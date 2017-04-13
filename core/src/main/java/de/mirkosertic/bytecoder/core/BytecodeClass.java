@@ -15,18 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public class BytecodeClass {
 
-public class BytecodeConstantPool {
+    private final BytecodeConstantPool constantPool;
 
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
+    public BytecodeClass(BytecodeConstantPool aConstantPool) {
+        constantPool = aConstantPool;
     }
 
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
+    public BytecodeConstantPool constantPool() {
+        return constantPool;
     }
 }
