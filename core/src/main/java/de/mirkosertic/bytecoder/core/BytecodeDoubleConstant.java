@@ -15,18 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public class BytecodeDoubleConstant implements BytecodeConstant {
 
-public class BytecodeConstantPool {
+    private final long lowBytes;
+    private final long highBytes;
 
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
-    }
-
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
+    public BytecodeDoubleConstant(long lowBytes, long highBytes) {
+        this.lowBytes = lowBytes;
+        this.highBytes = highBytes;
     }
 }

@@ -15,18 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public abstract class BytecodeRefConstant implements BytecodeConstant {
 
-public class BytecodeConstantPool {
+    private final BytecodeClassIndex classIndex;
+    private final BytecodeNameAndTypeIndex nameAndTypeIndex;
 
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
-    }
-
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
+    protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
+        classIndex = aClassIndex;
+        nameAndTypeIndex = aNameAndTypeIndex;
     }
 }

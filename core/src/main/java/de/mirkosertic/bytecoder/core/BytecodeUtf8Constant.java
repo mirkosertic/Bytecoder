@@ -15,18 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public class BytecodeUtf8Constant implements BytecodeConstant {
 
-public class BytecodeConstantPool {
+    private final String value;
 
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
-    }
-
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
+    public BytecodeUtf8Constant(String aValue) {
+        value = aValue;
     }
 }

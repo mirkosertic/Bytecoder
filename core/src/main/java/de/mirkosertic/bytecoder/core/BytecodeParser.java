@@ -20,5 +20,5 @@ import java.io.IOException;
 
 public interface BytecodeParser {
 
-    void parseBody(DataInput dis) throws IOException;
+    BytecodeClass parseBody(DataInput dis) throws IOException;
 }
