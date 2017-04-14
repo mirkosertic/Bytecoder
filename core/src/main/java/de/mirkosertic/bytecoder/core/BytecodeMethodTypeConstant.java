@@ -15,22 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public class BytecodeMethodTypeConstant implements BytecodeConstant {
 
-public class BytecodeConstantPool {
+    private final BytecodeDescriptorIndex descriptorIndex;
 
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
+    public BytecodeMethodTypeConstant(BytecodeDescriptorIndex aDescriptorIndex) {
+        descriptorIndex = aDescriptorIndex;
     }
 
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
-    }
-
-    public BytecodeConstant constantByIndex(int aIndex) {
-        return constants.get(aIndex);
+    public BytecodeDescriptorIndex getDescriptorIndex() {
+        return descriptorIndex;
     }
 }

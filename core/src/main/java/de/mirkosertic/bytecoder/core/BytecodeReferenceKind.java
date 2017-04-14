@@ -15,22 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public enum BytecodeReferenceKind {
 
-public class BytecodeConstantPool {
-
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
-    }
-
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
-    }
-
-    public BytecodeConstant constantByIndex(int aIndex) {
-        return constants.get(aIndex);
-    }
+    REF_getField,
+    REF_getStatic,
+    REF_putField,
+    REF_putStatic,
+    REF_invokeVirtual,
+    REF_invokeStatic,
+    REF_invokeSpecial,
+    REF_newInvokeSpecial,
+    REF_invokeInterface
 }
