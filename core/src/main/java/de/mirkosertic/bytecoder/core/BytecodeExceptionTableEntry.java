@@ -15,6 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeAttributeInfo {
+public class BytecodeExceptionTableEntry {
 
+    private final int startPC;
+    private final int endPc;
+    private final int handlerPc;
+    private final int catchType;
+
+    public BytecodeExceptionTableEntry(int aStartPC, int aEndPc, int aHandlerPc, int aCatchType) {
+        startPC = aStartPC;
+        endPc = aEndPc;
+        handlerPc = aHandlerPc;
+        catchType = aCatchType;
+    }
 }

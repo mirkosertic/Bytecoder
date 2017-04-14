@@ -15,6 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeAttributeInfo {
+public class BytecodeUnknownAttributeInfo implements BytecodeAttributeInfo {
 
+    private final BytecodeUtf8Constant attributeName;
+    private final byte[] attributeData;
+
+    public BytecodeUnknownAttributeInfo(BytecodeUtf8Constant aAttributeName, byte[] aAttributeData) {
+        attributeName = aAttributeName;
+        attributeData = aAttributeData;
+    }
 }

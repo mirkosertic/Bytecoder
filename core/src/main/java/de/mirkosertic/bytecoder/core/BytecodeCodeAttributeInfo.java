@@ -15,6 +15,19 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeAttributeInfo {
+public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
 
+    private int maxStack;
+    private int maxLocals;
+    private byte[] code;
+    private BytecodeExceptionTableEntry[] exceptionTableEntries;
+    private BytecodeAttributeInfo[] attributes;
+
+    public BytecodeCodeAttributeInfo(int aMaxStack, int aMaxLocals, byte[] aCode, BytecodeExceptionTableEntry[] aExceptionTableEntries, BytecodeAttributeInfo[] aAttributes) {
+        maxStack = aMaxStack;
+        maxLocals = aMaxLocals;
+        code = aCode;
+        exceptionTableEntries = aExceptionTableEntries;
+        attributes = aAttributes;
+    }
 }
