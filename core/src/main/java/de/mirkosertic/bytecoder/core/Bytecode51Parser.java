@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+// https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7
 public class Bytecode51Parser implements BytecodeParser {
 
     private static final int CONSTANT_Class = 7;
@@ -42,17 +43,24 @@ public class Bytecode51Parser implements BytecodeParser {
 
         BytecodeConstantPool theConstantPool = parseConstantPool(dis);
 
-        BytecodeClass theResult = new BytecodeClass(theConstantPool);
         BytecodeAccessFlags theAccessFlags = parseAccessFlags(dis);
         BytecodeClassinfoConstant theThisClass = parseThisClass(dis, theConstantPool);
         BytecodeClassinfoConstant theSuperClass = parseSuperClass(dis, theConstantPool);
 
         BytecodeInterface[] theInterfaces = parseInterfaces(dis, theConstantPool);
-        parseFields(dis);
-        parseMethods(dis);
-        parseAttributes(dis);
+        BytecodeField[] theFields = parseFields(dis, theConstantPool);
+        BytecodeMethod[] theMethods = parseMethods(dis, theConstantPool);
 
-        return theResult;
+        BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
+
+        return new BytecodeClass(theConstantPool,
+                theAccessFlags,
+                theThisClass,
+                theSuperClass,
+                theInterfaces,
+                theFields,
+                theMethods,
+                theClassAttributes);
     }
 
     private BytecodeConstantPool parseConstantPool(DataInput aDis) throws IOException {
@@ -262,40 +270,80 @@ public class Bytecode51Parser implements BytecodeParser {
         return theInterfaces.toArray(new BytecodeInterface[theInterfaces.size()]);
     }
 
-    private void parseFields(DataInput aDis) throws IOException {
+    private BytecodeAttributeInfo[] parseAttributes(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+        List<BytecodeAttributeInfo> theAttributes = new ArrayList<>();
+        int theAttributesCount = aDis.readUnsignedShort();
+        for (int j=0;j<theAttributesCount;j++) {
+            int theAttributeNameIndex = aDis.readUnsignedShort();
+
+            BytecodeConstant theAttributeNameConstant = aConstantPool.constantByIndex(theAttributeNameIndex - 1);
+            if (!(theAttributeNameConstant instanceof BytecodeUtf8Constant)) {
+                throw new IllegalStateException("Invalid interface constant reference : got type " + theAttributeNameConstant.getClass().getName());
+            }
+
+            int theAttributeLength = aDis.readInt();
+            byte[] theAttributeData = new byte[theAttributeLength];
+            aDis.readFully(theAttributeData);
+
+            theAttributes.add(new BytecodeAttributeInfo((BytecodeUtf8Constant) theAttributeNameConstant, theAttributeData));
+        }
+        return theAttributes.toArray(new BytecodeAttributeInfo[theAttributes.size()]);
+    }
+
+    private BytecodeField[] parseFields(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+        List<BytecodeField> theFields = new ArrayList<>();
         int theFieldCount = aDis.readUnsignedShort();
         for (int i=0;i<theFieldCount;i++) {
             int theAccessFlags = aDis.readUnsignedShort();
             int theNameIndex = aDis.readUnsignedShort();
-            int theDescriptorIndex = aDis.readUnsignedShort();
-            int theAttributesCount = aDis.readUnsignedShort();
-            for (int j=0;j<theAttributesCount;j++) {
-                int theAttributeNameIndex = aDis.readUnsignedShort();
-                long theAttributeLength = aDis.readInt();
-                for (int k=0;k<theAttributeLength;k++) {
-                    int b = aDis.readUnsignedByte();
-                }
+            BytecodeConstant theNameConstant = aConstantPool.constantByIndex(theNameIndex - 1);
+            if (!(theNameConstant instanceof BytecodeUtf8Constant)) {
+                throw new IllegalStateException("Invalid interface constant reference : got type " + theNameConstant.getClass().getName());
             }
+
+            int theDescriptorIndex = aDis.readUnsignedShort();
+            BytecodeConstant theDescriptorConstant = aConstantPool.constantByIndex(theDescriptorIndex - 1);
+            if (!(theDescriptorConstant instanceof BytecodeUtf8Constant)) {
+                throw new IllegalStateException("Invalid interface constant reference : got type " + theDescriptorConstant.getClass().getName());
+            }
+
+            BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
+
+            theFields.add(new BytecodeField(
+                    new BytecodeAccessFlags(theAccessFlags),
+                    (BytecodeUtf8Constant) theNameConstant,
+                    (BytecodeUtf8Constant) theDescriptorConstant,
+                    theAttributes));
         }
+        return theFields.toArray(new BytecodeField[theFields.size()]);
     }
 
-    private void parseMethods(DataInput aDis) throws IOException {
-    /*    int theMethodCount = aDis.readUnsignedShort();
+    private BytecodeMethod[] parseMethods(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+        List<BytecodeMethod> theMethods = new ArrayList<>();
+        int theMethodCount = aDis.readUnsignedShort();
         for (int i=0;i<theMethodCount;i++) {
             int theAccessFlags = aDis.readUnsignedShort();
             int theNameIndex = aDis.readUnsignedShort();
-            int theDescriptorIndex = aDis.readUnsignedShort();
-            int theAttributesCount = aDis.readUnsignedShort();
-            for (int j=0;j<theAttributesCount;j++) {
-                int theAttributeNameIndex = aDis.readUnsignedShort();
-                long theAttributeLength = aDis.readLong();
-                for (int k=0;k<theAttributeLength;k++) {
-                    int b = aDis.readUnsignedByte();
-                }
-            }
-        }*/
-    }
 
-    private void parseAttributes(DataInput aDis) {
+            BytecodeConstant theName = aConstantPool.constantByIndex(theNameIndex - 1);
+            if (!(theName instanceof BytecodeUtf8Constant)) {
+                throw new IllegalStateException("Invalid interface constant reference : got type " + theName.getClass().getName());
+            }
+
+            int theDescriptorIndex = aDis.readUnsignedShort();
+
+            BytecodeConstant theDescriptor = aConstantPool.constantByIndex(theDescriptorIndex - 1);
+            if (!(theDescriptor instanceof BytecodeUtf8Constant)) {
+                throw new IllegalStateException("Invalid interface constant reference : got type " + theDescriptor.getClass().getName());
+            }
+
+            BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
+
+            theMethods.add(new BytecodeMethod(new BytecodeAccessFlags(theAccessFlags),
+                    (BytecodeUtf8Constant) theName,
+                    (BytecodeUtf8Constant) theDescriptor,
+                    theAttributes));
+        }
+        return theMethods.toArray(new BytecodeMethod[theMethods.size()]);
     }
 }

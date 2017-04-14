@@ -15,17 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class SimpleClass implements SimpleInterface {
+public class BytecodeAttributeInfo {
 
-    protected String unknown;
-    protected int intValue = 10;
-    protected float floatValue = 14f;
-    protected String[] stringArray;
-    protected byte[] byteArray;
+    private final BytecodeUtf8Constant attributeName;
+    private final byte[] attributeData;
 
-    public static void main(String args) {
-        int a = 10;
-        int b = 20;
-        int c = a + b;
+    public BytecodeAttributeInfo(BytecodeUtf8Constant aAttributeName, byte[] aAttributeData) {
+        attributeName = aAttributeName;
+        attributeData = aAttributeData;
     }
 }

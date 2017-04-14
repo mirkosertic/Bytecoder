@@ -15,17 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class SimpleClass implements SimpleInterface {
+public class BytecodeMethod {
 
-    protected String unknown;
-    protected int intValue = 10;
-    protected float floatValue = 14f;
-    protected String[] stringArray;
-    protected byte[] byteArray;
+    private final BytecodeAccessFlags accessFlags;
+    private final BytecodeUtf8Constant name;
+    private final BytecodeUtf8Constant desriptor;
+    private final BytecodeAttributeInfo[] attributes;
 
-    public static void main(String args) {
-        int a = 10;
-        int b = 20;
-        int c = a + b;
+    public BytecodeMethod(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeUtf8Constant aDesriptor, BytecodeAttributeInfo[] aAttributes) {
+        accessFlags = aAccessFlags;
+        name = aName;
+        desriptor = aDesriptor;
+        attributes = aAttributes;
     }
 }
