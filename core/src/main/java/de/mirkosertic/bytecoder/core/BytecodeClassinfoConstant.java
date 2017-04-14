@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeClassinfoConstant implements BytecodeConstant {
 
+    public static final BytecodeClassinfoConstant OBJECT_CLASS = new BytecodeClassinfoConstant(new BytecodeNameIndex(-1));
+
     private final BytecodeNameIndex nameIndex;
 
     public BytecodeClassinfoConstant(BytecodeNameIndex aNameIndex) {

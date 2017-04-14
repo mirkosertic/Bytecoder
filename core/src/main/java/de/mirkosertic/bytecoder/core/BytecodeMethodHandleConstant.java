@@ -15,22 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+public class BytecodeMethodHandleConstant implements BytecodeConstant {
 
-public class BytecodeConstantPool {
+    private final BytecodeReferenceKind referenceKind;
+    private final BytecodeReferenceIndex referenceIndex;
 
-    private final List<BytecodeConstant> constants;
-
-    public BytecodeConstantPool() {
-        constants = new ArrayList<>();
-    }
-
-    public void registerConstant(BytecodeConstant aConstant) {
-        constants.add(aConstant);
-    }
-
-    public BytecodeConstant constantByIndex(int aIndex) {
-        return constants.get(aIndex);
+    public BytecodeMethodHandleConstant(BytecodeReferenceKind aReferenceKind, BytecodeReferenceIndex aReferenceIndex) {
+        referenceKind = aReferenceKind;
+        referenceIndex = aReferenceIndex;
     }
 }
