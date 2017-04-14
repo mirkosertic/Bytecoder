@@ -22,4 +22,8 @@ public class BytecodeUtf8Constant implements BytecodeConstant {
     public BytecodeUtf8Constant(String aValue) {
         value = aValue;
     }
+
+    public String stringValue() {
+        return value;
+    }
 }

@@ -263,11 +263,36 @@ public class Bytecode51Parser implements BytecodeParser {
             int theNameIndex = aDis.readUnsignedShort();
             BytecodeConstant theConstant = aConstantPool.constantByIndex(theNameIndex - 1);
             if (!(theConstant instanceof BytecodeClassinfoConstant)) {
-                throw new IllegalStateException("Invalid interface constant reference : got type " + theConstant.getClass().getName());
+                throw new IllegalStateException("Invalid constant reference : got type " + theConstant.getClass().getName());
             }
             theInterfaces.add(new BytecodeInterface((BytecodeClassinfoConstant) theConstant));
         }
         return theInterfaces.toArray(new BytecodeInterface[theInterfaces.size()]);
+    }
+
+    private BytecodeCodeAttributeInfo parseCodeAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+
+        int theMaxStack = aDis.readUnsignedShort();
+        int theMaxLocals = aDis.readUnsignedShort();
+        int theCodeLength = aDis.readInt();
+        byte[] theCode = new byte[theCodeLength];
+        aDis.readFully(theCode);
+
+        List<BytecodeExceptionTableEntry> theExceptionEntries = new ArrayList<>();
+
+        int theExceptionTableLength = aDis.readUnsignedShort();
+        for (int i=0;i<theExceptionTableLength;i++) {
+            int theStartPC = aDis.readUnsignedShort();
+            int theEndPc = aDis.readUnsignedShort();
+            int theHandlerPc = aDis.readUnsignedShort();
+            int theCatchType = aDis.readUnsignedShort();
+            theExceptionEntries.add(new BytecodeExceptionTableEntry(theStartPC, theEndPc, theHandlerPc, theCatchType));
+        }
+        BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
+
+        return new BytecodeCodeAttributeInfo(theMaxStack, theMaxLocals, theCode,
+                theExceptionEntries.toArray(new BytecodeExceptionTableEntry[theExceptionEntries.size()]),
+                theAttributes);
     }
 
     private BytecodeAttributeInfo[] parseAttributes(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
@@ -278,14 +303,21 @@ public class Bytecode51Parser implements BytecodeParser {
 
             BytecodeConstant theAttributeNameConstant = aConstantPool.constantByIndex(theAttributeNameIndex - 1);
             if (!(theAttributeNameConstant instanceof BytecodeUtf8Constant)) {
-                throw new IllegalStateException("Invalid interface constant reference : got type " + theAttributeNameConstant.getClass().getName());
+                throw new IllegalStateException("Invalid constant reference : got type " + theAttributeNameConstant.getClass().getName());
             }
 
             int theAttributeLength = aDis.readInt();
-            byte[] theAttributeData = new byte[theAttributeLength];
-            aDis.readFully(theAttributeData);
+            switch (((BytecodeUtf8Constant) theAttributeNameConstant).stringValue()) {
+                case "Code":
+                    theAttributes.add(parseCodeAttribute(aDis, aConstantPool));
+                    break;
+                default:
+                    byte[] theAttributeData = new byte[theAttributeLength];
+                    aDis.readFully(theAttributeData);
 
-            theAttributes.add(new BytecodeAttributeInfo((BytecodeUtf8Constant) theAttributeNameConstant, theAttributeData));
+                    theAttributes.add(new BytecodeUnknownAttributeInfo((BytecodeUtf8Constant) theAttributeNameConstant, theAttributeData));
+                    break;
+            }
         }
         return theAttributes.toArray(new BytecodeAttributeInfo[theAttributes.size()]);
     }

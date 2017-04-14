@@ -22,8 +22,14 @@ import java.io.IOException;
 public class BytecodeLoaderTest {
 
     @Test
-    public void testLoad() throws IOException {
+    public void testLoadSimpleClass() throws IOException {
         BytecodeLoader loader = new BytecodeLoader();
         loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
+    }
+
+    @Test
+    public void testLoadInterface() throws IOException {
+        BytecodeLoader loader = new BytecodeLoader();
+        loader.loadByteCode(getClass().getResourceAsStream("SimpleInterface.class"));
     }
 }
