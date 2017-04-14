@@ -18,12 +18,22 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeClass {
 
     private final BytecodeConstantPool constantPool;
+    private final BytecodeAccessFlags accessFlags;
+    private final BytecodeClassinfoConstant thisClass;
+    private final BytecodeClassinfoConstant superClass;
+    private final BytecodeInterface[] interfaces;
+    private final BytecodeField[] fields;
+    private final BytecodeMethod[] methods;
+    private final BytecodeAttributeInfo[] classAttributes;
 
-    public BytecodeClass(BytecodeConstantPool aConstantPool) {
+    public BytecodeClass(BytecodeConstantPool aConstantPool, BytecodeAccessFlags aAccessFlags, BytecodeClassinfoConstant aThisClass, BytecodeClassinfoConstant aSuperClass, BytecodeInterface[] aInterfaces, BytecodeField[] aFields, BytecodeMethod[] aMethods, BytecodeAttributeInfo[] aClassAttributes) {
         constantPool = aConstantPool;
-    }
-
-    public BytecodeConstantPool constantPool() {
-        return constantPool;
+        accessFlags = aAccessFlags;
+        thisClass = aThisClass;
+        superClass = aSuperClass;
+        interfaces = aInterfaces;
+        fields = aFields;
+        methods = aMethods;
+        classAttributes = aClassAttributes;
     }
 }
