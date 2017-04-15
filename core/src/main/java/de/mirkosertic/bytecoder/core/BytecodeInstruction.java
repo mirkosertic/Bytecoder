@@ -15,10 +15,5 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.io.DataInput;
-import java.io.IOException;
-
-public interface BytecodeParser {
-
-    BytecodeClass parseBody(DataInput dis) throws IOException;
+public interface BytecodeInstruction {
 }

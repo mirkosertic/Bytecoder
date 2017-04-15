@@ -19,15 +19,16 @@ public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
 
     private int maxStack;
     private int maxLocals;
-    private byte[] code;
+    private BytecodeProgramm programm;
     private BytecodeExceptionTableEntry[] exceptionTableEntries;
     private BytecodeAttributeInfo[] attributes;
 
-    public BytecodeCodeAttributeInfo(int aMaxStack, int aMaxLocals, byte[] aCode, BytecodeExceptionTableEntry[] aExceptionTableEntries, BytecodeAttributeInfo[] aAttributes) {
+    public BytecodeCodeAttributeInfo(int aMaxStack, int aMaxLocals, BytecodeProgramm aProgramm, BytecodeExceptionTableEntry[] aExceptionTableEntries, BytecodeAttributeInfo[] aAttributes) {
         maxStack = aMaxStack;
         maxLocals = aMaxLocals;
-        code = aCode;
+        programm = aProgramm;
         exceptionTableEntries = aExceptionTableEntries;
         attributes = aAttributes;
     }
+
 }

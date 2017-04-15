@@ -24,12 +24,12 @@ public class BytecodeLoader {
 
     public void loadByteCode(InputStream aStream) throws IOException {
         try (DataInputStream dis = new DataInputStream(aStream)) {
-            BytecodeParser parser = parseHeader(dis);
+            BytecodeClassParser parser = parseHeader(dis);
             parser.parseBody(dis);
         }
     }
 
-    private BytecodeParser parseHeader(DataInput aStream) throws IOException {
+    private BytecodeClassParser parseHeader(DataInput aStream) throws IOException {
         int theMagic = aStream.readInt();
         if (!(theMagic == 0xCAFEBABE)) {
             throw new IllegalArgumentException("Wrong class file format : " + theMagic);
@@ -38,7 +38,7 @@ public class BytecodeLoader {
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
         case 51:
-            return new Bytecode51Parser();
+            return new Bytecode51ClassParser(new Bytecode51ProgrammParser());
         }
         throw new IllegalArgumentException("Not Supported bytecode format : " + theMajorVersion);
     }
