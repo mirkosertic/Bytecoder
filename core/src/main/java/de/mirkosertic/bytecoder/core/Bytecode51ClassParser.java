@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7
-public class Bytecode51Parser implements BytecodeParser {
+public class Bytecode51ClassParser implements BytecodeClassParser {
 
     private static final int CONSTANT_Class = 7;
     private static final int CONSTANT_Fieldref = 9;
@@ -37,6 +37,12 @@ public class Bytecode51Parser implements BytecodeParser {
     private static final int CONSTANT_MethodHandle = 15;
     private static final int CONSTANT_MethodType = 16;
     private static final int CONSTANT_InvokeDynamic = 18;
+
+    private final BytecodeProgrammParser programmParser;
+
+    public Bytecode51ClassParser(BytecodeProgrammParser aParser) {
+        programmParser = aParser;
+    }
 
     @Override
     public BytecodeClass parseBody(DataInput dis) throws IOException {
@@ -278,6 +284,8 @@ public class Bytecode51Parser implements BytecodeParser {
         byte[] theCode = new byte[theCodeLength];
         aDis.readFully(theCode);
 
+        BytecodeProgramm theProgramm = programmParser.parse(theCode);
+
         List<BytecodeExceptionTableEntry> theExceptionEntries = new ArrayList<>();
 
         int theExceptionTableLength = aDis.readUnsignedShort();
@@ -290,7 +298,7 @@ public class Bytecode51Parser implements BytecodeParser {
         }
         BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 
-        return new BytecodeCodeAttributeInfo(theMaxStack, theMaxLocals, theCode,
+        return new BytecodeCodeAttributeInfo(theMaxStack, theMaxLocals, theProgramm,
                 theExceptionEntries.toArray(new BytecodeExceptionTableEntry[theExceptionEntries.size()]),
                 theAttributes);
     }
