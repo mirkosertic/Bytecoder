@@ -15,27 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class SimpleClass implements SimpleInterface {
+public class BytecodeInstructionASTORE implements BytecodeInstruction {
 
-    protected String unknownString;
-    protected double doubleValue;
-    protected int intValue = 10;
-    protected float floatValue = 14f;
-    protected String[] stringArray;
-    protected byte[] byteArray;
-    protected long longValue;
-    protected int anotherIntValue;
+    private final byte index;
 
-    public int sum(int a, int b) {
-        return a + b;
-    }
-
-    public static void main(String args) {
-        int a = 10;
-        int b = 20;
-        int c = a + b;
-
-        SimpleClass theSimpleMe = new SimpleClass();
-        int theSum = theSimpleMe.sum(10, 20);
+    public BytecodeInstructionASTORE(byte aIndex) {
+        index = aIndex;
     }
 }
