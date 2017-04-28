@@ -37,8 +37,10 @@ public class BytecodeLoader {
         int theMinorVersion = aStream.readUnsignedShort();
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
-        case 51:
-            return new Bytecode51ClassParser(new Bytecode51ProgrammParser());
+            case 51:
+                return new Bytecode51ClassParser(new Bytecode5xProgrammParser());
+            case 52:
+                return new Bytecode51ClassParser(new Bytecode5xProgrammParser());
         }
         throw new IllegalArgumentException("Not Supported bytecode format : " + theMajorVersion);
     }

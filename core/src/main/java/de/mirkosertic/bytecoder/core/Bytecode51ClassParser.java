@@ -98,9 +98,13 @@ public class Bytecode51ClassParser implements BytecodeClassParser {
                     break;
                 case CONSTANT_Long:
                     parseConstantPool_CONSTANT_Long(aDis, theResult);
+                    theResult.registerConstant(new BytecodeUnusedConstant());
+                    i++;
                     break;
                 case CONSTANT_Double:
                     parseConstantPool_CONSTANT_Double(aDis, theResult);
+                    theResult.registerConstant(new BytecodeUnusedConstant());
+                    i++;
                     break;
                 case CONSTANT_NameAndType:
                     parseConstantPool_CONSTANT_NameAndType(aDis, theResult);
