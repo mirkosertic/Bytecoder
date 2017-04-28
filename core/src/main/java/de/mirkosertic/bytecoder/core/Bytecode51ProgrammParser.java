@@ -110,6 +110,42 @@ public class Bytecode51ProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionIADD());
                     break;
                 }
+                case 159: { // if_icmpeq = 159 (0x9f)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionICMP(BytecodeInstructionICMP.Type.eq, theBranchByte1, theBranchByte2));
+                    break;
+                }
+                case 160: { // if_icmpne = 160 (0xa0)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionICMP(BytecodeInstructionICMP.Type.ne, theBranchByte1, theBranchByte1));
+                    break;
+                }
+                case 161: { // if_icmplt = 161 (0xa1)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionICMP(BytecodeInstructionICMP.Type.lt, theBranchByte1, theBranchByte2));
+                    break;
+                }
+                case 162: { // if_icmpge = 162 (0xa2)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionICMP(BytecodeInstructionICMP.Type.ge, theBranchByte1, theBranchByte2));
+                    break;
+                }
+                case 163: { // if_icmpgt = 163 (0xa3)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionICMP(BytecodeInstructionICMP.Type.gt, theBranchByte1, theBranchByte2));
+                    break;
+                }
+                case 164: { // if_icmple = 164 (0xa4)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionICMP(BytecodeInstructionICMP.Type.le, theBranchByte1, theBranchByte2));
+                    break;
+                }
                 case 172: { // ireturn = 172 (0xac)
                     theResult.addInstruction(new BytecodeInstructionIRETURN());
                     break;
