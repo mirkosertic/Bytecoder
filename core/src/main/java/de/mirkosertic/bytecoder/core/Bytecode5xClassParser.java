@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7
-public class Bytecode51ClassParser implements BytecodeClassParser {
+public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private static final int CONSTANT_Class = 7;
     private static final int CONSTANT_Fieldref = 9;
@@ -40,7 +40,7 @@ public class Bytecode51ClassParser implements BytecodeClassParser {
 
     private final BytecodeProgrammParser programmParser;
 
-    public Bytecode51ClassParser(BytecodeProgrammParser aParser) {
+    public Bytecode5xClassParser(BytecodeProgrammParser aParser) {
         programmParser = aParser;
     }
 
