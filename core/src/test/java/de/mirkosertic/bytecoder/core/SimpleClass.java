@@ -23,7 +23,7 @@ public class SimpleClass implements SimpleInterface {
     protected float floatValue = 14f;
     protected String[] stringArray;
     protected byte[] byteArray;
-    protected long longValue;
+    protected long longValue = 44L;
     protected int anotherIntValue;
 
     public int sum(int a, int b) {
@@ -31,9 +31,18 @@ public class SimpleClass implements SimpleInterface {
     }
 
     public static void main(String args) {
+
         int a = 10;
         int b = 20;
         int c = a + b;
+
+        byte x1= -1;
+        byte x2 = 0;
+        byte x3 = 1;
+        byte x4 = 2;
+        byte x5 = 3;
+        byte x6 = 4;
+        byte x7 = 5;
 
         if (c > 20) {
             return;
@@ -41,5 +50,6 @@ public class SimpleClass implements SimpleInterface {
 
         SimpleClass theSimpleMe = new SimpleClass();
         int theSum = theSimpleMe.sum(10, 20);
+        int x = theSimpleMe.intValue;
     }
 }

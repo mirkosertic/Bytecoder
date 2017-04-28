@@ -28,6 +28,34 @@ public class Bytecode51ProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionNOP());
                     break;
                 }
+                case 2: { // iconst_m1 = 2 (0x2)
+                    theResult.addInstruction(new BytecodeInstructionICONST(-1));
+                    break;
+                }
+                case 3: { // iconst_0 = 3 (0x3)
+                    theResult.addInstruction(new BytecodeInstructionICONST(0));
+                    break;
+                }
+                case 4: { // iconst_1 = 4 (0x4)
+                    theResult.addInstruction(new BytecodeInstructionICONST(1));
+                    break;
+                }
+                case 5: { // iconst_2 = 5 (0x5)
+                    theResult.addInstruction(new BytecodeInstructionICONST(2));
+                    break;
+                }
+                case 6: { // iconst_3 = 6 (0x6)
+                    theResult.addInstruction(new BytecodeInstructionICONST(3));
+                    break;
+                }
+                case 7: { // iconst_4 = 7 (0x7)
+                    theResult.addInstruction(new BytecodeInstructionICONST(4));
+                    break;
+                }
+                case 8: { // iconst_5 = 8 (0x8)
+                    theResult.addInstruction(new BytecodeInstructionICONST(5));
+                    break;
+                }
                 case 16: { // bipush = 16 (0x10)
                     byte theValue = aBytecodes[offset++];
                     theResult.addInstruction(new BytecodeInstructionBIPUSH(theValue));
@@ -152,6 +180,12 @@ public class Bytecode51ProgrammParser implements BytecodeProgrammParser {
                 }
                 case 177: {// return = 177 (0xb1)
                     theResult.addInstruction(new BytecodeInstructionRETURN());
+                    break;
+                }
+                case 180: { // getfield = 180 (0xb4)
+                    byte theIndexByte1 = aBytecodes[offset++];
+                    byte theIndexByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionGETFIELD(theIndexByte1, theIndexByte2));
                     break;
                 }
                 case 181: { // putfield = 181 (0xb5)
