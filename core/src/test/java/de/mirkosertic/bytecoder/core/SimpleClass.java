@@ -18,13 +18,17 @@ package de.mirkosertic.bytecoder.core;
 public class SimpleClass implements SimpleInterface {
 
     protected String unknownString;
-    protected double doubleValue;
+    protected double doubleValue = 10d;
     protected int intValue = 10;
     protected float floatValue = 14f;
     protected String[] stringArray;
     protected byte[] byteArray;
     protected long longValue = 44L;
     protected int anotherIntValue;
+
+    public static byte[] createArray() {
+        return new byte[] {(byte) 10};
+    }
 
     public int sum(int a, int b) {
         return a + b;
@@ -43,6 +47,26 @@ public class SimpleClass implements SimpleInterface {
         byte x5 = 3;
         byte x6 = 4;
         byte x7 = 5;
+
+        boolean[] booleans = new boolean[10];
+        booleans[0] = false;
+        char[] chars = {};
+        float[] floats = {};
+        double[] doubles = {};
+        byte[] bytes = {};
+        short[] shorts = {};
+        int[] ints = {};
+        long[] longs = {};
+
+        int z = createArray().length;
+
+        Object[] objects = new Object[10];
+        objects[0] = null;
+        if (objects[1] instanceof Object) {
+            return;
+        }
+
+        double dw = 11d;
 
         if (c > 20) {
             return;
