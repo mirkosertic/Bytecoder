@@ -80,8 +80,12 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionFCONST(2f));
                     break;
                 }
-                case 14: { // i2b = 145 (0x91)
-                    theResult.addInstruction(new BytecodeInstructionI2B());
+                case 14: { // dconst_0 = 14 (0xe)
+                    theResult.addInstruction(new BytecodeInstructionDCONST(0));
+                    break;
+                }
+                case 15: { // dconst_1 = 15 (0xf)
+                    theResult.addInstruction(new BytecodeInstructionDCONST(1));
                     break;
                 }
                 case 16: { // bipush = 16 (0x10)
@@ -100,6 +104,12 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionLDC(theValue));
                     break;
                 }
+                case 19: { //ldc_w = 19 (0x13)
+                    byte theIndexByte1 = aBytecodes[offset++];
+                    byte theIndexByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionLDCW(theIndexByte1, theIndexByte2));
+                    break;
+                }
                 case 20: { //ldc2_w = 20 (0x14)
                     byte theIndexByte1 = aBytecodes[offset++];
                     byte theIndexByte2 = aBytecodes[offset++];
@@ -114,6 +124,16 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 case 22: { // lload = 22 (0x16)
                     byte theIndexByte1 = aBytecodes[offset++];
                     theResult.addInstruction(new BytecodeInstructionLLOAD(theIndexByte1));
+                    break;
+                }
+                case 23: { // fload = 23 (0x17)
+                    byte theIndexByte1 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionFLOAD(theIndexByte1));
+                    break;
+                }
+                case 24: { // dload = 24 (0x18)
+                    byte theIndexByte1 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionDLOAD(theIndexByte1));
                     break;
                 }
                 case 25: { // aload = 25 (0x19)
@@ -205,6 +225,18 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionIALOAD());
                     break;
                 }
+                case 47: {// laload = 47 (0x2f)
+                    theResult.addInstruction(new BytecodeInstructionLALOAD());
+                    break;
+                }
+                case 48: {// faload = 48 (0x30)
+                    theResult.addInstruction(new BytecodeInstructionFALOAD());
+                    break;
+                }
+                case 49: {// daload = 49 (0x31)
+                    theResult.addInstruction(new BytecodeInstructionDALOAD());
+                    break;
+                }
                 case 50: { // aaload = 50 (0x32)
                     theResult.addInstruction(new BytecodeInstructionAALOAD());
                     break;
@@ -217,6 +249,10 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionCALOAD());
                     break;
                 }
+                case 53: { // saload = 53 (0x35)
+                    theResult.addInstruction(new BytecodeInstructionSALOAD());
+                    break;
+                }
                 case 54: { // istore = 54 (0x36)
                     byte theIndex = aBytecodes[offset++];
                     theResult.addInstruction(new BytecodeInstructionISTORE(theIndex));
@@ -227,13 +263,17 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionLSTORE(theIndex));
                     break;
                 }
+                case 56: { // fstore = 56 (0x38)
+                    byte theIndex = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionFSTORE(theIndex));
+                    break;
+                }
                 case 57: { // dstore = 57 (0x39)
                     byte theIndex = aBytecodes[offset++];
                     theResult.addInstruction(new BytecodeInstructionDSTORE(theIndex));
                     break;
                 }
-                case 58: {
-                     // astore = 58 (0x3a)
+                case 58: { // astore = 58 (0x3a)
                     byte theIndex = aBytecodes[offset++];
                     theResult.addInstruction(new BytecodeInstructionASTORE(theIndex));
                     break;
@@ -270,6 +310,22 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionLSTORE((byte) 3));
                     break;
                 }
+                case 67: { // fstore_0 = 67 (0x43)
+                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 0));
+                    break;
+                }
+                case 68: { // fstore_1 = 68 (0x44)
+                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 1));
+                    break;
+                }
+                case 69: { // fstore_2 = 69 (0x45)
+                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 2));
+                    break;
+                }
+                case 70: { // fstore_3 = 70 (0x46)
+                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 3));
+                    break;
+                }
                 case 71: { // dstore_0 = 71 (0x47)
                     theResult.addInstruction(new BytecodeInstructionDSTORE((byte) 0));
                     break;
@@ -302,24 +358,72 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionASTORE((byte) 3));
                     break;
                 }
-                case 83: { // aastore = 83 (0x53)
-                    theResult.addInstruction(new BytecodeInstructionAASTORE());
+                case 79: { // iastore = 79 (0x4f)
+                    theResult.addInstruction(new BytecodeInstructionIASTORE());
                     break;
                 }
-                case 85: { // castore = 85 (0x55)
-                    theResult.addInstruction(new BytecodeInstructionCASTORE());
+                case 80: { // lastore = 80 (0x50)
+                    theResult.addInstruction(new BytecodeInstructionLASTORE());
+                    break;
+                }
+                case 81: { // fastore = 81 (0x51)
+                    theResult.addInstruction(new BytecodeInstructionFASTORE());
+                    break;
+                }
+                case 82: { // dastore = 82 (0x52)
+                    theResult.addInstruction(new BytecodeInstructionDASTORE());
+                    break;
+                }
+                case 83: { // aastore = 83 (0x53)
+                    theResult.addInstruction(new BytecodeInstructionAASTORE());
                     break;
                 }
                 case 84: { // bastore = 84 (0x54)
                     theResult.addInstruction(new BytecodeInstructionBASTORE());
                     break;
                 }
+                case 85: { // castore = 85 (0x55)
+                    theResult.addInstruction(new BytecodeInstructionCASTORE());
+                    break;
+                }
+                case 86: { // sastore = 86 (0x56)
+                    theResult.addInstruction(new BytecodeInstructionSASTORE());
+                    break;
+                }
                 case 87: { // pop = 87 (0x57)
                     theResult.addInstruction(new BytecodeInstructionPOP());
                     break;
                 }
+                case 88: { // pop2 = 88 (0x58)
+                    theResult.addInstruction(new BytecodeInstructionPOP2());
+                    break;
+                }
                 case 89: { // dup = 89 (0x59)
                     theResult.addInstruction(new BytecodeInstructionDUP());
+                    break;
+                }
+                case 90: { // dup_x1 = 90 (0x5a)
+                    theResult.addInstruction(new BytecodeInstructionDUPX1());
+                    break;
+                }
+                case 91: { // dup_x2 = 91 (0x5b)
+                    theResult.addInstruction(new BytecodeInstructionDUPX2());
+                    break;
+                }
+                case 92: { // dup2 = 92 (0x5c)
+                    theResult.addInstruction(new BytecodeInstructionDUP2());
+                    break;
+                }
+                case 93: { // dup2_x1 = 93 (0x5d)
+                    theResult.addInstruction(new BytecodeInstructionDUP2X1());
+                    break;
+                }
+                case 94: { // dup2_x2 = 94 (0x5e)
+                    theResult.addInstruction(new BytecodeInstructionDUP2X2());
+                    break;
+                }
+                case 95: { // swap = 95 (0x5f)
+                    theResult.addInstruction(new BytecodeInstructionSWAP());
                     break;
                 }
                 case 96: { // iadd = 96 (0x60)
@@ -328,6 +432,14 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 }
                 case 97: { // ladd = 97 (0x61)
                     theResult.addInstruction(new BytecodeInstructionLADD());
+                    break;
+                }
+                case 98: { // fadd = 98 (0x62)
+                    theResult.addInstruction(new BytecodeInstructionFADD());
+                    break;
+                }
+                case 99: { // ladd = 97 (0x61)
+                    theResult.addInstruction(new BytecodeInstructionDADD());
                     break;
                 }
                 case 100: { // isub = 100 (0x64)
@@ -354,6 +466,10 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionLMUL());
                     break;
                 }
+                case 106: { // fmul = 106 (0x6a)
+                    theResult.addInstruction(new BytecodeInstructionFMUL());
+                    break;
+                }
                 case 107: { // dmul = 107 (0x6b)
                     theResult.addInstruction(new BytecodeInstructionDMUL());
                     break;
@@ -366,8 +482,28 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionLDIV());
                     break;
                 }
+                case 110: { // fdiv = 110 (0x6e)
+                    theResult.addInstruction(new BytecodeInstructionFDIV());
+                    break;
+                }
                 case 111: {// ddiv = 111 (0x6f)
                     theResult.addInstruction(new BytecodeInstructionDDIV());
+                    break;
+                }
+                case 112: {// irem = 112 (0x70)
+                    theResult.addInstruction(new BytecodeInstructionIREM());
+                    break;
+                }
+                case 113: {// lrem = 113 (0x71)
+                    theResult.addInstruction(new BytecodeInstructionLREM());
+                    break;
+                }
+                case 114: {// frem = 114 (0x72)
+                    theResult.addInstruction(new BytecodeInstructionFREM());
+                    break;
+                }
+                case 115: {// drem = 115 (0x73)
+                    theResult.addInstruction(new BytecodeInstructionDREM());
                     break;
                 }
                 case 116: {// ineg = 116 (0x74)
@@ -378,7 +514,19 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionLNEG());
                     break;
                 }
+                case 118: {// fneg = 118 (0x76)
+                    theResult.addInstruction(new BytecodeInstructionFNEG());
+                    break;
+                }
+                case 119: {// dneg = 119 (0x77)
+                    theResult.addInstruction(new BytecodeInstructionDNEG());
+                    break;
+                }
                 case 120: { // ishl = 120 (0x78)
+                    theResult.addInstruction(new BytecodeInstructionISHL());
+                    break;
+                }
+                case 121: { // lshl = 121 (0x79)
                     theResult.addInstruction(new BytecodeInstructionISHL());
                     break;
                 }
@@ -388,6 +536,10 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 }
                 case 123: { // lshr = 123 (0x7b)
                     theResult.addInstruction(new BytecodeInstructionLSHR());
+                    break;
+                }
+                case 124: { // iushr = 124 (0x7c)
+                    theResult.addInstruction(new BytecodeInstructionIUSHR());
                     break;
                 }
                 case 125: { // lushr = 125 (0x7d)
@@ -428,16 +580,48 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionI2L());
                     break;
                 }
+                case 134: { // i2f = 134 (0x86)
+                    theResult.addInstruction(new BytecodeInstructionI2F());
+                    break;
+                }
+                case 135: { // i2d = 135 (0x87)
+                    theResult.addInstruction(new BytecodeInstructionI2D());
+                    break;
+                }
                 case 136: { // l2i = 136 (0x88)
                     theResult.addInstruction(new BytecodeInstructionL2I());
+                    break;
+                }
+                case 137: { // l2f = 137 (0x89)
+                    theResult.addInstruction(new BytecodeInstructionL2F());
+                    break;
+                }
+                case 138: { // l2d = 138 (0x8a)
+                    theResult.addInstruction(new BytecodeInstructionL2D());
                     break;
                 }
                 case 139: { // f2i = 139 (0x8b)
                     theResult.addInstruction(new BytecodeInstructionF2I());
                     break;
                 }
+                case 140: { // f2l = 140 (0x8c)
+                    theResult.addInstruction(new BytecodeInstructionF2L());
+                    break;
+                }
+                case 141: { // f2d = 141 (0x8d)
+                    theResult.addInstruction(new BytecodeInstructionF2D());
+                    break;
+                }
+                case 142: { // d2i = 142 (0x8e)
+                    theResult.addInstruction(new BytecodeInstructionF2I());
+                    break;
+                }
                 case 143: { // d2l = 143 (0x8f)
                     theResult.addInstruction(new BytecodeInstructionD2L());
+                    break;
+                }
+                case 144: { // d2f = 144 (0x90)
+                    theResult.addInstruction(new BytecodeInstructionD2F());
                     break;
                 }
                 case 145: { // i2b = 145 (0x91)
@@ -446,6 +630,10 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 }
                 case 146: { // i2c = 146 (0x92)
                     theResult.addInstruction(new BytecodeInstructionI2C());
+                    break;
+                }
+                case 147: { // i2s = 147 (0x93)
+                    theResult.addInstruction(new BytecodeInstructionI2S());
                     break;
                 }
                 case 148: { // lcmp = 148 (0x94)
@@ -558,6 +746,58 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionGOTO(theBranchByte1, theBranchByte2));
                     break;
                 }
+                case 168: { // jsr = 168 (0xa8)
+                    byte theBranchByte1 = aBytecodes[offset++];
+                    byte theBranchByte2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionJSR(theBranchByte1, theBranchByte2));
+                    break;
+                }
+                case 169: { // ret = 169 (0xa9)
+                    byte theIndex = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionRET(theIndex));
+                    break;
+                }
+
+                // TODO: 170
+
+                case 171: { // lookupswitch = 171 (0xab)
+
+                    // Skip padding
+                    offset +=  4 - offset % 4;
+                    byte theDefaultByte1 = aBytecodes[offset++];
+                    byte theDefaultByte2 = aBytecodes[offset++];
+                    byte theDefaultByte3 = aBytecodes[offset++];
+                    byte theDefaultByte4 = aBytecodes[offset++];
+
+                    long theDefault = (theDefaultByte1 << 24) | (theDefaultByte2 << 16) | (theDefaultByte3 << 8) | theDefaultByte4;
+
+                    byte theNPairs1 = aBytecodes[offset++];
+                    byte theNPairs2 = aBytecodes[offset++];
+                    byte theNPairs3 = aBytecodes[offset++];
+                    byte theNPairs4 = aBytecodes[offset++];
+
+                    long theNumPairs = (theNPairs1 << 24) | (theNPairs2 << 16) | (theNPairs3 << 8) | theNPairs4;
+
+                    BytecodeInstructionLOOKUPSWITCH.Pair thePairs[] = new BytecodeInstructionLOOKUPSWITCH.Pair[(int) theNumPairs];
+
+                    for (long i=0; i<theNumPairs; i++) {
+                        byte theMatchByte1 = aBytecodes[offset++];
+                        byte theMatchByte2 = aBytecodes[offset++];
+
+                        byte theOffsetByte1 = aBytecodes[offset++];
+                        byte theOffsetByte2 = aBytecodes[offset++];
+                        byte theOffsetByte3 = aBytecodes[offset++];
+                        byte theOffsetByte4 = aBytecodes[offset++];
+
+                        int theMatch = (theMatchByte1 << 8) | theMatchByte2;
+                        long theOffset = (theOffsetByte1 << 24) | (theOffsetByte2 << 16) | (theOffsetByte3 << 8) | theOffsetByte4;
+
+                        thePairs[(int) i] = new BytecodeInstructionLOOKUPSWITCH.Pair(theMatch, theOffset);
+                    }
+
+                    theResult.addInstruction(new BytecodeInstructionLOOKUPSWITCH(theDefault, thePairs));
+                    break;
+                }
                 case 172: { // ireturn = 172 (0xac)
                     theResult.addInstruction(new BytecodeInstructionIRETURN());
                     break;
@@ -632,6 +872,14 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionINVOKEINTERFACE(theIndexByte1, theIndexByte2, theCount));
                     break;
                 }
+                case 186: { // invokedynamic = 186 (0xba)
+                    byte theIndexByte1 = aBytecodes[offset++];
+                    byte theIndexByte2 = aBytecodes[offset++];
+                    byte theNull1 = aBytecodes[offset++];
+                    byte theNull2 = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionINVOKEDYNAMIC(theIndexByte1, theIndexByte2));
+                    break;
+                }
                 case 187: { // new = 187 (0xbb)
                     byte theIndexByte1 = aBytecodes[offset++];
                     byte theIndexByte2 = aBytecodes[offset++];
@@ -704,6 +952,11 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionMONITOREXIT());
                     break;
                 }
+
+                // TODO: 196
+
+                // TODO: 197
+
                 case 198: { // ifnull = 198 (0xc6)
                     byte theIndexByte1 = aBytecodes[offset++];
                     byte theIndexByte2 = aBytecodes[offset++];
@@ -716,6 +969,10 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionIFNONNULL(theIndexByte1, theIndexByte2));
                     break;
                 }
+
+                // TODO: 200
+
+                // TODO: 201
                 default:
                     throw new IllegalStateException("Unknown opcode : " + theOpcode);
             }
