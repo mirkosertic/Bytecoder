@@ -40,6 +40,12 @@ public class BytecodeLoaderTest {
     }
 
     @Test
+    public void testLoadRuntime4() throws IOException {
+        BytecodeLoader loader = new BytecodeLoader();
+        loader.loadByteCode(getClass().getResourceAsStream("/java/lang/Class.class"));
+    }
+
+    @Test
     public void testLoadSimpleClass() throws IOException {
         BytecodeLoader loader = new BytecodeLoader();
         loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
