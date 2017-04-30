@@ -28,4 +28,17 @@ public class BytecodeMethod {
         desriptor = aDesriptor;
         attributes = aAttributes;
     }
+
+    public BytecodeUtf8Constant getName() {
+        return name;
+    }
+
+    public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
+        for (BytecodeAttributeInfo theInfo : attributes) {
+            if (theInfo.getClass().equals(aAttributeClass)) {
+                return (T) theInfo;
+            }
+        }
+        return null;
+    }
 }

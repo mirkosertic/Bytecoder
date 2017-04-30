@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -48,7 +49,11 @@ public class BytecodeLoaderTest {
     @Test
     public void testLoadSimpleClass() throws IOException {
         BytecodeLoader loader = new BytecodeLoader();
-        loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
+        BytecodeClass theClass = loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
+        BytecodeMethod theMethod = theClass.methodByName("main");
+
+        JSBackend theBackend = new JSBackend();
+        theBackend.generateCodeFor(theClass.getConstantPool(), theMethod);
     }
 
     @Test
