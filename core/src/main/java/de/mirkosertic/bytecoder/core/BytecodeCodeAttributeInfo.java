@@ -31,4 +31,23 @@ public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
         attributes = aAttributes;
     }
 
+    public int getMaxStack() {
+        return maxStack;
+    }
+
+    public int getMaxLocals() {
+        return maxLocals;
+    }
+
+    public BytecodeProgramm getProgramm() {
+        return programm;
+    }
+
+    public BytecodeExceptionTableEntry[] getExceptionTableEntries() {
+        return exceptionTableEntries;
+    }
+
+    public BytecodeAttributeInfo[] getAttributes() {
+        return attributes;
+    }
 }

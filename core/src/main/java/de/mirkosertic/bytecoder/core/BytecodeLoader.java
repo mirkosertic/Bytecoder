@@ -22,10 +22,10 @@ import java.io.InputStream;
 
 public class BytecodeLoader {
 
-    public void loadByteCode(InputStream aStream) throws IOException {
+    public BytecodeClass loadByteCode(InputStream aStream) throws IOException {
         try (DataInputStream dis = new DataInputStream(aStream)) {
             BytecodeClassParser parser = parseHeader(dis);
-            parser.parseBody(dis);
+            return parser.parseBody(dis);
         }
     }
 

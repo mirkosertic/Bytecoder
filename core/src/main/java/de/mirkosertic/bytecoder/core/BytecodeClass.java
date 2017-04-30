@@ -36,4 +36,17 @@ public class BytecodeClass {
         methods = aMethods;
         classAttributes = aClassAttributes;
     }
+
+    public BytecodeConstantPool getConstantPool() {
+        return constantPool;
+    }
+
+    public BytecodeMethod methodByName(String aMethodName) {
+        for (BytecodeMethod theMethod : methods) {
+            if (aMethodName.equals(theMethod.getName().stringValue())) {
+                return theMethod;
+            }
+        }
+        throw new IllegalArgumentException("No such method : " + aMethodName);
+    }
 }
