@@ -50,7 +50,7 @@ public class BytecodeLoaderTest {
     public void testLoadSimpleClass() throws IOException {
         BytecodeLoader loader = new BytecodeLoader();
         BytecodeClass theClass = loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
-        BytecodeMethod theMethod = theClass.methodByName("main");
+        BytecodeMethod theMethod = theClass.methodByName("sum");
 
         JSBackend theBackend = new JSBackend();
         theBackend.generateCodeFor(theClass.getConstantPool(), theMethod);

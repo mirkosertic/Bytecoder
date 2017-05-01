@@ -39,9 +39,12 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     private static final int CONSTANT_InvokeDynamic = 18;
 
     private final BytecodeProgrammParser programmParser;
+    private final BytecodeSignatureParser signatureParser;
 
-    public Bytecode5xClassParser(BytecodeProgrammParser aParser) {
+    public Bytecode5xClassParser(BytecodeProgrammParser aParser,
+                                 BytecodeSignatureParser aSignatureParser) {
         programmParser = aParser;
+        signatureParser = aSignatureParser;
     }
 
     @Override
@@ -385,7 +388,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
             theMethods.add(new BytecodeMethod(new BytecodeAccessFlags(theAccessFlags),
                     (BytecodeUtf8Constant) theName,
-                    (BytecodeUtf8Constant) theDescriptor,
+                    signatureParser.toMethodSignature((BytecodeUtf8Constant) theDescriptor),
                     theAttributes));
         }
         return theMethods.toArray(new BytecodeMethod[theMethods.size()]);
