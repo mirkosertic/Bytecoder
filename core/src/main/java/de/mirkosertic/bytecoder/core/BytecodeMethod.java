@@ -19,13 +19,13 @@ public class BytecodeMethod {
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;
-    private final BytecodeUtf8Constant desriptor;
     private final BytecodeAttributeInfo[] attributes;
+    private final BytecodeMethodSignature signature;
 
-    public BytecodeMethod(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeUtf8Constant aDesriptor, BytecodeAttributeInfo[] aAttributes) {
+    public BytecodeMethod(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeMethodSignature aSignature, BytecodeAttributeInfo[] aAttributes) {
         accessFlags = aAccessFlags;
         name = aName;
-        desriptor = aDesriptor;
+        signature = aSignature;
         attributes = aAttributes;
     }
 

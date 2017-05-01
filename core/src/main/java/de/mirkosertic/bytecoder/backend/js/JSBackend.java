@@ -25,10 +25,10 @@ public class JSBackend {
         BytecodeCodeAttributeInfo theCode = aMethod.attributeByType(BytecodeCodeAttributeInfo.class);
         System.out.println("var " + aMethod.getName().stringValue() + " = function() {");
         for (int i=0;i<theCode.getMaxLocals();i++) {
-            System.out.println("    var l" + i+";");
+            System.out.println("    var local" + i+";");
         }
-        System.out.println("    var s = [" + theCode.getMaxStack() + "];");
-        System.out.println("    var so = 0;");
+        System.out.println("    var stack = [" + theCode.getMaxStack() + "];");
+        System.out.println("    var stackOffset = 0;");
         System.out.println("}");
     }
 }
