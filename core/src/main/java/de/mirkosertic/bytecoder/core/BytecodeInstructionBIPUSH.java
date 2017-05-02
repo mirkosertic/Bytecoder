@@ -22,4 +22,8 @@ public class BytecodeInstructionBIPUSH implements BytecodeInstruction {
     public BytecodeInstructionBIPUSH(byte aValue) {
         value = aValue;
     }
+
+    public byte getValue() {
+        return value;
+    }
 }

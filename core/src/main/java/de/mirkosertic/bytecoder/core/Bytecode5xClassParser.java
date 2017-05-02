@@ -140,19 +140,19 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     private void parseConstantPool_CONSTANT_Fieldref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theClassIndex = aDis.readUnsignedShort();
         int theNameAndTypeIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeFieldRefConstant(new BytecodeClassIndex(theClassIndex), new BytecodeNameAndTypeIndex(theNameAndTypeIndex)));
+        aConstantPool.registerConstant(new BytecodeFieldRefConstant(new BytecodeClassIndex(theClassIndex, aConstantPool), new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
     private void parseConstantPool_CONSTANT_Methodref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theClassIndex = aDis.readUnsignedShort();
         int theNameAndTypeIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeMethodRefConstant(new BytecodeClassIndex(theClassIndex), new BytecodeNameAndTypeIndex(theNameAndTypeIndex)));
+        aConstantPool.registerConstant(new BytecodeMethodRefConstant(new BytecodeClassIndex(theClassIndex, aConstantPool), new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
     private void parseConstantPool_CONSTANT_InterfaceMethodref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theClassIndex = aDis.readUnsignedShort();
         int theNameAndTypeIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeInterfaceRefConstant(new BytecodeClassIndex(theClassIndex), new BytecodeNameAndTypeIndex(theNameAndTypeIndex)));
+        aConstantPool.registerConstant(new BytecodeInterfaceRefConstant(new BytecodeClassIndex(theClassIndex, aConstantPool), new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
     private void parseConstantPool_CONSTANT_String(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
@@ -185,7 +185,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     private void parseConstantPool_CONSTANT_NameAndType(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theNameIndex = aDis.readUnsignedShort();
         int theDescriptorIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeNameAndTypeConstant(new BytecodeNameIndex(theNameIndex), new BytecodeDescriptorIndex(theDescriptorIndex)));
+        aConstantPool.registerConstant(new BytecodeNameAndTypeConstant(new BytecodeNameIndex(theNameIndex, aConstantPool), new BytecodeDescriptorIndex(theDescriptorIndex, aConstantPool, signatureParser)));
     }
 
     private void parseConstantPool_CONSTANT_Utf8(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
@@ -233,14 +233,14 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private void parseConstantPool_CONSTANT_MethodType(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theDescriptorIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeMethodTypeConstant(new BytecodeDescriptorIndex(theDescriptorIndex)));
+        aConstantPool.registerConstant(new BytecodeMethodTypeConstant(new BytecodeDescriptorIndex(theDescriptorIndex, aConstantPool, signatureParser)));
     }
 
     private void parseConstantPool_CONSTANT_InvokeDynamic(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theBootstrapMethodAttrIndex = aDis.readUnsignedShort();
         int theNameAndTypeIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeInvokeDynamicConstant(new BytecodeMethodAttributeIndex(theBootstrapMethodAttrIndex),
-                new BytecodeNameAndTypeIndex(theNameAndTypeIndex)));
+                new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
     private BytecodeAccessFlags parseAccessFlags(DataInput aDis) throws IOException {
@@ -291,7 +291,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         byte[] theCode = new byte[theCodeLength];
         aDis.readFully(theCode);
 
-        BytecodeProgramm theProgramm = programmParser.parse(theCode);
+        BytecodeProgramm theProgramm = programmParser.parse(theCode, aConstantPool);
 
         List<BytecodeExceptionTableEntry> theExceptionEntries = new ArrayList<>();
 

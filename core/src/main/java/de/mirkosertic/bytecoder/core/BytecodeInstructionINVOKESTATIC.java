@@ -17,11 +17,13 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINVOKESTATIC implements BytecodeInstruction {
 
-    private final byte index1;
-    private final byte index2;
+    private final BytecodeMethodRefConstant methodRefConstant;
 
-    public BytecodeInstructionINVOKESTATIC(byte aIndex1, byte aIndex2) {
-        index1 = aIndex1;
-        index2 = aIndex2;
+    public BytecodeInstructionINVOKESTATIC(BytecodeMethodRefConstant methodRefConstant) {
+        this.methodRefConstant = methodRefConstant;
+    }
+
+    public BytecodeMethodRefConstant getMethodRefConstant() {
+        return methodRefConstant;
     }
 }

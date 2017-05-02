@@ -18,8 +18,14 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeNameAndTypeIndex {
 
     private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeNameAndTypeIndex(int aIndex) {
-        index = aIndex;
+    public BytecodeNameAndTypeIndex(int index, BytecodeConstantPool constantPool) {
+        this.index = index;
+        this.constantPool = constantPool;
+    }
+
+    public BytecodeNameAndTypeConstant getNameAndType() {
+        return (BytecodeNameAndTypeConstant) constantPool.constantByIndex(index - 1);
     }
 }
