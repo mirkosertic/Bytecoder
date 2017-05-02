@@ -22,4 +22,8 @@ public class BytecodeFloatConstant implements BytecodeConstant {
     public BytecodeFloatConstant(long aValue) {
         value = aValue;
     }
+
+    public long getValue() {
+        return value;
+    }
 }

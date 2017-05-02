@@ -24,4 +24,12 @@ public class BytecodeNameAndTypeConstant implements BytecodeConstant {
         nameIndex = aNameIndex;
         descriptorIndex = aDescriptorIndex;
     }
+
+    public BytecodeNameIndex getNameIndex() {
+        return nameIndex;
+    }
+
+    public BytecodeDescriptorIndex getDescriptorIndex() {
+        return descriptorIndex;
+    }
 }

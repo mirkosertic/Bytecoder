@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import sun.reflect.ConstantPool;
+
 public abstract class BytecodeRefConstant implements BytecodeConstant {
 
     private final BytecodeClassIndex classIndex;
@@ -23,5 +25,13 @@ public abstract class BytecodeRefConstant implements BytecodeConstant {
     protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
         classIndex = aClassIndex;
         nameAndTypeIndex = aNameAndTypeIndex;
+    }
+
+    public BytecodeClassIndex getClassIndex() {
+        return classIndex;
+    }
+
+    public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
+        return nameAndTypeIndex;
     }
 }

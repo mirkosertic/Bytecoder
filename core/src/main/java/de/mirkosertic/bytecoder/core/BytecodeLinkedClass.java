@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import sun.reflect.ConstantPool;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -55,6 +57,28 @@ public class BytecodeLinkedClass {
             link(theArgument);
         }
         linkedMethods.add(theMethod);
+
+        // Check static dependencies
+        BytecodeCodeAttributeInfo theCode = theMethod.attributeByType(BytecodeCodeAttributeInfo.class);
+        BytecodeProgramm theProgram = theCode.getProgramm();
+        for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
+            if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
+                BytecodeInstructionINVOKESTATIC theStaticInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
+
+                BytecodeMethodRefConstant theMethodRefConstant = theStaticInvoke.getMethodRefConstant();
+                BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+                BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+                BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+                linkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+                        theName.stringValue());
+            }
+        }
+    }
+
+    public BytecodeConstantPool getConstantPool() {
+        return bytecodeClass.getConstantPool();
     }
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {

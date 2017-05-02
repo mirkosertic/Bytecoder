@@ -22,4 +22,8 @@ public class BytecodeInstructionFCONST implements BytecodeInstruction {
     public BytecodeInstructionFCONST(float value) {
         this.value = value;
     }
+
+    public float getValue() {
+        return value;
+    }
 }

@@ -18,8 +18,16 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeDescriptorIndex {
 
     private final int index;
+    private final BytecodeConstantPool constantPool;
+    private final BytecodeSignatureParser signatureParser;
 
-    public BytecodeDescriptorIndex(int aIndex) {
+    public BytecodeDescriptorIndex(int aIndex, BytecodeConstantPool aConstantPool, BytecodeSignatureParser aSignatureParser) {
         index = aIndex;
+        constantPool = aConstantPool;
+        signatureParser = aSignatureParser;
+    }
+
+    public BytecodeMethodSignature methodSignature() {
+        return signatureParser.toMethodSignature((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
     }
 }

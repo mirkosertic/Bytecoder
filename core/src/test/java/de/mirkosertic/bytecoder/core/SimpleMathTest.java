@@ -15,7 +15,21 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeProgrammParser {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    BytecodeProgramm parse(byte[] aBytecodes, BytecodeConstantPool aConstantPool);
+@RunWith(BytecoderUnitTestRunner.class)
+public class SimpleMathTest {
+
+    public static int sum(int a, int b) {
+        return a + b;
+    }
+
+    @Test
+    public void testAdd() {
+        int c = sum(10, 20);
+        Assert.assertEquals(30, c, 0);
+    }
 }

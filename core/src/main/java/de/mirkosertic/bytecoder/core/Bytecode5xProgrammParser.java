@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.core;
 public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
 
     @Override
-    public BytecodeProgramm parse(byte[] aBytecodes) {
+    public BytecodeProgramm parse(byte[] aBytecodes, BytecodeConstantPool aConstantPool) {
         BytecodeProgramm theResult = new BytecodeProgramm();
         int offset = 0;
         while(offset < aBytecodes.length) {
@@ -100,8 +100,8 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 18: { //ldc = 18 (0x12)
-                    byte theValue = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionLDC(theValue));
+                    byte theIndex = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionLDC(theIndex, aConstantPool));
                     break;
                 }
                 case 19: { //ldc_w = 19 (0x13)
@@ -896,7 +896,11 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 case 184: {//invokestatic = 184 (0xb8)
                     byte theIndexByte1 = aBytecodes[offset++];
                     byte theIndexByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionINVOKESTATIC(theIndexByte1, theIndexByte2));
+
+                    int theIndex = (theIndexByte1 << 8) | theIndexByte2;
+
+                    BytecodeMethodRefConstant theConstant = (BytecodeMethodRefConstant) aConstantPool.constantByIndex(theIndex - 1);
+                    theResult.addInstruction(new BytecodeInstructionINVOKESTATIC(theConstant));
                     break;
                 }
                 case 185: { // invokeinterface = 185 (0xb9)

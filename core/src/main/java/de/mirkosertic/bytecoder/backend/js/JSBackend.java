@@ -15,20 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.core.*;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
 public class JSBackend {
 
@@ -61,7 +51,34 @@ public class JSBackend {
 
             theWriter.println("    // Begin method code");
             for (BytecodeInstruction theInstruction : theCode.getProgramm().getInstructions()) {
-                if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
+                if (theInstruction instanceof BytecodeInstructionRETURN) {
+                    theWriter.println("    return;");
+                }else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
+                    BytecodeInstructionINVOKESTATIC theStaticInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
+
+                    BytecodeMethodRefConstant theMethodRefConstant = theStaticInvoke.getMethodRefConstant();
+                    BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+                    BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                    BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+                    BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+                    theWriter.println("    {");
+                    BytecodeTypeRef[] theStaticArguments = theSig.getArguments();
+                    for (int i=theStaticArguments.length;i>0;i--) {
+                        theWriter.println("        var arg"+i+" = stack[stackOffset--];");
+                    }
+                    theWriter.print("       " + theName.stringValue()+"(");
+                    for (int i=1;i<=theStaticArguments.length;i++) {
+                        if (i>1) {
+                            theWriter.print(",");
+                        }
+                        theWriter.print("arg" + i);
+                    }
+                    theWriter.println(");");
+                    theWriter.println("    }");
+                } else if (theInstruction instanceof BytecodeInstructionBIPUSH) {
+                    BytecodeInstructionBIPUSH thePush = (BytecodeInstructionBIPUSH) theInstruction;
+                    theWriter.println("    stack[++stackOffset] = " + thePush.getValue() + ";");
+                } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                     BytecodeInstructionGenericLOAD theLoad = (BytecodeInstructionGenericLOAD) theInstruction;
                     theWriter.println("    stack[++stackOffset] = local" + theLoad.getIndex() + ";");
                 } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
@@ -97,6 +114,23 @@ public class JSBackend {
                 } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                     BytecodeInstructionGenericRETURN theReturn = (BytecodeInstructionGenericRETURN) theInstruction;
                     theWriter.println("    return stack[stackOffset];");
+                } else if (theInstruction instanceof BytecodeInstructionFCONST) {
+                    BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
+                    theWriter.println("    stack[++stackOffset] = " + theConst.getValue() + ";");
+                } else if (theInstruction instanceof BytecodeInstructionI2F) {
+                    theWriter.println("    {");
+                    theWriter.println("        var theInt = stack[stackOffset--];");
+                    theWriter.println("        stack[stackOffset++] = theInt;");
+                    theWriter.println("    }");
+                } else if (theInstruction instanceof BytecodeInstructionLDC) {
+                    BytecodeInstructionLDC theLoad = (BytecodeInstructionLDC) theInstruction;
+                    BytecodeConstant theConstant = theLoad.constant();
+                    if (theConstant instanceof BytecodeFloatConstant) {
+                        BytecodeFloatConstant theFloat = (BytecodeFloatConstant) theConstant;
+                        theWriter.println("    stack[++stackOffset] = " + theFloat.getValue() + ";");
+                    } else {
+                        throw new IllegalStateException("Unsupported constant : " + theConstant);
+                    }
                 } else {
                     throw new IllegalStateException("Cannot compile " + theInstruction);
                 }
