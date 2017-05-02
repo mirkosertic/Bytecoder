@@ -32,20 +32,31 @@ public class BytecodeLinkerContext {
     }
 
     public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
-        return linkedClasses.computeIfAbsent(aTypeRef,
-                new Function<BytecodeObjectTypeRef, BytecodeLinkedClass>() {
-                    @Override
-                    public BytecodeLinkedClass apply(BytecodeObjectTypeRef aTypeRef) {
-                        try {
-                            String theResourceName = "/" + aTypeRef.name().replace(".", "/") + ".class";
-                            BytecodeClass theLoadedClass = loader.loadByteCode(getClass().getResourceAsStream(theResourceName));
+        BytecodeLinkedClass theLinkedClass = linkedClasses.get(aTypeRef);
+        if (theLinkedClass != null) {
+            return theLinkedClass;
+        }
 
-                            return new BytecodeLinkedClass(aTypeRef, theLoadedClass);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                });
+        try {
+            String theResourceName = "/" + aTypeRef.name().replace(".", "/") + ".class";
+            BytecodeClass theLoadedClass = loader.loadByteCode(getClass().getResourceAsStream(theResourceName));
+            theLinkedClass = new BytecodeLinkedClass(this, aTypeRef, theLoadedClass);
+            linkedClasses.put(aTypeRef, theLinkedClass);
+
+            BytecodeClassinfoConstant theClass = theLoadedClass.getSuperClass();
+            if (theClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                BytecodeUtf8Constant theSuperClassName = theClass.getConstant();
+                linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
+            }
+            for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
+                BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
+                linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
+            }
+
+            return theLinkedClass;
+        } catch (Exception e) {
+            throw new RuntimeException("Error linking class " + aTypeRef.name(), e);
+        }
     }
 
     public void linkClassMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName) {

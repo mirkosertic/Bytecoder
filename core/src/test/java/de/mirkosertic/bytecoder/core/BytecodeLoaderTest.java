@@ -129,4 +129,12 @@ public class BytecodeLoaderTest {
         BytecodeLoader theLoader = new BytecodeLoader();
         theLoader.loadByteCode(getClass().getResourceAsStream("SimpleInterface.class"));
     }
+
+    @Test
+    public void testLinkMain() {
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "main");
+        System.out.println("lala");
+    }
 }

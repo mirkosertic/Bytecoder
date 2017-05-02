@@ -15,15 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInterface {
+public class BytecodeInstructionTABLESWITCH implements BytecodeInstruction {
 
-    private final BytecodeClassinfoConstant classinfoConstant;
+    private final long defaultValue;
+    private final long lowValue;
+    private final long highValue;
+    private final long offsets[];
 
-    public BytecodeInterface(BytecodeClassinfoConstant aClassinfoConstant) {
-        this.classinfoConstant = aClassinfoConstant;
-    }
-
-    public BytecodeClassinfoConstant getClassinfoConstant() {
-        return classinfoConstant;
+    public BytecodeInstructionTABLESWITCH(long defaultValue, long lowValue, long highValue, long[] offsets) {
+        this.defaultValue = defaultValue;
+        this.lowValue = lowValue;
+        this.highValue = highValue;
+        this.offsets = offsets;
     }
 }
