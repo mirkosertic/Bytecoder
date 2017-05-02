@@ -17,11 +17,11 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeClassinfoConstant implements BytecodeConstant {
 
-    public static final BytecodeClassinfoConstant OBJECT_CLASS = new BytecodeClassinfoConstant(new BytecodeNameIndex(-1));
+    public static final BytecodeClassinfoConstant OBJECT_CLASS = new BytecodeClassinfoConstant(null);
 
-    private final BytecodeNameIndex nameIndex;
+    private final BytecodeObjectTypeRef typeRef;
 
-    public BytecodeClassinfoConstant(BytecodeNameIndex aNameIndex) {
-        nameIndex = aNameIndex;
+    public BytecodeClassinfoConstant(BytecodeObjectTypeRef typeRef) {
+        this.typeRef = typeRef;
     }
 }

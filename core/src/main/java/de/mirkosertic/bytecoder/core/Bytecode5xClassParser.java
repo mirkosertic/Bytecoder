@@ -134,7 +134,8 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private void parseConstantPool_CONSTANT_Class(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theNameIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeClassinfoConstant(new BytecodeNameIndex(theNameIndex)));
+        BytecodeUtf8Constant theConstant = (BytecodeUtf8Constant) aConstantPool.constantByIndex(theNameIndex);
+        aConstantPool.registerConstant(new BytecodeClassinfoConstant(new BytecodeObjectTypeRef(theConstant.stringValue())));
     }
 
     private void parseConstantPool_CONSTANT_Fieldref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
