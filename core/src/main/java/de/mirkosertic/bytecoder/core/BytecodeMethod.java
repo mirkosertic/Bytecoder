@@ -41,4 +41,8 @@ public class BytecodeMethod {
         }
         return null;
     }
+
+    public BytecodeMethodSignature getSignature() {
+        return signature;
+    }
 }

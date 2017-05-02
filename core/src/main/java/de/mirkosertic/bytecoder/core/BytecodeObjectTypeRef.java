@@ -15,11 +15,21 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionFLOAD implements BytecodeInstruction {
+public class BytecodeObjectTypeRef implements BytecodeTypeRef {
 
-    private final byte index;
+    private final String className;
 
-    public BytecodeInstructionFLOAD(byte aIndex) {
-        index = aIndex;
+    public BytecodeObjectTypeRef(String aClassName) {
+        className = aClassName;
+    }
+
+    @Override
+    public String name() {
+        return className;
+    }
+
+    @Override
+    public boolean isPrimitive() {
+        return false;
     }
 }

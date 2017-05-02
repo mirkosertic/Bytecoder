@@ -20,45 +20,99 @@ import java.util.List;
 
 public class BytecodeSignatureParser {
 
-    private void add(List<String> aTypes, String aType, boolean isArray) {
+    private void add(List<BytecodeTypeRef> aTypes, BytecodeTypeRef aType, boolean isArray, int arrayDepth) {
         if (isArray) {
-            aTypes.add(aType + "[]");
+            aTypes.add(new BytecodeArrayTypeRef(aType, arrayDepth));
         } else {
             aTypes.add(aType);
         }
     }
 
-    private String[] toTypes(String aTypeList) {
-        List<String> theResult = new ArrayList();
+    private BytecodeTypeRef[] toTypes(String aTypeList) {
+        List<BytecodeTypeRef> theResult = new ArrayList();
         int p = 0;
+        int arrayDepth = 0;
         boolean isArray = false;
+        boolean isObject = false;
+        StringBuilder objectName = null;
         while(p<aTypeList.length()) {
             char theChar = aTypeList.charAt(p++);
-            switch (theChar) {
-                case 'V':
-                    add(theResult, "void", isArray);
-                    isArray = false;
-                    break;
-                case 'I':
-                    add(theResult, "integer", isArray);
-                    isArray = false;
-                    break;
-                case 'L':
-                    add(theResult, "long", isArray);
+            if (isObject) {
+                switch (theChar) {
+                    case '[':
+                        if (!isArray) {
+                            isArray = true;
+                            arrayDepth = 1;
+                        } else {
+                            arrayDepth++;
+                        }
+                        break;
+                    case ';':
+                        add(theResult, new BytecodeObjectTypeRef(objectName.toString().replace("/",".")), isArray, arrayDepth);
+                        isObject = false;
+                        isArray = false;
+                        objectName = null;
+                        break;
+                    default:
+                        objectName.append(theChar);
+                        break;
+                }
+            } else {
+                switch (theChar) {
+                case 'Z':
+                    add(theResult, BytecodePrimitiveTypeRef.BOOLEAN, isArray, arrayDepth);
                     isArray = false;
                     break;
                 case 'B':
-                    add(theResult, "boolean", isArray);
+                    add(theResult, BytecodePrimitiveTypeRef.BYTE, isArray, arrayDepth);
                     isArray = false;
                     break;
+                case 'C':
+                    add(theResult, BytecodePrimitiveTypeRef.CHAR, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'D':
+                    add(theResult, BytecodePrimitiveTypeRef.DOUBLE, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'F':
+                    add(theResult, BytecodePrimitiveTypeRef.FLOAT, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'I':
+                    add(theResult, BytecodePrimitiveTypeRef.INT, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'J':
+                    add(theResult, BytecodePrimitiveTypeRef.LONG, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'S':
+                    add(theResult, BytecodePrimitiveTypeRef.SHORT, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'V':
+                    add(theResult, BytecodePrimitiveTypeRef.VOID, isArray, arrayDepth);
+                    isArray = false;
+                    break;
+                case 'L':
+                    isObject = true;
+                    objectName = new StringBuilder();
+                    break;
                 case '[':
-                    isArray = true;
+                    if (!isArray) {
+                        arrayDepth = 1;
+                        isArray = true;
+                    } else {
+                        arrayDepth++;
+                    }
                     break;
                 default:
                     throw new IllegalStateException("Unexpected character " + theChar + " in typelist " + aTypeList);
+                }
             }
         }
-        return theResult.toArray(new String[theResult.size()]);
+        return theResult.toArray(new BytecodeTypeRef[theResult.size()]);
     }
 
     public BytecodeMethodSignature toMethodSignature(BytecodeUtf8Constant aConstant) {
@@ -66,7 +120,7 @@ public class BytecodeSignatureParser {
         int p = theBuilder.indexOf("(");
         int p2 = theBuilder.lastIndexOf(")");
         String theArguments = theBuilder.substring(p+1, p2);
-        String[] theReturnValue = toTypes(theBuilder.substring(p2 + 1));
+        BytecodeTypeRef[] theReturnValue = toTypes(theBuilder.substring(p2 + 1));
         if (theReturnValue.length != 1) {
             throw new IllegalArgumentException("Invalid method signature: missing return type : " + theBuilder);
         }

@@ -17,11 +17,19 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeMethodSignature {
 
-    private final String returnType;
-    private final String[] arguments;
+    private final BytecodeTypeRef returnType;
+    private final BytecodeTypeRef[] arguments;
 
-    public BytecodeMethodSignature(String aReturnType, String[] aArguments) {
+    public BytecodeMethodSignature(BytecodeTypeRef aReturnType, BytecodeTypeRef[] aArguments) {
         this.returnType = aReturnType;
         this.arguments = aArguments;
+    }
+
+    public BytecodeTypeRef getReturnType() {
+        return returnType;
+    }
+
+    public BytecodeTypeRef[] getArguments() {
+        return arguments;
     }
 }
