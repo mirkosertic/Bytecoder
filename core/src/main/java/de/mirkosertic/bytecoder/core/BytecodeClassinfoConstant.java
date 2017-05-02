@@ -17,11 +17,17 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeClassinfoConstant implements BytecodeConstant {
 
-    public static final BytecodeClassinfoConstant OBJECT_CLASS = new BytecodeClassinfoConstant(null);
+    public static final BytecodeClassinfoConstant OBJECT_CLASS = new BytecodeClassinfoConstant(-1, null);
 
-    private final BytecodeObjectTypeRef typeRef;
+    private final int nameIndex;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeClassinfoConstant(BytecodeObjectTypeRef typeRef) {
-        this.typeRef = typeRef;
+    public BytecodeClassinfoConstant(int nameIndex, BytecodeConstantPool constantPool) {
+        this.nameIndex = nameIndex;
+        this.constantPool = constantPool;
+    }
+
+    public BytecodeUtf8Constant getConstant() {
+        return (BytecodeUtf8Constant) constantPool.constantByIndex(nameIndex - 1);
     }
 }

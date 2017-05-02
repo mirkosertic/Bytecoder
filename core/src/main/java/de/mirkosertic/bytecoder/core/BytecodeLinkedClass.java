@@ -24,15 +24,37 @@ public class BytecodeLinkedClass {
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
     private final Set<BytecodeMethod> linkedMethods;
+    private final BytecodeLinkerContext linkerContext;
 
-    public BytecodeLinkedClass(BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
+    public BytecodeLinkedClass(BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkedMethods = new HashSet<>();
+        linkerContext = aLinkerContext;
+    }
+
+    private void link(BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            return;
+        }
+        if (aTypeRef instanceof BytecodeArrayTypeRef) {
+            BytecodeArrayTypeRef theArrayRef = (BytecodeArrayTypeRef) aTypeRef;
+            link(theArrayRef.getType());
+            return;
+        }
+        if (aTypeRef instanceof BytecodeObjectTypeRef) {
+            linkerContext.linkClass((BytecodeObjectTypeRef) aTypeRef);
+        }
     }
 
     public void linkMethod(String aMethodName) {
-        linkedMethods.add(bytecodeClass.methodByName(aMethodName));
+        BytecodeMethod theMethod = bytecodeClass.methodByName(aMethodName);
+        BytecodeMethodSignature theSignature = theMethod.getSignature();
+        link(theSignature.getReturnType());
+        for (BytecodeTypeRef theArgument : theSignature.getArguments()) {
+            link(theArgument);
+        }
+        linkedMethods.add(theMethod);
     }
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {

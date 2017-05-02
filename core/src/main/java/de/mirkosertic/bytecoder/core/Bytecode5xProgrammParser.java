@@ -757,9 +757,44 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionRET(theIndex));
                     break;
                 }
+                case 170: { // tableswitch = 170 (0xaa)
+                    offset +=  4 - offset % 4;
+                    byte theDefaultByte1 = aBytecodes[offset++];
+                    byte theDefaultByte2 = aBytecodes[offset++];
+                    byte theDefaultByte3 = aBytecodes[offset++];
+                    byte theDefaultByte4 = aBytecodes[offset++];
 
-                // TODO: 170
+                    long theDefault = (theDefaultByte1 << 24) | (theDefaultByte2 << 16) | (theDefaultByte3 << 8) | theDefaultByte4;
 
+                    byte theLowByte1 = aBytecodes[offset++];
+                    byte theLowByte2 = aBytecodes[offset++];
+                    byte theLowByte3 = aBytecodes[offset++];
+                    byte theLowByte4 = aBytecodes[offset++];
+
+                    long theLow = (theLowByte1 << 24) | (theLowByte2 << 16) | (theLowByte3 << 8) | theLowByte4;
+
+                    byte theHighByte1 = aBytecodes[offset++];
+                    byte theHighByte2 = aBytecodes[offset++];
+                    byte theHighByte3 = aBytecodes[offset++];
+                    byte theHighByte4 = aBytecodes[offset++];
+
+                    long theHigh = (theHighByte1 << 24) | (theHighByte2 << 16) | (theHighByte3 << 8) | theHighByte4;
+
+                    long[] theOffsets = new long[(int)(theHigh - theLow + 1)];
+                    long theNumOffsets = theHigh - theLow + 1;
+                    for (int i=0;i<theNumOffsets;i++) {
+                        byte theOffset1 = aBytecodes[offset++];
+                        byte theOffset2 = aBytecodes[offset++];
+                        byte theOffset3 = aBytecodes[offset++];
+                        byte theOffset4 = aBytecodes[offset++];
+
+                        long theOffset = (theOffset1 << 24) | (theOffset2 << 16) | (theOffset3 << 8) | theOffset4;
+                        theOffsets[i] = theOffset;
+                    }
+
+                    theResult.addInstruction(new BytecodeInstructionTABLESWITCH(theDefault, theLow, theHigh, theOffsets));
+                    break;
+                }
                 case 171: { // lookupswitch = 171 (0xab)
 
                     // Skip padding
@@ -952,11 +987,8 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionMONITOREXIT());
                     break;
                 }
-
                 // TODO: 196
-
                 // TODO: 197
-
                 case 198: { // ifnull = 198 (0xc6)
                     byte theIndexByte1 = aBytecodes[offset++];
                     byte theIndexByte2 = aBytecodes[offset++];
@@ -969,9 +1001,7 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     theResult.addInstruction(new BytecodeInstructionIFNONNULL(theIndexByte1, theIndexByte2));
                     break;
                 }
-
                 // TODO: 200
-
                 // TODO: 201
                 default:
                     throw new IllegalStateException("Unknown opcode : " + theOpcode);
