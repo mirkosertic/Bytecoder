@@ -15,49 +15,55 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
-import org.junit.Assert;
-import org.junit.Test;
+import java.io.IOException;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.IOException;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
 
 public class BytecodeLoaderTest {
 
     @Test
     public void testLoadRuntime1() throws IOException {
-        BytecodeLoader loader = new BytecodeLoader();
-        loader.loadByteCode(getClass().getResourceAsStream("/java/lang/Object.class"));
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClass(new BytecodeObjectTypeRef(Object.class.getName()));
     }
 
     @Test
     public void testLoadRuntime2() throws IOException {
-        BytecodeLoader loader = new BytecodeLoader();
-        loader.loadByteCode(getClass().getResourceAsStream("/java/lang/String.class"));
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClass(new BytecodeObjectTypeRef(String.class.getName()));
     }
 
     @Test
     public void testLoadRuntime3() throws IOException {
-        BytecodeLoader loader = new BytecodeLoader();
-        loader.loadByteCode(getClass().getResourceAsStream("/java/lang/Math.class"));
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClass(new BytecodeObjectTypeRef(Math.class.getName()));
     }
 
     @Test
     public void testLoadRuntime4() throws IOException {
-        BytecodeLoader loader = new BytecodeLoader();
-        loader.loadByteCode(getClass().getResourceAsStream("/java/lang/Class.class"));
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClass(new BytecodeObjectTypeRef(Class.class.getName()));
     }
 
     @Test
     public void testSimpleClassSum() throws IOException, ScriptException {
-        BytecodeLoader loader = new BytecodeLoader();
-        BytecodeClass theClass = loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
-        BytecodeMethod theMethod = theClass.methodByName("sum");
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "sum");
 
         JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theClass.getConstantPool(), theMethod);
+        String theCode = theBackend.generateCodeFor(theLinkerContext);
         theCode = theCode+ "\nsum(10, 20);";
 
         System.out.println(theCode);
@@ -69,12 +75,12 @@ public class BytecodeLoaderTest {
 
     @Test
     public void testSimpleClassDiv() throws IOException, ScriptException {
-        BytecodeLoader loader = new BytecodeLoader();
-        BytecodeClass theClass = loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
-        BytecodeMethod theMethod = theClass.methodByName("div");
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "div");
 
         JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theClass.getConstantPool(), theMethod);
+        String theCode = theBackend.generateCodeFor(theLinkerContext);
         theCode = theCode+ "\ndiv(30, 7);";
 
         System.out.println(theCode);
@@ -86,12 +92,12 @@ public class BytecodeLoaderTest {
 
     @Test
     public void testSimpleClassMul() throws IOException, ScriptException {
-        BytecodeLoader loader = new BytecodeLoader();
-        BytecodeClass theClass = loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
-        BytecodeMethod theMethod = theClass.methodByName("mul");
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "mul");
 
         JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theClass.getConstantPool(), theMethod);
+        String theCode = theBackend.generateCodeFor(theLinkerContext);
         theCode = theCode+ "\nmul(30, 7);";
 
         System.out.println(theCode);
@@ -103,12 +109,12 @@ public class BytecodeLoaderTest {
 
     @Test
     public void testSimpleClassSub() throws IOException, ScriptException {
-        BytecodeLoader loader = new BytecodeLoader();
-        BytecodeClass theClass = loader.loadByteCode(getClass().getResourceAsStream("SimpleClass.class"));
-        BytecodeMethod theMethod = theClass.methodByName("sub");
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "sub");
 
         JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theClass.getConstantPool(), theMethod);
+        String theCode = theBackend.generateCodeFor(theLinkerContext);
         theCode = theCode+ "\nsub(30, 7);";
 
         System.out.println(theCode);
@@ -120,7 +126,7 @@ public class BytecodeLoaderTest {
 
     @Test
     public void testLoadInterface() throws IOException {
-        BytecodeLoader loader = new BytecodeLoader();
-        loader.loadByteCode(getClass().getResourceAsStream("SimpleInterface.class"));
+        BytecodeLoader theLoader = new BytecodeLoader();
+        theLoader.loadByteCode(getClass().getResourceAsStream("SimpleInterface.class"));
     }
 }

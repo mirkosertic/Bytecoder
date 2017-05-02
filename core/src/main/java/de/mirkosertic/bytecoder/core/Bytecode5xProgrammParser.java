@@ -81,11 +81,11 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 14: { // dconst_0 = 14 (0xe)
-                    theResult.addInstruction(new BytecodeInstructionDCONST(0));
+                    theResult.addInstruction(new BytecodeInstructionDCONST(0d));
                     break;
                 }
                 case 15: { // dconst_1 = 15 (0xf)
-                    theResult.addInstruction(new BytecodeInstructionDCONST(1));
+                    theResult.addInstruction(new BytecodeInstructionDCONST(1d));
                     break;
                 }
                 case 16: { // bipush = 16 (0x10)
@@ -255,22 +255,22 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 }
                 case 54: { // istore = 54 (0x36)
                     byte theIndex = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionISTORE(theIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.INT, theIndex));
                     break;
                 }
                 case 55: { // lstore = 55 (0x37)
                     byte theIndex = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionLSTORE(theIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.LONG, theIndex));
                     break;
                 }
                 case 56: { // fstore = 56 (0x38)
                     byte theIndex = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionFSTORE(theIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.FLOAT, theIndex));
                     break;
                 }
                 case 57: { // dstore = 57 (0x39)
                     byte theIndex = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionDSTORE(theIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.FLOAT, theIndex));
                     break;
                 }
                 case 58: { // astore = 58 (0x3a)
@@ -279,67 +279,67 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 59: { //istore_0 = 59 (0x3b)
-                    theResult.addInstruction(new BytecodeInstructionISTORE((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.INT, (byte) 0));
                     break;
                 }
                 case 60: { // istore_1 = 60 (0x3c)
-                    theResult.addInstruction(new BytecodeInstructionISTORE((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.INT, (byte) 1));
                     break;
                 }
                 case 61: { //istore_2 = 61 (0x3d)
-                    theResult.addInstruction(new BytecodeInstructionISTORE((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.INT, (byte) 2));
                     break;
                 }
                 case 62: { // istore_3 = 62 (0x3e)
-                    theResult.addInstruction(new BytecodeInstructionISTORE((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.INT, (byte) 3));
                     break;
                 }
                 case 63: { // lstore_0 = 63 (0x3f)
-                    theResult.addInstruction(new BytecodeInstructionLSTORE((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.LONG, (byte) 0));
                     break;
                 }
                 case 64: { // lstore_1 = 64 (0x40)
-                    theResult.addInstruction(new BytecodeInstructionLSTORE((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.LONG, (byte) 1));
                     break;
                 }
                 case 65: { // lstore_2 = 65 (0x41)
-                    theResult.addInstruction(new BytecodeInstructionLSTORE((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.LONG, (byte) 2));
                     break;
                 }
                 case 66: { // lstore_3 = 66 (0x42)
-                    theResult.addInstruction(new BytecodeInstructionLSTORE((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.LONG, (byte) 3));
                     break;
                 }
                 case 67: { // fstore_0 = 67 (0x43)
-                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.FLOAT, (byte) 0));
                     break;
                 }
                 case 68: { // fstore_1 = 68 (0x44)
-                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.FLOAT, (byte) 1));
                     break;
                 }
                 case 69: { // fstore_2 = 69 (0x45)
-                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.FLOAT, (byte) 2));
                     break;
                 }
                 case 70: { // fstore_3 = 70 (0x46)
-                    theResult.addInstruction(new BytecodeInstructionFSTORE((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.FLOAT, (byte) 3));
                     break;
                 }
                 case 71: { // dstore_0 = 71 (0x47)
-                    theResult.addInstruction(new BytecodeInstructionDSTORE((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.DOUBLE, (byte) 0));
                     break;
                 }
                 case 72: { // dstore_1 = 72 (0x48)
-                    theResult.addInstruction(new BytecodeInstructionDSTORE((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.DOUBLE, (byte) 1));
                     break;
                 }
                 case 73: { // dstore_2 = 73 (0x49)
-                    theResult.addInstruction(new BytecodeInstructionDSTORE((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.DOUBLE, (byte) 2));
                     break;
                 }
                 case 74: { // dstore_3 = 74 (0x4a)
-                    theResult.addInstruction(new BytecodeInstructionDSTORE((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(BytecodePrimitiveTypeRef.DOUBLE, (byte) 2));
                     break;
                 }
                 case 75: { // astore_0 = 75 (0x4b)
@@ -799,19 +799,19 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 172: { // ireturn = 172 (0xac)
-                    theResult.addInstruction(new BytecodeInstructionIRETURN());
+                    theResult.addInstruction(new BytecodeInstructionGenericRETURN(BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 173: {// lreturn = 173 (0xad)
-                    theResult.addInstruction(new BytecodeInstructionLRETURN());
+                    theResult.addInstruction(new BytecodeInstructionGenericRETURN(BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 174: {// freturn = 174 (0xae)
-                    theResult.addInstruction(new BytecodeInstructionFRETURN());
+                    theResult.addInstruction(new BytecodeInstructionGenericRETURN(BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 175: {// dreturn = 175 (0xaf)
-                    theResult.addInstruction(new BytecodeInstructionDRETURN());
+                    theResult.addInstruction(new BytecodeInstructionGenericRETURN(BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 176: {// areturn = 176 (0xb0)

@@ -32,4 +32,24 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
     public boolean isPrimitive() {
         return false;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        BytecodeObjectTypeRef that = (BytecodeObjectTypeRef) o;
+
+        if (!className.equals(that.className))
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return className.hashCode();
+    }
 }

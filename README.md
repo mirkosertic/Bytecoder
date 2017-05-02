@@ -4,10 +4,16 @@ Rich Domain Model for Java Bytecode and Framework to interpret and transpile it.
 
 ## High Level Goals
 
-* Ability to cross-compile JVM Bytecode to C or other languages
-* Primary compile targets are C and WebAssembly
+* Ability to cross-compile JVM Bytecode to TypeScript, C and other languages
+* Primary compile targets are TypeScript and WebAssembly
 * Use other toolchains such as clang or emscripten to further optimize generated code
 * Reuse or implement cross-compileable Java Classlib
+
+## Dead Code removal and brute force optimizations
+
+Before compiling to the target language, a dead code removal is done to reduce the amount of generated code. Starting
+from an application entry point, the referenced classes, fields, methods and interfaces are searched. Only detected used
+objects are then compiled by a language specific backend.
 
 ## Compiling strategies
 
@@ -23,4 +29,3 @@ There are currently no plans to implement Bytecode optimization strategies. The 
 ## Memory management
 
 *JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has no GC support on the current MVP. Also plain C has no garbage collection build in. So the WebAssembly and C compile targets must include garbage collection code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
-

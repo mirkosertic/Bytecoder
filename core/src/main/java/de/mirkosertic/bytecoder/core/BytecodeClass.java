@@ -49,4 +49,12 @@ public class BytecodeClass {
         }
         throw new IllegalArgumentException("No such method : " + aMethodName);
     }
+
+    public BytecodeClassinfoConstant getSuperClass() {
+        return superClass;
+    }
+
+    public BytecodeInterface[] getInterfaces() {
+        return interfaces;
+    }
 }
