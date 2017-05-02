@@ -15,5 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionFMUL implements BytecodeInstruction {
+public class BytecodeInstructionGenericLOAD implements BytecodeInstruction {
+
+    private final BytecodePrimitiveTypeRef type;
+    private final byte index;
+
+    public BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef type, byte index) {
+        this.type = type;
+        this.index = index;
+    }
+
+    public byte getIndex() {
+        return index;
+    }
 }

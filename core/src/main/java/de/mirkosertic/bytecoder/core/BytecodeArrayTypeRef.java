@@ -15,5 +15,31 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionISUB implements BytecodeInstruction {
+public class BytecodeArrayTypeRef implements BytecodeTypeRef {
+
+    private final BytecodeTypeRef type;
+    private final int depth;
+
+    public BytecodeArrayTypeRef(BytecodeTypeRef aType, int aDepth) {
+        type = aType;
+        depth = aDepth;
+    }
+
+    @Override
+    public String name() {
+        return "";
+    }
+
+    @Override
+    public boolean isPrimitive() {
+        return false;
+    }
+
+    public BytecodeTypeRef getType() {
+        return type;
+    }
+
+    public int getDepth() {
+        return depth;
+    }
 }

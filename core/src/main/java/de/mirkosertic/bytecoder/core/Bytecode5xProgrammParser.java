@@ -118,22 +118,22 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 }
                 case 21: { // iload = 21 (0x15)
                     byte theIndexByte1 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionILOAD(theIndexByte1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.INT, theIndexByte1));
                     break;
                 }
                 case 22: { // lload = 22 (0x16)
                     byte theIndexByte1 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionLLOAD(theIndexByte1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.LONG, theIndexByte1));
                     break;
                 }
                 case 23: { // fload = 23 (0x17)
                     byte theIndexByte1 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionFLOAD(theIndexByte1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.FLOAT, theIndexByte1));
                     break;
                 }
                 case 24: { // dload = 24 (0x18)
                     byte theIndexByte1 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionDLOAD(theIndexByte1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.DOUBLE, theIndexByte1));
                     break;
                 }
                 case 25: { // aload = 25 (0x19)
@@ -142,67 +142,67 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 26: { // iload_0 = 26 (0x1a)
-                    theResult.addInstruction(new BytecodeInstructionILOAD((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.INT, (byte) 0));
                     break;
                 }
                 case 27: { //iload_1 = 27 (0x1b)
-                    theResult.addInstruction(new BytecodeInstructionILOAD((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.INT, (byte) 1));
                     break;
                 }
                 case 28: { // iload_2 = 28 (0x1c)
-                    theResult.addInstruction(new BytecodeInstructionILOAD((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.INT, (byte) 2));
                     break;
                 }
                 case 29: { // iload_3 = 29 (0x1d)
-                    theResult.addInstruction(new BytecodeInstructionILOAD((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.INT, (byte) 3));
                     break;
                 }
                 case 30: { // lload_0 = 30 (0x1e)
-                    theResult.addInstruction(new BytecodeInstructionLLOAD((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.LONG, (byte) 0));
                     break;
                 }
                 case 31: { // lload_1 = 31 (0x1f)
-                    theResult.addInstruction(new BytecodeInstructionLLOAD((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.LONG, (byte) 1));
                     break;
                 }
                 case 32: { // lload_2 = 32 (0x20)
-                    theResult.addInstruction(new BytecodeInstructionLLOAD((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.LONG, (byte) 2));
                     break;
                 }
                 case 33: { // lload_3 = 33 (0x21)
-                    theResult.addInstruction(new BytecodeInstructionLLOAD((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.LONG, (byte) 3));
                     break;
                 }
                 case 34: { // fload_0 = 34 (0x22)
-                    theResult.addInstruction(new BytecodeInstructionFLOAD((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.FLOAT, (byte) 0));
                     break;
                 }
                 case 35: { // fload_1 = 35 (0x23)
-                    theResult.addInstruction(new BytecodeInstructionFLOAD((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.FLOAT, (byte) 1));
                     break;
                 }
                 case 36: { // fload_2 = 36 (0x24)
-                    theResult.addInstruction(new BytecodeInstructionFLOAD((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.FLOAT, (byte) 2));
                     break;
                 }
                 case 37: { // fload_3 = 37 (0x25)
-                    theResult.addInstruction(new BytecodeInstructionFLOAD((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.FLOAT, (byte) 3));
                     break;
                 }
                 case 38: { // dload_0 = 38 (0x26)
-                    theResult.addInstruction(new BytecodeInstructionDLOAD((byte) 0));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.DOUBLE, (byte) 0));
                     break;
                 }
                 case 39: { // dload_1 = 39 (0x27)
-                    theResult.addInstruction(new BytecodeInstructionDLOAD((byte) 1));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.DOUBLE, (byte) 1));
                     break;
                 }
                 case 40: { // dload_2 = 40 (0x28)
-                    theResult.addInstruction(new BytecodeInstructionDLOAD((byte) 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.DOUBLE, (byte) 2));
                     break;
                 }
                 case 41: { // dload_3 = 41 (0x29)
-                    theResult.addInstruction(new BytecodeInstructionDLOAD((byte) 3));
+                    theResult.addInstruction(new BytecodeInstructionGenericLOAD(BytecodePrimitiveTypeRef.DOUBLE, (byte) 3));
                     break;
                 }
                 case 42: {// aload_0 (0x2a)
@@ -427,67 +427,67 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 96: { // iadd = 96 (0x60)
-                    theResult.addInstruction(new BytecodeInstructionIADD());
+                    theResult.addInstruction(new BytecodeInstructionGenericADD(BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 97: { // ladd = 97 (0x61)
-                    theResult.addInstruction(new BytecodeInstructionLADD());
+                    theResult.addInstruction(new BytecodeInstructionGenericADD(BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 98: { // fadd = 98 (0x62)
-                    theResult.addInstruction(new BytecodeInstructionFADD());
+                    theResult.addInstruction(new BytecodeInstructionGenericADD(BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 99: { // ladd = 97 (0x61)
-                    theResult.addInstruction(new BytecodeInstructionDADD());
+                    theResult.addInstruction(new BytecodeInstructionGenericADD(BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 100: { // isub = 100 (0x64)
-                    theResult.addInstruction(new BytecodeInstructionISUB());
+                    theResult.addInstruction(new BytecodeInstructionGenericSUB(BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 101: { // lsub = 101 (0x65)
-                    theResult.addInstruction(new BytecodeInstructionLSUB());
+                    theResult.addInstruction(new BytecodeInstructionGenericSUB(BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 102: { // fsub = 102 (0x66)
-                    theResult.addInstruction(new BytecodeInstructionFSUB());
+                    theResult.addInstruction(new BytecodeInstructionGenericSUB(BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 103: { // dsub = 103 (0x67)
-                    theResult.addInstruction(new BytecodeInstructionDSUB());
+                    theResult.addInstruction(new BytecodeInstructionGenericSUB(BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 104: { // imul = 104 (0x68)
-                    theResult.addInstruction(new BytecodeInstructionIMUL());
+                    theResult.addInstruction(new BytecodeInstructionGenericMUL(BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 105: { // lmul = 105 (0x69)
-                    theResult.addInstruction(new BytecodeInstructionLMUL());
+                    theResult.addInstruction(new BytecodeInstructionGenericMUL(BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 106: { // fmul = 106 (0x6a)
-                    theResult.addInstruction(new BytecodeInstructionFMUL());
+                    theResult.addInstruction(new BytecodeInstructionGenericMUL(BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 107: { // dmul = 107 (0x6b)
-                    theResult.addInstruction(new BytecodeInstructionDMUL());
+                    theResult.addInstruction(new BytecodeInstructionGenericMUL(BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 108: { // idiv = 108 (0x6c)
-                    theResult.addInstruction(new BytecodeInstructionIDIV());
+                    theResult.addInstruction(new BytecodeInstructionGenericDIV(BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 109: { // ldiv = 109 (0x6d)
-                    theResult.addInstruction(new BytecodeInstructionLDIV());
+                    theResult.addInstruction(new BytecodeInstructionGenericDIV(BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 110: { // fdiv = 110 (0x6e)
-                    theResult.addInstruction(new BytecodeInstructionFDIV());
+                    theResult.addInstruction(new BytecodeInstructionGenericDIV(BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 111: {// ddiv = 111 (0x6f)
-                    theResult.addInstruction(new BytecodeInstructionDDIV());
+                    theResult.addInstruction(new BytecodeInstructionGenericDIV(BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 112: {// irem = 112 (0x70)

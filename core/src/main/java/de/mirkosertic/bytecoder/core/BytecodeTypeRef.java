@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDMUL implements BytecodeInstruction {
+public interface BytecodeTypeRef {
+
+    String name();
+
+    boolean isPrimitive();
 }

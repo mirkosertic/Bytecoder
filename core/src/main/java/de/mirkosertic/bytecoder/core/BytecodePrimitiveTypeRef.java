@@ -15,11 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDLOAD implements BytecodeInstruction {
+public enum BytecodePrimitiveTypeRef implements BytecodeTypeRef {
 
-    private final byte index;
+    BOOLEAN,
+    BYTE,
+    CHAR,
+    DOUBLE,
+    FLOAT,
+    LONG,
+    SHORT,
+    INT,
+    VOID;
 
-    public BytecodeInstructionDLOAD(byte aIndex) {
-        index = aIndex;
+    @Override
+    public boolean isPrimitive() {
+        return true;
     }
 }

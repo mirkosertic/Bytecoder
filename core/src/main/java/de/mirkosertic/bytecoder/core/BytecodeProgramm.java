@@ -29,4 +29,8 @@ public class BytecodeProgramm {
     public void addInstruction(BytecodeInstruction aInstruction) {
         instructions.add(aInstruction);
     }
+
+    public List<BytecodeInstruction> getInstructions() {
+        return instructions;
+    }
 }

@@ -15,5 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIDIV implements BytecodeInstruction {
+public class BytecodeInstructionGenericMUL implements BytecodeInstruction {
+
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericMUL(BytecodePrimitiveTypeRef type) {
+        this.type = type;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
+    }
 }

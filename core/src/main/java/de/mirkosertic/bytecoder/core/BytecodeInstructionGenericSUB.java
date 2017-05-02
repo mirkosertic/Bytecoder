@@ -15,5 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDADD implements BytecodeInstruction {
+public class BytecodeInstructionGenericSUB implements BytecodeInstruction {
+
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericSUB(BytecodePrimitiveTypeRef type) {
+        this.type = type;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
+    }
 }
