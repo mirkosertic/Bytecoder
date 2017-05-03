@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionI2L implements BytecodeInstruction {
+public class BytecodeInstructionI2L extends BytecodeInstruction {
 
+    public BytecodeInstructionI2L(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

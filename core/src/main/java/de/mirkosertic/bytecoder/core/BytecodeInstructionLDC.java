@@ -15,14 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLDC implements BytecodeInstruction {
+public class BytecodeInstructionLDC extends BytecodeInstruction {
 
     private final byte constantIndex;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionLDC(byte aConstantIndex, BytecodeConstantPool aConstantPool) {
-        this.constantIndex = aConstantIndex;
-        this.constantPool = aConstantPool;
+    public BytecodeInstructionLDC(BytecodeOpcodeAddress aOpcodeIndex, byte aConstantIndex, BytecodeConstantPool aConstantPool) {
+        super(aOpcodeIndex);
+        constantIndex = aConstantIndex;
+        constantPool = aConstantPool;
     }
 
     public BytecodeConstant constant() {

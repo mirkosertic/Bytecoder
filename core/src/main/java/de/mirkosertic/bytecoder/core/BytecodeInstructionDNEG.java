@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDNEG implements BytecodeInstruction {
+public class BytecodeInstructionDNEG extends BytecodeInstruction {
+
+    public BytecodeInstructionDNEG(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

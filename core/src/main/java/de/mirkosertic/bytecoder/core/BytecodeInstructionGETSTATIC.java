@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionGETSTATIC implements BytecodeInstruction {
+public class BytecodeInstructionGETSTATIC extends BytecodeInstruction {
 
     private final byte index1;
     private final byte index2;
 
-    public BytecodeInstructionGETSTATIC(byte aIndex1, byte aIndex2) {
+    public BytecodeInstructionGETSTATIC(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex1, byte aIndex2) {
+        super(aOpcodeIndex);
         index1 = aIndex1;
         index2 = aIndex2;
     }

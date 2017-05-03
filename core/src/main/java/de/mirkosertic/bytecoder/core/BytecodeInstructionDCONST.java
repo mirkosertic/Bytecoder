@@ -15,11 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDCONST implements BytecodeInstruction {
+public class BytecodeInstructionDCONST extends BytecodeInstruction {
 
     private final double doubleConst;
 
-    public BytecodeInstructionDCONST(double doubleConst) {
-        this.doubleConst = doubleConst;
+    public BytecodeInstructionDCONST(BytecodeOpcodeAddress aOpcodeIndex, double aDoubleConst) {
+        super(aOpcodeIndex);
+        doubleConst = aDoubleConst;
     }
 }

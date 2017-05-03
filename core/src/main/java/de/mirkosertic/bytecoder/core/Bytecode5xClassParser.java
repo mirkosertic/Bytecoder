@@ -157,7 +157,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private void parseConstantPool_CONSTANT_String(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theStringIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeStringConstant(new BytecodeStringIndex(theStringIndex)));
+        aConstantPool.registerConstant(new BytecodeStringConstant(new BytecodeStringIndex(theStringIndex), aConstantPool));
     }
 
     private void parseConstantPool_CONSTANT_Integer(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {

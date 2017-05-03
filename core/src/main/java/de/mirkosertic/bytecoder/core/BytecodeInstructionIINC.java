@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIINC implements BytecodeInstruction {
+public class BytecodeInstructionIINC extends BytecodeInstruction {
 
     private final byte index;
     private final byte consant;
 
-    public BytecodeInstructionIINC(byte index, byte consant) {
+    public BytecodeInstructionIINC(BytecodeOpcodeAddress aOpcodeIndex, byte index, byte consant) {
+        super(aOpcodeIndex);
         this.index = index;
         this.consant = consant;
     }

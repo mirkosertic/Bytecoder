@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDCMP implements BytecodeInstruction {
+public class BytecodeInstructionDCMP extends BytecodeInstruction {
 
     public static enum Type {
         g, l
@@ -23,7 +23,8 @@ public class BytecodeInstructionDCMP implements BytecodeInstruction {
 
     private final Type type;
 
-    public BytecodeInstructionDCMP(Type type) {
+    public BytecodeInstructionDCMP(BytecodeOpcodeAddress aOpcodeIndex, Type type) {
+        super(aOpcodeIndex);
         this.type = type;
     }
 }

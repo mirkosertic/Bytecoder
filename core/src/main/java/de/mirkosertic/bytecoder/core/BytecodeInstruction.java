@@ -15,5 +15,26 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeInstruction {
+public abstract class BytecodeInstruction {
+
+    private final BytecodeOpcodeAddress opcodeAddress;
+
+    public BytecodeInstruction(BytecodeOpcodeAddress aOpcodeAddress) {
+        opcodeAddress = aOpcodeAddress;
+    }
+
+    public BytecodeOpcodeAddress getOpcodeAddress() {
+        return opcodeAddress;
+    }
+
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    }
+
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        return new BytecodeOpcodeAddress[0];
+    }
+
+    public boolean isJumpSource() {
+        return false;
+    }
 }

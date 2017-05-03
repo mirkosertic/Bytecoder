@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionFREM implements BytecodeInstruction {
+public class BytecodeInstructionFREM extends BytecodeInstruction {
+
+    public BytecodeInstructionFREM(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

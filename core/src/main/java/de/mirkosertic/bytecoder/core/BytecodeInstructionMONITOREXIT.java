@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionMONITOREXIT implements BytecodeInstruction {
+public class BytecodeInstructionMONITOREXIT extends BytecodeInstruction {
 
+    public BytecodeInstructionMONITOREXIT(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

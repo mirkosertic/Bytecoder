@@ -15,19 +15,36 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIFCOND implements BytecodeInstruction {
+public class BytecodeInstructionIFCOND extends BytecodeInstruction {
 
     public enum Type {
         eq, ne, lt, ge, gt, le
     }
 
     private final Type type;
-    private final byte banchbyte1;
-    private final byte banchbyte2;
+    private final int jumpAddress;
 
-    public BytecodeInstructionIFCOND(Type aType, byte aBanchbyte1, byte aBanchbyte2) {
+    public BytecodeInstructionIFCOND(BytecodeOpcodeAddress aOpcodeIndex, Type aType, int aIndex) {
+        super(aOpcodeIndex);
         type = aType;
-        banchbyte1 = aBanchbyte1;
-        banchbyte2 = aBanchbyte2;
+        jumpAddress = aIndex;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public BytecodeOpcodeAddress getJumpAddress() {
+        return getOpcodeAddress().add(jumpAddress);
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        return new BytecodeOpcodeAddress[] { getJumpAddress() };
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

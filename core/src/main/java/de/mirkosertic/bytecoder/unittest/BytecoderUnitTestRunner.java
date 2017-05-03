@@ -73,6 +73,7 @@ public class BytecoderUnitTestRunner extends Runner {
                 this.testClass.getJavaClass().getAnnotations());
         return spec;
     }
+
     @Override
     public void run(RunNotifier aRunNotifier) {
         for (Method theMethod : testMethods) {

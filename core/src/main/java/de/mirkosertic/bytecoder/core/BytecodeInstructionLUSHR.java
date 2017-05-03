@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLUSHR implements BytecodeInstruction {
+public class BytecodeInstructionLUSHR extends BytecodeInstruction {
+
+    public BytecodeInstructionLUSHR(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

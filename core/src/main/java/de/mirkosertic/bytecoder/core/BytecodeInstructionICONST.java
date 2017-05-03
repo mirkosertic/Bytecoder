@@ -15,11 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionICONST implements BytecodeInstruction {
+public class BytecodeInstructionICONST extends BytecodeInstruction {
 
     private final int intConst;
 
-    public BytecodeInstructionICONST(int intConst) {
-        this.intConst = intConst;
+    public BytecodeInstructionICONST(BytecodeOpcodeAddress aOpcodeIndex, int aIntConst) {
+        super(aOpcodeIndex);
+        intConst = aIntConst;
+    }
+
+    public int getIntConst() {
+        return intConst;
     }
 }

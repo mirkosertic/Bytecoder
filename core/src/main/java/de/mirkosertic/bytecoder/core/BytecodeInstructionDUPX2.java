@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDUPX2 implements BytecodeInstruction {
+public class BytecodeInstructionDUPX2 extends BytecodeInstruction {
+
+    public BytecodeInstructionDUPX2(BytecodeOpcodeAddress aOffset) {
+        super(aOffset);
+    }
 }

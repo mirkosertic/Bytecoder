@@ -15,13 +15,26 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIFNULL implements BytecodeInstruction {
+public class BytecodeInstructionIFNULL extends BytecodeInstruction {
 
-    private final byte banchbyte1;
-    private final byte banchbyte2;
+    private final int jumpOffset;
 
-    public BytecodeInstructionIFNULL(byte aBanchbyte1, byte aBanchbyte2) {
-        banchbyte1 = aBanchbyte1;
-        banchbyte2 = aBanchbyte2;
+    public BytecodeInstructionIFNULL(BytecodeOpcodeAddress aOpcodeIndex, int aOffset) {
+        super(aOpcodeIndex);
+        jumpOffset = aOffset;
+    }
+
+    public int getJumpOffset() {
+        return jumpOffset;
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        return new BytecodeOpcodeAddress[] { getOpcodeAddress().add(getJumpOffset())};
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

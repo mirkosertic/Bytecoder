@@ -15,11 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLCONST implements BytecodeInstruction {
+public class BytecodeInstructionLCONST extends BytecodeInstruction {
 
     private final long longConst;
 
-    public BytecodeInstructionLCONST(long longConst) {
-        this.longConst = longConst;
+    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
+        super(aOpcodeIndex);
+        longConst = aLongConst;
     }
 }

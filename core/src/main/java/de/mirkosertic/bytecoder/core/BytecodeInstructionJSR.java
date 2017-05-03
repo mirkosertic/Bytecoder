@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionJSR implements BytecodeInstruction {
+public class BytecodeInstructionJSR extends BytecodeInstruction {
 
     private final byte banchbyte1;
     private final byte banchbyte2;
 
-    public BytecodeInstructionJSR(byte aBanchbyte1, byte aBanchbyte2) {
+    public BytecodeInstructionJSR(BytecodeOpcodeAddress aOpcodeIndex, byte aBanchbyte1, byte aBanchbyte2) {
+        super(aOpcodeIndex);
         banchbyte1 = aBanchbyte1;
         banchbyte2 = aBanchbyte2;
     }

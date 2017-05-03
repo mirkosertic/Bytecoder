@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class BytecodeLinkerContext {
 
@@ -38,8 +36,7 @@ public class BytecodeLinkerContext {
         }
 
         try {
-            String theResourceName = "/" + aTypeRef.name().replace(".", "/") + ".class";
-            BytecodeClass theLoadedClass = loader.loadByteCode(getClass().getResourceAsStream(theResourceName));
+            BytecodeClass theLoadedClass = loader.loadByteCode(aTypeRef);
             theLinkedClass = new BytecodeLinkedClass(this, aTypeRef, theLoadedClass);
             linkedClasses.put(aTypeRef, theLinkedClass);
 

@@ -15,13 +15,26 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionGOTO implements BytecodeInstruction {
+public class BytecodeInstructionGOTO extends BytecodeInstruction {
 
-    private final byte banchbyte1;
-    private final byte banchbyte2;
+    private final int jumpAddress;
 
-    public BytecodeInstructionGOTO(byte aBanchbyte1, byte aBanchbyte2) {
-        banchbyte1 = aBanchbyte1;
-        banchbyte2 = aBanchbyte2;
+    public BytecodeInstructionGOTO(BytecodeOpcodeAddress aOpcodeIndex, int aJumpAddress) {
+        super(aOpcodeIndex);
+        jumpAddress = aJumpAddress;
+    }
+
+    public BytecodeOpcodeAddress getJumpAddress() {
+        return getOpcodeAddress().add(jumpAddress);
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        return new BytecodeOpcodeAddress[] { getJumpAddress()};
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionGenericDIV implements BytecodeInstruction {
+public class BytecodeInstructionGenericDIV extends BytecodeInstruction {
 
     private final BytecodePrimitiveTypeRef type;
 
-    public BytecodeInstructionGenericDIV(BytecodePrimitiveTypeRef type) {
-        this.type = type;
+    public BytecodeInstructionGenericDIV(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
+        super(aOpcodeIndex);
+        type = aType;
     }
 
     public BytecodePrimitiveTypeRef getType() {
