@@ -15,15 +15,32 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKESTATIC implements BytecodeInstruction {
+public class BytecodeInstructionINVOKESTATIC extends BytecodeInstruction {
 
-    private final BytecodeMethodRefConstant methodRefConstant;
+    private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKESTATIC(BytecodeMethodRefConstant methodRefConstant) {
-        this.methodRefConstant = methodRefConstant;
+    public BytecodeInstructionINVOKESTATIC(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+        super(aOpcodeIndex);
+        index = aIndex;
+        constantPool = aConstantPool;
     }
 
     public BytecodeMethodRefConstant getMethodRefConstant() {
-        return methodRefConstant;
+        return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeMethodRefConstant theMethodRefConstant = getMethodRefConstant();
+        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+
+        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+        aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+                theName.stringValue());
+
     }
 }

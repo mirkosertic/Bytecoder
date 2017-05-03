@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionACONSTNULL implements BytecodeInstruction {
+public class BytecodeInstructionACONSTNULL extends BytecodeInstruction {
 
+    public BytecodeInstructionACONSTNULL(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

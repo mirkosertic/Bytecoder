@@ -15,11 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionBIPUSH implements BytecodeInstruction {
+public class BytecodeInstructionBIPUSH extends BytecodeInstruction {
 
     private final byte value;
 
-    public BytecodeInstructionBIPUSH(byte aValue) {
+    public BytecodeInstructionBIPUSH(BytecodeOpcodeAddress aOpcodeIndex, byte aValue) {
+        super(aOpcodeIndex);
         value = aValue;
     }
 

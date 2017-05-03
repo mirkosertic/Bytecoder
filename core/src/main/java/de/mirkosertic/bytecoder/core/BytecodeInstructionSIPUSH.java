@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionSIPUSH implements BytecodeInstruction {
+public class BytecodeInstructionSIPUSH extends BytecodeInstruction {
 
     private final byte indexbyte1;
     private final byte indexbyte2;
 
-    public BytecodeInstructionSIPUSH(byte indebyte1, byte indexbyte2) {
+    public BytecodeInstructionSIPUSH(BytecodeOpcodeAddress aOpcodeIndex, byte indebyte1, byte indexbyte2) {
+        super(aOpcodeIndex);
         this.indexbyte1 = indebyte1;
         this.indexbyte2 = indexbyte2;
     }

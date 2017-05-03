@@ -15,11 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionASTORE implements BytecodeInstruction {
+public class BytecodeInstructionASTORE extends BytecodeInstruction {
 
-    private final byte index;
+    private final byte variableIndex;
 
-    public BytecodeInstructionASTORE(byte aIndex) {
-        index = aIndex;
+    public BytecodeInstructionASTORE(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex) {
+        super(aOpcodeIndex);
+        variableIndex = aIndex;
+    }
+
+    public byte getVariableIndex() {
+        return variableIndex;
     }
 }

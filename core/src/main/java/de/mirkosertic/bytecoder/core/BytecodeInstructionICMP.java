@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionICMP implements BytecodeInstruction {
+public class BytecodeInstructionICMP extends BytecodeInstruction {
 
     public static enum Type {
         eq, ne, lt, ge, gt, le
@@ -25,7 +25,8 @@ public class BytecodeInstructionICMP implements BytecodeInstruction {
     private final byte banchbyte1;
     private final byte banchbyte2;
 
-    public BytecodeInstructionICMP(Type aType, byte aBanchbyte1, byte aBanchbyte2) {
+    public BytecodeInstructionICMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType, byte aBanchbyte1, byte aBanchbyte2) {
+        super(aOpcodeIndex);
         type = aType;
         banchbyte1 = aBanchbyte1;
         banchbyte2 = aBanchbyte2;

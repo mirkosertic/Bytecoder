@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLCMP implements BytecodeInstruction {
+public class BytecodeInstructionLCMP extends BytecodeInstruction {
+
+    public BytecodeInstructionLCMP(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKEDYNAMIC implements BytecodeInstruction {
+public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction {
 
     private final byte index1;
     private final byte index2;
 
-    public BytecodeInstructionINVOKEDYNAMIC(byte aIndex1, byte aIndex2) {
+    public BytecodeInstructionINVOKEDYNAMIC(BytecodeOpcodeAddress aIndex, byte aIndex1, byte aIndex2) {
+        super(aIndex);
         index1 = aIndex1;
         index2 = aIndex2;
     }

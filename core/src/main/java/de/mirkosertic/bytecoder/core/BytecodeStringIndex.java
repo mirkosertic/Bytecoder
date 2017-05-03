@@ -22,4 +22,8 @@ public class BytecodeStringIndex {
     public BytecodeStringIndex(int aIndex) {
         index = aIndex;
     }
+
+    public int getIndex() {
+        return index;
+    }
 }

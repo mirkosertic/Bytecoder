@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKEINTERFACE implements BytecodeInstruction {
+public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction {
 
     private final byte indexbyte1;
     private final byte indexbyte2;
     private final byte count;
 
-    public BytecodeInstructionINVOKEINTERFACE(byte indexbyte1, byte indexbyte2, byte count) {
+    public BytecodeInstructionINVOKEINTERFACE(BytecodeOpcodeAddress aOpcodeIndex, byte indexbyte1, byte indexbyte2, byte count) {
+        super(aOpcodeIndex);
         this.indexbyte1 = indexbyte1;
         this.indexbyte2 = indexbyte2;
         this.count = count;

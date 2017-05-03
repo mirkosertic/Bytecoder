@@ -125,9 +125,9 @@ public class BytecodeLoaderTest {
     }
 
     @Test
-    public void testLoadInterface() throws IOException {
+    public void testLoadInterface() throws IOException, ClassNotFoundException {
         BytecodeLoader theLoader = new BytecodeLoader();
-        theLoader.loadByteCode(getClass().getResourceAsStream("SimpleInterface.class"));
+        theLoader.loadByteCode(new BytecodeObjectTypeRef(SimpleInterface.class.getName()));
     }
 
     @Test

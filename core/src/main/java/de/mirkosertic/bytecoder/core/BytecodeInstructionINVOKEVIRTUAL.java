@@ -15,13 +15,32 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKEVIRTUAL implements BytecodeInstruction {
+public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstruction {
 
-    private final byte index1;
-    private final byte index2;
+    private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKEVIRTUAL(byte aIndex1, byte aIndex2) {
-        index1 = aIndex1;
-        index2 = aIndex2;
+    public BytecodeInstructionINVOKEVIRTUAL(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+        super(aOpcodeIndex);
+        index = aIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeMethodRefConstant getMethodDescriptor() {
+        return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeMethodRefConstant theMethodRefConstant = getMethodDescriptor();
+        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+
+        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+        //aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+//                theName.stringValue());
+
     }
 }

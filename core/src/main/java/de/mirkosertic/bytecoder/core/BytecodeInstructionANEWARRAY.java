@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionANEWARRAY implements BytecodeInstruction {
+public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
 
     private final byte indexbyte1;
     private final byte indexbyte2;
 
-    public BytecodeInstructionANEWARRAY(byte indebyte1, byte indexbyte2) {
+    public BytecodeInstructionANEWARRAY(BytecodeOpcodeAddress aIndex, byte indebyte1, byte indexbyte2) {
+        super(aIndex);
         this.indexbyte1 = indebyte1;
         this.indexbyte2 = indexbyte2;
     }

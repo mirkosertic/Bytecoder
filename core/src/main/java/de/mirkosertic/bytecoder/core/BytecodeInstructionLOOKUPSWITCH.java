@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLOOKUPSWITCH implements BytecodeInstruction {
+public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
 
     public static class Pair {
 
@@ -31,7 +31,8 @@ public class BytecodeInstructionLOOKUPSWITCH implements BytecodeInstruction {
     private final long defaultValue;
     private final Pair[] pairs;
 
-    public BytecodeInstructionLOOKUPSWITCH(long aDefaultValue, Pair[] aPairs) {
+    public BytecodeInstructionLOOKUPSWITCH(BytecodeOpcodeAddress aIndex, long aDefaultValue, Pair[] aPairs) {
+        super(aIndex);
         defaultValue = aDefaultValue;
         pairs = aPairs;
     }

@@ -15,15 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionFCMP implements BytecodeInstruction {
+public class BytecodeInstructionFCMP extends BytecodeInstruction {
 
     public static enum Type {
-        g, l
+        l, g
     }
 
     private final Type type;
 
-    public BytecodeInstructionFCMP(Type type) {
-        this.type = type;
+    public BytecodeInstructionFCMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
+        super(aOpcodeIndex);
+        type = aType;
     }
 }

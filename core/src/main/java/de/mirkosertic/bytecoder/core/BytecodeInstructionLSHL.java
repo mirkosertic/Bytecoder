@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLSHL implements BytecodeInstruction {
+public class BytecodeInstructionLSHL extends BytecodeInstruction {
+
+    public BytecodeInstructionLSHL(BytecodeOpcodeAddress aOffset) {
+        super(aOffset);
+    }
 }

@@ -15,15 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionFCONST implements BytecodeInstruction {
+public class BytecodeInstructionFCONST extends BytecodeInstruction {
 
-    private final float value;
+    private final float floatValue;
 
-    public BytecodeInstructionFCONST(float value) {
-        this.value = value;
+    public BytecodeInstructionFCONST(BytecodeOpcodeAddress aIndex, float aFloatValue) {
+        super(aIndex);
+        floatValue = aFloatValue;
     }
 
-    public float getValue() {
-        return value;
+    public float getFloatValue() {
+        return floatValue;
     }
 }

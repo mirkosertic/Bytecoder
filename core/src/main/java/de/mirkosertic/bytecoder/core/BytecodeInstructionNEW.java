@@ -15,13 +15,18 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionNEW implements BytecodeInstruction {
+public class BytecodeInstructionNEW extends BytecodeInstruction {
 
-    private final byte index1;
-    private final byte index2;
+    private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionNEW(byte aIndex1, byte aIndex2) {
-        index1 = aIndex1;
-        index2 = aIndex2;
+    public BytecodeInstructionNEW(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+        super(aOpcodeIndex);
+        index = aIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeConstant getConstructorRef() {
+        return constantPool.constantByIndex(index - 1);
     }
 }

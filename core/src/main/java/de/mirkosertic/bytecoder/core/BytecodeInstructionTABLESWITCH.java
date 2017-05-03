@@ -15,14 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionTABLESWITCH implements BytecodeInstruction {
+public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
 
     private final long defaultValue;
     private final long lowValue;
     private final long highValue;
     private final long offsets[];
 
-    public BytecodeInstructionTABLESWITCH(long defaultValue, long lowValue, long highValue, long[] offsets) {
+    public BytecodeInstructionTABLESWITCH(BytecodeOpcodeAddress aOpcodeIndex, long defaultValue, long lowValue, long highValue, long[] offsets) {
+        super(aOpcodeIndex);
         this.defaultValue = defaultValue;
         this.lowValue = lowValue;
         this.highValue = highValue;

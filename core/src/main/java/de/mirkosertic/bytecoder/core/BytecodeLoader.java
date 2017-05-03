@@ -19,11 +19,38 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 public class BytecodeLoader {
 
-    public BytecodeClass loadByteCode(InputStream aStream) throws IOException {
-        try (DataInputStream dis = new DataInputStream(aStream)) {
+    private final Set<String> shadowPackages;
+
+    public BytecodeLoader() {
+        shadowPackages = new HashSet<>();
+        shadowPackages.add("java.lang.");
+        shadowPackages.add("org.junit.");
+        shadowPackages.add("junit.");
+    }
+
+    public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
+        StringBuilder theTypeName = new StringBuilder(aTypeRef.name());
+
+        for (String thePrefix : shadowPackages) {
+            if (theTypeName.indexOf(thePrefix) == 0) {
+                theTypeName.insert(0, "de.mirkosertic.bytecoder.classlib.");
+                int p = theTypeName.lastIndexOf(".");
+                theTypeName.insert(p+1, "T");
+            }
+        }
+        theTypeName.insert(0, "/");
+
+        String theResourceName = theTypeName.toString().replace(".", "/") + ".class";
+        InputStream theStream = getClass().getResourceAsStream(theResourceName);
+        if (theStream == null) {
+            throw new ClassNotFoundException(theResourceName);
+        }
+        try (DataInputStream dis = new DataInputStream(theStream)) {
             BytecodeClassParser parser = parseHeader(dis);
             return parser.parseBody(dis);
         }

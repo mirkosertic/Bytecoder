@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLDCW implements BytecodeInstruction {
+public class BytecodeInstructionLDCW extends BytecodeInstruction {
 
     private final byte index1;
     private final byte index2;
 
-    public BytecodeInstructionLDCW(byte aIndex1, byte aIndex2) {
+    public BytecodeInstructionLDCW(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex1, byte aIndex2) {
+        super(aOpcodeIndex);
         index1 = aIndex1;
         index2 = aIndex2;
     }

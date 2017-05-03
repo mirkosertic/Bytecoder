@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionGenericMUL implements BytecodeInstruction {
+public class BytecodeInstructionGenericMUL extends BytecodeInstruction {
 
     private final BytecodePrimitiveTypeRef type;
 
-    public BytecodeInstructionGenericMUL(BytecodePrimitiveTypeRef type) {
-        this.type = type;
+    public BytecodeInstructionGenericMUL(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
+        super(aOpcodeIndex);
+        type = aType;
     }
 
     public BytecodePrimitiveTypeRef getType() {

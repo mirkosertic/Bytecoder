@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionCASTORE implements BytecodeInstruction {
+public class BytecodeInstructionCASTORE extends BytecodeInstruction {
 
+    public BytecodeInstructionCASTORE(BytecodeOpcodeAddress aOffset) {
+        super(aOffset);
+    }
 }

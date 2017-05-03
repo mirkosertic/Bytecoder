@@ -18,8 +18,14 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeStringConstant implements BytecodeConstant {
 
     private final BytecodeStringIndex stringIndex;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeStringConstant(BytecodeStringIndex aStringIndex) {
+    public BytecodeStringConstant(BytecodeStringIndex aStringIndex, BytecodeConstantPool aConstantPool) {
         stringIndex = aStringIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeUtf8Constant getValue() {
+        return (BytecodeUtf8Constant) constantPool.constantByIndex(stringIndex.getIndex() - 1);
     }
 }

@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionSWAP implements BytecodeInstruction {
+public class BytecodeInstructionSWAP extends BytecodeInstruction {
+
+    public BytecodeInstructionSWAP(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }

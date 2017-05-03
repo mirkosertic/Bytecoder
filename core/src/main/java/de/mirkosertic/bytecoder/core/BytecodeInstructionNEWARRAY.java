@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionNEWARRAY implements BytecodeInstruction {
+public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
 
     public enum Type {
         T_BOOLEAN,
@@ -30,7 +30,8 @@ public class BytecodeInstructionNEWARRAY implements BytecodeInstruction {
 
     private final Type type;
 
-    public BytecodeInstructionNEWARRAY(Type aType) {
+    public BytecodeInstructionNEWARRAY(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
+        super(aOpcodeIndex);
         type = aType;
     }
 }

@@ -33,4 +33,24 @@ public class BytecodeProgramm {
     public List<BytecodeInstruction> getInstructions() {
         return instructions;
     }
+
+    public List<BytecodeOpcodeAddress> getJumpSources() {
+        List<BytecodeOpcodeAddress> theResult = new ArrayList<>();
+        for (BytecodeInstruction theInstruction : instructions) {
+            if (theInstruction.isJumpSource()) {
+                theResult.add(theInstruction.getOpcodeAddress());
+            }
+        }
+        return theResult;
+    }
+
+    public List<BytecodeOpcodeAddress> getPotentialJumpTargets() {
+        List<BytecodeOpcodeAddress> theResult = new ArrayList<>();
+        for (BytecodeInstruction theInstruction : instructions) {
+            for (BytecodeOpcodeAddress thetarget : theInstruction.getPotentialJumpTargets()) {
+                theResult.add(thetarget);
+            }
+        }
+        return theResult;
+    }
 }

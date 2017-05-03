@@ -15,5 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionARRAYLENGTH implements BytecodeInstruction {
+public class BytecodeInstructionARRAYLENGTH extends BytecodeInstruction {
+
+    public BytecodeInstructionARRAYLENGTH(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
+    }
 }
