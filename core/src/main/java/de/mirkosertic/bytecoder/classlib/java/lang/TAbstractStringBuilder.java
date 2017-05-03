@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public abstract class TAbstractStringBuilder extends TObject implements TAppendable, TCharSequence {
+public abstract class TAbstractStringBuilder implements TAppendable, TCharSequence {
 }

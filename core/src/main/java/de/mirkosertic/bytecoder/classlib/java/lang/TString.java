@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import java.io.Serializable;
-
 public class TString implements TSerializable, TComparable<TString>, TCharSequence {
 
     public TString() {
