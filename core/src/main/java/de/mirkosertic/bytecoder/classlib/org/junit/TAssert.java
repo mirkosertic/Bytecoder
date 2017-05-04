@@ -39,10 +39,10 @@ public class TAssert {
     }
 
     public static void assertEquals(String message, float expected, float actual, float delta) {
-        if(Float.compare(expected, actual) != 0) {
-            if(Math.abs(expected - actual) > delta) {
-                failNotEquals(message, new Float(expected), new Float(actual));
-            }
+        if  (Float.compare(expected, actual) != 0) {
+                if (Math.abs(expected - actual) > delta) {
+                    failNotEquals(message, new Float(expected), new Float(actual));
+                }
         }
     }
 

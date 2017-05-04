@@ -26,7 +26,7 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstruction {
         constantPool = aConstantPool;
     }
 
-    public BytecodeConstant getSuperConstructorRef() {
-        return constantPool.constantByIndex(index - 1);
+    public BytecodeMethodRefConstant getMethodReference() {
+        return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
     }
 }

@@ -16,6 +16,9 @@
 package de.mirkosertic.bytecoder.core;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 
 public class BytecodeProgramm {
@@ -34,6 +37,15 @@ public class BytecodeProgramm {
         return instructions;
     }
 
+    private List<BytecodeOpcodeAddress> unifyAndSort(List<BytecodeOpcodeAddress> aResult) {
+        HashSet<BytecodeOpcodeAddress> theSet = new HashSet<>();
+        theSet.addAll(aResult);
+        List<BytecodeOpcodeAddress> theResult = new ArrayList<>();
+        theResult.addAll(theSet);
+        Collections.sort(theResult, Comparator.comparingInt(BytecodeOpcodeAddress::getAddress));
+        return theResult;
+    }
+
     public List<BytecodeOpcodeAddress> getJumpSources() {
         List<BytecodeOpcodeAddress> theResult = new ArrayList<>();
         for (BytecodeInstruction theInstruction : instructions) {
@@ -41,7 +53,7 @@ public class BytecodeProgramm {
                 theResult.add(theInstruction.getOpcodeAddress());
             }
         }
-        return theResult;
+        return unifyAndSort(theResult);
     }
 
     public List<BytecodeOpcodeAddress> getPotentialJumpTargets() {
@@ -51,6 +63,6 @@ public class BytecodeProgramm {
                 theResult.add(thetarget);
             }
         }
-        return theResult;
+        return unifyAndSort(theResult);
     }
 }
