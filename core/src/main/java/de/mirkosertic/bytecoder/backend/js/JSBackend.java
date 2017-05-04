@@ -93,12 +93,13 @@ public class JSBackend {
                         }
                     }
                 }
-
                 if (thePotentialJumpTargets.contains(theInstruction.getOpcodeAddress())) {
                     theBraceCounter--;
                     theInset = theInset.substring("    ".length());
                     theWriter.println(theInset+ "}");
                 }
+
+                theWriter.println(theInset + "// Address " + theInstruction.getOpcodeAddress().getAddress());
 
                 if (theInstruction instanceof BytecodeInstructionRETURN) {
                     theWriter.println(theInset + "return;");
