@@ -134,7 +134,7 @@ public class JSBackend {
                     if (theSig.getReturnType().isVoid()) {
                         theWriter.print(theInset + "  ");
                     } else {
-                        theWriter.print(theInset + "  stack[stackOffset++] = ");
+                        theWriter.print(theInset + "  stack[++stackOffset] = ");
                     }
                     theWriter.print("callsite." + toMethodName(theName.stringValue(), theSig) + "(");
                     for (int i=1;i<=theStaticArguments.length;i++) {
@@ -164,7 +164,7 @@ public class JSBackend {
                     if (theSig.getReturnType().isVoid()) {
                         theWriter.print(theInset + "  ");
                     } else {
-                        theWriter.print(theInset + "  stack[stackOffset++] = ");
+                        theWriter.print(theInset + "  stack[++stackOffset] = ");
                     }
                     theWriter.print("callsite." + toMethodName(theName.stringValue(), theSig) + "(");
                     for (int i=1;i<=theStaticArguments.length;i++) {
@@ -191,7 +191,7 @@ public class JSBackend {
                     if (theSig.getReturnType().isVoid()) {
                         theWriter.print(theInset + "  ");
                     } else {
-                        theWriter.print(theInset + "  stack[stackOffset++] = ");
+                        theWriter.print(theInset + "  stack[++stackOffset] = ");
                     }
                     theWriter.print(toMethodName(theName.stringValue(), theSig) +"(");
                     for (int i=1;i<=theStaticArguments.length;i++) {
@@ -296,7 +296,7 @@ public class JSBackend {
                     theWriter.println(theInset + "  stack[stackOffset] = temp;");
                     theWriter.println(theInset + "}");
                 } else if (theInstruction instanceof BytecodeInstructionGenericSUB) {
-                    BytecodeInstructionGenericSUB theDiv = (BytecodeInstructionGenericSUB) theInstruction;
+                    BytecodeInstructionGenericSUB theSub = (BytecodeInstructionGenericSUB) theInstruction;
                     theWriter.println(theInset + "{");
                     theWriter.println(theInset + "  var temp = stack[stackOffset-1] - stack[stackOffset];");
                     theWriter.println(theInset + "  stackOffset -= 1;");
