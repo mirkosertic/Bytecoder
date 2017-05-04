@@ -56,8 +56,8 @@ public class BytecodeLinkerContext {
         }
     }
 
-    public void linkClassMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName) {
-        linkClass(aTypeRef).linkMethod(aMethodName);
+    public void linkClassMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
+        linkClass(aTypeRef).linkMethod(aMethodName, aSignature);
     }
 
     public void forEachClass(Consumer<Map.Entry<BytecodeObjectTypeRef, BytecodeLinkedClass>> aConsumer) {

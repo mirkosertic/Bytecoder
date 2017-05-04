@@ -17,18 +17,34 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionICMP extends BytecodeInstruction {
 
-    public static enum Type {
+    public enum Type {
         eq, ne, lt, ge, gt, le
     }
 
     private final Type type;
-    private final byte banchbyte1;
-    private final byte banchbyte2;
+    private final int jumpOffset;
 
-    public BytecodeInstructionICMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType, byte aBanchbyte1, byte aBanchbyte2) {
+    public BytecodeInstructionICMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType, int aJumpOffset) {
         super(aOpcodeIndex);
         type = aType;
-        banchbyte1 = aBanchbyte1;
-        banchbyte2 = aBanchbyte2;
+        jumpOffset = aJumpOffset;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public BytecodeOpcodeAddress getJumpAddress() {
+        return getOpcodeAddress().add(jumpOffset);
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        return new BytecodeOpcodeAddress[] {getJumpAddress()};
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

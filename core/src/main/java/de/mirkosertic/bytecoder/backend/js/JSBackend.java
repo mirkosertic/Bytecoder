@@ -19,50 +19,31 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2F;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeProgramm;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.*;
 
 public class JSBackend {
+
+    private String typeRefToString(BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
+            return thePrimitive.toString();
+        }
+        if (aTypeRef.isArray()) {
+            BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
+            return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
+        }
+        BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
+        return theObjectRef.name().replace(".", "");
+    }
+
+
+    public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
+        String theName = aMethodName.replace("<", "").replace(">", "");
+        for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
+            theName += typeRefToString(theTypeRef);
+        }
+        return theName;
+    }
 
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
@@ -71,15 +52,15 @@ public class JSBackend {
 
         aLinkerContext.forEachClass(aEntry -> aEntry.getValue().forEachMethod(aMethod -> {
             BytecodeCodeAttributeInfo theCode = aMethod.attributeByType(BytecodeCodeAttributeInfo.class);
-            BytecodeMethodSignature theSignature = aMethod.getSignature();
+            BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
             StringBuffer theArguments = new StringBuffer();
-            for (int i=1;i<=theSignature.getArguments().length;i++) {
+            for (int i=1;i<=theCurrentMethodSignature.getArguments().length;i++) {
                 if (theArguments.length() > 0) {
                     theArguments.append(",");
                 }
                 theArguments.append("p" + i);
             }
-            theWriter.println("var " + aMethod.getName().stringValue() + " = function(" + theArguments.toString() + ") {");
+            theWriter.println("var " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " = function(" + theArguments.toString() + ") {");
             for (int i=1;i<=theCode.getMaxLocals();i++) {
                 theWriter.println("    var local" + i+";");
             }
@@ -87,7 +68,7 @@ public class JSBackend {
             theWriter.println("    var stackOffset = -1;");
 
             // Push parameters to local variables
-            for (int i=1;i<=theSignature.getArguments().length;i++) {
+            for (int i=1;i<=theCurrentMethodSignature.getArguments().length;i++) {
                 theWriter.println("    local" + i + " = p" + i +";");
             }
 
@@ -149,7 +130,12 @@ public class JSBackend {
                         theWriter.println(theInset + "  var arg"+i+" = stack[stackOffset--];");
                     }
                     theWriter.println(theInset + "  var callsite = stack[stackOffset--];");
-                    theWriter.print(theInset + "    callsite." + theName.stringValue()+"(");
+                    if (theSig.getReturnType().isVoid()) {
+                        theWriter.print(theInset + "  ");
+                    } else {
+                        theWriter.print(theInset + "  stack[stackOffset++] = ");
+                    }
+                    theWriter.print("callsite." + toMethodName(theName.stringValue(), theSig) + "(");
                     for (int i=1;i<=theStaticArguments.length;i++) {
                         if (i>1) {
                             theWriter.print(",");
@@ -174,7 +160,12 @@ public class JSBackend {
                         theWriter.println(theInset + "  var arg"+i+" = stack[stackOffset--];");
                     }
                     theWriter.println(theInset + "  var callsite = stack[stackOffset--];");
-                    theWriter.print(theInset + "    callsite." + theName.stringValue()+"(");
+                    if (theSig.getReturnType().isVoid()) {
+                        theWriter.print(theInset + "  ");
+                    } else {
+                        theWriter.print(theInset + "  stack[stackOffset++] = ");
+                    }
+                    theWriter.print("callsite." + toMethodName(theName.stringValue(), theSig) + "(");
                     for (int i=1;i<=theStaticArguments.length;i++) {
                         if (i>1) {
                             theWriter.print(",");
@@ -196,7 +187,12 @@ public class JSBackend {
                     for (int i=theStaticArguments.length;i>0;i--) {
                         theWriter.println(theInset + "  var arg"+i+" = stack[stackOffset--];");
                     }
-                    theWriter.print(theInset + "  " + theName.stringValue()+"(");
+                    if (theSig.getReturnType().isVoid()) {
+                        theWriter.print(theInset + "  ");
+                    } else {
+                        theWriter.print(theInset + "  stack[stackOffset++] = ");
+                    }
+                    theWriter.print(toMethodName(theName.stringValue(), theSig) +"(");
                     for (int i=1;i<=theStaticArguments.length;i++) {
                         if (i>1) {
                             theWriter.print(",");
@@ -217,6 +213,13 @@ public class JSBackend {
                 } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                     BytecodeInstructionASTORE theStore = (BytecodeInstructionASTORE) theInstruction;
                     theWriter.println(theInset + "local" + (theStore.getVariableIndex() + 1)+" = stack[stackOffset--];");
+                } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
+                    BytecodeInstructionCHECKCAST theCheckCast = (BytecodeInstructionCHECKCAST) theInstruction;
+                    BytecodeClassinfoConstant theConstant = theCheckCast.getTypeCheck();
+                    theWriter.println(theInset + "// Checkcast ignored at this place for type " + theConstant.getConstant().stringValue());
+                } else if (theInstruction instanceof BytecodeInstructionACONSTNULL) {
+                    BytecodeInstructionACONSTNULL theNullConst = (BytecodeInstructionACONSTNULL) theInstruction;
+                    theWriter.println(theInset + "stack[++stackOffset] = null;");
                 } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                     BytecodeInstructionALOAD theStore = (BytecodeInstructionALOAD) theInstruction;
                     theWriter.println(theInset + "stack[++stackOffset] = local" + (theStore.getVariableIndex() + 1) + ";");
@@ -338,6 +341,71 @@ public class JSBackend {
                     } else {
                         theWriter.println(theInset + "continue " + theLabelPrefix + theGoto.getJumpAddress().getAddress());
                     }
+                } else if (theInstruction instanceof BytecodeInstructionICMP) {
+                    BytecodeInstructionICMP theCond = (BytecodeInstructionICMP) theInstruction;
+
+                    BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
+                    theWriter.println(theInset + "{");
+                    theWriter.println(theInset + "  var theValue2 = stack[stackOffset--];");
+                    theWriter.println(theInset + "  var theValue1 = stack[stackOffset--];");
+                    switch (theCond.getType()) {
+                        case eq:
+                            theWriter.println(theInset + "  if (theValue1 == theValue2) {");
+                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
+                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
+                            } else {
+                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
+                            }
+                            theWriter.println(theInset + "  }");
+                            break;
+                        case gt:
+                            theWriter.println(theInset + "  if (theValue1 > theValue2) {");
+                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
+                                theWriter.println(theInset+ "       break " + theLabelPrefix + theTarget.getAddress());
+                            } else {
+                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
+                            }
+                            theWriter.println(theInset + "  }");
+                            break;
+                        case le:
+                            theWriter.println(theInset + "  if (theValue1 <= theValue2) {");
+                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
+                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
+                            } else {
+                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
+                            }
+                            theWriter.println(theInset + "  }");
+                            break;
+                        case ge:
+                            theWriter.println(theInset + "  if (theValue1 >= theValue2) {");
+                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
+                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
+                            } else {
+                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
+                            }
+                            theWriter.println(theInset + "  }");
+                            break;
+                        case lt:
+                            theWriter.println(theInset + "  if (theValue1 < theValue2) {");
+                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
+                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
+                            } else {
+                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
+                            }
+                            theWriter.println(theInset + "  }");
+                            break;
+                        case ne:
+                            theWriter.println(theInset + "  if (theValue1 != theValue2) {");
+                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
+                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
+                            } else {
+                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
+                            }
+                            theWriter.println(theInset + "  }");
+                            break;
+                    }
+                    theWriter.println(theInset + "}");
+
                 } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                     BytecodeInstructionIFCOND theCond = (BytecodeInstructionIFCOND) theInstruction;
                     BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();

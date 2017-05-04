@@ -20,4 +20,10 @@ public interface BytecodeTypeRef {
     String name();
 
     boolean isPrimitive();
+
+    boolean isArray();
+
+    boolean matchesTo(BytecodeTypeRef aOtherType);
+
+    boolean isVoid();
 }

@@ -47,15 +47,15 @@ public class BytecodeLinkedClass {
         }
     }
 
-    public void linkMethod(String aMethodName) {
+    public void linkMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
         try {
-            BytecodeMethod theMethod = bytecodeClass.methodByName(aMethodName);
-            BytecodeMethodSignature theSignature = theMethod.getSignature();
-            link(theSignature.getReturnType());
-            for (BytecodeTypeRef theArgument : theSignature.getArguments()) {
+            BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
+            linkedMethods.add(theMethod);
+
+            link(aMethodSignature.getReturnType());
+            for (BytecodeTypeRef theArgument : aMethodSignature.getArguments()) {
                 link(theArgument);
             }
-            linkedMethods.add(theMethod);
 
             BytecodeCodeAttributeInfo theCode = theMethod.attributeByType(BytecodeCodeAttributeInfo.class);
             BytecodeProgramm theProgram = theCode.getProgramm();

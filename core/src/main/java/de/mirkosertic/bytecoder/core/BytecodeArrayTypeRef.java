@@ -42,4 +42,29 @@ public class BytecodeArrayTypeRef implements BytecodeTypeRef {
     public int getDepth() {
         return depth;
     }
+
+    @Override
+    public boolean isArray() {
+        return true;
+    }
+
+    @Override
+    public boolean matchesTo(BytecodeTypeRef aOtherType) {
+        if (!(aOtherType instanceof BytecodeArrayTypeRef)) {
+            return false;
+        }
+        BytecodeArrayTypeRef theOther = (BytecodeArrayTypeRef) aOtherType;
+        if (!type.matchesTo(((BytecodeArrayTypeRef) aOtherType).type)) {
+            return false;
+        }
+        if (depth != theOther.getDepth()) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isVoid() {
+        return false;
+    }
 }

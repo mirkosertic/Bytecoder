@@ -52,4 +52,22 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
     public int hashCode() {
         return className.hashCode();
     }
+
+    @Override
+    public boolean isArray() {
+        return false;
+    }
+
+    @Override
+    public boolean matchesTo(BytecodeTypeRef aOtherType) {
+        if (!(aOtherType instanceof BytecodeObjectTypeRef)) {
+            return false;
+        }
+        return className.equals(((BytecodeObjectTypeRef) aOtherType).className);
+    }
+
+    @Override
+    public boolean isVoid() {
+        return false;
+    }
 }

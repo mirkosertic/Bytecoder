@@ -41,9 +41,9 @@ public class BytecodeClass {
         return constantPool;
     }
 
-    public BytecodeMethod methodByName(String aMethodName) {
+    public BytecodeMethod methodByNameAndSignature(String aMethodName, BytecodeMethodSignature aSignature) {
         for (BytecodeMethod theMethod : methods) {
-            if (aMethodName.equals(theMethod.getName().stringValue())) {
+            if (aMethodName.equals(theMethod.getName().stringValue()) && theMethod.getSignature().matchesTo(aSignature)) {
                 return theMethod;
             }
         }

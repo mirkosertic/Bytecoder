@@ -17,12 +17,16 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionCHECKCAST extends BytecodeInstruction {
 
-    private final byte indexbyte1;
-    private final byte indexbyte2;
+    private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionCHECKCAST(BytecodeOpcodeAddress aOpcodeIndex, byte indebyte1, byte indexbyte2) {
+    public BytecodeInstructionCHECKCAST(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
-        this.indexbyte1 = indebyte1;
-        this.indexbyte2 = indexbyte2;
+        index = aIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeClassinfoConstant getTypeCheck() {
+        return (BytecodeClassinfoConstant) constantPool.constantByIndex(index - 1);
     }
 }

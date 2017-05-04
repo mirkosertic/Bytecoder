@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -113,6 +114,34 @@ public class BytecodeSignatureParser {
             }
         }
         return theResult.toArray(new BytecodeTypeRef[theResult.size()]);
+    }
+
+    private BytecodeTypeRef toTypeRef(Class aClass) {
+        if (aClass == Void.class) {
+            return BytecodePrimitiveTypeRef.VOID;
+        }
+        if (aClass.isPrimitive()) {
+            switch (aClass.getSimpleName()) {
+                case "void":
+                    return BytecodePrimitiveTypeRef.VOID;
+                default:
+                    throw new IllegalArgumentException("Unknown primitive : " + aClass.getSimpleName());
+            }
+        }
+        if (aClass.isArray()) {
+            throw new IllegalArgumentException("Unknown array type : " + aClass);
+        }
+        return new BytecodeObjectTypeRef(aClass.getName());
+    }
+
+    public BytecodeMethodSignature toMethodSignature(Method aMethod) {
+        BytecodeTypeRef theReturnType = toTypeRef(aMethod.getReturnType());
+        Class<?>[] theParameter = aMethod.getParameterTypes();
+        BytecodeTypeRef[] theReturnValues = new BytecodeTypeRef[theParameter.length];
+        for (int i=0;i<theParameter.length;i++) {
+            theReturnValues[i] = toTypeRef(theParameter[i]);
+        }
+        return new BytecodeMethodSignature(theReturnType, theReturnValues);
     }
 
     public BytecodeMethodSignature toMethodSignature(BytecodeUtf8Constant aConstant) {

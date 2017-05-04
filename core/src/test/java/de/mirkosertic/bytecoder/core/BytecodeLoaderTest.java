@@ -15,16 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.io.IOException;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
-import org.junit.Assert;
 import org.junit.Test;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
+import java.io.IOException;
 
 public class BytecodeLoaderTest {
 
@@ -57,84 +50,8 @@ public class BytecodeLoaderTest {
     }
 
     @Test
-    public void testSimpleClassSum() throws IOException, ScriptException {
-        BytecodeLoader theLoader = new BytecodeLoader();
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
-        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "sum");
-
-        JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theLinkerContext);
-        theCode = theCode+ "\nsum(10, 20);";
-
-        System.out.println(theCode);
-
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        Assert.assertEquals(30, engine.eval(theCode));
-    }
-
-    @Test
-    public void testSimpleClassDiv() throws IOException, ScriptException {
-        BytecodeLoader theLoader = new BytecodeLoader();
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
-        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "div");
-
-        JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theLinkerContext);
-        theCode = theCode+ "\ndiv(30, 7);";
-
-        System.out.println(theCode);
-
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        Assert.assertEquals(4, engine.eval(theCode));
-    }
-
-    @Test
-    public void testSimpleClassMul() throws IOException, ScriptException {
-        BytecodeLoader theLoader = new BytecodeLoader();
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
-        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "mul");
-
-        JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theLinkerContext);
-        theCode = theCode+ "\nmul(30, 7);";
-
-        System.out.println(theCode);
-
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        Assert.assertEquals(210, engine.eval(theCode));
-    }
-
-    @Test
-    public void testSimpleClassSub() throws IOException, ScriptException {
-        BytecodeLoader theLoader = new BytecodeLoader();
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
-        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "sub");
-
-        JSBackend theBackend = new JSBackend();
-        String theCode = theBackend.generateCodeFor(theLinkerContext);
-        theCode = theCode+ "\nsub(30, 7);";
-
-        System.out.println(theCode);
-
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("JavaScript");
-        Assert.assertEquals(23, engine.eval(theCode));
-    }
-
-    @Test
     public void testLoadInterface() throws IOException, ClassNotFoundException {
         BytecodeLoader theLoader = new BytecodeLoader();
         theLoader.loadByteCode(new BytecodeObjectTypeRef(SimpleInterface.class.getName()));
-    }
-
-    @Test
-    public void testLinkMain() {
-        BytecodeLoader theLoader = new BytecodeLoader();
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
-        theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(SimpleClass.class.getName()), "main");
-        System.out.println("lala");
     }
 }

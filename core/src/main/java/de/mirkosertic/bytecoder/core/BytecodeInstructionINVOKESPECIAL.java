@@ -29,4 +29,18 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstruction {
     public BytecodeMethodRefConstant getMethodReference() {
         return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
     }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        /**BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
+        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+
+        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+        aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+                theName.stringValue(), theSig);
+        */
+    }
 }
