@@ -28,8 +28,10 @@ public class SimpleMathTest {
     }
 
     @Test
-    public void testAdd() {
+    public void testAdd() throws Exception {
         int c = sum(10, 20);
-        Assert.assertEquals(30, c, 0);
+        if (c == 30) {
+            throw new Exception();
+        }
     }
 }

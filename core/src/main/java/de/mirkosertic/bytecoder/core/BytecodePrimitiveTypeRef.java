@@ -31,4 +31,19 @@ public enum BytecodePrimitiveTypeRef implements BytecodeTypeRef {
     public boolean isPrimitive() {
         return true;
     }
+
+    @Override
+    public boolean isArray() {
+        return false;
+    }
+
+    @Override
+    public boolean matchesTo(BytecodeTypeRef aOtherType) {
+        return equals(aOtherType);
+    }
+
+    @Override
+    public boolean isVoid() {
+        return this == VOID;
+    }
 }

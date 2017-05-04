@@ -40,7 +40,7 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstruction {
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
         aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
-                theName.stringValue());
+                theName.stringValue(), theSig);
 
     }
 }

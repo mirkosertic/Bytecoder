@@ -32,4 +32,22 @@ public class BytecodeMethodSignature {
     public BytecodeTypeRef[] getArguments() {
         return arguments;
     }
+
+    public boolean matchesTo(BytecodeMethodSignature aSignature) {
+        if (arguments.length != aSignature.arguments.length) {
+            return false;
+        }
+
+        boolean theMatch = returnType.matchesTo(aSignature.getReturnType());
+        if (!theMatch) {
+            return false;
+        }
+        for (int i=0;i<arguments.length;i++) {
+            if (!arguments[i].matchesTo(aSignature.arguments[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

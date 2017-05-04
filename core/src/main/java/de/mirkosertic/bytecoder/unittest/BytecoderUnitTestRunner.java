@@ -16,9 +16,7 @@
 package de.mirkosertic.bytecoder.unittest;
 
 import de.mirkosertic.bytecoder.backend.js.JSBackend;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.*;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -84,16 +82,20 @@ public class BytecoderUnitTestRunner extends Runner {
             try {
                 BytecodeLoader theLoader = new BytecodeLoader();
                 BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
-                theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(testClass.getName()), theMethod.getName());
+
+                BytecodeSignatureParser theParser = new BytecodeSignatureParser();
+                BytecodeMethodSignature theSignature = theParser.toMethodSignature(theMethod);
+
+                theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(testClass.getName()), theMethod.getName(), theSignature);
 
                 JSBackend theBackend = new JSBackend();
                 String theCode = theBackend.generateCodeFor(theLinkerContext);
-                theCode = theCode+ "\n" + theMethod.getName()+"();";
+                theCode = theCode+ "\n" + theBackend.toMethodName(theMethod.getName(), theSignature) + "();";
 
                 System.out.println(theCode);
 
                 ScriptEngine theEngine = SCRIPTENGINEFACTORY.getEngineByName("JavaScript");
-                theEngine.eval(theCode);
+                Object theResult = theEngine.eval(theCode);
 
                 aRunNotifier.fireTestFinished(theDescription);
             } catch (Exception e) {
