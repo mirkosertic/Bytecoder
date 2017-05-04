@@ -27,6 +27,10 @@ public class BytecodeOpcodeAddress {
         return new BytecodeOpcodeAddress(address + aOffset);
     }
 
+    public boolean isAfter(BytecodeOpcodeAddress aOtherAddress) {
+        return address > aOtherAddress.address;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

@@ -26,7 +26,7 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
         constantPool = aConstantPool;
     }
 
-    public BytecodeConstant getConstructorRef() {
-        return constantPool.constantByIndex(index - 1);
+    public BytecodeClassinfoConstant getClassInfoForObjectToCreate() {
+        return (BytecodeClassinfoConstant) constantPool.constantByIndex(index - 1);
     }
 }

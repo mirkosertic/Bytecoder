@@ -24,13 +24,13 @@ public class BytecodeInstructionIFNONNULL extends BytecodeInstruction {
         jumpOffset = aJumpOffset;
     }
 
-    public int getJumpOffset() {
-        return jumpOffset;
+    public BytecodeOpcodeAddress getJumpTarget() {
+        return getOpcodeAddress().add(jumpOffset);
     }
 
     @Override
     public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
-        return new BytecodeOpcodeAddress[] { getOpcodeAddress().add(getJumpOffset())};
+        return new BytecodeOpcodeAddress[] { getJumpTarget()};
     }
 
     @Override
