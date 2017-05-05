@@ -86,11 +86,14 @@ public class BytecoderUnitTestRunner extends Runner {
                 BytecodeSignatureParser theParser = new BytecodeSignatureParser();
                 BytecodeMethodSignature theSignature = theParser.toMethodSignature(theMethod);
 
-                theLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(testClass.getName()), theMethod.getName(), theSignature);
+                BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
+
+                theLinkerContext.linkClassMethod(theTypeRef, theMethod.getName(), theSignature);
 
                 JSBackend theBackend = new JSBackend();
                 String theCode = theBackend.generateCodeFor(theLinkerContext);
-                theCode = theCode+ "\n" + theBackend.toMethodName(theMethod.getName(), theSignature) + "();";
+                theCode += "\nvar instance = Object.create(" + theBackend.toClassName(theTypeRef) + ", {})\n";
+                theCode += "instance." + theBackend.toMethodName(theMethod.getName(), theSignature) + "()";
 
                 System.out.println(theCode);
 
