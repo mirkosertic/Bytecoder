@@ -41,10 +41,10 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     private static final int CONSTANT_MethodType = 16;
     private static final int CONSTANT_InvokeDynamic = 18;
 
-    private final BytecodeProgrammParser programmParser;
+    private final BytecodeProgramParser programmParser;
     private final BytecodeSignatureParser signatureParser;
 
-    public Bytecode5xClassParser(BytecodeProgrammParser aParser,
+    public Bytecode5xClassParser(BytecodeProgramParser aParser,
                                  BytecodeSignatureParser aSignatureParser) {
         programmParser = aParser;
         signatureParser = aSignatureParser;
@@ -307,7 +307,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         byte[] theCode = new byte[theCodeLength];
         aDis.readFully(theCode);
 
-        BytecodeProgramm theProgramm = programmParser.parse(theCode, aConstantPool);
+        BytecodeProgram theProgramm = programmParser.parse(theCode, aConstantPool);
 
         List<BytecodeExceptionTableEntry> theExceptionEntries = new ArrayList<>();
 

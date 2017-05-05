@@ -72,7 +72,7 @@ public class BytecodeLinkedClass {
             }
 
             BytecodeCodeAttributeInfo theCode = theMethod.attributeByType(BytecodeCodeAttributeInfo.class);
-            BytecodeProgramm theProgram = theCode.getProgramm();
+            BytecodeProgram theProgram = theCode.getProgramm();
             for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
                 theInstruction.performLinking(linkerContext);
             }

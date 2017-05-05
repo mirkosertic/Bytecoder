@@ -15,58 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.core.*;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2F;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgramm;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
 public class JSBackend {
 
@@ -82,7 +35,6 @@ public class JSBackend {
         BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
         return theObjectRef.name().replace(".", "");
     }
-
 
     public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
         String theName = aMethodName.replace("<", "").replace(">", "");
@@ -129,28 +81,26 @@ public class JSBackend {
                     theWriter.println("        local" + i + " = p" + i +";");
                 }
 
-                BytecodeProgramm theProgram = theCode.getProgramm();
+                BytecodeProgram theProgram = theCode.getProgramm();
 
                 String theLabelPrefix = aMethod.getName().stringValue();
 
-                List<BytecodeOpcodeAddress> thePotentialJumpTargets =  theProgram.getPotentialJumpTargets();
-                List<BytecodeOpcodeAddress> theJumpSources = theProgram.getJumpSources();
+                BytecodeProgramJumps theJumps = theProgram.buildJumps();
 
                 int theBraceCounter = 0;
                 String theInset = "        ";
                 theWriter.println("        // Begin method code");
                 for (BytecodeInstruction theInstruction : theCode.getProgramm().getInstructions()) {
 
-                    if (!theJumpSources.isEmpty()) {
-                        if (theJumpSources.get(0).getAddress() == theInstruction.getOpcodeAddress().getAddress()) {
-                            for (BytecodeOpcodeAddress theTarget : thePotentialJumpTargets) {
-                                theWriter.println(theInset + theLabelPrefix + theTarget.getAddress() + ": {");
-                                theInset += "    ";
-                                theBraceCounter++;
-                            }
-                        }
+                    List<BytecodeProgramJumps.Range> theStartRangesAt = theJumps.startRangesAt(theInstruction.getOpcodeAddress());
+                    for (BytecodeProgramJumps.Range theRange : theStartRangesAt) {
+                        theWriter.println(theInset + theLabelPrefix + theRange.rangeName() + ": {");
+                        theInset += "    ";
+                        theBraceCounter++;
                     }
-                    if (thePotentialJumpTargets.contains(theInstruction.getOpcodeAddress())) {
+
+                    List<BytecodeProgramJumps.Range> theEndRangesAt = theJumps.getEndRangesAt(theInstruction.getOpcodeAddress());
+                    for (BytecodeProgramJumps.Range theRange : theEndRangesAt) {
                         theBraceCounter--;
                         theInset = theInset.substring("    ".length());
                         theWriter.println(theInset+ "}");
