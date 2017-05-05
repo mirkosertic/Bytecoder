@@ -50,4 +50,15 @@ public class BytecodeMethodSignature {
 
         return true;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder theBuilder = new StringBuilder(returnType.name());
+        theBuilder.append("(");
+        for (BytecodeTypeRef theArgument : arguments) {
+            theBuilder.append(theArgument.name());
+        }
+        theBuilder.append(")");
+        return theBuilder.toString();
+    }
 }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -47,6 +48,13 @@ public class BytecodeLoaderTest {
         BytecodeLoader theLoader = new BytecodeLoader();
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
         theLinkerContext.linkClass(new BytecodeObjectTypeRef(Class.class.getName()));
+    }
+
+    @Test
+    public void testLoadRuntime5() throws IOException {
+        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+        theLinkerContext.linkClass(new BytecodeObjectTypeRef(TObject.class.getName()));
     }
 
     @Test

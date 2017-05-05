@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -47,6 +49,9 @@ public class BytecodeLinkedClass {
         }
     }
 
+    public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
+    }
+
     public void linkMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
         try {
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
@@ -55,6 +60,15 @@ public class BytecodeLinkedClass {
             link(aMethodSignature.getReturnType());
             for (BytecodeTypeRef theArgument : aMethodSignature.getArguments()) {
                 link(theArgument);
+            }
+
+            if ("<init>".equals(aMethodName) && ("java.lang.Object".equals(className.name()))) {
+                // Do not try to resolve root constructor of Object() !!
+                return;
+            }
+            if ("<init>".equals(aMethodName) && (TThrowable.class.getName().equals(className.name()))) {
+                // Do not try to resolve root constructor of Object() !!
+                return;
             }
 
             BytecodeCodeAttributeInfo theCode = theMethod.attributeByType(BytecodeCodeAttributeInfo.class);

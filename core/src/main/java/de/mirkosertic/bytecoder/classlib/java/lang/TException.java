@@ -15,5 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TException extends Exception {
+public class TException extends TThrowable {
+
+    public TException() {
+    }
+
+    public TException(String aMessage) {
+    }
 }

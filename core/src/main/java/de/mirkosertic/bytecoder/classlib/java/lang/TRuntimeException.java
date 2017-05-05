@@ -15,17 +15,12 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TFloat extends TNumber implements TComparable<TFloat> {
+public class TRuntimeException extends TException {
 
-    public TFloat(float aValue) {
+    public TRuntimeException() {
     }
 
-    @Override
-    public int compareTo(TFloat o) {
-        return 0;
-    }
-
-    public static int compare(float f1, float f2) {
-        return 0;
+    public TRuntimeException(String aMessage) {
+        super(aMessage);
     }
 }
