@@ -39,8 +39,7 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstruction {
         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
-        //aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
-          //      theName.stringValue());
-
+        aLinkerContext.linkVirtualMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+                theName.stringValue(), theSig);
     }
 }

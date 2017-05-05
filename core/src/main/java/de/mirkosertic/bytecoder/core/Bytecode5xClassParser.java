@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
+
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,6 +64,19 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         BytecodeMethod[] theMethods = parseMethods(dis, theConstantPool);
 
         BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
+
+        if (theThisClass.getConstant().stringValue().equals(TThrowable.class.getName().replace(".", "/"))) {
+            theSuperClass = new BytecodeClassinfoConstant(-1 , null) {
+                @Override
+                public BytecodeUtf8Constant getConstant() {
+                    return new BytecodeUtf8Constant("java/lang/Object");
+                }
+            };
+        }
+
+        if (theThisClass.getConstant().stringValue().equals(TObject.class.getName().replace(".", "/"))) {
+            theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
+        }
 
         return new BytecodeClass(theConstantPool,
                 theAccessFlags,

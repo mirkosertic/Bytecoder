@@ -32,15 +32,15 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstruction {
 
     @Override
     public void performLinking(BytecodeLinkerContext aLinkerContext) {
-        /**BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
+        BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 
         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
 
-        aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+        aLinkerContext.linkConstructorInvocation(new BytecodeObjectTypeRef(theClassName.stringValue().replace("/",".")),
                 theName.stringValue(), theSig);
-        */
     }
 }

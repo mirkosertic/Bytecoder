@@ -47,7 +47,7 @@ public class BytecodeClass {
                 return theMethod;
             }
         }
-        throw new IllegalArgumentException("No such method : " + aMethodName);
+        throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aSignature);
     }
 
     public BytecodeClassinfoConstant getSuperClass() {

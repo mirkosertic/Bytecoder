@@ -18,4 +18,8 @@ package de.mirkosertic.bytecoder.classlib.io;
 import de.mirkosertic.bytecoder.classlib.java.lang.TException;
 
 public class TIOException extends TException {
+
+    public TIOException(String aMessage) {
+        super(aMessage);
+    }
 }

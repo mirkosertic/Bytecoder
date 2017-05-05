@@ -24,8 +24,32 @@ two stack machines can be translated to each other.
 So for *WebAssembly* the most performant code will be a direct translation between JVM Bytecode and WebAssembly Bytecode. Compiling JVM ByteCode to C and then compiling to WebAssembly would be a emulated stack machine running on a stack maschine,
 which will of course be a performance penality.
 
-There are currently no plans to implement Bytecode optimization strategies. The reasoning is that the current status of the project is MVP, the goal is to create a minimul viable project. The WebAssembly Browser Runtime also includes optimization strategies, so for the MVP we will rely on them. This also holds true for optimizations build into the C compiler like emscripten.
+There are currently no plans to implement Bytecode optimization strategies. The reasoning is that the current status of the project is MVP, the goal is to create a minimul viable product. The WebAssembly Browser Runtime also includes optimization strategies, so for the MVP we will rely on them. This also holds true for optimizations build into the C compiler like emscripten.
 
 ## Memory management
 
 *JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has no GC support on the current MVP. Also plain C has no garbage collection build in. So the WebAssembly and C compile targets must include garbage collection code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
+
+## Unit testing
+
+Bytecoder comes with built in JUnit Testing support using a specialized test runner. This test runner compiles the body of the test method to a target language
+and executes this code. For instance, the following JUnit Test
+
+```
+@RunWith(BytecoderUnitTestRunner.class)
+public class SimpleMathTest {
+
+    public static int sum(int a, int b) {
+        return a + b;
+    }
+
+    @Test
+    public void testAdd() throws Exception {
+        int c = sum(10, 20);
+        Assert.assertEquals(20, c, 0);
+    }
+}
+```
+
+Is compiled to JavaScript and executed by the Nashorn engine. This testrunner will also support comparison of original Java code and its crosscompiled
+counterpart. This mechanism is the core tool to test the compiler and the Classlib.
