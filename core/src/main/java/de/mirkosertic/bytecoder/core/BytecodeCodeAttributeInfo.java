@@ -19,11 +19,11 @@ public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
 
     private int maxStack;
     private int maxLocals;
-    private BytecodeProgramm programm;
+    private BytecodeProgram programm;
     private BytecodeExceptionTableEntry[] exceptionTableEntries;
     private BytecodeAttributeInfo[] attributes;
 
-    public BytecodeCodeAttributeInfo(int aMaxStack, int aMaxLocals, BytecodeProgramm aProgramm, BytecodeExceptionTableEntry[] aExceptionTableEntries, BytecodeAttributeInfo[] aAttributes) {
+    public BytecodeCodeAttributeInfo(int aMaxStack, int aMaxLocals, BytecodeProgram aProgramm, BytecodeExceptionTableEntry[] aExceptionTableEntries, BytecodeAttributeInfo[] aAttributes) {
         maxStack = aMaxStack;
         maxLocals = aMaxLocals;
         programm = aProgramm;
@@ -39,7 +39,7 @@ public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
         return maxLocals;
     }
 
-    public BytecodeProgramm getProgramm() {
+    public BytecodeProgram getProgramm() {
         return programm;
     }
 

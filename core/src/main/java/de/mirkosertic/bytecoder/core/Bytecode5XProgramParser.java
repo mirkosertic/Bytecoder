@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
+public class Bytecode5XProgramParser implements BytecodeProgramParser {
 
     @Override
-    public BytecodeProgramm parse(byte[] aBytecodes, BytecodeConstantPool aConstantPool) {
-        BytecodeProgramm theResult = new BytecodeProgramm();
+    public BytecodeProgram parse(byte[] aBytecodes, BytecodeConstantPool aConstantPool) {
+        BytecodeProgram theResult = new BytecodeProgram();
         int offset = 0;
         while(offset < aBytecodes.length) {
             BytecodeOpcodeAddress theOpcodeIndex = new BytecodeOpcodeAddress(offset);
