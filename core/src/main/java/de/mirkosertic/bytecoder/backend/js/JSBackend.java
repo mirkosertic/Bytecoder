@@ -377,14 +377,14 @@ public class JSBackend {
                     } else if (theInstruction instanceof BytecodeInstructionI2F) {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var theInt = stack[stackOffset--];");
-                        theWriter.println(theInset + "  stack[stackOffset++] = theInt;");
+                        theWriter.println(theInset + "  stack[++stackOffset] = theInt;");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionLDC) {
                         BytecodeInstructionLDC theLoad = (BytecodeInstructionLDC) theInstruction;
                         BytecodeConstant theConstant = theLoad.constant();
                         if (theConstant instanceof BytecodeFloatConstant) {
                             BytecodeFloatConstant theFloat = (BytecodeFloatConstant) theConstant;
-                            theWriter.println(theInset + "stack[++stackOffset] = " + theFloat.getValue() + ";");
+                            theWriter.println(theInset + "stack[++stackOffset] = " + theFloat.getFloatValue() + ";");
                         } else if (theConstant instanceof BytecodeStringConstant) {
                             BytecodeStringConstant theStr = (BytecodeStringConstant) theConstant;
                             String theValue = theStr.getValue().stringValue();
