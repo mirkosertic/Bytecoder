@@ -26,6 +26,12 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
     }
 
     public static int compare(float f1, float f2) {
+        if(f1 < f2) {
+            return -1;
+        }
+        if(f1 > f2) {
+            return 1;
+        }
         return 0;
     }
 }

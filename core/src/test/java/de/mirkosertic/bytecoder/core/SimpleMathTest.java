@@ -35,12 +35,6 @@ public class SimpleMathTest {
     @Test
     public void testAdd() throws Exception {
         int c = sum(10, 20);
-        Assert.assertEquals(30, c, 0);
-    }
-
-    @Test
-    public void testSub() throws Exception {
-        int c = sub(30, 20);
-        Assert.assertEquals(10, c, 0);
+        Assert.assertEquals(15, c, 0);
     }
 }

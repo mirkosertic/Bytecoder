@@ -658,93 +658,77 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 153: { // ifeq = 153 (0x99)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionIFCOND(theOpcodeIndex, BytecodeInstructionIFCOND.Type.eq, theIndex));
                     break;
                 }
                 case 154: { // ifne = 154 (0x9a)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionIFCOND(theOpcodeIndex, BytecodeInstructionIFCOND.Type.ne, theIndex));
                     break;
                 }
                 case 155: { // iflt = 155 (0x9b)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionIFCOND(theOpcodeIndex, BytecodeInstructionIFCOND.Type.lt, theIndex));
                     break;
                 }
                 case 156: { // ifge = 156 (0x9c)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionIFCOND(theOpcodeIndex, BytecodeInstructionIFCOND.Type.ge, theIndex));
                     break;
                 }
                 case 157: { // ifgt = 157 (0x9d)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionIFCOND(theOpcodeIndex, BytecodeInstructionIFCOND.Type.gt, theIndex));
                     break;
                 }
                 case 158: { // ifle = 158 (0x9e)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionIFCOND(theOpcodeIndex, BytecodeInstructionIFCOND.Type.le, theIndex));
                     break;
                 }
                 case 159: { // if_icmpeq = 159 (0x9f)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.eq, theIndex));
                     break;
                 }
                 case 160: { // if_icmpne = 160 (0xa0)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.ne, theIndex));
                     break;
                 }
                 case 161: { // if_icmplt = 161 (0xa1)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.lt, theIndex));
                     break;
                 }
                 case 162: { // if_icmpge = 162 (0xa2)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
                     theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.ge, theIndex));
                     break;
                 }
                 case 163: { // if_icmpgt = 163 (0xa3)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
                     theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.gt, theIndex));
                     break;
                 }
                 case 164: { // if_icmple = 164 (0xa4)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
                     theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.le, theIndex));
                     break;
                 }
@@ -761,9 +745,9 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 167: { // goto = 167 (0xa7)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    int theIndex = (theBranchByte1 << 8) | theBranchByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+
                     theResult.addInstruction(new BytecodeInstructionGOTO(theOpcodeIndex, theIndex));
                     break;
                 }
@@ -780,36 +764,23 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 }
                 case 170: { // tableswitch = 170 (0xaa)
                     offset +=  4 - offset % 4;
-                    byte theDefaultByte1 = aBytecodes[offset++];
-                    byte theDefaultByte2 = aBytecodes[offset++];
-                    byte theDefaultByte3 = aBytecodes[offset++];
-                    byte theDefaultByte4 = aBytecodes[offset++];
 
-                    long theDefault = (theDefaultByte1 << 24) | (theDefaultByte2 << 16) | (theDefaultByte3 << 8) | theDefaultByte4;
+                    long theDefault = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                    offset+=4;
 
-                    byte theLowByte1 = aBytecodes[offset++];
-                    byte theLowByte2 = aBytecodes[offset++];
-                    byte theLowByte3 = aBytecodes[offset++];
-                    byte theLowByte4 = aBytecodes[offset++];
+                    long theLow = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                    offset+=4;
 
-                    long theLow = (theLowByte1 << 24) | (theLowByte2 << 16) | (theLowByte3 << 8) | theLowByte4;
-
-                    byte theHighByte1 = aBytecodes[offset++];
-                    byte theHighByte2 = aBytecodes[offset++];
-                    byte theHighByte3 = aBytecodes[offset++];
-                    byte theHighByte4 = aBytecodes[offset++];
-
-                    long theHigh = (theHighByte1 << 24) | (theHighByte2 << 16) | (theHighByte3 << 8) | theHighByte4;
+                    long theHigh = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                    offset+=4;
 
                     long[] theOffsets = new long[(int)(theHigh - theLow + 1)];
                     long theNumOffsets = theHigh - theLow + 1;
                     for (int i=0;i<theNumOffsets;i++) {
-                        byte theOffset1 = aBytecodes[offset++];
-                        byte theOffset2 = aBytecodes[offset++];
-                        byte theOffset3 = aBytecodes[offset++];
-                        byte theOffset4 = aBytecodes[offset++];
 
-                        long theOffset = (theOffset1 << 24) | (theOffset2 << 16) | (theOffset3 << 8) | theOffset4;
+                        long theOffset = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                        offset+=4;
+
                         theOffsets[i] = theOffset;
                     }
 
@@ -820,33 +791,21 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
 
                     // Skip padding
                     offset +=  4 - offset % 4;
-                    byte theDefaultByte1 = aBytecodes[offset++];
-                    byte theDefaultByte2 = aBytecodes[offset++];
-                    byte theDefaultByte3 = aBytecodes[offset++];
-                    byte theDefaultByte4 = aBytecodes[offset++];
 
-                    long theDefault = (theDefaultByte1 << 24) | (theDefaultByte2 << 16) | (theDefaultByte3 << 8) | theDefaultByte4;
+                    long theDefault = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                    offset+=4;
 
-                    byte theNPairs1 = aBytecodes[offset++];
-                    byte theNPairs2 = aBytecodes[offset++];
-                    byte theNPairs3 = aBytecodes[offset++];
-                    byte theNPairs4 = aBytecodes[offset++];
-
-                    long theNumPairs = (theNPairs1 << 24) | (theNPairs2 << 16) | (theNPairs3 << 8) | theNPairs4;
+                    long theNumPairs = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                    offset+=4;
 
                     BytecodeInstructionLOOKUPSWITCH.Pair thePairs[] = new BytecodeInstructionLOOKUPSWITCH.Pair[(int) theNumPairs];
 
                     for (long i=0; i<theNumPairs; i++) {
-                        byte theMatchByte1 = aBytecodes[offset++];
-                        byte theMatchByte2 = aBytecodes[offset++];
+                        int theMatch = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                        offset+=2;
 
-                        byte theOffsetByte1 = aBytecodes[offset++];
-                        byte theOffsetByte2 = aBytecodes[offset++];
-                        byte theOffsetByte3 = aBytecodes[offset++];
-                        byte theOffsetByte4 = aBytecodes[offset++];
-
-                        int theMatch = (theMatchByte1 << 8) | theMatchByte2;
-                        long theOffset = (theOffsetByte1 << 24) | (theOffsetByte2 << 16) | (theOffsetByte3 << 8) | theOffsetByte4;
+                        long theOffset = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                        offset+=4;
 
                         thePairs[(int) i] = new BytecodeInstructionLOOKUPSWITCH.Pair(theMatch, theOffset);
                     }
@@ -903,27 +862,22 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 182: { // invokevirtual = 182 (0xb6)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
-                    int theIndex =  (theIndexByte1 << 8) | theIndexByte2;
                     theResult.addInstruction(new BytecodeInstructionINVOKEVIRTUAL(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
                 case 183: {//invokespecial = 183 (0xb7)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theIndexByte1 << 8) | theIndexByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
                     theResult.addInstruction(new BytecodeInstructionINVOKESPECIAL(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
                 case 184: {//invokestatic = 184 (0xb8)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theIndexByte1 << 8) | theIndexByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
                     theResult.addInstruction(new BytecodeInstructionINVOKESTATIC(theOpcodeIndex, theIndex, aConstantPool));
                     break;
@@ -945,10 +899,8 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 187: { // new = 187 (0xbb)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-
-                    int theIndex = (theIndexByte1 << 8) | theIndexByte2;
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
                     theResult.addInstruction(new BytecodeInstructionNEW(theOpcodeIndex, theIndex, aConstantPool));
                     break;
@@ -1000,10 +952,9 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                     break;
                 }
                 case 192: { // checkcast = 192 (0xc0)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
-                    int theIndex = (theIndexByte1 << 8) | theIndexByte2;
                     theResult.addInstruction(new BytecodeInstructionCHECKCAST(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
@@ -1024,19 +975,15 @@ public class Bytecode5xProgrammParser implements BytecodeProgrammParser {
                 // TODO: 196
                 // TODO: 197
                 case 198: { // ifnull = 198 (0xc6)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-
-                    int theOffset = (theIndexByte1 << 8) | theIndexByte2;
+                    int theOffset = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
                     theResult.addInstruction(new BytecodeInstructionIFNULL(theOpcodeIndex, theOffset));
                     break;
                 }
                 case 199: { // ifnonnull = 199 (0xc7)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-
-                    int theOffset = (theIndexByte1 << 8) | theIndexByte2;
+                    int theOffset = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
 
                     theResult.addInstruction(new BytecodeInstructionIFNONNULL(theOpcodeIndex, theOffset));
                     break;
