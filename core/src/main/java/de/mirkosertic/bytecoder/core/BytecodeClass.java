@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+
 public class BytecodeClass {
 
     private final BytecodeConstantPool constantPool;
@@ -37,6 +39,10 @@ public class BytecodeClass {
         classAttributes = aClassAttributes;
     }
 
+    public BytecodeAnnotations getAnnotations() {
+        return new BytecodeAnnotations(classAttributes);
+    }
+
     public BytecodeConstantPool getConstantPool() {
         return constantPool;
     }
@@ -51,6 +57,16 @@ public class BytecodeClass {
     }
 
     public BytecodeClassinfoConstant getSuperClass() {
+        BytecodeAnnotation theDelegatesTo = getAnnotations().getAnnotationByType(OverrideParentClass.class.getName());
+        if (theDelegatesTo != null) {
+            BytecodeAnnotation.ElementValue theParentOverride = ( BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
+            return new BytecodeClassinfoConstant(-1, null, null) {
+                @Override
+                public BytecodeUtf8Constant getConstant() {
+                    return new BytecodeUtf8Constant(theParentOverride.stringValue().replace(".","/"));
+                }
+            };
+        }
         return superClass;
     }
 

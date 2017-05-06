@@ -63,16 +63,12 @@ public class BytecodeLinkedClass {
                 link(theArgument);
             }
 
-            if ("<init>".equals(aMethodName) && (TObject.class.getName().equals(className.name()))) {
-                // Do not try to resolve root constructor of Object() !!
-                return;
-            }
             if ("<init>".equals(aMethodName) && (TThrowable.class.getName().equals(className.name()))) {
-                // Do not try to resolve root constructor of Object() !!
+                // Do not try to resolve root constructor of TThrowable() !!
                 return;
             }
 
-            BytecodeCodeAttributeInfo theCode = theMethod.attributeByType(BytecodeCodeAttributeInfo.class);
+            BytecodeCodeAttributeInfo theCode = theMethod.getCode(bytecodeClass);
             BytecodeProgram theProgram = theCode.getProgramm();
             for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
                 theInstruction.performLinking(linkerContext);
@@ -84,6 +80,10 @@ public class BytecodeLinkedClass {
 
     public BytecodeConstantPool getConstantPool() {
         return bytecodeClass.getConstantPool();
+    }
+
+    public BytecodeClass getBytecodeClass() {
+        return bytecodeClass;
     }
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {

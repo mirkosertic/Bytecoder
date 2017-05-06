@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.annotations.DelegatesTo;
+public class BytecodeAnnotationAttributeInfo implements BytecodeAttributeInfo {
 
-public class TObject {
+    private final BytecodeAnnotation[] annotations;
 
-    @DelegatesTo(methodName = "doNothing")
-    public TObject() {
+    public BytecodeAnnotationAttributeInfo(BytecodeAnnotation[] aAnnotations) {
+        annotations = aAnnotations;
     }
 
-    public void doNothing() {
-    }
-
-    public String toString() {
+    public BytecodeAnnotation getAnnotationByType(String aName) {
+        for (BytecodeAnnotation theAnnotation : annotations) {
+            BytecodeTypeRef theTypeRefs = theAnnotation.getType();
+            if (theTypeRefs.name().equals(aName)) {
+                return theAnnotation;
+            }
+        }
         return null;
     }
 }

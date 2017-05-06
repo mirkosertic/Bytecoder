@@ -35,7 +35,7 @@ public class BytecodeSignatureParser {
         }
     }
 
-    private BytecodeTypeRef[] toTypes(String aTypeList) {
+    public BytecodeTypeRef[] toTypes(String aTypeList) {
         List<BytecodeTypeRef> theResult = new ArrayList();
         int p = 0;
         int arrayDepth = 0;
