@@ -48,6 +48,10 @@ public class JSBackend {
         return aTypeRef.name().replace(".","_");
     }
 
+    public String toClassName(BytecodeClassinfoConstant aTypeRef) {
+        return aTypeRef.getConstant().stringValue().replace("/","_");
+    }
+
     public String generateJumpCoodeFor(BytecodeProgramJumps aJumps, BytecodeOpcodeAddress aSource, BytecodeOpcodeAddress aTarget) {
         BytecodeProgramJumps.Range theRange = aJumps.findClosestRangeToJumpFrom(aSource, aTarget);
         if (aTarget.isAfter(aSource)) {
@@ -71,6 +75,9 @@ public class JSBackend {
                 BytecodeCodeAttributeInfo theCode = aMethod.attributeByType(BytecodeCodeAttributeInfo.class);
                 BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
                 StringBuffer theArguments = new StringBuffer();
+                if (!aMethod.getAccessFlags().isStatic()) {
+                    theArguments.append("thisRef");
+                }
                 for (int i=1;i<=theCurrentMethodSignature.getArguments().length;i++) {
                     if (theArguments.length() > 0) {
                         theArguments.append(",");
@@ -148,11 +155,9 @@ public class JSBackend {
                         } else {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
-                        theWriter.print("callsite." + toMethodName(theName.stringValue(), theSig) + "(");
+                        theWriter.print(toClassName(theConstant.getClassIndex().getClassConstant()) + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
-                            if (i>1) {
-                                theWriter.print(",");
-                            }
+                            theWriter.print(",");
                             theWriter.print("arg" + i);
                         }
                         theWriter.println(");");
@@ -178,11 +183,9 @@ public class JSBackend {
                         } else {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
-                        theWriter.print("callsite." + toMethodName(theName.stringValue(), theSig) + "(");
+                        theWriter.print(toClassName(theClassConstant) + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
-                            if (i>1) {
-                                theWriter.print(",");
-                            }
+                            theWriter.print(",");
                             theWriter.print("arg" + i);
                         }
                         theWriter.println(");");
@@ -205,7 +208,7 @@ public class JSBackend {
                         } else {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
-                        theWriter.print(toClassName(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/","."))) + "." + toMethodName(theName.stringValue(), theSig) +"(");
+                        theWriter.print(toClassName((theClassConstant)) + "." + toMethodName(theName.stringValue(), theSig) +"(");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
                             if (i>1) {
                                 theWriter.print(",");

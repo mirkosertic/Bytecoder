@@ -92,8 +92,8 @@ public class BytecoderUnitTestRunner extends Runner {
 
                 JSBackend theBackend = new JSBackend();
                 String theCode = theBackend.generateCodeFor(theLinkerContext);
-                theCode += "\nvar instance = Object.create(" + theBackend.toClassName(theTypeRef) + ", {})\n";
-                theCode += "instance." + theBackend.toMethodName(theMethod.getName(), theSignature) + "()";
+                theCode += "\n";
+                theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(theMethod.getName(), theSignature) + "({})";
 
                 System.out.println(theCode);
 
