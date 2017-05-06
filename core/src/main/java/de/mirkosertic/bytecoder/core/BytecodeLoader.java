@@ -24,28 +24,15 @@ import java.util.Set;
 
 public class BytecodeLoader {
 
-    private final Set<String> shadowPackages;
+    private final BytecodePackageReplacer packageReplacer;
 
-    public BytecodeLoader() {
-        shadowPackages = new HashSet<>();
-        shadowPackages.add("java.lang.");
-        shadowPackages.add("org.junit.");
-        shadowPackages.add("junit.");
+    public BytecodeLoader(BytecodePackageReplacer aPackageReplacer) {
+        this.packageReplacer = aPackageReplacer;
     }
 
     public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
-        StringBuilder theTypeName = new StringBuilder(aTypeRef.name());
 
-        for (String thePrefix : shadowPackages) {
-            if (theTypeName.indexOf(thePrefix) == 0) {
-                theTypeName.insert(0, "de.mirkosertic.bytecoder.classlib.");
-                int p = theTypeName.lastIndexOf(".");
-                theTypeName.insert(p+1, "T");
-            }
-        }
-        theTypeName.insert(0, "/");
-
-        String theResourceName = theTypeName.toString().replace(".", "/") + ".class";
+        String theResourceName = "/" + packageReplacer.replaceTypeIn(aTypeRef).name().replace(".", "/") + ".class";
         InputStream theStream = getClass().getResourceAsStream(theResourceName);
         if (theStream == null) {
             throw new ClassNotFoundException(theResourceName);
@@ -65,9 +52,9 @@ public class BytecodeLoader {
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
             case 51:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), new BytecodeSignatureParser());
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), new BytecodeSignatureParser(packageReplacer), packageReplacer);
             case 52:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), new BytecodeSignatureParser());
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), new BytecodeSignatureParser(packageReplacer), packageReplacer);
         }
         throw new IllegalArgumentException("Not Supported bytecode format : " + theMajorVersion);
     }

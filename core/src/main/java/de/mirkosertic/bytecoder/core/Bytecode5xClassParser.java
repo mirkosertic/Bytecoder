@@ -43,11 +43,14 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private final BytecodeProgramParser programmParser;
     private final BytecodeSignatureParser signatureParser;
+    private final BytecodePackageReplacer packageReplacer;
 
     public Bytecode5xClassParser(BytecodeProgramParser aParser,
-                                 BytecodeSignatureParser aSignatureParser) {
+                                 BytecodeSignatureParser aSignatureParser,
+                                 BytecodePackageReplacer aPackageReplacer) {
         programmParser = aParser;
         signatureParser = aSignatureParser;
+        packageReplacer = aPackageReplacer;
     }
 
     @Override
@@ -66,10 +69,10 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
 
         if (theThisClass.getConstant().stringValue().equals(TThrowable.class.getName().replace(".", "/"))) {
-            theSuperClass = new BytecodeClassinfoConstant(-1 , null) {
+            theSuperClass = new BytecodeClassinfoConstant(-1 , null, packageReplacer) {
                 @Override
                 public BytecodeUtf8Constant getConstant() {
-                    return new BytecodeUtf8Constant("java/lang/Object");
+                    return new BytecodeUtf8Constant(TObject.class.getName().replace(".","/"));
                 }
             };
         }
@@ -150,7 +153,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private void parseConstantPool_CONSTANT_Class(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theNameIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool));
+        aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool, packageReplacer));
     }
 
     private void parseConstantPool_CONSTANT_Fieldref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {

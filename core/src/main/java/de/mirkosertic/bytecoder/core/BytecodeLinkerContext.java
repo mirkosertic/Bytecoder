@@ -30,6 +30,7 @@ public class BytecodeLinkerContext {
     }
 
     public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
+
         BytecodeLinkedClass theLinkedClass = linkedClasses.get(aTypeRef);
         if (theLinkedClass != null) {
             return theLinkedClass;
