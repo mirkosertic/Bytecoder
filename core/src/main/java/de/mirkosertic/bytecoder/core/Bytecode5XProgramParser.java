@@ -508,19 +508,19 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 116: {// ineg = 116 (0x74)
-                    theResult.addInstruction(new BytecodeInstructionINEG(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericNEG(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 117: {// lneg = 117 (0x75)
-                    theResult.addInstruction(new BytecodeInstructionLNEG(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericNEG(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 118: {// fneg = 118 (0x76)
-                    theResult.addInstruction(new BytecodeInstructionFNEG(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericNEG(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 119: {// dneg = 119 (0x77)
-                    theResult.addInstruction(new BytecodeInstructionDNEG(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericNEG(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 120: { // ishl = 120 (0x78)

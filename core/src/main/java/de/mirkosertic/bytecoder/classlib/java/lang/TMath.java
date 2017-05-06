@@ -18,6 +18,9 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 public class TMath {
 
     public static float abs(float a) {
-        return (a <= 0.0F) ? 0.0F - a : a;
+        if (a<0) {
+            return -a;
+        }
+        return a;
     }
 }
