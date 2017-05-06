@@ -22,4 +22,8 @@ public class BytecodeAccessFlags {
     public BytecodeAccessFlags(int aValue) {
         value = aValue;
     }
+
+    public boolean isStatic() {
+        return (value & 0x0008) > 0;
+    }
 }

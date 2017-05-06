@@ -33,6 +33,10 @@ public class BytecodeMethod {
         return name;
     }
 
+    public BytecodeAccessFlags getAccessFlags() {
+        return accessFlags;
+    }
+
     public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
         for (BytecodeAttributeInfo theInfo : attributes) {
             if (theInfo.getClass().equals(aAttributeClass)) {
