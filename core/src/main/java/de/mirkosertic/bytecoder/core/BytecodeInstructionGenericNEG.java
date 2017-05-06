@@ -15,9 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINEG extends BytecodeInstruction {
+public class BytecodeInstructionGenericNEG extends BytecodeInstruction {
 
-    public BytecodeInstructionINEG(BytecodeOpcodeAddress aOpcodeIndex) {
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericNEG(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
         super(aOpcodeIndex);
+        type = aType;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
     }
 }

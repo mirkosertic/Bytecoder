@@ -48,6 +48,14 @@ public class JSBackend {
         return aTypeRef.name().replace(".","_");
     }
 
+    public String generateJumpCoodeFor(BytecodeProgramJumps aJumps, BytecodeOpcodeAddress aSource, BytecodeOpcodeAddress aTarget) {
+        BytecodeProgramJumps.Range theRange = aJumps.findClosestRangeToJumpFrom(aSource, aTarget);
+        if (aTarget.isAfter(aSource)) {
+            return "break " + theRange.rangeName();
+        }
+        return "continue " + theRange.rangeName();
+    }
+
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
         StringWriter theStrWriter = new StringWriter();
@@ -82,9 +90,6 @@ public class JSBackend {
                 }
 
                 BytecodeProgram theProgram = theCode.getProgramm();
-
-                String theLabelPrefix = aMethod.getName().stringValue();
-
                 BytecodeProgramJumps theJumps = theProgram.buildJumps();
 
                 int theBraceCounter = 0;
@@ -94,12 +99,12 @@ public class JSBackend {
 
                     List<BytecodeProgramJumps.Range> theStartRangesAt = theJumps.startRangesAt(theInstruction.getOpcodeAddress());
                     for (BytecodeProgramJumps.Range theRange : theStartRangesAt) {
-                        theWriter.println(theInset + theLabelPrefix + theRange.rangeName() + ": {");
+                        theWriter.println(theInset + theRange.rangeName() + ": {");
                         theInset += "    ";
                         theBraceCounter++;
                     }
 
-                    List<BytecodeProgramJumps.Range> theEndRangesAt = theJumps.getEndRangesAt(theInstruction.getOpcodeAddress());
+                    List<BytecodeProgramJumps.Range> theEndRangesAt = theJumps.endRangesAt(theInstruction.getOpcodeAddress());
                     for (BytecodeProgramJumps.Range theRange : theEndRangesAt) {
                         theBraceCounter--;
                         theInset = theInset.substring("    ".length());
@@ -249,11 +254,7 @@ public class JSBackend {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var currentStack = stack[stackOffset--];");
                         theWriter.println(theInset + "  if (!(currentStack)) {");
-                        if (theIf.getJumpTarget().isAfter(theIf.getOpcodeAddress())) {
-                            theWriter.println(theInset + "      break " + theLabelPrefix + theIf.getJumpTarget().getAddress());
-                        } else {
-                            theWriter.println(theInset + "      continue " + theLabelPrefix + theIf.getJumpTarget().getAddress());
-                        }
+                        theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theIf.getJumpTarget()));
                         theWriter.println(theInset + "  }");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
@@ -261,12 +262,7 @@ public class JSBackend {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var currentStack = stack[stackOffset--];");
                         theWriter.println(theInset + "  if (currentStack) {");
-                        if (theIf.getJumpTarget().isAfter(theIf.getOpcodeAddress())) {
-                            theWriter.println(theInset + "      break " + theLabelPrefix + theIf.getJumpTarget().getAddress());
-                        } else {
-                            theWriter.println(theInset +"       continue " + theLabelPrefix + theIf.getJumpTarget().getAddress());
-                        }
-
+                        theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theIf.getJumpTarget()));
                         theWriter.println(theInset + "  }");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionFCMP) {
@@ -309,6 +305,12 @@ public class JSBackend {
                         theWriter.println(theInset + "  stackOffset -= 1;");
                         theWriter.println(theInset + "  stack[stackOffset] = temp;");
                         theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionGenericNEG) {
+                        BytecodeInstructionGenericNEG theNeg = (BytecodeInstructionGenericNEG) theInstruction;
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var temp = -stack[stackOffset--];");
+                        theWriter.println(theInset + "  stack[++stackOffset] = temp;");
+                        theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                         BytecodeInstructionGenericRETURN theReturn = (BytecodeInstructionGenericRETURN) theInstruction;
                         theWriter.println(theInset + "return stack[stackOffset];");
@@ -344,11 +346,7 @@ public class JSBackend {
                         }
                     } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                         BytecodeInstructionGOTO theGoto = (BytecodeInstructionGOTO) theInstruction;
-                        if (theGoto.getJumpAddress().isAfter(theGoto.getOpcodeAddress())) {
-                            theWriter.println(theInset + "break " + theLabelPrefix + theGoto.getJumpAddress().getAddress());
-                        } else {
-                            theWriter.println(theInset + "continue " + theLabelPrefix + theGoto.getJumpAddress().getAddress());
-                        }
+                        theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theGoto.getJumpAddress()));
                     } else if (theInstruction instanceof BytecodeInstructionICMP) {
                         BytecodeInstructionICMP theCond = (BytecodeInstructionICMP) theInstruction;
 
@@ -359,56 +357,32 @@ public class JSBackend {
                         switch (theCond.getType()) {
                         case eq:
                             theWriter.println(theInset + "  if (theValue1 == theValue2) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case gt:
                             theWriter.println(theInset + "  if (theValue1 > theValue2) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset+ "       break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case le:
                             theWriter.println(theInset + "  if (theValue1 <= theValue2) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case ge:
                             theWriter.println(theInset + "  if (theValue1 >= theValue2) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case lt:
                             theWriter.println(theInset + "  if (theValue1 < theValue2) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case ne:
                             theWriter.println(theInset + "  if (theValue1 != theValue2) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         }
@@ -422,56 +396,32 @@ public class JSBackend {
                         switch (theCond.getType()) {
                         case eq:
                             theWriter.println(theInset + "  if (theValue == 0) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case gt:
                             theWriter.println(theInset + "  if (theValue > 0) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset+ "       break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case le:
                             theWriter.println(theInset + "  if (theValue <= 0) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case ge:
                             theWriter.println(theInset + "  if (theValue >= 0) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case lt:
                             theWriter.println(theInset + "  if (theValue < 0) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         case ne:
                             theWriter.println(theInset + "  if (theValue != 0) {");
-                            if (theTarget.isAfter(theCond.getOpcodeAddress())) {
-                                theWriter.println(theInset + "      break " + theLabelPrefix + theTarget.getAddress());
-                            } else {
-                                theWriter.println(theInset + "      continue " + theLabelPrefix + theTarget.getAddress());
-                            }
+                            theWriter.println(theInset + "      " + generateJumpCoodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
                             theWriter.println(theInset + "  }");
                             break;
                         }

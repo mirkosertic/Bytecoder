@@ -71,7 +71,7 @@ public class BytecodeProgramJumps {
         return theResult;
     }
 
-    public List<Range> getEndRangesAt(BytecodeOpcodeAddress aAddress) {
+    public List<Range> endRangesAt(BytecodeOpcodeAddress aAddress) {
         List<Range> theResult = new ArrayList<>();
         for (Range theRange : ranges) {
             if (theRange.end.equals(aAddress)) {
@@ -80,5 +80,29 @@ public class BytecodeProgramJumps {
         }
         Collections.sort(theResult, (o1, o2) -> Integer.compare(o2.start.getAddress(), o1.start.getAddress()));
         return theResult;
+    }
+
+    public Range findClosestRangeToJumpFrom(BytecodeOpcodeAddress aSource, BytecodeOpcodeAddress aTarget) {
+        if (aSource.getAddress() < aTarget.getAddress()) {
+            // Jump Forward
+            List<Range> theRanges = endRangesAt(aTarget);
+            for (int i=theRanges.size()-1;i>=0;i--) {
+                Range theRange = theRanges.get(i);
+                if (theRange.start.getAddress() >=aSource.getAddress()) {
+                    return theRange;
+                }
+            }
+            throw new IllegalStateException();
+        } else {
+            // Jump Backward
+            List<Range> theRanges = startRangesAt(aTarget);
+            for (int i=0;i<theRanges.size();i++) {
+                Range theRange = theRanges.get(i);
+                if (theRange.end.getAddress() < aTarget.getAddress()) {
+                    return theRange;
+                }
+            }
+            throw new IllegalStateException();
+        }
     }
 }
