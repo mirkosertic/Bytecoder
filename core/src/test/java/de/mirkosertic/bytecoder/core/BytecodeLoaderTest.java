@@ -24,42 +24,42 @@ public class BytecodeLoaderTest {
 
     @Test
     public void testLoadRuntime1() throws IOException {
-        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
         theLinkerContext.linkClass(new BytecodeObjectTypeRef(Object.class.getName()));
     }
 
     @Test
     public void testLoadRuntime2() throws IOException {
-        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
         theLinkerContext.linkClass(new BytecodeObjectTypeRef(String.class.getName()));
     }
 
     @Test
     public void testLoadRuntime3() throws IOException {
-        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
         theLinkerContext.linkClass(new BytecodeObjectTypeRef(Math.class.getName()));
     }
 
     @Test
     public void testLoadRuntime4() throws IOException {
-        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
         theLinkerContext.linkClass(new BytecodeObjectTypeRef(Class.class.getName()));
     }
 
     @Test
     public void testLoadRuntime5() throws IOException {
-        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
         theLinkerContext.linkClass(new BytecodeObjectTypeRef(TObject.class.getName()));
     }
 
     @Test
     public void testLoadInterface() throws IOException, ClassNotFoundException {
-        BytecodeLoader theLoader = new BytecodeLoader();
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
         theLoader.loadByteCode(new BytecodeObjectTypeRef(SimpleInterface.class.getName()));
     }
 }

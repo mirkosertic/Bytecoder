@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 
 import java.util.HashSet;
@@ -62,7 +63,7 @@ public class BytecodeLinkedClass {
                 link(theArgument);
             }
 
-            if ("<init>".equals(aMethodName) && ("java.lang.Object".equals(className.name()))) {
+            if ("<init>".equals(aMethodName) && (TObject.class.getName().equals(className.name()))) {
                 // Do not try to resolve root constructor of Object() !!
                 return;
             }

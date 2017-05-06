@@ -80,10 +80,11 @@ public class BytecoderUnitTestRunner extends Runner {
             aRunNotifier.fireTestStarted(theDescription);
 
             try {
-                BytecodeLoader theLoader = new BytecodeLoader();
+                BytecodePackageReplacer theReplacer = new BytecodePackageReplacer();
+                BytecodeLoader theLoader = new BytecodeLoader(theReplacer);
                 BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
 
-                BytecodeSignatureParser theParser = new BytecodeSignatureParser();
+                BytecodeSignatureParser theParser = new BytecodeSignatureParser(theReplacer);
                 BytecodeMethodSignature theSignature = theParser.toMethodSignature(theMethod);
 
                 BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
