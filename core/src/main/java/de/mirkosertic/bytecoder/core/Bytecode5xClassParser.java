@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 
 import java.io.DataInput;
 import java.io.IOException;
@@ -67,15 +66,6 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         BytecodeMethod[] theMethods = parseMethods(dis, theConstantPool);
 
         BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
-
-        if (theThisClass.getConstant().stringValue().equals(TThrowable.class.getName().replace(".", "/"))) {
-            theSuperClass = new BytecodeClassinfoConstant(-1 , null, packageReplacer) {
-                @Override
-                public BytecodeUtf8Constant getConstant() {
-                    return new BytecodeUtf8Constant(TObject.class.getName().replace(".","/"));
-                }
-            };
-        }
 
         if (theThisClass.getConstant().stringValue().equals(TObject.class.getName().replace(".", "/"))) {
             theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
@@ -302,6 +292,41 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return theInterfaces.toArray(new BytecodeInterface[theInterfaces.size()]);
     }
 
+    private BytecodeAnnotationAttributeInfo parseAnnotationAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+        int theAnnotationCount = aDis.readUnsignedShort();
+        List<BytecodeAnnotation> theAnnotations = new ArrayList<>();
+        for (int i=0;i<theAnnotationCount;i++) {
+            int theTypeIndex = aDis.readUnsignedShort();
+            int theNumElementValuePairs = aDis.readUnsignedShort();
+
+            List<BytecodeAnnotation.ElementValuePair> theElementValuePairs = new ArrayList<>();
+            for (int j=0;j<theNumElementValuePairs;j++) {
+                int theElementNameIndex = aDis.readUnsignedShort();
+                char theTag = (char) aDis.readUnsignedByte();
+                switch (theTag) {
+                    case 's':
+                        int theConstValueIndex = aDis.readUnsignedShort();
+                        theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
+                                new BytecodeAnnotation.StringElementValue(theConstValueIndex, aConstantPool),
+                                aConstantPool));
+                        break;
+                    case 'c':
+                        int theClassInfoIndex = aDis.readUnsignedShort();
+                        theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
+                                new BytecodeAnnotation.ClassElementValue(theClassInfoIndex, aConstantPool, signatureParser),
+                                aConstantPool));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Not supported annotation value type : " + theTag);
+                }
+            }
+
+            theAnnotations.add(new BytecodeAnnotation(theTypeIndex, theElementValuePairs.toArray(new BytecodeAnnotation.ElementValuePair[theElementValuePairs.size()]), aConstantPool, signatureParser));
+        }
+
+        return new BytecodeAnnotationAttributeInfo(theAnnotations.toArray(new BytecodeAnnotation[theAnnotations.size()]));
+    }
+
     private BytecodeCodeAttributeInfo parseCodeAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
 
         int theMaxStack = aDis.readUnsignedShort();
@@ -344,6 +369,9 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             switch (((BytecodeUtf8Constant) theAttributeNameConstant).stringValue()) {
                 case "Code":
                     theAttributes.add(parseCodeAttribute(aDis, aConstantPool));
+                    break;
+                case "RuntimeVisibleAnnotations":
+                    theAttributes.add(parseAnnotationAttribute(aDis, aConstantPool));
                     break;
                 default:
                     byte[] theAttributeData = new byte[theAttributeLength];

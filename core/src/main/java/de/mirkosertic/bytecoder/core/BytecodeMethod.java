@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.annotations.DelegatesTo;
+
 public class BytecodeMethod {
 
     private final BytecodeAccessFlags accessFlags;
@@ -29,6 +31,10 @@ public class BytecodeMethod {
         attributes = aAttributes;
     }
 
+    public BytecodeAnnotations getAnnotations() {
+        return new BytecodeAnnotations(attributes);
+    }
+
     public BytecodeUtf8Constant getName() {
         return name;
     }
@@ -37,7 +43,17 @@ public class BytecodeMethod {
         return accessFlags;
     }
 
-    public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
+    public BytecodeCodeAttributeInfo getCode(BytecodeClass aContextClass) {
+        BytecodeAnnotation theDelegatesTo = getAnnotations().getAnnotationByType(DelegatesTo.class.getName());
+        if (theDelegatesTo != null) {
+            BytecodeAnnotation.ElementValue theMethodToDelegate = theDelegatesTo.getElementValueByName("methodName");
+            String theDelegatingMethod = theMethodToDelegate.stringValue();
+            return aContextClass.methodByNameAndSignature(theDelegatingMethod, getSignature()).getCode(aContextClass);
+        }
+        return attributeByType(BytecodeCodeAttributeInfo.class);
+    }
+
+    private <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
         for (BytecodeAttributeInfo theInfo : attributes) {
             if (theInfo.getClass().equals(aAttributeClass)) {
                 return (T) theInfo;

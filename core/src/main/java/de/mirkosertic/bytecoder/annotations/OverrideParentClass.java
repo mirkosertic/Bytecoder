@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.annotations;
 
-import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@OverrideParentClass(parentClass = TObject.class)
-public class TThrowable extends Exception {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface OverrideParentClass {
+
+    Class<?> parentClass();
 }

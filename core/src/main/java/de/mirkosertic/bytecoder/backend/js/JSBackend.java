@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.core.*;
 
 import java.io.PrintWriter;
@@ -60,6 +61,15 @@ public class JSBackend {
         return "continue " + theRange.rangeName();
     }
 
+    private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
+        BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAnnotations().getAnnotationByType(OverrideParentClass.class.getName());
+        if (theDelegatesTo != null) {
+            BytecodeAnnotation.ElementValue theParentOverride = (BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
+            return theParentOverride.stringValue().replace("/",".");
+        }
+        return null;
+    }
+
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
         StringWriter theStrWriter = new StringWriter();
@@ -67,12 +77,15 @@ public class JSBackend {
 
         aLinkerContext.forEachClass(aEntry -> {
 
+            final String theOverriddenParentClassName = getOverriddenParentClassFor(aEntry.getValue().getBytecodeClass());
+
             String theJSClassName = toClassName(aEntry.getKey());
 
             theWriter.println("var " + theJSClassName + " = {");
 
             aEntry.getValue().forEachMethod(aMethod -> {
-                BytecodeCodeAttributeInfo theCode = aMethod.attributeByType(BytecodeCodeAttributeInfo.class);
+
+                BytecodeCodeAttributeInfo theCode = aMethod.getCode(aEntry.getValue().getBytecodeClass());
                 BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
                 StringBuffer theArguments = new StringBuffer();
                 if (!aMethod.getAccessFlags().isStatic()) {
@@ -155,7 +168,12 @@ public class JSBackend {
                         } else {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
-                        theWriter.print(toClassName(theConstant.getClassIndex().getClassConstant()) + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
+
+                        if (theOverriddenParentClassName != null) {
+                            theWriter.print(theOverriddenParentClassName.replace(".","_") + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
+                        } else {
+                            theWriter.print(toClassName(theConstant.getClassIndex().getClassConstant()) + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
+                        }
                         for (int i=1;i<=theInvokeArguments.length;i++) {
                             theWriter.print(",");
                             theWriter.print("arg" + i);
