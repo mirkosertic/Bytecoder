@@ -22,33 +22,19 @@ import java.util.function.Consumer;
 
 public class BytecodeLinkedClass {
 
-    public static class LinkingInfo {
-        private final BytecodeMethodSignature methodSignature;
+    public static class LinkTarget {
         private final BytecodeClass targetType;
+        private final BytecodeMethod targetMethod;
 
-        public LinkingInfo(BytecodeMethodSignature aMethodSignature, BytecodeClass aTargetType) {
-            this.methodSignature = aMethodSignature;
-            this.targetType = aTargetType;
-        }
-    }
-
-    public static class LinkingCollection {
-        private final List<LinkingInfo> linkingInfos;
-        private final Map<String, BytecodeClass> typeLinks;
-
-        public LinkingCollection() {
-            linkingInfos = new ArrayList<>();
-            typeLinks = new HashMap<>();
-        }
-
-        public void linkSignatureAndType(BytecodeMethodSignature aSignature, BytecodeClass aBytecodeClass) {
-            typeLinks.put(aSignature.toString(), aBytecodeClass);
+        public LinkTarget(BytecodeClass aTargetType, BytecodeMethod aTargetMethod) {
+            targetType = aTargetType;
+            targetMethod = aTargetMethod;
         }
     }
 
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
-    private final Map<String, LinkingCollection> linkedMethods;
+    private final Map<BytecodeVirtualMethodIdentifier, LinkTarget> linkedMethods;
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
 
@@ -74,35 +60,21 @@ public class BytecodeLinkedClass {
         }
     }
 
-    private LinkingCollection getOrCreateLinkingCollection(String aMethodName) {
-        LinkingCollection theCollection = linkedMethods.get(aMethodName);
-        if (theCollection == null) {
-            theCollection = new LinkingCollection();
-            linkedMethods.put(aMethodName, theCollection);
-        }
-        return theCollection;
-    }
-
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
         linkMethod(aMethodName, aSignature);
     }
 
     public void linkMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
         try {
-            LinkingCollection theCollection = getOrCreateLinkingCollection(aMethodName);
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
-            theCollection.linkSignatureAndType(theMethod.getSignature(), bytecodeClass);
+            BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
+            linkedMethods.put(theIdentifier, new LinkTarget(bytecodeClass, theMethod));
 
             knownMethods.add(theMethod);
 
             link(aMethodSignature.getReturnType());
             for (BytecodeTypeRef theArgument : aMethodSignature.getArguments()) {
                 link(theArgument);
-            }
-
-            if ("<init>".equals(aMethodName) && (TThrowable.class.getName().equals(className.name()))) {
-                // Do not try to resolve root constructor of TThrowable() !!
-                //return;
             }
 
             BytecodeCodeAttributeInfo theCode = theMethod.getCode(bytecodeClass);

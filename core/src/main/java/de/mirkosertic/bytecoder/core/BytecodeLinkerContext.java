@@ -23,10 +23,16 @@ public class BytecodeLinkerContext {
 
     private final Map<BytecodeObjectTypeRef, BytecodeLinkedClass> linkedClasses;
     private final BytecodeLoader loader;
+    private final BytecodeMethodCollection methodCollection;
 
     public BytecodeLinkerContext(BytecodeLoader aLoader) {
         linkedClasses = new HashMap<>();
         loader = aLoader;
+        methodCollection = new BytecodeMethodCollection();
+    }
+
+    public BytecodeMethodCollection getMethodCollection() {
+        return methodCollection;
     }
 
     public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
