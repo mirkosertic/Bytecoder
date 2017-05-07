@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.annotations.IsObject;
 
 import java.io.DataInput;
 import java.io.IOException;
@@ -67,7 +67,8 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
         BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
 
-        if (theThisClass.getConstant().stringValue().equals(TObject.class.getName().replace(".", "/"))) {
+        BytecodeAnnotations theAnnotations = new BytecodeAnnotations(theClassAttributes);
+        if (theAnnotations.getAnnotationByType(IsObject.class.getName()) != null) {
             theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
         }
 

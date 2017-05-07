@@ -15,25 +15,49 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class BytecodeLinkedClass {
 
+    public static class LinkingInfo {
+        private final BytecodeMethodSignature methodSignature;
+        private final BytecodeClass targetType;
+
+        public LinkingInfo(BytecodeMethodSignature aMethodSignature, BytecodeClass aTargetType) {
+            this.methodSignature = aMethodSignature;
+            this.targetType = aTargetType;
+        }
+    }
+
+    public static class LinkingCollection {
+        private final List<LinkingInfo> linkingInfos;
+        private final Map<String, BytecodeClass> typeLinks;
+
+        public LinkingCollection() {
+            linkingInfos = new ArrayList<>();
+            typeLinks = new HashMap<>();
+        }
+
+        public void linkSignatureAndType(BytecodeMethodSignature aSignature, BytecodeClass aBytecodeClass) {
+            typeLinks.put(aSignature.toString(), aBytecodeClass);
+        }
+    }
+
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
-    private final Set<BytecodeMethod> linkedMethods;
+    private final Map<String, LinkingCollection> linkedMethods;
     private final BytecodeLinkerContext linkerContext;
+    private final Set<BytecodeMethod> knownMethods;
 
     public BytecodeLinkedClass(BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
         className = aClassName;
         bytecodeClass = aBytecodeClass;
-        linkedMethods = new HashSet<>();
+        linkedMethods = new HashMap<>();
         linkerContext = aLinkerContext;
+        knownMethods = new HashSet<>();
     }
 
     private void link(BytecodeTypeRef aTypeRef) {
@@ -50,14 +74,26 @@ public class BytecodeLinkedClass {
         }
     }
 
+    private LinkingCollection getOrCreateLinkingCollection(String aMethodName) {
+        LinkingCollection theCollection = linkedMethods.get(aMethodName);
+        if (theCollection == null) {
+            theCollection = new LinkingCollection();
+            linkedMethods.put(aMethodName, theCollection);
+        }
+        return theCollection;
+    }
+
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
-        // linkMethod(aMethodName, aSignature);
+        linkMethod(aMethodName, aSignature);
     }
 
     public void linkMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
         try {
+            LinkingCollection theCollection = getOrCreateLinkingCollection(aMethodName);
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
-            linkedMethods.add(theMethod);
+            theCollection.linkSignatureAndType(theMethod.getSignature(), bytecodeClass);
+
+            knownMethods.add(theMethod);
 
             link(aMethodSignature.getReturnType());
             for (BytecodeTypeRef theArgument : aMethodSignature.getArguments()) {
@@ -88,6 +124,6 @@ public class BytecodeLinkedClass {
     }
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {
-        linkedMethods.forEach(aMethod);
+        knownMethods.forEach(aMethod);
     }
 }

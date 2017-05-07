@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,7 +24,9 @@ import org.junit.runner.RunWith;
 public class TFloatTest {
 
     @Test
-    public void testCompare() {
-        int theResult = TFloat.compare(10f, 20f);
+    public void testCompare() throws TRuntimeException {
+        TAssert.assertEquals(TFloat.compare(10f, 20f), -1, 0);
+        TAssert.assertEquals(TFloat.compare(10f, 10f), 0, 0);
+        TAssert.assertEquals(TFloat.compare(20f, 10f), 1, 0);
     }
 }

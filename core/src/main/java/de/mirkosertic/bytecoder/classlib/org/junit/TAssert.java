@@ -15,13 +15,17 @@
  */
 package de.mirkosertic.bytecoder.classlib.org.junit;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TFloat;
+import de.mirkosertic.bytecoder.classlib.java.lang.TMath;
+import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
+
 public class TAssert {
 
-    public static void fail(String message) {
-        if(message == null) {
-            throw new RuntimeException();
+    public static void fail(String message) throws TRuntimeException {
+        if (message != null) {
+            throw new TRuntimeException(message);
         } else {
-            throw new RuntimeException(message);
+            throw new TRuntimeException();
         }
     }
 
@@ -35,19 +39,19 @@ public class TAssert {
         return "TO BE DONE";
     }
 
-    public static void failNotEquals(String message, Object expected, Object actual) {
+    public static void failNotEquals(String message, Object expected, Object actual) throws TRuntimeException {
         fail(format(message, expected, actual));
     }
 
-    public static void assertEquals(String message, float expected, float actual, float delta) {
-        if  (Float.compare(expected, actual) != 0) {
-                if (Math.abs(expected - actual) > delta) {
-                    failNotEquals(message, new Float(expected), new Float(actual));
+    public static void assertEquals(String message, float expected, float actual, float delta) throws TRuntimeException {
+        if  (TFloat.compare(expected, actual) != 0) {
+                if (TMath.abs(expected - actual) > delta) {
+                    failNotEquals(message, new TFloat(expected), new TFloat(actual));
                 }
         }
     }
 
-    public static void assertEquals(float expected, float actual, float delta) {
+    public static void assertEquals(float expected, float actual, float delta) throws TRuntimeException {
         assertEquals((String)null, expected, actual, delta);
     }
 }
