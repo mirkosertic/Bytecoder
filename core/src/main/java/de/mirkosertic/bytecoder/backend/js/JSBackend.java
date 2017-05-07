@@ -218,7 +218,7 @@ public class JSBackend {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
 
-                        theWriter.println(theInset + "  callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
+                        theWriter.print("callsite.clazz.resolveVirtuslMethod(" + theIdentifier.getIdentifier() + ")(callsite");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
                             theWriter.print(",");
                             theWriter.print("arg" + i);
