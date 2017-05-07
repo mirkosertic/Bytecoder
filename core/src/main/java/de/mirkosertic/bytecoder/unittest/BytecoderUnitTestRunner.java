@@ -34,8 +34,6 @@ import java.util.List;
 
 public class BytecoderUnitTestRunner extends Runner {
 
-    private static final ScriptEngineManager SCRIPTENGINEFACTORY = new ScriptEngineManager();
-
     private final List<Method> testMethods;
     private final TestClass testClass;
 
@@ -98,8 +96,10 @@ public class BytecoderUnitTestRunner extends Runner {
 
                 System.out.println(theCode);
 
-                ScriptEngine theEngine = SCRIPTENGINEFACTORY.getEngineByName("JavaScript");
+                ScriptEngine theEngine = new ScriptEngineManager().getEngineByName("JavaScript");
                 Object theResult = theEngine.eval(theCode);
+
+                // Perhaps cast to invocable?
 
                 aRunNotifier.fireTestFinished(theDescription);
             } catch (Exception e) {

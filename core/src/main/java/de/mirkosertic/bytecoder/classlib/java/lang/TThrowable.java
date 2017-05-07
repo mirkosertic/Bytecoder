@@ -15,8 +15,17 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.DelegatesTo;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 
 @OverrideParentClass(parentClass = TObject.class)
 public class TThrowable extends Exception {
+
+    @DelegatesTo(methodName = "doNothingAgain")
+    public TThrowable() {
+    }
+
+    private void doNothingAgain() {
+
+    }
 }

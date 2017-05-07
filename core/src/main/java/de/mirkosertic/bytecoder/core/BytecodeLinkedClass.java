@@ -51,6 +51,7 @@ public class BytecodeLinkedClass {
     }
 
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
+        // linkMethod(aMethodName, aSignature);
     }
 
     public void linkMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
@@ -65,7 +66,7 @@ public class BytecodeLinkedClass {
 
             if ("<init>".equals(aMethodName) && (TThrowable.class.getName().equals(className.name()))) {
                 // Do not try to resolve root constructor of TThrowable() !!
-                return;
+                //return;
             }
 
             BytecodeCodeAttributeInfo theCode = theMethod.getCode(bytecodeClass);
