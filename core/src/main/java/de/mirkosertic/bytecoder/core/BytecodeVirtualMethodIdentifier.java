@@ -23,6 +23,10 @@ public class BytecodeVirtualMethodIdentifier {
         number = aNumber;
     }
 
+    public int getIdentifier() {
+        return number;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

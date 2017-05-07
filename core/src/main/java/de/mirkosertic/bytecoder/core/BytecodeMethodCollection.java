@@ -37,12 +37,19 @@ public class BytecodeMethodCollection {
         return theIdentifier;
     }
 
+    public BytecodeVirtualMethodIdentifier toIdentifier(String aMethodName, BytecodeMethodSignature aSignature) {
+        return knownIdentifier.get(toSignature(aMethodName, aSignature));
+    }
+
     private String toSignature(BytecodeMethod aMethod) {
+        return toSignature(aMethod.getName().stringValue(), aMethod.getSignature());
+    }
+
+    private String toSignature(String aMethodName, BytecodeMethodSignature aSignature) {
         StringBuilder theStringBuilder = new StringBuilder();
-        BytecodeMethodSignature theSignature = aMethod.getSignature();
-        theStringBuilder.append(toSignature(theSignature.getReturnType()));
-        theStringBuilder.append(aMethod.getName());
-        for (BytecodeTypeRef theRef : theSignature.getArguments()) {
+        theStringBuilder.append(toSignature(aSignature.getReturnType()));
+        theStringBuilder.append(aMethodName);
+        for (BytecodeTypeRef theRef : aSignature.getArguments()) {
             theStringBuilder.append(toSignature(theRef));
         }
         return theStringBuilder.toString();

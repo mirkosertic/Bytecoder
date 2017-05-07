@@ -23,12 +23,20 @@ import java.util.function.Consumer;
 public class BytecodeLinkedClass {
 
     public static class LinkTarget {
-        private final BytecodeClass targetType;
+        private final BytecodeObjectTypeRef targetType;
         private final BytecodeMethod targetMethod;
 
-        public LinkTarget(BytecodeClass aTargetType, BytecodeMethod aTargetMethod) {
+        public LinkTarget(BytecodeObjectTypeRef aTargetType, BytecodeMethod aTargetMethod) {
             targetType = aTargetType;
             targetMethod = aTargetMethod;
+        }
+
+        public BytecodeObjectTypeRef getTargetType() {
+            return targetType;
+        }
+
+        public BytecodeMethod getTargetMethod() {
+            return targetMethod;
         }
     }
 
@@ -68,7 +76,7 @@ public class BytecodeLinkedClass {
         try {
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
             BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
-            linkedMethods.put(theIdentifier, new LinkTarget(bytecodeClass, theMethod));
+            linkedMethods.put(theIdentifier, new LinkTarget(className, theMethod));
 
             knownMethods.add(theMethod);
 
@@ -93,6 +101,10 @@ public class BytecodeLinkedClass {
 
     public BytecodeClass getBytecodeClass() {
         return bytecodeClass;
+    }
+
+    public void forEachVirtualMethod(Consumer<Map.Entry<BytecodeVirtualMethodIdentifier, LinkTarget>> aConsumer) {
+        linkedMethods.entrySet().forEach(aConsumer);
     }
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {

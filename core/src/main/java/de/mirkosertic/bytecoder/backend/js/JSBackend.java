@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.core.*;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 public class JSBackend {
 
@@ -82,6 +84,17 @@ public class JSBackend {
             String theJSClassName = toClassName(aEntry.getKey());
 
             theWriter.println("var " + theJSClassName + " = {");
+
+            theWriter.println("    resolveVirtuslMethod : function(aIdentifier) {");
+            aEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
+                BytecodeLinkedClass.LinkTarget theLinkTarget = aVirtualMethod.getValue();
+                theWriter.println("        if (aIdentifier == " + aVirtualMethod.getKey().getIdentifier() + ") {");
+                theWriter.println("            return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(theLinkTarget.getTargetMethod().getName().stringValue(), theLinkTarget.getTargetMethod().getSignature()));
+                theWriter.println("        }");
+            });
+            theWriter.println("        throw {type: 'unknown virtual method'}");
+            theWriter.println("    },");
+            theWriter.println();
 
             aEntry.getValue().forEachMethod(aMethod -> {
 
@@ -147,7 +160,7 @@ public class JSBackend {
 
                         BytecodeClassinfoConstant theConstant = theNew.getClassInfoForObjectToCreate();
                         theWriter.println(theInset + "// Create new object " + theConstant.getConstant().stringValue());
-                        theWriter.println(theInset + "stack[++stackOffset] = {};");
+                        theWriter.println(theInset + "stack[++stackOffset] = {data: {}, clazz: " + toClassName(theConstant)+ "};");
 
                     } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
                         BytecodeInstructionINVOKESPECIAL theInvokeSpecial = (BytecodeInstructionINVOKESPECIAL) theInstruction;
@@ -190,6 +203,9 @@ public class JSBackend {
                         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
                         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
                         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+                        BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theName.stringValue(), theSig);
+
                         theWriter.println(theInset + "{");
                         BytecodeTypeRef[] theInvokeArguments = theSig.getArguments();
                         for (int i=theInvokeArguments.length;i>0;i--) {
@@ -201,7 +217,8 @@ public class JSBackend {
                         } else {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
-                        theWriter.print(toClassName(theClassConstant) + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
+
+                        theWriter.println(theInset + "  callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
                             theWriter.print(",");
                             theWriter.print("arg" + i);
