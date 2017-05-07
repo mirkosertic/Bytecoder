@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.annotations;
 
-import de.mirkosertic.bytecoder.annotations.DelegatesTo;
-import de.mirkosertic.bytecoder.annotations.IsObject;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@IsObject
-public class TObject {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface IsObject {
 
-    @DelegatesTo(methodName = "doNothing")
-    public TObject() {
-    }
-
-    public void doNothing() {
-    }
-
-    public String toString() {
-        return null;
-    }
 }
