@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.classlib.io.TIOException;
 
-public class TStringBuilder extends TAbstractStringBuilder implements TSerializable, TCharSequence {
+public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
 
     @Override
     public int length() {
@@ -25,7 +25,12 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     @Override
-    public TAppendable append(TCharSequence csq) throws TIOException {
+    public TAbstractStringBuilder append(TCharSequence csq) throws TIOException {
         return this;
     }
+
+    public TAbstractStringBuilder append(TString csq) throws TIOException {
+        return this;
+    }
+
 }
