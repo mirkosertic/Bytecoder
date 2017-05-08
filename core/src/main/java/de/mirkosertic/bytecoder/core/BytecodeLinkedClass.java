@@ -61,6 +61,10 @@ public class BytecodeLinkedClass {
         return superClass;
     }
 
+    public void linkStaticField(BytecodeUtf8Constant aName) {
+        BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
+    }
+
     private void link(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             return;

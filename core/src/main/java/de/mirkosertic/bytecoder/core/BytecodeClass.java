@@ -51,6 +51,15 @@ public class BytecodeClass {
         return constantPool;
     }
 
+    public BytecodeField fieldByName(String aName) {
+        for (BytecodeField theField : fields) {
+            if (theField.getName().stringValue().equals(aName)) {
+                return theField;
+            }
+        }
+        throw new IllegalArgumentException("No such field : " + aName);
+    }
+
     public BytecodeMethod methodByNameAndSignature(String aMethodName, BytecodeMethodSignature aSignature) {
         for (BytecodeMethod theMethod : methods) {
             if (aMethodName.equals(theMethod.getName().stringValue()) && theMethod.getSignature().matchesTo(aSignature)) {

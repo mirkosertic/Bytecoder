@@ -838,15 +838,17 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 178: { // getstatic = 178 (0xb2)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionGETSTATIC(theOpcodeIndex, theIndexByte1, theIndexByte2));
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+
+                    theResult.addInstruction(new BytecodeInstructionGETSTATIC(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
                 case 179: { // getstatic = 178 (0xb2)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionPUTSTATIC(theOpcodeIndex, theIndexByte1, theIndexByte2));
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+
+                    theResult.addInstruction(new BytecodeInstructionPUTSTATIC(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
                 case 180: { // getfield = 180 (0xb4)
