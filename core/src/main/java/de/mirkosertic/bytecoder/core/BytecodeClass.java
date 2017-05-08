@@ -39,6 +39,10 @@ public class BytecodeClass {
         classAttributes = aClassAttributes;
     }
 
+    public BytecodeAccessFlags getAccessFlags() {
+        return accessFlags;
+    }
+
     public BytecodeAnnotations getAnnotations() {
         return new BytecodeAnnotations(classAttributes);
     }

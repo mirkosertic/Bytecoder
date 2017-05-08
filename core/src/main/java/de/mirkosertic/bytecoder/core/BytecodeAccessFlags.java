@@ -26,4 +26,32 @@ public class BytecodeAccessFlags {
     public boolean isStatic() {
         return (value & 0x0008) > 0;
     }
+
+    public boolean isInterface() {
+        return (value & 0x0200) > 0;
+    }
+
+    public boolean isPublic() {
+        return (value & 0x0001) > 0;
+    }
+
+    public boolean isFinal() {
+        return (value & 0x0010) > 0;
+    }
+
+    public boolean isAbstract() {
+        return (value & 0x0400) > 0;
+    }
+
+    public boolean isSyntetic() {
+        return (value & 0x1000) > 0;
+    }
+
+    public boolean isAnnotation() {
+        return (value & 0x2000) > 0;
+    }
+
+    public boolean isEnum() {
+        return (value & 0x4000) > 0;
+    }
 }

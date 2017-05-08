@@ -65,4 +65,8 @@ public class BytecodeMethod {
     public BytecodeMethodSignature getSignature() {
         return signature;
     }
+
+    public boolean isConstructor() {
+        return name.stringValue().equals("<init>");
+    }
 }
