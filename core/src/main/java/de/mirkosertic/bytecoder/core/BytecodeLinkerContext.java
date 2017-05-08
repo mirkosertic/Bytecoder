@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -43,15 +45,17 @@ public class BytecodeLinkerContext {
         }
 
         try {
+            BytecodeLinkedClass theParentClass = null;
             BytecodeClass theLoadedClass = loader.loadByteCode(aTypeRef);
-            theLinkedClass = new BytecodeLinkedClass(this, aTypeRef, theLoadedClass);
+            BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
+            if (theSuperClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                BytecodeUtf8Constant theSuperClassName = theSuperClass.getConstant();
+                theParentClass = linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
+            }
+
+            theLinkedClass = new BytecodeLinkedClass(theParentClass, this, aTypeRef, theLoadedClass);
             linkedClasses.put(aTypeRef, theLinkedClass);
 
-            BytecodeClassinfoConstant theClass = theLoadedClass.getSuperClass();
-            if (theClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                BytecodeUtf8Constant theSuperClassName = theClass.getConstant();
-                linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
-            }
             for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
                 BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
                 linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
@@ -64,11 +68,11 @@ public class BytecodeLinkerContext {
     }
 
     public void linkClassMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkMethod(aMethodName, aSignature);
+        linkClass(aTypeRef).linkStaticMethod(aMethodName, aSignature);
     }
 
     public void linkConstructorInvocation(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkMethod(aMethodName, aSignature);
+        linkClass(aTypeRef).linkStaticMethod(aMethodName, aSignature);
     }
 
     public void linkVirtualMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
@@ -77,5 +81,32 @@ public class BytecodeLinkerContext {
 
     public void forEachClass(Consumer<Map.Entry<BytecodeObjectTypeRef, BytecodeLinkedClass>> aConsumer) {
         linkedClasses.entrySet().forEach(aConsumer);
+    }
+
+    private List<BytecodeLinkedClass> findLinkedClassWithParent(BytecodeLinkedClass aParent) {
+        List<BytecodeLinkedClass> theResult = new ArrayList<>();
+        linkedClasses.entrySet().forEach(aEntry -> {
+            if (aEntry.getValue().getSuperClass() == aParent) {
+                theResult.add(aEntry.getValue());
+            }
+        });
+        return theResult;
+    }
+
+    public void propagateVirtualMethods(BytecodeLinkedClass aClass) {
+
+        aClass.propagateVirtualMethods();
+
+        List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(aClass);
+        for (BytecodeLinkedClass theEntry : theClasses) {
+            propagateVirtualMethods(theEntry);
+        }
+    }
+
+    public void propagateVirtualMethods() {
+        List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(null);
+        for (BytecodeLinkedClass theEntry : theClasses) {
+            propagateVirtualMethods(theEntry);
+        }
     }
 }

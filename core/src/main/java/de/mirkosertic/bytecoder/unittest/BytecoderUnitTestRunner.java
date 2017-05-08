@@ -15,8 +15,15 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
-import de.mirkosertic.bytecoder.core.*;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -27,13 +34,13 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
+import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -114,6 +121,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
             theLinkerContext.linkClassMethod(theTypeRef, aFrameworkMethod.getName(), theSignature);
+            theLinkerContext.propagateVirtualMethods();
 
             JSBackend theBackend = new JSBackend();
             String theCode = theBackend.generateCodeFor(theLinkerContext);

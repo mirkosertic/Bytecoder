@@ -15,9 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class BytecodeLinkedClass {
@@ -45,13 +46,19 @@ public class BytecodeLinkedClass {
     private final Map<BytecodeVirtualMethodIdentifier, LinkTarget> linkedMethods;
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
+    private final BytecodeLinkedClass superClass;
 
-    public BytecodeLinkedClass(BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
+    public BytecodeLinkedClass(BytecodeLinkedClass aSuperClass, BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkedMethods = new HashMap<>();
         linkerContext = aLinkerContext;
         knownMethods = new HashSet<>();
+        superClass = aSuperClass;
+    }
+
+    public BytecodeLinkedClass getSuperClass() {
+        return superClass;
     }
 
     private void link(BytecodeTypeRef aTypeRef) {
@@ -69,14 +76,17 @@ public class BytecodeLinkedClass {
     }
 
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
-        linkMethod(aMethodName, aSignature);
+        linkStaticMethod(aMethodName, aSignature);
     }
 
-    public void linkMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
+    public void linkStaticMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
         try {
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
-            BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
-            linkedMethods.put(theIdentifier, new LinkTarget(className, theMethod));
+            // Constructors are not virtual
+            if (!theMethod.isConstructor()) {
+                BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
+                linkedMethods.put(theIdentifier, new LinkTarget(className, theMethod));
+            }
 
             knownMethods.add(theMethod);
 
@@ -109,5 +119,22 @@ public class BytecodeLinkedClass {
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {
         knownMethods.forEach(aMethod);
+    }
+
+    public void propagateVirtualMethods() {
+        if (superClass == null) {
+            return;
+        }
+        superClass.forEachVirtualMethod(aEntry -> {
+            if (linkedMethods.containsKey(aEntry.getKey())) {
+                // return because already linked
+                return;
+            }
+
+            LinkTarget theLinktarget = aEntry.getValue();
+            BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
+
+            linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
+        });
     }
 }

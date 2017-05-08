@@ -15,14 +15,65 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
-import de.mirkosertic.bytecoder.core.*;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
+
+import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionI2F;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeProgramJumps;
+import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSBackend {
 
@@ -85,16 +136,22 @@ public class JSBackend {
 
             theWriter.println("var " + theJSClassName + " = {");
 
-            theWriter.println("    resolveVirtuslMethod : function(aIdentifier) {");
-            aEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
-                BytecodeLinkedClass.LinkTarget theLinkTarget = aVirtualMethod.getValue();
-                theWriter.println("        if (aIdentifier == " + aVirtualMethod.getKey().getIdentifier() + ") {");
-                theWriter.println("            return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(theLinkTarget.getTargetMethod().getName().stringValue(), theLinkTarget.getTargetMethod().getSignature()));
+            if (!aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.println("    resolveVirtualMethod : function(aIdentifier) {");
+                theWriter.println("        switch(aIdentifier) {");
+                aEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
+                    BytecodeLinkedClass.LinkTarget theLinkTarget = aVirtualMethod.getValue();
+                    theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
+                    theWriter.println("                return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(
+                            theLinkTarget.getTargetMethod().getName().stringValue(),
+                            theLinkTarget.getTargetMethod().getSignature()));
+                });
+                theWriter.println("            default:");
+                theWriter.println("                throw {type: 'unknown virtual method'}");
                 theWriter.println("        }");
-            });
-            theWriter.println("        throw {type: 'unknown virtual method'}");
-            theWriter.println("    },");
-            theWriter.println();
+                theWriter.println("    },");
+                theWriter.println();
+            }
 
             aEntry.getValue().forEachMethod(aMethod -> {
 
@@ -112,15 +169,14 @@ public class JSBackend {
                 }
                 theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                 for (int i=1;i<=theCode.getMaxLocals();i++) {
-                    theWriter.println("        var local" + i+";");
+                    if (i<=theCurrentMethodSignature.getArguments().length) {
+                        theWriter.println("        var local" + i + " = p" + i + ";");
+                    } else {
+                        theWriter.println("        var local" + i + ";");
+                    }
                 }
                 theWriter.println("        var stack = [" + theCode.getMaxStack() + "];");
                 theWriter.println("        var stackOffset = -1;");
-
-                // Push parameters to local variables
-                for (int i=1;i<=theCurrentMethodSignature.getArguments().length;i++) {
-                    theWriter.println("        local" + i + " = p" + i +";");
-                }
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeProgramJumps theJumps = theProgram.buildJumps();
@@ -218,7 +274,7 @@ public class JSBackend {
                             theWriter.print(theInset + "  stack[++stackOffset] = ");
                         }
 
-                        theWriter.print("callsite.clazz.resolveVirtuslMethod(" + theIdentifier.getIdentifier() + ")(callsite");
+                        theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
                             theWriter.print(",");
                             theWriter.print("arg" + i);
