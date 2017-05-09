@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.core;
 
-public class TMath {
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public static float abs(float a) {
-        if (a<0) {
-            return -a;
-        }
-        return a;
+import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
+import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
+@RunWith(BytecoderUnitTestRunner.class)
+public class AssertionTest {
+
+    @Test
+    public void testAssertion() throws TRuntimeException {
+        TAssert.assertEquals(10f, 10f, 0);
     }
 }

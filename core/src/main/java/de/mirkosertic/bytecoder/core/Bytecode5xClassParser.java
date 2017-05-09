@@ -404,10 +404,12 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
             BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 
+            BytecodeTypeRef theTypeRef = signatureParser.toFieldType(((BytecodeUtf8Constant) theDescriptorConstant));
+
             theFields.add(new BytecodeField(
                     new BytecodeAccessFlags(theAccessFlags),
                     (BytecodeUtf8Constant) theNameConstant,
-                    (BytecodeUtf8Constant) theDescriptorConstant,
+                    theTypeRef,
                     theAttributes));
         }
         return theFields.toArray(new BytecodeField[theFields.size()]);

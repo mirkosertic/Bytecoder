@@ -17,7 +17,10 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TFloat extends TNumber implements TComparable<TFloat> {
 
+    private float floatValue;
+
     public TFloat(float aValue) {
+        floatValue = aValue;
     }
 
     @Override
@@ -33,5 +36,9 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
             return 1;
         }
         return 0;
+    }
+
+    public float floatValue() {
+        return floatValue;
     }
 }

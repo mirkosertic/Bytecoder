@@ -35,6 +35,11 @@ public class BytecodeSignatureParser {
         }
     }
 
+    public BytecodeTypeRef toFieldType(BytecodeUtf8Constant aConstant) {
+        BytecodeTypeRef[] theTypes = toTypes(aConstant.stringValue());
+        return theTypes[0];
+    }
+
     public BytecodeTypeRef[] toTypes(String aTypeList) {
         List<BytecodeTypeRef> theResult = new ArrayList();
         int p = 0;

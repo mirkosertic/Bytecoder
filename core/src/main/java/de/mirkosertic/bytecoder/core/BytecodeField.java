@@ -19,13 +19,13 @@ public class BytecodeField {
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;
-    private final BytecodeUtf8Constant descriptor;
+    private final BytecodeTypeRef typeRef;
     private final BytecodeAttributeInfo[] attributeInfo;
 
-    public BytecodeField(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeUtf8Constant aDescriptor, BytecodeAttributeInfo[] aAttributeInfo) {
+    public BytecodeField(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeTypeRef aTypeRef, BytecodeAttributeInfo[] aAttributeInfo) {
         accessFlags = aAccessFlags;
         name = aName;
-        descriptor = aDescriptor;
+        typeRef = aTypeRef;
         attributeInfo = aAttributeInfo;
     }
 
@@ -37,8 +37,8 @@ public class BytecodeField {
         return name;
     }
 
-    public BytecodeUtf8Constant getDescriptor() {
-        return descriptor;
+    public BytecodeTypeRef getTypeRef() {
+        return typeRef;
     }
 
     public BytecodeAttributeInfo[] getAttributeInfo() {
