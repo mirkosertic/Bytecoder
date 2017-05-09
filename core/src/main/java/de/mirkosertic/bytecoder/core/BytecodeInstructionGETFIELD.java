@@ -17,12 +17,27 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionGETFIELD extends BytecodeInstruction {
 
-    private final byte index1;
-    private final byte index2;
+    private final int poolIndex;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionGETFIELD(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex1, byte aIndex2) {
+    public BytecodeInstructionGETFIELD(BytecodeOpcodeAddress aOpcodeIndex, int aConstantPoolIndex, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
-        index1 = aIndex1;
-        index2 = aIndex2;
+        poolIndex = aConstantPoolIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeFieldRefConstant getFieldRefConstant() {
+        return (BytecodeFieldRefConstant) constantPool.constantByIndex(poolIndex - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeFieldRefConstant theFieldRef = getFieldRefConstant();
+
+        BytecodeClassinfoConstant theClass = theFieldRef.getClassIndex().getClassConstant();
+        BytecodeNameIndex theName = theFieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
+
+        BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(new BytecodeObjectTypeRef(theClass.getConstant().stringValue().replace("/", ".")));
+        theLinkedClass.linkField(theName.getName());
     }
 }

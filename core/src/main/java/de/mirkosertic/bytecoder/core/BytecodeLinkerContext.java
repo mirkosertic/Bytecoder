@@ -93,20 +93,36 @@ public class BytecodeLinkerContext {
         return theResult;
     }
 
-    public void propagateVirtualMethods(BytecodeLinkedClass aClass) {
+    public void propagateVirtualMethodsAndFields(BytecodeLinkedClass aClass) {
 
-        aClass.propagateVirtualMethods();
+        aClass.propagateVirtualMethodsAndFields();
 
         List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(aClass);
         for (BytecodeLinkedClass theEntry : theClasses) {
-            propagateVirtualMethods(theEntry);
+            propagateVirtualMethodsAndFields(theEntry);
         }
     }
 
-    public void propagateVirtualMethods() {
+    public void propagateVirtualMethodsAndFields() {
         List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(null);
         for (BytecodeLinkedClass theEntry : theClasses) {
-            propagateVirtualMethods(theEntry);
+            propagateVirtualMethodsAndFields(theEntry);
         }
+    }
+
+    public void linkTypeRef(BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isVoid()) {
+            return;
+        }
+        if (aTypeRef.isPrimitive()) {
+            return;
+        }
+        if (aTypeRef.isArray()) {
+            BytecodeArrayTypeRef theArray = (BytecodeArrayTypeRef) aTypeRef;
+            linkTypeRef(theArray.getType());
+            return;
+        }
+        BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
+        linkClass(theTypeRef);
     }
 }

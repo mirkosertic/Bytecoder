@@ -15,24 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
 import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TFloat;
+import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
 @RunWith(BytecoderUnitTestRunner.class)
-public class TestStaticAccess {
-
-    public static class StaticClassWithStuffInside {
-
-        public static int member;
-    }
+public class FloatConstructorTest {
 
     @Test
-    public void testStaticGetAndSet() throws TRuntimeException {
-        StaticClassWithStuffInside.member = 12;
-        int theResult = StaticClassWithStuffInside.member;
-        TAssert.assertEquals(12, theResult, 0);
+    public void testConstructorInvocation() throws TRuntimeException {
+        TFloat theFloat = new TFloat(10f);
+        TAssert.assertEquals(10f, theFloat.floatValue(), 0);
     }
 }

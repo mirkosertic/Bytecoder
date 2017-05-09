@@ -45,9 +45,9 @@ public class TAssert {
 
     public static void assertEquals(String message, float expected, float actual, float delta) throws TRuntimeException {
         if  (TFloat.compare(expected, actual) != 0) {
-                if (TMath.abs(expected - actual) > delta) {
-                    failNotEquals(message, new TFloat(expected), new TFloat(actual));
-                }
+            if (TMath.abs(expected - actual) > delta) {
+                failNotEquals(message, new TFloat(expected), new TFloat(actual));
+            }
         }
     }
 

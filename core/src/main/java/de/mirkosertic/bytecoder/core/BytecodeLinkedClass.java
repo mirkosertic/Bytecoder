@@ -23,11 +23,11 @@ import java.util.function.Consumer;
 
 public class BytecodeLinkedClass {
 
-    public static class LinkTarget {
+    public static class LinkedMethod {
         private final BytecodeObjectTypeRef targetType;
         private final BytecodeMethod targetMethod;
 
-        public LinkTarget(BytecodeObjectTypeRef aTargetType, BytecodeMethod aTargetMethod) {
+        public LinkedMethod(BytecodeObjectTypeRef aTargetType, BytecodeMethod aTargetMethod) {
             targetType = aTargetType;
             targetMethod = aTargetMethod;
         }
@@ -43,7 +43,9 @@ public class BytecodeLinkedClass {
 
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
-    private final Map<BytecodeVirtualMethodIdentifier, LinkTarget> linkedMethods;
+    private final Map<BytecodeVirtualMethodIdentifier, LinkedMethod> linkedMethods;
+    private final Map<String, BytecodeField> staticFields;
+    private final Map<String, BytecodeField> memberFields;
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
     private final BytecodeLinkedClass superClass;
@@ -55,6 +57,8 @@ public class BytecodeLinkedClass {
         linkerContext = aLinkerContext;
         knownMethods = new HashSet<>();
         superClass = aSuperClass;
+        staticFields = new HashMap<>();
+        memberFields = new HashMap<>();
     }
 
     public BytecodeLinkedClass getSuperClass() {
@@ -62,7 +66,23 @@ public class BytecodeLinkedClass {
     }
 
     public void linkStaticField(BytecodeUtf8Constant aName) {
-        BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
+        String theFieldName = aName.stringValue();
+        if (!staticFields.containsKey(theFieldName)) {
+            BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
+            staticFields.put(theFieldName, theField);
+
+            linkerContext.linkTypeRef(theField.getTypeRef());
+        }
+    }
+
+    public void linkField(BytecodeUtf8Constant aName) {
+        String theFieldName = aName.stringValue();
+        if (!memberFields.containsKey(theFieldName)) {
+            BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
+            memberFields.put(theFieldName, theField);
+
+            linkerContext.linkTypeRef(theField.getTypeRef());
+        }
     }
 
     private void link(BytecodeTypeRef aTypeRef) {
@@ -89,7 +109,7 @@ public class BytecodeLinkedClass {
             // Constructors are not virtual
             if (!theMethod.isConstructor()) {
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
-                linkedMethods.put(theIdentifier, new LinkTarget(className, theMethod));
+                linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
             }
 
             knownMethods.add(theMethod);
@@ -117,7 +137,7 @@ public class BytecodeLinkedClass {
         return bytecodeClass;
     }
 
-    public void forEachVirtualMethod(Consumer<Map.Entry<BytecodeVirtualMethodIdentifier, LinkTarget>> aConsumer) {
+    public void forEachVirtualMethod(Consumer<Map.Entry<BytecodeVirtualMethodIdentifier, LinkedMethod>> aConsumer) {
         linkedMethods.entrySet().forEach(aConsumer);
     }
 
@@ -125,17 +145,35 @@ public class BytecodeLinkedClass {
         knownMethods.forEach(aMethod);
     }
 
-    public void propagateVirtualMethods() {
+    public void forEachStaticField(Consumer<Map.Entry<String, BytecodeField>> aConsumer) {
+        staticFields.entrySet().forEach(aConsumer);
+    }
+
+    public void forEachMemberField(Consumer<Map.Entry<String, BytecodeField>> aConsumer) {
+        memberFields.entrySet().forEach(aConsumer);
+    }
+
+    public void propagateVirtualMethodsAndFields() {
         if (superClass == null) {
             return;
         }
+        superClass.forEachMemberField(new Consumer<Map.Entry<String, BytecodeField>>() {
+            @Override
+            public void accept(Map.Entry<String, BytecodeField> aEntry) {
+                if (memberFields.containsKey(aEntry.getKey())) {
+                    return;
+                }
+
+                memberFields.put(aEntry.getKey(), aEntry.getValue());
+            }
+        });
         superClass.forEachVirtualMethod(aEntry -> {
             if (linkedMethods.containsKey(aEntry.getKey())) {
                 // return because already linked
                 return;
             }
 
-            LinkTarget theLinktarget = aEntry.getValue();
+            LinkedMethod theLinktarget = aEntry.getValue();
             BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
 
             linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());

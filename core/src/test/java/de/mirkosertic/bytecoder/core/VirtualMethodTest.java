@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TestVirtualMethod {
+public class VirtualMethodTest {
 
     public static class SimpleThing {
         public int compute() {

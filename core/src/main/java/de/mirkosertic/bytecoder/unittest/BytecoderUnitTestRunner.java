@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
+import java.io.File;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -121,23 +123,35 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
             theLinkerContext.linkClassMethod(theTypeRef, aFrameworkMethod.getName(), theSignature);
-            theLinkerContext.propagateVirtualMethods();
+            theLinkerContext.propagateVirtualMethodsAndFields();
 
             JSBackend theBackend = new JSBackend();
             String theCode = theBackend.generateCodeFor(theLinkerContext);
-            theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "({})";
 
-            System.out.println(theCode);
+            String theJSFileName = theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + ".js";
+
+            theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance())";
+
+            File theNewFile = new File("./target");
+            File theTempDir = new File(theNewFile, "bytecoderjs");
+            theTempDir.mkdirs();
+            File theJSFile = new File(theTempDir, theJSFileName);
+            PrintWriter theWriter = new PrintWriter(theJSFile);
+            theWriter.println(theCode);
+            theWriter.flush();
+            theWriter.close();
 
             ScriptEngine theEngine = new ScriptEngineManager().getEngineByName("nashorn");
+            Object theResult = theEngine.eval("load('" + theJSFile + "')");
             StringWriter theError = new StringWriter();
             theEngine.getContext().setErrorWriter(theError);
-            Object theResult = theEngine.eval(theCode);
 
             aRunNotifier.fireTestFinished(theDescription);
 
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
+        } finally {
+            aRunNotifier.fireTestFinished(theDescription);
         }
     }
 
