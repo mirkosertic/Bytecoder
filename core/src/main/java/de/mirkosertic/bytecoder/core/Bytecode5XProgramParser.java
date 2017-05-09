@@ -963,9 +963,10 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 193: { // instanceof = 193 (0xc1)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionINSTANCEOF(theOpcodeIndex, theIndexByte1, theIndexByte2));
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+
+                    theResult.addInstruction(new BytecodeInstructionINSTANCEOF(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
                 case 194: { // monitorenter = 194 (0xc2)

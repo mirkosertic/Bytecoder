@@ -15,70 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.core.*;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-
-import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2F;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeProgramJumps;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSBackend {
 
@@ -168,6 +110,25 @@ public class JSBackend {
                 theWriter.println("        return {data: {");
                 aEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null,"));
                 theWriter.println("        }, clazz: " + toClassName(aEntry.getKey())+ "};");
+                theWriter.println("    },");
+                theWriter.println();
+
+                theWriter.println("    thisIdentifier : function() {");
+                theWriter.println("        return " + aEntry.getValue().getUniqueId());
+                theWriter.println("    },");
+                theWriter.println();
+
+                theWriter.println("    instanceOfType : function(aType) {");
+                theWriter.println("        switch(aType) {");
+
+                for (BytecodeLinkedClass theType : aEntry.getValue().getImplementingTypes()) {
+                    theWriter.println("            case " + theType.getUniqueId() +":");
+                    theWriter.println("                return true;");
+                }
+
+                theWriter.println("            default:");
+                theWriter.println("                return false;");
+                theWriter.println("        }");
                 theWriter.println("    },");
                 theWriter.println();
             }
@@ -337,6 +298,20 @@ public class JSBackend {
                         }
                         theWriter.println(");");
                         theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
+                        BytecodeInstructionINSTANCEOF theInstanceOf = (BytecodeInstructionINSTANCEOF) theInstruction;
+
+                        BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theInstanceOf.getTypeRef().getConstant());
+
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var temp = stack[stackOffset--];");
+                        theWriter.println(theInset + "  if (temp == null) {");
+                        theWriter.println(theInset + "    stack[++stackOffset] = 0;");
+                        theWriter.println(theInset + "  } else {");
+                        theWriter.println(theInset + "    stack[++stackOffset] = temp.clazz.instanceOfType(" + theLinkedClass.getUniqueId() + ");");
+                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "}");
+
                     } else if (theInstruction instanceof BytecodeInstructionBIPUSH) {
                         BytecodeInstructionBIPUSH thePush = (BytecodeInstructionBIPUSH) theInstruction;
                         theWriter.println(theInset + "stack[++stackOffset] = " + thePush.getValue() + ";");

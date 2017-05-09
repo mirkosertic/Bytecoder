@@ -132,7 +132,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance())";
 
-            File theNewFile = new File("./target");
+            File theNewFile = new File(new File("."), "target");
             File theTempDir = new File(theNewFile, "bytecoderjs");
             theTempDir.mkdirs();
             File theJSFile = new File(theTempDir, theJSFileName);
@@ -142,7 +142,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.close();
 
             ScriptEngine theEngine = new ScriptEngineManager().getEngineByName("nashorn");
-            Object theResult = theEngine.eval("load('" + theJSFile + "')");
+            Object theResult = theEngine.eval("load('" + theJSFile.toString().replace("\\", "\\\\") + "')");
             StringWriter theError = new StringWriter();
             theEngine.getContext().setErrorWriter(theError);
 

@@ -54,4 +54,16 @@ public class TAssert {
     public static void assertEquals(float expected, float actual, float delta) throws TRuntimeException {
         assertEquals((String)null, expected, actual, delta);
     }
+
+    public static void assertTrue(boolean aValue) throws TRuntimeException {
+        if (!aValue) {
+            throw new TRuntimeException();
+        }
+    }
+
+    public static void assertFalse(boolean aValue) throws TRuntimeException {
+        if (aValue) {
+            throw new TRuntimeException();
+        }
+    }
 }
