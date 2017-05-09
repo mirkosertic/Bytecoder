@@ -17,12 +17,22 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINSTANCEOF extends BytecodeInstruction {
 
-    private final byte indexbyte1;
-    private final byte indexbyte2;
+    private final int constantIndex;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINSTANCEOF(BytecodeOpcodeAddress aOpcodeIndex, byte indebyte1, byte indexbyte2) {
+    public BytecodeInstructionINSTANCEOF(BytecodeOpcodeAddress aOpcodeIndex, int aConstantIndex, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
-        this.indexbyte1 = indebyte1;
-        this.indexbyte2 = indexbyte2;
+        constantIndex = aConstantIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeClassinfoConstant getTypeRef() {
+        return (BytecodeClassinfoConstant) constantPool.constantByIndex(constantIndex - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeClassinfoConstant theType = getTypeRef();
+        aLinkerContext.linkClass(new BytecodeObjectTypeRef(theType.getConstant().stringValue().replace("/", ".")));
     }
 }

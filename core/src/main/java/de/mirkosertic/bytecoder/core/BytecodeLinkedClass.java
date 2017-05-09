@@ -41,6 +41,7 @@ public class BytecodeLinkedClass {
         }
     }
 
+    private final int uniqueId;
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
     private final Map<BytecodeVirtualMethodIdentifier, LinkedMethod> linkedMethods;
@@ -50,7 +51,8 @@ public class BytecodeLinkedClass {
     private final Set<BytecodeMethod> knownMethods;
     private final BytecodeLinkedClass superClass;
 
-    public BytecodeLinkedClass(BytecodeLinkedClass aSuperClass, BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
+    public BytecodeLinkedClass(int aUniqueId, BytecodeLinkedClass aSuperClass, BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
+        uniqueId = aUniqueId;
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkedMethods = new HashMap<>();
@@ -59,6 +61,26 @@ public class BytecodeLinkedClass {
         superClass = aSuperClass;
         staticFields = new HashMap<>();
         memberFields = new HashMap<>();
+    }
+
+    public int getUniqueId() {
+        return uniqueId;
+    }
+
+    public Set<BytecodeLinkedClass> getImplementingTypes() {
+        Set<BytecodeLinkedClass> theResult = new HashSet<>();
+        theResult.add(this);
+        for (BytecodeInterface theInterface : bytecodeClass.getInterfaces()) {
+            BytecodeLinkedClass theLinkedOrNull = linkerContext.isLinkedOrNull(theInterface.getClassinfoConstant().getConstant());
+            if (theLinkedOrNull != null) {
+                theResult.addAll(theLinkedOrNull.getImplementingTypes());
+            }
+            theInterface.getClassinfoConstant().getConstant().stringValue();
+        }
+        if (superClass != null) {
+            theResult.addAll(superClass.getImplementingTypes());
+        }
+        return theResult;
     }
 
     public BytecodeLinkedClass getSuperClass() {

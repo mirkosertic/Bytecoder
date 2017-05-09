@@ -37,6 +37,11 @@ public class BytecodeLinkerContext {
         return methodCollection;
     }
 
+    public BytecodeLinkedClass isLinkedOrNull(BytecodeUtf8Constant aConstant) {
+        BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(aConstant.stringValue().replace("/", "."));
+        return linkedClasses.get(theTypeRef);
+    }
+
     public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
 
         BytecodeLinkedClass theLinkedClass = linkedClasses.get(aTypeRef);
@@ -53,7 +58,7 @@ public class BytecodeLinkerContext {
                 theParentClass = linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
             }
 
-            theLinkedClass = new BytecodeLinkedClass(theParentClass, this, aTypeRef, theLoadedClass);
+            theLinkedClass = new BytecodeLinkedClass(linkedClasses.size(), theParentClass, this, aTypeRef, theLoadedClass);
             linkedClasses.put(aTypeRef, theLinkedClass);
 
             for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
