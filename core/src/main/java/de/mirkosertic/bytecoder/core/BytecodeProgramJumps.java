@@ -15,20 +15,28 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class BytecodeProgramJumps {
 
     public static class Range {
-        private final BytecodeOpcodeAddress start;
-        private final BytecodeOpcodeAddress end;
 
-        public Range(BytecodeOpcodeAddress start, BytecodeOpcodeAddress end) {
-            this.start = start;
-            this.end = end;
+        public enum OverlapCheckResult {
+            NO_OVERLAP,
+            OTHER_CONTAINS_START,
+            OTHER_CONTAINS_END;
+        }
+
+        private final boolean startFix;
+        private BytecodeOpcodeAddress start;
+        private final boolean endFix;
+        private BytecodeOpcodeAddress end;
+
+        public Range(boolean aStartFix, BytecodeOpcodeAddress aStart, boolean aEndFix, BytecodeOpcodeAddress aEnd) {
+            startFix = aStartFix;
+            start = aStart;
+            endFix = aEndFix;
+            end = aEnd;
         }
 
         public BytecodeOpcodeAddress getStart() {
@@ -42,6 +50,47 @@ public class BytecodeProgramJumps {
         public String rangeName() {
             return "range_" + start.getAddress()+ "_" + end.getAddress();
         }
+
+        private boolean contains(BytecodeOpcodeAddress aAddress) {
+            return aAddress.getAddress() >= start.getAddress() && aAddress.getAddress() <= end.getAddress();
+        }
+
+        public OverlapCheckResult checkOverlapWith(Range aOtherRange) {
+            if (aOtherRange.start.getAddress() < start.getAddress() && aOtherRange.end.getAddress() > end.getAddress()) {
+                return OverlapCheckResult.NO_OVERLAP;
+            }
+            if (start.getAddress() < aOtherRange.getStart().getAddress() && end.getAddress() > aOtherRange.getEnd().getAddress()) {
+                return OverlapCheckResult.NO_OVERLAP;
+            }
+            if (!contains(aOtherRange.start) && !contains(aOtherRange.end)) {
+                return OverlapCheckResult.NO_OVERLAP;
+            }
+            if (aOtherRange.contains(start)) {
+                return OverlapCheckResult.OTHER_CONTAINS_START;
+            }
+            if (aOtherRange.contains(end)) {
+                return OverlapCheckResult.OTHER_CONTAINS_END;
+            }
+            throw new IllegalStateException("Don't know what to do! " + start.getAddress() + " " + end.getAddress() + "-> " + aOtherRange.start.getAddress() +  " " + aOtherRange.end.getAddress());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Range range = (Range) o;
+
+            if (!start.equals(range.start)) return false;
+            return end.equals(range.end);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = start.hashCode();
+            result = 31 * result + end.hashCode();
+            return result;
+        }
     }
 
     private List<Range> ranges;
@@ -50,14 +99,12 @@ public class BytecodeProgramJumps {
         ranges = new ArrayList<>();
     }
 
-    public void registerRange(BytecodeOpcodeAddress a, BytecodeOpcodeAddress b) {
-        Range theRange;
-        if (a.getAddress()>b.getAddress()) {
-            theRange = new Range(b, a);
+    public void registerJumpFromAToB(BytecodeOpcodeAddress a, BytecodeOpcodeAddress b) {
+        if (a.getAddress() < b.getAddress()) {
+            ranges.add(new Range(false, a, true, b));
         } else {
-            theRange = new Range(a, b);
+            ranges.add(new Range(true, b, false, a));
         }
-        ranges.add(theRange);
     }
 
     public List<Range> startRangesAt(BytecodeOpcodeAddress aAddress) {
@@ -67,12 +114,7 @@ public class BytecodeProgramJumps {
                 theResult.add(theRange);
             }
         }
-        Collections.sort(theResult, new Comparator<Range>() {
-            @Override
-            public int compare(Range o1, Range o2) {
-                return Integer.compare(o2.getEnd().getAddress(), o1.getEnd().getAddress());
-            }
-        });
+        Collections.sort(theResult, (o1, o2) -> Integer.compare(o2.getEnd().getAddress(), o1.getEnd().getAddress()));
         return theResult;
     }
 
@@ -115,5 +157,31 @@ public class BytecodeProgramJumps {
             }
             throw new IllegalStateException();
         }
+    }
+
+    public void tryToOptimize() {
+        // Try every endFix
+        for (Range theRange : ranges) {
+            if (theRange.endFix) {
+                for (Range theOtherRange : ranges) {
+                    if (theRange != theOtherRange) {
+                        switch (theRange.checkOverlapWith(theOtherRange)) {
+                            case NO_OVERLAP:
+                                break;
+                            case OTHER_CONTAINS_START:
+                                theRange.start = theOtherRange.start;
+                                break;
+                            case OTHER_CONTAINS_END:
+                                theOtherRange.start = theRange.start;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        Set<Range> theUniqueRanges = new HashSet<>();
+        theUniqueRanges.addAll(ranges);
+        ranges.clear();
+        ranges.addAll(theUniqueRanges);
     }
 }

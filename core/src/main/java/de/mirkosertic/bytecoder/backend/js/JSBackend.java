@@ -499,7 +499,7 @@ public class JSBackend {
                         }
                     } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                         BytecodeInstructionGOTO theGoto = (BytecodeInstructionGOTO) theInstruction;
-                        theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theGoto.getJumpAddress()));
+                        theWriter.println(theInset + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theGoto.getJumpAddress()) + ";");
                     } else if (theInstruction instanceof BytecodeInstructionICMP) {
                         BytecodeInstructionICMP theCond = (BytecodeInstructionICMP) theInstruction;
 
