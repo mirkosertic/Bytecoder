@@ -34,7 +34,7 @@ public class BytecodeProgram {
         return instructions;
     }
 
-    public BytecodeProgramJumps buildJumps() {
+    public BytecodeProgramJumps buildJumps(BytecodeExceptionTableEntry[] aExceptionHandlerEntries) {
         BytecodeProgramJumps theJumps = new BytecodeProgramJumps();
         for (BytecodeInstruction theInstruction : instructions) {
             if (theInstruction.isJumpSource()) {
@@ -43,6 +43,19 @@ public class BytecodeProgram {
                 }
             }
         }
+        for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
+            theJumps.registerRange(aEntry.getStartPC(), aEntry.getHandlerPc());
+        }
         return theJumps;
+    }
+
+    public BytecodeExceptionTableEntry[] getActiveExceptionHandlers(BytecodeOpcodeAddress aAddress, BytecodeExceptionTableEntry[] aExceptionHandlerEntries) {
+        List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
+        for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
+            if (aEntry.getStartPC().isBefore(aAddress) && aEntry.getEndPc().isAfter(aAddress)) {
+                theResult.add(aEntry);
+            }
+        }
+        return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);
     }
 }

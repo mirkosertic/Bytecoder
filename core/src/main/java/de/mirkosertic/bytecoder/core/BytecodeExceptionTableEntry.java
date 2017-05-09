@@ -17,15 +17,37 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeExceptionTableEntry {
 
-    private final int startPC;
-    private final int endPc;
-    private final int handlerPc;
+    private final BytecodeOpcodeAddress startPC;
+    private final BytecodeOpcodeAddress endPc;
+    private final BytecodeOpcodeAddress handlerPc;
     private final int catchType;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeExceptionTableEntry(int aStartPC, int aEndPc, int aHandlerPc, int aCatchType) {
+    public BytecodeExceptionTableEntry(BytecodeOpcodeAddress aStartPC, BytecodeOpcodeAddress aEndPc, BytecodeOpcodeAddress aHandlerPc, int aCatchType, BytecodeConstantPool aConstantPool) {
         startPC = aStartPC;
         endPc = aEndPc;
         handlerPc = aHandlerPc;
         catchType = aCatchType;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeOpcodeAddress getStartPC() {
+        return startPC;
+    }
+
+    public BytecodeOpcodeAddress getEndPc() {
+        return endPc;
+    }
+
+    public BytecodeOpcodeAddress getHandlerPc() {
+        return handlerPc;
+    }
+
+    public boolean isFinally() {
+        return catchType == 0;
+    }
+
+    public BytecodeClassinfoConstant getCatchType() {
+        return (BytecodeClassinfoConstant) constantPool.constantByIndex(catchType - 1);
     }
 }

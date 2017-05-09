@@ -31,6 +31,10 @@ public class BytecodeOpcodeAddress {
         return address > aOtherAddress.address;
     }
 
+    public boolean isBefore(BytecodeOpcodeAddress aOtherAddress) {
+        return address < aOtherAddress.getAddress();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -54,4 +58,5 @@ public class BytecodeOpcodeAddress {
     public int getAddress() {
         return address;
     }
+
 }

@@ -342,11 +342,11 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
         int theExceptionTableLength = aDis.readUnsignedShort();
         for (int i=0;i<theExceptionTableLength;i++) {
-            int theStartPC = aDis.readUnsignedShort();
-            int theEndPc = aDis.readUnsignedShort();
-            int theHandlerPc = aDis.readUnsignedShort();
+            BytecodeOpcodeAddress theStartPC = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
+            BytecodeOpcodeAddress theEndPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
+            BytecodeOpcodeAddress theHandlerPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
             int theCatchType = aDis.readUnsignedShort();
-            theExceptionEntries.add(new BytecodeExceptionTableEntry(theStartPC, theEndPc, theHandlerPc, theCatchType));
+            theExceptionEntries.add(new BytecodeExceptionTableEntry(theStartPC, theEndPc, theHandlerPc, theCatchType, aConstantPool));
         }
         BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 

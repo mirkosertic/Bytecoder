@@ -67,7 +67,12 @@ public class BytecodeProgramJumps {
                 theResult.add(theRange);
             }
         }
-        Collections.sort(theResult, Comparator.comparingInt(o -> o.getEnd().getAddress()));
+        Collections.sort(theResult, new Comparator<Range>() {
+            @Override
+            public int compare(Range o1, Range o2) {
+                return Integer.compare(o2.getEnd().getAddress(), o1.getEnd().getAddress());
+            }
+        });
         return theResult;
     }
 
@@ -86,6 +91,9 @@ public class BytecodeProgramJumps {
         if (aSource.getAddress() < aTarget.getAddress()) {
             // Jump Forward
             List<Range> theRanges = endRangesAt(aTarget);
+            if (theRanges.size() == 1) {
+                return theRanges.get(0);
+            }
             for (int i=theRanges.size()-1;i>=0;i--) {
                 Range theRange = theRanges.get(i);
                 if (theRange.start.getAddress() >=aSource.getAddress()) {
@@ -96,6 +104,9 @@ public class BytecodeProgramJumps {
         } else {
             // Jump Backward
             List<Range> theRanges = startRangesAt(aTarget);
+            if (theRanges.size() == 1) {
+                return theRanges.get(0);
+            }
             for (int i=0;i<theRanges.size();i++) {
                 Range theRange = theRanges.get(i);
                 if (theRange.end.getAddress() < aTarget.getAddress()) {
