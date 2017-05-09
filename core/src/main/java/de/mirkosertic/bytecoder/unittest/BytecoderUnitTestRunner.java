@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.script.Compilable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
@@ -142,9 +143,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.close();
 
             ScriptEngine theEngine = new ScriptEngineManager().getEngineByName("nashorn");
-            Object theResult = theEngine.eval("load('" + theJSFile.toString().replace("\\", "\\\\") + "')");
             StringWriter theError = new StringWriter();
             theEngine.getContext().setErrorWriter(theError);
+
+            Object theResult = theEngine.eval("load('" + theJSFile.toString().replace("\\", "\\\\") + "')");
+
+            System.out.println(theError);
+            System.out.println(theResult);
 
             aRunNotifier.fireTestFinished(theDescription);
 

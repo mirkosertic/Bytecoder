@@ -74,13 +74,13 @@ public class JSBackend {
 
         StringWriter theStrWriter = new StringWriter();
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
+        theWriter.println("'use strict';");
 
         aLinkerContext.forEachClass(aEntry -> {
 
             final String theOverriddenParentClassName = getOverriddenParentClassFor(aEntry.getValue().getBytecodeClass());
 
             String theJSClassName = toClassName(aEntry.getKey());
-
             theWriter.println("var " + theJSClassName + " = {");
 
             if (!aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
@@ -170,7 +170,7 @@ public class JSBackend {
                 theWriter.println("        var stackOffset = -1;");
 
                 BytecodeProgram theProgram = theCode.getProgramm();
-                BytecodeProgramJumps theJumps = theProgram.buildJumps();
+                BytecodeProgramJumps theJumps = theProgram.buildJumps(theCode.getExceptionTableEntries());
 
                 int theBraceCounter = 0;
                 String theInset = "        ";
@@ -453,7 +453,26 @@ public class JSBackend {
                         theWriter.println(theInset + "return stack[stackOffset];");
                     } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                         BytecodeInstructionATHROW theThrow = (BytecodeInstructionATHROW) theInstruction;
-                        theWriter.println(theInset + "throw stack[stackOffset];");
+                        BytecodeExceptionTableEntry[] theActiveHandlers = theProgram.getActiveExceptionHandlers(theThrow.getOpcodeAddress(), theCode.getExceptionTableEntries());
+                        if (theActiveHandlers.length == 0) {
+                            theWriter.println(theInset + "throw stack[stackOffset];");
+                        } else {
+                            theWriter.println(theInset + "{");
+                            theWriter.println(theInset + "  var theException = stack[stackOffset];");
+                            for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
+                                if (!theEntry.isFinally()) {
+                                    BytecodeClassinfoConstant theConstant = theEntry.getCatchType();
+                                    BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theConstant.getConstant());
+                                    theWriter.println(theInset + "  if (theException.clazz.instanceOfType(" + theLinkedClass.getUniqueId() + ")) {");
+                                    BytecodeProgramJumps.Range theJumpRange = theJumps.findClosestRangeToJumpFrom(theInstruction.getOpcodeAddress(), theEntry.getHandlerPc());
+                                    theWriter.println(theInset + "      break " + theJumpRange.rangeName()+";");
+                                    theWriter.println(theInset + "      // should jump to " + theEntry.getHandlerPc().getAddress());
+                                    theWriter.println(theInset + "  }");
+                                }
+                            }
+                            theWriter.println(theInset + "  throw stack[stackOffset];");
+                            theWriter.println(theInset + "}");
+                        }
                     } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                         BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
                         theWriter.println(theInset + "stack[++stackOffset] = " + theConst.getFloatValue() + ";");
