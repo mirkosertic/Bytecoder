@@ -15,18 +15,8 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.script.Compilable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
+import de.mirkosertic.bytecoder.core.*;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -36,14 +26,16 @@ import org.junit.runners.ParentRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
+import org.openqa.selenium.phantomjs.PhantomJSDriver;
+import org.openqa.selenium.phantomjs.PhantomJSDriverService;
+import org.openqa.selenium.remote.DesiredCapabilities;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
-import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
+import java.io.File;
+import java.io.PrintWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -131,7 +123,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             String theJSFileName = theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + ".js";
 
+            theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance())";
+            theCode += "\n    console.log(\"Test finished\");\n";
+            theCode += "\n    return('OK');\n";
 
             File theNewFile = new File(new File("."), "target");
             File theTempDir = new File(theNewFile, "bytecoderjs");
@@ -142,17 +137,16 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.flush();
             theWriter.close();
 
-            ScriptEngine theEngine = new ScriptEngineManager().getEngineByName("nashorn");
-            StringWriter theError = new StringWriter();
-            theEngine.getContext().setErrorWriter(theError);
+            DesiredCapabilities theCapabilities = new DesiredCapabilities();
+            theCapabilities.setJavascriptEnabled(true);
+            theCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
+                    "d:\\temp\\phantomjs.exe");
+            PhantomJSDriver theDriver = new PhantomJSDriver(theCapabilities);
 
-            Object theResult = theEngine.eval("load('" + theJSFile.toString().replace("\\", "\\\\") + "')");
-
-            System.out.println(theError);
-            System.out.println(theResult);
-
-            aRunNotifier.fireTestFinished(theDescription);
-
+            Object theResult = theDriver.executePhantomJS(theCode);
+            if (!"OK".equals(theResult)) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException(theResult.toString())));
+            }
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } finally {

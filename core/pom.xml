@@ -22,5 +22,11 @@
             <version>4.12</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.codeborne</groupId>
+            <artifactId>phantomjsdriver</artifactId>
+            <version>1.4.2</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

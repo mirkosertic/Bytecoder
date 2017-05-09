@@ -39,21 +39,24 @@ public class BytecodeProgram {
         for (BytecodeInstruction theInstruction : instructions) {
             if (theInstruction.isJumpSource()) {
                 for (BytecodeOpcodeAddress theAddress : theInstruction.getPotentialJumpTargets()) {
-                    theJumps.registerRange(theInstruction.getOpcodeAddress(), theAddress);
+                    theJumps.registerJumpFromAToB(theInstruction.getOpcodeAddress(), theAddress);
                 }
             }
         }
         for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
-            theJumps.registerRange(aEntry.getStartPC(), aEntry.getHandlerPc());
+            theJumps.registerJumpFromAToB(aEntry.getStartPC(), aEntry.getHandlerPc());
         }
+        theJumps.tryToOptimize();
         return theJumps;
     }
 
     public BytecodeExceptionTableEntry[] getActiveExceptionHandlers(BytecodeOpcodeAddress aAddress, BytecodeExceptionTableEntry[] aExceptionHandlerEntries) {
         List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
         for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
-            if (aEntry.getStartPC().isBefore(aAddress) && aEntry.getEndPc().isAfter(aAddress)) {
-                theResult.add(aEntry);
+            if (!aEntry.isFinally()) {
+                if (aEntry.getStartPC().isBefore(aAddress) && aEntry.getEndPc().isAfter(aAddress)) {
+                    theResult.add(aEntry);
+                }
             }
         }
         return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);

@@ -31,12 +31,14 @@ public class ExceptionHandlerTest {
             throw new RuntimeException();
         } catch (RuntimeException e1) {
             counter += 7f;
+        } finally {
+            counter+=1;
         }
         return counter;
     }
 
     @Test
     public void testSimpleExceptionFlow() throws TRuntimeException {
-        TAssert.assertEquals(7f, flowTest(), 0);
+        TAssert.assertEquals(9f, flowTest(), 0);
     }
 }
