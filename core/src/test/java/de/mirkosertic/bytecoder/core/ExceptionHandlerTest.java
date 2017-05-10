@@ -37,8 +37,32 @@ public class ExceptionHandlerTest {
         return counter;
     }
 
+    private static void throwSomething() throws Exception {
+        throw new Exception();
+    }
+
+    private static void doSomething() throws Exception {
+        throwSomething();
+    }
+
     @Test
     public void testSimpleExceptionFlow() throws TRuntimeException {
-        TAssert.assertEquals(10f, flowTest(), 0);
+        TAssert.assertEquals(9f, flowTest(), 0);
+    }
+
+    @Test
+    public void testRethrow() throws TRuntimeException {
+        float theCounter = 0;
+        try {
+            theCounter+= 1;
+
+            doSomething();
+
+            theCounter+=2;
+        } catch (Exception e) {
+            theCounter+=4;
+        }
+
+        TAssert.assertEquals(5f, theCounter, 0f);
     }
 }

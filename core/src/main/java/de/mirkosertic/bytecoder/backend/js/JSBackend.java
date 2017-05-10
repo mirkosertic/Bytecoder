@@ -146,6 +146,10 @@ public class JSBackend {
 
         aLinkerContext.forEachClass(aEntry -> {
 
+            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+
             final String theOverriddenParentClassName = getOverriddenParentClassFor(aEntry.getValue().getBytecodeClass());
 
             String theJSClassName = toClassName(aEntry.getKey());
@@ -315,6 +319,13 @@ public class JSBackend {
                             theWriter.print("arg" + i);
                         }
                         theWriter.println(");");
+                        theWriter.println(theInset + "  var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "  if (theLastException) {");
+
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                                theInset + "    ", theInvokeSpecial, "theLastException");
+
+                        theWriter.println(theInset + "  }");
                         theWriter.println(theInset + "}");
 
                     } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
@@ -347,6 +358,15 @@ public class JSBackend {
                             theWriter.print("arg" + i);
                         }
                         theWriter.println(");");
+
+                        theWriter.println(theInset + "  var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "  if (theLastException) {");
+
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                                theInset + "    ", theVirtualInvoke, "theLastException");
+
+                        theWriter.println(theInset + "  }");
+
                         theWriter.println(theInset + "}");
                     }else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
                         BytecodeInstructionINVOKESTATIC theStaticInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
@@ -374,6 +394,15 @@ public class JSBackend {
                             theWriter.print("arg" + i);
                         }
                         theWriter.println(");");
+
+                        theWriter.println(theInset + "  var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "  if (theLastException) {");
+
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                                theInset + "    ", theStaticInvoke, "theLastException");
+
+                        theWriter.println(theInset + "  }");
+
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
                         BytecodeInstructionINSTANCEOF theInstanceOf = (BytecodeInstructionINSTANCEOF) theInstruction;
@@ -530,28 +559,11 @@ public class JSBackend {
                         theWriter.println(theInset + "return stack[stackOffset];");
                     } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                         BytecodeInstructionATHROW theThrow = (BytecodeInstructionATHROW) theInstruction;
-                        BytecodeExceptionTableEntry[] theActiveHandlers = theProgram.getActiveExceptionHandlers(theThrow.getOpcodeAddress(), theCode.getExceptionTableEntries());
-                        if (theActiveHandlers.length == 0) {
-                            theWriter.println(theInset + toClassName(theExceptionRethrower.getClassName()) + ".registerExceptionOutcome(stack[stackOffset]);");
-                            theWriter.println(theInset + "return;");
-                        } else {
-                            theWriter.println(theInset + "{");
-                            theWriter.println(theInset + "  var theException = stack[stackOffset];");
-                            for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
-                                if (!theEntry.isFinally()) {
-                                    BytecodeClassinfoConstant theConstant = theEntry.getCatchType();
-                                    BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theConstant.getConstant());
-                                    theWriter.println(theInset + "  if (theException.clazz.instanceOfType(" + theLinkedClass.getUniqueId() + ")) {");
-                                    BytecodeProgramJumps.Range theJumpRange = theJumps.findClosestRangeToJumpFrom(theInstruction.getOpcodeAddress(), theEntry.getHandlerPc());
-                                    theWriter.println(theInset + "      break " + theJumpRange.rangeName()+";");
-                                    theWriter.println(theInset + "      // should jump to " + theEntry.getHandlerPc().getAddress());
-                                    theWriter.println(theInset + "  }");
-                                }
-                            }
-                            theWriter.println(theInset + "  " + toClassName(theExceptionRethrower.getClassName()) + ".registerExceptionOutcome(stack[stackOffset]);");
-                            theWriter.println(theInset + "  return;");
-                            theWriter.println(theInset + "}");
-                        }
+
+                        theWriter.println(theInset + "var theException = stack[stackOffset];");
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                                theInset, theThrow, "theException");
+
                     } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                         BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
                         theWriter.println(theInset + "stack[++stackOffset] = " + theConst.getFloatValue() + ";");
@@ -673,5 +685,30 @@ public class JSBackend {
         theWriter.flush();
 
         return theStrWriter.toString();
+    }
+
+    private void writeExceptionHandlerCode(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aExceptionRethrower,
+            PrintWriter aWriter, BytecodeCodeAttributeInfo aCode, BytecodeProgram aProgram, BytecodeProgramJumps aJumps,
+            String aInset, BytecodeInstruction aInstruction, String aExceptionVariableName) {
+        BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aCode.getExceptionTableEntries());
+        if (theActiveHandlers.length == 0) {
+            // Missing catch block
+            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + "return;");
+        } else {
+            for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
+                if (!theEntry.isFinally()) {
+                    BytecodeClassinfoConstant theConstant = theEntry.getCatchType();
+                    BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theConstant.getConstant());
+                    aWriter.println(aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId() + ")) {");
+                    BytecodeProgramJumps.Range theJumpRange = aJumps.findClosestRangeToJumpFrom(aInstruction.getOpcodeAddress(), theEntry.getHandlerPc());
+                    aWriter.println(aInset + "    break " + theJumpRange.rangeName()+";");
+                    aWriter.println(aInset + "    // should jump to " + theEntry.getHandlerPc().getAddress());
+                    aWriter.println(aInset + "}");
+                }
+            }
+            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + "return;");
+        }
     }
 }
