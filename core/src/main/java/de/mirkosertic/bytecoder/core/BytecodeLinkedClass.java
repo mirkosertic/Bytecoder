@@ -50,6 +50,7 @@ public class BytecodeLinkedClass {
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
     private final BytecodeLinkedClass superClass;
+    private BytecodeMethod classInitializer;
 
     public BytecodeLinkedClass(int aUniqueId, BytecodeLinkedClass aSuperClass, BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
@@ -61,6 +62,10 @@ public class BytecodeLinkedClass {
         superClass = aSuperClass;
         staticFields = new HashMap<>();
         memberFields = new HashMap<>();
+    }
+
+    public BytecodeObjectTypeRef getClassName() {
+        return className;
     }
 
     public int getUniqueId() {
@@ -85,6 +90,11 @@ public class BytecodeLinkedClass {
 
     public BytecodeLinkedClass getSuperClass() {
         return superClass;
+    }
+
+    public void linkClassInitializer(BytecodeMethod aMethod) {
+        classInitializer = aMethod;
+        linkVirtualMethod(aMethod.getName().stringValue(), aMethod.getSignature());
     }
 
     public void linkStaticField(BytecodeUtf8Constant aName) {
@@ -129,7 +139,7 @@ public class BytecodeLinkedClass {
         try {
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
             // Constructors are not virtual
-            if (!theMethod.isConstructor()) {
+            if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
                 linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
             }
@@ -173,6 +183,10 @@ public class BytecodeLinkedClass {
 
     public void forEachMemberField(Consumer<Map.Entry<String, BytecodeField>> aConsumer) {
         memberFields.entrySet().forEach(aConsumer);
+    }
+
+    public boolean hasClassInitializer() {
+        return classInitializer != null;
     }
 
     public void propagateVirtualMethodsAndFields() {

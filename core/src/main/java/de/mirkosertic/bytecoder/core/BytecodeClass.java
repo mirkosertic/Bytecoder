@@ -86,4 +86,13 @@ public class BytecodeClass {
     public BytecodeInterface[] getInterfaces() {
         return interfaces;
     }
+
+    public BytecodeMethod classInitializerOrNull() {
+        for (BytecodeMethod theMethod : methods) {
+            if ("<clinit>".equalsIgnoreCase(theMethod.getName().stringValue())) {
+                return theMethod;
+            }
+        }
+        return null;
+    }
 }

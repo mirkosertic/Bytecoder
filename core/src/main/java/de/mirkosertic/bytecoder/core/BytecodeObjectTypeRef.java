@@ -19,6 +19,10 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
 
     private final String className;
 
+    public static BytecodeObjectTypeRef fromRuntimeClass(Class aClass) {
+        return new BytecodeObjectTypeRef(aClass.getName());
+    }
+
     public BytecodeObjectTypeRef(String aClassName) {
         className = aClassName;
     }

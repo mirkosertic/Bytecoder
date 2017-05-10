@@ -61,6 +61,11 @@ public class BytecodeLinkerContext {
             theLinkedClass = new BytecodeLinkedClass(linkedClasses.size(), theParentClass, this, aTypeRef, theLoadedClass);
             linkedClasses.put(aTypeRef, theLinkedClass);
 
+            BytecodeMethod theMethod = theLoadedClass.classInitializerOrNull();
+            if (theMethod != null) {
+                theLinkedClass.linkClassInitializer(theMethod);
+            }
+
             for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
                 BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
                 linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
