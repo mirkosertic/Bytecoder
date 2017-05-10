@@ -13,11 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class BytecodeInstructionI2B extends BytecodeInstruction {
+public class TByte extends TNumber {
 
-    public BytecodeInstructionI2B(BytecodeOpcodeAddress aOffset) {
-        super(aOffset);
+    private byte byteValue;
+
+    public TByte(byte aByteValue) {
+        byteValue = aByteValue;
+    }
+
+    @Override
+    public int intValue() {
+        return (int) byteValue;
+    }
+
+    @Override
+    public byte byteValue() {
+        return byteValue;
+    }
+
+    @Override
+    public short shortValue() {
+        return (short) byteValue;
+    }
+
+    @Override
+    public float floatValue() {
+        return (float) byteValue;
     }
 }

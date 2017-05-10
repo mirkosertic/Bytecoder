@@ -15,5 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TNumber {
+public abstract class TNumber {
+
+    public abstract int intValue();
+
+    public abstract byte byteValue();
+
+    public abstract short shortValue();
+
+    public abstract float floatValue();
 }

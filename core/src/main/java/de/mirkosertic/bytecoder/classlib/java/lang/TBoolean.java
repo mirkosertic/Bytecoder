@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class BytecodeInstructionD2I extends BytecodeInstruction {
+public class TBoolean implements TSerializable {
 
-    public BytecodeInstructionD2I(BytecodeOpcodeAddress aOffset) {
-        super(aOffset);
+    private boolean booleanValue;
+
+    public TBoolean(boolean aBooleanValue) {
+        booleanValue = aBooleanValue;
+    }
+
+    public boolean booleanValue() {
+        return booleanValue;
     }
 }

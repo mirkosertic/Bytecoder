@@ -16,11 +16,13 @@
 package de.mirkosertic.bytecoder.unittest;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,6 +46,8 @@ import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
+
+    private static PhantomJSDriver driver;
 
     private final List<FrameworkMethod> testMethods;
     private final TestClass testClass;
@@ -139,24 +143,41 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCode += "\nconsole.log(\"Test finished\");\n";
             theCode += "\nreturn('OK');\n";
 
-            File theNewFile = new File(new File("."), "target");
-            File theTempDir = new File(theNewFile, "bytecoderjs");
-            theTempDir.mkdirs();
-            File theJSFile = new File(theTempDir, theJSFileName);
-            PrintWriter theWriter = new PrintWriter(theJSFile);
+            File theWorkingDirectory = new File(".");
+
+            File theMavenTargetDir = new File(theWorkingDirectory, "target");
+            File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
+            theGeneratedFilesDir.mkdirs();
+            File theGeneratedFile = new File(theGeneratedFilesDir, theJSFileName);
+            PrintWriter theWriter = new PrintWriter(theGeneratedFile);
             theWriter.println("<script>");
             theWriter.println(theCode);
             theWriter.println("</script>");
             theWriter.flush();
             theWriter.close();
 
-            DesiredCapabilities theCapabilities = new DesiredCapabilities();
-            theCapabilities.setJavascriptEnabled(true);
-            theCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
-                    "/home/sertic/Development/Tools/phantomjs-2.1.1-linux-x86_64/bin/phantomjs");
-            PhantomJSDriver theDriver = new PhantomJSDriver(theCapabilities);
+            if (driver == null) {
+                Properties theProperties = new Properties(System.getProperties());
+                File theConfigFile = new File(theWorkingDirectory, "phantomjs.properties");
+                if (theConfigFile.exists()) {
+                    try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
+                        theProperties.load(theStream);
+                    }
+                }
 
-            Object theResult = theDriver.executePhantomJS(theCode);
+                String thePhantomBinary = theProperties.getProperty("phantomjs.binary");
+                if (thePhantomBinary == null || thePhantomBinary.length() == 0) {
+                    throw new RuntimeException("No phantomjs binary found!");
+                }
+
+                DesiredCapabilities theCapabilities = new DesiredCapabilities();
+                theCapabilities.setJavascriptEnabled(true);
+                theCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
+                        thePhantomBinary);
+                driver = new PhantomJSDriver(theCapabilities);
+            }
+
+            Object theResult = driver.executePhantomJS(theCode);
             if (!"OK".equals(theResult)) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException(theResult.toString())));
             }
