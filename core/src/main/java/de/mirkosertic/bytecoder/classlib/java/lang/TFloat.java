@@ -38,7 +38,23 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         return 0;
     }
 
+    @Override
     public float floatValue() {
         return floatValue;
+    }
+
+    @Override
+    public int intValue() {
+        return (int) floatValue;
+    }
+
+    @Override
+    public byte byteValue() {
+        return (byte) floatValue;
+    }
+
+    @Override
+    public short shortValue() {
+        return (short) floatValue;
     }
 }

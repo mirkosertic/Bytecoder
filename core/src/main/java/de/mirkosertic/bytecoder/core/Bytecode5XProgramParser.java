@@ -578,63 +578,63 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 133: { // i2l = 133 (0x85)
-                    theResult.addInstruction(new BytecodeInstructionI2L(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionI2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 134: { // i2f = 134 (0x86)
-                    theResult.addInstruction(new BytecodeInstructionI2F(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionI2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 135: { // i2d = 135 (0x87)
-                    theResult.addInstruction(new BytecodeInstructionI2D(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionI2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 136: { // l2i = 136 (0x88)
-                    theResult.addInstruction(new BytecodeInstructionL2I(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionL2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 137: { // l2f = 137 (0x89)
-                    theResult.addInstruction(new BytecodeInstructionL2F(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionL2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 138: { // l2d = 138 (0x8a)
-                    theResult.addInstruction(new BytecodeInstructionL2D(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionL2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 139: { // f2i = 139 (0x8b)
-                    theResult.addInstruction(new BytecodeInstructionF2I(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionF2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 140: { // f2l = 140 (0x8c)
-                    theResult.addInstruction(new BytecodeInstructionF2L(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionF2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 141: { // f2d = 141 (0x8d)
-                    theResult.addInstruction(new BytecodeInstructionF2D(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionF2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 142: { // d2i = 142 (0x8e)
-                    theResult.addInstruction(new BytecodeInstructionF2I(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionD2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 143: { // d2l = 143 (0x8f)
-                    theResult.addInstruction(new BytecodeInstructionD2L(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionD2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 144: { // d2f = 144 (0x90)
-                    theResult.addInstruction(new BytecodeInstructionD2F(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionD2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 145: { // i2b = 145 (0x91)
-                    theResult.addInstruction(new BytecodeInstructionI2B(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionI2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.BYTE));
                     break;
                 }
                 case 146: { // i2c = 146 (0x92)
-                    theResult.addInstruction(new BytecodeInstructionI2C(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionI2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.CHAR));
                     break;
                 }
                 case 147: { // i2s = 147 (0x93)
-                    theResult.addInstruction(new BytecodeInstructionI2S(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionI2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.SHORT));
                     break;
                 }
                 case 148: { // lcmp = 148 (0x94)
