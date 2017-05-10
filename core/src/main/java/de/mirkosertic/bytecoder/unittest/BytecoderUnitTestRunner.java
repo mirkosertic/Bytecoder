@@ -127,11 +127,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             JSBackend theBackend = new JSBackend();
             String theCode = theBackend.generateCodeFor(theLinkerContext);
 
-            String theJSFileName = theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + ".js";
+            String theJSFileName = theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
 
             theCode += "\nconsole.log(\"Starting test\");\n";
-            theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance())";
-            theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.staticFields.lastMethodOutcome;\n";
+            theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance());\n";
+            theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();\n";
             theCode += "if (theLastException) {\n";
             theCode += "    console.log(\"Test finished with exception\");\n";
             theCode += "    throw theLastException;\n";
@@ -144,7 +144,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theTempDir.mkdirs();
             File theJSFile = new File(theTempDir, theJSFileName);
             PrintWriter theWriter = new PrintWriter(theJSFile);
+            theWriter.println("<script>");
             theWriter.println(theCode);
+            theWriter.println("</script>");
             theWriter.flush();
             theWriter.close();
 
