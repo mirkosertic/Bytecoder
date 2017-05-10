@@ -15,8 +15,13 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
-import de.mirkosertic.bytecoder.core.*;
+import java.io.File;
+import java.io.PrintWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -30,12 +35,13 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
+import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -125,8 +131,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance())";
-            theCode += "\n    console.log(\"Test finished\");\n";
-            theCode += "\n    return('OK');\n";
+            theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.staticFields.lastMethodOutcome;\n";
+            theCode += "if (theLastException) {\n";
+            theCode += "    console.log(\"Test finished with exception\");\n";
+            theCode += "    throw theLastException;\n";
+            theCode += "}\n";
+            theCode += "\nconsole.log(\"Test finished\");\n";
+            theCode += "\nreturn('OK');\n";
 
             File theNewFile = new File(new File("."), "target");
             File theTempDir = new File(theNewFile, "bytecoderjs");
@@ -140,7 +151,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             DesiredCapabilities theCapabilities = new DesiredCapabilities();
             theCapabilities.setJavascriptEnabled(true);
             theCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
-                    "d:\\temp\\phantomjs.exe");
+                    "/home/sertic/Development/Tools/phantomjs-2.1.1-linux-x86_64/bin/phantomjs");
             PhantomJSDriver theDriver = new PhantomJSDriver(theCapabilities);
 
             Object theResult = theDriver.executePhantomJS(theCode);

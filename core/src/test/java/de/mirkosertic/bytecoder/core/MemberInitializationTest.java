@@ -15,30 +15,28 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class ExceptionHandlerTest {
+import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
+import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
-    private static float flowTest() {
-        float counter = 0f;
-        try {
-            counter += 1f;
-            throw new RuntimeException();
-        } catch (RuntimeException e1) {
-            counter += 7f;
-        } finally {
-            counter+=1;
-        }
-        return counter;
+@RunWith(BytecoderUnitTestRunner.class)
+public class MemberInitializationTest {
+
+    public static int staticMember = 18;
+
+    public static class StaticClassWithStuffInside {
+
+        public int member = 12;
     }
 
     @Test
-    public void testSimpleExceptionFlow() throws TRuntimeException {
-        TAssert.assertEquals(10f, flowTest(), 0);
+    public void testInstanceGetAndSet() throws TRuntimeException {
+        StaticClassWithStuffInside theInstance = new StaticClassWithStuffInside();
+        int theResult = theInstance.member;
+        TAssert.assertEquals(12, theResult, 0);
+        TAssert.assertEquals(18, MemberInitializationTest.staticMember, 0);
     }
 }

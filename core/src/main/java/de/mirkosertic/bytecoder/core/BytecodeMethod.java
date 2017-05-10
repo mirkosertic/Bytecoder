@@ -69,4 +69,8 @@ public class BytecodeMethod {
     public boolean isConstructor() {
         return name.stringValue().equals("<init>");
     }
+
+    public boolean isClassInitializer() {
+        return name.stringValue().equals("<clinit>");
+    }
 }
