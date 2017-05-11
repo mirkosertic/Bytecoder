@@ -38,6 +38,11 @@ public class ArrayTest {
     private static Entry[] entries = new Entry[10];
 
     @Test
+    public void testLength() throws TRuntimeException {
+        TAssert.assertEquals(10, bytes.length, 0);
+    }
+
+    @Test
     public void testBytes() throws TRuntimeException {
         bytes[4] = (byte) 10;
         TAssert.assertEquals(10, bytes[4], 0);

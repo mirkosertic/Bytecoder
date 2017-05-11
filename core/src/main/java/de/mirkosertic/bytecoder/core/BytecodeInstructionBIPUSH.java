@@ -24,7 +24,7 @@ public class BytecodeInstructionBIPUSH extends BytecodeInstruction {
         value = aValue;
     }
 
-    public byte getValue() {
+    public byte getByteValue() {
         return value;
     }
 }

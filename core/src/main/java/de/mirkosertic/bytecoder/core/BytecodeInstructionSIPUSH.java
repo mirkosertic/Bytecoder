@@ -17,12 +17,14 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionSIPUSH extends BytecodeInstruction {
 
-    private final byte indexbyte1;
-    private final byte indexbyte2;
+    private final short shortValue;
 
-    public BytecodeInstructionSIPUSH(BytecodeOpcodeAddress aOpcodeIndex, byte indebyte1, byte indexbyte2) {
+    public BytecodeInstructionSIPUSH(BytecodeOpcodeAddress aOpcodeIndex, short aShortValue) {
         super(aOpcodeIndex);
-        this.indexbyte1 = indebyte1;
-        this.indexbyte2 = indexbyte2;
+        shortValue = aShortValue;
+    }
+
+    public short getShortValue() {
+        return shortValue;
     }
 }

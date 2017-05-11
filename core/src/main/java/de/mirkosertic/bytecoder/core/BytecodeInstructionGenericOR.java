@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionLOR extends BytecodeInstruction {
+public class BytecodeInstructionGenericOR extends BytecodeInstruction {
 
-    public BytecodeInstructionLOR(BytecodeOpcodeAddress aOpcodeIndex) {
-        super(aOpcodeIndex);
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericOR(BytecodeOpcodeAddress aOffset, BytecodePrimitiveTypeRef aType) {
+        super(aOffset);
+        type = aType;
     }
 }

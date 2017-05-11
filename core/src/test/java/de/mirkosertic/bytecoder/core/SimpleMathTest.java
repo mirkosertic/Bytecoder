@@ -15,11 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
 import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class SimpleMathTest {
@@ -38,6 +39,46 @@ public class SimpleMathTest {
 
     public static int div(int a, int b) {
         return a / b;
+    }
+
+    public static int rem(int a, int b) {
+        return a % b;
+    }
+
+    public static int getInt() {
+        return 240;
+    }
+
+    public static byte getByte() {
+        return (byte) 127;
+    }
+
+    public static short getShort() {
+        return (short) 240;
+    }
+
+    public static float getFloat() {
+        return (float) 240;
+    }
+
+    @Test
+    public void testGetInt() throws TRuntimeException {
+        TAssert.assertEquals(240, getInt(), 0);
+    }
+
+    @Test
+    public void testGetByte() throws TRuntimeException {
+        TAssert.assertEquals(127, getByte(), 0);
+    }
+
+    @Test
+    public void testGetShort() throws TRuntimeException {
+        TAssert.assertEquals(240, getShort(), 0);
+    }
+
+    @Test
+    public void testGetFloat() throws TRuntimeException {
+        TAssert.assertEquals(240, getFloat(), 0);
     }
 
     @Test
@@ -62,5 +103,11 @@ public class SimpleMathTest {
     public void testDiv() throws TRuntimeException {
         int c = div(100, 5);
         TAssert.assertEquals(20, c, 0);
+    }
+
+    @Test
+    public void testRemainder() throws TRuntimeException {
+        int c = rem(33, 10);
+        TAssert.assertEquals(3, c, 0);
     }
 }

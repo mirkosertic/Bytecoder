@@ -95,9 +95,9 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 17: { // sipush = 17 (0x11)
-                    byte theByte1 = aBytecodes[offset++];
-                    byte theByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionSIPUSH(theOpcodeIndex,theByte1, theByte2));
+                    short theShortValue = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                    offset+=2;
+                    theResult.addInstruction(new BytecodeInstructionSIPUSH(theOpcodeIndex, theShortValue));
                     break;
                 }
                 case 18: { //ldc = 18 (0x12)
@@ -492,19 +492,19 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 112: {// irem = 112 (0x70)
-                    theResult.addInstruction(new BytecodeInstructionIREM(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericREM(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 113: {// lrem = 113 (0x71)
-                    theResult.addInstruction(new BytecodeInstructionLREM(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericREM(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 114: {// frem = 114 (0x72)
-                    theResult.addInstruction(new BytecodeInstructionFREM(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericREM(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 115: {// drem = 115 (0x73)
-                    theResult.addInstruction(new BytecodeInstructionDREM(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericREM(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 116: {// ineg = 116 (0x74)
@@ -524,19 +524,19 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 120: { // ishl = 120 (0x78)
-                    theResult.addInstruction(new BytecodeInstructionISHL(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSHL(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 121: { // lshl = 121 (0x79)
-                    theResult.addInstruction(new BytecodeInstructionISHL(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSHL(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 122: { // ishr = 122 (0x7a)
-                    theResult.addInstruction(new BytecodeInstructionISHR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSHR(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 123: { // lshr = 123 (0x7b)
-                    theResult.addInstruction(new BytecodeInstructionLSHR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericSHR(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 124: { // iushr = 124 (0x7c)
@@ -548,27 +548,27 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 126: { // iand = 126 (0x7e)
-                    theResult.addInstruction(new BytecodeInstructionIAND(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericAND(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 127: { // land = 127 (0x7f)
-                    theResult.addInstruction(new BytecodeInstructionLAND(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericAND(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 128: { // ior = 128 (0x80)
-                    theResult.addInstruction(new BytecodeInstructionIOR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericOR(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 129: { // lor = 129 (0x81)
-                    theResult.addInstruction(new BytecodeInstructionLOR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericOR(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 130: { // ixor = 130 (0x82)
-                    theResult.addInstruction(new BytecodeInstructionIXOR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericXOR(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 131: { // lxor = 131 (0x83)
-                    theResult.addInstruction(new BytecodeInstructionLXOR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericXOR(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 132: { // iinc = 132 (0x84)

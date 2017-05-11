@@ -19,8 +19,14 @@ public class BytecodeParserUtils {
 
     public static int integerFromByteArray(byte[] aData, int aOffset) {
         byte theByte1 = aData[aOffset++];
-        byte thByte2 = aData[aOffset];
-        return (theByte1 << 8) | thByte2;
+        byte theByte2 = aData[aOffset];
+        return (theByte1 << 8) | theByte2;
+    }
+
+    public static short shortFromByteArray(byte[] aData, int aOffset) {
+        byte theByte1 = aData[aOffset++];
+        byte theByte2 = aData[aOffset];
+        return (short)( ((theByte1 & 0xFF) << 8) | (theByte2 & 0xFF) );
     }
 
     public static long longFromByteArray(byte[] aData, int aOffset) {

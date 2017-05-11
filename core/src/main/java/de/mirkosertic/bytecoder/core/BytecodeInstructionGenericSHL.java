@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIREM extends BytecodeInstruction {
+public class BytecodeInstructionGenericSHL extends BytecodeInstruction {
 
-    public BytecodeInstructionIREM(BytecodeOpcodeAddress aOpcodeIndex) {
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericSHL(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
         super(aOpcodeIndex);
+        type = aType;
     }
 }

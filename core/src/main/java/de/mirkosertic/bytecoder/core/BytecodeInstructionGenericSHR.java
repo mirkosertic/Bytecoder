@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIAND extends BytecodeInstruction {
+public class BytecodeInstructionGenericSHR extends BytecodeInstruction {
 
-    public BytecodeInstructionIAND(BytecodeOpcodeAddress aOpcodeIndex) {
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericSHR(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
         super(aOpcodeIndex);
+        type = aType;
     }
 }
