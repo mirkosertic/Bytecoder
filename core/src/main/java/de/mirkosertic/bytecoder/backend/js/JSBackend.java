@@ -22,7 +22,74 @@ import java.util.List;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionAALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionAASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeProgramJumps;
+import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSBackend {
 
@@ -227,6 +294,18 @@ public class JSBackend {
                         BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
 
                         BytecodeClassinfoConstant theConstant = theNew.getClassInfoForObjectToCreate();
+                        theWriter.println(theInset + "stack[++stackOffset] = " + toClassName(theConstant)+ ".emptyInstance();");
+
+                    } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
+                        BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
+
+                        BytecodeObjectTypeRef theConstant = theNew.getObjectType();
+                        theWriter.println(theInset + "stack[++stackOffset] = " + toClassName(theConstant)+ ".emptyInstance();");
+
+                    } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
+                        BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
+
+                        BytecodeObjectTypeRef theConstant = theNew.getObjectType();
                         theWriter.println(theInset + "stack[++stackOffset] = " + toClassName(theConstant)+ ".emptyInstance();");
 
                     } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
@@ -490,6 +569,36 @@ public class JSBackend {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var temp = -stack[stackOffset--];");
                         theWriter.println(theInset + "  stack[++stackOffset] = temp;");
+                        theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionGenericASTORE) {
+                        BytecodeInstructionGenericASTORE theStore = (BytecodeInstructionGenericASTORE) theInstruction;
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var theValue = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theIndex = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theArrayRef = stack[stackOffset--];");
+                        theWriter.println(theInset + "  theArrayRef.data[theIndex] = theValue;");
+                        theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionAASTORE) {
+                        BytecodeInstructionAASTORE theStore = (BytecodeInstructionAASTORE) theInstruction;
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var theValue = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theIndex = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theArrayRef = stack[stackOffset--];");
+                        theWriter.println(theInset + "  theArrayRef.data[theIndex] = theValue;");
+                        theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionGenericALOAD) {
+                        BytecodeInstructionGenericALOAD theLoad = (BytecodeInstructionGenericALOAD) theInstruction;
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var theIndex = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theArrayRef = stack[stackOffset--];");
+                        theWriter.println(theInset + "  stack[++stackOffset] = theArrayRef.data[theIndex];");
+                        theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionAALOAD) {
+                        BytecodeInstructionAALOAD theLoad = (BytecodeInstructionAALOAD) theInstruction;
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var theIndex = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theArrayRef = stack[stackOffset--];");
+                        theWriter.println(theInset + "  stack[++stackOffset] = theArrayRef.data[theIndex];");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                         BytecodeInstructionGenericRETURN theReturn = (BytecodeInstructionGenericRETURN) theInstruction;

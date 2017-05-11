@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionCASTORE extends BytecodeInstruction {
+public class BytecodeInstructionGenericASTORE extends BytecodeInstruction {
 
-    public BytecodeInstructionCASTORE(BytecodeOpcodeAddress aOffset) {
-        super(aOffset);
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericASTORE(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
+        super(aOpcodeIndex);
+        type = aType;
     }
 }

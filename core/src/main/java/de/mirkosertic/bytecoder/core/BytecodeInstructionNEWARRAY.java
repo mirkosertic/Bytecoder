@@ -15,23 +15,27 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+
 public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
 
-    public enum Type {
-        T_BOOLEAN,
-        T_CHAR,
-        T_FLOAT,
-        T_DOUBLE,
-        T_BYTE,
-        T_SHORT,
-        T_INT,
-        T_LONG
-    }
+    private final BytecodePrimitiveTypeRef type;
 
-    private final Type type;
-
-    public BytecodeInstructionNEWARRAY(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
+    public BytecodeInstructionNEWARRAY(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
         super(aOpcodeIndex);
         type = aType;
+    }
+
+    public BytecodeObjectTypeRef getObjectType() {
+        return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+    }
+
+    public BytecodePrimitiveTypeRef getPrimitiveType() {
+        return type;
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        aLinkerContext.linkClass(getObjectType());
     }
 }
