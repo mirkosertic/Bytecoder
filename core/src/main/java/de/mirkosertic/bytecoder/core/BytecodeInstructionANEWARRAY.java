@@ -15,14 +15,30 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+
 public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
 
-    private final byte indexbyte1;
-    private final byte indexbyte2;
+    private final int typeIndex;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionANEWARRAY(BytecodeOpcodeAddress aIndex, byte indebyte1, byte indexbyte2) {
+    public BytecodeInstructionANEWARRAY(BytecodeOpcodeAddress aIndex, int aTypeIndex, BytecodeConstantPool aConstantPool) {
         super(aIndex);
-        this.indexbyte1 = indebyte1;
-        this.indexbyte2 = indexbyte2;
+        typeIndex = aTypeIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeObjectTypeRef getObjectType() {
+        return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+    }
+
+    public BytecodeClassinfoConstant getTypeConstant() {
+        return (BytecodeClassinfoConstant) constantPool.constantByIndex(typeIndex - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeClassinfoConstant theConstant = getTypeConstant();
+        aLinkerContext.linkClass(new BytecodeObjectTypeRef(theConstant.getConstant().stringValue().replace("/",".")));
     }
 }
