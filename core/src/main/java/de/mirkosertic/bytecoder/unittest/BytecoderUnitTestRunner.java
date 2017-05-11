@@ -47,7 +47,7 @@ import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
-    private static PhantomJSDriver driver;
+    private static PhantomJSDriver SINGLETONDRIVER;
 
     private final List<FrameworkMethod> testMethods;
     private final TestClass testClass;
@@ -156,7 +156,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.flush();
             theWriter.close();
 
-            if (driver == null) {
+            if (SINGLETONDRIVER == null) {
                 Properties theProperties = new Properties(System.getProperties());
                 File theConfigFile = new File(theWorkingDirectory, "phantomjs.properties");
                 if (theConfigFile.exists()) {
@@ -174,10 +174,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 theCapabilities.setJavascriptEnabled(true);
                 theCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
                         thePhantomBinary);
-                driver = new PhantomJSDriver(theCapabilities);
+                SINGLETONDRIVER = new PhantomJSDriver(theCapabilities);
             }
 
-            Object theResult = driver.executePhantomJS(theCode);
+            Object theResult = SINGLETONDRIVER.executePhantomJS(theCode);
             if (!"OK".equals(theResult)) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException(theResult.toString())));
             }

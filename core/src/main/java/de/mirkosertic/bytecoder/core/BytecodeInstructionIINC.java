@@ -18,11 +18,11 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeInstructionIINC extends BytecodeInstruction {
 
     private final byte index;
-    private final byte consant;
+    private final byte constant;
 
-    public BytecodeInstructionIINC(BytecodeOpcodeAddress aOpcodeIndex, byte index, byte consant) {
+    public BytecodeInstructionIINC(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex, byte aConsant) {
         super(aOpcodeIndex);
-        this.index = index;
-        this.consant = consant;
+        index = aIndex;
+        constant = aConsant;
     }
 }

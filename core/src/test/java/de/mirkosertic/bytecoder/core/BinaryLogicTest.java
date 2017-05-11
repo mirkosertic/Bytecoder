@@ -15,14 +15,88 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
+import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
 @RunWith(BytecoderUnitTestRunner.class)
 public class BinaryLogicTest {
+
+    @Test
+    public void testCharXor() throws TRuntimeException {
+        char theValue = 6;
+        Assert.assertEquals(4, theValue ^ 2, 0);
+    }
+
+    @Test
+    public void testByteXor() throws TRuntimeException {
+        byte theValue = 6;
+        TAssert.assertEquals(4, theValue ^ 2, 0);
+    }
+
+    @Test
+    public void testShortXor() throws TRuntimeException {
+        short theValue = 6;
+        TAssert.assertEquals(4, theValue ^ 2, 0);
+    }
+
+    @Test
+    public void testIntXor() throws TRuntimeException {
+        int theValue = 6;
+        TAssert.assertEquals(4, theValue ^ 2, 0);
+    }
+
+    @Test
+    public void testCharOr() throws TRuntimeException {
+        char theValue = 1;
+        TAssert.assertEquals(3, theValue | 2, 0);
+    }
+
+    @Test
+    public void testByteOr() throws TRuntimeException {
+        byte theValue = 1;
+        TAssert.assertEquals(3, theValue | 2, 0);
+    }
+
+    @Test
+    public void testShortOr() throws TRuntimeException {
+        short theValue = 1;
+        TAssert.assertEquals(3, theValue | 2, 0);
+    }
+
+    @Test
+    public void testIntOr() throws TRuntimeException {
+        int theValue = 1;
+        TAssert.assertEquals(3, theValue | 2, 0);
+    }
+
+    @Test
+    public void testCharAnd() throws TRuntimeException {
+        char theValue = 3;
+        TAssert.assertEquals(2, theValue & 2, 0);
+    }
+
+    @Test
+    public void testByteAnd() throws TRuntimeException {
+        byte theValue = 3;
+        TAssert.assertEquals(2, theValue & 2, 0);
+    }
+
+    @Test
+    public void testShortAnd() throws TRuntimeException {
+        short theValue = 3;
+        TAssert.assertEquals(2, theValue & 2, 0);
+    }
+
+    @Test
+    public void testIntAnd() throws TRuntimeException {
+        int theValue = 3;
+        TAssert.assertEquals(2, theValue & 2, 0);
+    }
 
     @Test
     public void testShiftByte() throws TRuntimeException {
