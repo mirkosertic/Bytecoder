@@ -262,7 +262,7 @@ public class JSBackend {
                         }
                     }
                 }
-                theWriter.println("        var stack = [" + theCode.getMaxStack() + "];");
+                theWriter.println("        var stack = []; // Max stack depth = " + theCode.getMaxStack());
                 theWriter.println("        var stackOffset = -1;");
 
                 BytecodeProgram theProgram = theCode.getProgramm();
@@ -311,8 +311,7 @@ public class JSBackend {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var theLength = stack[stackOffset--];");
                         theWriter.println(theInset + "  var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
-                        theWriter.println(theInset + "  theInstance.data = [];");
-                        theWriter.println(theInset + "  theInstance.data.length = theLength;");
+                        theWriter.println(theInset + "  theInstance.data = new Array(theLength);");
                         theWriter.println(theInset + "  stack[++stackOffset] = theInstance;");
                         theWriter.println(theInset + "}");
 
@@ -323,8 +322,7 @@ public class JSBackend {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var theLength = stack[stackOffset--];");
                         theWriter.println(theInset + "  var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
-                        theWriter.println(theInset + "  theInstance.data = [];");
-                        theWriter.println(theInset + "  theInstance.data.length = theLength;");
+                        theWriter.println(theInset + "  theInstance.data = new Array(theLength);");
                         theWriter.println(theInset + "  stack[++stackOffset] = theInstance;");
                         theWriter.println(theInset + "}");
 
