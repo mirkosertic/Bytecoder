@@ -51,5 +51,5 @@ public class SimpleMathTest {
 }
 ```
 
-Is compiled to JavaScript and executed by the Nashorn engine. This testrunner will also support comparison of original Java code and its crosscompiled
+Is compiled to JavaScript and executed on a PhantomJS engine. This testrunner will also support comparison of original Java code and its crosscompiled
 counterpart. This mechanism is the core tool to test the compiler and the Classlib.
