@@ -66,4 +66,10 @@ public class TAssert {
             throw new TRuntimeException();
         }
     }
+
+    public static void assertNotNull(Object aValue) throws TRuntimeException {
+        if (aValue == null) {
+            throw new TRuntimeException();
+        }
+    }
 }
