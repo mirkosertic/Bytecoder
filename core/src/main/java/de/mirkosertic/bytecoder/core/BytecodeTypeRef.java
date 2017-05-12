@@ -23,7 +23,7 @@ public interface BytecodeTypeRef {
 
     boolean isArray();
 
-    boolean matchesTo(BytecodeTypeRef aOtherType);
+    boolean matchesExactlyTo(BytecodeTypeRef aOtherType);
 
     boolean isVoid();
 }

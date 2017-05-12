@@ -33,17 +33,17 @@ public class BytecodeMethodSignature {
         return arguments;
     }
 
-    public boolean matchesTo(BytecodeMethodSignature aSignature) {
+    public boolean metchesExactlyTo(BytecodeMethodSignature aSignature) {
         if (arguments.length != aSignature.arguments.length) {
             return false;
         }
 
-        boolean theMatch = returnType.matchesTo(aSignature.getReturnType());
+        boolean theMatch = returnType.matchesExactlyTo(aSignature.getReturnType());
         if (!theMatch) {
             return false;
         }
         for (int i=0;i<arguments.length;i++) {
-            if (!arguments[i].matchesTo(aSignature.arguments[i])) {
+            if (!arguments[i].matchesExactlyTo(aSignature.arguments[i])) {
                 return false;
             }
         }

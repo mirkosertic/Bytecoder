@@ -49,12 +49,12 @@ public class BytecodeArrayTypeRef implements BytecodeTypeRef {
     }
 
     @Override
-    public boolean matchesTo(BytecodeTypeRef aOtherType) {
+    public boolean matchesExactlyTo(BytecodeTypeRef aOtherType) {
         if (!(aOtherType instanceof BytecodeArrayTypeRef)) {
             return false;
         }
         BytecodeArrayTypeRef theOther = (BytecodeArrayTypeRef) aOtherType;
-        if (!type.matchesTo(((BytecodeArrayTypeRef) aOtherType).type)) {
+        if (!type.matchesExactlyTo(((BytecodeArrayTypeRef) aOtherType).type)) {
             return false;
         }
         if (depth != theOther.getDepth()) {

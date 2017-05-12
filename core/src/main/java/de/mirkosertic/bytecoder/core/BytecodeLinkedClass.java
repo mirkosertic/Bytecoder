@@ -132,32 +132,60 @@ public class BytecodeLinkedClass {
     }
 
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
-        linkStaticMethod(aMethodName, aSignature);
+        try {
+            BytecodeClass theClass = bytecodeClass;
+            BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
+            while(theMethod != null && theClass != null) {
+                if (theMethod != null) {
+                    if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
+                        BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
+                                .identifierFor(theMethod);
+                        linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
+                    }
+                    linkMethodInternal(theMethod);
+                    return;
+                }
+                theClass = linkerContext.linkClass(new BytecodeObjectTypeRef(theClass.getSuperClass().getConstant().stringValue().replace("/","."))).bytecodeClass;
+                theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
+            }
+            throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aSignature);
+            // We need to traver
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error while linking virtual method for " + className.name(), e);
+        }
     }
 
     public void linkStaticMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
         try {
-            BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignature(aMethodName, aMethodSignature);
+            BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
+            if (theMethod == null) {
+                throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aMethodSignature);
+            }
             // Constructors are not virtual
             if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
                 linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
             }
 
-            knownMethods.add(theMethod);
-
-            link(aMethodSignature.getReturnType());
-            for (BytecodeTypeRef theArgument : aMethodSignature.getArguments()) {
-                link(theArgument);
-            }
-
-            BytecodeCodeAttributeInfo theCode = theMethod.getCode(bytecodeClass);
-            BytecodeProgram theProgram = theCode.getProgramm();
-            for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
-                theInstruction.performLinking(linkerContext);
-            }
+            linkMethodInternal(theMethod);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error while linking method for " + className.name(), e);
+            throw new IllegalArgumentException("Error while linking static method for " + className.name(), e);
+        }
+    }
+
+    private void linkMethodInternal(BytecodeMethod aMethod) {
+        BytecodeMethodSignature theSignature = aMethod.getSignature();
+        knownMethods.add(aMethod);
+
+        link(theSignature.getReturnType());
+        for (BytecodeTypeRef theArgument : theSignature.getArguments()) {
+            link(theArgument);
+        }
+
+        BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
+        BytecodeProgram theProgram = theCode.getProgramm();
+        for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
+            theInstruction.performLinking(linkerContext);
         }
     }
 

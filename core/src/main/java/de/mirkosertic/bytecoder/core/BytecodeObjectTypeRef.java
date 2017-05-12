@@ -63,7 +63,7 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
     }
 
     @Override
-    public boolean matchesTo(BytecodeTypeRef aOtherType) {
+    public boolean matchesExactlyTo(BytecodeTypeRef aOtherType) {
         if (!(aOtherType instanceof BytecodeObjectTypeRef)) {
             return false;
         }

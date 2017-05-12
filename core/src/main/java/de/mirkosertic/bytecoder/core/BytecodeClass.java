@@ -60,13 +60,13 @@ public class BytecodeClass {
         throw new IllegalArgumentException("No such field : " + aName);
     }
 
-    public BytecodeMethod methodByNameAndSignature(String aMethodName, BytecodeMethodSignature aSignature) {
+    public BytecodeMethod methodByNameAndSignatureOrNull(String aMethodName, BytecodeMethodSignature aSignature) {
         for (BytecodeMethod theMethod : methods) {
-            if (aMethodName.equals(theMethod.getName().stringValue()) && theMethod.getSignature().matchesTo(aSignature)) {
+            if (aMethodName.equals(theMethod.getName().stringValue()) && theMethod.getSignature().metchesExactlyTo(aSignature)) {
                 return theMethod;
             }
         }
-        throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aSignature);
+        return null;
     }
 
     public BytecodeClassinfoConstant getSuperClass() {
