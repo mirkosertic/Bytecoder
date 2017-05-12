@@ -196,12 +196,20 @@ public class JSBackend {
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    emptyInstance : function() {");
+                theWriter.println("    classInitCheck : function() {");
                 if (aEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
-                    theWriter.println("            " + theJSClassName + ".clinit();");
                     theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
+                    theWriter.println("            " + theJSClassName + ".clinit();");
                     theWriter.println("        }");
+                }
+                theWriter.println("    },");
+                theWriter.println();
+
+
+                theWriter.println("    emptyInstance : function() {");
+                if (aEntry.getValue().hasClassInitializer()) {
+                    theWriter.println("        " + theJSClassName + ".classInitCheck();");
                 }
                 theWriter.println("        return {data: {");
                 aEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null,"));
@@ -492,6 +500,8 @@ public class JSBackend {
                         BytecodeFieldRefConstant theConstant = thePut.getConstant();
                         BytecodeClassinfoConstant theClassName = theConstant.getClassIndex().getClassConstant();
                         BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName();
+                        theWriter.println(
+                                theInset + toClassName(theClassName) + ".classInitCheck();");
                         theWriter.println(theInset + toClassName(theClassName) + ".staticFields." + theFieldName.stringValue() + " = stack[stackOffset--];");
                     } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                         BytecodeInstructionGETSTATIC theGet = (BytecodeInstructionGETSTATIC) theInstruction;
@@ -499,6 +509,8 @@ public class JSBackend {
                         BytecodeClassinfoConstant theClassName = theConstant.getClassIndex().getClassConstant();
                         BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex()
                                 .getName();
+                        theWriter.println(
+                                theInset + toClassName(theClassName) + ".classInitCheck();");
                         theWriter.println(
                                 theInset + "stack[++stackOffset] = " + toClassName(theClassName) + ".staticFields." + theFieldName
                                         .stringValue() + ";");
