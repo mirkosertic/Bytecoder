@@ -48,7 +48,7 @@ public class BytecodeMethod {
         if (theDelegatesTo != null) {
             BytecodeAnnotation.ElementValue theMethodToDelegate = theDelegatesTo.getElementValueByName("methodName");
             String theDelegatingMethod = theMethodToDelegate.stringValue();
-            return aContextClass.methodByNameAndSignature(theDelegatingMethod, getSignature()).getCode(aContextClass);
+            return aContextClass.methodByNameAndSignatureOrNull(theDelegatingMethod, getSignature()).getCode(aContextClass);
         }
         return attributeByType(BytecodeCodeAttributeInfo.class);
     }

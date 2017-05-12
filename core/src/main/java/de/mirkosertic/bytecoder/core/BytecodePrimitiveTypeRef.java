@@ -38,7 +38,7 @@ public enum BytecodePrimitiveTypeRef implements BytecodeTypeRef {
     }
 
     @Override
-    public boolean matchesTo(BytecodeTypeRef aOtherType) {
+    public boolean matchesExactlyTo(BytecodeTypeRef aOtherType) {
         return equals(aOtherType);
     }
 
