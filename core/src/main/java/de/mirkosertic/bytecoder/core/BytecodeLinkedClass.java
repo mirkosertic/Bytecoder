@@ -133,20 +133,33 @@ public class BytecodeLinkedClass {
 
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
         try {
+            BytecodeObjectTypeRef theClassName = className;
             BytecodeClass theClass = bytecodeClass;
-            BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
-            while(theMethod != null && theClass != null) {
+            while(theClass != null) {
+
+                BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 if (theMethod != null) {
                     if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
                         BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
                                 .identifierFor(theMethod);
-                        linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
+                        linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
                     }
                     linkMethodInternal(theMethod);
+
+                    if (theClass != bytecodeClass) {
+                        // Superclass methods must also be marked as linked
+                        linkerContext.linkVirtualMethod(theClassName, aMethodName, aSignature);
+                    }
+
                     return;
                 }
-                theClass = linkerContext.linkClass(new BytecodeObjectTypeRef(theClass.getSuperClass().getConstant().stringValue().replace("/","."))).bytecodeClass;
-                theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
+
+                if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                    theClassName = new BytecodeObjectTypeRef(theClass.getSuperClass().getConstant().stringValue().replace("/", "."));
+                    theClass = linkerContext.linkClass(theClassName).bytecodeClass;
+                } else {
+                    theClass = null;
+                }
             }
             throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aSignature);
             // We need to traver
@@ -173,7 +186,7 @@ public class BytecodeLinkedClass {
         }
     }
 
-    private void linkMethodInternal(BytecodeMethod aMethod) {
+    public void linkMethodInternal(BytecodeMethod aMethod) {
         BytecodeMethodSignature theSignature = aMethod.getSignature();
         knownMethods.add(aMethod);
 
