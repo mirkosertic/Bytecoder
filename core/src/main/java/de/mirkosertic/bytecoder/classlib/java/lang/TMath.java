@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TMath {
+public class TMath extends TObject {
 
     public static float abs(float a) {
         if (a<0) {

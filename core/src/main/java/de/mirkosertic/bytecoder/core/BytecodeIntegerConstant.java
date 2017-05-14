@@ -17,9 +17,13 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeIntegerConstant implements BytecodeConstant {
 
-    private final long value;
+    private final int value;
 
-    public BytecodeIntegerConstant(long aValue) {
+    public BytecodeIntegerConstant(int aValue) {
         value = aValue;
+    }
+
+    public int integerValue() {
+        return value;
     }
 }

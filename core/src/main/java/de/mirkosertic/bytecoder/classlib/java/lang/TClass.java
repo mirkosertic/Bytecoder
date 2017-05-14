@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TClass {
+public class TClass extends TObject {
 }

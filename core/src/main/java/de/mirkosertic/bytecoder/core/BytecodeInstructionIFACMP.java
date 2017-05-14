@@ -22,13 +22,29 @@ public class BytecodeInstructionIFACMP extends BytecodeInstruction {
     }
 
     private final Type type;
-    private final byte banchbyte1;
-    private final byte banchbyte2;
+    private final int jumpOffset;
 
-    public BytecodeInstructionIFACMP(BytecodeOpcodeAddress aIndex, Type aType, byte aBanchbyte1, byte aBanchbyte2) {
+    public BytecodeInstructionIFACMP(BytecodeOpcodeAddress aIndex, Type aType, int aJumpOffset) {
         super(aIndex);
         type = aType;
-        banchbyte1 = aBanchbyte1;
-        banchbyte2 = aBanchbyte2;
+        jumpOffset = aJumpOffset;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public BytecodeOpcodeAddress getJumpAddress() {
+        return getOpcodeAddress().add(jumpOffset);
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        return new BytecodeOpcodeAddress[] { getJumpAddress() };
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

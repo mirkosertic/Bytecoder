@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.io.UnsupportedEncodingException;
+
 public class BytecodeUtf8Constant implements BytecodeConstant {
 
     private final String value;
@@ -25,5 +27,9 @@ public class BytecodeUtf8Constant implements BytecodeConstant {
 
     public String stringValue() {
         return value;
+    }
+
+    public byte[] toUTF8Bytes() throws UnsupportedEncodingException {
+        return value.getBytes("UTF-8");
     }
 }

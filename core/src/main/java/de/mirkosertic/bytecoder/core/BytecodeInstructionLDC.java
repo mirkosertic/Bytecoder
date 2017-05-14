@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+
 public class BytecodeInstructionLDC extends BytecodeInstruction {
 
     private final byte constantIndex;
@@ -28,5 +31,17 @@ public class BytecodeInstructionLDC extends BytecodeInstruction {
 
     public BytecodeConstant constant() {
         return constantPool.constantByIndex(constantIndex - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        if (constant() instanceof BytecodeStringConstant) {
+            aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
+
+            BytecodeObjectTypeRef theObjectTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
+            aLinkerContext.linkConstructorInvocation(theObjectTypeRef,
+                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                            new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+        }
     }
 }

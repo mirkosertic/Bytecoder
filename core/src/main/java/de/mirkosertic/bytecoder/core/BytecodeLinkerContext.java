@@ -81,8 +81,8 @@ public class BytecodeLinkerContext {
         linkClass(aTypeRef).linkStaticMethod(aMethodName, aSignature);
     }
 
-    public void linkConstructorInvocation(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkStaticMethod(aMethodName, aSignature);
+    public void linkConstructorInvocation(BytecodeObjectTypeRef aTypeRef, BytecodeMethodSignature aSignature) {
+        linkClass(aTypeRef).linkStaticMethod("<init>", aSignature);
     }
 
     public void linkVirtualMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {

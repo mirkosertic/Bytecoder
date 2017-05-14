@@ -22,25 +22,25 @@ public class BytecodeInstructionIFCOND extends BytecodeInstruction {
     }
 
     private final Type type;
-    private final int jumpAddress;
+    private final int jumpOffset;
 
     public BytecodeInstructionIFCOND(BytecodeOpcodeAddress aOpcodeIndex, Type aType, int aIndex) {
         super(aOpcodeIndex);
         type = aType;
-        jumpAddress = aIndex;
+        jumpOffset = aIndex;
     }
 
     public Type getType() {
         return type;
     }
 
-    public BytecodeOpcodeAddress getJumpAddress() {
-        return getOpcodeAddress().add(jumpAddress);
+    public BytecodeOpcodeAddress getJumpOffset() {
+        return getOpcodeAddress().add(jumpOffset);
     }
 
     @Override
     public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
-        return new BytecodeOpcodeAddress[] { getJumpAddress() };
+        return new BytecodeOpcodeAddress[] { getJumpOffset() };
     }
 
     @Override

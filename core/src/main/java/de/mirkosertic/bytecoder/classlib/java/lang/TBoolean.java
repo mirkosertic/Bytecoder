@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TBoolean implements TSerializable {
+public class TBoolean extends TObject implements TSerializable {
 
     private boolean booleanValue;
 

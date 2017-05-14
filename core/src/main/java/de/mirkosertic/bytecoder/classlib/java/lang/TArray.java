@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TArray {
+public class TArray extends TObject {
 }

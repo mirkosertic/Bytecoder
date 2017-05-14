@@ -31,4 +31,8 @@ public class TObject {
     public String toString() {
         return null;
     }
+
+    public boolean equals(TObject aObject) {
+        return this == aObject;
+    }
 }

@@ -17,87 +17,15 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionAALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionAASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeProgramJumps;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.*;
 
 public class JSBackend {
 
@@ -128,6 +56,18 @@ public class JSBackend {
 
     public String toClassName(BytecodeClassinfoConstant aTypeRef) {
         return aTypeRef.getConstant().stringValue().replace("/","_");
+    }
+
+    public String toArray(byte[] aData) {
+        StringBuilder theResult = new StringBuilder("[");
+        for (int i=0;i<aData.length;i++) {
+            if (i>0) {
+                theResult.append(",");
+            }
+            theResult.append(aData[i]);
+        }
+        theResult.append("]");
+        return theResult.toString();
     }
 
     public String generateJumpCodeFor(BytecodeProgramJumps aJumps, BytecodeOpcodeAddress aSource, BytecodeOpcodeAddress aTarget) {
@@ -305,6 +245,16 @@ public class JSBackend {
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var top = stack[stackOffset];");
                         theWriter.println(theInset + "  stack[++stackOffset] = top;");
+                        theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
+                        BytecodeInstructionDUPX1 theDup = (BytecodeInstructionDUPX1) theInstruction;
+
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var theValue1 = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theValue2 = stack[stackOffset--];");
+                        theWriter.println(theInset + "  stack[++stackOffset] = theValue1;");
+                        theWriter.println(theInset + "  stack[++stackOffset] = theValue2;");
+                        theWriter.println(theInset + "  stack[++stackOffset] = theValue1;");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionNEW) {
                         BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
@@ -716,18 +666,60 @@ public class JSBackend {
                         if (theConstant instanceof BytecodeFloatConstant) {
                             BytecodeFloatConstant theFloat = (BytecodeFloatConstant) theConstant;
                             theWriter.println(theInset + "stack[++stackOffset] = " + theFloat.getFloatValue() + ";");
+                        } else if (theConstant instanceof BytecodeIntegerConstant) {
+                            BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
+                            theWriter.println(theInset + "stack[++stackOffset] = " + theInteger.integerValue() + ";");
                         } else if (theConstant instanceof BytecodeStringConstant) {
-                            BytecodeStringConstant theStr = (BytecodeStringConstant) theConstant;
-                            String theValue = theStr.getValue().stringValue();
-                            theWriter.println(theInset + "stack[++stackOffset] =  '" + theValue + "';");
+                            try {
+                                BytecodeStringConstant theStr = (BytecodeStringConstant) theConstant;
+                                String theValue = theStr.getValue().stringValue();
+                                byte[] theBytes = theStr.getValue().toUTF8Bytes();
+                                BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
+                                BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+
+                                BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                                        new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
+
+                                // Construct a String
+                                //theWriter.println(theInset + "stack[++stackOffset] =  '" + theValue + "';");
+                                theWriter.println(theInset + "{");
+                                theWriter.println(theInset + "  // new String from constant pool : " + theValue);
+                                theWriter.println(theInset + "  var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
+                                theWriter.println(theInset + "  var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
+                                theWriter.println(theInset + "  theBytes.data = " + toArray(theBytes) + ";");
+                                theWriter.println(theInset + "  theNewString = " + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
+                                theWriter.println(theInset + "  stack[++stackOffset] =  theNewString;");
+                                theWriter.println(theInset + "}");
+                            } catch (UnsupportedEncodingException e) {
+                                throw new RuntimeException(e);
+                            }
                         } else {
                             throw new IllegalStateException("Unsupported constant : " + theConstant);
                         }
                     } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                         BytecodeInstructionGOTO theGoto = (BytecodeInstructionGOTO) theInstruction;
                         theWriter.println(theInset + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theGoto.getJumpAddress()) + ";");
-                    } else if (theInstruction instanceof BytecodeInstructionICMP) {
-                        BytecodeInstructionICMP theCond = (BytecodeInstructionICMP) theInstruction;
+                    } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
+                        BytecodeInstructionIFACMP theCond = (BytecodeInstructionIFACMP) theInstruction;
+                        BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
+                        theWriter.println(theInset + "{");
+                        theWriter.println(theInset + "  var theValue2 = stack[stackOffset--];");
+                        theWriter.println(theInset + "  var theValue1 = stack[stackOffset--];");
+                        switch (theCond.getType()) {
+                            case eq:
+                                theWriter.println(theInset + "  if (theValue1 == theValue2) {");
+                                theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
+                                theWriter.println(theInset + "  }");
+                                break;
+                            case ne:
+                                theWriter.println(theInset + "  if (theValue1 != theValue2) {");
+                                theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
+                                theWriter.println(theInset + "  }");
+                                break;
+                        }
+                        theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
+                        BytecodeInstructionIFICMP theCond = (BytecodeInstructionIFICMP) theInstruction;
 
                         BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
                         theWriter.println(theInset + "{");
@@ -769,7 +761,7 @@ public class JSBackend {
 
                     } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                         BytecodeInstructionIFCOND theCond = (BytecodeInstructionIFCOND) theInstruction;
-                        BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
+                        BytecodeOpcodeAddress theTarget = theCond.getJumpOffset();
                         theWriter.println(theInset + "{");
                         theWriter.println(theInset + "  var theValue = stack[stackOffset--];");
                         switch (theCond.getType()) {
