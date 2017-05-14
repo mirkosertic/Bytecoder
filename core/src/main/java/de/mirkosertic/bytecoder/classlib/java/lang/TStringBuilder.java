@@ -25,11 +25,11 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     @Override
-    public TAbstractStringBuilder append(TCharSequence csq) throws TIOException {
+    public TStringBuilder append(TCharSequence csq) throws TIOException {
         return this;
     }
 
-    public TAbstractStringBuilder append(TString csq) throws TIOException {
+    public TStringBuilder append(TString csq) throws TIOException {
         return this;
     }
 

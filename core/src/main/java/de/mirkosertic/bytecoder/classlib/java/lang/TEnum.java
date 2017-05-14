@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TEnum implements TSerializable {
+public class TEnum extends TObject implements TSerializable {
 
     private final TString name;
     private final int ordinalNumber;

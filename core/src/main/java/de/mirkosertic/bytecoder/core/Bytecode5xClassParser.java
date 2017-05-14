@@ -171,7 +171,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     }
 
     private void parseConstantPool_CONSTANT_Integer(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        long theBytes = aDis.readInt();
+        int theBytes = aDis.readInt();
         aConstantPool.registerConstant(new BytecodeIntegerConstant(theBytes));
     }
 

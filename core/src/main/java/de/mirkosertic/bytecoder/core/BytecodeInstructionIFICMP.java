@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionICMP extends BytecodeInstruction {
+public class BytecodeInstructionIFICMP extends BytecodeInstruction {
 
     public enum Type {
         eq, ne, lt, ge, gt, le
@@ -24,7 +24,7 @@ public class BytecodeInstructionICMP extends BytecodeInstruction {
     private final Type type;
     private final int jumpOffset;
 
-    public BytecodeInstructionICMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType, int aJumpOffset) {
+    public BytecodeInstructionIFICMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType, int aJumpOffset) {
         super(aOpcodeIndex);
         type = aType;
         jumpOffset = aJumpOffset;

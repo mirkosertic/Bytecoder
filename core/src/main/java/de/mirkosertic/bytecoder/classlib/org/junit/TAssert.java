@@ -72,4 +72,10 @@ public class TAssert {
             throw new TRuntimeException();
         }
     }
+
+    public static void assertEquals(Object aValue1, Object aValue2) throws TRuntimeException {
+        if (!aValue1.equals(aValue2)) {
+            throw new TRuntimeException();
+        }
+    }
 }

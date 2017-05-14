@@ -696,52 +696,54 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                 case 159: { // if_icmpeq = 159 (0x9f)
                     int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;
-                    theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.eq, theIndex));
+                    theResult.addInstruction(new BytecodeInstructionIFICMP(theOpcodeIndex, BytecodeInstructionIFICMP.Type.eq, theIndex));
                     break;
                 }
                 case 160: { // if_icmpne = 160 (0xa0)
                     int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;
-                    theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.ne, theIndex));
+                    theResult.addInstruction(new BytecodeInstructionIFICMP(theOpcodeIndex, BytecodeInstructionIFICMP.Type.ne, theIndex));
                     break;
                 }
                 case 161: { // if_icmplt = 161 (0xa1)
                     int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;
-                    theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.lt, theIndex));
+                    theResult.addInstruction(new BytecodeInstructionIFICMP(theOpcodeIndex, BytecodeInstructionIFICMP.Type.lt, theIndex));
                     break;
                 }
                 case 162: { // if_icmpge = 162 (0xa2)
                     int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;
 
-                    theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.ge, theIndex));
+                    theResult.addInstruction(new BytecodeInstructionIFICMP(theOpcodeIndex, BytecodeInstructionIFICMP.Type.ge, theIndex));
                     break;
                 }
                 case 163: { // if_icmpgt = 163 (0xa3)
                     int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;
 
-                    theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.gt, theIndex));
+                    theResult.addInstruction(new BytecodeInstructionIFICMP(theOpcodeIndex, BytecodeInstructionIFICMP.Type.gt, theIndex));
                     break;
                 }
                 case 164: { // if_icmple = 164 (0xa4)
-                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    int theOffset = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;
 
-                    theResult.addInstruction(new BytecodeInstructionICMP(theOpcodeIndex, BytecodeInstructionICMP.Type.le, theIndex));
+                    theResult.addInstruction(new BytecodeInstructionIFICMP(theOpcodeIndex, BytecodeInstructionIFICMP.Type.le, theOffset));
                     break;
                 }
                 case 165: { // if_acmpeq = 165 (0xa5)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionIFACMP(theOpcodeIndex, BytecodeInstructionIFACMP.Type.eq, theBranchByte1, theBranchByte2));
+                    int theOffset = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+
+                    theResult.addInstruction(new BytecodeInstructionIFACMP(theOpcodeIndex, BytecodeInstructionIFACMP.Type.eq, theOffset));
                     break;
                 }
                 case 166: { // if_acmpne = 166 (0xa6)
-                    byte theBranchByte1 = aBytecodes[offset++];
-                    byte theBranchByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionIFACMP(theOpcodeIndex, BytecodeInstructionIFACMP.Type.ne, theBranchByte1, theBranchByte2));
+                    int theOffset = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+
+                    theResult.addInstruction(new BytecodeInstructionIFACMP(theOpcodeIndex, BytecodeInstructionIFACMP.Type.ne, theOffset));
                     break;
                 }
                 case 167: { // goto = 167 (0xa7)

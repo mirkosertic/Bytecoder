@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public abstract class TNumber {
+public abstract class TNumber extends TObject {
 
     public abstract int intValue();
 
