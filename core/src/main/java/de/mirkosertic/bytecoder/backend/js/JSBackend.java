@@ -246,6 +246,9 @@ public class JSBackend {
                         theWriter.println(theInset + "  var top = stack[stackOffset];");
                         theWriter.println(theInset + "  stack[++stackOffset] = top;");
                         theWriter.println(theInset + "}");
+                    } else if (theInstruction instanceof BytecodeInstructionIINC) {
+                        BytecodeInstructionIINC theInc = (BytecodeInstructionIINC) theInstruction;
+                        theWriter.println(theInset + "local" + (theInc.getIndex() + 1) + " += " + theInc.getConstant() + ";");
                     } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                         BytecodeInstructionDUPX1 theDup = (BytecodeInstructionDUPX1) theInstruction;
 
@@ -687,7 +690,7 @@ public class JSBackend {
                                 theWriter.println(theInset + "  var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
                                 theWriter.println(theInset + "  var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
                                 theWriter.println(theInset + "  theBytes.data = " + toArray(theBytes) + ";");
-                                theWriter.println(theInset + "  theNewString = " + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
+                                theWriter.println(theInset + "  " + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
                                 theWriter.println(theInset + "  stack[++stackOffset] =  theNewString;");
                                 theWriter.println(theInset + "}");
                             } catch (UnsupportedEncodingException e) {

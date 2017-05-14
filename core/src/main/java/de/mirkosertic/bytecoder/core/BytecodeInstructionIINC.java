@@ -25,4 +25,12 @@ public class BytecodeInstructionIINC extends BytecodeInstruction {
         index = aIndex;
         constant = aConsant;
     }
+
+    public byte getIndex() {
+        return index;
+    }
+
+    public byte getConstant() {
+        return constant;
+    }
 }

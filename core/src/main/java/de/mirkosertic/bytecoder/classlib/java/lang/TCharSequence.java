@@ -18,4 +18,6 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 public interface TCharSequence {
 
     int length();
+
+    byte[] getBytes();
 }

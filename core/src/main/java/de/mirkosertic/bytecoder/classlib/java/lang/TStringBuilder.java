@@ -19,18 +19,53 @@ import de.mirkosertic.bytecoder.classlib.io.TIOException;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
 
+    private byte[] data;
+
+    public TStringBuilder() {
+        data = new byte[0];
+    }
+
     @Override
     public int length() {
-        return 0;
+        return data.length;
     }
 
     @Override
-    public TStringBuilder append(TCharSequence csq) throws TIOException {
+    public TStringBuilder append(TCharSequence aCharSequence) throws TIOException {
+        byte[] theOtherData = aCharSequence.getBytes();
+        byte[] theNewData = new byte[data.length + theOtherData.length];
+        int offset = 0;
+        for (int i=0;i<data.length;i++) {
+            theNewData[offset++] = data[i];
+        }
+        for (int i=0;i<theNewData.length;i++) {
+            theNewData[offset++] = theNewData[i];
+        }
+        data = theNewData;
         return this;
     }
 
-    public TStringBuilder append(TString csq) throws TIOException {
+    public TStringBuilder append(TString aString) throws TIOException {
+        byte[] theOtherData = aString.getBytes();
+        byte[] theNewData = new byte[data.length + theOtherData.length];
+        int offset = 0;
+        for (int i=0;i<data.length;i++) {
+            theNewData[offset++] = data[i];
+        }
+        for (int i=0;i<theNewData.length;i++) {
+            theNewData[offset++] = theNewData[i];
+        }
+        data = theNewData;
         return this;
     }
 
+    @Override
+    public byte[] getBytes() {
+        return data;
+    }
+
+    @Override
+    public String toString() {
+        return new String(data);
+    }
 }

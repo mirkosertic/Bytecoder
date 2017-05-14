@@ -33,6 +33,11 @@ public class StringTest {
     }
 
     @Test
+    public void testLength() {
+        Assert.assertEquals(3, new Stringer().lala.length(), 0);
+    }
+
+    @Test
     public void testString() {
         Stringer theStringer = new Stringer();
         theStringer.append("lala");

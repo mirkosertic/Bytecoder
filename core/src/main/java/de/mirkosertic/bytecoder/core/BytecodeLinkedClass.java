@@ -144,7 +144,7 @@ public class BytecodeLinkedClass {
                                 .identifierFor(theMethod);
                         linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
                     }
-                    linkMethodInternal(theMethod);
+                    linkMethodInternal(theMethod, theClass == bytecodeClass);
 
                     if (theClass != bytecodeClass) {
                         // Superclass methods must also be marked as linked
@@ -180,15 +180,17 @@ public class BytecodeLinkedClass {
                 linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
             }
 
-            linkMethodInternal(theMethod);
+            linkMethodInternal(theMethod, true);
         } catch (Exception e) {
             throw new IllegalArgumentException("Error while linking static method for " + className.name(), e);
         }
     }
 
-    public void linkMethodInternal(BytecodeMethod aMethod) {
+    public void linkMethodInternal(BytecodeMethod aMethod, boolean isLocal) {
         BytecodeMethodSignature theSignature = aMethod.getSignature();
-        knownMethods.add(aMethod);
+        if (isLocal) {
+            knownMethods.add(aMethod);
+        }
 
         link(theSignature.getReturnType());
         for (BytecodeTypeRef theArgument : theSignature.getArguments()) {
