@@ -18,16 +18,18 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 public class TString extends TObject implements TSerializable, TComparable<TString>, TCharSequence {
 
     private byte[] data;
-    private int length;
 
     public TString(byte[] aData) {
         data = aData;
-        length = aData.length;
     }
 
     public TString() {
-        data = new byte[64];
-        length = 0;
+        data = new byte[0];
+    }
+
+    @Override
+    public byte[] getBytes() {
+        return data;
     }
 
     @Override
@@ -37,6 +39,6 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
 
     @Override
     public int length() {
-        return length;
+        return data.length;
     }
 }
