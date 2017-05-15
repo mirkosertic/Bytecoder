@@ -146,14 +146,8 @@ public class BytecodeProgramJumps {
         } else {
             // Jump Backward
             List<Range> theRanges = startRangesAt(aTarget);
-            if (theRanges.size() == 1) {
+            if (theRanges.size() > 0) {
                 return theRanges.get(0);
-            }
-            for (int i=0;i<theRanges.size();i++) {
-                Range theRange = theRanges.get(i);
-                if (theRange.end.getAddress() < aTarget.getAddress()) {
-                    return theRange;
-                }
             }
             throw new IllegalStateException();
         }

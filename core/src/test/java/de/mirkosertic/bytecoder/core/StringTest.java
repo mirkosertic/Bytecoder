@@ -15,32 +15,59 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.classlib.io.TIOException;
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+import de.mirkosertic.bytecoder.classlib.java.lang.TStringBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
 @RunWith(BytecoderUnitTestRunner.class)
 public class StringTest {
 
-    public class Stringer {
-
-        private String lala = "123";
-
-        public void append(String aOtherString) {
-            lala+= aOtherString;
-        }
+    public static String getString() {
+        return "123";
     }
 
     @Test
     public void testLength() {
-        Assert.assertEquals(3, new Stringer().lala.length(), 0);
+        String theTest = getString();
+        Assert.assertEquals(3, theTest.length(), 0);
     }
 
     @Test
-    public void testString() {
-        Stringer theStringer = new Stringer();
-        theStringer.append("lala");
-        Assert.assertEquals("123lala", theStringer.lala);
+    public void testStringArrayClone() {
+        String theNewString = new String(getString().getBytes());
+        Assert.assertEquals(3, theNewString.length(), 0);
+    }
+
+    @Test
+    public void testConcatenation() {
+        String theTest = getString();
+        String theTest2 = theTest + "456";
+        Assert.assertEquals(6, theTest2.length(), 0);
+    }
+
+    @Test
+    public void testEquals() {
+        String theString1  = getString() + "456";
+        String theString2  = getString() + "456";
+        Assert.assertEquals(theString1, theString2);
+    }
+
+    @Test
+    public void testStringBuilder() {
+        TStringBuilder theBuilder = new TStringBuilder();
+        String theResult = theBuilder.toString();
+        Assert.assertEquals(theResult.length(), 0, 0);
+    }
+
+    public void testStringBuilderAppend() throws TIOException {
+        TStringBuilder theBuilder = new TStringBuilder();
+        theBuilder.append(new TString("123".getBytes()));
+        String theResult = theBuilder.toString();
+        Assert.assertEquals(theResult.length(), 3, 0);
     }
 }

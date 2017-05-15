@@ -41,4 +41,24 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
     public int length() {
         return data.length;
     }
+
+    @Override
+    public boolean equals(Object aOtherObject) {
+        if (this == aOtherObject) {
+            return true;
+        }
+        if (!(aOtherObject instanceof TString)) {
+            return false;
+        }
+        TString theOtherString = (TString) aOtherObject;
+        if (!(theOtherString.length() == data.length)) {
+            return false;
+        }
+        for (int i=0;i<data.length;i++) {
+            if (data[i] != theOtherString.data[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

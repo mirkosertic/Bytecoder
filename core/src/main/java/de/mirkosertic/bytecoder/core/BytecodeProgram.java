@@ -61,4 +61,23 @@ public class BytecodeProgram {
         }
         return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);
     }
+
+    public boolean containsBackJump(BytecodeProgramJumps.Range aRange) {
+        for (BytecodeInstruction theInstruction : instructions) {
+            BytecodeOpcodeAddress theAddress = theInstruction.getOpcodeAddress();
+            if (theAddress.getAddress() >= aRange.getStart().getAddress() &&
+                theAddress.getAddress() < aRange.getEnd().getAddress()) {
+                // Instruction is in Range
+                if (theInstruction.isJumpSource()) {
+                    for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
+                        if (theTarget.getAddress() == aRange.getStart().getAddress()) {
+                            // Jump to top of the block, so it is a backjump
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }

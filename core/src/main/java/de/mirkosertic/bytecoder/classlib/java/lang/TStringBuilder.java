@@ -38,8 +38,8 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         for (int i=0;i<data.length;i++) {
             theNewData[offset++] = data[i];
         }
-        for (int i=0;i<theNewData.length;i++) {
-            theNewData[offset++] = theNewData[i];
+        for (int i=0;i<theOtherData.length;i++) {
+            theNewData[offset++] = theOtherData[i];
         }
         data = theNewData;
         return this;
@@ -52,8 +52,8 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         for (int i=0;i<data.length;i++) {
             theNewData[offset++] = data[i];
         }
-        for (int i=0;i<theNewData.length;i++) {
-            theNewData[offset++] = theNewData[i];
+        for (int i=0;i<theOtherData.length;i++) {
+            theNewData[offset++] = theOtherData[i];
         }
         data = theNewData;
         return this;
