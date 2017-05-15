@@ -42,4 +42,15 @@ public class BytecodeProgramJumpsTest {
         assertEquals(1,theJumps.endRangesAt(new BytecodeOpcodeAddress(13)).size());
         assertEquals(1,theJumps.endRangesAt(new BytecodeOpcodeAddress(33)).size());
     }
+
+    @Test
+    public void testJumpBackward() {
+        BytecodeProgramJumps theJumps = new BytecodeProgramJumps();
+        theJumps.registerJumpFromAToB(new BytecodeOpcodeAddress(22), new BytecodeOpcodeAddress(52));
+        theJumps.registerJumpFromAToB(new BytecodeOpcodeAddress(22), new BytecodeOpcodeAddress(59));
+
+        BytecodeProgramJumps.Range theRange = theJumps.findClosestRangeToJumpFrom(new BytecodeOpcodeAddress(49), new BytecodeOpcodeAddress(22));
+        assertEquals(22, theRange.getStart().getAddress());
+        assertEquals(59, theRange.getEnd().getAddress());
+    }
 }
