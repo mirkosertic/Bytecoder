@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+
 public class TInteger extends TNumber {
 
     private int integerValue;
 
+    @NoExceptionCheck
     public TInteger(int aIntegerValue) {
         integerValue = aIntegerValue;
     }

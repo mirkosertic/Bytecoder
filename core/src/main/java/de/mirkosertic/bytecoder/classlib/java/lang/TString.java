@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+
 public class TString extends TObject implements TSerializable, TComparable<TString>, TCharSequence {
 
     private byte[] data;
 
+    @NoExceptionCheck
     public TString(byte[] aData) {
         data = aData;
     }
 
+    @NoExceptionCheck
     public TString() {
         data = new byte[0];
     }
