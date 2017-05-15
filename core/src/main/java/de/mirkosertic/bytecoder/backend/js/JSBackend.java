@@ -193,6 +193,7 @@ public class JSBackend {
             if (!aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
 
                 theWriter.println("    staticFields : {");
+                theWriter.println("        name : '" + aEntry.getValue().getClassName().name() + "',");
                 if (aEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        classInitialized : false,");
                 }
@@ -208,7 +209,7 @@ public class JSBackend {
                     theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
                     theWriter.println("                return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(
                             theLinkTarget.getTargetMethod().getName().stringValue(),
-                            theLinkTarget.getTargetMethod().getSignature()));
+                            theLinkTarget.getTargetMethod().getSignature()) + ";");
                 });
                 theWriter.println("            default:");
                 theWriter.println("                throw {type: 'unknown virtual method'}");
@@ -296,7 +297,7 @@ public class JSBackend {
                     }
                 }
 
-                theWriter.println("        }");
+                theWriter.println("        };");
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeProgramJumps theJumps = theProgram.buildJumps(theCode.getExceptionTableEntries());

@@ -48,8 +48,24 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         return this;
     }
 
-    public TStringBuilder append(TString aString) throws TIOException {
+    /*public TStringBuilder append(TString aString) throws TIOException {
         byte[] theOtherData = aString.getBytes();
+        byte[] theNewData = new byte[data.length + theOtherData.length];
+        int offset = 0;
+        for (int i=0;i<data.length;i++) {
+            theNewData[offset++] = data[i];
+        }
+        for (int i=0;i<theOtherData.length;i++) {
+            theNewData[offset++] = theOtherData[i];
+        }
+        data = theNewData;
+        return this;
+    }*/
+
+    public TStringBuilder append(Object aObject) {
+        String theOtherObject = aObject != null ? aObject.toString() : "null";
+        byte[] theOtherData = theOtherObject.getBytes();
+
         byte[] theNewData = new byte[data.length + theOtherData.length];
         int offset = 0;
         for (int i=0;i<data.length;i++) {

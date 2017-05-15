@@ -30,13 +30,12 @@ public class TAssert {
     }
 
     public static String format(String message, Object expected, Object actual) {
-        /*String formatted = "";
+        String formatted = "";
         if(message != null && message.length() > 0) {
             formatted = message + " ";
         }
 
-        return formatted + "expected:<" + expected + "> but was:<" + actual + ">";*/
-        return null;
+        return formatted + "expected:<" + expected + "> but was:<" + actual + ">";
     }
 
     public static void failNotEquals(String message, Object expected, Object actual) throws TRuntimeException {
