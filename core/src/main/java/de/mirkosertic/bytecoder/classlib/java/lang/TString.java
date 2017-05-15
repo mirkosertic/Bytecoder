@@ -31,7 +31,7 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         data = new byte[0];
     }
 
-    @Override
+//    @Override
     public byte[] getBytes() {
         return data;
     }
