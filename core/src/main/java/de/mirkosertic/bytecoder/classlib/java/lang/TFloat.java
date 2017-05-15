@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+
 public class TFloat extends TNumber implements TComparable<TFloat> {
 
     private float floatValue;
 
+    @NoExceptionCheck
     public TFloat(float aValue) {
         floatValue = aValue;
     }

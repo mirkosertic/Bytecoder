@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+
 public class TEnum extends TObject implements TSerializable {
 
     private final TString name;
     private final int ordinalNumber;
 
+    @NoExceptionCheck
     protected TEnum(TString aName, int aOrdinalNumber) {
         name = aName;
         ordinalNumber = aOrdinalNumber;

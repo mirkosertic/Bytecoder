@@ -36,7 +36,7 @@ public class TAssert {
         }
 
         return formatted + "expected:<" + expected + "> but was:<" + actual + ">";*/
-        return "TO BE DONE";
+        return null;
     }
 
     public static void failNotEquals(String message, Object expected, Object actual) throws TRuntimeException {

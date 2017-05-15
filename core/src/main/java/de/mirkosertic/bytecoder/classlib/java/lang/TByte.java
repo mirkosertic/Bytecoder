@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+
 public class TByte extends TNumber {
 
     private byte byteValue;
 
+    @NoExceptionCheck
     public TByte(byte aByteValue) {
         byteValue = aByteValue;
     }

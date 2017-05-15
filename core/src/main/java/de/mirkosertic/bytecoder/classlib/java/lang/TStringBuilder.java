@@ -15,17 +15,20 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
 import de.mirkosertic.bytecoder.classlib.io.TIOException;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
 
     private byte[] data;
 
+    @NoExceptionCheck
     public TStringBuilder() {
         data = new byte[0];
     }
 
     @Override
+    @NoExceptionCheck
     public int length() {
         return data.length;
     }
@@ -60,11 +63,13 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     @Override
+    @NoExceptionCheck
     public byte[] getBytes() {
         return data;
     }
 
     @Override
+    @NoExceptionCheck
     public String toString() {
         return new String(data);
     }

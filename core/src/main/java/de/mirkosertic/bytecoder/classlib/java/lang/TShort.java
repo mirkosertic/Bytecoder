@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+
 public class TShort extends TNumber {
 
     private short shortValue;
 
+    @NoExceptionCheck
     public TShort(short aShortValue) {
         shortValue = aShortValue;
     }
