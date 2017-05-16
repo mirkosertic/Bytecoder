@@ -62,11 +62,33 @@ public class BytecodeProgram {
         return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);
     }
 
-    public boolean containsBackJump(BytecodeProgramJumps.Range aRange) {
+    public BytecodeInstruction instructionAt(BytecodeOpcodeAddress aAddress) {
         for (BytecodeInstruction theInstruction : instructions) {
+            if (theInstruction.getOpcodeAddress().equals(aAddress)) {
+                return theInstruction;
+            }
+        }
+        throw new IllegalArgumentException("No instruction found at " + aAddress.getAddress());
+    }
+
+    public boolean containsBackJump(BytecodeProgramJumps.Range aRange) {
+
+        BytecodeInstruction theInstructionAtEnd = instructionAt(aRange.getEnd());
+        if (theInstructionAtEnd.isJumpSource()) {
+            BytecodeOpcodeAddress[] theAddresses = theInstructionAtEnd.getPotentialJumpTargets();
+            for (BytecodeOpcodeAddress theAddress : theAddresses) {
+                if (theAddress.equals(aRange.getStart())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return false;
+
+        /*for (BytecodeInstruction theInstruction : instructions) {
             BytecodeOpcodeAddress theAddress = theInstruction.getOpcodeAddress();
             if (theAddress.getAddress() >= aRange.getStart().getAddress() &&
-                theAddress.getAddress() < aRange.getEnd().getAddress()) {
+                theAddress.getAddress() <= aRange.getEnd().getAddress()) {
                 // Instruction is in Range
                 if (theInstruction.isJumpSource()) {
                     for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
@@ -78,6 +100,6 @@ public class BytecodeProgram {
                 }
             }
         }
-        return false;
+        return false;*/
     }
 }

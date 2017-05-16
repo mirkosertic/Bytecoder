@@ -20,73 +20,97 @@ import de.mirkosertic.bytecoder.classlib.io.TIOException;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
 
-    private byte[] data;
+    private byte[] byteData;
 
     @NoExceptionCheck
     public TStringBuilder() {
-        data = new byte[0];
+        byteData = new byte[0];
+    }
+
+    @NoExceptionCheck
+    public TStringBuilder(byte[] aData) {
+        byteData = aData;
     }
 
     @Override
     @NoExceptionCheck
     public int length() {
-        return data.length;
+        return byteData.length;
+    }
+
+    public void internalAdd(byte[] aOtherData) {
+        byte[] theNewData = new byte[byteData.length + aOtherData.length];
+        int offset = 0;
+        for (int i = 0; i< byteData.length; i++) {
+            theNewData[offset++] = byteData[i];
+        }
+        for (int i=0;i<aOtherData.length;i++) {
+            theNewData[offset++] = aOtherData[i];
+        }
+        byteData = theNewData;
     }
 
     @Override
     public TStringBuilder append(TCharSequence aCharSequence) throws TIOException {
         byte[] theOtherData = aCharSequence.getBytes();
-        byte[] theNewData = new byte[data.length + theOtherData.length];
-        int offset = 0;
-        for (int i=0;i<data.length;i++) {
-            theNewData[offset++] = data[i];
-        }
-        for (int i=0;i<theOtherData.length;i++) {
-            theNewData[offset++] = theOtherData[i];
-        }
-        data = theNewData;
+        internalAdd(theOtherData);
         return this;
     }
 
-    /*public TStringBuilder append(TString aString) throws TIOException {
+    public TStringBuilder append(TString aString) throws TIOException {
         byte[] theOtherData = aString.getBytes();
-        byte[] theNewData = new byte[data.length + theOtherData.length];
-        int offset = 0;
-        for (int i=0;i<data.length;i++) {
-            theNewData[offset++] = data[i];
-        }
-        for (int i=0;i<theOtherData.length;i++) {
-            theNewData[offset++] = theOtherData[i];
-        }
-        data = theNewData;
+        internalAdd(theOtherData);
         return this;
-    }*/
+    }
 
     public TStringBuilder append(Object aObject) {
         String theOtherObject = aObject != null ? aObject.toString() : "null";
         byte[] theOtherData = theOtherObject.getBytes();
 
-        byte[] theNewData = new byte[data.length + theOtherData.length];
-        int offset = 0;
-        for (int i=0;i<data.length;i++) {
-            theNewData[offset++] = data[i];
+        internalAdd(theOtherData);
+        return this;
+    }
+
+    public TStringBuilder append(int aValue) {
+        boolean isNegative = false;
+        if (aValue < 0) {
+            isNegative = true;
+            aValue=-aValue;
         }
-        for (int i=0;i<theOtherData.length;i++) {
-            theNewData[offset++] = theOtherData[i];
+        byte[] theBytes = new byte[20];
+        int theOffset = 0;
+        do {
+            int theRemainder = aValue % 10;
+            theBytes[theOffset++] = (byte) theRemainder;
+            aValue = aValue / 10;
+        } while (aValue > 0);
+
+        byte[] theNewData;
+        int theStart = 0;
+        if (isNegative) {
+            theNewData = new byte[theOffset + 1];
+            theNewData[0] = '-';
+            theStart = 1;
+        } else {
+            theNewData = new byte[theOffset];
+            for (int i=0;i<theOffset;i++) {
+                theNewData[theStart + i] = (byte) (48 + theBytes[theOffset - 1 - i]);
+            }
         }
-        data = theNewData;
+
+        internalAdd(theNewData);
         return this;
     }
 
     @Override
     @NoExceptionCheck
     public byte[] getBytes() {
-        return data;
+        return byteData;
     }
 
     @Override
     @NoExceptionCheck
     public String toString() {
-        return new String(data);
+        return new String(byteData);
     }
 }

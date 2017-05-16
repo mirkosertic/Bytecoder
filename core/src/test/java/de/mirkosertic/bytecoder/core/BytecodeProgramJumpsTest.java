@@ -51,6 +51,6 @@ public class BytecodeProgramJumpsTest {
 
         BytecodeProgramJumps.Range theRange = theJumps.findClosestRangeToJumpFrom(new BytecodeOpcodeAddress(49), new BytecodeOpcodeAddress(22));
         assertEquals(22, theRange.getStart().getAddress());
-        assertEquals(59, theRange.getEnd().getAddress());
+        assertEquals(52, theRange.getEnd().getAddress());
     }
 }

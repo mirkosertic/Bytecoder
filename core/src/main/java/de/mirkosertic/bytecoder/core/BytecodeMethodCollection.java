@@ -57,8 +57,8 @@ public class BytecodeMethodCollection {
 
     private String toSignature(BytecodeTypeRef aTypeRef) {
         if (aTypeRef instanceof BytecodeObjectTypeRef) {
-            // We dont care for concrete type here!
-            return "Object";
+            BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
+            return theTypeRef.name().replace(".","_");
         }
         if (aTypeRef instanceof BytecodePrimitiveTypeRef) {
             BytecodePrimitiveTypeRef theRef = (BytecodePrimitiveTypeRef) aTypeRef;

@@ -302,6 +302,10 @@ public class JSBackend {
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeProgramJumps theJumps = theProgram.buildJumps(theCode.getExceptionTableEntries());
 
+                theWriter.println("        // Debug output jumptable");
+                theJumps.ranges().forEach(
+                        range -> theWriter.println("        //    " + range.rangeName()+ " "+ range.getStart().getAddress() + " -> " + range.getEnd().getAddress()));
+
                 String theInset = "        ";
                 theWriter.println("        // Begin method code");
                 for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
@@ -314,12 +318,6 @@ public class JSBackend {
                             theWriter.println(theInset + theRange.rangeName() + ": {");
                         }
                         theInset += "    ";
-                    }
-
-                    List<BytecodeProgramJumps.Range> theEndRangesAt = theJumps.endRangesAt(theInstruction.getOpcodeAddress());
-                    for (BytecodeProgramJumps.Range theRange : theEndRangesAt) {
-                        theInset = theInset.substring("    ".length());
-                        theWriter.println(theInset+ "}");
                     }
 
                     theWriter.println(theInset + "// Address " + theInstruction.getOpcodeAddress().getAddress());
@@ -896,6 +894,12 @@ public class JSBackend {
                         theWriter.println(theInset + "}");
                     } else {
                         throw new IllegalStateException("Cannot compile " + theInstruction);
+                    }
+
+                    List<BytecodeProgramJumps.Range> theEndRangesAt = theJumps.endRangesAt(theInstruction.getOpcodeAddress());
+                    for (BytecodeProgramJumps.Range theRange : theEndRangesAt) {
+                        theInset = theInset.substring("    ".length());
+                        theWriter.println(theInset+ "} // end of range " + theRange.rangeName());
                     }
                 }
 
