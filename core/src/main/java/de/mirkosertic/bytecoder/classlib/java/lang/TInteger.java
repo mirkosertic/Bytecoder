@@ -45,4 +45,11 @@ public class TInteger extends TNumber {
     public float floatValue() {
         return integerValue;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(integerValue);
+        return theBuffer.toString();
+    }
 }

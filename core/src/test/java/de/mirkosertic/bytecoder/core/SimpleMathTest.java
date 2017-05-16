@@ -63,7 +63,7 @@ public class SimpleMathTest {
 
     @Test
     public void testGetInt() throws TRuntimeException {
-        TAssert.assertEquals(220, getInt(), 0);
+        TAssert.assertEquals(240, getInt(), 0);
     }
 
     @Test

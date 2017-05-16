@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class BytecodeProgramJumps {
 
@@ -99,6 +100,10 @@ public class BytecodeProgramJumps {
         ranges = new ArrayList<>();
     }
 
+    public Stream<Range> ranges() {
+        return ranges.stream();
+    }
+
     public void registerJumpFromAToB(BytecodeOpcodeAddress a, BytecodeOpcodeAddress b) {
         if (a.getAddress() < b.getAddress()) {
             ranges.add(new Range(false, a, true, b));
@@ -125,7 +130,7 @@ public class BytecodeProgramJumps {
                 theResult.add(theRange);
             }
         }
-        Collections.sort(theResult, (o1, o2) -> Integer.compare(o2.start.getAddress(), o1.start.getAddress()));
+        Collections.sort(theResult, (o2, o1) -> Integer.compare(o2.start.getAddress(), o1.start.getAddress()));
         return theResult;
     }
 
@@ -147,7 +152,7 @@ public class BytecodeProgramJumps {
             // Jump Backward
             List<Range> theRanges = startRangesAt(aTarget);
             if (theRanges.size() > 0) {
-                return theRanges.get(0);
+                return theRanges.get(theRanges.size() - 1);
             }
             throw new IllegalStateException();
         }
