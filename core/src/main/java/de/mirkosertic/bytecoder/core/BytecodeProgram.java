@@ -34,22 +34,6 @@ public class BytecodeProgram {
         return instructions;
     }
 
-    public BytecodeProgramJumps buildJumps(BytecodeExceptionTableEntry[] aExceptionHandlerEntries) {
-        BytecodeProgramJumps theJumps = new BytecodeProgramJumps();
-        for (BytecodeInstruction theInstruction : instructions) {
-            if (theInstruction.isJumpSource()) {
-                for (BytecodeOpcodeAddress theAddress : theInstruction.getPotentialJumpTargets()) {
-                    theJumps.registerJumpFromAToB(theInstruction.getOpcodeAddress(), theAddress);
-                }
-            }
-        }
-        for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
-            theJumps.registerJumpFromAToB(aEntry.getStartPC(), aEntry.getHandlerPc());
-        }
-        theJumps.tryToOptimize();
-        return theJumps;
-    }
-
     public BytecodeExceptionTableEntry[] getActiveExceptionHandlers(BytecodeOpcodeAddress aAddress, BytecodeExceptionTableEntry[] aExceptionHandlerEntries) {
         List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
         for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
@@ -62,44 +46,11 @@ public class BytecodeProgram {
         return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);
     }
 
-    public BytecodeInstruction instructionAt(BytecodeOpcodeAddress aAddress) {
-        for (BytecodeInstruction theInstruction : instructions) {
-            if (theInstruction.getOpcodeAddress().equals(aAddress)) {
-                return theInstruction;
-            }
+    public int getNextInstructionAddress(BytecodeInstruction aInstruction) {
+        int p = instructions.indexOf(aInstruction);
+        if (p== instructions.size() -1) {
+            return -1;
         }
-        throw new IllegalArgumentException("No instruction found at " + aAddress.getAddress());
-    }
-
-    public boolean containsBackJump(BytecodeProgramJumps.Range aRange) {
-
-        BytecodeInstruction theInstructionAtEnd = instructionAt(aRange.getEnd());
-        if (theInstructionAtEnd.isJumpSource()) {
-            BytecodeOpcodeAddress[] theAddresses = theInstructionAtEnd.getPotentialJumpTargets();
-            for (BytecodeOpcodeAddress theAddress : theAddresses) {
-                if (theAddress.equals(aRange.getStart())) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return false;
-
-        /*for (BytecodeInstruction theInstruction : instructions) {
-            BytecodeOpcodeAddress theAddress = theInstruction.getOpcodeAddress();
-            if (theAddress.getAddress() >= aRange.getStart().getAddress() &&
-                theAddress.getAddress() <= aRange.getEnd().getAddress()) {
-                // Instruction is in Range
-                if (theInstruction.isJumpSource()) {
-                    for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
-                        if (theTarget.getAddress() == aRange.getStart().getAddress()) {
-                            // Jump to top of the block, so it is a backjump
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;*/
+        return instructions.get(p + 1).getOpcodeAddress().getAddress();
     }
 }

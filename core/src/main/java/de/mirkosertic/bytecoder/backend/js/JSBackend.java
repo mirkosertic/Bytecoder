@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.backend.js;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.List;
 
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
@@ -101,7 +100,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeProgramJumps;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
@@ -150,12 +148,8 @@ public class JSBackend {
         return theResult.toString();
     }
 
-    public String generateJumpCodeFor(BytecodeProgramJumps aJumps, BytecodeOpcodeAddress aSource, BytecodeOpcodeAddress aTarget) {
-        BytecodeProgramJumps.Range theRange = aJumps.findClosestRangeToJumpFrom(aSource, aTarget);
-        if (aTarget.isAfter(aSource)) {
-            return "break " + theRange.rangeName();
-        }
-        return "continue " + theRange.rangeName();
+    public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
+        return "return " + aTarget.getAddress()+";";
     }
 
     private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
@@ -300,30 +294,15 @@ public class JSBackend {
                 theWriter.println("        };");
 
                 BytecodeProgram theProgram = theCode.getProgramm();
-                BytecodeProgramJumps theJumps = theProgram.buildJumps(theCode.getExceptionTableEntries());
 
-                theWriter.println("        // Debug output jumptable");
-                theJumps.ranges().forEach(
-                        range -> theWriter.println("        //    " + range.rangeName()+ " "+ range.getStart().getAddress() + " -> " + range.getEnd().getAddress()));
-
-                String theInset = "        ";
+                String theInset = "            ";
                 theWriter.println("        // Begin method code");
+                theWriter.println("        var theProgramm = [];");
                 for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
 
-                    List<BytecodeProgramJumps.Range> theStartRangesAt = theJumps.startRangesAt(theInstruction.getOpcodeAddress());
-                    for (BytecodeProgramJumps.Range theRange : theStartRangesAt) {
-                        if (theProgram.containsBackJump(theRange)) {
-                            theWriter.println(theInset + theRange.rangeName() + ": while(true) {");
-                        } else {
-                            theWriter.println(theInset + theRange.rangeName() + ": {");
-                        }
-                        theInset += "    ";
-                    }
-
-                    theWriter.println(theInset + "// Address " + theInstruction.getOpcodeAddress().getAddress());
-
+                    theWriter.println("        theProgramm[" + theInstruction.getOpcodeAddress().getAddress()+"] = function(frame) {");
                     if (theInstruction instanceof BytecodeInstructionRETURN) {
-                        theWriter.println(theInset + "return;");
+                        theWriter.println(theInset + "return -1;");
                     } else if (theInstruction instanceof BytecodeInstructionDUP) {
                         BytecodeInstructionDUP theDup = (BytecodeInstructionDUP) theInstruction;
                         theWriter.println(theInset + "frame.stack.push(frame.stack[frame.stack.length - 1]);");
@@ -333,13 +312,11 @@ public class JSBackend {
                     } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                         BytecodeInstructionDUPX1 theDup = (BytecodeInstructionDUPX1) theInstruction;
 
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1);");
-                        theWriter.println(theInset + "  frame.stack.push(theValue2);");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theValue1);");
+                        theWriter.println(theInset + "frame.stack.push(theValue2);");
+                        theWriter.println(theInset + "frame.stack.push(theValue1);");
                     } else if (theInstruction instanceof BytecodeInstructionNEW) {
                         BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
 
@@ -350,23 +327,19 @@ public class JSBackend {
                         BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
 
                         BytecodeObjectTypeRef theConstant = theNew.getObjectType();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theLength = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
-                        theWriter.println(theInset + "  theInstance.data = new Array(theLength);");
-                        theWriter.println(theInset + "  frame.stack.push(theInstance);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theLength = frame.stack.pop();");
+                        theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                        theWriter.println(theInset + "theInstance.data = new Array(theLength);");
+                        theWriter.println(theInset + "frame.stack.push(theInstance);");
 
                     } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                         BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
 
                         BytecodeObjectTypeRef theConstant = theNew.getObjectType();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theLength = frame.stack.pop()");
-                        theWriter.println(theInset + "  var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
-                        theWriter.println(theInset + "  theInstance.data = new Array(theLength);");
-                        theWriter.println(theInset + "  frame.stack.push(theInstance);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theLength = frame.stack.pop()");
+                        theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                        theWriter.println(theInset + "theInstance.data = new Array(theLength);");
+                        theWriter.println(theInset + "frame.stack.push(theInstance);");
 
                     } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
                         BytecodeInstructionINVOKESPECIAL theInvokeSpecial = (BytecodeInstructionINVOKESPECIAL) theInstruction;
@@ -376,16 +349,15 @@ public class JSBackend {
                         BytecodeNameAndTypeConstant theMethodRef = theConstant.getNameAndTypeIndex().getNameAndType();
                         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
                         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-                        theWriter.println(theInset + "{");
                         BytecodeTypeRef[] theInvokeArguments = theSig.getArguments();
                         for (int i=theInvokeArguments.length;i>0;i--) {
-                            theWriter.println(theInset + "  var arg"+i+" = frame.stack.pop();");
+                            theWriter.println(theInset + "var arg"+i+" = frame.stack.pop();");
                         }
-                        theWriter.println(theInset + "  var callsite = frame.stack.pop();");
+                        theWriter.println(theInset + "var callsite = frame.stack.pop();");
                         if (theSig.getReturnType().isVoid()) {
-                            theWriter.print(theInset + "  ");
+                            theWriter.print(theInset);
                         } else {
-                            theWriter.print(theInset + "  frame.stack.push(");
+                            theWriter.print(theInset + "frame.stack.push(");
                         }
 
                         if (theOverriddenParentClassName != null) {
@@ -404,13 +376,12 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "  var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
-                        theWriter.println(theInset + "  if (theLastException) {");
+                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "if (theLastException) {");
 
-                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
                                 theInset + "    ", theInvokeSpecial, "theLastException");
 
-                        theWriter.println(theInset + "  }");
                         theWriter.println(theInset + "}");
 
                     } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
@@ -425,16 +396,15 @@ public class JSBackend {
 
                         BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theName.stringValue(), theSig);
 
-                        theWriter.println(theInset + "{");
                         BytecodeTypeRef[] theInvokeArguments = theSig.getArguments();
                         for (int i=theInvokeArguments.length;i>0;i--) {
-                            theWriter.println(theInset + "  var arg"+i+" = frame.stack.pop();");
+                            theWriter.println(theInset + "var arg"+i+" = frame.stack.pop();");
                         }
-                        theWriter.println(theInset + "  var callsite = frame.stack.pop();");
+                        theWriter.println(theInset + "var callsite = frame.stack.pop();");
                         if (theSig.getReturnType().isVoid()) {
-                            theWriter.print(theInset + "  ");
+                            theWriter.print(theInset);
                         } else {
-                            theWriter.print(theInset + "  frame.stack.push(");
+                            theWriter.print(theInset + "frame.stack.push(");
                         }
 
                         theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
@@ -448,15 +418,14 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "  var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
-                        theWriter.println(theInset + "  if (theLastException) {");
+                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "if (theLastException) {");
 
-                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
                                 theInset + "    ", theVirtualInvoke, "theLastException");
 
-                        theWriter.println(theInset + "  }");
-
                         theWriter.println(theInset + "}");
+
                     }else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
                         BytecodeInstructionINVOKESTATIC theStaticInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
 
@@ -465,15 +434,14 @@ public class JSBackend {
                         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
                         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
                         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-                        theWriter.println(theInset + "{");
                         BytecodeTypeRef[] theInvokeArguments = theSig.getArguments();
                         for (int i=theInvokeArguments.length;i>0;i--) {
-                            theWriter.println(theInset + "  var arg"+i+" = frame.stack.pop();");
+                            theWriter.println(theInset + "var arg"+i+" = frame.stack.pop();");
                         }
                         if (theSig.getReturnType().isVoid()) {
-                            theWriter.print(theInset + "  ");
+                            theWriter.print(theInset);
                         } else {
-                            theWriter.print(theInset + "  frame.stack.push(");
+                            theWriter.print(theInset + "frame.stack.push(");
                         }
                         theWriter.print(toClassName((theClassConstant)) + "." + toMethodName(theName.stringValue(), theSig) +"(");
                         for (int i=1;i<=theInvokeArguments.length;i++) {
@@ -489,27 +457,24 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "  var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
-                        theWriter.println(theInset + "  if (theLastException) {");
+                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "if (theLastException) {");
 
-                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
                                 theInset + "    ", theStaticInvoke, "theLastException");
 
-                        theWriter.println(theInset + "  }");
-
                         theWriter.println(theInset + "}");
+
                     } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
                         BytecodeInstructionINSTANCEOF theInstanceOf = (BytecodeInstructionINSTANCEOF) theInstruction;
 
                         BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theInstanceOf.getTypeRef().getConstant());
 
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp = frame.stack.pop();");
-                        theWriter.println(theInset + "  if (temp == null) {");
-                        theWriter.println(theInset + "    frame.stack.push(0);");
-                        theWriter.println(theInset + "  } else {");
-                        theWriter.println(theInset + "    frame.stack.push(temp.clazz.instanceOfType(" + theLinkedClass.getUniqueId() + "));");
-                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "var temp = frame.stack.pop();");
+                        theWriter.println(theInset + "if (temp == null) {");
+                        theWriter.println(theInset + "  frame.stack.push(0);");
+                        theWriter.println(theInset + "} else {");
+                        theWriter.println(theInset + "  frame.stack.push(temp.clazz.instanceOfType(" + theLinkedClass.getUniqueId() + "));");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionPOP) {
                         BytecodeInstructionPOP thePop = (BytecodeInstructionPOP) theInstruction;
@@ -541,11 +506,9 @@ public class JSBackend {
                         theWriter.println(theInset + "frame.stack.push(frame.local" + (theStore.getVariableIndex() + 1) + ");");
                     } else if (theInstruction instanceof BytecodeInstructionAALOAD) {
                         BytecodeInstructionAALOAD theLoad = (BytecodeInstructionAALOAD) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theIndex = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theArrayRef = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theArrayRef.data[theIndex]);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theIndex = frame.stack.pop();");
+                        theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theArrayRef.data[theIndex]);");
                     } else if (theInstruction instanceof BytecodeInstructionPUTSTATIC) {
                         BytecodeInstructionPUTSTATIC thePut = (BytecodeInstructionPUTSTATIC) theInstruction;
                         BytecodeFieldRefConstant theConstant = thePut.getConstant();
@@ -570,173 +533,133 @@ public class JSBackend {
                         BytecodeFieldRefConstant theConstant = theGet.getFieldRefConstant();
                         BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex()
                                 .getName();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theObjectRef = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue = frame.stack.pop();");
+                        theWriter.println(theInset + "var theObjectRef = frame.stack.pop();");
                         theWriter.println(
-                                theInset + "  theObjectRef.data." + theFieldName.stringValue() + " = theValue;");
-                        theWriter.println(theInset + "}");
+                                theInset + "theObjectRef.data." + theFieldName.stringValue() + " = theValue;");
                     } else if (theInstruction instanceof BytecodeInstructionGETFIELD) {
                         BytecodeInstructionGETFIELD theGet = (BytecodeInstructionGETFIELD) theInstruction;
                         BytecodeFieldRefConstant theConstant = theGet.getFieldRefConstant();
                         BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex()
                                 .getName();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theObjectRef = frame.stack.pop();");
+                        theWriter.println(theInset + "var theObjectRef = frame.stack.pop();");
                         theWriter.println(
-                                theInset + "  frame.stack.push(theObjectRef.data." + theFieldName.stringValue() + ");");
-                        theWriter.println(theInset + "}");
+                                theInset + "frame.stack.push(theObjectRef.data." + theFieldName.stringValue() + ");");
                     } else if (theInstruction instanceof BytecodeInstructionLCMP) {
                         BytecodeInstructionLCMP theCmp = (BytecodeInstructionLCMP) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var temp1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  if (temp1 > temp2) {");
-                        theWriter.println(theInset + "      frame.stack.push(1);");
-                        theWriter.println(theInset + "  } else if (temp1 < temp2) {");
-                        theWriter.println(theInset + "      frame.stack.push(-1);");
-                        theWriter.println(theInset + "  } else {");
-                        theWriter.println(theInset + "      frame.stack.push(0);");
-                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "var temp2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var temp1 = frame.stack.pop();");
+                        theWriter.println(theInset + "if (temp1 > temp2) {");
+                        theWriter.println(theInset + "    frame.stack.push(1);");
+                        theWriter.println(theInset + "} else if (temp1 < temp2) {");
+                        theWriter.println(theInset + "    frame.stack.push(-1);");
+                        theWriter.println(theInset + "} else {");
+                        theWriter.println(theInset + "    frame.stack.push(0);");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionGenericSHL) {
                         BytecodeInstructionGenericSHL theShift = (BytecodeInstructionGenericSHL) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1 << theValue2);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theValue1 << theValue2);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericSHR) {
                         BytecodeInstructionGenericSHR theShift = (BytecodeInstructionGenericSHR) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1 >> theValue2);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theValue1 >> theValue2);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericAND) {
                         BytecodeInstructionGenericAND theAnd = (BytecodeInstructionGenericAND) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1 & theValue2);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theValue1 & theValue2);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericOR) {
                         BytecodeInstructionGenericOR theOr = (BytecodeInstructionGenericOR) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1 | theValue2);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theValue1 | theValue2);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericXOR) {
                         BytecodeInstructionGenericXOR theXOr = (BytecodeInstructionGenericXOR) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theValue1 ^ theValue2);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theValue1 ^ theValue2);");
                     } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                         BytecodeInstructionIFNULL theIf = (BytecodeInstructionIFNULL) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var currentStack = frame.stack.pop();");
-                        theWriter.println(theInset + "  if (!(currentStack)) {");
-                        theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theIf.getJumpTarget()));
-                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "var currentStack = frame.stack.pop();");
+                        theWriter.println(theInset + "if (!(currentStack)) {");
+                        theWriter.println(theInset + "    " + generateJumpCodeFor(theIf.getJumpTarget()));
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
                         BytecodeInstructionIFNONNULL theIf = (BytecodeInstructionIFNONNULL) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var currentStack = frame.stack.pop();");
-                        theWriter.println(theInset + "  if (currentStack) {");
-                        theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theIf.getJumpTarget()));
-                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "var currentStack = frame.stack.pop();");
+                        theWriter.println(theInset + "if (currentStack) {");
+                        theWriter.println(theInset + "    " + generateJumpCodeFor(theIf.getJumpTarget()));
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionFCMP) {
                         BytecodeInstructionFCMP theCmp = (BytecodeInstructionFCMP) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var temp1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  if (temp1 > temp2) {");
-                        theWriter.println(theInset + "      frame.stack.push(1);");
-                        theWriter.println(theInset + "  } else if (temp1 < temp2) {");
-                        theWriter.println(theInset + "      frame.stack.push(-1);");
-                        theWriter.println(theInset + "  } else {");
-                        theWriter.println(theInset + "      frame.stack.push(0);");
-                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "var temp2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var temp1 = frame.stack.pop();");
+                        theWriter.println(theInset + "if (temp1 > temp2) {");
+                        theWriter.println(theInset + "    frame.stack.push(1);");
+                        theWriter.println(theInset + "} else if (temp1 < temp2) {");
+                        theWriter.println(theInset + "    frame.stack.push(-1);");
+                        theWriter.println(theInset + "} else {");
+                        theWriter.println(theInset + "    frame.stack.push(0);");
                         theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionGenericADD) {
                         BytecodeInstructionGenericADD theAdd = (BytecodeInstructionGenericADD) theInstruction;
-                        theWriter.println(theInset + "var temp = frame.stack.push(frame.stack.pop() + frame.stack.pop());");
+                        theWriter.println(theInset + "frame.stack.push(frame.stack.pop() + frame.stack.pop());");
                     } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                         BytecodeInstructionGenericDIV theDiv = (BytecodeInstructionGenericDIV) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp = Math.floor(frame.stack[frame.stack.length - 2] / frame.stack[frame.stack.length - 1]);");
-                        theWriter.println(theInset + "  frame.stack[frame.stack.length - 1] = temp;");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var temp = Math.floor(frame.stack[frame.stack.length - 2] / frame.stack[frame.stack.length - 1]);");
+                        theWriter.println(theInset + "frame.stack[frame.stack.length - 1] = temp;");
                     } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                         BytecodeInstructionGenericREM theRem = (BytecodeInstructionGenericREM) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp = Math.floor(frame.stack[frame.stack.length - 2] % frame.stack[frame.stack.length - 1]);");
-                        theWriter.println(theInset + "  frame.stack[frame.stack.length - 1] = temp;");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var temp = Math.floor(frame.stack[frame.stack.length - 2] % frame.stack[frame.stack.length - 1]);");
+                        theWriter.println(theInset + "frame.stack[frame.stack.length - 1] = temp;");
                     } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
                         BytecodeInstructionGenericMUL theDiv = (BytecodeInstructionGenericMUL) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp = frame.stack[frame.stack.length - 2] * frame.stack[frame.stack.length - 1];");
-                        theWriter.println(theInset + "  frame.stack[frame.stack.length - 1] = temp;");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var temp = frame.stack[frame.stack.length - 2] * frame.stack[frame.stack.length - 1];");
+                        theWriter.println(theInset + "frame.stack[frame.stack.length - 1] = temp;");
                     } else if (theInstruction instanceof BytecodeInstructionGenericSUB) {
                         BytecodeInstructionGenericSUB theSub = (BytecodeInstructionGenericSUB) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp1 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var temp2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(temp2 - temp1);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var temp1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var temp2 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(temp2 - temp1);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericNEG) {
                         BytecodeInstructionGenericNEG theNeg = (BytecodeInstructionGenericNEG) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var temp = - frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(temp);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var temp = - frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(temp);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericASTORE) {
                         BytecodeInstructionGenericASTORE theStore = (BytecodeInstructionGenericASTORE) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theIndex = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theArrayRef = frame.stack.pop();");
-                        theWriter.println(theInset + "  theArrayRef.data[theIndex] = theValue;");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue = frame.stack.pop();");
+                        theWriter.println(theInset + "var theIndex = frame.stack.pop();");
+                        theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
+                        theWriter.println(theInset + "theArrayRef.data[theIndex] = theValue;");
                     } else if (theInstruction instanceof BytecodeInstructionAASTORE) {
                         BytecodeInstructionAASTORE theStore = (BytecodeInstructionAASTORE) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theIndex = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theArrayRef = frame.stack.pop();");
-                        theWriter.println(theInset + "  theArrayRef.data[theIndex] = theValue;");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theValue = frame.stack.pop();");
+                        theWriter.println(theInset + "var theIndex = frame.stack.pop();");
+                        theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
+                        theWriter.println(theInset + "theArrayRef.data[theIndex] = theValue;");
                     } else if (theInstruction instanceof BytecodeInstructionGenericALOAD) {
                         BytecodeInstructionGenericALOAD theLoad = (BytecodeInstructionGenericALOAD) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theIndex = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theArrayRef = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theArrayRef.data[theIndex]);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theIndex = frame.stack.pop();");
+                        theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theArrayRef.data[theIndex]);");
                     } else if (theInstruction instanceof BytecodeInstructionARRAYLENGTH) {
                         BytecodeInstructionARRAYLENGTH theLength = (BytecodeInstructionARRAYLENGTH) theInstruction;
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theArrayRef = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theArrayRef.data.length);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theArrayRef.data.length);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                         BytecodeInstructionGenericRETURN theReturn = (BytecodeInstructionGenericRETURN) theInstruction;
-                        theWriter.println(theInset + "return frame.stack.pop();");
+                        theWriter.println(theInset + "return -2;");
                     } else if (theInstruction instanceof BytecodeInstructionARETURN) {
                         BytecodeInstructionARETURN theReturn = (BytecodeInstructionARETURN) theInstruction;
-                        theWriter.println(theInset + "return frame.stack.pop();");
+                        theWriter.println(theInset + "return -2;");
                     } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                         BytecodeInstructionATHROW theThrow = (BytecodeInstructionATHROW) theInstruction;
 
                         theWriter.println(theInset + "var theException = frame.stack[frame.stack.length - 1];");
-                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram, theJumps,
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
                                 theInset, theThrow, "theException");
 
                     } else if (theInstruction instanceof BytecodeInstructionFCONST) {
@@ -746,15 +669,11 @@ public class JSBackend {
                         BytecodeInstructionICONST theConst = (BytecodeInstructionICONST) theInstruction;
                         theWriter.println(theInset + "frame.stack.push(" + theConst.getIntConst() + ");");
                     } else if (theInstruction instanceof BytecodeInstructionI2Generic) {
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theInt = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theInt);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theInt = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theInt);");
                     } else if (theInstruction instanceof BytecodeInstructionF2Generic) {
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theFloat = frame.stack.pop();");
-                        theWriter.println(theInset + "  frame.stack.push(theFloat);");
-                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theFloat = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theFloat);");
                     } else if (theInstruction instanceof BytecodeInstructionLDC) {
                         BytecodeInstructionLDC theLoad = (BytecodeInstructionLDC) theInstruction;
                         BytecodeConstant theConstant = theLoad.constant();
@@ -776,15 +695,12 @@ public class JSBackend {
                                         new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
 
                                 // Construct a String
-                                //theWriter.println(theInset + "stack[++stackOffset] =  '" + theValue + "';");
-                                theWriter.println(theInset + "{");
-                                theWriter.println(theInset + "  // new String from constant pool : " + theValue);
-                                theWriter.println(theInset + "  var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
-                                theWriter.println(theInset + "  var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
-                                theWriter.println(theInset + "  theBytes.data = " + toArray(theBytes) + ";");
-                                theWriter.println(theInset + "  " + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
-                                theWriter.println(theInset + "  frame.stack.push(theNewString);");
-                                theWriter.println(theInset + "}");
+                                theWriter.println(theInset + "// new String from constant pool : " + theValue);
+                                theWriter.println(theInset + "var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
+                                theWriter.println(theInset + "var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
+                                theWriter.println(theInset + "theBytes.data = " + toArray(theBytes) + ";");
+                                theWriter.println(theInset + "" + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
+                                theWriter.println(theInset + "frame.stack.push(theNewString);");
                             } catch (UnsupportedEncodingException e) {
                                 throw new RuntimeException(e);
                             }
@@ -793,115 +709,117 @@ public class JSBackend {
                         }
                     } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                         BytecodeInstructionGOTO theGoto = (BytecodeInstructionGOTO) theInstruction;
-                        theWriter.println(theInset + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theGoto.getJumpAddress()) + ";");
+                        theWriter.println(theInset + generateJumpCodeFor(theGoto.getJumpAddress()));
                     } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                         BytecodeInstructionIFACMP theCond = (BytecodeInstructionIFACMP) theInstruction;
                         BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
                         switch (theCond.getType()) {
                             case eq:
-                                theWriter.println(theInset + "  if (theValue1 == theValue2) {");
-                                theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                                theWriter.println(theInset + "  }");
+                                theWriter.println(theInset + "if (theValue1 == theValue2) {");
+                                theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                                theWriter.println(theInset + "}");
                                 break;
                             case ne:
-                                theWriter.println(theInset + "  if (theValue1 != theValue2) {");
-                                theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                                theWriter.println(theInset + "  }");
+                                theWriter.println(theInset + "if (theValue1 != theValue2) {");
+                                theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                                theWriter.println(theInset + "}");
                                 break;
                         }
-                        theWriter.println(theInset + "}");
                     } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                         BytecodeInstructionIFICMP theCond = (BytecodeInstructionIFICMP) theInstruction;
 
                         BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue2 = frame.stack.pop();");
-                        theWriter.println(theInset + "  var theValue1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
                         switch (theCond.getType()) {
                         case eq:
-                            theWriter.println(theInset + "  if (theValue1 == theValue2) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue1 == theValue2) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case gt:
-                            theWriter.println(theInset + "  if (theValue1 > theValue2) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue1 > theValue2) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case le:
-                            theWriter.println(theInset + "  if (theValue1 <= theValue2) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue1 <= theValue2) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case ge:
-                            theWriter.println(theInset + "  if (theValue1 >= theValue2) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue1 >= theValue2) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case lt:
-                            theWriter.println(theInset + "  if (theValue1 < theValue2) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue1 < theValue2) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case ne:
-                            theWriter.println(theInset + "  if (theValue1 != theValue2) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue1 != theValue2) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         }
-                        theWriter.println(theInset + "}");
 
                     } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                         BytecodeInstructionIFCOND theCond = (BytecodeInstructionIFCOND) theInstruction;
                         BytecodeOpcodeAddress theTarget = theCond.getJumpOffset();
-                        theWriter.println(theInset + "{");
-                        theWriter.println(theInset + "  var theValue = frame.stack.pop();");
+                        theWriter.println(theInset + "var theValue = frame.stack.pop();");
                         switch (theCond.getType()) {
                         case eq:
-                            theWriter.println(theInset + "  if (theValue == 0) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue == 0) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case gt:
-                            theWriter.println(theInset + "  if (theValue > 0) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue > 0) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case le:
-                            theWriter.println(theInset + "  if (theValue <= 0) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue <= 0) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case ge:
-                            theWriter.println(theInset + "  if (theValue >= 0) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue >= 0) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case lt:
-                            theWriter.println(theInset + "  if (theValue < 0) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue < 0) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         case ne:
-                            theWriter.println(theInset + "  if (theValue != 0) {");
-                            theWriter.println(theInset + "      " + generateJumpCodeFor(theJumps, theInstruction.getOpcodeAddress(), theTarget));
-                            theWriter.println(theInset + "  }");
+                            theWriter.println(theInset + "if (theValue != 0) {");
+                            theWriter.println(theInset + "    " + generateJumpCodeFor(theTarget));
+                            theWriter.println(theInset + "}");
                             break;
                         }
-                        theWriter.println(theInset + "}");
                     } else {
                         throw new IllegalStateException("Cannot compile " + theInstruction);
                     }
 
-                    List<BytecodeProgramJumps.Range> theEndRangesAt = theJumps.endRangesAt(theInstruction.getOpcodeAddress());
-                    for (BytecodeProgramJumps.Range theRange : theEndRangesAt) {
-                        theInset = theInset.substring("    ".length());
-                        theWriter.println(theInset+ "} // end of range " + theRange.rangeName());
-                    }
+                    theWriter.println(theInset + "return " + theProgram.getNextInstructionAddress(theInstruction) + ";");
+                    theWriter.println("        };");
                 }
+
+                theWriter.println("        var theCurrentPC = 0;\n"
+                        + "        while(true) {\n"
+                        + "            theCurrentPC = theProgramm[theCurrentPC](frame);\n"
+                        + "            if (theCurrentPC === -1) {\n"
+                        + "                return;\n"
+                        + "            }\n"
+                        + "            if (theCurrentPC === -2) {\n"
+                        + "                return frame.stack.pop();\n"
+                        + "            }\n"
+                        + "        }\n");
 
                 theWriter.println("    },");
             });
@@ -916,27 +834,25 @@ public class JSBackend {
     }
 
     private void writeExceptionHandlerCode(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aExceptionRethrower,
-            PrintWriter aWriter, BytecodeCodeAttributeInfo aCode, BytecodeProgram aProgram, BytecodeProgramJumps aJumps,
+            PrintWriter aWriter, BytecodeCodeAttributeInfo aCode, BytecodeProgram aProgram,
             String aInset, BytecodeInstruction aInstruction, String aExceptionVariableName) {
         BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aCode.getExceptionTableEntries());
         if (theActiveHandlers.length == 0) {
             // Missing catch block
             aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");
-            aWriter.println(aInset + "return;");
+            aWriter.println(aInset + "return -1;");
         } else {
             for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
                 if (!theEntry.isFinally()) {
                     BytecodeClassinfoConstant theConstant = theEntry.getCatchType();
                     BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theConstant.getConstant());
                     aWriter.println(aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId() + ")) {");
-                    BytecodeProgramJumps.Range theJumpRange = aJumps.findClosestRangeToJumpFrom(aInstruction.getOpcodeAddress(), theEntry.getHandlerPc());
-                    aWriter.println(aInset + "    break " + theJumpRange.rangeName()+";");
-                    aWriter.println(aInset + "    // should jump to " + theEntry.getHandlerPc().getAddress());
+                    aWriter.println(aInset + "    return " + theEntry.getHandlerPc().getAddress()+";");
                     aWriter.println(aInset + "}");
                 }
             }
             aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");
-            aWriter.println(aInset + "return;");
+            aWriter.println(aInset + "return -1;");
         }
     }
 }
