@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.io;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TException;
-
-public class TIOException extends TException {
-
-    public TIOException(String aMessage) {
-        super(aMessage);
-    }
+public class TAssertionError extends TError {
 }

@@ -41,6 +41,14 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         return 0;
     }
 
+    public static boolean isNaN(float aFloat) {
+        return false;
+    }
+
+    public static boolean isInfinite(float aFloat) {
+        return false;
+    }
+
     @Override
     public float floatValue() {
         return floatValue;

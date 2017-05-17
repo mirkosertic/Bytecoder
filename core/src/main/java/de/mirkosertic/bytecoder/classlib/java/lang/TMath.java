@@ -23,4 +23,20 @@ public class TMath extends TObject {
         }
         return a;
     }
+
+    public static double ceil(double aValue) {
+        return aValue;
+    }
+
+    public static double floor(double aValue)  {
+        return aValue;
+    }
+
+    public static double sin(double aValue) {
+        return aValue;
+    }
+
+    public static double cos(double aValue) {
+        return aValue;
+    }
 }

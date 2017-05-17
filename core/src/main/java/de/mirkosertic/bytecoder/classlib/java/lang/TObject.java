@@ -37,4 +37,8 @@ public class TObject {
     public boolean equals(TObject aObject) {
         return this == aObject;
     }
+
+    public Object clone() throws CloneNotSupportedException {
+        throw new CloneNotSupportedException();
+    }
 }

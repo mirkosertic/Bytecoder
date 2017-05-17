@@ -24,4 +24,8 @@ public class BytecodeDoubleConstant implements BytecodeConstant {
         this.lowBytes = lowBytes;
         this.highBytes = highBytes;
     }
+
+    public double getDoubleValue() {
+        return BytecodeParserUtils.intToDouble(lowBytes, highBytes);
+    }
 }

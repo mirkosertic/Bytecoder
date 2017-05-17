@@ -39,7 +39,13 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstruction {
         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
         BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
 
-        aLinkerContext.linkConstructorInvocation(new BytecodeObjectTypeRef(theClassName.stringValue().replace("/",".")),
-                theSig);
+        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        if ("<init>".equals(theName.stringValue())) {
+            aLinkerContext.linkConstructorInvocation(new BytecodeObjectTypeRef(theClassName.stringValue().replace("/", ".")),
+                    theSig);
+        } else {
+            aLinkerContext.linkVirtualMethod(new BytecodeObjectTypeRef(theClassName.stringValue().replace("/", ".")),
+                    theName.stringValue(), theSig);
+        }
     }
 }

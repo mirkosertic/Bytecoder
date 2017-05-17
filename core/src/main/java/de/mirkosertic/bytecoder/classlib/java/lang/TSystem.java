@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class BytecodeInstructionLCONST extends BytecodeInstruction {
+public class TSystem {
 
-    private final long longConst;
-
-    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
-        super(aOpcodeIndex);
-        longConst = aLongConst;
+    public static long nanoTime() {
+        return 0;
     }
 
-    public long getLongConst() {
-        return longConst;
+    public static long currentTimeMillis() {
+        return 0;
+    }
+
+    public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {
     }
 }

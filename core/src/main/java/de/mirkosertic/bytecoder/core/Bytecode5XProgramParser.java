@@ -101,20 +101,20 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 18: { //ldc = 18 (0x12)
-                    byte theIndex = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionLDC(theOpcodeIndex,theIndex, aConstantPool));
+                    int theIndex = aBytecodes[offset++] & 0xFF;
+                    theResult.addInstruction(new BytecodeInstructionGenericLDC(theOpcodeIndex,theIndex, aConstantPool));
                     break;
                 }
                 case 19: { //ldc_w = 19 (0x13)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionLDCW(theOpcodeIndex,theIndexByte1, theIndexByte2));
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+                    theResult.addInstruction(new BytecodeInstructionGenericLDC(theOpcodeIndex,theIndex, aConstantPool));
                     break;
                 }
                 case 20: { //ldc2_w = 20 (0x14)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionLDC2W(theOpcodeIndex,theIndexByte1, theIndexByte2));
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+                    theResult.addInstruction(new BytecodeInstructionGenericLDC(theOpcodeIndex,theIndex, aConstantPool));
                     break;
                 }
                 case 21: { // iload = 21 (0x15)
@@ -889,11 +889,11 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 185: { // invokeinterface = 185 (0xb9)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     byte theCount = aBytecodes[offset++];
                     byte theNull = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionINVOKEINTERFACE(theOpcodeIndex, theIndexByte1, theIndexByte2, theCount));
+                    theResult.addInstruction(new BytecodeInstructionINVOKEINTERFACE(theOpcodeIndex, theIndex, theCount, aConstantPool));
                     break;
                 }
                 case 186: { // invokedynamic = 186 (0xba)
@@ -981,7 +981,13 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 // TODO: 196
-                // TODO: 197
+                case 197: { // multianewarray = 197 (0xc5)
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
+                    byte theDimensions = aBytecodes[offset++];
+                    theResult.addInstruction(new BytecodeInstructionNEWMULTIARRAY(theOpcodeIndex, theIndex, theDimensions, aConstantPool));
+                    break;
+                }
                 case 198: { // ifnull = 198 (0xc6)
                     int theOffset = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;

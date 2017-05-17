@@ -13,16 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class BytecodeInstructionLDC2W extends BytecodeInstruction {
-
-    private final byte index1;
-    private final byte index2;
-
-    public BytecodeInstructionLDC2W(BytecodeOpcodeAddress aIndex, byte aIndex1, byte aIndex2) {
-        super(aIndex);
-        index1 = aIndex1;
-        index2 = aIndex2;
-    }
+public class TIllegalArgumentException extends TRuntimeException {
 }

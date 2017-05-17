@@ -18,12 +18,12 @@ package de.mirkosertic.bytecoder.core;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 
-public class BytecodeInstructionLDC extends BytecodeInstruction {
+public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
 
-    private final byte constantIndex;
+    private final int constantIndex;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionLDC(BytecodeOpcodeAddress aOpcodeIndex, byte aConstantIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionGenericLDC(BytecodeOpcodeAddress aOpcodeIndex, int aConstantIndex, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         constantIndex = aConstantIndex;
         constantPool = aConstantPool;

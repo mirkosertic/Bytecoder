@@ -101,6 +101,9 @@ public class BytecodeLinkedClass {
         String theFieldName = aName.stringValue();
         if (!staticFields.containsKey(theFieldName)) {
             BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
+            if (theField == null) {
+                throw new RuntimeException("No field " + aName.stringValue() + " in " + className.name());
+            }
             staticFields.put(theFieldName, theField);
 
             linkerContext.linkTypeRef(theField.getTypeRef());
@@ -111,8 +114,16 @@ public class BytecodeLinkedClass {
         String theFieldName = aName.stringValue();
         if (!memberFields.containsKey(theFieldName)) {
             BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
+            if (theField == null) {
+                if (bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                    BytecodeObjectTypeRef theSuperClassName = new BytecodeObjectTypeRef(bytecodeClass.getSuperClass().getConstant().stringValue().replace("/", "."));
+                    linkerContext.linkClass(theSuperClassName).linkField(aName);
+                    return;
+                } else {
+                    throw new RuntimeException("No field " + aName.stringValue() + " in " + className.name());
+                }
+            }
             memberFields.put(theFieldName, theField);
-
             linkerContext.linkTypeRef(theField.getTypeRef());
         }
     }
@@ -139,7 +150,7 @@ public class BytecodeLinkedClass {
 
                 BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 if (theMethod != null) {
-                    if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
+                    if (!theMethod.isClassInitializer()) {
                         BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
                                 .identifierFor(theMethod);
                         linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
@@ -162,9 +173,22 @@ public class BytecodeLinkedClass {
                 }
             }
             throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aSignature);
-            // We need to traver
+            // We need to traverse
         } catch (Exception e) {
             throw new IllegalArgumentException("Error while linking virtual method for " + className.name(), e);
+        }
+    }
+
+    public void linkConstructorInvocation(BytecodeMethodSignature aMethodSignature) {
+
+        BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull("<init>", aMethodSignature);
+        if (theMethod == null) {
+            System.out.println("No constructor with signature " + aMethodSignature + " in " + className.name());
+            return;
+        }
+
+        if (!knownMethods.contains(theMethod)) {
+            linkMethodInternal(theMethod, true);
         }
     }
 
@@ -174,15 +198,14 @@ public class BytecodeLinkedClass {
             if (theMethod == null) {
                 throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aMethodSignature);
             }
-            // Constructors are not virtual
-            if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
+            if (!theMethod.isClassInitializer()) {
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
                 linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
             }
 
             linkMethodInternal(theMethod, true);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error while linking static method for " + className.name(), e);
+            throw new IllegalArgumentException("Error while linking static method " + aMethodName + " for " + className.name(), e);
         }
     }
 
@@ -197,10 +220,12 @@ public class BytecodeLinkedClass {
             link(theArgument);
         }
 
-        BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
-        BytecodeProgram theProgram = theCode.getProgramm();
-        for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
-            theInstruction.performLinking(linkerContext);
+        if (!aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isSyntetic()) {
+            BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
+            BytecodeProgram theProgram = theCode.getProgramm();
+            for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
+                theInstruction.performLinking(linkerContext);
+            }
         }
     }
 
@@ -213,7 +238,8 @@ public class BytecodeLinkedClass {
     }
 
     public void forEachVirtualMethod(Consumer<Map.Entry<BytecodeVirtualMethodIdentifier, LinkedMethod>> aConsumer) {
-        linkedMethods.entrySet().forEach(aConsumer);
+        Map<BytecodeVirtualMethodIdentifier, LinkedMethod> theClone = new HashMap<>(linkedMethods);
+        theClone.entrySet().forEach(aConsumer);
     }
 
     public void forEachMethod(Consumer<BytecodeMethod> aMethod) {

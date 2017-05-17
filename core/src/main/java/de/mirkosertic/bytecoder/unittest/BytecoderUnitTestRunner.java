@@ -24,6 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -119,6 +123,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             BytecodePackageReplacer theReplacer = new BytecodePackageReplacer();
             BytecodeLoader theLoader = new BytecodeLoader(theReplacer);
             BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
+
+            // We need these intrinsics
+            BytecodeLinkedClass theClassLinkedCass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
+            theClassLinkedCass.linkConstructorInvocation(new BytecodeMethodSignature(
+                    BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
 
             BytecodeSignatureParser theParser = new BytecodeSignatureParser(theReplacer);
             BytecodeMethodSignature theSignature = theParser.toMethodSignature(aFrameworkMethod.getMethod());

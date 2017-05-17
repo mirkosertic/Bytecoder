@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-public class BytecodeInstructionLCONST extends BytecodeInstruction {
+public interface TMap {
 
-    private final long longConst;
+    boolean containsKey(Object aKey);
 
-    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
-        super(aOpcodeIndex);
-        longConst = aLongConst;
-    }
+    Object put(Object aKey, Object aValue);
 
-    public long getLongConst() {
-        return longConst;
-    }
+    Object get(Object aKey);
 }

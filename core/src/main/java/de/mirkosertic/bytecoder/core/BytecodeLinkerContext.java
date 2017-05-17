@@ -33,6 +33,10 @@ public class BytecodeLinkerContext {
         methodCollection = new BytecodeMethodCollection();
     }
 
+    public BytecodeSignatureParser getSignatureParser() {
+        return loader.getSignatureParser();
+    }
+
     public BytecodeMethodCollection getMethodCollection() {
         return methodCollection;
     }
@@ -82,7 +86,7 @@ public class BytecodeLinkerContext {
     }
 
     public void linkConstructorInvocation(BytecodeObjectTypeRef aTypeRef, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkStaticMethod("<init>", aSignature);
+        linkClass(aTypeRef).linkConstructorInvocation(aSignature);
     }
 
     public void linkVirtualMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
@@ -103,7 +107,7 @@ public class BytecodeLinkerContext {
         return theResult;
     }
 
-    public void propagateVirtualMethodsAndFields(BytecodeLinkedClass aClass) {
+    private void propagateVirtualMethodsAndFields(BytecodeLinkedClass aClass) {
 
         aClass.propagateVirtualMethodsAndFields();
 

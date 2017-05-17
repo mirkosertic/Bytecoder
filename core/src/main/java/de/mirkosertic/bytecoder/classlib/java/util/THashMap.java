@@ -13,18 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-public class BytecodeInstructionLCONST extends BytecodeInstruction {
+import de.mirkosertic.bytecoder.classlib.java.lang.TCloneable;
+import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 
-    private final long longConst;
+public class THashMap extends TAbstractMap implements TSerializable, TCloneable {
 
-    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
-        super(aOpcodeIndex);
-        longConst = aLongConst;
+    @Override
+    public boolean containsKey(Object aKey) {
+        return false;
     }
 
-    public long getLongConst() {
-        return longConst;
+    @Override
+    public Object put(Object aKey, Object aValue) {
+        return null;
+    }
+
+    @Override
+    public Object get(Object aKey) {
+        return null;
     }
 }

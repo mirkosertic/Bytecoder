@@ -52,4 +52,8 @@ public class TInteger extends TNumber {
         theBuffer.append(integerValue);
         return theBuffer.toString();
     }
+
+    public static TInteger valueOf(int aValue) {
+        return new TInteger(aValue);
+    }
 }
