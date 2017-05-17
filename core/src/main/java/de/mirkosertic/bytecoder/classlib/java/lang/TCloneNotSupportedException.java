@@ -13,18 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class BytecodeInstructionLCONST extends BytecodeInstruction {
-
-    private final long longConst;
-
-    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
-        super(aOpcodeIndex);
-        longConst = aLongConst;
-    }
-
-    public long getLongConst() {
-        return longConst;
-    }
+public class TCloneNotSupportedException extends TException {
 }

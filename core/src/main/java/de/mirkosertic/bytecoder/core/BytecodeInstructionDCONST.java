@@ -23,4 +23,8 @@ public class BytecodeInstructionDCONST extends BytecodeInstruction {
         super(aOpcodeIndex);
         doubleConst = aDoubleConst;
     }
+
+    public double getDoubleConst() {
+        return doubleConst;
+    }
 }

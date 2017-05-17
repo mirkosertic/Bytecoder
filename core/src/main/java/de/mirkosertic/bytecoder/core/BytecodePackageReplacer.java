@@ -24,7 +24,7 @@ public class BytecodePackageReplacer {
 
     public BytecodePackageReplacer() {
         shadowPackages = new HashSet<>();
-        shadowPackages.add("java.lang.");
+        shadowPackages.add("java.");
         shadowPackages.add("org.junit.");
         shadowPackages.add("junit.");
     }

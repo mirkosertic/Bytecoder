@@ -18,9 +18,9 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeParserUtils {
 
     public static int integerFromByteArray(byte[] aData, int aOffset) {
-        byte theByte1 = aData[aOffset++];
-        byte theByte2 = aData[aOffset];
-        return (theByte1 << 8) | theByte2;
+        int theByte1 = aData[aOffset++];
+        int theByte2 = aData[aOffset];
+        return (short)( ((theByte1 & 0xFF) << 8) | (theByte2 & 0xFF) );
     }
 
     public static short shortFromByteArray(byte[] aData, int aOffset) {
@@ -53,5 +53,9 @@ public class BytecodeParserUtils {
                 (aIntValue & 0x7fffff) | 0x800000;
 
         return (float) (s * m * Math.pow(2, e-150));
+    }
+
+    public static double intToDouble(long aLowBytes, long aHighBytes) {
+        return 0;
     }
 }

@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
@@ -30,6 +31,7 @@ import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
@@ -45,6 +47,8 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
@@ -78,21 +82,30 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInterfaceRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
@@ -163,7 +176,8 @@ public class JSBackend {
 
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
-        // Also link intrinsics required for code generation
+        BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
+
         BytecodeLinkedClass theExceptionRethrower = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 ExceptionRethrower.class));
         theExceptionRethrower.linkStaticMethod("registerExceptionOutcome", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)}));
@@ -187,6 +201,7 @@ public class JSBackend {
             if (!aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
 
                 theWriter.println("    staticFields : {");
+
                 theWriter.println("        name : '" + aEntry.getValue().getClassName().name() + "',");
                 if (aEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        classInitialized : false,");
@@ -254,6 +269,11 @@ public class JSBackend {
 
             aEntry.getValue().forEachMethod(aMethod -> {
 
+                // Do not generate code for abstract methods
+                if (aMethod.getAccessFlags().isAbstract()) {
+                    return;
+                }
+
                 BytecodeCodeAttributeInfo theCode = aMethod.getCode(aEntry.getValue().getBytecodeClass());
                 BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
                 StringBuffer theArguments = new StringBuffer();
@@ -301,7 +321,9 @@ public class JSBackend {
                 for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
 
                     theWriter.println("        theProgramm[" + theInstruction.getOpcodeAddress().getAddress()+"] = function(frame) {");
-                    if (theInstruction instanceof BytecodeInstructionRETURN) {
+                    if (theInstruction instanceof BytecodeInstructionNOP) {
+                        theWriter.println(theInset + "// noop");
+                    } else if (theInstruction instanceof BytecodeInstructionRETURN) {
                         theWriter.println(theInset + "return -1;");
                     } else if (theInstruction instanceof BytecodeInstructionDUP) {
                         BytecodeInstructionDUP theDup = (BytecodeInstructionDUP) theInstruction;
@@ -325,6 +347,15 @@ public class JSBackend {
 
                     } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                         BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
+
+                        BytecodeObjectTypeRef theConstant = theNew.getObjectType();
+                        theWriter.println(theInset + "var theLength = frame.stack.pop();");
+                        theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                        theWriter.println(theInset + "theInstance.data = new Array(theLength);");
+                        theWriter.println(theInset + "frame.stack.push(theInstance);");
+
+                    } else if (theInstruction instanceof BytecodeInstructionNEWMULTIARRAY) {
+                        BytecodeInstructionNEWMULTIARRAY theNew = (BytecodeInstructionNEWMULTIARRAY) theInstruction;
 
                         BytecodeObjectTypeRef theConstant = theNew.getObjectType();
                         theWriter.println(theInset + "var theLength = frame.stack.pop();");
@@ -395,6 +426,9 @@ public class JSBackend {
                         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
                         BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theName.stringValue(), theSig);
+                        if (theIdentifier == null) {
+                            throw new IllegalStateException("Keine gelinkte Methode gefunden für " + theName.stringValue() + " Sig = " + theSig + " in " + aEntry.getValue().getClassName().name());
+                        }
 
                         BytecodeTypeRef[] theInvokeArguments = theSig.getArguments();
                         for (int i=theInvokeArguments.length;i>0;i--) {
@@ -423,6 +457,51 @@ public class JSBackend {
 
                         writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
                                 theInset + "    ", theVirtualInvoke, "theLastException");
+
+                        theWriter.println(theInset + "}");
+
+                    } else if (theInstruction instanceof BytecodeInstructionINVOKEINTERFACE) {
+                        BytecodeInstructionINVOKEINTERFACE theInterfaceInvoke = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
+
+                        BytecodeInterfaceRefConstant theMethodRefConstant = theInterfaceInvoke.getMethodDescriptor();
+
+                        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+                        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+                        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+                        BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theName.stringValue(), theSig);
+                        if (theIdentifier == null) {
+                            throw new IllegalStateException("Keine gelinkte Methode gefunden für " + theName.stringValue() + " Sig = " + theSig + " in " + aEntry.getValue().getClassName().name());
+                        }
+
+                        BytecodeTypeRef[] theInvokeArguments = theSig.getArguments();
+                        for (int i=theInvokeArguments.length;i>0;i--) {
+                            theWriter.println(theInset + "var arg"+i+" = frame.stack.pop();");
+                        }
+                        theWriter.println(theInset + "var callsite = frame.stack.pop();");
+                        if (theSig.getReturnType().isVoid()) {
+                            theWriter.print(theInset);
+                        } else {
+                            theWriter.print(theInset + "frame.stack.push(");
+                        }
+
+                        theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
+                        for (int i=1;i<=theInvokeArguments.length;i++) {
+                            theWriter.print(",");
+                            theWriter.print("arg" + i);
+                        }
+                        if (theSig.getReturnType().isVoid()) {
+                            theWriter.println(");");
+                        } else {
+                            theWriter.println("));");
+                        }
+
+                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "if (theLastException) {");
+
+                        writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
+                                theInset + "    ", theInterfaceInvoke, "theLastException");
 
                         theWriter.println(theInset + "}");
 
@@ -662,24 +741,73 @@ public class JSBackend {
                         writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
                                 theInset, theThrow, "theException");
 
+                    } else if (theInstruction instanceof BytecodeInstructionTABLESWITCH) {
+                        BytecodeInstructionTABLESWITCH theSwitch = (BytecodeInstructionTABLESWITCH) theInstruction;
+                        theWriter.println("// tableswitch");
+                        theWriter.println(theInset + "var theCurrentValue = frame.stack.pop();");
+                        theWriter.println(theInset + "if (theCurrentValue < " + theSwitch.getLowValue() + " || theCurrentValue > " + theSwitch.getHighValue() + " {");
+                        theWriter.println(theInset + "  return " + theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue() + ";");
+                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "var theOffset = theCurrentValue - " + theSwitch.getLowValue() + ";");
+                        theWriter.println(theInset + "switch(theOffset) {");
+                        long[] theOffsets = theSwitch.getOffsets();
+                        for (int i=0;i<theOffsets.length;i++) {
+                            theWriter.println(theInset + "  case " + i + ":");
+                            theWriter.println(theInset + "    return " + theSwitch.getOpcodeAddress().getAddress() + theOffsets[i] + ";");
+                        }
+                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "throw \"Illegal jump target\";");
+
+                    } else if (theInstruction instanceof BytecodeInstructionLOOKUPSWITCH) {
+                        BytecodeInstructionLOOKUPSWITCH theSwitch = (BytecodeInstructionLOOKUPSWITCH) theInstruction;
+                        theWriter.println("// lookupwitch");
+                        theWriter.println(theInset + "var theCurrentValue = frame.stack.pop();");
+                        theWriter.println(theInset + "switch(theCurrentValue) {");
+                        for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theSwitch.getPairs()) {
+                            theWriter.println(theInset + "  case " + thePair.getMatch() + ":");
+                            theWriter.println(theInset +"    return " + theSwitch.getOpcodeAddress().getAddress() + thePair.getOffset() + ";");
+                        }
+                        theWriter.println(theInset + "}");
+                        theWriter.println(theInset + "return " + theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue() + ";");
                     } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                         BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
                         theWriter.println(theInset + "frame.stack.push(" + theConst.getFloatValue() + ");");
                     } else if (theInstruction instanceof BytecodeInstructionICONST) {
                         BytecodeInstructionICONST theConst = (BytecodeInstructionICONST) theInstruction;
                         theWriter.println(theInset + "frame.stack.push(" + theConst.getIntConst() + ");");
+                    } else if (theInstruction instanceof BytecodeInstructionLCONST) {
+                        BytecodeInstructionLCONST theConst = (BytecodeInstructionLCONST) theInstruction;
+                        theWriter.println(theInset + "frame.stack.push(" + theConst.getLongConst() + ");");
+                    } else if (theInstruction instanceof BytecodeInstructionDCONST) {
+                        BytecodeInstructionDCONST theConst = (BytecodeInstructionDCONST) theInstruction;
+                        theWriter.println(theInset + "frame.stack.push(" + theConst.getDoubleConst() + ");");
                     } else if (theInstruction instanceof BytecodeInstructionI2Generic) {
+                        theWriter.println(theInset + "var theInt = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theInt);");
+                    } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
+                        theWriter.println(theInset + "var theInt = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theInt);");
+                    } else if (theInstruction instanceof BytecodeInstructionD2Generic) {
                         theWriter.println(theInset + "var theInt = frame.stack.pop();");
                         theWriter.println(theInset + "frame.stack.push(theInt);");
                     } else if (theInstruction instanceof BytecodeInstructionF2Generic) {
                         theWriter.println(theInset + "var theFloat = frame.stack.pop();");
                         theWriter.println(theInset + "frame.stack.push(theFloat);");
-                    } else if (theInstruction instanceof BytecodeInstructionLDC) {
-                        BytecodeInstructionLDC theLoad = (BytecodeInstructionLDC) theInstruction;
+                    } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
+                        BytecodeInstructionGenericLDC theLoad = (BytecodeInstructionGenericLDC) theInstruction;
                         BytecodeConstant theConstant = theLoad.constant();
                         if (theConstant instanceof BytecodeFloatConstant) {
                             BytecodeFloatConstant theFloat = (BytecodeFloatConstant) theConstant;
                             theWriter.println(theInset + "frame.stack.push(" + theFloat.getFloatValue() + ");");
+                        } else if (theConstant instanceof BytecodeDoubleConstant) {
+                            BytecodeDoubleConstant theDouble = (BytecodeDoubleConstant) theConstant;
+                            theWriter.println(theInset + "frame.stack.push(" + theDouble.getDoubleValue() + ");");
+                        } else if (theConstant instanceof BytecodeLongConstant) {
+                            BytecodeLongConstant theLong = (BytecodeLongConstant) theConstant;
+                            theWriter.println(theInset + "frame.stack.push(" + theLong.getLongValue() + ");");
+                        } else if (theConstant instanceof BytecodeClassinfoConstant) {
+                            BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
+                            theWriter.println(theInset + "frame.stack.push(" + toClassName(theClassLinkedCass.getClassName()) + ".emptyInstance());");
                         } else if (theConstant instanceof BytecodeIntegerConstant) {
                             BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
                             theWriter.println(theInset + "frame.stack.push(" + theInteger.integerValue() + ");");
@@ -846,9 +974,13 @@ public class JSBackend {
                 if (!theEntry.isFinally()) {
                     BytecodeClassinfoConstant theConstant = theEntry.getCatchType();
                     BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theConstant.getConstant());
-                    aWriter.println(aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId() + ")) {");
-                    aWriter.println(aInset + "    return " + theEntry.getHandlerPc().getAddress()+";");
-                    aWriter.println(aInset + "}");
+                    if (theLinkedClass != null) {
+                        aWriter.println(
+                                aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId()
+                                        + ")) {");
+                        aWriter.println(aInset + "    return " + theEntry.getHandlerPc().getAddress() + ";");
+                        aWriter.println(aInset + "}");
+                    }
                 }
             }
             aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");

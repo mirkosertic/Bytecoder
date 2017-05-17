@@ -27,7 +27,7 @@ public class BytecodeArrayTypeRef implements BytecodeTypeRef {
 
     @Override
     public String name() {
-        return "";
+        return "L" + depth + type.name();
     }
 
     @Override

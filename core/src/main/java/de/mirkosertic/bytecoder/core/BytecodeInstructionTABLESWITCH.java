@@ -22,11 +22,27 @@ public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
     private final long highValue;
     private final long offsets[];
 
-    public BytecodeInstructionTABLESWITCH(BytecodeOpcodeAddress aOpcodeIndex, long defaultValue, long lowValue, long highValue, long[] offsets) {
+    public BytecodeInstructionTABLESWITCH(BytecodeOpcodeAddress aOpcodeIndex, long aDefaultValue, long aLowValue, long aHighValue, long[] aOffsets) {
         super(aOpcodeIndex);
-        this.defaultValue = defaultValue;
-        this.lowValue = lowValue;
-        this.highValue = highValue;
-        this.offsets = offsets;
+        defaultValue = aDefaultValue;
+        lowValue = aLowValue;
+        highValue = aHighValue;
+        offsets = aOffsets;
+    }
+
+    public long getDefaultValue() {
+        return defaultValue;
+    }
+
+    public long getLowValue() {
+        return lowValue;
+    }
+
+    public long getHighValue() {
+        return highValue;
+    }
+
+    public long[] getOffsets() {
+        return offsets;
     }
 }

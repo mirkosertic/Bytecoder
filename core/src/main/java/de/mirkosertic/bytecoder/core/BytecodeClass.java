@@ -57,7 +57,7 @@ public class BytecodeClass {
                 return theField;
             }
         }
-        throw new IllegalArgumentException("No such field : " + aName);
+        return null;
     }
 
     public BytecodeMethod methodByNameAndSignatureOrNull(String aMethodName, BytecodeMethodSignature aSignature) {

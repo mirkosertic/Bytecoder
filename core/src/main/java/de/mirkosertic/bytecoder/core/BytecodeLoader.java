@@ -19,15 +19,19 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
 
 public class BytecodeLoader {
 
     private final BytecodePackageReplacer packageReplacer;
+    private final BytecodeSignatureParser signatureParser;
 
     public BytecodeLoader(BytecodePackageReplacer aPackageReplacer) {
-        this.packageReplacer = aPackageReplacer;
+        packageReplacer = aPackageReplacer;
+        signatureParser = new BytecodeSignatureParser(aPackageReplacer);
+    }
+
+    public BytecodeSignatureParser getSignatureParser() {
+        return signatureParser;
     }
 
     public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
@@ -51,10 +55,12 @@ public class BytecodeLoader {
         int theMinorVersion = aStream.readUnsignedShort();
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
+            case 50:
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
             case 51:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), new BytecodeSignatureParser(packageReplacer), packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
             case 52:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), new BytecodeSignatureParser(packageReplacer), packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
         }
         throw new IllegalArgumentException("Not Supported bytecode format : " + theMajorVersion);
     }

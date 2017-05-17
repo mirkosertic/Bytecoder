@@ -14,7 +14,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.classlib.io.TIOException;
+import de.mirkosertic.bytecoder.classlib.java.io.TIOException;
 
 public interface TAppendable {
 

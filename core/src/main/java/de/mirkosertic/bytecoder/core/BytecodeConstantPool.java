@@ -31,6 +31,9 @@ public class BytecodeConstantPool {
     }
 
     public BytecodeConstant constantByIndex(int aIndex) {
+        if (aIndex < 0) {
+            throw new IllegalStateException("Invalid index : " + aIndex);
+        }
         return constants.get(aIndex);
     }
 }

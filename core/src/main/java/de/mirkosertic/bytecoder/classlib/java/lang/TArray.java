@@ -16,4 +16,9 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TArray extends TObject {
+
+    @Override
+    public TObject clone() {
+        return this;
+    }
 }

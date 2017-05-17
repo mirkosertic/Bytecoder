@@ -17,14 +17,33 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction {
 
-    private final byte indexbyte1;
-    private final byte indexbyte2;
+    private final int methodIndex;
     private final byte count;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKEINTERFACE(BytecodeOpcodeAddress aOpcodeIndex, byte indexbyte1, byte indexbyte2, byte count) {
+    public BytecodeInstructionINVOKEINTERFACE(BytecodeOpcodeAddress aOpcodeIndex, int aMethodIndex, byte aCount, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
-        this.indexbyte1 = indexbyte1;
-        this.indexbyte2 = indexbyte2;
-        this.count = count;
+        methodIndex = aMethodIndex;
+        count = aCount;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeInterfaceRefConstant getMethodDescriptor() {
+        return (BytecodeInterfaceRefConstant) constantPool.constantByIndex(methodIndex - 1);
+    }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeInterfaceRefConstant theMethodRefConstant = getMethodDescriptor();
+        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+
+        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+
+        BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
+        String theClassName = theConstant.stringValue();
+        aLinkerContext.linkVirtualMethod(new BytecodeObjectTypeRef(theClassName.replace("/", ".")),
+                theName.stringValue(), theSig);
     }
 }

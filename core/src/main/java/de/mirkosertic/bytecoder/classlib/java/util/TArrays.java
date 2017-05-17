@@ -13,18 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-public class BytecodeInstructionLCONST extends BytecodeInstruction {
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 
-    private final long longConst;
+public class TArrays {
 
-    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
-        super(aOpcodeIndex);
-        longConst = aLongConst;
-    }
-
-    public long getLongConst() {
-        return longConst;
+    public static void sort(TObject[] aData, int aStart, int aEnd) {
     }
 }

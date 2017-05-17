@@ -26,6 +26,14 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
             this.match = match;
             this.offset = offset;
         }
+
+        public int getMatch() {
+            return match;
+        }
+
+        public long getOffset() {
+            return offset;
+        }
     }
 
     private final long defaultValue;
@@ -35,5 +43,13 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
         super(aIndex);
         defaultValue = aDefaultValue;
         pairs = aPairs;
+    }
+
+    public long getDefaultValue() {
+        return defaultValue;
+    }
+
+    public Pair[] getPairs() {
+        return pairs;
     }
 }

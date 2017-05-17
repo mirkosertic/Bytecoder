@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.io;
 
-public class BytecodeInstructionLCONST extends BytecodeInstruction {
+import de.mirkosertic.bytecoder.classlib.java.lang.TException;
 
-    private final long longConst;
+public class TIOException extends TException {
 
-    public BytecodeInstructionLCONST(BytecodeOpcodeAddress aOpcodeIndex, long aLongConst) {
-        super(aOpcodeIndex);
-        longConst = aLongConst;
-    }
-
-    public long getLongConst() {
-        return longConst;
+    public TIOException(String aMessage) {
+        super(aMessage);
     }
 }

@@ -16,4 +16,11 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TClass extends TObject {
+
+    public TClass() {
+    }
+
+    public boolean desiredAssertionStatus() {
+        return false;
+    }
 }

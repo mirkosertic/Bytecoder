@@ -24,4 +24,8 @@ public class BytecodeLongConstant implements BytecodeConstant {
         this.lowBytes = lowBytes;
         this.highBytes = highBytes;
     }
+
+    public long getLongValue() {
+        return 0;
+    }
 }
