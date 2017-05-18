@@ -13,23 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-public class TSystem {
+import de.mirkosertic.bytecoder.classlib.java.lang.TArrayIndexOutOfBoundsException;
 
-    public static long nanoTime() {
-        return 0;
-    }
+public interface TList<T> extends TCollection<T> {
 
-    public static long currentTimeMillis() {
-        return 0;
-    }
-
-    public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {
-        Object[] theSource = (Object[]) aSource;
-        Object[] theTarget = (Object[]) aTarget;
-        for (int i=0;i<aLength;i++) {
-            theTarget[aTargetPos + i] = theSource[aSourcePos + i];
-        }
-    }
+    public T get(int aIndex) throws TArrayIndexOutOfBoundsException;
 }

@@ -19,7 +19,7 @@ import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
 
 public class TInteger extends TNumber {
 
-    private int integerValue;
+    private final int integerValue;
 
     @NoExceptionCheck
     public TInteger(int aIntegerValue) {
@@ -43,6 +43,25 @@ public class TInteger extends TNumber {
 
     @Override
     public float floatValue() {
+        return integerValue;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof TInteger)) {
+            return false;
+        }
+
+        TInteger theOtherInteger = (TInteger) o;
+
+        return integerValue == theOtherInteger.integerValue;
+    }
+
+    @Override
+    public int hashCode() {
         return integerValue;
     }
 
