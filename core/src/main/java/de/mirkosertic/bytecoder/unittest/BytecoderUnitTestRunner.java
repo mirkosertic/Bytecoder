@@ -144,7 +144,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance());\n";
-            theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();\n";
+            theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.de_mirkosertic_bytecoder_classlib_java_lang_TThrowablegetLastOutcomeOrNullAndReset();\n";
             theCode += "if (theLastException) {\n";
 
             theCode += "var theStringData = theLastException.data.message.data.data.data;\n"

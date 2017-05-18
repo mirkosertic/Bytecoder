@@ -120,6 +120,14 @@ import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSBackend {
 
+    private final BytecodeMethodSignature theRegisterExceptionOutcomeSignature;
+    private final BytecodeMethodSignature theGetLastExceptionOutcomeSignature;
+
+    public JSBackend() {
+        theRegisterExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
+        theGetLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
+    }
+
     private String typeRefToString(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
@@ -134,7 +142,9 @@ public class JSBackend {
     }
 
     public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
-        String theName = aMethodName.replace("<", "").replace(">", "");
+        String theName = aSignature.getReturnType().name().replace(".","_");
+        theName += aMethodName.replace("<", "").replace(">", "");
+
         for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
             theName += typeRefToString(theTypeRef);
         }
@@ -176,12 +186,13 @@ public class JSBackend {
 
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
+
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
         BytecodeLinkedClass theExceptionRethrower = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 ExceptionRethrower.class));
-        theExceptionRethrower.linkStaticMethod("registerExceptionOutcome", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)}));
-        theExceptionRethrower.linkStaticMethod("getLastOutcomeOrNullAndReset", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]));
+        theExceptionRethrower.linkStaticMethod("registerExceptionOutcome", theRegisterExceptionOutcomeSignature);
+        theExceptionRethrower.linkStaticMethod("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature);
 
         StringWriter theStrWriter = new StringWriter();
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
@@ -230,7 +241,7 @@ public class JSBackend {
                 if (aEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
                     theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
-                    theWriter.println("            " + theJSClassName + ".clinit();");
+                    theWriter.println("            " + theJSClassName + ".VOIDclinit();");
                     theWriter.println("        }");
                 }
                 theWriter.println("    },");
@@ -407,7 +418,7 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                         theWriter.println(theInset + "if (theLastException) {");
 
                         writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
@@ -452,7 +463,7 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                         theWriter.println(theInset + "if (theLastException) {");
 
                         writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
@@ -497,7 +508,7 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                         theWriter.println(theInset + "if (theLastException) {");
 
                         writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
@@ -536,7 +547,7 @@ public class JSBackend {
                             theWriter.println("));");
                         }
 
-                        theWriter.println(theInset + "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.getLastOutcomeOrNullAndReset();");
+                        theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                         theWriter.println(theInset + "if (theLastException) {");
 
                         writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theCode, theProgram,
@@ -745,7 +756,7 @@ public class JSBackend {
                         BytecodeInstructionTABLESWITCH theSwitch = (BytecodeInstructionTABLESWITCH) theInstruction;
                         theWriter.println("// tableswitch");
                         theWriter.println(theInset + "var theCurrentValue = frame.stack.pop();");
-                        theWriter.println(theInset + "if (theCurrentValue < " + theSwitch.getLowValue() + " || theCurrentValue > " + theSwitch.getHighValue() + " {");
+                        theWriter.println(theInset + "if (theCurrentValue < " + theSwitch.getLowValue() + " || theCurrentValue > " + theSwitch.getHighValue() + ") {");
                         theWriter.println(theInset + "  return " + theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue() + ";");
                         theWriter.println(theInset + "}");
                         theWriter.println(theInset + "var theOffset = theCurrentValue - " + theSwitch.getLowValue() + ";");
@@ -967,7 +978,7 @@ public class JSBackend {
         BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aCode.getExceptionTableEntries());
         if (theActiveHandlers.length == 0) {
             // Missing catch block
-            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + "." + toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
             aWriter.println(aInset + "return -1;");
         } else {
             for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
@@ -983,7 +994,7 @@ public class JSBackend {
                     }
                 }
             }
-            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + ".registerExceptionOutcomedemirkoserticbytecoderclasslibjavalangTThrowable(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + "." + toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
             aWriter.println(aInset + "return -1;");
         }
     }
