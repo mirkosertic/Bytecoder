@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-public class TSystem {
+public interface TCollection<T> {
 
-    public static long nanoTime() {
-        return 0;
-    }
+    boolean add(T aObject);
 
-    public static long currentTimeMillis() {
-        return 0;
-    }
+    void clear();
 
-    public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {
-        Object[] theSource = (Object[]) aSource;
-        Object[] theTarget = (Object[]) aTarget;
-        for (int i=0;i<aLength;i++) {
-            theTarget[aTargetPos + i] = theSource[aSourcePos + i];
-        }
-    }
+    boolean contains(T aObject);
+
+    boolean isEmpty();
+
+    boolean remove(T aObject);
+
+    int size();
 }
