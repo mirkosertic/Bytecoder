@@ -62,6 +62,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
@@ -88,7 +89,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
@@ -222,14 +222,52 @@ public class JSBackend {
                 theWriter.println("    },");
                 theWriter.println();
 
+                theWriter.println("    runtimeClass : {");
+                theWriter.println("        clazz: {");
+                theWriter.println("            resolveVirtualMethod: function(aIdentifier) {");
+                theWriter.println("                switch(aIdentifier) {");
+
+                theClassLinkedCass.forEachVirtualMethod(
+                        aClassMethod -> {
+                            theWriter.println("                    case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                            if ("getClass".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                                theWriter.println(
+                                        "                        return " + toClassName(theClassLinkedCass.getClassName()));
+                            } else if ("toString".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                                    theWriter.println("                        throw 'Not implemented';");
+                            } else if ("equals".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                                theWriter.println("                        throw 'Not implemented';");
+                            } else if ("hashCode".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                                theWriter.println("                        throw 'Not implemented';");
+                            } else if ("desiredAssertionStatus".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                                theWriter.println("                        return function(callsite) {return false};");
+                            } else {
+                                throw new IllegalStateException("Cannot link runtime class method " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                            }
+                        });
+
+                theWriter.println("                    default:");
+                theWriter.println("                        throw {type: 'unknown virtual method'}");
+                theWriter.println("                }");
+                theWriter.println("            }");
+                theWriter.println("        }");
+                theWriter.println("    },");
+                theWriter.println();
+
                 theWriter.println("    resolveVirtualMethod : function(aIdentifier) {");
                 theWriter.println("        switch(aIdentifier) {");
                 aEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
                     BytecodeLinkedClass.LinkedMethod theLinkTarget = aVirtualMethod.getValue();
                     theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
-                    theWriter.println("                return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(
-                            theLinkTarget.getTargetMethod().getName().stringValue(),
-                            theLinkTarget.getTargetMethod().getSignature()) + ";");
+                    if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
+                        theWriter.println(
+                                "                return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(
+                                        theLinkTarget.getTargetMethod().getName().stringValue(),
+                                        theLinkTarget.getTargetMethod().getSignature()) + ";");
+                    } else {
+                        theWriter.println(
+                                "                return function(callsite) {return " + theJSClassName + ".runtimeClass;};");
+                    }
                 });
                 theWriter.println("            default:");
                 theWriter.println("                throw {type: 'unknown virtual method'}");
@@ -281,7 +319,7 @@ public class JSBackend {
             aEntry.getValue().forEachMethod(aMethod -> {
 
                 // Do not generate code for abstract methods
-                if (aMethod.getAccessFlags().isAbstract()) {
+                if (aMethod.getAccessFlags().isAbstract() || aMethod.getAccessFlags().isNative()) {
                     return;
                 }
 
@@ -818,7 +856,7 @@ public class JSBackend {
                             theWriter.println(theInset + "frame.stack.push(" + theLong.getLongValue() + ");");
                         } else if (theConstant instanceof BytecodeClassinfoConstant) {
                             BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
-                            theWriter.println(theInset + "frame.stack.push(" + toClassName(theClassLinkedCass.getClassName()) + ".emptyInstance());");
+                            theWriter.println(theInset + "frame.stack.push(" + toClassName(theClassInfo) + ".runtimeClass);");
                         } else if (theConstant instanceof BytecodeIntegerConstant) {
                             BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
                             theWriter.println(theInset + "frame.stack.push(" + theInteger.integerValue() + ");");

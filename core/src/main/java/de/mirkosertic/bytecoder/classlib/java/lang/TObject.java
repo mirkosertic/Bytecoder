@@ -38,6 +38,10 @@ public class TObject {
         return this == aObject;
     }
 
+    public int hashCode() {
+        return 0;
+    }
+
     public Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }

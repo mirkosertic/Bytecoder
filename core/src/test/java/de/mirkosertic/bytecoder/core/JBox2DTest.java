@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.ShapeType;
@@ -32,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -187,42 +186,3 @@ public class JBox2DTest {
         Assert.assertEquals(4, theTypes.length, 0);
     }
 }
-
-/**
-
-
- [sertic@sertic normal]$ javap -c -p DefaultWorldPool\$1
- DefaultWorldPool$10.class  DefaultWorldPool$11.class  DefaultWorldPool$12.class  DefaultWorldPool$13.class  DefaultWorldPool$1.class
- [sertic@sertic normal]$ javap -c -p DefaultWorldPool\$1.class
- Compiled from "DefaultWorldPool.java"
- class org.jbox2d.pooling.normal.DefaultWorldPool$1 extends org.jbox2d.pooling.normal.MutableStack<org.jbox2d.dynamics.contacts.Contact> {
- final org.jbox2d.pooling.normal.DefaultWorldPool this$0;
-
- org.jbox2d.pooling.normal.DefaultWorldPool$1(org.jbox2d.pooling.normal.DefaultWorldPool, int);
- Code:
- 0: aload_0
- 1: aload_1
- 2: putfield      #1                  // Field this$0:Lorg/jbox2d/pooling/normal/DefaultWorldPool;
- 5: aload_0
- 6: iload_2
- 7: invokespecial #2                  // Method org/jbox2d/pooling/normal/MutableStack."<init>":(I)V
- 10: return
-
- protected org.jbox2d.dynamics.contacts.Contact newInstance();
- Code:
- 0: new           #3                  // class org/jbox2d/dynamics/contacts/PolygonContact
- 3: dup
- 4: aload_0
- 5: getfield      #1                  // Field this$0:Lorg/jbox2d/pooling/normal/DefaultWorldPool;
- 8: invokestatic  #4                  // Method org/jbox2d/pooling/normal/DefaultWorldPool.access$000:(Lorg/jbox2d/pooling/normal/DefaultWorldPool;)Lorg/jbox2d/pooling/IWorldPool;
- 11: invokespecial #5                  // Method org/jbox2d/dynamics/contacts/PolygonContact."<init>":(Lorg/jbox2d/pooling/IWorldPool;)V
- 14: areturn
-
- protected java.lang.Object newInstance();
- Code:
- 0: aload_0
- 1: invokevirtual #6                  // Method newInstance:()Lorg/jbox2d/dynamics/contacts/Contact;
- 4: areturn
-
-
- */

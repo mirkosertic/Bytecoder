@@ -13,12 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.core;
 
-public final class TClass extends TObject {
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public TClass() {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
+@RunWith(BytecoderUnitTestRunner.class)
+public class RuntimeClassTest {
+
+    @Test
+    public void testRuntimeClass() {
+        String str1 = new String("1");
+        String str2 = new String("1");
+        Assert.assertSame(str1.getClass(), str2.getClass());
+        Assert.assertNotSame(str1.getClass(), RuntimeClassTest.class);
     }
-
-    public native boolean desiredAssertionStatus();
 }

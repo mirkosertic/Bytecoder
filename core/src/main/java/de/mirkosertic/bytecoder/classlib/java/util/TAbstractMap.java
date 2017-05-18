@@ -15,5 +15,15 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-public abstract class TAbstractMap implements TMap {
+public abstract class TAbstractMap<K, V> implements TMap<K, V> {
+
+    public static class Entry<K, V> {
+        protected final K key;
+        protected V value;
+
+        public Entry(K aKey, V aValue) {
+            key = aKey;
+            value = aValue;
+        }
+    }
 }

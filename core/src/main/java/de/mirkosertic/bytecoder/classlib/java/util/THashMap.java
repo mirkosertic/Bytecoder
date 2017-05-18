@@ -15,24 +15,99 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TCloneable;
 import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
-import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.classlib.java.lang.TArrayIndexOutOfBoundsException;
+import de.mirkosertic.bytecoder.classlib.java.lang.TCloneable;
 
-public class THashMap extends TAbstractMap implements TSerializable, TCloneable {
+public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable, TCloneable {
 
-    @Override
-    public boolean containsKey(Object aKey) {
-        return false;
+    private static class Bucket<K, V> {
+
+        private final int hashCode;
+        private final TArrayList<Entry<K, V>> values;
+
+        public Bucket(int aHashCode) {
+            hashCode = aHashCode;
+            values = new TArrayList<>();
+        }
+
+        public boolean containsKey(K aKey) throws TArrayIndexOutOfBoundsException {
+            for (int i=0;i<values.size();i++) {
+                Entry<K, V> theEntry = values.get(i);
+                if (theEntry.key.equals(aKey)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public V put(K aKey, V aValue) throws TArrayIndexOutOfBoundsException {
+            for (int i=0;i<values.size();i++) {
+                Entry<K, V> theEntry = values.get(i);
+                if (theEntry.key.equals(aKey)) {
+                    V theOldValue = theEntry.value;
+                    theEntry.value = aValue;
+                    return theOldValue;
+                }
+            }
+            Entry<K, V> theNewEntry = new Entry<>(aKey, aValue);
+            values.add(theNewEntry);
+            return null;
+        }
+
+        public V get(K aKey) throws TArrayIndexOutOfBoundsException {
+            for (int i=0;i<values.size();i++) {
+                Entry<K, V> theEntry = values.get(i);
+                if (theEntry.key.equals(aKey)) {
+                    return theEntry.value;
+                }
+            }
+            return null;
+        }
     }
 
-    @Override
-    public Object put(Object aKey, Object aValue) {
+    private final TArrayList<Bucket> buckets;
+
+    public THashMap() {
+        buckets = new TArrayList<>();
+    }
+
+    private Bucket<K, V> findByHashCode(int aHashCode) throws TArrayIndexOutOfBoundsException {
+        for (int i=0;i<buckets.size();i++) {
+            Bucket<K, V> theBuckets = buckets.get(i);
+            if (theBuckets.hashCode == aHashCode) {
+                return theBuckets;
+            }
+        }
         return null;
     }
 
     @Override
-    public Object get(Object aKey) {
+    public boolean containsKey(K aKey) throws TArrayIndexOutOfBoundsException {
+        Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
+        if (theBucket != null) {
+            return theBucket.containsKey(aKey);
+        }
+        return false;
+    }
+
+    @Override
+    public V put(K aKey, V aValue) throws TArrayIndexOutOfBoundsException {
+        int theHashCode = aKey.hashCode();
+        Bucket<K, V> theBucket = findByHashCode(theHashCode);
+        if (theBucket == null) {
+            theBucket = new Bucket<>(theHashCode);
+            buckets.add(theBucket);
+        }
+        return theBucket.put(aKey, aValue);
+    }
+
+    @Override
+    public V get(K aKey) throws TArrayIndexOutOfBoundsException {
+        Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
+        if (theBucket != null) {
+            return theBucket.get(aKey);
+        }
         return null;
     }
 }
