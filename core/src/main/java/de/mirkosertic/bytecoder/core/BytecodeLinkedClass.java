@@ -220,7 +220,7 @@ public class BytecodeLinkedClass {
             link(theArgument);
         }
 
-        if (!aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isSyntetic()) {
+        if (!aMethod.getAccessFlags().isAbstract()) {
             BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
             BytecodeProgram theProgram = theCode.getProgramm();
             for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {

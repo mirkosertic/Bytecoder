@@ -16,4 +16,10 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TAssertionError extends TError {
+
+    public TAssertionError() {
+    }
+
+    public TAssertionError(Object aObject) {
+    }
 }
