@@ -54,4 +54,8 @@ public class BytecodeAccessFlags {
     public boolean isEnum() {
         return (value & 0x4000) > 0;
     }
+
+    public boolean isNative() {
+        return (value & 0x00000100) > 0;
+    }
 }

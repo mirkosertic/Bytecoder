@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
 
 public class TString extends TObject implements TSerializable, TComparable<TString>, TCharSequence {
 
+    private int computedHash;
     private byte[] data;
 
     @NoExceptionCheck
@@ -27,11 +28,16 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
     }
 
     @NoExceptionCheck
+    public TString(TString aOtherString) {
+        data = aOtherString.data;
+    }
+
+    @NoExceptionCheck
     public TString() {
         data = new byte[0];
     }
 
-//    @Override
+    @Override
     public byte[] getBytes() {
         return data;
     }
@@ -64,5 +70,17 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
             }
         }
         return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = computedHash;
+        if (h == 0 && data.length > 0) {
+            for (int i = 0; i < data.length; i++) {
+                h = 31 * h + data[i];
+            }
+            computedHash = h;
+        }
+        return h;
     }
 }

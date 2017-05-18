@@ -72,8 +72,26 @@ public class TAssert {
         }
     }
 
+    public static void assertNull(Object aValue) throws TRuntimeException {
+        if (aValue != null) {
+            throw new TRuntimeException();
+        }
+    }
+
     public static void assertEquals(Object aValue1, Object aValue2) throws TRuntimeException {
         if (!aValue1.equals(aValue2)) {
+            throw new TRuntimeException();
+        }
+    }
+
+    public static void assertSame(Object aValue1, Object aValue2) throws TRuntimeException {
+        if (!(aValue1 == aValue2)) {
+            throw new TRuntimeException();
+        }
+    }
+
+    public static void assertNotSame(Object aValue1, Object aValue2) throws TRuntimeException {
+        if (aValue1 == aValue2) {
             throw new TRuntimeException();
         }
     }

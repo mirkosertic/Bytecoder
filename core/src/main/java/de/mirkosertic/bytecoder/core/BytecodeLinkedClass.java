@@ -21,7 +21,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
+
 public class BytecodeLinkedClass {
+
+    public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class), new BytecodeTypeRef[0]);
+    public static final BytecodeMethod GET_CLASS_PLACEHOLDER = new BytecodeMethod(null, null, null, null) {
+        @Override
+        public BytecodeUtf8Constant getName() {
+            return new BytecodeUtf8Constant("getClass");
+        }
+
+        @Override
+        public BytecodeMethodSignature getSignature() {
+            return GET_CLASS_SIGNATURE;
+        }
+    };
 
     public static class LinkedMethod {
         private final BytecodeObjectTypeRef targetType;
@@ -146,6 +161,15 @@ public class BytecodeLinkedClass {
         try {
             BytecodeObjectTypeRef theClassName = className;
             BytecodeClass theClass = bytecodeClass;
+
+            if ("getClass".equals(aMethodName) && GET_CLASS_SIGNATURE.metchesExactlyTo(aSignature)) {
+
+                BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
+                        .identifierFor("getClass", GET_CLASS_SIGNATURE);
+                linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, GET_CLASS_PLACEHOLDER));
+                return;
+            }
+
             while(theClass != null) {
 
                 BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
@@ -220,7 +244,7 @@ public class BytecodeLinkedClass {
             link(theArgument);
         }
 
-        if (!aMethod.getAccessFlags().isAbstract()) {
+        if (!aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isNative()) {
             BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
             BytecodeProgram theProgram = theCode.getProgramm();
             for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
@@ -280,7 +304,6 @@ public class BytecodeLinkedClass {
 
             LinkedMethod theLinktarget = aEntry.getValue();
             BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
-
             linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
         });
     }

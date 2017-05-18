@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,14 +26,18 @@ public class BytecodeMethodCollection {
         knownIdentifier = new HashMap<>();
     }
 
-    public BytecodeVirtualMethodIdentifier identifierFor(BytecodeMethod aMethod) {
-        String theSignature = toSignature(aMethod);
+    public BytecodeVirtualMethodIdentifier identifierFor(String aMethodName, BytecodeMethodSignature aSignature) {
+        String theSignature = toSignature(aMethodName, aSignature);
         BytecodeVirtualMethodIdentifier theIdentifier = knownIdentifier.get(theSignature);
         if (theIdentifier == null) {
             theIdentifier = new BytecodeVirtualMethodIdentifier(knownIdentifier.size());
             knownIdentifier.put(theSignature, theIdentifier);
         }
         return theIdentifier;
+    }
+
+    public BytecodeVirtualMethodIdentifier identifierFor(BytecodeMethod aMethod) {
+        return identifierFor(aMethod.getName().stringValue(), aMethod.getSignature());
     }
 
     public BytecodeVirtualMethodIdentifier toIdentifier(String aMethodName, BytecodeMethodSignature aSignature) {

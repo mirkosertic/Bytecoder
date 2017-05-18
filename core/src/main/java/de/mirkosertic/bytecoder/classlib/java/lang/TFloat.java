@@ -49,6 +49,10 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         return false;
     }
 
+    public static int floatToIntBits(float aFloat) {
+        return 0;
+    }
+
     @Override
     public float floatValue() {
         return floatValue;
