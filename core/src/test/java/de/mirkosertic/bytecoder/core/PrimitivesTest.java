@@ -32,6 +32,8 @@ public class PrimitivesTest {
         public final Boolean booleanTrueValue = new Boolean(true);
         public final Boolean booleanFalseValue = new Boolean(false);
         public final Float floatValue = new Float(13f);
+        public final Double doubleValue = new Double(13d);
+        private final Long longValue = new Long(57236352L);
     }
 
     @Test
@@ -59,5 +61,20 @@ public class PrimitivesTest {
 
         TAssert.assertTrue(theContainer.booleanTrueValue.booleanValue());
         TAssert.assertFalse(theContainer.booleanFalseValue.booleanValue());
+
+    }
+
+    @Test
+    public void testLongValue() throws TRuntimeException {
+        Long theLong = new Long(13);
+        Container theContainer = new Container();
+        TAssert.assertEquals(57236352L, theContainer.longValue.longValue(), 0);
+    }
+
+    @Test
+    public void testDoubleValue() throws TRuntimeException {
+        Double theDouble = new Double(13);
+        Container theContainer = new Container();
+        TAssert.assertEquals(13, (float) theContainer.doubleValue.doubleValue(), 0);
     }
 }

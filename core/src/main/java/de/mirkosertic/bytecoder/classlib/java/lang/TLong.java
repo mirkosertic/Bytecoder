@@ -15,15 +15,12 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+public class TLong extends TNumber {
 
-public class TFloat extends TNumber implements TComparable<TFloat> {
+    private final long longValue;
 
-    private float floatValue;
-
-    @NoExceptionCheck
-    public TFloat(float aValue) {
-        floatValue = aValue;
+    public TLong(long aLongValue) {
+        longValue = aLongValue;
     }
 
     @Override
@@ -33,9 +30,9 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TFloat tFloat = (TFloat) o;
+        TLong tLong = (TLong) o;
 
-        if (Float.compare(tFloat.floatValue, floatValue) != 0)
+        if (longValue != tLong.longValue)
             return false;
 
         return true;
@@ -43,63 +40,36 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
 
     @Override
     public int hashCode() {
-        return (int) floatValue;
-    }
-
-    @Override
-    public int compareTo(TFloat o) {
-        return 0;
-    }
-
-    public static int compare(float f1, float f2) {
-        if(f1 < f2) {
-            return -1;
-        }
-        if(f1 > f2) {
-            return 1;
-        }
-        return 0;
-    }
-
-    public static boolean isNaN(float aFloat) {
-        return false;
-    }
-
-    public static boolean isInfinite(float aFloat) {
-        return false;
-    }
-
-    public static int floatToIntBits(float aFloat) {
-        return 0;
-    }
-
-    @Override
-    public float floatValue() {
-        return floatValue;
+        return (int) longValue;
     }
 
     @Override
     public int intValue() {
-        return (int) floatValue;
+        return (int) longValue;
     }
 
     @Override
     public byte byteValue() {
-        return (byte) floatValue;
+        return (byte) longValue;
     }
 
     @Override
     public short shortValue() {
-        return (short) floatValue;
+        return (short) longValue;
+    }
+
+    @Override
+    public float floatValue() {
+        return (float) longValue;
     }
 
     @Override
     public long longValue() {
-        return (long) floatValue;
+        return longValue;
     }
 
     @Override
     public double doubleValue() {
-        return floatValue;
+        return longValue;
     }
 }

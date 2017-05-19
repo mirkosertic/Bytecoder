@@ -47,6 +47,16 @@ public class TInteger extends TNumber {
     }
 
     @Override
+    public long longValue() {
+        return integerValue;
+    }
+
+    @Override
+    public double doubleValue() {
+        return integerValue;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

@@ -18,10 +18,10 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction {
 
     private final int methodIndex;
-    private final byte count;
+    private final int count;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKEINTERFACE(BytecodeOpcodeAddress aOpcodeIndex, int aMethodIndex, byte aCount, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINVOKEINTERFACE(BytecodeOpcodeAddress aOpcodeIndex, int aMethodIndex, int aCount, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         methodIndex = aMethodIndex;
         count = aCount;

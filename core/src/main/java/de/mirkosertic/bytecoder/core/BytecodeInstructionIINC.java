@@ -17,20 +17,20 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionIINC extends BytecodeInstruction {
 
-    private final byte index;
-    private final byte constant;
+    private final int index;
+    private final int constant;
 
-    public BytecodeInstructionIINC(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex, byte aConsant) {
+    public BytecodeInstructionIINC(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, int aConsant) {
         super(aOpcodeIndex);
         index = aIndex;
         constant = aConsant;
     }
 
-    public byte getIndex() {
+    public int getIndex() {
         return index;
     }
 
-    public byte getConstant() {
+    public int getConstant() {
         return constant;
     }
 }

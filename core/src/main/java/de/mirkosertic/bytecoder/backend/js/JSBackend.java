@@ -338,7 +338,6 @@ public class JSBackend {
 
                 theWriter.println();
                 theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
-
                 theWriter.println("        var frame = {");
                 theWriter.println("            stack : [], // " + theCode.getMaxStack() + " max stack depth");
                 if (aMethod.getAccessFlags().isStatic()) {
@@ -865,7 +864,7 @@ public class JSBackend {
                         theWriter.println("// tableswitch");
                         theWriter.println(theInset + "var theCurrentValue = frame.stack.pop();");
                         theWriter.println(theInset + "if (theCurrentValue < " + theSwitch.getLowValue() + " || theCurrentValue > " + theSwitch.getHighValue() + ") {");
-                        theWriter.println(theInset + "  return " + theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue() + ";");
+                        theWriter.println(theInset + "  return " + (theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue()) + ";");
                         theWriter.println(theInset + "}");
                         theWriter.println(theInset + "var theOffset = theCurrentValue - " + theSwitch.getLowValue() + ";");
                         theWriter.println(theInset + "switch(theOffset) {");
@@ -887,7 +886,7 @@ public class JSBackend {
                             theWriter.println(theInset +"    return " + (theSwitch.getOpcodeAddress().getAddress() + thePair.getOffset()) + ";");
                         }
                         theWriter.println(theInset + "}");
-                        theWriter.println(theInset + "return " + theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue() + ";");
+                        theWriter.println(theInset + "return " + (theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue()) + ";");
                     } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                         BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
                         theWriter.println(theInset + "frame.stack.push(" + theConst.getFloatValue() + ");");
@@ -1059,6 +1058,7 @@ public class JSBackend {
 
                 theWriter.println("        var theCurrentPC = 0;\n"
                         + "        while(true) {\n"
+                        + "            console.log('" + theJSClassName + "." + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " ' + theCurrentPC);"
                         + "            theCurrentPC = theProgramm[theCurrentPC](frame);\n"
                         + "            if (theCurrentPC === -1) {\n"
                         + "                return;\n"

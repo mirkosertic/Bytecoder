@@ -17,14 +17,14 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionALOAD extends BytecodeInstruction {
 
-    private final byte variableIndex;
+    private final int variableIndex;
 
-    public BytecodeInstructionALOAD(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex) {
+    public BytecodeInstructionALOAD(BytecodeOpcodeAddress aOpcodeIndex, int aIndex) {
         super(aOpcodeIndex);
         variableIndex = aIndex;
     }
 
-    public byte getVariableIndex() {
+    public int getVariableIndex() {
         return variableIndex;
     }
 }

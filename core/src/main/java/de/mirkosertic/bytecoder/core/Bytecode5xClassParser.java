@@ -181,14 +181,14 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     }
 
     private void parseConstantPool_CONSTANT_Long(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        long theHighBytes = aDis.readInt();
-        long theLowBytes = aDis.readInt();
+        long theLowBytes = aDis.readInt() & 0xFFFFFFFFL;
+        long theHighBytes = aDis.readInt() & 0xFFFFFFFFL;
         aConstantPool.registerConstant(new BytecodeLongConstant(theHighBytes, theLowBytes));
     }
 
     private void parseConstantPool_CONSTANT_Double(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        long theHighBytes = aDis.readInt();
-        long theLowBytes = aDis.readInt();
+        long theLowBytes = aDis.readInt() & 0xFFFFFFFFL;
+        long theHighBytes = aDis.readInt() & 0xFFFFFFFFL;
         aConstantPool.registerConstant(new BytecodeDoubleConstant(theHighBytes, theLowBytes));
     }
 

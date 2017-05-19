@@ -31,6 +31,19 @@ public class TArrayList<T> implements TList<T> {
     }
 
     @Override
+    public Object[] toArray() {
+        Object[] theNewArray = new Object[currentLength];
+        System.arraycopy(data, 0, theNewArray, 0, currentLength);
+        return theNewArray;
+    }
+
+    @Override
+    public Object[] toArray(Object[] aTarget) {
+        System.arraycopy(data, 0, aTarget, 0, currentLength);
+        return aTarget;
+    }
+
+    @Override
     public boolean add(T aObject) {
         currentLength++;
         if (currentLength >= data.length) {
