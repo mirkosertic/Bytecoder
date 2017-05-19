@@ -16,4 +16,11 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TIllegalArgumentException extends TRuntimeException {
+
+    public TIllegalArgumentException() {
+    }
+
+    public TIllegalArgumentException(String aMessage) {
+        super(aMessage);
+    }
 }

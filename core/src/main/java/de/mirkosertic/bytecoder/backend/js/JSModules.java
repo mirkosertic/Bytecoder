@@ -13,15 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.backend.js;
 
-import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+import java.util.HashMap;
+import java.util.Map;
 
-@EmulatedByRuntime
-public final class TClass extends TObject {
+public class JSModules {
 
-    public TClass() {
+    private final Map<String, JSModule> modules;
+
+    public JSModules() {
+        modules = new HashMap<>();
     }
 
-    public native boolean desiredAssertionStatus();
+    public JSModule resolveModule(String aName) {
+        JSModule theModule = modules.get(aName);
+        if (theModule == null) {
+            throw new IllegalStateException("No such module : " + aName);
+        }
+        return theModule;
+    }
+
+    public void register(String aName, JSModule aModule) {
+        modules.put(aName, aModule);
+    }
 }

@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.annotations;
 
-import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@EmulatedByRuntime
-public final class TClass extends TObject {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+public @interface Import {
 
-    public TClass() {
-    }
+    String module();
 
-    public native boolean desiredAssertionStatus();
+    String name();
 }

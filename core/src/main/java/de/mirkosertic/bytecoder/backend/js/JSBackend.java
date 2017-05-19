@@ -19,6 +19,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
+import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
@@ -122,10 +124,27 @@ public class JSBackend {
 
     private final BytecodeMethodSignature theRegisterExceptionOutcomeSignature;
     private final BytecodeMethodSignature theGetLastExceptionOutcomeSignature;
+    private final JSModules modules;
 
     public JSBackend() {
         theRegisterExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
         theGetLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
+        modules = new JSModules();
+
+        JSModule theMathModule = new JSModule();
+        theMathModule.registerFunction("ceil", new JSFunction("return Math.ceil(p1);"));
+        theMathModule.registerFunction("floor", new JSFunction("return Math.floor(p1);"));
+        theMathModule.registerFunction("sin", new JSFunction("return Math.sin(p1);"));
+        theMathModule.registerFunction("cos", new JSFunction("return Math.cos(p1);"));
+        theMathModule.registerFunction("sqrt", new JSFunction("return Math.sqrt(p1);"));
+        theMathModule.registerFunction("round", new JSFunction("return Math.round(p1);"));
+
+        JSModule theSystemModule = new JSModule();
+        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return new Date().getTime();"));
+        theSystemModule.registerFunction("nanoTime", new JSFunction("return new Date().getTime();"));
+
+        modules.register("math", theMathModule);
+        modules.register("system", theSystemModule);
     }
 
     private String typeRefToString(BytecodeTypeRef aTypeRef) {
@@ -242,12 +261,12 @@ public class JSBackend {
                             } else if ("desiredAssertionStatus".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        return function(callsite) {return false};");
                             } else {
-                                throw new IllegalStateException("Cannot link runtime class method " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                                throw new IllegalStateException("Cannot link runtime class name " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
                             }
                         });
 
                 theWriter.println("                    default:");
-                theWriter.println("                        throw {type: 'unknown virtual method'}");
+                theWriter.println("                        throw {type: 'unknown virtual name'}");
                 theWriter.println("                }");
                 theWriter.println("            }");
                 theWriter.println("        }");
@@ -270,7 +289,7 @@ public class JSBackend {
                     }
                 });
                 theWriter.println("            default:");
-                theWriter.println("                throw {type: 'unknown virtual method'}");
+                theWriter.println("                throw {type: 'unknown virtual name'}");
                 theWriter.println("        }");
                 theWriter.println("    },");
                 theWriter.println();
@@ -319,11 +338,10 @@ public class JSBackend {
             aEntry.getValue().forEachMethod(aMethod -> {
 
                 // Do not generate code for abstract methods
-                if (aMethod.getAccessFlags().isAbstract() || aMethod.getAccessFlags().isNative()) {
+                if (aMethod.getAccessFlags().isAbstract()) {
                     return;
                 }
 
-                BytecodeCodeAttributeInfo theCode = aMethod.getCode(aEntry.getValue().getBytecodeClass());
                 BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
                 StringBuffer theArguments = new StringBuffer();
                 if (!aMethod.getAccessFlags().isStatic()) {
@@ -335,6 +353,26 @@ public class JSBackend {
                     }
                     theArguments.append("p" + i);
                 }
+
+                if (aMethod.getAccessFlags().isNative()) {
+                    if (aEntry.getValue().getBytecodeClass().getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                        return;
+                    }
+                    BytecodeAnnotation theImportAnnotation = aMethod.getAnnotations().getAnnotationByType(Import.class.getName());
+                    if (theImportAnnotation == null) {
+                        throw new IllegalStateException("No @Import annotation found. Potential linker error!");
+                    }
+
+                    JSModule theModule = modules.resolveModule(theImportAnnotation.getElementValueByName("module").stringValue());
+                    JSFunction theFunction = theModule.resolveFunction(theImportAnnotation.getElementValueByName("name").stringValue());
+                    theWriter.println();
+                    theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                    theWriter.println("         " + theFunction.generateCode());
+                    theWriter.println("    },");
+                    return;
+                }
+
+                BytecodeCodeAttributeInfo theCode = aMethod.getCode(aEntry.getValue().getBytecodeClass());
 
                 theWriter.println();
                 theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
@@ -364,7 +402,7 @@ public class JSBackend {
                 BytecodeProgram theProgram = theCode.getProgramm();
 
                 String theInset = "            ";
-                theWriter.println("        // Begin method code");
+                theWriter.println("        // Begin name code");
                 theWriter.println("        var theProgramm = [];");
                 for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
 
@@ -903,14 +941,38 @@ public class JSBackend {
                         theWriter.println(theInset + "var theInt = frame.stack.pop();");
                         theWriter.println(theInset + "frame.stack.push(theInt);");
                     } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
-                        theWriter.println(theInset + "var theInt = frame.stack.pop();");
-                        theWriter.println(theInset + "frame.stack.push(theInt);");
+                        theWriter.println(theInset + "var theLong = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(theLong);");
                     } else if (theInstruction instanceof BytecodeInstructionD2Generic) {
-                        theWriter.println(theInset + "var theInt = frame.stack.pop();");
-                        theWriter.println(theInset + "frame.stack.push(theInt);");
+                        theWriter.println(theInset + "var theDouble = frame.stack.pop();");
+                        BytecodeInstructionD2Generic theConv = (BytecodeInstructionD2Generic) theInstruction;
+                        switch (theConv.getTargetType()) {
+                            case BYTE:
+                            case SHORT:
+                            case CHAR:
+                            case INT:
+                            case LONG:
+                                theWriter.println(theInset + "frame.stack.push(Math.round(theDouble));");
+                                break;
+                            default:
+                                theWriter.println(theInset + "frame.stack.push(theDouble);");
+                                break;
+                        }
                     } else if (theInstruction instanceof BytecodeInstructionF2Generic) {
                         theWriter.println(theInset + "var theFloat = frame.stack.pop();");
-                        theWriter.println(theInset + "frame.stack.push(theFloat);");
+                        BytecodeInstructionF2Generic theConv = (BytecodeInstructionF2Generic) theInstruction;
+                        switch (theConv.getTargetType()) {
+                            case BYTE:
+                            case SHORT:
+                            case CHAR:
+                            case INT:
+                            case LONG:
+                                theWriter.println(theInset + "frame.stack.push(Math.round(theFloat));");
+                                break;
+                            default:
+                                theWriter.println(theInset + "frame.stack.push(theFloat);");
+                                break;
+                        }
                     } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                         BytecodeInstructionGenericLDC theLoad = (BytecodeInstructionGenericLDC) theInstruction;
                         BytecodeConstant theConstant = theLoad.constant();
@@ -1058,7 +1120,6 @@ public class JSBackend {
 
                 theWriter.println("        var theCurrentPC = 0;\n"
                         + "        while(true) {\n"
-                        + "            console.log('" + theJSClassName + "." + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " ' + theCurrentPC);"
                         + "            theCurrentPC = theProgramm[theCurrentPC](frame);\n"
                         + "            if (theCurrentPC === -1) {\n"
                         + "                return;\n"

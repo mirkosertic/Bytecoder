@@ -172,7 +172,7 @@ public class JBox2DTest {
     @Test
     public void testSceneAndRun() {
         Scene theScene = new Scene();
-        theScene.calculate();
+//        theScene.calculate();
     }
 
     @Test

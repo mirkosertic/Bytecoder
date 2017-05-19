@@ -33,6 +33,10 @@ public class BytecodeParserUtils {
         return aData[aOffset] & 0xFF;
     }
 
+    public static int signedByteFromByteArray(byte[] aData, int aOffset) {
+        return aData[aOffset];
+    }
+
     public static long longFromByteArray(byte[] aData, int aOffset) {
         int theByte1 = aData[aOffset++];
         int theByte2 = aData[aOffset++];

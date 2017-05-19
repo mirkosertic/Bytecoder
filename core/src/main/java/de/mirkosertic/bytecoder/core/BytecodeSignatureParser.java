@@ -162,7 +162,7 @@ public class BytecodeSignatureParser {
         String theArguments = theBuilder.substring(p+1, p2);
         BytecodeTypeRef[] theReturnValue = toTypes(theBuilder.substring(p2 + 1));
         if (theReturnValue.length != 1) {
-            throw new IllegalArgumentException("Invalid method signature: missing return type : " + theBuilder);
+            throw new IllegalArgumentException("Invalid name signature: missing return type : " + theBuilder);
         }
         return new BytecodeMethodSignature(theReturnValue[0], toTypes(theArguments));
     }
