@@ -407,9 +407,12 @@ public class JSBackend {
                         BytecodeInstructionNEWMULTIARRAY theNew = (BytecodeInstructionNEWMULTIARRAY) theInstruction;
 
                         BytecodeObjectTypeRef theConstant = theNew.getObjectType();
-                        theWriter.println(theInset + "var theLength = frame.stack.pop();");
+
+                        for (int i=0;i<theNew.getDimensions();i++) {
+                            theWriter.println(theInset + "var theLength" + i + " = frame.stack.pop();");
+                        }
                         theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
-                        theWriter.println(theInset + "theInstance.data = new Array(theLength);");
+                        theWriter.println(theInset + "theInstance.data = new Array(theLength0);");
                         theWriter.println(theInset + "frame.stack.push(theInstance);");
 
                     } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
