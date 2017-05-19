@@ -18,15 +18,15 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeInstructionGenericLOAD extends BytecodeInstruction {
 
     private final BytecodePrimitiveTypeRef type;
-    private final byte index;
+    private final int index;
 
-    public BytecodeInstructionGenericLOAD(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType, byte aIndex) {
+    public BytecodeInstructionGenericLOAD(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType, int aIndex) {
         super(aOpcodeIndex);
         type = aType;
         index = aIndex;
     }
 
-    public byte getIndex() {
+    public int getIndex() {
         return index;
     }
 }

@@ -24,4 +24,8 @@ public abstract class TNumber extends TObject {
     public abstract short shortValue();
 
     public abstract float floatValue();
+
+    public abstract long longValue();
+
+    public abstract double doubleValue();
 }

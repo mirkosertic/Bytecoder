@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionRET extends BytecodeInstruction {
 
-    private final byte index;
+    private final int index;
 
-    public BytecodeInstructionRET(BytecodeOpcodeAddress aOpcodeIndex, byte aIndex) {
+    public BytecodeInstructionRET(BytecodeOpcodeAddress aOpcodeIndex, int aIndex) {
         super(aOpcodeIndex);
         index = aIndex;
     }

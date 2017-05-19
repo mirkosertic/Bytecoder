@@ -27,6 +27,26 @@ public class TByte extends TNumber {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        TByte tByte = (TByte) o;
+
+        if (byteValue != tByte.byteValue)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return byteValue;
+    }
+
+    @Override
     public int intValue() {
         return (int) byteValue;
     }
@@ -44,5 +64,15 @@ public class TByte extends TNumber {
     @Override
     public float floatValue() {
         return (float) byteValue;
+    }
+
+    @Override
+    public long longValue() {
+        return byteValue;
+    }
+
+    @Override
+    public double doubleValue() {
+        return byteValue;
     }
 }

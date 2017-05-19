@@ -15,15 +15,12 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+public class TDouble extends TNumber {
 
-public class TFloat extends TNumber implements TComparable<TFloat> {
+    private final double doubleValue;
 
-    private float floatValue;
-
-    @NoExceptionCheck
-    public TFloat(float aValue) {
-        floatValue = aValue;
+    public TDouble(double aDoubleValue) {
+        doubleValue = aDoubleValue;
     }
 
     @Override
@@ -33,9 +30,9 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TFloat tFloat = (TFloat) o;
+        TDouble tDouble = (TDouble) o;
 
-        if (Float.compare(tFloat.floatValue, floatValue) != 0)
+        if (Double.compare(tDouble.doubleValue, doubleValue) != 0)
             return false;
 
         return true;
@@ -43,63 +40,36 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
 
     @Override
     public int hashCode() {
-        return (int) floatValue;
-    }
-
-    @Override
-    public int compareTo(TFloat o) {
-        return 0;
-    }
-
-    public static int compare(float f1, float f2) {
-        if(f1 < f2) {
-            return -1;
-        }
-        if(f1 > f2) {
-            return 1;
-        }
-        return 0;
-    }
-
-    public static boolean isNaN(float aFloat) {
-        return false;
-    }
-
-    public static boolean isInfinite(float aFloat) {
-        return false;
-    }
-
-    public static int floatToIntBits(float aFloat) {
-        return 0;
-    }
-
-    @Override
-    public float floatValue() {
-        return floatValue;
+        return (int) doubleValue;
     }
 
     @Override
     public int intValue() {
-        return (int) floatValue;
+        return (int) doubleValue;
     }
 
     @Override
     public byte byteValue() {
-        return (byte) floatValue;
+        return (byte) doubleValue;
     }
 
     @Override
     public short shortValue() {
-        return (short) floatValue;
+        return (short) doubleValue;
+    }
+
+    @Override
+    public float floatValue() {
+        return (float) doubleValue;
     }
 
     @Override
     public long longValue() {
-        return (long) floatValue;
+        return (long) doubleValue;
     }
 
     @Override
     public double doubleValue() {
-        return floatValue;
+        return doubleValue;
     }
 }

@@ -28,4 +28,8 @@ public interface TCollection<T> {
     boolean remove(T aObject);
 
     int size();
+
+    Object[] toArray();
+
+    Object[] toArray(Object[] aTarget);
 }

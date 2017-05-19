@@ -20,12 +20,12 @@ public class BytecodeLongConstant implements BytecodeConstant {
     private final long lowBytes;
     private final long highBytes;
 
-    public BytecodeLongConstant(long lowBytes, long highBytes) {
-        this.lowBytes = lowBytes;
-        this.highBytes = highBytes;
+    public BytecodeLongConstant(long aLowBytes, long aHighBytes) {
+        this.lowBytes = aLowBytes;
+        this.highBytes = aHighBytes;
     }
 
     public long getLongValue() {
-        return 0;
+        return ((long) highBytes << 32) + lowBytes;
     }
 }

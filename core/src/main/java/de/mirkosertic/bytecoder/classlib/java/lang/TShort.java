@@ -27,6 +27,26 @@ public class TShort extends TNumber {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        TShort tShort = (TShort) o;
+
+        if (shortValue != tShort.shortValue)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return shortValue;
+    }
+
+    @Override
     public int intValue() {
         return (int) shortValue;
     }
@@ -44,5 +64,15 @@ public class TShort extends TNumber {
     @Override
     public float floatValue() {
         return (float) shortValue;
+    }
+
+    @Override
+    public long longValue() {
+        return shortValue;
+    }
+
+    @Override
+    public double doubleValue() {
+        return shortValue;
     }
 }

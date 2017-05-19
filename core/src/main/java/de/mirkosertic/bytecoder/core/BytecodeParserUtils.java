@@ -29,13 +29,17 @@ public class BytecodeParserUtils {
         return (short)( ((theByte1 & 0xFF) << 8) | (theByte2 & 0xFF) );
     }
 
-    public static long longFromByteArray(byte[] aData, int aOffset) {
-        byte theByte1 = aData[aOffset++];
-        byte theByte2 = aData[aOffset++];
-        byte theByte3 = aData[aOffset++];
-        byte theByte4 = aData[aOffset];
+    public static int byteFromByteArray(byte[] aData, int aOffset) {
+        return aData[aOffset] & 0xFF;
+    }
 
-        return (theByte1 << 24) | (theByte2 << 16) | (theByte3 << 8) | theByte4;
+    public static long longFromByteArray(byte[] aData, int aOffset) {
+        int theByte1 = aData[aOffset++];
+        int theByte2 = aData[aOffset++];
+        int theByte3 = aData[aOffset++];
+        int theByte4 = aData[aOffset];
+
+        return ((theByte1 << 24) | (theByte2 << 16) | (theByte3 << 8) | theByte4);
     }
 
     public static float intToFloat(int aIntValue) {
@@ -56,6 +60,20 @@ public class BytecodeParserUtils {
     }
 
     public static double intToDouble(long aLowBytes, long aHighBytes) {
-        return 0;
+        long theValue = aHighBytes << 32  + aLowBytes;
+        if (theValue == 0x7ff0000000000000L) {
+            return Double.POSITIVE_INFINITY;
+        }
+        if (theValue == 0xfff0000000000000L) {
+            return Double.NEGATIVE_INFINITY;
+        }
+
+        int s = ((theValue >> 63) == 0) ? 1 : -1;
+        int e = (int)((theValue >> 52) & 0x7ffL);
+        long m = (e == 0) ?
+                (theValue & 0xfffffffffffffL) << 1 :
+                (theValue & 0xfffffffffffffL) | 0x10000000000000L;
+
+        return (double) (s * m * Math.pow(2, e-1075));
     }
 }
