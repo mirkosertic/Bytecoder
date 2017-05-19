@@ -74,4 +74,9 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
     public boolean isVoid() {
         return false;
     }
+
+    @Override
+    public Object defaultValue() {
+        return null;
+    }
 }

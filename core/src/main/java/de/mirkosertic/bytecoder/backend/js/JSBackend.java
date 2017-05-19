@@ -396,32 +396,85 @@ public class JSBackend {
 
                     } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                         BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
-
-                        BytecodeObjectTypeRef theConstant = theNew.getObjectType();
+                        BytecodeObjectTypeRef theArrayType = theNew.getObjectType();
+                        BytecodeTypeRef thePrimitiveType = theNew.getPrimitiveType();
+                        Object theDefaultValue = thePrimitiveType.defaultValue();
                         theWriter.println(theInset + "var theLength = frame.stack.pop();");
-                        theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                        theWriter.println(theInset + "var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
                         theWriter.println(theInset + "theInstance.data = new Array(theLength);");
+                        theWriter.println(theInset + "for (var i=0;i<theLength;i++) {");
+                        if (theDefaultValue == null) {
+                            theWriter.println(theInset + "  theInstance.data[i] = null;");
+                        } else {
+                            theWriter.println(theInset + "  theInstance.data[i] = " + theDefaultValue.toString() + ";");
+                        }
+                        theWriter.println(theInset + "}");
                         theWriter.println(theInset + "frame.stack.push(theInstance);");
 
                     } else if (theInstruction instanceof BytecodeInstructionNEWMULTIARRAY) {
                         BytecodeInstructionNEWMULTIARRAY theNew = (BytecodeInstructionNEWMULTIARRAY) theInstruction;
 
+                        BytecodeTypeRef theTypeRef = aLinkerContext.getSignatureParser().toFieldType(theNew.getTypeConstant().getConstant());
+                        Object theDefaultValue = theTypeRef.defaultValue();
+
+                        if (theNew.getDimensions() > 2) {
+                            throw new IllegalStateException("Not supported multi array size : " + theNew.getDimensions());
+                        }
+
                         BytecodeObjectTypeRef theConstant = theNew.getObjectType();
 
+                        theWriter.println(theInset + "var theDimensions = [];");
                         for (int i=0;i<theNew.getDimensions();i++) {
-                            theWriter.println(theInset + "var theLength" + i + " = frame.stack.pop();");
+                            theWriter.println(theInset + "theDimensions.push(frame.stack.pop());");
                         }
                         theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
-                        theWriter.println(theInset + "theInstance.data = new Array(theLength0);");
+                        theWriter.println(theInset + "theInstance.data = new Array(theDimensions[0]);");
+
+                        theWriter.println(theInset + "for (var filler=0;filler<theDimensions[0];filler++) {");
+                        if (theDefaultValue == null) {
+                            theWriter.println(theInset + "  theInstance.data[filler] = null;");
+                        } else {
+                            theWriter.println(theInset + "  theInstance.data[filler] = " + theDefaultValue.toString() + ";");
+                        }
+                        theWriter.println(theInset + "}");
+
+                        theWriter.println(theInset + "for (var theLevel=1;theLevel<theDimensions.length;theLevel++) {");
+                        theWriter.println(theInset + "  var theParent = theInstance;");
+                        theWriter.println(theInset + "  var theNumberOfInstances = theDimensions[theLevel - 1];");
+                        theWriter.println(theInset + "  var theRequestedDimension = theDimensions[i];");
+                        theWriter.println(theInset + "  for (var j=0;j<theNumberOfInstances;j++) {");
+                        theWriter.println(theInset + "      var theSubInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                        theWriter.println(theInset + "      theSubInstance.data = new Array(theRequestedDimension);");
+
+                        theWriter.println(theInset + "      for (var filler=0;filler<theRequestedDimension;filler++) {");
+                        if (theDefaultValue == null) {
+                            theWriter.println(theInset + "          theSubInstance.data[filler] = null;");
+                        } else {
+                            theWriter.println(theInset + "          theSubInstance.data[filler] = " + theDefaultValue.toString() + ";");
+                        }
+                        theWriter.println(theInset + "      }");
+
+                        theWriter.println(theInset + "      theParent.data[j] = theSubInstance;");
+                        theWriter.println(theInset + "  }");
+                        theWriter.println(theInset + "}");
+
                         theWriter.println(theInset + "frame.stack.push(theInstance);");
 
                     } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                         BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
+                        BytecodeObjectTypeRef theArrayType = theNew.getObjectType();
+                        Object theDefaultValue = theArrayType.defaultValue();
 
-                        BytecodeObjectTypeRef theConstant = theNew.getObjectType();
                         theWriter.println(theInset + "var theLength = frame.stack.pop()");
-                        theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                        theWriter.println(theInset + "var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
                         theWriter.println(theInset + "theInstance.data = new Array(theLength);");
+                        theWriter.println(theInset + "for (var i=0;i<theLength;i++) {");
+                        if (theDefaultValue == null) {
+                            theWriter.println(theInset + "  theInstance.data[i] = null;");
+                        } else {
+                            theWriter.println(theInset + "  theInstance.data[i] = " + theDefaultValue.toString() + ";");
+                        }
+                        theWriter.println(theInset + "}");
                         theWriter.println(theInset + "frame.stack.push(theInstance);");
 
                     } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
@@ -740,16 +793,30 @@ public class JSBackend {
                         theWriter.println(theInset + "frame.stack.push(frame.stack.pop() + frame.stack.pop());");
                     } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                         BytecodeInstructionGenericDIV theDiv = (BytecodeInstructionGenericDIV) theInstruction;
-                        theWriter.println(theInset + "var temp = Math.floor(frame.stack[frame.stack.length - 2] / frame.stack[frame.stack.length - 1]);");
-                        theWriter.println(theInset + "frame.stack[frame.stack.length - 1] = temp;");
+                        theWriter.println(theInset + "var temp1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var temp2 = frame.stack.pop();");
+                        switch (theDiv.getType()) {
+                        case INT:
+                        case BYTE:
+                        case CHAR:
+                        case LONG:
+                        case SHORT:
+                            theWriter.println(theInset + "frame.stack.push(Math.floor(temp2 / temp1));");
+                            break;
+                        default:
+                            theWriter.println(theInset + "frame.stack.push(temp2 / temp1);");
+                            break;
+                        }
                     } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                         BytecodeInstructionGenericREM theRem = (BytecodeInstructionGenericREM) theInstruction;
-                        theWriter.println(theInset + "var temp = Math.floor(frame.stack[frame.stack.length - 2] % frame.stack[frame.stack.length - 1]);");
-                        theWriter.println(theInset + "frame.stack[frame.stack.length - 1] = temp;");
+                        theWriter.println(theInset + "var temp1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var temp2 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(Math.floor(temp2 % temp1));");
                     } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
-                        BytecodeInstructionGenericMUL theDiv = (BytecodeInstructionGenericMUL) theInstruction;
-                        theWriter.println(theInset + "var temp = frame.stack[frame.stack.length - 2] * frame.stack[frame.stack.length - 1];");
-                        theWriter.println(theInset + "frame.stack[frame.stack.length - 1] = temp;");
+                        BytecodeInstructionGenericMUL theMul = (BytecodeInstructionGenericMUL) theInstruction;
+                        theWriter.println(theInset + "var temp1 = frame.stack.pop();");
+                        theWriter.println(theInset + "var temp2 = frame.stack.pop();");
+                        theWriter.println(theInset + "frame.stack.push(temp1 * temp2);");
                     } else if (theInstruction instanceof BytecodeInstructionGenericSUB) {
                         BytecodeInstructionGenericSUB theSub = (BytecodeInstructionGenericSUB) theInstruction;
                         theWriter.println(theInset + "var temp1 = frame.stack.pop();");
@@ -805,7 +872,7 @@ public class JSBackend {
                         long[] theOffsets = theSwitch.getOffsets();
                         for (int i=0;i<theOffsets.length;i++) {
                             theWriter.println(theInset + "  case " + i + ":");
-                            theWriter.println(theInset + "    return " + theSwitch.getOpcodeAddress().getAddress() + theOffsets[i] + ";");
+                            theWriter.println(theInset + "    return " + (theSwitch.getOpcodeAddress().getAddress() + theOffsets[i]) + ";");
                         }
                         theWriter.println(theInset + "}");
                         theWriter.println(theInset + "throw \"Illegal jump target\";");
@@ -817,7 +884,7 @@ public class JSBackend {
                         theWriter.println(theInset + "switch(theCurrentValue) {");
                         for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theSwitch.getPairs()) {
                             theWriter.println(theInset + "  case " + thePair.getMatch() + ":");
-                            theWriter.println(theInset +"    return " + theSwitch.getOpcodeAddress().getAddress() + thePair.getOffset() + ";");
+                            theWriter.println(theInset +"    return " + (theSwitch.getOpcodeAddress().getAddress() + thePair.getOffset()) + ";");
                         }
                         theWriter.println(theInset + "}");
                         theWriter.println(theInset + "return " + theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue() + ";");

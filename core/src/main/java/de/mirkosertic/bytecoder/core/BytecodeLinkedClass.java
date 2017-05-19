@@ -103,6 +103,10 @@ public class BytecodeLinkedClass {
         return theResult;
     }
 
+    public BytecodeAccessFlags getAccessFlags() {
+        return bytecodeClass.getAccessFlags();
+    }
+
     public BytecodeLinkedClass getSuperClass() {
         return superClass;
     }

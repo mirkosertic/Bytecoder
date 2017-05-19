@@ -17,15 +17,60 @@ package de.mirkosertic.bytecoder.core;
 
 public enum BytecodePrimitiveTypeRef implements BytecodeTypeRef {
 
-    BOOLEAN,
-    BYTE,
-    CHAR,
-    DOUBLE,
-    FLOAT,
-    LONG,
-    SHORT,
-    INT,
-    VOID;
+    BOOLEAN {
+        @Override
+        public Object defaultValue() {
+            return false;
+        }
+    },
+    BYTE {
+        @Override
+        public Object defaultValue() {
+            return (byte) 0;
+        }
+    },
+    CHAR {
+        @Override
+        public Object defaultValue() {
+            return (byte) 0;
+        }
+    },
+    DOUBLE {
+        @Override
+        public Object defaultValue() {
+            return 0.0d;
+        }
+    },
+    FLOAT {
+        @Override
+        public Object defaultValue() {
+            return 0.0f;
+        }
+    },
+    LONG {
+        @Override
+        public Object defaultValue() {
+            return 0L;
+        }
+    },
+    SHORT {
+        @Override
+        public Object defaultValue() {
+            return (short) 0;
+        }
+    },
+    INT {
+        @Override
+        public Object defaultValue() {
+            return 0;
+        }
+    },
+    VOID {
+        @Override
+        public Object defaultValue() {
+            throw new IllegalStateException("Should never be invoked!");
+        }
+    };
 
     @Override
     public boolean isPrimitive() {
