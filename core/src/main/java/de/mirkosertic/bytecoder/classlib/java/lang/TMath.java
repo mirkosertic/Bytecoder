@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.Import;
+
 public class TMath extends TObject {
 
     public static float abs(float a) {
@@ -24,19 +26,15 @@ public class TMath extends TObject {
         return a;
     }
 
-    public static double ceil(double aValue) {
-        return aValue;
-    }
+    @Import(module = "math", name = "ceil")
+    public static native double ceil(double aValue);
 
-    public static double floor(double aValue)  {
-        return aValue;
-    }
+    @Import(module = "math", name = "floor")
+    public static native double floor(double aValue);
 
-    public static double sin(double aValue) {
-        return aValue;
-    }
+    @Import(module = "math", name = "sin")
+    public static native double sin(double aValue);
 
-    public static double cos(double aValue) {
-        return aValue;
-    }
+    @Import(module = "math", name = "cos")
+    public static native double cos(double aValue);
 }

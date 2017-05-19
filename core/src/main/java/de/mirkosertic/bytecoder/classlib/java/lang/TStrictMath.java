@@ -15,19 +15,19 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.Import;
+
 public class TStrictMath {
 
-    public static double sqrt(double aValue) {
-        return 0;
-    }
+    @Import(module = "math", name = "sqrt")
+    public static native double sqrt(double aValue);
 
-    public static double sin(double aValue) {return 0;}
+    @Import(module = "math", name = "sin")
+    public static native double sin(double aValue);
 
-    public static double cos(double aValue) {
-        return 0;
-    }
+    @Import(module = "math", name = "cos")
+    public static native double cos(double aValue);
 
-    public static int round(float aFloat) {
-        return (int) aFloat;
-    }
+    @Import(module = "math", name = "round")
+    public static native int round(float aFloat);
 }

@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 
 public class BytecodeLinkedClass {
@@ -200,10 +202,10 @@ public class BytecodeLinkedClass {
                     theClass = null;
                 }
             }
-            throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aSignature);
+            throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aSignature);
             // We need to traverse
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error while linking virtual method for " + className.name(), e);
+            throw new IllegalArgumentException("Error while linking virtual name for " + className.name(), e);
         }
     }
 
@@ -224,7 +226,7 @@ public class BytecodeLinkedClass {
         try {
             BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
             if (theMethod == null) {
-                throw new IllegalArgumentException("No such method : " + aMethodName + " with signature " + aMethodSignature);
+                throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aMethodSignature);
             }
             if (!theMethod.isClassInitializer()) {
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
@@ -233,7 +235,7 @@ public class BytecodeLinkedClass {
 
             linkMethodInternal(theMethod, true);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error while linking static method " + aMethodName + " for " + className.name(), e);
+            throw new IllegalArgumentException("Error while linking static name " + aMethodName + " for " + className.name(), e);
         }
     }
 
@@ -248,11 +250,20 @@ public class BytecodeLinkedClass {
             link(theArgument);
         }
 
-        if (!aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isNative()) {
-            BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
-            BytecodeProgram theProgram = theCode.getProgramm();
-            for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
-                theInstruction.performLinking(linkerContext);
+        if (!aMethod.getAccessFlags().isAbstract()) {
+            if (aMethod.getAccessFlags().isNative()) {
+                if (bytecodeClass.getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) == null) {
+                    if (aMethod.getAnnotations().getAnnotationByType(Import.class.getName()) == null) {
+                        throw new IllegalStateException("Method " + aMethod.getName().stringValue()
+                                + " declared as native, but no @Import annotation found");
+                    }
+                }
+            } else {
+                BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
+                BytecodeProgram theProgram = theCode.getProgramm();
+                for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
+                    theInstruction.performLinking(linkerContext);
+                }
             }
         }
     }

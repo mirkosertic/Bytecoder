@@ -15,15 +15,15 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.annotations.Import;
+
 public class TSystem {
 
-    public static long nanoTime() {
-        return 0;
-    }
+    @Import(module = "system", name = "nanoTime")
+    public static native long nanoTime();
 
-    public static long currentTimeMillis() {
-        return 0;
-    }
+    @Import(module = "system", name = "currentTimeMillis")
+    public static native long currentTimeMillis();
 
     public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {
         Object[] theSource = (Object[]) aSource;

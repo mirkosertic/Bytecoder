@@ -586,7 +586,7 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
                     offset++;
 
-                    int theConstant = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                    int theConstant = BytecodeParserUtils.signedByteFromByteArray(aBytecodes, offset);
                     offset++;
 
                     theResult.addInstruction(new BytecodeInstructionIINC(theOpcodeIndex, theIndex, theConstant));

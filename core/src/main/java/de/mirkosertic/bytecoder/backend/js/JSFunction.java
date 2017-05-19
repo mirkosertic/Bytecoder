@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.backend.js;
 
-import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+public class JSFunction {
 
-@EmulatedByRuntime
-public final class TClass extends TObject {
+    private final String jsCode;
 
-    public TClass() {
+    public JSFunction(String aJSCode) {
+        jsCode = aJSCode;
     }
 
-    public native boolean desiredAssertionStatus();
+    public String generateCode() {
+        return jsCode;
+    }
 }

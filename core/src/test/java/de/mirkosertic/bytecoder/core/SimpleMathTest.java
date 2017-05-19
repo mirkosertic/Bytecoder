@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -24,6 +25,10 @@ import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class SimpleMathTest {
+
+    public static final float PRECISION = .00011f;
+    public static final double VALUE = Math.PI * 2 / PRECISION;
+    public static final int LENGTH = (int) Math.ceil(VALUE);
 
     public static int sum(int a, int b) {
         return a + b;
@@ -109,5 +114,11 @@ public class SimpleMathTest {
     public void testRemainder() throws TRuntimeException {
         int c = rem(33, 10);
         TAssert.assertEquals(3, c, 0);
+    }
+
+    @Test
+    public void testComputedLength() {
+        // Value is 57119.86598277577
+        Assert.assertEquals(57120, LENGTH, 0);
     }
 }

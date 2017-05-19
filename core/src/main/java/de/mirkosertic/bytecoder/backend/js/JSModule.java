@@ -13,18 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.backend.js;
 
-public class BytecodeInstructionD2Generic extends BytecodeInstruction {
+import java.util.HashMap;
+import java.util.Map;
 
-    private final BytecodePrimitiveTypeRef targetType;
+public class JSModule {
 
-    public BytecodeInstructionD2Generic(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aTargetType) {
-        super(aOpcodeIndex);
-        targetType = aTargetType;
+    private final Map<String, JSFunction> functions;
+
+    public JSModule() {
+        functions = new HashMap<>();
     }
 
-    public BytecodePrimitiveTypeRef getTargetType() {
-        return targetType;
+    public JSFunction resolveFunction(String aName) {
+        JSFunction theFunction = functions.get(aName);
+        if (theFunction == null) {
+            throw new IllegalStateException("No such function : " + aName);
+        }
+        return theFunction;
+    }
+
+    public void registerFunction(String aName, JSFunction aFunction) {
+        functions.put(aName, aFunction);
     }
 }

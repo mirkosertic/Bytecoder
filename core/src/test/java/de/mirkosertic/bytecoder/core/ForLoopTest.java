@@ -31,4 +31,10 @@ public class ForLoopTest {
         }
         Assert.assertEquals(202, theCount, 0);
     }
+
+    @Test
+    public void testNoEndlessLoop() {
+        for (int i = 10 - 1; i >= 0; i--) {
+        }
+    }
 }
