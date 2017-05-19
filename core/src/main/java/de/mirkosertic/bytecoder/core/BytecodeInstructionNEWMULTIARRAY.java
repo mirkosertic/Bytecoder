@@ -38,11 +38,15 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
         return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
     }
 
+    public int getDimensions() {
+        return dimensions;
+    }
+
     @Override
     public void performLinking(BytecodeLinkerContext aLinkerContext) {
-        BytecodeClassinfoConstant theConstant = getTypeConstant();
         aLinkerContext.linkClass(getObjectType());
 
+        BytecodeClassinfoConstant theConstant = getTypeConstant();
         String theClassName = theConstant.getConstant().stringValue();
 
         BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
