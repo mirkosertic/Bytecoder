@@ -17,8 +17,10 @@ package de.mirkosertic.bytecoder.core;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class BytecodeLinkerContext {
@@ -118,6 +120,20 @@ public class BytecodeLinkerContext {
     }
 
     public void propagateVirtualMethodsAndFields() {
+
+        Set<BytecodeLinkedClass> theKnownClasses = new HashSet<>(linkedClasses.values());
+
+        // First, we search for used interface and link the used methods to all classes implementing this interface
+        for (BytecodeLinkedClass theLinkedClass : theKnownClasses) {
+            if (theLinkedClass.getAccessFlags().isInterface()) {
+                for (BytecodeLinkedClass theOtherClass : theKnownClasses) {
+                    if (theOtherClass.getImplementingTypes().contains(theLinkedClass)) {
+                        theLinkedClass.forEachMethod(bytecodeMethod -> theOtherClass.linkVirtualMethod(bytecodeMethod.getName().stringValue(), bytecodeMethod.getSignature()));
+                    }
+                }
+            }
+        }
+
         List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(null);
         for (BytecodeLinkedClass theEntry : theClasses) {
             propagateVirtualMethodsAndFields(theEntry);

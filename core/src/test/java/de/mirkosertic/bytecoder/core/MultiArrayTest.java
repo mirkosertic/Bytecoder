@@ -15,17 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeTypeRef {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    String name();
+@RunWith(BytecoderUnitTestRunner.class)
+public class MultiArrayTest {
 
-    boolean isPrimitive();
-
-    boolean isArray();
-
-    boolean matchesExactlyTo(BytecodeTypeRef aOtherType);
-
-    boolean isVoid();
-
-    Object defaultValue();
+    @Test
+    public void testMultiStringArray() {
+        String[][] theStrings = new String[5][12];
+        theStrings[0][0] = "Hello";
+        theStrings[4][11] = "World";
+        Assert.assertEquals("Hello", theStrings[0][0]);
+        Assert.assertEquals("World", theStrings[4][11]);
+    }
 }

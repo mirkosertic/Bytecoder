@@ -34,6 +34,7 @@ public class ArrayTest {
     private static short[] shorts = new short[10];
     private static char[] chars = new char[10];
     private static int[] ints = new int[10];
+    private static boolean[] booleans = new boolean[10];
     private static float[] floats = new float[10];
     private static Entry[] entries = new Entry[10];
 
@@ -46,30 +47,42 @@ public class ArrayTest {
     public void testBytes() throws TRuntimeException {
         bytes[4] = (byte) 10;
         TAssert.assertEquals(10, bytes[4], 0);
+        TAssert.assertEquals(0, bytes[0], 0);
     }
 
     @Test
     public void testShorts() throws TRuntimeException {
         shorts[4] = (short) 10;
         TAssert.assertEquals(10, shorts[4], 0);
+        TAssert.assertEquals(0, shorts[0], 0);
     }
 
     @Test
     public void testChars() throws TRuntimeException {
         chars[4] = (char) 10;
         TAssert.assertEquals(10, chars[4], 0);
+        TAssert.assertEquals(0, chars[0], 0);
     }
 
     @Test
     public void testInts() throws TRuntimeException {
         ints[4] = (int) 10;
         TAssert.assertEquals(10, ints[4], 0);
+        TAssert.assertEquals(0, ints[0], 0);
     }
 
     @Test
     public void testFloats() throws TRuntimeException {
         floats[4] = (float) 10;
         TAssert.assertEquals(10, floats[4], 0);
+        TAssert.assertEquals(0, floats[0], 0);
+    }
+
+    @Test
+    public void testBooleans() throws TRuntimeException {
+        booleans[4] = true;
+        TAssert.assertTrue(booleans[4]);
+        TAssert.assertFalse(booleans[0]);
     }
 
     @Test
@@ -78,5 +91,6 @@ public class ArrayTest {
         theEntry.test = 10;
         entries[4] = theEntry;
         TAssert.assertEquals(10, entries[4].test, 0);
+        TAssert.assertNull(entries[0]);
     }
 }
