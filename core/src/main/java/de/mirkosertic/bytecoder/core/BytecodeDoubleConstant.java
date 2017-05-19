@@ -17,15 +17,13 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeDoubleConstant implements BytecodeConstant {
 
-    private final long lowBytes;
-    private final long highBytes;
+    private final double doubleValue;
 
-    public BytecodeDoubleConstant(long lowBytes, long highBytes) {
-        this.lowBytes = lowBytes;
-        this.highBytes = highBytes;
+    public BytecodeDoubleConstant(double aDoubleValue) {
+        doubleValue = aDoubleValue;
     }
 
     public double getDoubleValue() {
-        return BytecodeParserUtils.intToDouble(lowBytes, highBytes);
+        return doubleValue;
     }
 }

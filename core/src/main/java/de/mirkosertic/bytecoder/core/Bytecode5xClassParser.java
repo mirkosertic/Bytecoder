@@ -176,8 +176,8 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     }
 
     private void parseConstantPool_CONSTANT_Float(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theBytes = aDis.readInt();
-        aConstantPool.registerConstant(new BytecodeFloatConstant(theBytes));
+        float theFloat = aDis.readFloat();
+        aConstantPool.registerConstant(new BytecodeFloatConstant(theFloat));
     }
 
     private void parseConstantPool_CONSTANT_Long(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
@@ -187,9 +187,8 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     }
 
     private void parseConstantPool_CONSTANT_Double(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        long theLowBytes = aDis.readInt() & 0xFFFFFFFFL;
-        long theHighBytes = aDis.readInt() & 0xFFFFFFFFL;
-        aConstantPool.registerConstant(new BytecodeDoubleConstant(theHighBytes, theLowBytes));
+        double theDouble = aDis.readDouble();
+        aConstantPool.registerConstant(new BytecodeDoubleConstant(theDouble));
     }
 
     private void parseConstantPool_CONSTANT_NameAndType(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
