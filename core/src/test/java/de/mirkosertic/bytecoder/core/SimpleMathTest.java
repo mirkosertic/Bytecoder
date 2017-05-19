@@ -119,6 +119,6 @@ public class SimpleMathTest {
     @Test
     public void testComputedLength() {
         // Value is 57119.86598277577
-        Assert.assertEquals(57120, LENGTH, 0);
+        Assert.assertEquals(57120f, LENGTH, 0);
     }
 }

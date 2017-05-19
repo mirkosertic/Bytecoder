@@ -17,13 +17,13 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeFloatConstant implements BytecodeConstant {
 
-    private final int value;
+    private final float value;
 
-    public BytecodeFloatConstant(int aValue) {
+    public BytecodeFloatConstant(float aValue) {
         value = aValue;
     }
 
     public float getFloatValue() {
-        return BytecodeParserUtils.intToFloat(value);
+        return value;
     }
 }
