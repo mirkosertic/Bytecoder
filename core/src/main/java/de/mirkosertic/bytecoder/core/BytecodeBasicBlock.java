@@ -28,7 +28,19 @@ public class BytecodeBasicBlock {
         successors = new ArrayList<>();
     }
 
+    public BytecodeOpcodeAddress getStartAddress() {
+        return instructions.get(0).getOpcodeAddress();
+    }
+
     public void addInstruction(BytecodeInstruction aInstruction) {
         instructions.add(aInstruction);
+    }
+
+    public List<BytecodeInstruction> getInstructions() {
+        return instructions;
+    }
+
+    public BytecodeInstruction getLastInstruction() {
+        return instructions.get(instructions.size() - 1);
     }
 }
