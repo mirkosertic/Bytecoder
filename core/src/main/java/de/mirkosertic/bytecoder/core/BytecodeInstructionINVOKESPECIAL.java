@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstruction {
+public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstruction implements BytecodeInstructionInvoke {
 
     private final int index;
     private final BytecodeConstantPool constantPool;

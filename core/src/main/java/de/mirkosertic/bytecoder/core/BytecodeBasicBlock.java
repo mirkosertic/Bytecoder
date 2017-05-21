@@ -15,14 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implements BytecodeInstructionInvoke {
+import java.util.ArrayList;
+import java.util.List;
 
-    private final byte index1;
-    private final byte index2;
+public class BytecodeBasicBlock {
 
-    public BytecodeInstructionINVOKEDYNAMIC(BytecodeOpcodeAddress aIndex, byte aIndex1, byte aIndex2) {
-        super(aIndex);
-        index1 = aIndex1;
-        index2 = aIndex2;
+    private final List<BytecodeInstruction> instructions;
+    private final List<BytecodeBasicBlock> successors;
+
+    public BytecodeBasicBlock() {
+        instructions = new ArrayList<>();
+        successors = new ArrayList<>();
+    }
+
+    public void addInstruction(BytecodeInstruction aInstruction) {
+        instructions.add(aInstruction);
     }
 }
