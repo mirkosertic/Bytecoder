@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
 
     public static class Pair {
@@ -51,5 +54,19 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
 
     public Pair[] getPairs() {
         return pairs;
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        Set<BytecodeOpcodeAddress> theResult = new HashSet<>();
+        for (Pair thePair : pairs) {
+            theResult.add(getOpcodeAddress().add((int) thePair.offset));
+        }
+        return super.getPotentialJumpTargets();
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

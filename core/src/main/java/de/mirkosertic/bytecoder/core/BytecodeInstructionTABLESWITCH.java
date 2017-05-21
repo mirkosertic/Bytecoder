@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
 
     private final long defaultValue;
@@ -44,5 +47,19 @@ public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
 
     public long[] getOffsets() {
         return offsets;
+    }
+
+    @Override
+    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
+        Set<BytecodeOpcodeAddress> theResult = new HashSet<>();
+        for (long theOffset : getOffsets()) {
+            theResult.add(getOpcodeAddress().add((int) theOffset));
+        }
+        return super.getPotentialJumpTargets();
+    }
+
+    @Override
+    public boolean isJumpSource() {
+        return true;
     }
 }

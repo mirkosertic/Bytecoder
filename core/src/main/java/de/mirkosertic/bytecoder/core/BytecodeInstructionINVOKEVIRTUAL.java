@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 
-public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstruction {
+public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstruction implements BytecodeInstructionInvoke {
 
     private final int index;
     private final BytecodeConstantPool constantPool;

@@ -15,26 +15,31 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class BytecodeProgram {
 
     private final List<BytecodeInstruction> instructions;
+    private final List<BytecodeExceptionTableEntry> exceptionHandlers;
 
     public BytecodeProgram() {
         instructions = new ArrayList<>();
+        exceptionHandlers = new ArrayList<>();
     }
 
     public void addInstruction(BytecodeInstruction aInstruction) {
         instructions.add(aInstruction);
     }
 
+    public void addExceptionHandler(BytecodeExceptionTableEntry aHandler) {
+        exceptionHandlers.add(aHandler);
+    }
+
     public List<BytecodeInstruction> getInstructions() {
         return instructions;
     }
 
-    public BytecodeExceptionTableEntry[] getActiveExceptionHandlers(BytecodeOpcodeAddress aAddress, BytecodeExceptionTableEntry[] aExceptionHandlerEntries) {
+    public BytecodeExceptionTableEntry[] getActiveExceptionHandlers(BytecodeOpcodeAddress aAddress, List<BytecodeExceptionTableEntry> aExceptionHandlerEntries) {
         List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
         for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
             if (!aEntry.isFinally()) {
@@ -52,5 +57,31 @@ public class BytecodeProgram {
             return -1;
         }
         return instructions.get(p + 1).getOpcodeAddress().getAddress();
+    }
+
+    public boolean isStartOfTryBlock(BytecodeOpcodeAddress aAddress) {
+        for (BytecodeExceptionTableEntry aEntry : exceptionHandlers) {
+            if (aAddress.equals(aEntry.getStartPC())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Set<BytecodeOpcodeAddress> getJumpTargets() {
+        Set<BytecodeOpcodeAddress> theJumpTarget = new HashSet();
+        for (BytecodeInstruction theInstruction : instructions) {
+            if (theInstruction.isJumpSource()) {
+                theJumpTarget.addAll(Arrays.asList(theInstruction.getPotentialJumpTargets()));
+            }
+        }
+        for (BytecodeExceptionTableEntry aEntry: exceptionHandlers) {
+            theJumpTarget.add(aEntry.getHandlerPc());
+        }
+        return theJumpTarget;
+    }
+
+    public List<BytecodeExceptionTableEntry> getExceptionHandlers() {
+        return exceptionHandlers;
     }
 }

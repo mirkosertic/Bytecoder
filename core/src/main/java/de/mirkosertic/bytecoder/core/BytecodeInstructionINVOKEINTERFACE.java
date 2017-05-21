@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction {
+public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction implements BytecodeInstructionInvoke {
 
     private final int methodIndex;
     private final int count;

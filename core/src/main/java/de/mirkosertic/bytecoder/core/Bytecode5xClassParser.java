@@ -337,21 +337,17 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
         BytecodeProgram theProgramm = programmParser.parse(theCode, aConstantPool);
 
-        List<BytecodeExceptionTableEntry> theExceptionEntries = new ArrayList<>();
-
         int theExceptionTableLength = aDis.readUnsignedShort();
         for (int i=0;i<theExceptionTableLength;i++) {
             BytecodeOpcodeAddress theStartPC = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
             BytecodeOpcodeAddress theEndPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
             BytecodeOpcodeAddress theHandlerPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
             int theCatchType = aDis.readUnsignedShort();
-            theExceptionEntries.add(new BytecodeExceptionTableEntry(theStartPC, theEndPc, theHandlerPc, theCatchType, aConstantPool));
+            theProgramm.addExceptionHandler(new BytecodeExceptionTableEntry(theStartPC, theEndPc, theHandlerPc, theCatchType, aConstantPool));
         }
         BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 
-        return new BytecodeCodeAttributeInfo(theMaxStack, theMaxLocals, theProgramm,
-                theExceptionEntries.toArray(new BytecodeExceptionTableEntry[theExceptionEntries.size()]),
-                theAttributes);
+        return new BytecodeCodeAttributeInfo(theMaxStack, theMaxLocals, theProgramm, theAttributes);
     }
 
     private BytecodeAttributeInfo[] parseAttributes(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
