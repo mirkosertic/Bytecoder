@@ -24,10 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -41,13 +37,9 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.backend.js.JSCompileTarget;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
-import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -120,30 +112,19 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
-            BytecodePackageReplacer theReplacer = new BytecodePackageReplacer();
-            BytecodeLoader theLoader = new BytecodeLoader(theReplacer);
-            BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader);
 
-            // We need these intrinsics
-            BytecodeLinkedClass theClassLinkedCass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
-            theClassLinkedCass.linkConstructorInvocation(new BytecodeMethodSignature(
-                    BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
+            JSCompileTarget theCompileTarget = new JSCompileTarget();
 
-            BytecodeSignatureParser theParser = new BytecodeSignatureParser(theReplacer);
-            BytecodeMethodSignature theSignature = theParser.toMethodSignature(aFrameworkMethod.getMethod());
+            BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
 
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            theLinkerContext.linkClassMethod(theTypeRef, aFrameworkMethod.getName(), theSignature);
-            theLinkerContext.propagateVirtualMethodsAndFields();
+            String theCode = theCompileTarget.compileToJS(testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
-            JSBackend theBackend = new JSBackend();
-            String theCode = theBackend.generateCodeFor(theLinkerContext);
-
-            String theJSFileName = theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
+            String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
 
             theCode += "\nconsole.log(\"Starting test\");\n";
-            theCode += theBackend.toClassName(theTypeRef) + "." + theBackend.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theBackend.toClassName(theTypeRef) + ".emptyInstance());\n";
+            theCode += theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());\n";
             theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.de_mirkosertic_bytecoder_classlib_java_lang_TThrowablegetLastOutcomeOrNullAndReset();\n";
             theCode += "if (theLastException) {\n";
 
