@@ -53,3 +53,37 @@ public class SimpleMathTest {
 
 Is compiled to JavaScript and executed on a PhantomJS engine. This testrunner will also support comparison of original Java code and its crosscompiled
 counterpart. This mechanism is the core tool to test the compiler and the Classlib.
+
+## Maven Plugin
+
+There is Maven plugin available. It currently supports only the JavaScript compile target. Basically it can be used as follows:
+
+
+```
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder-mavenplugin</artifactId>
+                <version>${project.version}</version>
+                <configuration>
+                    <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <!-- Include all bytecode dependencies here !!-->
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+```
+
+You have to set a main class with a valid "public static void main(String[] args)" method as an entry point. 
+The plugin will invoke the JSCompileTarget which will do all the heavy lifting. The generated
+JavaScript will be placed in the Maven "target/bytecoder" directory.
