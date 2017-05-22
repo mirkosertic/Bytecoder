@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ast;
 
-public class BytecodeInstructionGenericLOAD extends BytecodeInstruction {
+public class ASTComputationDIV extends ASTComputationResult {
 
-    private final BytecodePrimitiveTypeRef type;
-    private final int localVariableIndex;
+    private final ASTValue value1;
+    private final ASTValue value2;
 
-    public BytecodeInstructionGenericLOAD(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType, int aVariableIndex) {
-        super(aOpcodeIndex);
-        type = aType;
-        localVariableIndex = aVariableIndex;
+    public ASTComputationDIV(ASTValue aValue1, ASTValue aValue2) {
+        value1 = aValue1;
+        value2 = aValue2;
     }
 
-    public int getLocalVariableIndex() {
-        return localVariableIndex;
+    public ASTValue getValue1() {
+        return value1;
+    }
+
+    public ASTValue getValue2() {
+        return value2;
     }
 }
