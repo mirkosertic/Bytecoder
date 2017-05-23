@@ -25,14 +25,18 @@ import de.mirkosertic.bytecoder.ast.ASTComputationMUL;
 import de.mirkosertic.bytecoder.ast.ASTComputationSUB;
 import de.mirkosertic.bytecoder.ast.ASTGetStatic;
 import de.mirkosertic.bytecoder.ast.ASTInputOfBlock;
+import de.mirkosertic.bytecoder.ast.ASTInvokeSpecial;
 import de.mirkosertic.bytecoder.ast.ASTInvokeStatic;
+import de.mirkosertic.bytecoder.ast.ASTInvokeVirtual;
 import de.mirkosertic.bytecoder.ast.ASTLocalVariable;
+import de.mirkosertic.bytecoder.ast.ASTNewObject;
 import de.mirkosertic.bytecoder.ast.ASTNull;
 import de.mirkosertic.bytecoder.ast.ASTObjectReturn;
 import de.mirkosertic.bytecoder.ast.ASTPutStatic;
 import de.mirkosertic.bytecoder.ast.ASTSetLocalVariable;
 import de.mirkosertic.bytecoder.ast.ASTThrow;
 import de.mirkosertic.bytecoder.ast.ASTValue;
+import de.mirkosertic.bytecoder.ast.ASTValueReference;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -108,9 +112,54 @@ public class JSASTCodeGenerator {
             visit((ASTThrow) aValue, aWriter);
         } else if (aValue instanceof ASTInvokeStatic) {
             visit((ASTInvokeStatic) aValue, aWriter);
+        } else if (aValue instanceof ASTInvokeSpecial) {
+            visit((ASTInvokeSpecial) aValue, aWriter);
+        } else if (aValue instanceof ASTValueReference) {
+            visit((ASTValueReference) aValue, aWriter);
+        } else if (aValue instanceof ASTNewObject) {
+            visit((ASTNewObject) aValue, aWriter);
+        } else if (aValue instanceof ASTInvokeVirtual) {
+            visit((ASTInvokeVirtual) aValue, aWriter);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void visit(ASTNewObject aValue, PrintWriter aWriter) {
+        aWriter.print(toClassName(aValue.getType()));
+        aWriter.print(".emptyInstance()");
+    }
+
+    private void visit(ASTValueReference aValue, PrintWriter aWriter) {
+        visit(aValue.getReference(), aWriter);
+    }
+
+    private void visit(ASTInvokeSpecial aValue, PrintWriter aWriter) {
+        aWriter.print(toClassName(aValue.getClassname()));
+        aWriter.print(".");
+        aWriter.print(toMethodName(aValue.getMethodName(), aValue.getSignature()));
+        aWriter.print("(");
+        visit(aValue.getReference(), aWriter);
+        BytecodeMethodSignature theSignature = aValue.getSignature();
+        for (int i=0;i<theSignature.getArguments().length;i++) {
+            aWriter.print(",");
+            visit(aValue.getArguments().get(i), aWriter);
+        }
+        aWriter.println(");");
+    }
+
+    private void visit(ASTInvokeVirtual aValue, PrintWriter aWriter) {
+        aWriter.print(toClassName(aValue.getClassname()));
+        aWriter.print(".");
+        aWriter.print(toMethodName(aValue.getMethodName(), aValue.getSignature()));
+        aWriter.print("(");
+        visit(aValue.getReference(), aWriter);
+        BytecodeMethodSignature theSignature = aValue.getSignature();
+        for (int i=0;i<theSignature.getArguments().length;i++) {
+            aWriter.print(",");
+            visit(aValue.getArguments().get(i), aWriter);
+        }
+        aWriter.println(");");
     }
 
     private void visit(ASTInputOfBlock aValue, PrintWriter aWriter) {

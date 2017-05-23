@@ -49,6 +49,9 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 public class ASTGenerator {
 
     public ASTBlock generateFrom(BytecodeBasicBlock aBasicBlock) {
+
+        int localVariableCounter = 100;
+
         ASTBlock theResult = new ASTBlock();
         Stack<ASTValue> theCurrentValueStack = new Stack<>();
         theCurrentValueStack.push(new ASTInputOfBlock());
@@ -156,8 +159,10 @@ public class ASTGenerator {
                 }
 
             } else if (theInstruction instanceof BytecodeInstructionNEW) {
+                int theNewVariable = localVariableCounter++;
                 BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
-                theCurrentValueStack.push(new ASTNewObject(theNew.getClassInfoForObjectToCreate()));
+                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewObject(theNew.getClassInfoForObjectToCreate())));
+                theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
             } else {
                 throw new IllegalStateException("Not implemented : " + theInstruction);
             }
