@@ -19,32 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.*;
 
 public class ASTGenerator {
 
@@ -163,6 +138,74 @@ public class ASTGenerator {
                 BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
                 theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewObject(theNew.getClassInfoForObjectToCreate())));
                 theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
+            } else if (theInstruction instanceof BytecodeInstructionPUTFIELD) {
+                BytecodeInstructionPUTFIELD thePut = (BytecodeInstructionPUTFIELD) theInstruction;
+                ASTValue theValue = theCurrentValueStack.pop();
+                ASTValue theReference = theCurrentValueStack.pop();
+                theResult.add(new ASTPutField(theReference, thePut.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), theValue));
+            } else if (theInstruction instanceof BytecodeInstructionGETFIELD) {
+                BytecodeInstructionGETFIELD thePut = (BytecodeInstructionGETFIELD) theInstruction;
+                ASTValue theValue = theCurrentValueStack.pop();
+                ASTValue theReference = theCurrentValueStack.pop();
+                theCurrentValueStack.push(new ASTGetField(theReference, thePut.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), theValue));
+            } else if (theInstruction instanceof BytecodeInstructionFCMP) {
+                BytecodeInstructionFCMP theCMP = (BytecodeInstructionFCMP) theInstruction;
+                ASTValue theValue2 = theCurrentValueStack.pop();
+                ASTValue theValue1 = theCurrentValueStack.pop();
+                theCurrentValueStack.push(new ASTFCMP(theValue1, theValue2, theCMP.getType()));
+            } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
+                BytecodeInstructionIFCOND theIf = (BytecodeInstructionIFCOND) theInstruction;
+                theResult.add(new ASTIFCOND(theCurrentValueStack.pop(), theIf.getJumpOffset()));
+            } else if (theInstruction instanceof BytecodeInstructionICONST) {
+                BytecodeInstructionICONST theConst = (BytecodeInstructionICONST) theInstruction;
+                theCurrentValueStack.push(new ASTIntValue(theConst.getIntConst()));
+            } else if (theInstruction instanceof BytecodeInstructionFCONST) {
+                BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
+                theCurrentValueStack.push(new ASTFloatValue(theConst.getFloatValue()));
+            } else if (theInstruction instanceof BytecodeInstructionGenericNEG) {
+                BytecodeInstructionGenericNEG theNeg = (BytecodeInstructionGenericNEG) theInstruction;
+                theCurrentValueStack.push(new ASTNeg(theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionARRAYLENGTH) {
+                BytecodeInstructionARRAYLENGTH theLength = (BytecodeInstructionARRAYLENGTH) theInstruction;
+                theCurrentValueStack.push(new ASTArrayLength(theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionI2Generic) {
+                BytecodeInstructionI2Generic theConv = (BytecodeInstructionI2Generic) theInstruction;
+                theCurrentValueStack.push(new ASTInt2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
+            } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
+                BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
+                int theNewVariable = localVariableCounter++;
+                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(theNew.getPrimitiveType())));
+                theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
+            } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
+                BytecodeInstructionIFNULL theIf = (BytecodeInstructionIFNULL) theInstruction;
+                theResult.add(new ASTIFNull(theCurrentValueStack.pop(), theIf.getJumpTarget()));
+            } else if (theInstruction instanceof BytecodeInstructionGOTO) {
+                BytecodeInstructionGOTO theGoto = (BytecodeInstructionGOTO) theInstruction;
+                theResult.add(new ASTGoto(theGoto.getJumpAddress()));
+            } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
+                BytecodeInstructionGenericLOAD theLoad = (BytecodeInstructionGenericLOAD) theInstruction;
+                theCurrentValueStack.push(new ASTLocalVariable(theLoad.getLocalVariableIndex()));
+            } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
+                BytecodeInstructionGenericSTORE theStore = (BytecodeInstructionGenericSTORE) theInstruction;
+                theResult.add(new ASTSetLocalVariable(theStore.getVariableIndex(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
+                BytecodeInstructionIFICMP theIf = (BytecodeInstructionIFICMP) theInstruction;
+                theResult.add(new ASTFICMP(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
+            } else if (theInstruction instanceof BytecodeInstructionIINC) {
+                BytecodeInstructionIINC theInc = (BytecodeInstructionIINC) theInstruction;
+                theResult.add(new ASTLocalVariableIncrement(theInc.getIndex(), theInc.getConstant()));
+            } else if (theInstruction instanceof BytecodeInstructionALOAD) {
+                BytecodeInstructionALOAD theLoad = (BytecodeInstructionALOAD) theInstruction;
+                theCurrentValueStack.push(new ASTLocalVariable(theLoad.getVariableIndex()));
+            } else if (theInstruction instanceof BytecodeInstructionGenericALOAD) {
+                BytecodeInstructionGenericALOAD theLoad = (BytecodeInstructionGenericALOAD) theInstruction;
+                theCurrentValueStack.push(new ASTArrayValue(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionGenericASTORE) {
+                BytecodeInstructionGenericASTORE theStore = (BytecodeInstructionGenericASTORE) theInstruction;
+                theResult.add(new ASTSetArrayValue(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
+                BytecodeInstructionCHECKCAST theCast = (BytecodeInstructionCHECKCAST) theInstruction;
+                theCurrentValueStack.push(new ASTCheckCast(theCast.getTypeCheck(), theCurrentValueStack.pop()));
             } else {
                 throw new IllegalStateException("Not implemented : " + theInstruction);
             }

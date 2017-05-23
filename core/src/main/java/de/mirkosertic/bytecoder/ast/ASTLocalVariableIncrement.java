@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ast;
 
-public class BytecodeInstructionFCMP extends BytecodeInstruction {
+public class ASTLocalVariableIncrement extends ASTValue {
 
-    public enum Type {
-        l, g
-    }
+    private final int variableIndex;
+    private final int amount;
 
-    private final Type type;
-
-    public BytecodeInstructionFCMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
-        super(aOpcodeIndex);
-        type = aType;
-    }
-
-    public Type getType() {
-        return type;
+    public ASTLocalVariableIncrement(int aVariableIndex, int aAmount) {
+        variableIndex = aVariableIndex;
+        amount = aAmount;
     }
 }

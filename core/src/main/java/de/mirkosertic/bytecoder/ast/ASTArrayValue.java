@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ast;
 
-public class BytecodeInstructionFCMP extends BytecodeInstruction {
+public class ASTArrayValue extends ASTValue {
 
-    public enum Type {
-        l, g
-    }
+    private final ASTValue array;
+    private final ASTValue index;
 
-    private final Type type;
-
-    public BytecodeInstructionFCMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
-        super(aOpcodeIndex);
-        type = aType;
-    }
-
-    public Type getType() {
-        return type;
+    public ASTArrayValue(ASTValue aIndex, ASTValue aArray) {
+        array = aArray;
+        index = aIndex;
     }
 }

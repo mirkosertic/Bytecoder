@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ast;
 
-public class BytecodeInstructionFCMP extends BytecodeInstruction {
+public class ASTPutField extends ASTValue {
 
-    public enum Type {
-        l, g
-    }
+    private final ASTValue reference;
+    private final String fieldName;
+    private final ASTValue fieldValue;
 
-    private final Type type;
-
-    public BytecodeInstructionFCMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
-        super(aOpcodeIndex);
-        type = aType;
-    }
-
-    public Type getType() {
-        return type;
+    public ASTPutField(ASTValue aReference, String aFieldName, ASTValue aFieldValue) {
+        reference = aReference;
+        fieldName = aFieldName;
+        fieldValue = aFieldValue;
     }
 }
