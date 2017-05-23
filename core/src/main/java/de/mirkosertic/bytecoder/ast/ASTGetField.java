@@ -19,11 +19,17 @@ public class ASTGetField extends ASTValue {
 
     private final ASTValue reference;
     private final String fieldName;
-    private final ASTValue fieldValue;
 
-    public ASTGetField(ASTValue aReference, String aFieldName, ASTValue aFieldValue) {
+    public ASTGetField(ASTValue aReference, String aFieldName) {
         reference = aReference;
         fieldName = aFieldName;
-        fieldValue = aFieldValue;
+    }
+
+    public ASTValue getReference() {
+        return reference;
+    }
+
+    public String getFieldName() {
+        return fieldName;
     }
 }

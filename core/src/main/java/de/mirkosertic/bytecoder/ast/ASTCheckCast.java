@@ -26,4 +26,12 @@ public class ASTCheckCast extends ASTValue {
         expectedType = aExpectedType;
         currentValue = aCurrentValue;
     }
+
+    public BytecodeClassinfoConstant getExpectedType() {
+        return expectedType;
+    }
+
+    public ASTValue getCurrentValue() {
+        return currentValue;
+    }
 }

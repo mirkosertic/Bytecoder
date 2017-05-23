@@ -15,47 +15,23 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import de.mirkosertic.bytecoder.ast.*;
+import de.mirkosertic.bytecoder.core.*;
 
-import de.mirkosertic.bytecoder.ast.ASTBlock;
-import de.mirkosertic.bytecoder.ast.ASTComputationADD;
-import de.mirkosertic.bytecoder.ast.ASTComputationDIV;
-import de.mirkosertic.bytecoder.ast.ASTComputationMUL;
-import de.mirkosertic.bytecoder.ast.ASTComputationSUB;
-import de.mirkosertic.bytecoder.ast.ASTGetStatic;
-import de.mirkosertic.bytecoder.ast.ASTInputOfBlock;
-import de.mirkosertic.bytecoder.ast.ASTInvokeSpecial;
-import de.mirkosertic.bytecoder.ast.ASTInvokeStatic;
-import de.mirkosertic.bytecoder.ast.ASTInvokeVirtual;
-import de.mirkosertic.bytecoder.ast.ASTLocalVariable;
-import de.mirkosertic.bytecoder.ast.ASTNewObject;
-import de.mirkosertic.bytecoder.ast.ASTNull;
-import de.mirkosertic.bytecoder.ast.ASTObjectReturn;
-import de.mirkosertic.bytecoder.ast.ASTPutStatic;
-import de.mirkosertic.bytecoder.ast.ASTSetLocalVariable;
-import de.mirkosertic.bytecoder.ast.ASTThrow;
-import de.mirkosertic.bytecoder.ast.ASTValue;
-import de.mirkosertic.bytecoder.ast.ASTValueReference;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import java.io.UnsupportedEncodingException;
 
 public class JSASTCodeGenerator {
 
-    public String generateFor(ASTBlock aBlock) {
-        StringWriter theResult = new StringWriter();
-        final PrintWriter theWriter = new PrintWriter(theResult);
+    private final BytecodeLinkerContext linkerContext;
 
+    public JSASTCodeGenerator(BytecodeLinkerContext aLinkerContext) {
+        linkerContext = aLinkerContext;
+    }
+
+    public void generateFor(ASTBlock aBlock, JSWriter aWriter) {
         for (ASTValue theValue : aBlock.getValues()) {
-            visit(theValue, theWriter);
+            visit(theValue, aWriter);
         }
-
-        theWriter.flush();;
-        return theResult.toString();
     }
 
     private String toClassName(BytecodeClassinfoConstant aTypeRef) {
@@ -85,7 +61,23 @@ public class JSASTCodeGenerator {
         return theName;
     }
 
-    private void visit(ASTValue aValue, PrintWriter aWriter) {
+    public String toArray(byte[] aData) {
+        StringBuilder theResult = new StringBuilder("[");
+        for (int i=0;i<aData.length;i++) {
+            if (i>0) {
+                theResult.append(",");
+            }
+            theResult.append(aData[i]);
+        }
+        theResult.append("]");
+        return theResult.toString();
+    }
+
+    private String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
+        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
+    }
+
+    private void visit(ASTValue aValue, JSWriter aWriter) {
         if (aValue instanceof ASTObjectReturn) {
             visit((ASTObjectReturn) aValue, aWriter);
         } else if (aValue instanceof ASTSetLocalVariable) {
@@ -120,21 +112,237 @@ public class JSASTCodeGenerator {
             visit((ASTNewObject) aValue, aWriter);
         } else if (aValue instanceof ASTInvokeVirtual) {
             visit((ASTInvokeVirtual) aValue, aWriter);
+        } else if (aValue instanceof ASTReturn) {
+            visit((ASTReturn) aValue, aWriter);
+        } else if (aValue instanceof ASTConstantValue) {
+            visit((ASTConstantValue) aValue, aWriter);
+        } else if (aValue instanceof ASTPutField) {
+            visit((ASTPutField) aValue, aWriter);
+        } else if (aValue instanceof ASTIFCOND) {
+            visit((ASTIFCOND) aValue, aWriter);
+        } else if (aValue instanceof ASTFCMP) {
+            visit((ASTFCMP) aValue, aWriter);
+        } else if (aValue instanceof ASTIntValue) {
+            visit((ASTIntValue) aValue, aWriter);
+        } else if (aValue instanceof ASTFloatValue) {
+            visit((ASTFloatValue) aValue, aWriter);
+        } else if (aValue instanceof ASTNeg) {
+            visit((ASTNeg) aValue, aWriter);
+        } else if (aValue instanceof ASTArrayLength) {
+            visit((ASTArrayLength) aValue, aWriter);
+        } else if (aValue instanceof ASTGetField) {
+            visit((ASTGetField) aValue, aWriter);
+        } else if (aValue instanceof ASTInt2Generic) {
+            visit((ASTInt2Generic) aValue, aWriter);
+        } else if (aValue instanceof ASTNewArray) {
+            visit((ASTNewArray) aValue, aWriter);
+        } else if (aValue instanceof ASTIFNull) {
+            visit((ASTIFNull) aValue, aWriter);
+        } else if (aValue instanceof ASTGoto) {
+            visit((ASTGoto) aValue, aWriter);
+        } else if (aValue instanceof ASTIFICMP) {
+            visit((ASTIFICMP) aValue, aWriter);
+        } else if (aValue instanceof ASTLocalVariableIncrement) {
+            visit((ASTLocalVariableIncrement) aValue, aWriter);
+        } else if (aValue instanceof ASTSetArrayValue) {
+            visit((ASTSetArrayValue) aValue, aWriter);
+        } else if (aValue instanceof ASTArrayValue) {
+            visit((ASTArrayValue) aValue, aWriter);
+        } else if (aValue instanceof ASTCheckCast) {
+            visit((ASTCheckCast) aValue, aWriter);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    private void visit(ASTNewObject aValue, PrintWriter aWriter) {
+    private void visit(ASTCheckCast aValue, JSWriter aWriter) {
+        visit(aValue.getCurrentValue(), aWriter);
+    }
+
+    private void visit(ASTArrayValue aValue, JSWriter aWriter) {
+        visit(aValue.getArray(), aWriter);
+        aWriter.print(".data[");
+        visit(aValue.getIndex(), aWriter);
+        aWriter.print("]");
+    }
+
+    private void visit(ASTSetArrayValue aValue, JSWriter aWriter) {
+        visit(aValue.getArray(), aWriter);
+        aWriter.print(".data[");
+        visit(aValue.getIndex(), aWriter);
+        aWriter.print("] = ");
+        visit(aValue.getValue(), aWriter);
+        aWriter.println(";");
+    }
+
+    private void visit(ASTLocalVariableIncrement aValue, JSWriter aWriter) {
+        aWriter.print("frame.local");
+        aWriter.print(aValue.getVariableIndex());
+        aWriter.print(" += ");
+        aWriter.print(aValue.getAmount());
+        aWriter.println(";");
+    }
+
+    private void visit(ASTIFICMP aValue, JSWriter aWriter) {
+        aWriter.print("if (");
+        visit(aValue.getValue1(), aWriter);
+        switch (aValue.getType()) {
+            case eq:
+                aWriter.print(" == ");
+                break;
+            case ge:
+                aWriter.print(" >= ");
+                break;
+            case gt:
+                aWriter.print(" > ");
+                break;
+            case le:
+                aWriter.print(" <= ");
+                break;
+            case lt:
+                aWriter.print(" < ");
+                break;
+            case ne:
+                aWriter.print(" != ");
+                break;
+        }
+        visit(aValue.getValue2(), aWriter);
+        aWriter.println(") {");
+        aWriter.print(" ");
+        aWriter.println(generateJumpCodeFor(aValue.getTargetAddress()));
+        aWriter.println("}");
+    }
+
+    private void visit(ASTGoto aValue, JSWriter aWriter) {
+        aWriter.print(generateJumpCodeFor(aValue.getTargetAddress()));
+        aWriter.println();
+    }
+
+    private void visit(ASTIFNull aValue, JSWriter aWriter) {
+        aWriter.print("if ((");
+        visit(aValue.getValue(), aWriter);
+        aWriter.println(") == null) {");
+        aWriter.print("   ");
+        aWriter.print(generateJumpCodeFor(aValue.getTargetAddress()));
+        aWriter.println("}");
+    }
+
+    private void visit(ASTNewArray aValue, JSWriter aWriter) {
+        aWriter.print("newArray(");
+        visit(aValue.getLength(), aWriter);
+        aWriter.print(")");
+    }
+
+    private void visit(ASTInt2Generic aValue, JSWriter aWriter) {
+        visit(aValue.getValue(), aWriter);
+    }
+
+    private void visit(ASTGetField aValue, JSWriter aWriter) {
+        visit(aValue.getReference(), aWriter);
+        aWriter.print(".data.");
+        aWriter.print(aValue.getFieldName());
+    }
+
+    private void visit(ASTArrayLength aValue, JSWriter aWriter) {
+        visit(aValue.getReference(), aWriter);
+        aWriter.print(".data.length");
+    }
+
+    private void visit(ASTNeg aValue, JSWriter aWriter) {
+        aWriter.print("-(");
+        visit(aValue.getValue(), aWriter);
+        aWriter.print(")");
+    }
+
+    private void visit(ASTFloatValue aValue, JSWriter aWriter) {
+        aWriter.print(aValue.getFloatValue());
+    }
+
+    private void visit(ASTIntValue aValue, JSWriter aWriter) {
+        aWriter.print(aValue.getIntValue());
+    }
+
+    private void visit(ASTFCMP aValue, JSWriter aWriter) {
+        aWriter.print("(");
+        visit(aValue.getValue1(), aWriter);
+        aWriter.print(" == ");
+        visit(aValue.getValue2(), aWriter);
+        aWriter.print("? 0 : ");
+        aWriter.print("(");
+        visit(aValue.getValue1(), aWriter);
+        aWriter.print(" > ");
+        visit(aValue.getValue2(), aWriter);
+        aWriter.print("? 1 : ");
+        aWriter.print(" - 1))");
+    }
+
+    private void visit(ASTIFCOND aValue, JSWriter aWriter) {
+        aWriter.print("if ((");
+        visit(aValue.getValue(), aWriter);
+        aWriter.println(") == 0) {");
+        aWriter.print("   ");
+        aWriter.print(generateJumpCodeFor(aValue.getTargetAddress()));
+        aWriter.println("}");
+    }
+
+    private void visit(ASTPutField aValue, JSWriter aWriter) {
+        visit(aValue.getReference(), aWriter);
+        aWriter.print(".data.");
+        aWriter.print(aValue.getFieldName());
+        aWriter.print(" = ");
+        visit(aValue.getFieldValue(), aWriter);
+        aWriter.println(";");
+    }
+
+    private void visit(ASTConstantValue aValue, JSWriter aWriter) {
+        BytecodeConstant theConstant = aValue.getConstant();
+        if (theConstant instanceof BytecodeFloatConstant) {
+            BytecodeFloatConstant theFloat = (BytecodeFloatConstant) theConstant;
+            aWriter.print(theFloat.getFloatValue());
+        } else if (theConstant instanceof BytecodeDoubleConstant) {
+            BytecodeDoubleConstant theDouble = (BytecodeDoubleConstant) theConstant;
+            aWriter.print(theDouble.getDoubleValue());
+        } else if (theConstant instanceof BytecodeLongConstant) {
+            BytecodeLongConstant theLong = (BytecodeLongConstant) theConstant;
+            aWriter.print(theLong.getLongValue());
+        } else if (theConstant instanceof BytecodeClassinfoConstant) {
+            BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
+            aWriter.print(toClassName(theClassInfo) + ".runtimeClass);");
+        } else if (theConstant instanceof BytecodeIntegerConstant) {
+            BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
+            aWriter.print(theInteger.integerValue());
+        } else if (theConstant instanceof BytecodeStringConstant) {
+            try {
+                BytecodeStringConstant theStr = (BytecodeStringConstant) theConstant;
+                byte[] theBytes = theStr.getValue().toUTF8Bytes();
+
+                // Construct a String
+                aWriter.print("newConstantString(");
+                aWriter.print(toArray(theBytes));
+                aWriter.print(")");
+
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new IllegalStateException("Unsupported constant : " + theConstant);
+        }
+    }
+
+    private void visit(ASTReturn aValue, JSWriter aWriter) {
+        aWriter.println("return;");
+    }
+
+    private void visit(ASTNewObject aValue, JSWriter aWriter) {
         aWriter.print(toClassName(aValue.getType()));
         aWriter.print(".emptyInstance()");
     }
 
-    private void visit(ASTValueReference aValue, PrintWriter aWriter) {
+    private void visit(ASTValueReference aValue, JSWriter aWriter) {
         visit(aValue.getReference(), aWriter);
     }
 
-    private void visit(ASTInvokeSpecial aValue, PrintWriter aWriter) {
+    private void visit(ASTInvokeSpecial aValue, JSWriter aWriter) {
         aWriter.print(toClassName(aValue.getClassname()));
         aWriter.print(".");
         aWriter.print(toMethodName(aValue.getMethodName(), aValue.getSignature()));
@@ -148,7 +356,7 @@ public class JSASTCodeGenerator {
         aWriter.println(");");
     }
 
-    private void visit(ASTInvokeVirtual aValue, PrintWriter aWriter) {
+    private void visit(ASTInvokeVirtual aValue, JSWriter aWriter) {
         aWriter.print(toClassName(aValue.getClassname()));
         aWriter.print(".");
         aWriter.print(toMethodName(aValue.getMethodName(), aValue.getSignature()));
@@ -162,12 +370,12 @@ public class JSASTCodeGenerator {
         aWriter.println(");");
     }
 
-    private void visit(ASTInputOfBlock aValue, PrintWriter aWriter) {
+    private void visit(ASTInputOfBlock aValue, JSWriter aWriter) {
         // TODO: How to handle this?
         System.out.println("lala");
     }
 
-    private void visit(ASTThrow aValue, PrintWriter aWriter) {
+    private void visit(ASTThrow aValue, JSWriter aWriter) {
         aWriter.print("throw ");
 
         visit(aValue.getReference(), aWriter);
@@ -175,7 +383,7 @@ public class JSASTCodeGenerator {
         aWriter.println(";");
     }
 
-    private void visit(ASTInvokeStatic aValue, PrintWriter aWriter) {
+    private void visit(ASTInvokeStatic aValue, JSWriter aWriter) {
 
         aWriter.print(toClassName(aValue.getClassname()));
         aWriter.print(".");
@@ -190,14 +398,14 @@ public class JSASTCodeGenerator {
         aWriter.print(")");
     }
 
-    private void visit(ASTGetStatic aValue, PrintWriter aWriter) {
+    private void visit(ASTGetStatic aValue, JSWriter aWriter) {
         // TODO: Check static init here
         aWriter.print(toClassName(aValue.getClassName()));
         aWriter.print(".staticFields.");
         aWriter.print(aValue.getFieldName().stringValue());
     }
 
-    private void visit(ASTPutStatic aValue, PrintWriter aWriter) {
+    private void visit(ASTPutStatic aValue, JSWriter aWriter) {
         // TODO: Check static init here
         aWriter.print(toClassName(aValue.getClassName()));
         aWriter.print(".staticFields.");
@@ -209,22 +417,22 @@ public class JSASTCodeGenerator {
         aWriter.println(";");
     }
 
-    private void visit(ASTLocalVariable aValue, PrintWriter aWriter) {
+    private void visit(ASTLocalVariable aValue, JSWriter aWriter) {
         aWriter.print("local" + aValue.getVariableIndex());
     }
 
-    private void visit(ASTNull aValue, PrintWriter aWriter) {
+    private void visit(ASTNull aValue, JSWriter aWriter) {
         aWriter.print("null");
     }
 
-    private void visit(ASTSetLocalVariable aValue, PrintWriter aWriter) {
+    private void visit(ASTSetLocalVariable aValue, JSWriter aWriter) {
         aWriter.print("frame.local" + aValue.getVariableIndex());
         aWriter.print(" = ");
         visit(aValue.getValue(), aWriter);
         aWriter.println(";");
     }
 
-    private void visit(ASTComputationADD aValue, PrintWriter aWriter) {
+    private void visit(ASTComputationADD aValue, JSWriter aWriter) {
         aWriter.print("(");
         visit(aValue.getValue2(), aWriter);
         aWriter.print(" + ");
@@ -232,7 +440,7 @@ public class JSASTCodeGenerator {
         aWriter.print(")");
     }
 
-    private void visit(ASTComputationSUB aValue, PrintWriter aWriter) {
+    private void visit(ASTComputationSUB aValue, JSWriter aWriter) {
         aWriter.print("(");
         visit(aValue.getValue2(), aWriter);
         aWriter.print(" - ");
@@ -240,7 +448,7 @@ public class JSASTCodeGenerator {
         aWriter.print(")");
     }
 
-    private void visit(ASTComputationMUL aValue, PrintWriter aWriter) {
+    private void visit(ASTComputationMUL aValue, JSWriter aWriter) {
         aWriter.print("(");
         visit(aValue.getValue2(), aWriter);
         aWriter.print(" * ");
@@ -248,7 +456,7 @@ public class JSASTCodeGenerator {
         aWriter.print(")");
     }
 
-    private void visit(ASTComputationDIV aValue, PrintWriter aWriter) {
+    private void visit(ASTComputationDIV aValue, JSWriter aWriter) {
         aWriter.print("(");
         visit(aValue.getValue2(), aWriter);
         aWriter.print(" / ");
@@ -256,7 +464,7 @@ public class JSASTCodeGenerator {
         aWriter.print(")");
     }
 
-    private void visit(ASTObjectReturn aValue, PrintWriter aWriter) {
+    private void visit(ASTObjectReturn aValue, JSWriter aWriter) {
         aWriter.print("return ");
         visit(aValue.getValue(), aWriter);
         aWriter.println(";");

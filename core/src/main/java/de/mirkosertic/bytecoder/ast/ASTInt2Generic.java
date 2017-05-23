@@ -26,4 +26,12 @@ public class ASTInt2Generic extends ASTValue {
         value = aValue;
         targetType = aTargetType;
     }
+
+    public ASTValue getValue() {
+        return value;
+    }
+
+    public BytecodePrimitiveTypeRef getTargetType() {
+        return targetType;
+    }
 }

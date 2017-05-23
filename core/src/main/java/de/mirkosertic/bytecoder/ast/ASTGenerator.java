@@ -145,9 +145,8 @@ public class ASTGenerator {
                 theResult.add(new ASTPutField(theReference, thePut.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), theValue));
             } else if (theInstruction instanceof BytecodeInstructionGETFIELD) {
                 BytecodeInstructionGETFIELD thePut = (BytecodeInstructionGETFIELD) theInstruction;
-                ASTValue theValue = theCurrentValueStack.pop();
                 ASTValue theReference = theCurrentValueStack.pop();
-                theCurrentValueStack.push(new ASTGetField(theReference, thePut.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), theValue));
+                theCurrentValueStack.push(new ASTGetField(theReference, thePut.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
             } else if (theInstruction instanceof BytecodeInstructionFCMP) {
                 BytecodeInstructionFCMP theCMP = (BytecodeInstructionFCMP) theInstruction;
                 ASTValue theValue2 = theCurrentValueStack.pop();
@@ -174,7 +173,7 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
                 int theNewVariable = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(theNew.getPrimitiveType())));
+                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(theNew.getPrimitiveType(), theCurrentValueStack.pop())));
                 theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
             } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                 BytecodeInstructionIFNULL theIf = (BytecodeInstructionIFNULL) theInstruction;
@@ -190,7 +189,7 @@ public class ASTGenerator {
                 theResult.add(new ASTSetLocalVariable(theStore.getVariableIndex(), theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theIf = (BytecodeInstructionIFICMP) theInstruction;
-                theResult.add(new ASTFICMP(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
+                theResult.add(new ASTIFICMP(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 BytecodeInstructionIINC theInc = (BytecodeInstructionIINC) theInstruction;
                 theResult.add(new ASTLocalVariableIncrement(theInc.getIndex(), theInc.getConstant()));

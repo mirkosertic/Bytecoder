@@ -24,4 +24,8 @@ public class ASTGoto extends ASTValue {
     public ASTGoto(BytecodeOpcodeAddress aTargetAddress) {
         targetAddress = aTargetAddress;
     }
+
+    public BytecodeOpcodeAddress getTargetAddress() {
+        return targetAddress;
+    }
 }

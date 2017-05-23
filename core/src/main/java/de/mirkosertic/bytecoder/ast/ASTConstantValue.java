@@ -24,4 +24,8 @@ public class ASTConstantValue extends ASTValue {
     public ASTConstantValue(BytecodeConstant aConstant) {
         constant = aConstant;
     }
+
+    public BytecodeConstant getConstant() {
+        return constant;
+    }
 }

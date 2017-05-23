@@ -22,4 +22,8 @@ public class ASTFloatValue extends ASTValue {
     public ASTFloatValue(float aFloatValue) {
         floatValue = aFloatValue;
     }
+
+    public float getFloatValue() {
+        return floatValue;
+    }
 }

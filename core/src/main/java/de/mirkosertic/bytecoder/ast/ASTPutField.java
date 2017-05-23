@@ -26,4 +26,16 @@ public class ASTPutField extends ASTValue {
         fieldName = aFieldName;
         fieldValue = aFieldValue;
     }
+
+    public ASTValue getReference() {
+        return reference;
+    }
+
+    public String getFieldName() {
+        return fieldName;
+    }
+
+    public ASTValue getFieldValue() {
+        return fieldValue;
+    }
 }

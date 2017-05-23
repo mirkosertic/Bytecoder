@@ -22,4 +22,8 @@ public class ASTArrayLength extends ASTValue {
     public ASTArrayLength(ASTValue aReference) {
         reference = aReference;
     }
+
+    public ASTValue getReference() {
+        return reference;
+    }
 }
