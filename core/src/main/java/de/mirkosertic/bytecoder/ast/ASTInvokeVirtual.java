@@ -20,7 +20,6 @@ import java.util.List;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
 public class ASTInvokeVirtual extends ASTComputationResult {
 
@@ -34,6 +33,10 @@ public class ASTInvokeVirtual extends ASTComputationResult {
         methodRef = aMethodRef;
     }
 
+    public ASTValue getReference() {
+        return reference;
+    }
+
     public List<ASTValue> getArguments() {
         return arguments;
     }
@@ -42,8 +45,8 @@ public class ASTInvokeVirtual extends ASTComputationResult {
         return methodRef.getClassIndex().getClassConstant();
     }
 
-    public BytecodeUtf8Constant getMethodName() {
-        return methodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName();
+    public String getMethodName() {
+        return methodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
     }
 
     public BytecodeMethodSignature getSignature() {

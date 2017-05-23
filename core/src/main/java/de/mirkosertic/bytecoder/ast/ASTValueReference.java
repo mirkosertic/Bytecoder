@@ -22,4 +22,8 @@ public class ASTValueReference extends ASTValue {
     public ASTValueReference(ASTValue reference) {
         this.reference = reference;
     }
+
+    public ASTValue getReference() {
+        return reference;
+    }
 }
