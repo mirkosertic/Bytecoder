@@ -565,7 +565,7 @@ public class JSBackend {
                         } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                             BytecodeInstructionINVOKEVIRTUAL theVirtualInvoke = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
 
-                            BytecodeMethodRefConstant theMethodRefConstant = theVirtualInvoke.getMethodDescriptor();
+                            BytecodeMethodRefConstant theMethodRefConstant = theVirtualInvoke.getMethodReference();
 
                             BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
                             BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
@@ -655,7 +655,7 @@ public class JSBackend {
                         }else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
                             BytecodeInstructionINVOKESTATIC theStaticInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
 
-                            BytecodeMethodRefConstant theMethodRefConstant = theStaticInvoke.getMethodRefConstant();
+                            BytecodeMethodRefConstant theMethodRefConstant = theStaticInvoke.getMethodReference();
                             BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
                             BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
                             BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();

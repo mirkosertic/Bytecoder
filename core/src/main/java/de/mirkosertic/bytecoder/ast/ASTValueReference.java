@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ast;
 
-public interface BytecodeInstructionInvoke {
+public class ASTValueReference extends ASTValue {
 
+    private final ASTValue reference;
+
+    public ASTValueReference(ASTValue reference) {
+        this.reference = reference;
+    }
 }
