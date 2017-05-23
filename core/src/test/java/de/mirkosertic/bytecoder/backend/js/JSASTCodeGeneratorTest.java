@@ -41,6 +41,13 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class JSASTCodeGeneratorTest {
 
+    public static class Instance {
+
+        public int compute(int a, int b) {
+            return a + b;
+        }
+    }
+
     public static int intAdd(int a, int b) {
         return a + b;
     }
@@ -55,6 +62,14 @@ public class JSASTCodeGeneratorTest {
 
     public static int intMul(int a, int b) {
         return a * b;
+    }
+
+    public static int staticInvocation(int a, int b) {
+        return intAdd(a, b);
+    }
+
+    public static int newInstance(int a, int b) {
+        return new Instance().compute(a, b);
     }
 
     @Test
@@ -170,5 +185,51 @@ public class JSASTCodeGeneratorTest {
         }
         thePW.flush();
         Assert.assertEquals("return (local0 / local1);", theWriter.toString().trim());
+    }
+
+    @Test
+    public void testStaticInvocation() throws IOException, ClassNotFoundException {
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
+        BytecodeClass theClass = theLoader.loadByteCode(BytecodeObjectTypeRef.fromRuntimeClass(JSASTCodeGeneratorTest.class));
+        BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull("staticInvocation", new BytecodeMethodSignature(
+                BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}
+        ));
+        BytecodeCodeAttributeInfo theCode = theMethod.getCode(theClass);
+        BytecodeProgram theProgram = theCode.getProgramm();
+
+        ASTGenerator theGenerator = new ASTGenerator();
+        BytecodeControlFlowGraph theGraph = new BytecodeControlFlowGraph(theProgram);
+        JSASTCodeGenerator theJSGenerator = new JSASTCodeGenerator();
+        StringWriter theWriter = new StringWriter();
+        PrintWriter thePW = new PrintWriter(theWriter);
+        for (BytecodeBasicBlock theBlock : theGraph.getBlocks()) {
+            ASTBlock theASTBlock = theGenerator.generateFrom(theBlock);
+            thePW.println(theJSGenerator.generateFor(theASTBlock));
+        }
+        thePW.flush();
+        Assert.assertEquals("return de_mirkosertic_bytecoder_backend_js_JSASTCodeGeneratorTest.INTintAddINTINT(local1,local0);", theWriter.toString().trim());
+    }
+
+    @Test
+    public void testNewInstance() throws IOException, ClassNotFoundException {
+        BytecodeLoader theLoader = new BytecodeLoader(new BytecodePackageReplacer());
+        BytecodeClass theClass = theLoader.loadByteCode(BytecodeObjectTypeRef.fromRuntimeClass(JSASTCodeGeneratorTest.class));
+        BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull("newInstance", new BytecodeMethodSignature(
+                BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}
+        ));
+        BytecodeCodeAttributeInfo theCode = theMethod.getCode(theClass);
+        BytecodeProgram theProgram = theCode.getProgramm();
+
+        ASTGenerator theGenerator = new ASTGenerator();
+        BytecodeControlFlowGraph theGraph = new BytecodeControlFlowGraph(theProgram);
+        JSASTCodeGenerator theJSGenerator = new JSASTCodeGenerator();
+        StringWriter theWriter = new StringWriter();
+        PrintWriter thePW = new PrintWriter(theWriter);
+        for (BytecodeBasicBlock theBlock : theGraph.getBlocks()) {
+            ASTBlock theASTBlock = theGenerator.generateFrom(theBlock);
+            thePW.println(theJSGenerator.generateFor(theASTBlock));
+        }
+        thePW.flush();
+        Assert.assertEquals("return de_mirkosertic_bytecoder_backend_js_JSASTCodeGeneratorTest.INTintAddINTINT(local1,local0);", theWriter.toString().trim());
     }
 }

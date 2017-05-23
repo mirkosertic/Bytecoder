@@ -15,11 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTThrowValue extends ASTValue {
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
-    private final ASTValue reference;
+public class ASTNewObject extends ASTComputationResult {
 
-    public ASTThrowValue(ASTValue aReference) {
-        reference = aReference;
+    private final BytecodeClassinfoConstant type;
+
+    public ASTNewObject(BytecodeClassinfoConstant aType) {
+        type = aType;
+    }
+
+    public BytecodeClassinfoConstant getType() {
+        return type;
     }
 }

@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 public class BytecodeControlFlowGraph {
 
@@ -57,9 +59,9 @@ public class BytecodeControlFlowGraph {
             } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                 // thowing an exception, start new basic block
                 currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
+//            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
                 // invocation, start new basic block
-                currentBlock = null;
+  //              currentBlock = null;
             }
         }
     }

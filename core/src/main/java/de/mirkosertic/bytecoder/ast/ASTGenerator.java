@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
@@ -32,8 +34,14 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
 public class ASTGenerator {
 
@@ -49,28 +57,28 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTConstantValue(theLoad.constant()));
             } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                 BytecodeInstructionGenericLOAD theLoad = (BytecodeInstructionGenericLOAD) theInstruction;
-                theCurrentValueStack.push(new ASTLocalVariableValue(theLoad.getLocalVariableIndex()));
+                theCurrentValueStack.push(new ASTLocalVariable(theLoad.getLocalVariableIndex()));
             } else if (theInstruction instanceof BytecodeInstructionACONSTNULL) {
-                theCurrentValueStack.push(new ASTNullValue());
+                theCurrentValueStack.push(new ASTNull());
             } else if (theInstruction instanceof BytecodeInstructionARETURN) {
                 theResult.add(new ASTObjectReturn(theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                 theResult.add(new ASTObjectReturn(theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                 BytecodeInstructionALOAD theLoad = (BytecodeInstructionALOAD) theInstruction;
-                theCurrentValueStack.push(new ASTLocalVariableValue(theLoad.getVariableIndex()));
+                theCurrentValueStack.push(new ASTLocalVariable(theLoad.getVariableIndex()));
             } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                 BytecodeInstructionASTORE theStore = (BytecodeInstructionASTORE) theInstruction;
-                theResult.add(new ASTSetLocalVariableValue(theStore.getVariableIndex(), theCurrentValueStack.pop()));
+                theResult.add(new ASTSetLocalVariable(theStore.getVariableIndex(), theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionPUTSTATIC) {
                 BytecodeInstructionPUTSTATIC thePut = (BytecodeInstructionPUTSTATIC) theInstruction;
-                theResult.add(new ASTPutStaticValue(theCurrentValueStack.pop(), thePut.getConstant()));
+                theResult.add(new ASTPutStatic(theCurrentValueStack.pop(), thePut.getConstant()));
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 BytecodeInstructionGETSTATIC theGet = (BytecodeInstructionGETSTATIC) theInstruction;
-                theCurrentValueStack.push(new ASTGetStaticValue(theGet.getConstant()));
+                theCurrentValueStack.push(new ASTGetStatic(theGet.getConstant()));
             } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                 BytecodeInstructionATHROW theThrow = (BytecodeInstructionATHROW) theInstruction;
-                theResult.add(new ASTThrowValue(theCurrentValueStack.pop()));
+                theResult.add(new ASTThrow(theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionGenericADD) {
                 BytecodeInstructionGenericADD theAdd = (BytecodeInstructionGenericADD) theInstruction;
                 theCurrentValueStack.push(new ASTComputationADD(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
@@ -83,9 +91,33 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                 BytecodeInstructionGenericDIV theDiv = (BytecodeInstructionGenericDIV) theInstruction;
                 theCurrentValueStack.push(new ASTComputationDIV(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
+
+                BytecodeInstructionINVOKESTATIC theInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
+
+                BytecodeMethodRefConstant theMethodRefConstant = theInvoke.getMethodRefConstant();
+                BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+
+                List<ASTValue> theArguments = new ArrayList<>();
+                for (int i = 0; i < theSig.getArguments().length; i++) {
+                    theArguments.add(theCurrentValueStack.pop());
+                }
+
+                if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
+                    theResult.add(new ASTInvokeStatic(theArguments, theMethodRefConstant));
+                } else {
+                    theCurrentValueStack.push(new ASTInvokeStatic(theArguments, theMethodRefConstant));
+                }
+            } else if (theInstruction instanceof BytecodeInstructionNEW) {
+                BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
+                theCurrentValueStack.push(new ASTNewObject(theNew.getClassInfoForObjectToCreate()));
             } else {
                 throw new IllegalStateException("Not implemented : " + theInstruction);
             }
+        }
+        for (int i=1;i<theCurrentValueStack.size();i++) {
+            theResult.add(theCurrentValueStack.get(i));
         }
         return theResult;
     }
