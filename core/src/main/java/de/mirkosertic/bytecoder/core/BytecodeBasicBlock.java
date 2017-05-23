@@ -51,6 +51,7 @@ public class BytecodeBasicBlock {
     public boolean endsWithReturn() {
         BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionRETURN ||
-                theLastInstruction instanceof BytecodeInstructionGenericRETURN;
+                theLastInstruction instanceof BytecodeInstructionGenericRETURN ||
+                theLastInstruction instanceof BytecodeInstructionARETURN;
     }
 }

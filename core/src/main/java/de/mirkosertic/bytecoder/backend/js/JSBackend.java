@@ -1134,9 +1134,9 @@ public class JSBackend {
                         theWriter.println(
                                 theInset + "continue controlflowloop;");
                     }
-                    theWriter.println("         };");
+                    theWriter.println("         }");
                 }
-                theWriter.println("        };");
+                theWriter.println("        }");
                 theWriter.println("    },");
             });
 
