@@ -22,6 +22,8 @@ import java.io.UnsupportedEncodingException;
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.ast.ASTBlock;
+import de.mirkosertic.bytecoder.ast.ASTGenerator;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -403,6 +405,7 @@ public class JSBackend {
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
+                ASTGenerator theGenerator = new ASTGenerator();
 
                 String theInset = "            ";
                 theWriter.println("        // Begin name code");
@@ -410,6 +413,9 @@ public class JSBackend {
                 theWriter.println("        var currentLabel = " + theFlowGraph.getBlocks().get(0).getStartAddress().getAddress() + ";");
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
+
+                    ASTBlock theASTBlock = theGenerator.generateFrom(theBlock);
+
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
                     for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
                         if (theInstruction instanceof BytecodeInstructionNOP) {
