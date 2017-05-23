@@ -17,24 +17,15 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 
-public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstruction implements BytecodeInstructionInvoke {
-
-    private final int index;
-    private final BytecodeConstantPool constantPool;
+public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGenericInvoke {
 
     public BytecodeInstructionINVOKEVIRTUAL(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
-        super(aOpcodeIndex);
-        index = aIndex;
-        constantPool = aConstantPool;
-    }
-
-    public BytecodeMethodRefConstant getMethodDescriptor() {
-        return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
+        super(aOpcodeIndex, aIndex, aConstantPool);
     }
 
     @Override
     public void performLinking(BytecodeLinkerContext aLinkerContext) {
-        BytecodeMethodRefConstant theMethodRefConstant = getMethodDescriptor();
+        BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 

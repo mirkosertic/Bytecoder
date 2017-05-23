@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
@@ -34,7 +35,9 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
@@ -91,11 +94,14 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                 BytecodeInstructionGenericDIV theDiv = (BytecodeInstructionGenericDIV) theInstruction;
                 theCurrentValueStack.push(new ASTComputationDIV(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionDUP) {
+                BytecodeInstructionDUP theDup = (BytecodeInstructionDUP) theInstruction;
+                theCurrentValueStack.push(new ASTValueReference(theCurrentValueStack.peek()));
             } else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
 
                 BytecodeInstructionINVOKESTATIC theInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
 
-                BytecodeMethodRefConstant theMethodRefConstant = theInvoke.getMethodRefConstant();
+                BytecodeMethodRefConstant theMethodRefConstant = theInvoke.getMethodReference();
                 BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
                 BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
 
@@ -109,6 +115,46 @@ public class ASTGenerator {
                 } else {
                     theCurrentValueStack.push(new ASTInvokeStatic(theArguments, theMethodRefConstant));
                 }
+            } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
+
+                BytecodeInstructionINVOKESPECIAL theInvoke = (BytecodeInstructionINVOKESPECIAL) theInstruction;
+
+                BytecodeMethodRefConstant theMethodRefConstant = theInvoke.getMethodReference();
+                BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+
+                List<ASTValue> theArguments = new ArrayList<>();
+                for (int i = 0; i < theSig.getArguments().length; i++) {
+                    theArguments.add(theCurrentValueStack.pop());
+                }
+                ASTValue theReference = theCurrentValueStack.pop();
+
+                if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
+                    theResult.add(new ASTInvokeSpecial(theReference, theArguments, theMethodRefConstant));
+                } else {
+                    theCurrentValueStack.push(new ASTInvokeSpecial(theReference, theArguments, theMethodRefConstant));
+                }
+
+            } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
+
+                BytecodeInstructionINVOKEVIRTUAL theInvoke = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
+
+                BytecodeMethodRefConstant theMethodRefConstant = theInvoke.getMethodReference();
+                BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+
+                List<ASTValue> theArguments = new ArrayList<>();
+                for (int i = 0; i < theSig.getArguments().length; i++) {
+                    theArguments.add(theCurrentValueStack.pop());
+                }
+                ASTValue theReference = theCurrentValueStack.pop();
+
+                if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
+                    theResult.add(new ASTInvokeVirtual(theReference, theArguments, theMethodRefConstant));
+                } else {
+                    theCurrentValueStack.push(new ASTInvokeVirtual(theReference, theArguments, theMethodRefConstant));
+                }
+
             } else if (theInstruction instanceof BytecodeInstructionNEW) {
                 BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
                 theCurrentValueStack.push(new ASTNewObject(theNew.getClassInfoForObjectToCreate()));

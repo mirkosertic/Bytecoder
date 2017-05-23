@@ -15,24 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionINVOKESTATIC extends BytecodeInstruction implements BytecodeInstructionInvoke {
-
-    private final int index;
-    private final BytecodeConstantPool constantPool;
+public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericInvoke {
 
     public BytecodeInstructionINVOKESTATIC(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
-        super(aOpcodeIndex);
-        index = aIndex;
-        constantPool = aConstantPool;
-    }
-
-    public BytecodeMethodRefConstant getMethodRefConstant() {
-        return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
+        super(aOpcodeIndex, aIndex, aConstantPool);
     }
 
     @Override
     public void performLinking(BytecodeLinkerContext aLinkerContext) {
-        BytecodeMethodRefConstant theMethodRefConstant = getMethodRefConstant();
+        BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 

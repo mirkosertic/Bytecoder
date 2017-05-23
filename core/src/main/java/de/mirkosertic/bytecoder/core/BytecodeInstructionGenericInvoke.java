@@ -15,6 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public interface BytecodeInstructionInvoke {
+public class BytecodeInstructionGenericInvoke extends BytecodeInstruction implements BytecodeInstructionInvoke {
+
+    private final int index;
+    private final BytecodeConstantPool constantPool;
+
+    public BytecodeInstructionGenericInvoke(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+        super(aOpcodeIndex);
+        index = aIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeMethodRefConstant getMethodReference() {
+        return (BytecodeMethodRefConstant) constantPool.constantByIndex(index - 1);
+    }
+
 
 }
