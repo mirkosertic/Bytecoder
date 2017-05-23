@@ -43,4 +43,14 @@ public class BytecodeBasicBlock {
     public BytecodeInstruction getLastInstruction() {
         return instructions.get(instructions.size() - 1);
     }
+
+    public boolean endsWithJump() {
+        return instructions.get(instructions.size() - 1).isJumpSource();
+    }
+
+    public boolean endsWithReturn() {
+        BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
+        return theLastInstruction instanceof BytecodeInstructionRETURN ||
+                theLastInstruction instanceof BytecodeInstructionGenericRETURN;
+    }
 }

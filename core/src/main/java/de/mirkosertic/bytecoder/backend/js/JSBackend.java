@@ -193,7 +193,7 @@ public class JSBackend {
     }
 
     public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
-        return "return " + aTarget.getAddress()+";";
+        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
     private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
@@ -407,15 +407,15 @@ public class JSBackend {
                 String theInset = "            ";
                 theWriter.println("        // Begin name code");
                 theWriter.println("        // # basic blocks in flow graph : " + theFlowGraph.getBlocks().size());
-                theWriter.println("        var theProgramm = [];");
+                theWriter.println("        var currentLabel = " + theFlowGraph.getBlocks().get(0).getStartAddress().getAddress() + ";");
+                theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
-
-                    theWriter.println("        theProgramm[" + theBlock.getStartAddress().getAddress()+"] = function(frame) {");
+                    theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
                     for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
                         if (theInstruction instanceof BytecodeInstructionNOP) {
                             theWriter.println(theInset + "// noop");
                         } else if (theInstruction instanceof BytecodeInstructionRETURN) {
-                            theWriter.println(theInset + "return -1;");
+                            theWriter.println(theInset + "return;");
                         } else if (theInstruction instanceof BytecodeInstructionDUP) {
                             BytecodeInstructionDUP theDup = (BytecodeInstructionDUP) theInstruction;
                             theWriter.println(theInset + "frame.stack.push(frame.stack[frame.stack.length - 1]);");
@@ -891,10 +891,10 @@ public class JSBackend {
                             theWriter.println(theInset + "frame.stack.push(theArrayRef.data.length);");
                         } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                             BytecodeInstructionGenericRETURN theReturn = (BytecodeInstructionGenericRETURN) theInstruction;
-                            theWriter.println(theInset + "return -2;");
+                            theWriter.println(theInset + "return frame.stack.pop();");
                         } else if (theInstruction instanceof BytecodeInstructionARETURN) {
                             BytecodeInstructionARETURN theReturn = (BytecodeInstructionARETURN) theInstruction;
-                            theWriter.println(theInset + "return -2;");
+                            theWriter.println(theInset + "return frame.stack.pop();");
                         } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                             BytecodeInstructionATHROW theThrow = (BytecodeInstructionATHROW) theInstruction;
 
@@ -907,14 +907,16 @@ public class JSBackend {
                             theWriter.println("// tableswitch");
                             theWriter.println(theInset + "var theCurrentValue = frame.stack.pop();");
                             theWriter.println(theInset + "if (theCurrentValue < " + theSwitch.getLowValue() + " || theCurrentValue > " + theSwitch.getHighValue() + ") {");
-                            theWriter.println(theInset + "  return " + (theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue()) + ";");
+                            theWriter.println(theInset + "  currentLabel = " + (theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue()) + ";");
+                            theWriter.println(theInset + "  continue controlflowloop;");
                             theWriter.println(theInset + "}");
                             theWriter.println(theInset + "var theOffset = theCurrentValue - " + theSwitch.getLowValue() + ";");
                             theWriter.println(theInset + "switch(theOffset) {");
                             long[] theOffsets = theSwitch.getOffsets();
                             for (int i=0;i<theOffsets.length;i++) {
                                 theWriter.println(theInset + "  case " + i + ":");
-                                theWriter.println(theInset + "    return " + (theSwitch.getOpcodeAddress().getAddress() + theOffsets[i]) + ";");
+                                theWriter.println(theInset + "    currentLabel = " + (theSwitch.getOpcodeAddress().getAddress() + theOffsets[i]) + ";");
+                                theWriter.println(theInset + "    continue controlflowloop;");
                             }
                             theWriter.println(theInset + "}");
                             theWriter.println(theInset + "throw \"Illegal jump target\";");
@@ -1119,21 +1121,16 @@ public class JSBackend {
                             throw new IllegalStateException("Cannot compile " + theInstruction);
                         }
                     }
-                    theWriter.println(theInset + "return " + theProgram.getNextInstructionAddress(theBlock.getLastInstruction()) + ";");
-                    theWriter.println("        };");
+                    if (!theBlock.endsWithJump() && !theBlock.endsWithReturn()) {
+                        theWriter.println(
+                                theInset + "currentLabel = " + theProgram.getNextInstructionAddress(theBlock.getLastInstruction())
+                                        + ";");
+                        theWriter.println(
+                                theInset + "continue controlflowloop;");
+                    }
+                    theWriter.println("         };");
                 }
-
-                theWriter.println("        var theCurrentPC = 0;\n"
-                        + "        while(true) {\n"
-                        + "            theCurrentPC = theProgramm[theCurrentPC](frame);\n"
-                        + "            if (theCurrentPC === -1) {\n"
-                        + "                return;\n"
-                        + "            }\n"
-                        + "            if (theCurrentPC === -2) {\n"
-                        + "                return frame.stack.pop();\n"
-                        + "            }\n"
-                        + "        }\n");
-
+                theWriter.println("        };");
                 theWriter.println("    },");
             });
 
@@ -1153,7 +1150,7 @@ public class JSBackend {
         if (theActiveHandlers.length == 0) {
             // Missing catch block
             aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + "." + toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
-            aWriter.println(aInset + "return -1;");
+            aWriter.println(aInset + "return;");
         } else {
             for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
                 if (!theEntry.isFinally()) {
@@ -1163,13 +1160,14 @@ public class JSBackend {
                         aWriter.println(
                                 aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId()
                                         + ")) {");
-                        aWriter.println(aInset + "    return " + theEntry.getHandlerPc().getAddress() + ";");
+                        aWriter.println(aInset + "    currentLabel = " + theEntry.getHandlerPc().getAddress() + ";");
+                        aWriter.println(aInset + "    continue controlflowloop;");
                         aWriter.println(aInset + "}");
                     }
                 }
             }
             aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + "." + toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
-            aWriter.println(aInset + "return -1;");
+            aWriter.println(aInset + "return;");
         }
     }
 }
