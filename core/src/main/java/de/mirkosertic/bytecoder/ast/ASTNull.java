@@ -15,15 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-
-public class ASTPutStaticValue extends ASTValue {
-
-    private final ASTValue argument;
-    private final BytecodeFieldRefConstant fieldRef;
-
-    public ASTPutStaticValue(ASTValue aArgument, BytecodeFieldRefConstant aFieldRef) {
-        argument = aArgument;
-        fieldRef = aFieldRef;
-    }
+public class ASTNull extends ASTValue {
 }

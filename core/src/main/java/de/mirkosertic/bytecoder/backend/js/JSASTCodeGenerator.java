@@ -23,10 +23,22 @@ import de.mirkosertic.bytecoder.ast.ASTComputationADD;
 import de.mirkosertic.bytecoder.ast.ASTComputationDIV;
 import de.mirkosertic.bytecoder.ast.ASTComputationMUL;
 import de.mirkosertic.bytecoder.ast.ASTComputationSUB;
-import de.mirkosertic.bytecoder.ast.ASTLocalVariableValue;
+import de.mirkosertic.bytecoder.ast.ASTGetStatic;
+import de.mirkosertic.bytecoder.ast.ASTInputOfBlock;
+import de.mirkosertic.bytecoder.ast.ASTInvokeStatic;
+import de.mirkosertic.bytecoder.ast.ASTLocalVariable;
+import de.mirkosertic.bytecoder.ast.ASTNull;
 import de.mirkosertic.bytecoder.ast.ASTObjectReturn;
-import de.mirkosertic.bytecoder.ast.ASTSetLocalVariableValue;
+import de.mirkosertic.bytecoder.ast.ASTPutStatic;
+import de.mirkosertic.bytecoder.ast.ASTSetLocalVariable;
+import de.mirkosertic.bytecoder.ast.ASTThrow;
 import de.mirkosertic.bytecoder.ast.ASTValue;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class JSASTCodeGenerator {
 
@@ -42,11 +54,38 @@ public class JSASTCodeGenerator {
         return theResult.toString();
     }
 
+    private String toClassName(BytecodeClassinfoConstant aTypeRef) {
+        return aTypeRef.getConstant().stringValue().replace("/","_");
+    }
+
+    private String typeRefToString(BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
+            return thePrimitive.toString();
+        }
+        if (aTypeRef.isArray()) {
+            BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
+            return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
+        }
+        BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
+        return theObjectRef.name().replace(".", "");
+    }
+
+    private String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
+        String theName = aSignature.getReturnType().name().replace(".","_");
+        theName += aMethodName.replace("<", "").replace(">", "");
+
+        for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
+            theName += typeRefToString(theTypeRef);
+        }
+        return theName;
+    }
+
     private void visit(ASTValue aValue, PrintWriter aWriter) {
         if (aValue instanceof ASTObjectReturn) {
             visit((ASTObjectReturn) aValue, aWriter);
-        } else if (aValue instanceof ASTSetLocalVariableValue) {
-            visit((ASTSetLocalVariableValue) aValue, aWriter);
+        } else if (aValue instanceof ASTSetLocalVariable) {
+            visit((ASTSetLocalVariable) aValue, aWriter);
         } else if (aValue instanceof ASTComputationADD) {
             visit((ASTComputationADD) aValue, aWriter);
         } else if (aValue instanceof ASTComputationSUB) {
@@ -55,19 +94,82 @@ public class JSASTCodeGenerator {
             visit((ASTComputationMUL) aValue, aWriter);
         } else if (aValue instanceof ASTComputationDIV) {
             visit((ASTComputationDIV) aValue, aWriter);
-        } else if (aValue instanceof ASTLocalVariableValue) {
-            visit((ASTLocalVariableValue) aValue, aWriter);
+        } else if (aValue instanceof ASTLocalVariable) {
+            visit((ASTLocalVariable) aValue, aWriter);
+        } else if (aValue instanceof ASTGetStatic) {
+            visit((ASTGetStatic) aValue, aWriter);
+        } else if (aValue instanceof ASTPutStatic) {
+            visit((ASTPutStatic) aValue, aWriter);
+        } else if (aValue instanceof ASTNull) {
+            visit((ASTNull) aValue, aWriter);
+        } else if (aValue instanceof ASTInputOfBlock) {
+            visit((ASTInputOfBlock) aValue, aWriter);
+        } else if (aValue instanceof ASTThrow) {
+            visit((ASTThrow) aValue, aWriter);
+        } else if (aValue instanceof ASTInvokeStatic) {
+            visit((ASTInvokeStatic) aValue, aWriter);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    private void visit(ASTLocalVariableValue aValue, PrintWriter aWriter) {
+    private void visit(ASTInputOfBlock aValue, PrintWriter aWriter) {
+        // TODO: How to handle this?
+        System.out.println("lala");
+    }
+
+    private void visit(ASTThrow aValue, PrintWriter aWriter) {
+        aWriter.print("throw ");
+
+        visit(aValue.getReference(), aWriter);
+
+        aWriter.println(";");
+    }
+
+    private void visit(ASTInvokeStatic aValue, PrintWriter aWriter) {
+
+        aWriter.print(toClassName(aValue.getClassname()));
+        aWriter.print(".");
+        aWriter.print(toMethodName(aValue.getMethodName().stringValue(), aValue.getSignature()));
+        aWriter.print("(");
+        for (int i=0;i<aValue.getArguments().size();i++) {
+            if (i>0) {
+                aWriter.print(",");
+            }
+            visit(aValue.getArguments().get(i), aWriter);
+        }
+        aWriter.print(")");
+    }
+
+    private void visit(ASTGetStatic aValue, PrintWriter aWriter) {
+        // TODO: Check static init here
+        aWriter.print(toClassName(aValue.getClassName()));
+        aWriter.print(".staticFields.");
+        aWriter.print(aValue.getFieldName().stringValue());
+    }
+
+    private void visit(ASTPutStatic aValue, PrintWriter aWriter) {
+        // TODO: Check static init here
+        aWriter.print(toClassName(aValue.getClassName()));
+        aWriter.print(".staticFields.");
+        aWriter.print(aValue.getFieldName().stringValue());
+        aWriter.print(" = ");
+
+        visit(aValue.getArgument(), aWriter);
+
+        aWriter.println(";");
+    }
+
+    private void visit(ASTLocalVariable aValue, PrintWriter aWriter) {
         aWriter.print("local" + aValue.getVariableIndex());
     }
 
-    private void visit(ASTSetLocalVariableValue aValue, PrintWriter aWriter) {
-        aWriter.print("local" + aValue.getVariableIndex());
+    private void visit(ASTNull aValue, PrintWriter aWriter) {
+        aWriter.print("null");
+    }
+
+    private void visit(ASTSetLocalVariable aValue, PrintWriter aWriter) {
+        aWriter.print("frame.local" + aValue.getVariableIndex());
         aWriter.print(" = ");
         visit(aValue.getValue(), aWriter);
         aWriter.println(";");

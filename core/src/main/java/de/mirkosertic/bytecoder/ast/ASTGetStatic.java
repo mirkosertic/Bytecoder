@@ -15,21 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTSetLocalVariableValue extends ASTValue {
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
-    private final int variableIndex;
-    private final ASTValue value;
+public class ASTGetStatic extends ASTValue {
 
-    public ASTSetLocalVariableValue(int aVariableIndex, ASTValue aValue) {
-        variableIndex = aVariableIndex;
-        value = aValue;
+    private final BytecodeFieldRefConstant fieldRef;
+
+    public ASTGetStatic(BytecodeFieldRefConstant aFieldRef) {
+        fieldRef = aFieldRef;
     }
 
-    public int getVariableIndex() {
-        return variableIndex;
+    public BytecodeClassinfoConstant getClassName() {
+        return fieldRef.getClassIndex().getClassConstant();
     }
 
-    public ASTValue getValue() {
-        return value;
+    public BytecodeUtf8Constant getFieldName() {
+        return fieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName();
     }
 }

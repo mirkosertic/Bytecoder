@@ -15,5 +15,21 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTNullValue extends ASTValue {
+public class ASTSetLocalVariable extends ASTValue {
+
+    private final int variableIndex;
+    private final ASTValue value;
+
+    public ASTSetLocalVariable(int aVariableIndex, ASTValue aValue) {
+        variableIndex = aVariableIndex;
+        value = aValue;
+    }
+
+    public int getVariableIndex() {
+        return variableIndex;
+    }
+
+    public ASTValue getValue() {
+        return value;
+    }
 }

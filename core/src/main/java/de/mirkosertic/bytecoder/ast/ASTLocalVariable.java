@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTLocalVariableValue extends ASTValue {
+public class ASTLocalVariable extends ASTValue {
 
     private final int variableIndex;
 
-    public ASTLocalVariableValue(int aVariableIndex) {
+    public ASTLocalVariable(int aVariableIndex) {
         variableIndex = aVariableIndex;
     }
 
