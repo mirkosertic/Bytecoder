@@ -26,4 +26,16 @@ public class ASTSetArrayValue extends ASTValue {
         index = aIndex;
         value = aValue;
     }
+
+    public ASTValue getArray() {
+        return array;
+    }
+
+    public ASTValue getIndex() {
+        return index;
+    }
+
+    public ASTValue getValue() {
+        return value;
+    }
 }

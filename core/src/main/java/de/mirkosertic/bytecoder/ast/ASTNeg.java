@@ -22,4 +22,8 @@ public class ASTNeg extends ASTValue {
     public ASTNeg(ASTValue aValue) {
         value = aValue;
     }
+
+    public ASTValue getValue() {
+        return value;
+    }
 }

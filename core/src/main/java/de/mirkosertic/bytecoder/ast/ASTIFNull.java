@@ -26,4 +26,12 @@ public class ASTIFNull extends ASTValue {
         value = aValue;
         targetAddress = aTargetAddress;
     }
+
+    public ASTValue getValue() {
+        return value;
+    }
+
+    public BytecodeOpcodeAddress getTargetAddress() {
+        return targetAddress;
+    }
 }

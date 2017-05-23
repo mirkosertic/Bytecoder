@@ -24,4 +24,12 @@ public class ASTArrayValue extends ASTValue {
         array = aArray;
         index = aIndex;
     }
+
+    public ASTValue getArray() {
+        return array;
+    }
+
+    public ASTValue getIndex() {
+        return index;
+    }
 }

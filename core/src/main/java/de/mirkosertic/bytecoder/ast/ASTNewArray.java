@@ -20,8 +20,18 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 public class ASTNewArray extends ASTComputationResult {
 
     private final BytecodePrimitiveTypeRef type;
+    private final ASTValue length;
 
-    public ASTNewArray(BytecodePrimitiveTypeRef aType) {
+    public ASTNewArray(BytecodePrimitiveTypeRef aType, ASTValue aLength) {
         type = aType;
+        length = aLength;
+    }
+
+    public ASTValue getLength() {
+        return length;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
     }
 }

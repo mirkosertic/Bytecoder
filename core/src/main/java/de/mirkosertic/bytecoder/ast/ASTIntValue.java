@@ -22,4 +22,8 @@ public class ASTIntValue extends ASTValue {
     public ASTIntValue(int aIntValue) {
         intValue = aIntValue;
     }
+
+    public int getIntValue() {
+        return intValue;
+    }
 }

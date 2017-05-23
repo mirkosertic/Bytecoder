@@ -19,6 +19,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
+import com.sun.corba.se.impl.copyobject.JavaStreamObjectCopierImpl;
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -209,6 +210,8 @@ public class JSBackend {
 
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
+        ASTGenerator theAST = new ASTGenerator();
+        JSASTCodeGenerator theASTCodeGenerator = new JSASTCodeGenerator(aLinkerContext);
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -405,7 +408,6 @@ public class JSBackend {
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
-                ASTGenerator theGenerator = new ASTGenerator();
 
                 String theInset = "            ";
                 theWriter.println("        // Begin name code");
@@ -414,7 +416,11 @@ public class JSBackend {
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
 
-                    ASTBlock theASTBlock = theGenerator.generateFrom(theBlock);
+                    ASTBlock theASTBlock = theAST.generateFrom(theBlock);
+
+                    theWriter.println("/*  Generated Code from AST");
+                    theASTCodeGenerator.generateFor(theASTBlock, new JSWriter("            ", theWriter));
+                    theWriter.println("*/");
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
                     for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {

@@ -23,9 +23,21 @@ public class ASTFCMP extends ASTValue {
     private final ASTValue value2;
     private final BytecodeInstructionFCMP.Type type;
 
-    public ASTFCMP(ASTValue aValue1, ASTValue aValue2, BytecodeInstructionFCMP.Type aType) {
+    public ASTFCMP(ASTValue aValue2, ASTValue aValue1, BytecodeInstructionFCMP.Type aType) {
         value1 = aValue1;
         value2 = aValue2;
         type = aType;
+    }
+
+    public ASTValue getValue1() {
+        return value1;
+    }
+
+    public ASTValue getValue2() {
+        return value2;
+    }
+
+    public BytecodeInstructionFCMP.Type getType() {
+        return type;
     }
 }

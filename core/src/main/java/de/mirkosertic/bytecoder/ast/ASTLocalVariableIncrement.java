@@ -24,4 +24,12 @@ public class ASTLocalVariableIncrement extends ASTValue {
         variableIndex = aVariableIndex;
         amount = aAmount;
     }
+
+    public int getVariableIndex() {
+        return variableIndex;
+    }
+
+    public int getAmount() {
+        return amount;
+    }
 }
