@@ -23,6 +23,10 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
         return new BytecodeObjectTypeRef(aClass.getName());
     }
 
+    public static BytecodeObjectTypeRef fromUtf8Constant(BytecodeUtf8Constant aConstant) {
+        return new BytecodeObjectTypeRef(aConstant.stringValue().replace("/","."));
+    }
+
     public BytecodeObjectTypeRef(String aClassName) {
         className = aClassName;
     }

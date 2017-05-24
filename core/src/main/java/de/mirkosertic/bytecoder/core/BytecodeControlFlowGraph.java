@@ -37,7 +37,17 @@ public class BytecodeControlFlowGraph {
                 currentBlock = null;
             }
             if (currentBlock == null) {
-                currentBlock = new BytecodeBasicBlock();
+                BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
+                for (BytecodeExceptionTableEntry theHandler : aProgramm.getExceptionHandlers()) {
+                    if (theHandler.getHandlerPc().equals(theInstruction.getOpcodeAddress())) {
+                        if (theHandler.isFinally()) {
+                            theType = BytecodeBasicBlock.Type.FINALLY;
+                        } else {
+                            theType = BytecodeBasicBlock.Type.EXCEPTION_HANDLER;
+                        }
+                    }
+                }
+                currentBlock = new BytecodeBasicBlock(theType);
                 blocks.add(currentBlock);
             }
             currentBlock.addInstruction(theInstruction);

@@ -30,7 +30,7 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericI
         BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
-        aLinkerContext.linkClassMethod(new BytecodeObjectTypeRef(theClassConstant.getConstant().stringValue().replace("/",".")),
+        aLinkerContext.linkClassMethod(BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()),
                 theName.stringValue(), theSig);
 
     }

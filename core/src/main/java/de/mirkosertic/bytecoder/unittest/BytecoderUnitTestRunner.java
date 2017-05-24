@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -107,13 +108,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-    private void testJSBackendFrameworkMethod(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Target");
+    private void testJSBackendFrameworkMethod(JSBackend.CodeType aCodeType, FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
+        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Target " + aCodeType);
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
 
-            JSCompileTarget theCompileTarget = new JSCompileTarget();
+            JSCompileTarget theCompileTarget = new JSCompileTarget(aCodeType);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
 
@@ -121,7 +122,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             String theCode = theCompileTarget.compileToJS(testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
-            String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
+            String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aCodeType + ".html";
 
             theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());\n";
@@ -186,7 +187,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        testJSBackendFrameworkMethod(JSBackend.CodeType.STACK, aFrameworkMethod, aRunNotifier);
+        //testJSBackendFrameworkMethod(JSBackend.CodeType.AST, aFrameworkMethod, aRunNotifier);
         testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
     }
 }

@@ -33,8 +33,8 @@ public class JSCompileTarget {
     private final BytecodePackageReplacer packageReplacer;
     private final BytecodeLoader bytecodeLoader;
 
-    public JSCompileTarget() {
-        backend = new JSBackend();
+    public JSCompileTarget(JSBackend.CodeType aCodeType) {
+        backend = new JSBackend(aCodeType);
         packageReplacer = new BytecodePackageReplacer();
         bytecodeLoader = new BytecodeLoader(packageReplacer);
     }

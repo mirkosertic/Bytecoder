@@ -15,23 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class ASTGetStatic extends ASTValue {
 
-    private final BytecodeFieldRefConstant fieldRef;
+    private final BytecodeObjectTypeRef className;
+    private final String fieldName;
 
-    public ASTGetStatic(BytecodeFieldRefConstant aFieldRef) {
-        fieldRef = aFieldRef;
+    public ASTGetStatic(BytecodeObjectTypeRef aClassName, String aFieldName) {
+        className = aClassName;
+        fieldName = aFieldName;
     }
 
-    public BytecodeClassinfoConstant getClassName() {
-        return fieldRef.getClassIndex().getClassConstant();
+    public BytecodeObjectTypeRef getClassName() {
+        return className;
     }
 
-    public BytecodeUtf8Constant getFieldName() {
-        return fieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName();
+    public String getFieldName() {
+        return fieldName;
     }
 }

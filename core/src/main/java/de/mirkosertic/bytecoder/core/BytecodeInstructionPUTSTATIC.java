@@ -36,7 +36,7 @@ public class BytecodeInstructionPUTSTATIC extends BytecodeInstruction {
         BytecodeClassinfoConstant theClass = theConstant.getClassIndex().getClassConstant();
         BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
-        BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(new BytecodeObjectTypeRef(theClass.getConstant().stringValue().replace("/", ".")));
+        BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
         theLinkedClass.linkStaticField(theName.getName());
     }
 }
