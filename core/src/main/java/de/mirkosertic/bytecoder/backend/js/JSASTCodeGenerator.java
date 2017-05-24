@@ -31,6 +31,7 @@ public class JSASTCodeGenerator {
     public void generateFor(ASTBlock aBlock, JSWriter aWriter) {
         for (ASTValue theValue : aBlock.getValues()) {
             visit(theValue, aWriter);
+            aWriter.println(";");
         }
     }
 
@@ -78,7 +79,7 @@ public class JSASTCodeGenerator {
     }
 
     private String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
-        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
+        return "currentLabel = " + aTarget.getAddress()+"; continue controlflowloop;";
     }
 
     private void visit(ASTValue aValue, JSWriter aWriter) {
@@ -96,8 +97,6 @@ public class JSASTCodeGenerator {
             visit((ASTPutStatic) aValue, aWriter);
         } else if (aValue instanceof ASTNull) {
             visit((ASTNull) aValue, aWriter);
-        } else if (aValue instanceof ASTInputOfBlock) {
-            visit((ASTInputOfBlock) aValue, aWriter);
         } else if (aValue instanceof ASTThrow) {
             visit((ASTThrow) aValue, aWriter);
         } else if (aValue instanceof ASTInvokeStatic) {
@@ -299,12 +298,10 @@ public class JSASTCodeGenerator {
         visit(aValue.getIndex(), aWriter);
         aWriter.print("] = ");
         visit(aValue.getValue(), aWriter);
-        aWriter.println(";");
     }
 
     private void visit(ASTGoto aValue, JSWriter aWriter) {
         aWriter.print(generateJumpCodeFor(aValue.getTargetAddress()));
-        aWriter.println();
     }
 
     private void visit(ASTNewArray aValue, JSWriter aWriter) {
@@ -362,7 +359,6 @@ public class JSASTCodeGenerator {
         aWriter.print(aValue.getFieldName());
         aWriter.print(" = ");
         visit(aValue.getFieldValue(), aWriter);
-        aWriter.println(";");
     }
 
     private void visit(ASTConstant aValue, JSWriter aWriter) {
@@ -401,7 +397,7 @@ public class JSASTCodeGenerator {
     }
 
     private void visit(ASTReturn aValue, JSWriter aWriter) {
-        aWriter.println("return;");
+        aWriter.print("return");
     }
 
     private void visit(ASTNewObject aValue, JSWriter aWriter) {
@@ -424,7 +420,7 @@ public class JSASTCodeGenerator {
             aWriter.print(",");
             visit(aValue.getArguments().get(i), aWriter);
         }
-        aWriter.println(")");
+        aWriter.print(")");
     }
 
     private void visit(ASTInvokeVirtual aValue, JSWriter aWriter) {
@@ -443,12 +439,7 @@ public class JSASTCodeGenerator {
             visit(aValue.getArguments().get(i), aWriter);
         }
 
-        aWriter.println(")");
-    }
-
-    private void visit(ASTInputOfBlock aValue, JSWriter aWriter) {
-        // TODO: How to handle this?
-        System.out.println("lala");
+        aWriter.print(")");
     }
 
     private void visit(ASTThrow aValue, JSWriter aWriter) {
@@ -456,7 +447,7 @@ public class JSASTCodeGenerator {
 
         visit(aValue.getReference(), aWriter);
 
-        aWriter.println(";");
+        aWriter.print(";");
     }
 
     private void visit(ASTInvokeStatic aValue, JSWriter aWriter) {
@@ -471,7 +462,7 @@ public class JSASTCodeGenerator {
             }
             visit(aValue.getArguments().get(i), aWriter);
         }
-        aWriter.println(")");
+        aWriter.print(")");
     }
 
     private void visit(ASTGetStatic aValue, JSWriter aWriter) {
@@ -489,8 +480,6 @@ public class JSASTCodeGenerator {
         aWriter.print(" = ");
 
         visit(aValue.getArgument(), aWriter);
-
-        aWriter.println(";");
     }
 
     private void visit(ASTLocalVariable aValue, JSWriter aWriter) {
@@ -505,12 +494,10 @@ public class JSASTCodeGenerator {
         aWriter.print("frame.local" + (aValue.getVariableIndex() + 1));
         aWriter.print(" = ");
         visit(aValue.getValue(), aWriter);
-        aWriter.println(";");
     }
 
     private void visit(ASTObjectReturn aValue, JSWriter aWriter) {
         aWriter.print("return ");
         visit(aValue.getValue(), aWriter);
-        aWriter.println(";");
     }
 }

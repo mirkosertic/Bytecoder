@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -61,7 +62,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
         File theBytecoderFileName = new File(theBytecoderDirectory, "bytecoder.js");
 
-        JSCompileTarget theCompileTarget = new JSCompileTarget();
+        JSCompileTarget theCompileTarget = new JSCompileTarget(JSBackend.CodeType.STACK);
 
         try {
             Class theTargetClass = getClass().getClassLoader().loadClass(mainClass);
