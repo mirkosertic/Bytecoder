@@ -151,9 +151,24 @@ public class JSASTCodeGenerator {
             visit((ASTShortValue) aValue, aWriter);
         } else if (aValue instanceof ASTIF) {
             visit((ASTIF) aValue, aWriter);
+        } else if (aValue instanceof ASTInstanceOf) {
+            visit((ASTInstanceOf) aValue, aWriter);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void visit(ASTInstanceOf aValue, JSWriter aWriter) {
+
+        BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
+
+        aWriter.print("(");
+        visit(aValue.getValue(), aWriter);
+        aWriter.print(") == null ? 0 : ");
+        visit(aValue.getValue(), aWriter);
+        aWriter.print(".clazz.instanceOfType(");
+        aWriter.print(theLinkedClass.getUniqueId());
+        aWriter.print(")");
     }
 
     private void visit(ASTIF aValue, JSWriter aWriter) {
@@ -162,7 +177,7 @@ public class JSASTCodeGenerator {
         aWriter.println(") {");
         aWriter.print(" ");
         aWriter.println(generateJumpCodeFor(aValue.getTargetAddress()));
-        aWriter.println("}");
+        aWriter.print("}");
     }
 
     private void visit(ASTValuesWithOperator aValue, JSWriter aWriter) {
@@ -305,8 +320,17 @@ public class JSASTCodeGenerator {
     }
 
     private void visit(ASTNewArray aValue, JSWriter aWriter) {
-        aWriter.print("newArray(");
+        aWriter.print("bytecoder.newArray(");
         visit(aValue.getLength(), aWriter);
+        aWriter.print(",");
+
+        Object theDefaultValue = aValue.getType().defaultValue();
+        if (theDefaultValue != null) {
+            aWriter.print(theDefaultValue.toString());
+        } else {
+            aWriter.print("null");
+        }
+
         aWriter.print(")");
     }
 
@@ -384,7 +408,7 @@ public class JSASTCodeGenerator {
                 byte[] theBytes = theStr.getValue().toUTF8Bytes();
 
                 // Construct a String
-                aWriter.print("newConstantString(");
+                aWriter.print("bytecoder.newString(");
                 aWriter.print(toArray(theBytes));
                 aWriter.print(")");
 

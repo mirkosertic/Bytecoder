@@ -36,7 +36,7 @@ public class ASTValuesWithOperator extends ASTValue {
     private final ASTValue value2;
 
     public ASTValuesWithOperator(ASTValue aValue2, Operator aOperator, ASTValue aValue1) {
-        value1 = aValue2;
+        value1 = aValue1;
         operator = aOperator;
         value2 = aValue2;
     }
