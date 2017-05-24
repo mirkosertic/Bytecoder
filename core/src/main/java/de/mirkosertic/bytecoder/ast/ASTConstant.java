@@ -15,23 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
 
-public class ASTIFNull extends ASTValue {
+public class ASTConstant extends ASTValue {
 
-    private final ASTValue value;
-    private final BytecodeOpcodeAddress targetAddress;
+    private final BytecodeConstant constant;
 
-    public ASTIFNull(ASTValue aValue, BytecodeOpcodeAddress aTargetAddress) {
-        value = aValue;
-        targetAddress = aTargetAddress;
+    public ASTConstant(BytecodeConstant aConstant) {
+        constant = aConstant;
     }
 
-    public ASTValue getValue() {
-        return value;
-    }
-
-    public BytecodeOpcodeAddress getTargetAddress() {
-        return targetAddress;
+    public BytecodeConstant getConstant() {
+        return constant;
     }
 }

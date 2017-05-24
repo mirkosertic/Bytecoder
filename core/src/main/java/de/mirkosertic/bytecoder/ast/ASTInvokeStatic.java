@@ -22,7 +22,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
-public class ASTInvokeStatic extends ASTComputationResult {
+public class ASTInvokeStatic extends ASTValue {
 
     private final List<ASTValue> arguments;
     private final BytecodeMethodRefConstant methodRef;
