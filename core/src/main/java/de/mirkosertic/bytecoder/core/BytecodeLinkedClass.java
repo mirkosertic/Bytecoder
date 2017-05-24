@@ -137,7 +137,7 @@ public class BytecodeLinkedClass {
             BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
             if (theField == null) {
                 if (bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                    BytecodeObjectTypeRef theSuperClassName = new BytecodeObjectTypeRef(bytecodeClass.getSuperClass().getConstant().stringValue().replace("/", "."));
+                    BytecodeObjectTypeRef theSuperClassName = BytecodeObjectTypeRef.fromUtf8Constant(bytecodeClass.getSuperClass().getConstant());
                     linkerContext.linkClass(theSuperClassName).linkField(aName);
                     return;
                 } else {
@@ -196,7 +196,7 @@ public class BytecodeLinkedClass {
                 }
 
                 if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                    theClassName = new BytecodeObjectTypeRef(theClass.getSuperClass().getConstant().stringValue().replace("/", "."));
+                    theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getSuperClass().getConstant());
                     theClass = linkerContext.linkClass(theClassName).bytecodeClass;
                 } else {
                     theClass = null;

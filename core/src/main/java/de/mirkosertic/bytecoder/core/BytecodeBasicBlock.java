@@ -20,12 +20,24 @@ import java.util.List;
 
 public class BytecodeBasicBlock {
 
+    public enum Type {
+        NORMAL,
+        EXCEPTION_HANDLER,
+        FINALLY
+    }
+
     private final List<BytecodeInstruction> instructions;
     private final List<BytecodeBasicBlock> successors;
+    private final Type type;
 
-    public BytecodeBasicBlock() {
+    public BytecodeBasicBlock(Type aType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
+        type = aType;
+    }
+
+    public Type getType() {
+        return type;
     }
 
     public BytecodeOpcodeAddress getStartAddress() {

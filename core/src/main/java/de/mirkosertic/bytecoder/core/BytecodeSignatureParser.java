@@ -142,7 +142,7 @@ public class BytecodeSignatureParser {
         if (aClass.isArray()) {
             throw new IllegalArgumentException("Unknown array type : " + aClass);
         }
-        return new BytecodeObjectTypeRef(aClass.getName());
+        return BytecodeObjectTypeRef.fromRuntimeClass(aClass);
     }
 
     public BytecodeMethodSignature toMethodSignature(Method aMethod) {

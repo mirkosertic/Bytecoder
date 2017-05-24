@@ -45,7 +45,7 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
             aLinkerContext.linkVirtualMethod(theTypeRef, theName.stringValue(), theSig);
 
         } else {
-            aLinkerContext.linkVirtualMethod(new BytecodeObjectTypeRef(theClassName.replace("/", ".")),
+            aLinkerContext.linkVirtualMethod(BytecodeObjectTypeRef.fromUtf8Constant(theConstant),
                     theName.stringValue(), theSig);
         }
     }

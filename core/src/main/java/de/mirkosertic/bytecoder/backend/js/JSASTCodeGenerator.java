@@ -15,59 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.UnsupportedEncodingException;
+import de.mirkosertic.bytecoder.ast.*;
+import de.mirkosertic.bytecoder.core.*;
 
-import de.mirkosertic.bytecoder.ast.ASTArrayLength;
-import de.mirkosertic.bytecoder.ast.ASTArrayValue;
-import de.mirkosertic.bytecoder.ast.ASTBlock;
-import de.mirkosertic.bytecoder.ast.ASTByteValue;
-import de.mirkosertic.bytecoder.ast.ASTCheckCast;
-import de.mirkosertic.bytecoder.ast.ASTConstant;
-import de.mirkosertic.bytecoder.ast.ASTDouble2Generic;
-import de.mirkosertic.bytecoder.ast.ASTFloat2Generic;
-import de.mirkosertic.bytecoder.ast.ASTFloatCompare;
-import de.mirkosertic.bytecoder.ast.ASTFloatValue;
-import de.mirkosertic.bytecoder.ast.ASTGetField;
-import de.mirkosertic.bytecoder.ast.ASTGetStatic;
-import de.mirkosertic.bytecoder.ast.ASTGoto;
-import de.mirkosertic.bytecoder.ast.ASTIF;
-import de.mirkosertic.bytecoder.ast.ASTInputOfBlock;
-import de.mirkosertic.bytecoder.ast.ASTInteger2Generic;
-import de.mirkosertic.bytecoder.ast.ASTIntegerValue;
-import de.mirkosertic.bytecoder.ast.ASTInvokeSpecial;
-import de.mirkosertic.bytecoder.ast.ASTInvokeStatic;
-import de.mirkosertic.bytecoder.ast.ASTInvokeVirtual;
-import de.mirkosertic.bytecoder.ast.ASTLocalVariable;
-import de.mirkosertic.bytecoder.ast.ASTLong2Generic;
-import de.mirkosertic.bytecoder.ast.ASTNeg;
-import de.mirkosertic.bytecoder.ast.ASTNewArray;
-import de.mirkosertic.bytecoder.ast.ASTNewObject;
-import de.mirkosertic.bytecoder.ast.ASTNull;
-import de.mirkosertic.bytecoder.ast.ASTObjectReturn;
-import de.mirkosertic.bytecoder.ast.ASTPutField;
-import de.mirkosertic.bytecoder.ast.ASTPutStatic;
-import de.mirkosertic.bytecoder.ast.ASTReturn;
-import de.mirkosertic.bytecoder.ast.ASTSetArrayValue;
-import de.mirkosertic.bytecoder.ast.ASTSetLocalVariable;
-import de.mirkosertic.bytecoder.ast.ASTShortValue;
-import de.mirkosertic.bytecoder.ast.ASTThrow;
-import de.mirkosertic.bytecoder.ast.ASTValue;
-import de.mirkosertic.bytecoder.ast.ASTValueReference;
-import de.mirkosertic.bytecoder.ast.ASTValuesWithOperator;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import java.io.UnsupportedEncodingException;
 
 public class JSASTCodeGenerator {
 
@@ -85,6 +36,10 @@ public class JSASTCodeGenerator {
 
     private String toClassName(BytecodeClassinfoConstant aTypeRef) {
         return aTypeRef.getConstant().stringValue().replace("/","_");
+    }
+
+    private String toClassName(BytecodeObjectTypeRef aTypeRef) {
+        return aTypeRef.name().replace(".","_");
     }
 
     private String typeRefToString(BytecodeTypeRef aTypeRef) {
@@ -469,21 +424,26 @@ public class JSASTCodeGenerator {
             aWriter.print(",");
             visit(aValue.getArguments().get(i), aWriter);
         }
-        aWriter.println(");");
+        aWriter.println(")");
     }
 
     private void visit(ASTInvokeVirtual aValue, JSWriter aWriter) {
-        aWriter.print(toClassName(aValue.getClassname()));
-        aWriter.print(".");
-        aWriter.print(toMethodName(aValue.getMethodName(), aValue.getSignature()));
-        aWriter.print("(");
         visit(aValue.getReference(), aWriter);
+        aWriter.print(".clazz.resolveVirtualMethod(");
+
+        BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().toIdentifier(aValue.getMethodName(),  aValue.getSignature());
+        aWriter.print(theIdentifier.getIdentifier());
+
+        aWriter.print(")(");
+        visit(aValue.getReference(), aWriter);
+
         BytecodeMethodSignature theSignature = aValue.getSignature();
         for (int i=0;i<theSignature.getArguments().length;i++) {
             aWriter.print(",");
             visit(aValue.getArguments().get(i), aWriter);
         }
-        aWriter.println(");");
+
+        aWriter.println(")");
     }
 
     private void visit(ASTInputOfBlock aValue, JSWriter aWriter) {
@@ -511,14 +471,14 @@ public class JSASTCodeGenerator {
             }
             visit(aValue.getArguments().get(i), aWriter);
         }
-        aWriter.print(")");
+        aWriter.println(")");
     }
 
     private void visit(ASTGetStatic aValue, JSWriter aWriter) {
         // TODO: Check static init here
         aWriter.print(toClassName(aValue.getClassName()));
         aWriter.print(".staticFields.");
-        aWriter.print(aValue.getFieldName().stringValue());
+        aWriter.print(aValue.getFieldName());
     }
 
     private void visit(ASTPutStatic aValue, JSWriter aWriter) {
@@ -534,7 +494,7 @@ public class JSASTCodeGenerator {
     }
 
     private void visit(ASTLocalVariable aValue, JSWriter aWriter) {
-        aWriter.print("local" + aValue.getVariableIndex());
+        aWriter.print("frame.local" + (aValue.getVariableIndex() + 1));
     }
 
     private void visit(ASTNull aValue, JSWriter aWriter) {
@@ -542,7 +502,7 @@ public class JSASTCodeGenerator {
     }
 
     private void visit(ASTSetLocalVariable aValue, JSWriter aWriter) {
-        aWriter.print("frame.local" + aValue.getVariableIndex());
+        aWriter.print("frame.local" + (aValue.getVariableIndex() + 1));
         aWriter.print(" = ");
         visit(aValue.getValue(), aWriter);
         aWriter.println(";");

@@ -126,11 +126,17 @@ import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSBackend {
 
+    public enum CodeType {
+        STACK, AST
+    }
+
     private final BytecodeMethodSignature theRegisterExceptionOutcomeSignature;
     private final BytecodeMethodSignature theGetLastExceptionOutcomeSignature;
     private final JSModules modules;
+    private final CodeType codeType;
 
-    public JSBackend() {
+    public JSBackend(CodeType aCodeType) {
+        codeType = aCodeType;
         theRegisterExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
         theGetLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
         modules = new JSModules();
@@ -415,12 +421,14 @@ public class JSBackend {
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
 
-                    ASTBlock theASTBlock = theAST.generateFrom(theBlock);
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
-                    theWriter.println("            /*  Generated Code from AST");
-                    theASTCodeGenerator.generateFor(theASTBlock, new JSWriter("            ", theWriter));
-                    theWriter.println("            */");
+                    if (codeType == CodeType.AST) {
+                        ASTBlock theASTBlock = theAST.generateFrom(theBlock);
+                        theASTCodeGenerator.generateFor(theASTBlock, new JSWriter("            ", theWriter));
+                        theWriter.println("         }");
+                        continue;
+                    }
 
                     for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
                         if (theInstruction instanceof BytecodeInstructionNOP) {

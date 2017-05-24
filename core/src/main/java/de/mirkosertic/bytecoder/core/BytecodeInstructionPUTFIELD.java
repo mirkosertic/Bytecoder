@@ -37,7 +37,7 @@ public class BytecodeInstructionPUTFIELD extends BytecodeInstruction {
         BytecodeClassinfoConstant theClass = theFieldRef.getClassIndex().getClassConstant();
         BytecodeNameIndex theName = theFieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
-        BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(new BytecodeObjectTypeRef(theClass.getConstant().stringValue().replace("/", ".")));
+        BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
         theLinkedClass.linkField(theName.getName());
     }
 }

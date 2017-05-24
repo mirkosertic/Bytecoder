@@ -44,7 +44,7 @@ public class BytecodeLinkerContext {
     }
 
     public BytecodeLinkedClass isLinkedOrNull(BytecodeUtf8Constant aConstant) {
-        BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(aConstant.stringValue().replace("/", "."));
+        BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromUtf8Constant(aConstant);
         return linkedClasses.get(theTypeRef);
     }
 
@@ -61,7 +61,7 @@ public class BytecodeLinkerContext {
             BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
             if (theSuperClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
                 BytecodeUtf8Constant theSuperClassName = theSuperClass.getConstant();
-                theParentClass = linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
+                theParentClass = linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
             theLinkedClass = new BytecodeLinkedClass(linkedClasses.size(), theParentClass, this, aTypeRef, theLoadedClass);
@@ -74,7 +74,7 @@ public class BytecodeLinkerContext {
 
             for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
                 BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
-                linkClass(new BytecodeObjectTypeRef(theSuperClassName.stringValue().replace("/", ".")));
+                linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
             return theLinkedClass;
