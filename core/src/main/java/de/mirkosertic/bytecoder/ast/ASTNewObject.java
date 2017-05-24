@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ast;
 
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
-public class ASTNewObject extends ASTComputationResult {
+public class ASTNewObject extends ASTValue {
 
     private final BytecodeClassinfoConstant type;
 

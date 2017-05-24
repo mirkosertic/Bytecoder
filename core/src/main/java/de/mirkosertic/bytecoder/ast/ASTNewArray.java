@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ast;
 
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
-public class ASTNewArray extends ASTComputationResult {
+public class ASTNewArray extends ASTValue {
 
     private final BytecodePrimitiveTypeRef type;
     private final ASTValue length;

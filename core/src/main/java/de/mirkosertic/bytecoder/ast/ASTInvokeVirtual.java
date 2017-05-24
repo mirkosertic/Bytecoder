@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
-public class ASTInvokeVirtual extends ASTComputationResult {
+public class ASTInvokeVirtual extends ASTValue {
 
     private final ASTValue reference;
     private final List<ASTValue> arguments;

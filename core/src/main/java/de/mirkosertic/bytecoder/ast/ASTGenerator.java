@@ -91,7 +91,7 @@ public class ASTGenerator {
                 theResult.add(new ASTReturn());
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                 BytecodeInstructionGenericLDC theLoad = (BytecodeInstructionGenericLDC) theInstruction;
-                theCurrentValueStack.push(new ASTConstantValue(theLoad.constant()));
+                theCurrentValueStack.push(new ASTConstant(theLoad.constant()));
             } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                 BytecodeInstructionGenericLOAD theLoad = (BytecodeInstructionGenericLOAD) theInstruction;
                 theCurrentValueStack.push(new ASTLocalVariable(theLoad.getLocalVariableIndex()));
@@ -118,16 +118,16 @@ public class ASTGenerator {
                 theResult.add(new ASTThrow(theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionGenericADD) {
                 BytecodeInstructionGenericADD theAdd = (BytecodeInstructionGenericADD) theInstruction;
-                theCurrentValueStack.push(new ASTComputationADD(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+                theCurrentValueStack.push(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.ADD, theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionGenericSUB) {
                 BytecodeInstructionGenericSUB theSub = (BytecodeInstructionGenericSUB) theInstruction;
-                theCurrentValueStack.push(new ASTComputationSUB(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+                theCurrentValueStack.push(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.SUBSTRACT, theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
                 BytecodeInstructionGenericMUL theMul = (BytecodeInstructionGenericMUL) theInstruction;
-                theCurrentValueStack.push(new ASTComputationMUL(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+                theCurrentValueStack.push(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.MULTIPLY, theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                 BytecodeInstructionGenericDIV theDiv = (BytecodeInstructionGenericDIV) theInstruction;
-                theCurrentValueStack.push(new ASTComputationDIV(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+                theCurrentValueStack.push(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.DIVIDE, theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionDUP) {
                 BytecodeInstructionDUP theDup = (BytecodeInstructionDUP) theInstruction;
                 theCurrentValueStack.push(new ASTValueReference(theCurrentValueStack.peek()));
@@ -210,7 +210,7 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTFloatCompare(theValue1, theValue2, theCMP.getType()));
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theIf = (BytecodeInstructionIFCOND) theInstruction;
-                theResult.add(new ASTIFCompareToZero(theCurrentValueStack.pop(), theIf.getJumpOffset()));
+                theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, new ASTIntegerValue(0)), theIf.getJumpOffset()));
             } else if (theInstruction instanceof BytecodeInstructionICONST) {
                 BytecodeInstructionICONST theConst = (BytecodeInstructionICONST) theInstruction;
                 theCurrentValueStack.push(new ASTIntegerValue(theConst.getIntConst()));
@@ -233,7 +233,7 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
             } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                 BytecodeInstructionIFNULL theIf = (BytecodeInstructionIFNULL) theInstruction;
-                theResult.add(new ASTIFNull(theCurrentValueStack.pop(), theIf.getJumpTarget()));
+                theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, new ASTNull()), theIf.getJumpTarget()));
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theGoto = (BytecodeInstructionGOTO) theInstruction;
                 theResult.add(new ASTGoto(theGoto.getJumpAddress()));
@@ -245,10 +245,30 @@ public class ASTGenerator {
                 theResult.add(new ASTSetLocalVariable(theStore.getVariableIndex(), theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theIf = (BytecodeInstructionIFICMP) theInstruction;
-                theResult.add(new ASTIFIntegerCompare(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
+                switch (theIf.getType()) {
+                    case lt:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.LESSTHAN ,theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                    case eq:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS ,theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                    case ge:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.GREATEREQUALS ,theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                    case gt:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.GREATERTHAN ,theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                    case le:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.LESSOREQUALS ,theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                    case ne:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.NOTEQUALS ,theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                }
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 BytecodeInstructionIINC theInc = (BytecodeInstructionIINC) theInstruction;
-                theResult.add(new ASTLocalVariableIncrement(theInc.getIndex(), theInc.getConstant()));
+                theResult.add(new ASTSetLocalVariable(theInc.getIndex(),
+                        new ASTValuesWithOperator(new ASTLocalVariable(theInc.getIndex()), ASTValuesWithOperator.Operator.ADD, new ASTIntegerValue(theInc.getConstant()))));
             } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                 BytecodeInstructionALOAD theLoad = (BytecodeInstructionALOAD) theInstruction;
                 theCurrentValueStack.push(new ASTLocalVariable(theLoad.getVariableIndex()));
@@ -269,7 +289,7 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTLong2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
             } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                 BytecodeInstructionGenericREM theRem = (BytecodeInstructionGenericREM) theInstruction;
-                theCurrentValueStack.push(new ASTComputationREM(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+                theCurrentValueStack.push(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.REMAINDER, theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionD2Generic) {
                 BytecodeInstructionD2Generic theConv = (BytecodeInstructionD2Generic) theInstruction;
                 theCurrentValueStack.push(new ASTDouble2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
@@ -278,7 +298,14 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTShortValue(thePush.getShortValue()));
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theIf = (BytecodeInstructionIFACMP) theInstruction;
-                theResult.add(new ASTIFObjectCompare(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
+                switch (theIf.getType()) {
+                    case eq:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                    case ne:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.NOTEQUALS, theCurrentValueStack.pop()), theIf.getJumpAddress()));
+                        break;
+                }
             } else {
                 throw new IllegalStateException("Not implemented : " + theInstruction);
             }

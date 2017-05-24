@@ -15,18 +15,38 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTComputationMUL extends ASTComputationResult {
+public class ASTValuesWithOperator extends ASTValue {
+
+    public enum Operator {
+        ADD,
+        SUBSTRACT,
+        DIVIDE,
+        MULTIPLY,
+        REMAINDER,
+        EQUALS,
+        NOTEQUALS,
+        LESSTHAN,
+        GREATEREQUALS,
+        GREATERTHAN,
+        LESSOREQUALS
+    }
 
     private final ASTValue value1;
+    private final Operator operator;
     private final ASTValue value2;
 
-    public ASTComputationMUL(ASTValue aValue2, ASTValue aValue1) {
-        value1 = aValue1;
+    public ASTValuesWithOperator(ASTValue aValue2, Operator aOperator, ASTValue aValue1) {
+        value1 = aValue2;
+        operator = aOperator;
         value2 = aValue2;
     }
 
     public ASTValue getValue1() {
         return value1;
+    }
+
+    public Operator getOperator() {
+        return operator;
     }
 
     public ASTValue getValue2() {
