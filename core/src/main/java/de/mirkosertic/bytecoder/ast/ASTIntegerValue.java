@@ -15,21 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTComputationMUL extends ASTComputationResult {
+public class ASTIntegerValue extends ASTValue {
 
-    private final ASTValue value1;
-    private final ASTValue value2;
+    private final int intValue;
 
-    public ASTComputationMUL(ASTValue aValue2, ASTValue aValue1) {
-        value1 = aValue1;
-        value2 = aValue2;
+    public ASTIntegerValue(int aIntValue) {
+        intValue = aIntValue;
     }
 
-    public ASTValue getValue1() {
-        return value1;
-    }
-
-    public ASTValue getValue2() {
-        return value2;
+    public int getIntValue() {
+        return intValue;
     }
 }

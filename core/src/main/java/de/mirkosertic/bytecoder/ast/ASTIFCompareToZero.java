@@ -15,33 +15,20 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class ASTIFICMP extends ASTValue {
+public class ASTIFCompareToZero extends ASTValue {
 
-    private final ASTValue value1;
-    private final ASTValue value2;
-    private final BytecodeInstructionIFICMP.Type type;
+    private final ASTValue value;
     private final BytecodeOpcodeAddress targetAddress;
 
-    public ASTIFICMP(ASTValue aValue2, ASTValue aValue1, BytecodeInstructionIFICMP.Type aType, BytecodeOpcodeAddress aTargetAddress) {
-        value1 = aValue1;
-        value2 = aValue2;
-        type = aType;
+    public ASTIFCompareToZero(ASTValue aValue, BytecodeOpcodeAddress aTargetAddress) {
+        value = aValue;
         targetAddress = aTargetAddress;
     }
 
-    public ASTValue getValue1() {
-        return value1;
-    }
-
-    public ASTValue getValue2() {
-        return value2;
-    }
-
-    public BytecodeInstructionIFICMP.Type getType() {
-        return type;
+    public ASTValue getValue() {
+        return value;
     }
 
     public BytecodeOpcodeAddress getTargetAddress() {

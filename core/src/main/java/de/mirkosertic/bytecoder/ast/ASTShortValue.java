@@ -15,23 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+public class ASTShortValue extends ASTValue {
 
-public class ASTInt2Generic extends ASTValue {
+    private final short shortValue;
 
-    private final ASTValue value;
-    private final BytecodePrimitiveTypeRef targetType;
-
-    public ASTInt2Generic(ASTValue aValue, BytecodePrimitiveTypeRef aTargetType) {
-        value = aValue;
-        targetType = aTargetType;
+    public ASTShortValue(short aShortValue) {
+        shortValue = aShortValue;
     }
 
-    public ASTValue getValue() {
-        return value;
-    }
-
-    public BytecodePrimitiveTypeRef getTargetType() {
-        return targetType;
+    public short getShortValue() {
+        return shortValue;
     }
 }

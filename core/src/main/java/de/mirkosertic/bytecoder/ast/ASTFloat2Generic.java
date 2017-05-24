@@ -15,21 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTComputationMUL extends ASTComputationResult {
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
-    private final ASTValue value1;
-    private final ASTValue value2;
+public class ASTFloat2Generic extends ASTValue {
 
-    public ASTComputationMUL(ASTValue aValue2, ASTValue aValue1) {
-        value1 = aValue1;
-        value2 = aValue2;
+    private final ASTValue value;
+    private final BytecodePrimitiveTypeRef targetType;
+
+    public ASTFloat2Generic(ASTValue aValue, BytecodePrimitiveTypeRef aTargetType) {
+        value = aValue;
+        targetType = aTargetType;
     }
 
-    public ASTValue getValue1() {
-        return value1;
+    public ASTValue getValue() {
+        return value;
     }
 
-    public ASTValue getValue2() {
-        return value2;
+    public BytecodePrimitiveTypeRef getTargetType() {
+        return targetType;
     }
 }

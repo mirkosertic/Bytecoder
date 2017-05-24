@@ -15,29 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
-public class ASTFCMP extends ASTValue {
+public class ASTInteger2Generic extends ASTValue {
 
-    private final ASTValue value1;
-    private final ASTValue value2;
-    private final BytecodeInstructionFCMP.Type type;
+    private final ASTValue value;
+    private final BytecodePrimitiveTypeRef targetType;
 
-    public ASTFCMP(ASTValue aValue2, ASTValue aValue1, BytecodeInstructionFCMP.Type aType) {
-        value1 = aValue1;
-        value2 = aValue2;
-        type = aType;
+    public ASTInteger2Generic(ASTValue aValue, BytecodePrimitiveTypeRef aTargetType) {
+        value = aValue;
+        targetType = aTargetType;
     }
 
-    public ASTValue getValue1() {
-        return value1;
+    public ASTValue getValue() {
+        return value;
     }
 
-    public ASTValue getValue2() {
-        return value2;
-    }
-
-    public BytecodeInstructionFCMP.Type getType() {
-        return type;
+    public BytecodePrimitiveTypeRef getTargetType() {
+        return targetType;
     }
 }

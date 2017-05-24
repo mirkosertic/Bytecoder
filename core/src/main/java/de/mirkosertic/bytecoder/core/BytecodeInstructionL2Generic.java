@@ -23,4 +23,8 @@ public class BytecodeInstructionL2Generic extends BytecodeInstruction {
         super(aOpcodeIndex);
         targetType = aTargetType;
     }
+
+    public BytecodePrimitiveTypeRef getTargetType() {
+        return targetType;
+    }
 }

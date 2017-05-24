@@ -15,14 +15,21 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTComputationMUL extends ASTComputationResult {
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
+public class ASTIFIntegerCompare extends ASTValue {
 
     private final ASTValue value1;
     private final ASTValue value2;
+    private final BytecodeInstructionIFICMP.Type type;
+    private final BytecodeOpcodeAddress targetAddress;
 
-    public ASTComputationMUL(ASTValue aValue2, ASTValue aValue1) {
+    public ASTIFIntegerCompare(ASTValue aValue2, ASTValue aValue1, BytecodeInstructionIFICMP.Type aType, BytecodeOpcodeAddress aTargetAddress) {
         value1 = aValue1;
         value2 = aValue2;
+        type = aType;
+        targetAddress = aTargetAddress;
     }
 
     public ASTValue getValue1() {
@@ -31,5 +38,13 @@ public class ASTComputationMUL extends ASTComputationResult {
 
     public ASTValue getValue2() {
         return value2;
+    }
+
+    public BytecodeInstructionIFICMP.Type getType() {
+        return type;
+    }
+
+    public BytecodeOpcodeAddress getTargetAddress() {
+        return targetAddress;
     }
 }

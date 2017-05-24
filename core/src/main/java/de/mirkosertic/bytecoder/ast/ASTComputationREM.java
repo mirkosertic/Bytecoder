@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-public class ASTComputationMUL extends ASTComputationResult {
+public class ASTComputationREM extends ASTComputationResult {
 
     private final ASTValue value1;
     private final ASTValue value2;
 
-    public ASTComputationMUL(ASTValue aValue2, ASTValue aValue1) {
+    public ASTComputationREM(ASTValue aValue2, ASTValue aValue1) {
         value1 = aValue1;
         value2 = aValue2;
     }
