@@ -229,6 +229,35 @@ public class JSBackend {
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
         theWriter.println("'use strict';");
 
+        theWriter.println("var bytecoder = {");
+        theWriter.println("     newString : function(aByteArray) { ");
+
+        BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
+        BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+
+        BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
+
+        // Construct a String
+        theWriter.println("          var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
+        theWriter.println("          var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
+        theWriter.println("          theBytes.data = aByteArray;");
+        theWriter.println("          " + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
+        theWriter.println("          return theNewString;");
+        theWriter.println("     },");
+        theWriter.println();
+        theWriter.println("     newArray : function(aLength, aDefault) {");
+
+        BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+        theWriter.println("          var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
+        theWriter.println("          theInstance.data = new Array(aLength);");
+        theWriter.println("          for (var i=0;i<aLength;i++) {");
+        theWriter.println("             theInstance.data[i] = aDefault;");
+        theWriter.println("          }");
+        theWriter.println("          return theInstance;");
+        theWriter.println("     }");
+        theWriter.println("}");
+        theWriter.println();
         aLinkerContext.forEachClass(aEntry -> {
 
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
@@ -457,21 +486,12 @@ public class JSBackend {
 
                         } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                             BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
-                            BytecodeObjectTypeRef theArrayType = theNew.getObjectType();
-                            BytecodeTypeRef thePrimitiveType = theNew.getPrimitiveType();
-                            Object theDefaultValue = thePrimitiveType.defaultValue();
-                            theWriter.println(theInset + "var theLength = frame.stack.pop();");
-                            theWriter.println(theInset + "var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
-                            theWriter.println(theInset + "theInstance.data = new Array(theLength);");
-                            theWriter.println(theInset + "for (var i=0;i<theLength;i++) {");
+                            Object theDefaultValue = theNew.getPrimitiveType().defaultValue();
                             if (theDefaultValue == null) {
-                                theWriter.println(theInset + "  theInstance.data[i] = null;");
+                                theWriter.println(theInset + "frame.stack.push(bytecoder.newArray(frame.stack.pop(), null));");
                             } else {
-                                theWriter.println(theInset + "  theInstance.data[i] = " + theDefaultValue.toString() + ";");
+                                theWriter.println(theInset + "frame.stack.push(bytecoder.newArray(frame.stack.pop(), " + theDefaultValue + "));");
                             }
-                            theWriter.println(theInset + "}");
-                            theWriter.println(theInset + "frame.stack.push(theInstance);");
-
                         } else if (theInstruction instanceof BytecodeInstructionNEWMULTIARRAY) {
                             BytecodeInstructionNEWMULTIARRAY theNew = (BytecodeInstructionNEWMULTIARRAY) theInstruction;
 
@@ -523,7 +543,6 @@ public class JSBackend {
 
                         } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                             BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
-                            BytecodeObjectTypeRef theArrayType = theNew.getObjectType();
                             Object theDefaultValue = theArrayType.defaultValue();
 
                             theWriter.println(theInset + "var theLength = frame.stack.pop()");
@@ -1022,19 +1041,10 @@ public class JSBackend {
                                     BytecodeStringConstant theStr = (BytecodeStringConstant) theConstant;
                                     String theValue = theStr.getValue().stringValue();
                                     byte[] theBytes = theStr.getValue().toUTF8Bytes();
-                                    BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
-                                    BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
-
-                                    BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                                            new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
 
                                     // Construct a String
                                     theWriter.println(theInset + "// new String from constant pool : " + theValue);
-                                    theWriter.println(theInset + "var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
-                                    theWriter.println(theInset + "var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
-                                    theWriter.println(theInset + "theBytes.data = " + toArray(theBytes) + ";");
-                                    theWriter.println(theInset + "" + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
-                                    theWriter.println(theInset + "frame.stack.push(theNewString);");
+                                    theWriter.println(theInset + "frame.stack.push(bytecoder.newString(" + toArray(theBytes) + "));");
                                 } catch (UnsupportedEncodingException e) {
                                     throw new RuntimeException(e);
                                 }
