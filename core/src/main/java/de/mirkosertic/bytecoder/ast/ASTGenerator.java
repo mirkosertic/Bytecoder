@@ -30,11 +30,7 @@ public class ASTGenerator {
 
         ASTBlock theResult = new ASTBlock();
         Stack<ASTValue> theCurrentValueStack = new Stack<>();
-        if (aBasicBlock.getType() != BytecodeBasicBlock.Type.NORMAL) {
-            // Exception handler or finally block
-            // Code expects the thrown exception to be on the stack
-//            theCurrentValueStack.push(new ASTGetStatic(BytecodeObjectTypeRef.fromRuntimeClass(ExceptionRethrower.class), "lastMethodOutcome"));
-        }
+
         theCurrentValueStack.push(new ASTGetStatic(BytecodeObjectTypeRef.fromRuntimeClass(ExceptionRethrower.class), "lastMethodOutcome"));
 
         for (BytecodeInstruction theInstruction : aBasicBlock.getInstructions()) {
@@ -140,14 +136,16 @@ public class ASTGenerator {
                     theArguments.add(theCurrentValueStack.pop());
                 }
                 ASTValue theReference = theCurrentValueStack.pop();
-
-                int theCallSite = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theCallSite, theReference));
+                if (!(theReference instanceof ASTLocalVariable)) {
+                    int theCallSite = localVariableCounter++;
+                    theResult.add(new ASTSetLocalVariable(theCallSite, theReference));
+                    theReference = new ASTLocalVariable(theCallSite);
+                }
 
                 if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
-                    theResult.add(new ASTInvokeVirtual(new ASTLocalVariable(theCallSite), theArguments, theMethodRefConstant));
+                    theResult.add(new ASTInvokeVirtual(theReference, theArguments, theMethodRefConstant));
                 } else {
-                    theCurrentValueStack.push(new ASTInvokeVirtual(new ASTLocalVariable(theCallSite), theArguments, theMethodRefConstant));
+                    theCurrentValueStack.push(new ASTInvokeVirtual(theReference, theArguments, theMethodRefConstant));
                 }
 
             } else if (theInstruction instanceof BytecodeInstructionNEW) {
