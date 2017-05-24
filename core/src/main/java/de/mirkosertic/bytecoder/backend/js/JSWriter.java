@@ -53,6 +53,16 @@ public class JSWriter {
         newLine = true;
     }
 
+    public void print(byte b) {
+        checkNewLine();
+        writer.print(b);
+    }
+
+    public void print(short s) {
+        checkNewLine();
+        writer.print(s);
+    }
+
     public void print(int i) {
         checkNewLine();
         writer.print(i);

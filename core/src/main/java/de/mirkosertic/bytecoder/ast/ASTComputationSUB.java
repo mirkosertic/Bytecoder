@@ -20,7 +20,7 @@ public class ASTComputationSUB extends ASTComputationResult {
     private final ASTValue value1;
     private final ASTValue value2;
 
-    public ASTComputationSUB(ASTValue aValue1, ASTValue aValue2) {
+    public ASTComputationSUB(ASTValue aValue2, ASTValue aValue1) {
         value1 = aValue1;
         value2 = aValue2;
     }

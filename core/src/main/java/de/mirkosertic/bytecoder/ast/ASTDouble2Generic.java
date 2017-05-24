@@ -15,23 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
-public class ASTIFCOND extends ASTValue {
+public class ASTDouble2Generic extends ASTValue {
 
     private final ASTValue value;
-    private final BytecodeOpcodeAddress targetAddress;
+    private final BytecodePrimitiveTypeRef targetType;
 
-    public ASTIFCOND(ASTValue aValue, BytecodeOpcodeAddress aTargetAddress) {
+    public ASTDouble2Generic(ASTValue aValue, BytecodePrimitiveTypeRef aTargetType) {
         value = aValue;
-        targetAddress = aTargetAddress;
+        targetType = aTargetType;
     }
 
     public ASTValue getValue() {
         return value;
     }
 
-    public BytecodeOpcodeAddress getTargetAddress() {
-        return targetAddress;
+    public BytecodePrimitiveTypeRef getTargetType() {
+        return targetType;
     }
 }

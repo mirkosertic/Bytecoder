@@ -19,7 +19,58 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
 public class ASTGenerator {
 
@@ -31,7 +82,12 @@ public class ASTGenerator {
         Stack<ASTValue> theCurrentValueStack = new Stack<>();
         theCurrentValueStack.push(new ASTInputOfBlock());
         for (BytecodeInstruction theInstruction : aBasicBlock.getInstructions()) {
-            if (theInstruction instanceof BytecodeInstructionRETURN) {
+            if (theInstruction instanceof BytecodeInstructionBIPUSH) {
+                BytecodeInstructionBIPUSH thePush = (BytecodeInstructionBIPUSH) theInstruction;
+                theCurrentValueStack.push(new ASTByteValue(thePush.getByteValue()));
+            } else if (theInstruction instanceof BytecodeInstructionPOP) {
+                theCurrentValueStack.pop();
+            } else if (theInstruction instanceof BytecodeInstructionRETURN) {
                 theResult.add(new ASTReturn());
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                 BytecodeInstructionGenericLDC theLoad = (BytecodeInstructionGenericLDC) theInstruction;
@@ -151,13 +207,13 @@ public class ASTGenerator {
                 BytecodeInstructionFCMP theCMP = (BytecodeInstructionFCMP) theInstruction;
                 ASTValue theValue2 = theCurrentValueStack.pop();
                 ASTValue theValue1 = theCurrentValueStack.pop();
-                theCurrentValueStack.push(new ASTFCMP(theValue1, theValue2, theCMP.getType()));
+                theCurrentValueStack.push(new ASTFloatCompare(theValue1, theValue2, theCMP.getType()));
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theIf = (BytecodeInstructionIFCOND) theInstruction;
-                theResult.add(new ASTIFCOND(theCurrentValueStack.pop(), theIf.getJumpOffset()));
+                theResult.add(new ASTIFCompareToZero(theCurrentValueStack.pop(), theIf.getJumpOffset()));
             } else if (theInstruction instanceof BytecodeInstructionICONST) {
                 BytecodeInstructionICONST theConst = (BytecodeInstructionICONST) theInstruction;
-                theCurrentValueStack.push(new ASTIntValue(theConst.getIntConst()));
+                theCurrentValueStack.push(new ASTIntegerValue(theConst.getIntConst()));
             } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                 BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
                 theCurrentValueStack.push(new ASTFloatValue(theConst.getFloatValue()));
@@ -169,7 +225,7 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTArrayLength(theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionI2Generic) {
                 BytecodeInstructionI2Generic theConv = (BytecodeInstructionI2Generic) theInstruction;
-                theCurrentValueStack.push(new ASTInt2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
+                theCurrentValueStack.push(new ASTInteger2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
                 int theNewVariable = localVariableCounter++;
@@ -189,7 +245,7 @@ public class ASTGenerator {
                 theResult.add(new ASTSetLocalVariable(theStore.getVariableIndex(), theCurrentValueStack.pop()));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theIf = (BytecodeInstructionIFICMP) theInstruction;
-                theResult.add(new ASTIFICMP(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
+                theResult.add(new ASTIFIntegerCompare(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 BytecodeInstructionIINC theInc = (BytecodeInstructionIINC) theInstruction;
                 theResult.add(new ASTLocalVariableIncrement(theInc.getIndex(), theInc.getConstant()));
@@ -205,6 +261,24 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
                 BytecodeInstructionCHECKCAST theCast = (BytecodeInstructionCHECKCAST) theInstruction;
                 theCurrentValueStack.push(new ASTCheckCast(theCast.getTypeCheck(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionF2Generic) {
+                BytecodeInstructionF2Generic theConv = (BytecodeInstructionF2Generic) theInstruction;
+                theCurrentValueStack.push(new ASTFloat2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
+            } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
+                BytecodeInstructionL2Generic theConv = (BytecodeInstructionL2Generic) theInstruction;
+                theCurrentValueStack.push(new ASTLong2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
+            } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
+                BytecodeInstructionGenericREM theRem = (BytecodeInstructionGenericREM) theInstruction;
+                theCurrentValueStack.push(new ASTComputationREM(theCurrentValueStack.pop(), theCurrentValueStack.pop()));
+            } else if (theInstruction instanceof BytecodeInstructionD2Generic) {
+                BytecodeInstructionD2Generic theConv = (BytecodeInstructionD2Generic) theInstruction;
+                theCurrentValueStack.push(new ASTDouble2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
+            } else if (theInstruction instanceof BytecodeInstructionSIPUSH) {
+                BytecodeInstructionSIPUSH thePush = (BytecodeInstructionSIPUSH) theInstruction;
+                theCurrentValueStack.push(new ASTShortValue(thePush.getShortValue()));
+            } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
+                BytecodeInstructionIFACMP theIf = (BytecodeInstructionIFACMP) theInstruction;
+                theResult.add(new ASTIFObjectCompare(theCurrentValueStack.pop(), theCurrentValueStack.pop(), theIf.getType(), theIf.getJumpAddress()));
             } else {
                 throw new IllegalStateException("Not implemented : " + theInstruction);
             }

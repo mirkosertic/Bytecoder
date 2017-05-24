@@ -13,7 +13,7 @@ Rich Domain Model for Java Bytecode and Framework to interpret and transpile it 
 
 Before compiling to the target language, a dead code removal is done to reduce the amount of generated code. Starting
 from an application entry point, the referenced classes, fields, methods and interfaces are searched. Only detected used
-objects are then compiled by a language specific backend.
+items are then compiled by a language specific backend.
 
 ## Compiling strategies
 

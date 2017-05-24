@@ -417,12 +417,12 @@ public class JSBackend {
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
 
                     ASTBlock theASTBlock = theAST.generateFrom(theBlock);
-
-                    theWriter.println("/*  Generated Code from AST");
-                    theASTCodeGenerator.generateFor(theASTBlock, new JSWriter("            ", theWriter));
-                    theWriter.println("*/");
-
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
+
+                    theWriter.println("            /*  Generated Code from AST");
+                    theASTCodeGenerator.generateFor(theASTBlock, new JSWriter("            ", theWriter));
+                    theWriter.println("            */");
+
                     for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
                         if (theInstruction instanceof BytecodeInstructionNOP) {
                             theWriter.println(theInset + "// noop");
