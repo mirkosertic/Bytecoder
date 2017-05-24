@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class ASTNewArray extends ASTValue {
 
-    private final BytecodePrimitiveTypeRef type;
+    private final BytecodeTypeRef type;
     private final ASTValue length;
 
-    public ASTNewArray(BytecodePrimitiveTypeRef aType, ASTValue aLength) {
+    public ASTNewArray(BytecodeTypeRef aType, ASTValue aLength) {
         type = aType;
         length = aLength;
     }
@@ -31,7 +31,7 @@ public class ASTNewArray extends ASTValue {
         return length;
     }
 
-    public BytecodePrimitiveTypeRef getType() {
+    public BytecodeTypeRef getType() {
         return type;
     }
 }

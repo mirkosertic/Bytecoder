@@ -201,6 +201,11 @@ public class ASTGenerator {
                 int theNewVariable = localVariableCounter++;
                 theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(theNew.getPrimitiveType(), theCurrentValueStack.pop())));
                 theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
+            } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
+                BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
+                int theNewVariable = localVariableCounter++;
+                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(BytecodeObjectTypeRef.fromUtf8Constant(theNew.getTypeConstant().getConstant()), theCurrentValueStack.pop())));
+                theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
             } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                 BytecodeInstructionIFNULL theIf = (BytecodeInstructionIFNULL) theInstruction;
                 theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, new ASTNull()), theIf.getJumpTarget()));
@@ -216,11 +221,11 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theIf = (BytecodeInstructionIFICMP) theInstruction;
 
-                int theNewVariable1 = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable1, theCurrentValueStack.pop()));
-
                 int theNewVariable2 = localVariableCounter++;
                 theResult.add(new ASTSetLocalVariable(theNewVariable2, theCurrentValueStack.pop()));
+
+                int theNewVariable1 = localVariableCounter++;
+                theResult.add(new ASTSetLocalVariable(theNewVariable1, theCurrentValueStack.pop()));
 
                 switch (theIf.getType()) {
                     case lt:
