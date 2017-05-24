@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 
@@ -25,8 +26,6 @@ import de.mirkosertic.bytecoder.core.*;
 public class ASTGenerator {
 
     public ASTBlock generateFrom(BytecodeBasicBlock aBasicBlock) {
-
-        int localVariableCounter = 100;
 
         ASTBlock theResult = new ASTBlock();
         Stack<ASTValue> theCurrentValueStack = new Stack<>();
@@ -40,12 +39,7 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
                 BytecodeInstructionINSTANCEOF theOf = (BytecodeInstructionINSTANCEOF) theInstruction;
 
-                ASTValue theReference = theCurrentValueStack.pop();
-                if (!(theReference instanceof ASTLocalVariable)) {
-                    int theCallSite = localVariableCounter++;
-                    theResult.add(new ASTSetLocalVariable(theCallSite, theReference));
-                    theReference = new ASTLocalVariable(theCallSite);
-                }
+                ASTValue theReference = theResult.resolveToLocalVariable(theCurrentValueStack.pop());
 
                 theCurrentValueStack.push(new ASTInstanceOf(theReference, theOf.getTypeRef()));
             } else if (theInstruction instanceof BytecodeInstructionPOP) {
@@ -109,6 +103,8 @@ public class ASTGenerator {
                     theArguments.add(theCurrentValueStack.pop());
                 }
 
+                Collections.reverse(theArguments);
+
                 if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
                     theResult.add(new ASTInvokeStatic(theArguments, theMethodRefConstant));
                 } else {
@@ -126,6 +122,7 @@ public class ASTGenerator {
                 for (int i = 0; i < theSig.getArguments().length; i++) {
                     theArguments.add(theCurrentValueStack.pop());
                 }
+
                 ASTValue theReference = theCurrentValueStack.pop();
 
                 if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
@@ -146,12 +143,8 @@ public class ASTGenerator {
                 for (int i = 0; i < theSig.getArguments().length; i++) {
                     theArguments.add(theCurrentValueStack.pop());
                 }
-                ASTValue theReference = theCurrentValueStack.pop();
-                if (!(theReference instanceof ASTLocalVariable)) {
-                    int theCallSite = localVariableCounter++;
-                    theResult.add(new ASTSetLocalVariable(theCallSite, theReference));
-                    theReference = new ASTLocalVariable(theCallSite);
-                }
+
+                ASTValue theReference = theResult.resolveToLocalVariable(theCurrentValueStack.pop());
 
                 if (theSig.getReturnType() == BytecodePrimitiveTypeRef.VOID) {
                     theResult.add(new ASTInvokeVirtual(theReference, theArguments, theMethodRefConstant));
@@ -160,10 +153,8 @@ public class ASTGenerator {
                 }
 
             } else if (theInstruction instanceof BytecodeInstructionNEW) {
-                int theNewVariable = localVariableCounter++;
                 BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
-                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewObject(theNew.getClassInfoForObjectToCreate())));
-                theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
+                theCurrentValueStack.push(theResult.resolveToLocalVariable(new ASTNewObject(theNew.getClassInfoForObjectToCreate())));
             } else if (theInstruction instanceof BytecodeInstructionPUTFIELD) {
                 BytecodeInstructionPUTFIELD thePut = (BytecodeInstructionPUTFIELD) theInstruction;
                 ASTValue theValue = theCurrentValueStack.pop();
@@ -198,14 +189,10 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTInteger2Generic(theCurrentValueStack.pop(), theConv.getTargetType()));
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
-                int theNewVariable = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(theNew.getPrimitiveType(), theCurrentValueStack.pop())));
-                theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
+                theCurrentValueStack.push(theResult.resolveToLocalVariable(new ASTNewArray(theNew.getPrimitiveType(), theCurrentValueStack.pop())));
             } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                 BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
-                int theNewVariable = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable, new ASTNewArray(BytecodeObjectTypeRef.fromUtf8Constant(theNew.getTypeConstant().getConstant()), theCurrentValueStack.pop())));
-                theCurrentValueStack.push(new ASTLocalVariable(theNewVariable));
+                theCurrentValueStack.push(theResult.resolveToLocalVariable(new ASTNewArray(BytecodeObjectTypeRef.fromUtf8Constant(theNew.getTypeConstant().getConstant()), theCurrentValueStack.pop())));
             } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                 BytecodeInstructionIFNULL theIf = (BytecodeInstructionIFNULL) theInstruction;
                 theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, new ASTNull()), theIf.getJumpTarget()));
@@ -221,30 +208,27 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theIf = (BytecodeInstructionIFICMP) theInstruction;
 
-                int theNewVariable2 = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable2, theCurrentValueStack.pop()));
-
-                int theNewVariable1 = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable1, theCurrentValueStack.pop()));
+                ASTValue theValue2 = theResult.resolveToLocalVariable(theCurrentValueStack.pop());
+                ASTValue theValue1 = theResult.resolveToLocalVariable(theCurrentValueStack.pop());
 
                 switch (theIf.getType()) {
                     case lt:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.LESSTHAN, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.LESSTHAN, theValue1), theIf.getJumpAddress()));
                         break;
                     case eq:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.EQUALS, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.EQUALS, theValue1), theIf.getJumpAddress()));
                         break;
                     case ge:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.GREATEREQUALS, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.GREATEREQUALS, theValue1), theIf.getJumpAddress()));
                         break;
                     case gt:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.GREATERTHAN, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.GREATERTHAN, theValue1), theIf.getJumpAddress()));
                         break;
                     case le:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.LESSOREQUALS, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.LESSOREQUALS, theValue1), theIf.getJumpAddress()));
                         break;
                     case ne:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.NOTEQUALS, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.NOTEQUALS, theValue1), theIf.getJumpAddress()));
                         break;
                 }
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
@@ -281,18 +265,15 @@ public class ASTGenerator {
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theIf = (BytecodeInstructionIFACMP) theInstruction;
 
-                int theNewVariable2 = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable2, theCurrentValueStack.pop()));
-
-                int theNewVariable1 = localVariableCounter++;
-                theResult.add(new ASTSetLocalVariable(theNewVariable1, theCurrentValueStack.pop()));
+                ASTValue theValue2 = theResult.resolveToLocalVariable(theCurrentValueStack.pop());
+                ASTValue theValue1 = theResult.resolveToLocalVariable(theCurrentValueStack.pop());
 
                 switch (theIf.getType()) {
                     case eq:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.EQUALS, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.EQUALS, theValue1), theIf.getJumpAddress()));
                         break;
                     case ne:
-                        theResult.add(new ASTIF(new ASTValuesWithOperator(new ASTLocalVariable(theNewVariable2), ASTValuesWithOperator.Operator.NOTEQUALS, new ASTLocalVariable(theNewVariable1)), theIf.getJumpAddress()));
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theValue2, ASTValuesWithOperator.Operator.NOTEQUALS, theValue1), theIf.getJumpAddress()));
                         break;
                 }
             } else {
