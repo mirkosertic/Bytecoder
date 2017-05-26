@@ -28,13 +28,17 @@ public class ASTBlock extends ASTValue {
         additionalVariablesCounter = 100;
     }
 
+    public ASTValue cloneToLocalVariable(ASTValue aValue) {
+        additionalVariablesCounter++;
+        values.add(new ASTSetLocalVariable(additionalVariablesCounter, aValue));
+        return new ASTLocalVariable(additionalVariablesCounter);
+    }
+
     public ASTValue resolveToLocalVariable(ASTValue aValue) {
         if (aValue instanceof ASTLocalVariable) {
             return aValue;
         }
-        additionalVariablesCounter++;
-        values.add(new ASTSetLocalVariable(additionalVariablesCounter, aValue));
-        return new ASTLocalVariable(additionalVariablesCounter);
+        return cloneToLocalVariable(aValue);
     }
 
     public void add(ASTValue aValue) {

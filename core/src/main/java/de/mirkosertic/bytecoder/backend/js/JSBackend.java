@@ -22,7 +22,6 @@ import java.io.UnsupportedEncodingException;
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
-import de.mirkosertic.bytecoder.ast.ASTBlock;
 import de.mirkosertic.bytecoder.ast.ASTGenerator;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
@@ -250,7 +249,8 @@ public class JSBackend {
 
         BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
         theWriter.println("          var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
-        theWriter.println("          theInstance.data = new Array(aLength);");
+        theWriter.println("          theInstance.data = [];");
+        theWriter.println("          theInstance.data.length = aLength;");
         theWriter.println("          for (var i=0;i<aLength;i++) {");
         theWriter.println("             theInstance.data[i] = aDefault;");
         theWriter.println("          }");
@@ -366,11 +366,11 @@ public class JSBackend {
 
                 for (BytecodeLinkedClass theType : aEntry.getValue().getImplementingTypes()) {
                     theWriter.println("            case " + theType.getUniqueId() +":");
-                    theWriter.println("                return true;");
+                    theWriter.println("                return 1;");
                 }
 
                 theWriter.println("            default:");
-                theWriter.println("                return false;");
+                theWriter.println("                return 0;");
                 theWriter.println("        }");
                 theWriter.println("    },");
                 theWriter.println();
@@ -448,13 +448,20 @@ public class JSBackend {
                 theWriter.println("        // # basic blocks in flow graph : " + theFlowGraph.getBlocks().size());
                 theWriter.println("        var currentLabel = " + theFlowGraph.getBlocks().get(0).getStartAddress().getAddress() + ";");
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
+
+                ASTGenerator.GenerationResult theLastGeneration = null;
+
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
                     if (codeType == CodeType.AST) {
-                        ASTBlock theASTBlock = theAST.generateFrom(theBlock);
-                        theASTCodeGenerator.generateFor(theASTBlock, new JSWriter("            ", theWriter));
+                        if (theLastGeneration == null) {
+                            theLastGeneration = theAST.generateFrom(theBlock);
+                        } else {
+                            theLastGeneration = theLastGeneration.continueWith(theBlock);
+                        }
+                        theASTCodeGenerator.generateFor(theLastGeneration.getBlock(), new JSWriter("            ", theWriter));
                         theWriter.println("         }");
                         continue;
                     }
@@ -650,7 +657,6 @@ public class JSBackend {
 
                             BytecodeInterfaceRefConstant theMethodRefConstant = theInterfaceInvoke.getMethodDescriptor();
 
-                            BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
                             BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
                             BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
                             BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();

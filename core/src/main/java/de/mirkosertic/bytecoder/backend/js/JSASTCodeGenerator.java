@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.ast.ASTArrayValue;
 import de.mirkosertic.bytecoder.ast.ASTBlock;
 import de.mirkosertic.bytecoder.ast.ASTByteValue;
 import de.mirkosertic.bytecoder.ast.ASTCheckCast;
+import de.mirkosertic.bytecoder.ast.ASTClassInitCheck;
 import de.mirkosertic.bytecoder.ast.ASTConstant;
 import de.mirkosertic.bytecoder.ast.ASTDouble2Generic;
 import de.mirkosertic.bytecoder.ast.ASTFloat2Generic;
@@ -34,6 +35,7 @@ import de.mirkosertic.bytecoder.ast.ASTIF;
 import de.mirkosertic.bytecoder.ast.ASTInstanceOf;
 import de.mirkosertic.bytecoder.ast.ASTInteger2Generic;
 import de.mirkosertic.bytecoder.ast.ASTIntegerValue;
+import de.mirkosertic.bytecoder.ast.ASTInvokeInterface;
 import de.mirkosertic.bytecoder.ast.ASTInvokeSpecial;
 import de.mirkosertic.bytecoder.ast.ASTInvokeStatic;
 import de.mirkosertic.bytecoder.ast.ASTInvokeVirtual;
@@ -49,6 +51,7 @@ import de.mirkosertic.bytecoder.ast.ASTPutStatic;
 import de.mirkosertic.bytecoder.ast.ASTReturn;
 import de.mirkosertic.bytecoder.ast.ASTSetArrayValue;
 import de.mirkosertic.bytecoder.ast.ASTSetLocalVariable;
+import de.mirkosertic.bytecoder.ast.ASTShift;
 import de.mirkosertic.bytecoder.ast.ASTShortValue;
 import de.mirkosertic.bytecoder.ast.ASTThrow;
 import de.mirkosertic.bytecoder.ast.ASTValue;
@@ -204,9 +207,57 @@ public class JSASTCodeGenerator {
             visit((ASTIF) aValue, aWriter);
         } else if (aValue instanceof ASTInstanceOf) {
             visit((ASTInstanceOf) aValue, aWriter);
+        } else if (aValue instanceof ASTInvokeInterface) {
+            visit((ASTInvokeInterface) aValue, aWriter);
+        } else if (aValue instanceof ASTClassInitCheck) {
+            visit((ASTClassInitCheck) aValue, aWriter);
+        } else if (aValue instanceof ASTShift) {
+            visit((ASTShift) aValue, aWriter);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void visit(ASTShift aValue, JSWriter aWriter) {
+        visit(aValue.getValue(), aWriter);
+        switch (aValue.getDirection()) {
+            case left:
+                aWriter.print(" << ");
+                break;
+            case right:
+                aWriter.print(" >> ");
+                break;
+        }
+        visit(aValue.getAmount(), aWriter);
+    }
+
+    private void visit(ASTClassInitCheck aValue, JSWriter aWriter) {
+        BytecodeObjectTypeRef theType = aValue.getObjectType();
+        if (linkerContext.linkClass(theType).hasClassInitializer()) {
+            aWriter.print(toClassName(aValue.getObjectType()));
+            aWriter.print(".classInitCheck()");
+        } else {
+            aWriter.print("// No class init check required");
+        }
+    }
+
+    private void visit(ASTInvokeInterface aValue, JSWriter aWriter) {
+        visit(aValue.getReference(), aWriter);
+        aWriter.print(".clazz.resolveVirtualMethod(");
+
+        BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().toIdentifier(aValue.getMethodName(),  aValue.getSignature());
+        aWriter.print(theIdentifier.getIdentifier());
+
+        aWriter.print(")(");
+        visit(aValue.getReference(), aWriter);
+
+        BytecodeMethodSignature theSignature = aValue.getSignature();
+        for (int i=0;i<theSignature.getArguments().length;i++) {
+            aWriter.print(",");
+            visit(aValue.getArguments().get(i), aWriter);
+        }
+
+        aWriter.print(")");
     }
 
     private void visit(ASTInstanceOf aValue, JSWriter aWriter) {
@@ -254,7 +305,7 @@ public class JSASTCodeGenerator {
                 aWriter.print(" % ");
                 break;
             case EQUALS:
-                aWriter.print(" == ");
+                aWriter.print(" === ");
                 break;
             case NOTEQUALS:
                 aWriter.print(" != ");
@@ -270,6 +321,15 @@ public class JSASTCodeGenerator {
                 break;
             case LESSOREQUALS:
                 aWriter.print(" <= ");
+                break;
+            case BINARYAND:
+                aWriter.print(" & ");
+                break;
+            case BINARYOR:
+                aWriter.print(" | ");
+                break;
+            case BINARYXOR:
+                aWriter.print(" ^ ");
                 break;
         }
 
@@ -377,7 +437,15 @@ public class JSASTCodeGenerator {
 
         Object theDefaultValue = aValue.getType().defaultValue();
         if (theDefaultValue != null) {
-            aWriter.print(theDefaultValue.toString());
+            if (theDefaultValue instanceof Boolean) {
+                if ((Boolean) theDefaultValue) {
+                    aWriter.print("1");
+                } else {
+                    aWriter.print("0");
+                }
+            } else {
+                aWriter.print(theDefaultValue.toString());
+            }
         } else {
             aWriter.print("null");
         }
@@ -541,14 +609,12 @@ public class JSASTCodeGenerator {
     }
 
     private void visit(ASTGetStatic aValue, JSWriter aWriter) {
-        // TODO: Check static init here
         aWriter.print(toClassName(aValue.getClassName()));
         aWriter.print(".staticFields.");
         aWriter.print(aValue.getFieldName());
     }
 
     private void visit(ASTPutStatic aValue, JSWriter aWriter) {
-        // TODO: Check static init here
         aWriter.print(toClassName(aValue.getClassName()));
         aWriter.print(".staticFields.");
         aWriter.print(aValue.getFieldName().stringValue());
