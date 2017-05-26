@@ -15,10 +15,61 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import de.mirkosertic.bytecoder.ast.*;
-import de.mirkosertic.bytecoder.core.*;
-
 import java.io.UnsupportedEncodingException;
+
+import de.mirkosertic.bytecoder.ast.ASTArrayLength;
+import de.mirkosertic.bytecoder.ast.ASTArrayValue;
+import de.mirkosertic.bytecoder.ast.ASTBlock;
+import de.mirkosertic.bytecoder.ast.ASTByteValue;
+import de.mirkosertic.bytecoder.ast.ASTCheckCast;
+import de.mirkosertic.bytecoder.ast.ASTConstant;
+import de.mirkosertic.bytecoder.ast.ASTDouble2Generic;
+import de.mirkosertic.bytecoder.ast.ASTFloat2Generic;
+import de.mirkosertic.bytecoder.ast.ASTFloatCompare;
+import de.mirkosertic.bytecoder.ast.ASTFloatValue;
+import de.mirkosertic.bytecoder.ast.ASTGetField;
+import de.mirkosertic.bytecoder.ast.ASTGetStatic;
+import de.mirkosertic.bytecoder.ast.ASTGoto;
+import de.mirkosertic.bytecoder.ast.ASTIF;
+import de.mirkosertic.bytecoder.ast.ASTInstanceOf;
+import de.mirkosertic.bytecoder.ast.ASTInteger2Generic;
+import de.mirkosertic.bytecoder.ast.ASTIntegerValue;
+import de.mirkosertic.bytecoder.ast.ASTInvokeSpecial;
+import de.mirkosertic.bytecoder.ast.ASTInvokeStatic;
+import de.mirkosertic.bytecoder.ast.ASTInvokeVirtual;
+import de.mirkosertic.bytecoder.ast.ASTLocalVariable;
+import de.mirkosertic.bytecoder.ast.ASTLong2Generic;
+import de.mirkosertic.bytecoder.ast.ASTNeg;
+import de.mirkosertic.bytecoder.ast.ASTNewArray;
+import de.mirkosertic.bytecoder.ast.ASTNewObject;
+import de.mirkosertic.bytecoder.ast.ASTNull;
+import de.mirkosertic.bytecoder.ast.ASTObjectReturn;
+import de.mirkosertic.bytecoder.ast.ASTPutField;
+import de.mirkosertic.bytecoder.ast.ASTPutStatic;
+import de.mirkosertic.bytecoder.ast.ASTReturn;
+import de.mirkosertic.bytecoder.ast.ASTSetArrayValue;
+import de.mirkosertic.bytecoder.ast.ASTSetLocalVariable;
+import de.mirkosertic.bytecoder.ast.ASTShortValue;
+import de.mirkosertic.bytecoder.ast.ASTThrow;
+import de.mirkosertic.bytecoder.ast.ASTValue;
+import de.mirkosertic.bytecoder.ast.ASTValueReference;
+import de.mirkosertic.bytecoder.ast.ASTValuesWithOperator;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
+import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSASTCodeGenerator {
 
@@ -398,7 +449,7 @@ public class JSASTCodeGenerator {
             aWriter.print(theLong.getLongValue());
         } else if (theConstant instanceof BytecodeClassinfoConstant) {
             BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
-            aWriter.print(toClassName(theClassInfo) + ".runtimeClass);");
+            aWriter.print(toClassName(theClassInfo) + ".runtimeClass");
         } else if (theConstant instanceof BytecodeIntegerConstant) {
             BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
             aWriter.print(theInteger.integerValue());
