@@ -21,24 +21,9 @@ import java.util.List;
 public class ASTBlock extends ASTValue {
 
     private final List<ASTValue> values;
-    private int additionalVariablesCounter;
 
     public ASTBlock() {
         values = new ArrayList<>();
-        additionalVariablesCounter = 100;
-    }
-
-    public ASTValue cloneToLocalVariable(ASTValue aValue) {
-        additionalVariablesCounter++;
-        values.add(new ASTSetLocalVariable(additionalVariablesCounter, aValue));
-        return new ASTLocalVariable(additionalVariablesCounter);
-    }
-
-    public ASTValue resolveToLocalVariable(ASTValue aValue) {
-        if (aValue instanceof ASTLocalVariable) {
-            return aValue;
-        }
-        return cloneToLocalVariable(aValue);
     }
 
     public void add(ASTValue aValue) {
