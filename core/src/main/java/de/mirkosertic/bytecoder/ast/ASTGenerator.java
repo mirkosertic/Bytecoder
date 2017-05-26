@@ -21,7 +21,61 @@ import java.util.List;
 import java.util.Stack;
 
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
 public class ASTGenerator {
 
@@ -171,7 +225,26 @@ public class ASTGenerator {
                 theCurrentValueStack.push(new ASTFloatCompare(theValue1, theValue2, theCMP.getType()));
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theIf = (BytecodeInstructionIFCOND) theInstruction;
-                theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                switch (theIf.getType()) {
+                    case eq:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.EQUALS, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                        break;
+                    case ne:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.NOTEQUALS, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                        break;
+                    case lt:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.LESSTHAN, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                        break;
+                    case ge:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.GREATEREQUALS, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                        break;
+                    case gt:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.GREATERTHAN, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                        break;
+                    case le:
+                        theResult.add(new ASTIF(new ASTValuesWithOperator(theCurrentValueStack.pop(), ASTValuesWithOperator.Operator.LESSOREQUALS, new ASTIntegerValue(0)), theIf.getJumpOffset()));
+                        break;
+                }
             } else if (theInstruction instanceof BytecodeInstructionICONST) {
                 BytecodeInstructionICONST theConst = (BytecodeInstructionICONST) theInstruction;
                 theCurrentValueStack.push(new ASTIntegerValue(theConst.getIntConst()));
