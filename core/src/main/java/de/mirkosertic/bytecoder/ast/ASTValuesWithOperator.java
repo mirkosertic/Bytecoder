@@ -28,7 +28,10 @@ public class ASTValuesWithOperator extends ASTValue {
         LESSTHAN,
         GREATEREQUALS,
         GREATERTHAN,
-        LESSOREQUALS
+        LESSOREQUALS,
+        BINARYOR,
+        BINARYAND,
+        BINARYXOR
     }
 
     private final ASTValue value1;
