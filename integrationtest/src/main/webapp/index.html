@@ -1,0 +1,80 @@
+<html>
+    <head>
+        <title>Bytecoder JBox2D Performance Test</title>
+    </head>
+    <body>
+        <script type="text/javascript" src="bytecoder.js"></script>
+        <script type="text/javascript">
+            // Our module for dynamic linking
+            var canvas = {
+
+                canvasClear : function() {
+                    console.log("canvasclear");
+                },
+
+                contextSave : function() {
+                    console.log("contextsave");
+                },
+
+                contextRestore : function() {
+                    console.log("contextrestore");
+                },
+
+                contextTranslate : function(aX, aY) {
+                    console.log("contexttranslate");
+                },
+
+                contextScale : function(aX, aY) {
+                    console.log("contextscale");
+                },
+
+                contextLineWidth : function(aWidth) {
+                    console.log("contextlinewidth");
+                },
+
+                contextRotate : function(aAngleInRadians) {
+                    console.log("contextrotate");
+                },
+
+                contextBeginPath : function() {
+                    console.log("contextbeginpath");
+                },
+
+                contextClosePath : function() {
+                    console.log("contextclosepath");
+                },
+
+                contextMoveTo: function(aX, aY) {
+                    console.log("contextmoveto");
+                },
+
+                contextLineTo : function(faX, aY) {
+                    console.log("contextlineto");
+                },
+
+                contextArc : function(x, y, radius, startAngle, endAngle, anticlockwise) {
+                    console.log("contextarc");
+                },
+
+                contextStroke : function() {
+                    console.log("contextstroke");
+                }
+            };
+
+            var debug = {
+                logRuntime : function(a) {
+                    console.log("Runtime was " + a + " ms");
+                }
+            };
+
+            de_mirkosertic_bytecoder_integrationtest_JBox2DSimulation.VOIDmainA1demirkoserticbytecoderclasslibjavalangTString();
+
+            var stepFunction = function(timestamp) {
+                de_mirkosertic_bytecoder_integrationtest_JBox2DSimulation.VOIDproceedSimulation();
+                window.requestAnimationFrame(stepFunction);
+            };
+
+            window.requestAnimationFrame(stepFunction);
+        </script>
+    </body>
+</html>

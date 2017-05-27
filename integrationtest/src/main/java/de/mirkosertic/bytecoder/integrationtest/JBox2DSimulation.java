@@ -171,6 +171,8 @@ public class JBox2DSimulation {
         scene.calculate();
         long theDuration = System.currentTimeMillis() - theNow;
 
+        logRuntime((int) theDuration);
+
         render();
     }
 
@@ -212,6 +214,9 @@ public class JBox2DSimulation {
 
     @Import(module = "canvas", name = "contextStroke")
     public static native void contextStroke();
+
+    @Import(module = "debug", name = "logRuntime")
+    public static native void logRuntime(int aValue);
 
     private static void render() {
         canvasClear();
