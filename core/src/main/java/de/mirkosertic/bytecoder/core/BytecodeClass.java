@@ -83,6 +83,10 @@ public class BytecodeClass {
         return superClass;
     }
 
+    public BytecodeMethod[] getMethods() {
+        return methods;
+    }
+
     public BytecodeInterface[] getInterfaces() {
         return interfaces;
     }

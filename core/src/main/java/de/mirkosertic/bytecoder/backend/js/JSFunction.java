@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+
 public class JSFunction {
 
     private final String jsCode;
@@ -23,7 +25,7 @@ public class JSFunction {
         jsCode = aJSCode;
     }
 
-    public String generateCode() {
+    public String generateCode(BytecodeMethodSignature aSignature) {
         return jsCode;
     }
 }
