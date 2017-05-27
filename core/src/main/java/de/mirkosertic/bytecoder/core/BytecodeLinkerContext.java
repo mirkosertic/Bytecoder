@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.annotations.Export;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -66,6 +68,18 @@ public class BytecodeLinkerContext {
 
             theLinkedClass = new BytecodeLinkedClass(linkedClasses.size(), theParentClass, this, aTypeRef, theLoadedClass);
             linkedClasses.put(aTypeRef, theLinkedClass);
+
+            for (BytecodeMethod theMethod : theLoadedClass.getMethods()) {
+                BytecodeAnnotation theAnnotation = theMethod.getAnnotations().getAnnotationByType(Export.class.getName());
+                if (theAnnotation != null) {
+                    // The method should be exported
+                    if (theMethod.getAccessFlags().isStatic()) {
+                        theLinkedClass.linkStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                    } else {
+                        theLinkedClass.linkVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                    }
+                }
+            }
 
             BytecodeMethod theMethod = theLoadedClass.classInitializerOrNull();
             if (theMethod != null) {

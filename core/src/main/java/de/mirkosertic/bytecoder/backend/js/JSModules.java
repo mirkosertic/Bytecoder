@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,10 +29,36 @@ public class JSModules {
         modules = new HashMap<>();
     }
 
-    public JSModule resolveModule(String aName) {
-        JSModule theModule = modules.get(aName);
+    public JSModule resolveModule(final String aModuleName) {
+        JSModule theModule = modules.get(aModuleName);
         if (theModule == null) {
-            throw new IllegalStateException("No such module : " + aName);
+            // Nothing found, hence we create a pass-thru module assuming that the defined
+            // variable is somewhere
+            return new JSModule() {
+                @Override
+                public JSFunction resolveFunction(String aName) {
+                    return new JSFunction(aName) {
+                        @Override
+                        public String generateCode(BytecodeMethodSignature aSignature) {
+
+                            StringBuilder theResult = new StringBuilder("return ");
+                            theResult.append(aModuleName);
+                            theResult.append(".");
+                            theResult.append(aName);
+                            theResult.append("(");
+                            BytecodeTypeRef[] theArguments = aSignature.getArguments();
+                            for (int i=0;i<theArguments.length;i++) {
+                                if (i>0) {
+                                    theResult.append(",");
+                                }
+                                theResult.append("p" + (i + 1));
+                            }
+                            theResult.append(")");
+                            return theResult.toString();
+                        }
+                    };
+                }
+            };
         }
         return theModule;
     }

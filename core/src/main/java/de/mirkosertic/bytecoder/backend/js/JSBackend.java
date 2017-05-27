@@ -408,7 +408,7 @@ public class JSBackend {
                     JSFunction theFunction = theModule.resolveFunction(theImportAnnotation.getElementValueByName("name").stringValue());
                     theWriter.println();
                     theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
-                    theWriter.println("         " + theFunction.generateCode());
+                    theWriter.println("         " + theFunction.generateCode(theCurrentMethodSignature));
                     theWriter.println("    },");
                     return;
                 }
