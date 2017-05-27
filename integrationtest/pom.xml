@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>bytecoder-mavenplugin</artifactId>
+            <artifactId>bytecoder-core</artifactId>
         </dependency>
 
         <dependency>
@@ -58,6 +58,27 @@
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-a-war</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>war</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <webResources>
+                        <webResource>
+                            <directory>${project.build.directory}/bytecoder</directory>
+                        </webResource>
+                    </webResources>
+                </configuration>
             </plugin>
         </plugins>
     </build>
