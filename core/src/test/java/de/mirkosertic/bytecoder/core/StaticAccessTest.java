@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -30,9 +29,9 @@ public class StaticAccessTest {
     }
 
     @Test
-    public void testStaticGetAndSet() throws TRuntimeException {
+    public void testStaticGetAndSet() {
         StaticClassWithStuffInside.member = 12;
         int theResult = StaticClassWithStuffInside.member;
-        TAssert.assertEquals(12, theResult, 0);
+        Assert.assertEquals(12, theResult, 0);
     }
 }

@@ -15,12 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class ArrayTest {
@@ -39,58 +37,58 @@ public class ArrayTest {
     private static Entry[] entries = new Entry[10];
 
     @Test
-    public void testLength() throws TRuntimeException {
-        TAssert.assertEquals(10, bytes.length, 0);
+    public void testLength() {
+        Assert.assertEquals(10, bytes.length, 0);
     }
 
     @Test
-    public void testBytes() throws TRuntimeException {
+    public void testBytes() {
         bytes[4] = (byte) 10;
-        TAssert.assertEquals(10, bytes[4], 0);
-        TAssert.assertEquals(0, bytes[0], 0);
+        Assert.assertEquals(10, bytes[4], 0);
+        Assert.assertEquals(0, bytes[0], 0);
     }
 
     @Test
-    public void testShorts() throws TRuntimeException {
+    public void testShorts() {
         shorts[4] = (short) 10;
-        TAssert.assertEquals(10, shorts[4], 0);
-        TAssert.assertEquals(0, shorts[0], 0);
+        Assert.assertEquals(10, shorts[4], 0);
+        Assert.assertEquals(0, shorts[0], 0);
     }
 
     @Test
-    public void testChars() throws TRuntimeException {
+    public void testChars() {
         chars[4] = (char) 10;
-        TAssert.assertEquals(10, chars[4], 0);
-        TAssert.assertEquals(0, chars[0], 0);
+        Assert.assertEquals(10, chars[4], 0);
+        Assert.assertEquals(0, chars[0], 0);
     }
 
     @Test
-    public void testInts() throws TRuntimeException {
+    public void testInts() {
         ints[4] = (int) 10;
-        TAssert.assertEquals(10, ints[4], 0);
-        TAssert.assertEquals(0, ints[0], 0);
+        Assert.assertEquals(10, ints[4], 0);
+        Assert.assertEquals(0, ints[0], 0);
     }
 
     @Test
-    public void testFloats() throws TRuntimeException {
+    public void testFloats() {
         floats[4] = (float) 10;
-        TAssert.assertEquals(10, floats[4], 0);
-        TAssert.assertEquals(0, floats[0], 0);
+        Assert.assertEquals(10, floats[4], 0);
+        Assert.assertEquals(0, floats[0], 0);
     }
 
     @Test
-    public void testBooleans() throws TRuntimeException {
+    public void testBooleans() {
         booleans[4] = true;
-        TAssert.assertTrue(booleans[4]);
-        TAssert.assertFalse(booleans[0]);
+        Assert.assertTrue(booleans[4]);
+        Assert.assertFalse(booleans[0]);
     }
 
     @Test
-    public void testEntries() throws TRuntimeException {
+    public void testEntries() {
         Entry theEntry = new Entry();
         theEntry.test = 10;
         entries[4] = theEntry;
-        TAssert.assertEquals(10, entries[4].test, 0);
-        TAssert.assertNull(entries[0]);
+        Assert.assertEquals(10, entries[4].test, 0);
+        Assert.assertNull(entries[0]);
     }
 }

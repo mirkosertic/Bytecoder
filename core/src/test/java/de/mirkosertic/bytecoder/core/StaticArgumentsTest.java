@@ -15,12 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class StaticArgumentsTest {
@@ -30,8 +28,8 @@ public class StaticArgumentsTest {
     }
 
     @Test
-    public void testStaticInvocation() throws TRuntimeException {
+    public void testStaticInvocation() {
         int theC = compute(10, 20);
-        TAssert.assertEquals(30, theC, 0);
+        Assert.assertEquals(30, theC, 0);
     }
 }

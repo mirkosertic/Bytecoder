@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,12 +45,12 @@ public class ExceptionHandlerTest {
     }
 
     @Test
-    public void testSimpleExceptionFlow() throws TRuntimeException {
-        TAssert.assertEquals(9f, flowTest(), 0);
+    public void testSimpleExceptionFlow() {
+        Assert.assertEquals(9f, flowTest(), 0);
     }
 
     @Test
-    public void testRethrow() throws TRuntimeException {
+    public void testRethrow() {
         float theCounter = 0;
         try {
             theCounter+= 1;
@@ -63,6 +62,6 @@ public class ExceptionHandlerTest {
             theCounter+=4;
         }
 
-        TAssert.assertEquals(5f, theCounter, 0f);
+        Assert.assertEquals(5f, theCounter, 0f);
     }
 }
