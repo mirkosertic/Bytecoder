@@ -194,6 +194,7 @@ public class JSBackend {
                 theWriter.println();
 
                 theWriter.println("    runtimeClass : {");
+                theWriter.println("        jsType: function() {return " + theJSClassName + ";},");
                 theWriter.println("        clazz: {");
                 theWriter.println("            resolveVirtualMethod: function(aIdentifier) {");
                 theWriter.println("                switch(aIdentifier) {");
@@ -212,6 +213,8 @@ public class JSBackend {
                                 theWriter.println("                        throw 'Not implemented';");
                             } else if ("desiredAssertionStatus".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        return function(callsite) {return false};");
+                            } else if ("getEnumConstants".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                                theWriter.println("                        return function(callsite) {\nvar theType = callsite.jsType();\ntheType.classInitCheck();\n;return theType.staticFields.$VALUES;\n};");
                             } else {
                                 theWriter.println("                        throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
                             }

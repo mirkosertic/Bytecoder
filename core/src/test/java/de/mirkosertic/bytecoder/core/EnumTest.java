@@ -37,4 +37,11 @@ public class EnumTest {
         Assert.assertNotNull(theEnum);
         Assert.assertEquals(1, theEnum.ordinal(), 0);
     }
+
+    @Test
+    public void testValueOf() {
+        Value theEnum = Value.valueOf("THREE");
+        Assert.assertEquals("THREE", theEnum.name());
+        Assert.assertSame(theEnum, Value.THREE);
+    }
 }

@@ -24,4 +24,6 @@ public final class TClass extends TObject {
     }
 
     public native boolean desiredAssertionStatus();
+
+    public native <T> T[] getEnumConstants();
 }
