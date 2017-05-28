@@ -15,9 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionIUSHR extends BytecodeInstruction {
+public class BytecodeInstructionGenericUSHR extends BytecodeInstruction {
 
-    public BytecodeInstructionIUSHR(BytecodeOpcodeAddress aOffset) {
+    private final BytecodePrimitiveTypeRef type;
+
+    public BytecodeInstructionGenericUSHR(BytecodeOpcodeAddress aOffset, BytecodePrimitiveTypeRef aType) {
         super(aOffset);
+        type = aType;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
     }
 }

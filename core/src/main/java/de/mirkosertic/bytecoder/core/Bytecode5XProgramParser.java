@@ -551,11 +551,11 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 124: { // iushr = 124 (0x7c)
-                    theResult.addInstruction(new BytecodeInstructionIUSHR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericUSHR(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 125: { // lushr = 125 (0x7d)
-                    theResult.addInstruction(new BytecodeInstructionLUSHR(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionGenericUSHR(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 126: { // iand = 126 (0x7e)
@@ -657,19 +657,19 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 149: { // fcmpl = 149 (0x95)
-                    theResult.addInstruction(new BytecodeInstructionFCMP(theOpcodeIndex, BytecodeInstructionFCMP.Type.l));
+                    theResult.addInstruction(new BytecodeInstructionGenericCMP(theOpcodeIndex, BytecodeInstructionGenericCMP.Type.l, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 150: { // fcmpg = 150 (0x96)
-                    theResult.addInstruction(new BytecodeInstructionFCMP(theOpcodeIndex, BytecodeInstructionFCMP.Type.g));
+                    theResult.addInstruction(new BytecodeInstructionGenericCMP(theOpcodeIndex, BytecodeInstructionGenericCMP.Type.g, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 151: { // dcmpl = 151 (0x97)
-                    theResult.addInstruction(new BytecodeInstructionDCMP(theOpcodeIndex, BytecodeInstructionDCMP.Type.l));
+                    theResult.addInstruction(new BytecodeInstructionGenericCMP(theOpcodeIndex, BytecodeInstructionGenericCMP.Type.l, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 152: { // dcmpg = 152 (0x98)
-                    theResult.addInstruction(new BytecodeInstructionDCMP(theOpcodeIndex, BytecodeInstructionDCMP.Type.g));
+                    theResult.addInstruction(new BytecodeInstructionGenericCMP(theOpcodeIndex, BytecodeInstructionGenericCMP.Type.g, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 153: { // ifeq = 153 (0x99)

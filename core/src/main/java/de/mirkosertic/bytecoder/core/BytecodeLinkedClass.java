@@ -90,8 +90,14 @@ public class BytecodeLinkedClass {
     }
 
     public Set<BytecodeLinkedClass> getImplementingTypes() {
+        return getImplementingTypes(true, true);
+    }
+
+    public Set<BytecodeLinkedClass> getImplementingTypes(boolean aIncludeSuperClass, boolean aIncludeSelf) {
         Set<BytecodeLinkedClass> theResult = new HashSet<>();
-        theResult.add(this);
+        if (aIncludeSelf) {
+            theResult.add(this);
+        }
         for (BytecodeInterface theInterface : bytecodeClass.getInterfaces()) {
             BytecodeLinkedClass theLinkedOrNull = linkerContext.isLinkedOrNull(theInterface.getClassinfoConstant().getConstant());
             if (theLinkedOrNull != null) {
@@ -99,7 +105,7 @@ public class BytecodeLinkedClass {
             }
             theInterface.getClassinfoConstant().getConstant().stringValue();
         }
-        if (superClass != null) {
+        if (superClass != null && aIncludeSuperClass) {
             theResult.addAll(superClass.getImplementingTypes());
         }
         return theResult;
@@ -163,6 +169,21 @@ public class BytecodeLinkedClass {
         }
     }
 
+    private BytecodeMethod findVirtualMethodIncludingInterfaces(BytecodeClass aClass, String aMethodName, BytecodeMethodSignature aSignature) {
+        BytecodeMethod theMethod = aClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
+        if (theMethod != null) {
+            return theMethod;
+        }
+        for (BytecodeLinkedClass theImplementingType : getImplementingTypes(false, false)) {
+            theMethod = theImplementingType.findVirtualMethodIncludingInterfaces(theImplementingType.bytecodeClass, aMethodName, aSignature);
+            if (theMethod != null) {
+                // Method body not found, but part of implementation, hence implicitly marked abstract
+                return theMethod;
+            }
+        }
+        return null;
+    }
+
     public void linkVirtualMethod(String aMethodName, BytecodeMethodSignature aSignature) {
         try {
             BytecodeObjectTypeRef theClassName = className;
@@ -178,11 +199,15 @@ public class BytecodeLinkedClass {
 
             while(theClass != null) {
 
-                BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                BytecodeMethod theMethod = findVirtualMethodIncludingInterfaces(theClass, aMethodName, aSignature);
                 if (theMethod != null) {
                     if (!theMethod.isClassInitializer()) {
                         BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
                                 .identifierFor(theMethod);
+                        if (linkedMethods.containsKey(theIdentifier)) {
+                            // Already linked, nothing to do
+                            return;
+                        }
                         linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
                     }
                     linkMethodInternal(theMethod, theClass == bytecodeClass);
@@ -197,15 +222,16 @@ public class BytecodeLinkedClass {
 
                 if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
                     theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getSuperClass().getConstant());
+
                     theClass = linkerContext.linkClass(theClassName).bytecodeClass;
                 } else {
                     theClass = null;
                 }
             }
-            throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aSignature);
+            throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aSignature + "in " + className.name());
             // We need to traverse
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error while linking virtual name for " + className.name(), e);
+            throw new IllegalArgumentException("Error while linking virtual method name " + aMethodName + " for " + className.name(), e);
         }
     }
 
@@ -214,6 +240,19 @@ public class BytecodeLinkedClass {
         BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull("<init>", aMethodSignature);
         if (theMethod == null) {
             System.out.println("No constructor with signature " + aMethodSignature + " in " + className.name());
+            return;
+        }
+
+        if (!knownMethods.contains(theMethod)) {
+            linkMethodInternal(theMethod, true);
+        }
+    }
+
+    public void linkPrivateMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
+
+        BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
+        if (theMethod == null) {
+            System.out.println("No method " + aMethodName + " with signature " + aMethodSignature + " in " + className.name());
             return;
         }
 
@@ -304,22 +343,28 @@ public class BytecodeLinkedClass {
         superClass.forEachMemberField(new Consumer<Map.Entry<String, BytecodeField>>() {
             @Override
             public void accept(Map.Entry<String, BytecodeField> aEntry) {
-                if (memberFields.containsKey(aEntry.getKey())) {
-                    return;
+                if (!memberFields.containsKey(aEntry.getKey())) {
+                    memberFields.put(aEntry.getKey(), aEntry.getValue());
                 }
-
-                memberFields.put(aEntry.getKey(), aEntry.getValue());
             }
         });
-        superClass.forEachVirtualMethod(aEntry -> {
-            if (linkedMethods.containsKey(aEntry.getKey())) {
-                // return because already linked
-                return;
-            }
 
-            LinkedMethod theLinktarget = aEntry.getValue();
-            BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
-            linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
+        for (BytecodeLinkedClass theImplementedInterface : getImplementingTypes()) {
+            theImplementedInterface.forEachVirtualMethod(aEntry -> {
+                if (!linkedMethods.containsKey(aEntry.getKey())) {
+                    LinkedMethod theLinktarget = aEntry.getValue();
+                    BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
+                    linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
+                }
+            });
+        }
+
+        superClass.forEachVirtualMethod(aEntry -> {
+            if (!linkedMethods.containsKey(aEntry.getKey())) {
+                LinkedMethod theLinktarget = aEntry.getValue();
+                BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
+                linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
+            }
         });
     }
 }

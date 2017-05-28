@@ -28,100 +28,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
-import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionAALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionAASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInterfaceRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.*;
 
 public class JSBackend {
 
@@ -147,6 +54,10 @@ public class JSBackend {
         theMathModule.registerFunction("cos", new JSFunction("return Math.cos(p1);"));
         theMathModule.registerFunction("sqrt", new JSFunction("return Math.sqrt(p1);"));
         theMathModule.registerFunction("round", new JSFunction("return Math.round(p1);"));
+        theMathModule.registerFunction("NaN", new JSFunction("return NaN;"));
+        theMathModule.registerFunction("atan2", new JSFunction("return Math.atan2(p1, p2);"));
+        theMathModule.registerFunction("max", new JSFunction("return Math.max(p1, p2);"));
+        theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
 
         JSModule theSystemModule = new JSModule();
         theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return new Date().getTime();"));
@@ -302,7 +213,7 @@ public class JSBackend {
                             } else if ("desiredAssertionStatus".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        return function(callsite) {return false};");
                             } else {
-                                throw new IllegalStateException("Cannot link runtime class name " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                                theWriter.println("                        throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
                             }
                         });
 
@@ -863,8 +774,8 @@ public class JSBackend {
                             theWriter.println(theInset + "if (currentStack) {");
                             theWriter.println(theInset + "    " + generateJumpCodeFor(theIf.getJumpTarget()));
                             theWriter.println(theInset + "}");
-                        } else if (theInstruction instanceof BytecodeInstructionFCMP) {
-                            BytecodeInstructionFCMP theCmp = (BytecodeInstructionFCMP) theInstruction;
+                        } else if (theInstruction instanceof BytecodeInstructionGenericCMP) {
+                            BytecodeInstructionGenericCMP theCmp = (BytecodeInstructionGenericCMP) theInstruction;
                             theWriter.println(theInset + "var temp2 = frame.stack.pop();");
                             theWriter.println(theInset + "var temp1 = frame.stack.pop();");
                             theWriter.println(theInset + "if (temp1 > temp2) {");
@@ -893,6 +804,11 @@ public class JSBackend {
                                     theWriter.println(theInset + "frame.stack.push(temp2 / temp1);");
                                     break;
                             }
+                        } else if (theInstruction instanceof BytecodeInstructionGenericUSHR) {
+                            BytecodeInstructionGenericUSHR theShift = (BytecodeInstructionGenericUSHR) theInstruction;
+                            theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
+                            theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
+                            theWriter.println(theInset + "frame.stack.push(theValue1 >>> theValue2);");
                         } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                             BytecodeInstructionGenericREM theRem = (BytecodeInstructionGenericREM) theInstruction;
                             theWriter.println(theInset + "var temp1 = frame.stack.pop();");

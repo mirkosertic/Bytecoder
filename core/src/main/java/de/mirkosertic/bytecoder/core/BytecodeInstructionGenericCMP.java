@@ -15,16 +15,22 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionDCMP extends BytecodeInstruction {
+public class BytecodeInstructionGenericCMP extends BytecodeInstruction {
 
-    public static enum Type {
-        g, l
+    public enum Type {
+        l, g
     }
 
     private final Type type;
+    private final BytecodePrimitiveTypeRef primitiveTypeRef;
 
-    public BytecodeInstructionDCMP(BytecodeOpcodeAddress aOpcodeIndex, Type type) {
+    public BytecodeInstructionGenericCMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType, BytecodePrimitiveTypeRef aTypeRef) {
         super(aOpcodeIndex);
-        this.type = type;
+        type = aType;
+        primitiveTypeRef = aTypeRef;
+    }
+
+    public Type getType() {
+        return type;
     }
 }

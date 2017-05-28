@@ -19,6 +19,10 @@ import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
 
 public class TFloat extends TNumber implements TComparable<TFloat> {
 
+    public static final float POSITIVE_INFINITY = 1 / 0.0f;
+    public static final float NEGATIVE_INFINITY = -POSITIVE_INFINITY;
+    public static final float NaN = POSITIVE_INFINITY - 1; // TODO correct implementation of NAN here
+
     private float floatValue;
 
     @NoExceptionCheck
@@ -69,10 +73,6 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         return false;
     }
 
-    public static int floatToIntBits(float aFloat) {
-        return 0;
-    }
-
     @Override
     public float floatValue() {
         return floatValue;
@@ -101,5 +101,81 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
     @Override
     public double doubleValue() {
         return floatValue;
+    }
+
+    private static float binaryExponent(int n) {
+        float result = 1;
+        if (n >= 0) {
+            float d = 2;
+            while (n != 0) {
+                if (n % 2 != 0) {
+                    result *= d;
+                }
+                n /= 2;
+                d *= d;
+            }
+        } else {
+            n = -n;
+            float d = 0.5f;
+            while (n != 0) {
+                if (n % 2 != 0) {
+                    result *= d;
+                }
+                n /= 2;
+                d *= d;
+            }
+        }
+        return result;
+    }
+
+    public static int floatToRawIntBits(float value) {
+        return floatToIntBits(value);
+    }
+
+    public static int floatToIntBits(float value) {
+        if (value == POSITIVE_INFINITY) {
+            return 0x7F800000;
+        } else if (value == NEGATIVE_INFINITY) {
+            return 0xFF800000;
+        } else if (isNaN(value)) {
+            return 0x7FC00000;
+        }
+        float abs = TMath.abs(value);
+        int exp = TMath.getExponent(abs);
+        int negExp = -exp + 23;
+        if (exp < -126) {
+            exp = -127;
+            negExp = 126 + 23;
+        }
+        float doubleMantissa;
+        if (negExp <= 126) {
+            doubleMantissa = abs * binaryExponent(negExp);
+        } else {
+            doubleMantissa = abs * 0x1p126f * binaryExponent(negExp - 126);
+        }
+        int mantissa = (int) (doubleMantissa + 0.5f) & 0x7FFFFF;
+        return mantissa | ((exp + 127) << 23) | (value < 0 || 1 / value == NEGATIVE_INFINITY  ? (1 << 31) : 0);
+    }
+
+    public static float intBitsToFloat(int bits) {
+        if ((bits & 0x7F800000) == 0x7F800000) {
+            if (bits == 0x7F800000) {
+                return POSITIVE_INFINITY;
+            } else if (bits == 0xFF800000) {
+                return NEGATIVE_INFINITY;
+            } else {
+                return NaN;
+            }
+        }
+        boolean negative = (bits & (1 << 31)) != 0;
+        int rawExp = (bits >> 23) & 0xFF;
+        int mantissa = bits & 0x7FFFFF;
+        if (rawExp == 0) {
+            mantissa <<= 1;
+        } else {
+            mantissa |= 1L << 23;
+        }
+        float value = mantissa * binaryExponent(rawExp - 127 - 23);
+        return !negative ? value : -value;
     }
 }

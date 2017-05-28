@@ -71,6 +71,11 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         return this;
     }
 
+    public TStringBuilder append(float aValue) {
+        // TODO: Implement this
+        return this;
+    }
+
     public TStringBuilder append(int aValue) {
         boolean isNegative = false;
         if (aValue < 0) {

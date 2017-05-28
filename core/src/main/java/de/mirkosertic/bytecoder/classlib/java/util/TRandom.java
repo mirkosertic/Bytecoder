@@ -13,22 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-public class BytecodeInstructionFCMP extends BytecodeInstruction {
+import de.mirkosertic.bytecoder.classlib.java.lang.TSerializable;
 
-    public enum Type {
-        l, g
+public class TRandom implements TSerializable {
+
+    public TRandom() {
     }
 
-    private final Type type;
-
-    public BytecodeInstructionFCMP(BytecodeOpcodeAddress aOpcodeIndex, Type aType) {
-        super(aOpcodeIndex);
-        type = aType;
-    }
-
-    public Type getType() {
-        return type;
+    public float nextFloat() {
+        return (float) Math.random();
     }
 }

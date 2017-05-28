@@ -40,7 +40,7 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
             BytecodeTypeRef theSingleType = theTypes[0];
             aLinkerContext.linkTypeRef(theSingleType);
 
-            // We are linking an Array here, so mark the corresponding name here
+            // We are linking an Array here, so mark the corresponding name
             BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
             aLinkerContext.linkVirtualMethod(theTypeRef, theName.stringValue(), theSig);
 

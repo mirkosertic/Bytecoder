@@ -37,7 +37,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
@@ -315,8 +315,8 @@ public class ASTGenerator {
                 BytecodeInstructionGETFIELD thePut = (BytecodeInstructionGETFIELD) theInstruction;
                 ASTValue theReference = aGenerationResult.popAndStoreToLocal();
                 aGenerationResult.push(new ASTGetField(theReference, thePut.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
-            } else if (theInstruction instanceof BytecodeInstructionFCMP) {
-                BytecodeInstructionFCMP theCMP = (BytecodeInstructionFCMP) theInstruction;
+            } else if (theInstruction instanceof BytecodeInstructionGenericCMP) {
+                BytecodeInstructionGenericCMP theCMP = (BytecodeInstructionGenericCMP) theInstruction;
                 ASTValue theValue2 = aGenerationResult.popAndStoreToLocal();
                 ASTValue theValue1 = aGenerationResult.popAndStoreToLocal();
                 aGenerationResult.push(new ASTFloatCompare(theValue1, theValue2, theCMP.getType()));

@@ -35,7 +35,7 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
             aLinkerContext.linkConstructorInvocation(BytecodeObjectTypeRef.fromUtf8Constant(theClassName),
                     theSig);
         } else {
-            aLinkerContext.linkVirtualMethod(BytecodeObjectTypeRef.fromUtf8Constant(theClassName),
+            aLinkerContext.linkPrivateMethod(BytecodeObjectTypeRef.fromUtf8Constant(theClassName),
                     theName.stringValue(), theSig);
         }
     }

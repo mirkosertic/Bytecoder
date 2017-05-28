@@ -15,15 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ast;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
 
 public class ASTFloatCompare extends ASTValue {
 
     private final ASTValue value1;
     private final ASTValue value2;
-    private final BytecodeInstructionFCMP.Type type;
+    private final BytecodeInstructionGenericCMP.Type type;
 
-    public ASTFloatCompare(ASTValue aValue2, ASTValue aValue1, BytecodeInstructionFCMP.Type aType) {
+    public ASTFloatCompare(ASTValue aValue2, ASTValue aValue1, BytecodeInstructionGenericCMP.Type aType) {
         value1 = aValue1;
         value2 = aValue2;
         type = aType;
@@ -37,7 +37,7 @@ public class ASTFloatCompare extends ASTValue {
         return value2;
     }
 
-    public BytecodeInstructionFCMP.Type getType() {
+    public BytecodeInstructionGenericCMP.Type getType() {
         return type;
     }
 }
