@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,44 +36,44 @@ public class PrimitivesTest {
     }
 
     @Test
-    public void testPrimivites() throws TRuntimeException {
+    public void testPrimivites() {
         Container theContainer = new Container();
-        TAssert.assertEquals(10, theContainer.intValue.intValue(), 0);
-        TAssert.assertEquals(10, theContainer.intValue.byteValue(), 0);
-        TAssert.assertEquals(10, theContainer.intValue.floatValue(), 0);
-        TAssert.assertEquals(10, theContainer.intValue.shortValue(), 0);
+        Assert.assertEquals(10, theContainer.intValue.intValue(), 0);
+        Assert.assertEquals(10, theContainer.intValue.byteValue(), 0);
+        Assert.assertEquals(10, theContainer.intValue.floatValue(), 0);
+        Assert.assertEquals(10, theContainer.intValue.shortValue(), 0);
 
-        TAssert.assertEquals(11, theContainer.byteValue.byteValue(), 0);
-        TAssert.assertEquals(11, theContainer.byteValue.intValue(), 0);
-        TAssert.assertEquals(11, theContainer.byteValue.shortValue(), 0);
-        TAssert.assertEquals(11, theContainer.byteValue.floatValue(), 0);
+        Assert.assertEquals(11, theContainer.byteValue.byteValue(), 0);
+        Assert.assertEquals(11, theContainer.byteValue.intValue(), 0);
+        Assert.assertEquals(11, theContainer.byteValue.shortValue(), 0);
+        Assert.assertEquals(11, theContainer.byteValue.floatValue(), 0);
 
-        TAssert.assertEquals(12, theContainer.shortValue.shortValue(), 0);
-        TAssert.assertEquals(12, theContainer.shortValue.byteValue(), 0);
-        TAssert.assertEquals(12, theContainer.shortValue.intValue(), 0);
-        TAssert.assertEquals(12, theContainer.shortValue.floatValue(), 0);
+        Assert.assertEquals(12, theContainer.shortValue.shortValue(), 0);
+        Assert.assertEquals(12, theContainer.shortValue.byteValue(), 0);
+        Assert.assertEquals(12, theContainer.shortValue.intValue(), 0);
+        Assert.assertEquals(12, theContainer.shortValue.floatValue(), 0);
 
-        TAssert.assertEquals(13, theContainer.floatValue.shortValue(), 0);
-        TAssert.assertEquals(13, theContainer.floatValue.byteValue(), 0);
-        TAssert.assertEquals(13, theContainer.floatValue.intValue(), 0);
-        TAssert.assertEquals(13, theContainer.floatValue.floatValue(), 0);
+        Assert.assertEquals(13, theContainer.floatValue.shortValue(), 0);
+        Assert.assertEquals(13, theContainer.floatValue.byteValue(), 0);
+        Assert.assertEquals(13, theContainer.floatValue.intValue(), 0);
+        Assert.assertEquals(13, theContainer.floatValue.floatValue(), 0);
 
-        TAssert.assertTrue(theContainer.booleanTrueValue.booleanValue());
-        TAssert.assertFalse(theContainer.booleanFalseValue.booleanValue());
+        Assert.assertTrue(theContainer.booleanTrueValue.booleanValue());
+        Assert.assertFalse(theContainer.booleanFalseValue.booleanValue());
 
     }
 
     @Test
-    public void testLongValue() throws TRuntimeException {
+    public void testLongValue() {
         Long theLong = new Long(13);
         Container theContainer = new Container();
-        TAssert.assertEquals(57236352L, theContainer.longValue.longValue(), 0);
+        Assert.assertEquals(57236352L, theContainer.longValue.longValue(), 0);
     }
 
     @Test
-    public void testDoubleValue() throws TRuntimeException {
+    public void testDoubleValue() {
         Double theDouble = new Double(13);
         Container theContainer = new Container();
-        TAssert.assertEquals(13, (float) theContainer.doubleValue.doubleValue(), 0);
+        Assert.assertEquals(13, (float) theContainer.doubleValue.doubleValue(), 0);
     }
 }

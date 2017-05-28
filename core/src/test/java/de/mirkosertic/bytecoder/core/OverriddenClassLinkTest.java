@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -71,9 +70,9 @@ public class OverriddenClassLinkTest {
     }
 
     @Test
-    public void testOverridden() throws TRuntimeException {
+    public void testOverridden() {
         AbstractClassLinkTest.Instance theInstance = new AbstractClassLinkTest.Instance();
-        TAssert.assertEquals(1, theInstance.get(1).compute(), 0);
-        TAssert.assertEquals(2, theInstance.get(2).compute(), 0);
+        Assert.assertEquals(1, theInstance.get(1).compute(), 0);
+        Assert.assertEquals(2, theInstance.get(2).compute(), 0);
     }
 }

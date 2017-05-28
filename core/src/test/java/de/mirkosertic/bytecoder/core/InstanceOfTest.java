@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -31,14 +30,14 @@ public class InstanceOfTest {
     }
 
     @Test
-    public void testInstanceOf() throws TRuntimeException {
-        TAssert.assertFalse(null instanceof Object);
-        TAssert.assertTrue(new Type1() instanceof Object);
-        TAssert.assertTrue(new Type1() instanceof Type1);
-        TAssert.assertFalse(new Type1() instanceof Type2);
+    public void testInstanceOf() {
+        Assert.assertFalse(null instanceof Object);
+        Assert.assertTrue(new Type1() instanceof Object);
+        Assert.assertTrue(new Type1() instanceof Type1);
+        Assert.assertFalse(new Type1() instanceof Type2);
 
-        TAssert.assertTrue(new Type2() instanceof Object);
-        TAssert.assertTrue(new Type2() instanceof Type1);
-        TAssert.assertTrue(new Type2() instanceof Type2);
+        Assert.assertTrue(new Type2() instanceof Object);
+        Assert.assertTrue(new Type2() instanceof Type1);
+        Assert.assertTrue(new Type2() instanceof Type2);
     }
 }

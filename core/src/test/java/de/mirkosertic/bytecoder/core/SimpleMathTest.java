@@ -15,13 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class SimpleMathTest {
@@ -67,53 +64,53 @@ public class SimpleMathTest {
     }
 
     @Test
-    public void testGetInt() throws TRuntimeException {
-        TAssert.assertEquals(240, getInt(), 0);
+    public void testGetInt() {
+        Assert.assertEquals(240, getInt(), 0);
     }
 
     @Test
-    public void testGetByte() throws TRuntimeException {
-        TAssert.assertEquals(127, getByte(), 0);
+    public void testGetByte() {
+        Assert.assertEquals(127, getByte(), 0);
     }
 
     @Test
-    public void testGetShort() throws TRuntimeException {
-        TAssert.assertEquals(240, getShort(), 0);
+    public void testGetShort() {
+        Assert.assertEquals(240, getShort(), 0);
     }
 
     @Test
-    public void testGetFloat() throws TRuntimeException {
-        TAssert.assertEquals(240, getFloat(), 0);
+    public void testGetFloat() {
+        Assert.assertEquals(240, getFloat(), 0);
     }
 
     @Test
-    public void testAdd() throws TRuntimeException {
+    public void testAdd() {
         int c = sum(10, 20);
-        TAssert.assertEquals(30, c, 0);
+        Assert.assertEquals(30, c, 0);
     }
 
     @Test
-    public void testSub() throws TRuntimeException {
+    public void testSub() {
         int c = sub(10, 20);
-        TAssert.assertEquals(-10, c, 0);
+        Assert.assertEquals(-10, c, 0);
     }
 
     @Test
-    public void testMul() throws TRuntimeException {
+    public void testMul() {
         int c = mul(10, 30);
-        TAssert.assertEquals(300, c, 0);
+        Assert.assertEquals(300, c, 0);
     }
 
     @Test
-    public void testDiv() throws TRuntimeException {
+    public void testDiv() {
         int c = div(100, 5);
-        TAssert.assertEquals(20, c, 0);
+        Assert.assertEquals(20, c, 0);
     }
 
     @Test
-    public void testRemainder() throws TRuntimeException {
+    public void testRemainder() {
         int c = rem(33, 10);
-        TAssert.assertEquals(3, c, 0);
+        Assert.assertEquals(3, c, 0);
     }
 
     @Test

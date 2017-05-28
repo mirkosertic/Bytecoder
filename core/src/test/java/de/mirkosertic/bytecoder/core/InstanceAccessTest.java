@@ -15,12 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class InstanceAccessTest {
@@ -31,10 +29,10 @@ public class InstanceAccessTest {
     }
 
     @Test
-    public void testInstanceGetAndSet() throws TRuntimeException {
+    public void testInstanceGetAndSet() {
         StaticClassWithStuffInside theInstance = new StaticClassWithStuffInside();
         theInstance.member = 12;
         int theResult = theInstance.member;
-        TAssert.assertEquals(12, theResult, 0);
+        Assert.assertEquals(12, theResult, 0);
     }
 }

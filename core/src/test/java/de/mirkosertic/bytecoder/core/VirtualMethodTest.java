@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,19 +38,19 @@ public class VirtualMethodTest {
     }
 
     @Test
-    public void testSimpleThing() throws TRuntimeException {
-        TAssert.assertEquals(0, new SimpleThing().compute(), 0);
+    public void testSimpleThing() {
+        Assert.assertEquals(0, new SimpleThing().compute(), 0);
     }
 
     @Test
-    public void testExtendedThing() throws TRuntimeException {
-        TAssert.assertEquals(10, new ExtendedThing().compute(), 0);
+    public void testExtendedThing() {
+        Assert.assertEquals(10, new ExtendedThing().compute(), 0);
     }
 
     @Test
-    public void testVirtualInvocation() throws TRuntimeException {
+    public void testVirtualInvocation() {
         ExtendedThing theThing = new ExtendedThing();
         SimpleThing theSimple = theThing;
-        TAssert.assertEquals(10, theSimple.compute(), 0);
+        Assert.assertEquals(10, theSimple.compute(), 0);
     }
 }

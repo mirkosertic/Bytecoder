@@ -16,18 +16,20 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class ArgumentsOrderTest {
+public class TypeConversionTest {
 
-    public static int compute(int a, int b, int c) {
-        return a / b * c;
+    public static double getDouble(double avalue) {
+        return avalue + 6.333d;
     }
 
     @Test
-    public void testSimpleComputation()  {
-        int theResult = compute(10, 20, 30);
+    public void testDoubleToByte() {
+        byte theValue = (byte) getDouble(1d);
+        Assert.assertEquals(7, theValue, 0);
     }
 }

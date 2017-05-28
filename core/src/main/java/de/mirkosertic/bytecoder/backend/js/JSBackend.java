@@ -15,10 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -29,6 +25,10 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.*;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 
 public class JSBackend {
 
@@ -214,7 +214,7 @@ public class JSBackend {
                             } else if ("desiredAssertionStatus".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        return function(callsite) {return false};");
                             } else if ("getEnumConstants".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                theWriter.println("                        return function(callsite) {\nvar theType = callsite.jsType();\ntheType.classInitCheck();\n;return theType.staticFields.$VALUES;\n};");
+                                theWriter.println("                        return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
                             } else {
                                 theWriter.println("                        throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
                             }
@@ -957,6 +957,7 @@ public class JSBackend {
                                 theWriter.println(theInset + "frame.stack.push(" + theLong.getLongValue() + ");");
                             } else if (theConstant instanceof BytecodeClassinfoConstant) {
                                 BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
+                                theWriter.println(theInset + toClassName(theClassInfo) + ".classInitCheck();");
                                 theWriter.println(theInset + "frame.stack.push(" + toClassName(theClassInfo) + ".runtimeClass);");
                             } else if (theConstant instanceof BytecodeIntegerConstant) {
                                 BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;

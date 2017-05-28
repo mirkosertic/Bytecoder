@@ -15,12 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class AbstractClassLinkTest {
@@ -53,9 +51,9 @@ public class AbstractClassLinkTest {
     }
 
     @Test
-    public void testLinkAndAbstractInvocation() throws TRuntimeException {
+    public void testLinkAndAbstractInvocation() {
         Instance theInstance = new Instance();
-        TAssert.assertEquals(1, theInstance.get(1).compute(), 0);
-        TAssert.assertEquals(2, theInstance.get(2).compute(), 0);
+        Assert.assertEquals(1, theInstance.get(1).compute(), 0);
+        Assert.assertEquals(2, theInstance.get(2).compute(), 0);
     }
 }
