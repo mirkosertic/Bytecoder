@@ -19,6 +19,8 @@ import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
 
 public class TEnum extends TObject implements TSerializable {
 
+    protected static TEnum[] $VALUES;
+
     private final TString name;
     private final int ordinalNumber;
 
@@ -30,5 +32,14 @@ public class TEnum extends TObject implements TSerializable {
 
     public int ordinal() {
         return ordinalNumber;
+    }
+
+    public static TEnum valueOf(Class aClass, TString aValue) {
+        for (TEnum theEnum : $VALUES) {
+            if (theEnum.name.equals(aValue)) {
+                return theEnum;
+            }
+        }
+        throw new IllegalArgumentException();
     }
 }

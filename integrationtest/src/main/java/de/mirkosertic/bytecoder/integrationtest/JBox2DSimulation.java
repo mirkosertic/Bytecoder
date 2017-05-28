@@ -169,11 +169,13 @@ public class JBox2DSimulation {
     public static void proceedSimulation() {
         long theNow = System.currentTimeMillis();
         scene.calculate();
-        long theDuration = System.currentTimeMillis() - theNow;
-
-        logRuntime((int) theDuration);
 
         render();
+
+        long theDuration = System.currentTimeMillis() - theNow;
+        logRuntime((int) theDuration);
+
+
     }
 
     @Import(module = "canvas", name = "canvasClear")

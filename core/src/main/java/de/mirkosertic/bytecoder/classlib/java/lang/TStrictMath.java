@@ -30,4 +30,7 @@ public class TStrictMath {
 
     @Import(module = "math", name = "round")
     public static native int round(float aFloat);
+
+    @Import(module = "math", name = "atan2")
+    public static native double atan2(double aValue1, double aValue2);
 }

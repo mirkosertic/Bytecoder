@@ -24,7 +24,10 @@ import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
+import org.jbox2d.dynamics.contacts.CircleContact;
+import org.jbox2d.dynamics.contacts.Contact;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
+import org.jbox2d.pooling.IDynamicStack;
 import org.jbox2d.pooling.normal.DefaultWorldPool;
 import org.junit.Assert;
 import org.junit.Test;
@@ -168,11 +171,20 @@ public class JBox2DTest {
         }
     }
 
+    @Test
+    public void testCircleContactStack() {
+        DefaultWorldPool thePool = new DefaultWorldPool(10, 10);
+        IDynamicStack<Contact> theCircleStack = thePool.getCircleContactStack();
+        Contact theContact = theCircleStack.pop();
+        Assert.assertTrue(theContact instanceof CircleContact);
+    }
 
     @Test
     public void testSceneAndRun() {
         Scene theScene = new Scene();
-        theScene.calculate();
+        int period = (int) ((100 + 5000) / 10000);
+        theScene.reel.applyTorque(period % 2 == 0 ? 8f : -8f);
+        theScene.world.step(0.01f, 20, 40);
     }
 
     @Test

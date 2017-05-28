@@ -3,61 +3,71 @@
         <title>Bytecoder JBox2D Performance Test</title>
     </head>
     <body>
+        <canvas id="benchmark-canvas" width="600" height="600"></canvas>
         <script type="text/javascript" src="bytecoder.js"></script>
         <script type="text/javascript">
+            var theCanvas = document.getElementById("benchmark-canvas");
+            var theCanvasContext = theCanvas.getContext("2d");
+
             // Our module for dynamic linking
             var canvas = {
 
                 canvasClear : function() {
-                    console.log("canvasclear");
+                    theCanvasContext.fillStyle = "white";
+                    theCanvasContext.strokeStyke = "grey";
+                    theCanvasContext.fillRect(0, 0, 600, 600);
                 },
 
                 contextSave : function() {
-                    console.log("contextsave");
+                    theCanvasContext.save();
                 },
 
                 contextRestore : function() {
-                    console.log("contextrestore");
+                    theCanvasContext.restore();
                 },
 
                 contextTranslate : function(aX, aY) {
-                    console.log("contexttranslate");
+                    theCanvasContext.translate(aX, aY);
                 },
 
                 contextScale : function(aX, aY) {
-                    console.log("contextscale");
+                    theCanvasContext.scale(aX, aY);
                 },
 
                 contextLineWidth : function(aWidth) {
-                    console.log("contextlinewidth");
+                    theCanvasContext.lineWidth = aWidth;
                 },
 
                 contextRotate : function(aAngleInRadians) {
-                    console.log("contextrotate");
+                    theCanvasContext.rotate(aAngleInRadians);
                 },
 
                 contextBeginPath : function() {
-                    console.log("contextbeginpath");
+                    theCanvasContext.beginPath();
                 },
 
                 contextClosePath : function() {
-                    console.log("contextclosepath");
+                    theCanvasContext.closePath();
                 },
 
                 contextMoveTo: function(aX, aY) {
-                    console.log("contextmoveto");
+                    theCanvasContext.moveTo(aX, aY);
                 },
 
-                contextLineTo : function(faX, aY) {
-                    console.log("contextlineto");
+                contextLineTo : function(aX, aY) {
+                    theCanvasContext.lineTo(aX, aY);
                 },
 
                 contextArc : function(x, y, radius, startAngle, endAngle, anticlockwise) {
-                    console.log("contextarc");
+                    if (anticlockwise == 0) {
+                        theCanvasContext.arc(x, y, radius, startAngle, endAngle, false);
+                    } else {
+                        theCanvasContext.arc(x, y, radius, startAngle, endAngle, true);
+                    }
                 },
 
                 contextStroke : function() {
-                    console.log("contextstroke");
+                    theCanvasContext.stroke();
                 }
             };
 
@@ -67,10 +77,15 @@
                 }
             };
 
+            console.log("Init");
             de_mirkosertic_bytecoder_integrationtest_JBox2DSimulation.VOIDmainA1demirkoserticbytecoderclasslibjavalangTString();
+            console.log("Ready");
 
             var stepFunction = function(timestamp) {
+                console.log("Running simulation step");
                 de_mirkosertic_bytecoder_integrationtest_JBox2DSimulation.VOIDproceedSimulation();
+
+                console.log("done");
                 window.requestAnimationFrame(stepFunction);
             };
 

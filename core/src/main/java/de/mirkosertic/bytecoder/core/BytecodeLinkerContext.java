@@ -78,6 +78,17 @@ public class BytecodeLinkerContext {
                     } else {
                         theLinkedClass.linkVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
                     }
+                } else {
+                    // Brute force: link everything
+                   if (!theMethod.isClassInitializer()) {
+                        if (theMethod.isConstructor()) {
+                            theLinkedClass.linkConstructorInvocation(theMethod.getSignature());
+                        } else if (theMethod.getAccessFlags().isStatic()) {
+                            theLinkedClass.linkStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                        } else {
+                            theLinkedClass.linkVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                        }
+                   }
                 }
             }
 
@@ -107,6 +118,10 @@ public class BytecodeLinkerContext {
 
     public void linkVirtualMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
         linkClass(aTypeRef).linkVirtualMethod(aMethodName, aSignature);
+    }
+
+    public void linkPrivateMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
+        linkClass(aTypeRef).linkPrivateMethod(aMethodName, aSignature);
     }
 
     public void forEachClass(Consumer<Map.Entry<BytecodeObjectTypeRef, BytecodeLinkedClass>> aConsumer) {

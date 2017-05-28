@@ -19,6 +19,14 @@ import de.mirkosertic.bytecoder.annotations.Import;
 
 public class TMath extends TObject {
 
+    private static class FloatExponents {
+        public static float[] exponents = { 0x1p1f, 0x1p2f, 0x1p4f, 0x1p8f, 0x1p16f, 0x1p32f, 0x1p64f };
+        public static float[] negativeExponents = { 0x1p-1f, 0x1p-2f, 0x1p-4f, 0x1p-8f, 0x1p-16f, 0x1p-32f,
+                0x1p-64f };
+        public static float[] negativeExponents2 = { 0x1p-0f, 0x1p-1f, 0x1p-3f, 0x1p-7f, 0x1p-15f, 0x1p-31f,
+                0x1p-63f };
+    }
+
     public static float abs(float a) {
         if (a<0) {
             return -a;
@@ -29,6 +37,9 @@ public class TMath extends TObject {
     @Import(module = "math", name = "ceil")
     public static native double ceil(double aValue);
 
+    @Import(module = "math", name = "NaN")
+    public static native float getNaN();
+
     @Import(module = "math", name = "floor")
     public static native double floor(double aValue);
 
@@ -37,4 +48,44 @@ public class TMath extends TObject {
 
     @Import(module = "math", name = "cos")
     public static native double cos(double aValue);
+
+    @Import(module = "math", name = "random")
+    public static native double random();
+
+    @Import(module = "math", name = "max")
+    public static native long max(long aValue1, long aValue2);
+
+    public static int getExponent(float f) {
+        f = abs(f);
+        int exp = 0;
+        float[] exponents = FloatExponents.exponents;
+        float[] negativeExponents = FloatExponents.negativeExponents;
+        float[] negativeExponents2 = FloatExponents.negativeExponents2;
+        if (f > 1) {
+            int expBit = 1 << (exponents.length - 1);
+            for (int i = exponents.length - 1; i >= 0; --i) {
+                if (f >= exponents[i]) {
+                    f *= negativeExponents[i];
+                    exp |= expBit;
+                }
+                expBit >>>= 1;
+            }
+        } else if (f < 1) {
+            int expBit = 1 << (negativeExponents.length - 1);
+            int offset = 0;
+            if (f < 0x1p-126) {
+                f *= 0x1p23f;
+                offset = 23;
+            }
+            for (int i = negativeExponents2.length - 1; i >= 0; --i) {
+                if (f < negativeExponents2[i]) {
+                    f *= exponents[i];
+                    exp |= expBit;
+                }
+                expBit >>>= 1;
+            }
+            exp = -(exp + offset);
+        }
+        return exp;
+    }
 }
