@@ -42,7 +42,6 @@ public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction impl
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
         BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
-        aLinkerContext.linkVirtualMethod(BytecodeObjectTypeRef.fromUtf8Constant(theConstant),
-                theName.stringValue(), theSig);
+        aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant)).linkVirtualMethod(theName.stringValue(), theSig);
     }
 }

@@ -29,4 +29,10 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
     public BytecodeClassinfoConstant getClassInfoForObjectToCreate() {
         return (BytecodeClassinfoConstant) constantPool.constantByIndex(index - 1);
     }
+
+    @Override
+    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+        BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
+        aLinkerContext.linkClass(theObjectType);
+    }
 }

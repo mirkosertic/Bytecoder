@@ -36,7 +36,6 @@ public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
 
     @Override
     public void performLinking(BytecodeLinkerContext aLinkerContext) {
-
         aLinkerContext.linkClass(getObjectType());
     }
 }

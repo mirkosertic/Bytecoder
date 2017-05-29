@@ -158,6 +158,7 @@ public class JSBackend {
         JSModule theSystemModule = new JSModule();
         theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return new Date().getTime();"));
         theSystemModule.registerFunction("nanoTime", new JSFunction("return new Date().getTime();"));
+        theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
 
         modules.register("math", theMathModule);
         modules.register("system", theSystemModule);
@@ -241,6 +242,17 @@ public class JSBackend {
         theWriter.println("'use strict';");
 
         theWriter.println("var bytecoder = {");
+
+        theWriter.println();
+        theWriter.println("     logByteArrayAsString : function(aArray) { ");
+        theWriter.println("         var theResult = '';");
+        theWriter.println("         for (var i=0;i<aArray.data.length;i++) {");
+        theWriter.println("             theResult += String.fromCharCode(aArray.data[i]);");
+        theWriter.println("         }");
+        theWriter.println("         console.log(theResult);");
+        theWriter.println("     }, ");
+        theWriter.println();
+
         theWriter.println("     newString : function(aByteArray) { ");
 
         BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
@@ -290,7 +302,7 @@ public class JSBackend {
                     theWriter.println("        classInitialized : false,");
                 }
                 aEntry.getValue().forEachStaticField(
-                        aFieldEntry -> theWriter.println("        " + aFieldEntry.getKey() + " : null," ));
+                        aFieldEntry -> theWriter.println("        " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
                 theWriter.println("    },");
                 theWriter.println();
 
@@ -336,7 +348,7 @@ public class JSBackend {
                     theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
                     if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
                         theWriter.println(
-                                "                return " + toClassName(theLinkTarget.getTargetType()) + "." + toMethodName(
+                                "                return " + toClassName(theLinkTarget.getDeclaringType()) + "." + toMethodName(
                                         theLinkTarget.getTargetMethod().getName().stringValue(),
                                         theLinkTarget.getTargetMethod().getSignature()) + ";");
                     } else {
@@ -366,7 +378,7 @@ public class JSBackend {
                     theWriter.println("        " + theJSClassName + ".classInitCheck();");
                 }
                 theWriter.println("        return {data: {");
-                aEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null,"));
+                aEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
                 theWriter.println("        }, clazz: " + toClassName(aEntry.getKey())+ "};");
                 theWriter.println("    },");
                 theWriter.println();
@@ -433,6 +445,9 @@ public class JSBackend {
 
                 theWriter.println();
                 theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+
+                // theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
+
                 theWriter.println("        var frame = {");
                 theWriter.println("            stack : [], // " + theCode.getMaxStack() + " max stack depth");
 
@@ -1036,6 +1051,9 @@ public class JSBackend {
                                 case INT:
                                 case LONG:
                                     theWriter.println(theInset + "frame.stack.push(Math.round(theDouble));");
+                                    break;
+                                case FLOAT:
+                                    theWriter.println(theInset + "frame.stack.push(theDouble);");
                                     break;
                                 default:
                                     theWriter.println(theInset + "frame.stack.push(theDouble);");

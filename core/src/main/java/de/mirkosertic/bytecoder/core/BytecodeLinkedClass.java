@@ -41,16 +41,16 @@ public class BytecodeLinkedClass {
     };
 
     public static class LinkedMethod {
-        private final BytecodeObjectTypeRef targetType;
+        private final BytecodeObjectTypeRef declaringType;
         private final BytecodeMethod targetMethod;
 
-        public LinkedMethod(BytecodeObjectTypeRef aTargetType, BytecodeMethod aTargetMethod) {
-            targetType = aTargetType;
+        public LinkedMethod(BytecodeObjectTypeRef aDeclaringType, BytecodeMethod aTargetMethod) {
+            declaringType = aDeclaringType;
             targetMethod = aTargetMethod;
         }
 
-        public BytecodeObjectTypeRef getTargetType() {
-            return targetType;
+        public BytecodeObjectTypeRef getDeclaringType() {
+            return declaringType;
         }
 
         public BytecodeMethod getTargetMethod() {
@@ -58,12 +58,30 @@ public class BytecodeLinkedClass {
         }
     }
 
+    public static class LinkedField {
+        private final BytecodeObjectTypeRef declaringType;
+        private final BytecodeField field;
+
+        public LinkedField(BytecodeObjectTypeRef aDeclaringType, BytecodeField aField) {
+            this.declaringType = aDeclaringType;
+            this.field = aField;
+        }
+
+        public BytecodeObjectTypeRef getDeclaringType() {
+            return declaringType;
+        }
+
+        public BytecodeField getField() {
+            return field;
+        }
+    }
+
     private final int uniqueId;
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
     private final Map<BytecodeVirtualMethodIdentifier, LinkedMethod> linkedMethods;
-    private final Map<String, BytecodeField> staticFields;
-    private final Map<String, BytecodeField> memberFields;
+    private final Map<String, LinkedField> staticFields;
+    private final Map<String, LinkedField> memberFields;
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
     private final BytecodeLinkedClass superClass;
@@ -121,7 +139,7 @@ public class BytecodeLinkedClass {
 
     public void linkClassInitializer(BytecodeMethod aMethod) {
         classInitializer = aMethod;
-        linkVirtualMethod(aMethod.getName().stringValue(), aMethod.getSignature());
+        linkStaticMethod(aMethod.getName().stringValue(), aMethod.getSignature());
     }
 
     public void linkStaticField(BytecodeUtf8Constant aName) {
@@ -131,8 +149,7 @@ public class BytecodeLinkedClass {
             if (theField == null) {
                 throw new RuntimeException("No field " + aName.stringValue() + " in " + className.name());
             }
-            staticFields.put(theFieldName, theField);
-
+            staticFields.put(theFieldName, new LinkedField(className, theField));
             linkerContext.linkTypeRef(theField.getTypeRef());
         }
     }
@@ -140,18 +157,28 @@ public class BytecodeLinkedClass {
     public void linkField(BytecodeUtf8Constant aName) {
         String theFieldName = aName.stringValue();
         if (!memberFields.containsKey(theFieldName)) {
-            BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
-            if (theField == null) {
-                if (bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                    BytecodeObjectTypeRef theSuperClassName = BytecodeObjectTypeRef.fromUtf8Constant(bytecodeClass.getSuperClass().getConstant());
-                    linkerContext.linkClass(theSuperClassName).linkField(aName);
+
+            BytecodeObjectTypeRef theClassName = className;
+            BytecodeClass theClass = bytecodeClass;
+
+            while(theClass != null) {
+
+                BytecodeField theField = theClass.fieldByName(aName.stringValue());
+                if (theField != null) {
+                    memberFields.put(theFieldName, new LinkedField(theClassName, theField));
+                    linkerContext.linkTypeRef(theField.getTypeRef());
                     return;
+                }
+
+                if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                    theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getSuperClass().getConstant());
+
+                    theClass = linkerContext.linkClass(theClassName).bytecodeClass;
                 } else {
-                    throw new RuntimeException("No field " + aName.stringValue() + " in " + className.name());
+                    theClass = null;
                 }
             }
-            memberFields.put(theFieldName, theField);
-            linkerContext.linkTypeRef(theField.getTypeRef());
+            throw new IllegalArgumentException("No such field : " + aName + " in " + className.name());
         }
     }
 
@@ -193,7 +220,15 @@ public class BytecodeLinkedClass {
 
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
                         .identifierFor("getClass", GET_CLASS_SIGNATURE);
-                linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, GET_CLASS_PLACEHOLDER));
+
+                if (!linkedMethods.containsKey(theIdentifier)) {
+
+                    linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, GET_CLASS_PLACEHOLDER));
+                    // We also have to propagate this to the subclasses
+                    for (BytecodeLinkedClass theSubClass : linkerContext.getSubclassesOf(this)) {
+                        theSubClass.linkVirtualMethod(aMethodName, aSignature);
+                    }
+                }
                 return;
             }
 
@@ -211,10 +246,22 @@ public class BytecodeLinkedClass {
                         linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
                     }
                     linkMethodInternal(theMethod, theClass == bytecodeClass);
-
                     if (theClass != bytecodeClass) {
                         // Superclass methods must also be marked as linked
-                        linkerContext.linkVirtualMethod(theClassName, aMethodName, aSignature);
+                        linkerContext.linkClass(theClassName).linkVirtualMethod(aMethodName, aSignature);
+                    }
+
+                    // Ok, now we know this method is virtual
+                    // We have to propagate it over all known subclasses to make it also reachable
+                    for (BytecodeLinkedClass theSubClass : linkerContext.getSubclassesOf(this)) {
+                        theSubClass.linkVirtualMethod(aMethodName, aSignature);
+                    }
+
+                    // In case this is in interface, we also have to link implementing classes of this interface
+                    if (bytecodeClass.getAccessFlags().isInterface()) {
+                        for (BytecodeLinkedClass theSubClass : linkerContext.getImplementingClassesOf(this)) {
+                            theSubClass.linkVirtualMethod(aMethodName, aSignature);
+                        }
                     }
 
                     return;
@@ -228,7 +275,7 @@ public class BytecodeLinkedClass {
                     theClass = null;
                 }
             }
-            throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aSignature + "in " + className.name());
+            throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aSignature + " in " + className.name());
             // We need to traverse
         } catch (Exception e) {
             throw new IllegalArgumentException("Error while linking virtual method name " + aMethodName + " for " + className.name(), e);
@@ -324,47 +371,15 @@ public class BytecodeLinkedClass {
         knownMethods.forEach(aMethod);
     }
 
-    public void forEachStaticField(Consumer<Map.Entry<String, BytecodeField>> aConsumer) {
+    public void forEachStaticField(Consumer<Map.Entry<String, LinkedField>> aConsumer) {
         staticFields.entrySet().forEach(aConsumer);
     }
 
-    public void forEachMemberField(Consumer<Map.Entry<String, BytecodeField>> aConsumer) {
+    public void forEachMemberField(Consumer<Map.Entry<String, LinkedField>> aConsumer) {
         memberFields.entrySet().forEach(aConsumer);
     }
 
     public boolean hasClassInitializer() {
         return classInitializer != null;
-    }
-
-    public void propagateVirtualMethodsAndFields() {
-        if (superClass == null) {
-            return;
-        }
-        superClass.forEachMemberField(new Consumer<Map.Entry<String, BytecodeField>>() {
-            @Override
-            public void accept(Map.Entry<String, BytecodeField> aEntry) {
-                if (!memberFields.containsKey(aEntry.getKey())) {
-                    memberFields.put(aEntry.getKey(), aEntry.getValue());
-                }
-            }
-        });
-
-        for (BytecodeLinkedClass theImplementedInterface : getImplementingTypes()) {
-            theImplementedInterface.forEachVirtualMethod(aEntry -> {
-                if (!linkedMethods.containsKey(aEntry.getKey())) {
-                    LinkedMethod theLinktarget = aEntry.getValue();
-                    BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
-                    linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
-                }
-            });
-        }
-
-        superClass.forEachVirtualMethod(aEntry -> {
-            if (!linkedMethods.containsKey(aEntry.getKey())) {
-                LinkedMethod theLinktarget = aEntry.getValue();
-                BytecodeMethod theLinkMethod = theLinktarget.getTargetMethod();
-                linkVirtualMethod(theLinkMethod.getName().stringValue(), theLinkMethod.getSignature());
-            }
-        });
     }
 }

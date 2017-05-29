@@ -49,8 +49,7 @@ public class JSCompileTarget {
 
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 
-        theLinkerContext.linkClassMethod(theTypeRef, aMethodName, aSignature);
-        theLinkerContext.propagateVirtualMethodsAndFields();
+        theLinkerContext.linkClass(theTypeRef).linkStaticMethod(aMethodName, aSignature);
 
         return backend.generateCodeFor(theLinkerContext);
     }

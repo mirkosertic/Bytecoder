@@ -32,11 +32,9 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
 
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
         if ("<init>".equals(theName.stringValue())) {
-            aLinkerContext.linkConstructorInvocation(BytecodeObjectTypeRef.fromUtf8Constant(theClassName),
-                    theSig);
+            aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName)).linkConstructorInvocation(theSig);
         } else {
-            aLinkerContext.linkPrivateMethod(BytecodeObjectTypeRef.fromUtf8Constant(theClassName),
-                    theName.stringValue(), theSig);
+            aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName)).linkPrivateMethod(theName.stringValue(), theSig);
         }
     }
 }
