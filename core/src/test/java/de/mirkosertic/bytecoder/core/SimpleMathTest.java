@@ -15,10 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class SimpleMathTest {
@@ -47,8 +48,24 @@ public class SimpleMathTest {
         return a % b;
     }
 
+    public static long longSum(long a, long b) {
+        return a + b;
+    }
+
+    public static double doubleSum(double a, double b) {
+        return a + b;
+    }
+
     public static int getInt() {
         return 240;
+    }
+
+    public static long getLong() {
+        return 240L;
+    }
+
+    public static double getDouble() {
+        return 240.5d;
     }
 
     public static byte getByte() {
@@ -117,5 +134,15 @@ public class SimpleMathTest {
     public void testComputedLength() {
         // Value is 57119.86598277577
         Assert.assertEquals(57120f, LENGTH, 0);
+    }
+
+    @Test
+    public void testLongSum() {
+        Assert.assertEquals(300, longSum(getLong(), 60), 0);
+    }
+
+    @Test
+    public void testDoubleSum() {
+        Assert.assertEquals(300.5d, doubleSum(getDouble(), 60), 0);
     }
 }

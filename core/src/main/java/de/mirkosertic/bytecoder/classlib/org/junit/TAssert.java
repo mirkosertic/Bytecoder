@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.org.junit;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TDouble;
 import de.mirkosertic.bytecoder.classlib.java.lang.TFloat;
 import de.mirkosertic.bytecoder.classlib.java.lang.TMath;
 import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
@@ -50,8 +51,20 @@ public class TAssert {
         }
     }
 
+    public static void assertEquals(String message, double expected, double actual, double delta) throws TRuntimeException {
+        if  (TDouble.compare(expected, actual) != 0) {
+            if (TMath.abs(expected - actual) > delta) {
+                failNotEquals(message, new TDouble(expected), new TDouble(actual));
+            }
+        }
+    }
+
     public static void assertEquals(float expected, float actual, float delta) throws TRuntimeException {
         assertEquals((String)null, expected, actual, delta);
+    }
+
+    public static void assertEquals(double expected, double actual, double delta) throws TRuntimeException {
+        assertEquals(null, expected, actual, delta);
     }
 
     public static void assertTrue(boolean aValue) throws TRuntimeException {

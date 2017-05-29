@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -38,9 +37,13 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
+import de.mirkosertic.bytecoder.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.backend.js.JSCompileTarget;
+import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -117,6 +120,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             JSCompileTarget theCompileTarget = new JSCompileTarget(aCodeType);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
+            BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                    TThrowable.class), new BytecodeTypeRef[0]);
 
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
@@ -126,7 +131,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());\n";
-            theCode += "var theLastException = de_mirkosertic_bytecoder_classlib_ExceptionRethrower.de_mirkosertic_bytecoder_classlib_java_lang_TThrowablegetLastOutcomeOrNullAndReset();\n";
+            theCode += "var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
+                    ExceptionRethrower.class)) + "." + theCompileTarget.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionSignature) + "();\n";
             theCode += "if (theLastException) {\n";
 
             theCode += "var theStringData = theLastException.data.message.data.data.data;\n"
