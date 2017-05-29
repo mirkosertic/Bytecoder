@@ -89,35 +89,40 @@ public class JSASTCodeGenerator {
         }
     }
 
-    private String toClassName(BytecodeClassinfoConstant aTypeRef) {
-        return aTypeRef.getConstant().stringValue().replace("/","_");
-    }
-
-    private String toClassName(BytecodeObjectTypeRef aTypeRef) {
-        return aTypeRef.name().replace(".","_");
-    }
-
     private String typeRefToString(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
-            return thePrimitive.toString();
+            return thePrimitive.name();
         }
         if (aTypeRef.isArray()) {
             BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
             return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
         }
         BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
-        return theObjectRef.name().replace(".", "");
+        return toClassName(theObjectRef);
     }
 
-    private String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
-        String theName = aSignature.getReturnType().name().replace(".","_");
+    public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
+        String theName = typeRefToString(aSignature.getReturnType());
         theName += aMethodName.replace("<", "").replace(">", "");
 
         for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
             theName += typeRefToString(theTypeRef);
         }
         return theName;
+    }
+
+    private String toClassNameInternal(String aClassName) {
+        int p = aClassName.lastIndexOf(".");
+        return aClassName.substring(p + 1);
+    }
+
+    public String toClassName(BytecodeObjectTypeRef aTypeRef) {
+        return toClassNameInternal(aTypeRef.name());
+    }
+
+    public String toClassName(BytecodeClassinfoConstant aTypeRef) {
+        return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
     }
 
     public String toArray(byte[] aData) {

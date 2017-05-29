@@ -167,4 +167,14 @@ public class BytecodeLinkerContext {
         }
         return theClasses;
     }
+
+    public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
+        List<BytecodeLinkedClass> theResult = new ArrayList<>();
+        for (BytecodeLinkedClass theClass : linkedClasses.values()) {
+            if (theClass.containsVirtualMethod(aIdentifier)) {
+                theResult.add(theClass);
+            }
+        }
+        return theResult;
+    }
 }
