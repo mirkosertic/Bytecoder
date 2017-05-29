@@ -19,6 +19,9 @@ import de.mirkosertic.bytecoder.annotations.Import;
 
 public class TMath extends TObject {
 
+    public static final double E = 2.7182818284590452354;
+    public static final double PI = 3.14159265358979323846;
+
     private static class FloatExponents {
         public static float[] exponents = { 0x1p1f, 0x1p2f, 0x1p4f, 0x1p8f, 0x1p16f, 0x1p32f, 0x1p64f };
         public static float[] negativeExponents = { 0x1p-1f, 0x1p-2f, 0x1p-4f, 0x1p-8f, 0x1p-16f, 0x1p-32f,
@@ -28,6 +31,13 @@ public class TMath extends TObject {
     }
 
     public static float abs(float a) {
+        if (a<0) {
+            return -a;
+        }
+        return a;
+    }
+
+    public static double abs(double a) {
         if (a<0) {
             return -a;
         }

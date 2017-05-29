@@ -15,6 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+import java.util.TreeMap;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -24,11 +30,101 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.*;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
+import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionAALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionAASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericUSHR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInterfaceRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
 public class JSBackend {
 
@@ -70,18 +166,18 @@ public class JSBackend {
     private String typeRefToString(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
-            return thePrimitive.toString();
+            return thePrimitive.name();
         }
         if (aTypeRef.isArray()) {
             BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
             return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
         }
         BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
-        return theObjectRef.name().replace(".", "");
+        return toClassName(theObjectRef);
     }
 
     public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
-        String theName = aSignature.getReturnType().name().replace(".","_");
+        String theName = typeRefToString(aSignature.getReturnType());
         theName += aMethodName.replace("<", "").replace(">", "");
 
         for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
@@ -90,12 +186,17 @@ public class JSBackend {
         return theName;
     }
 
+    private String toClassNameInternal(String aClassName) {
+        int p = aClassName.lastIndexOf(".");
+        return aClassName.substring(p + 1);
+    }
+
     public String toClassName(BytecodeObjectTypeRef aTypeRef) {
-        return aTypeRef.name().replace(".","_");
+        return toClassNameInternal(aTypeRef.name());
     }
 
     public String toClassName(BytecodeClassinfoConstant aTypeRef) {
-        return aTypeRef.getConstant().stringValue().replace("/","_");
+        return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
     }
 
     public String toArray(byte[] aData) {
@@ -298,11 +399,12 @@ public class JSBackend {
                 }
 
                 BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
+                BytecodeTypeRef[] theMethodArguments = theCurrentMethodSignature.getArguments();
                 StringBuffer theArguments = new StringBuffer();
                 if (!aMethod.getAccessFlags().isStatic()) {
                     theArguments.append("thisRef");
                 }
-                for (int i=1;i<=theCurrentMethodSignature.getArguments().length;i++) {
+                for (int i=1;i<=theMethodArguments.length;i++) {
                     if (theArguments.length() > 0) {
                         theArguments.append(",");
                     }
@@ -333,23 +435,34 @@ public class JSBackend {
                 theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                 theWriter.println("        var frame = {");
                 theWriter.println("            stack : [], // " + theCode.getMaxStack() + " max stack depth");
-                if (aMethod.getAccessFlags().isStatic()) {
-                    for (int i=1;i<=theCode.getMaxLocals();i++) {
-                        if (i<=theCurrentMethodSignature.getArguments().length) {
-                            theWriter.println("            local" + i + " : p" + i + ",");
-                        } else {
-                            theWriter.println("            local" + i + " : null,");
-                        }
+
+                Map<String, String> theLocalVariables = new TreeMap<>();
+                int p = 1;
+                if (!aMethod.getAccessFlags().isStatic()) {
+                    theLocalVariables.put("local1", "thisRef");
+                    p++;
+                }
+
+                for (int i=0;i<theMethodArguments.length;i++) {
+                    BytecodeTypeRef theRef = theMethodArguments[i];
+                    if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
+                        theLocalVariables.put("local" + p, "p" + (i+1));
+                        p++;
+                        theLocalVariables.put("local" + p, "null");
+                        p++;
+                    } else {
+                        theLocalVariables.put("local" + p, "p" + (i+1));
+                        p++;
                     }
-                } else {
-                    theWriter.println("            local1 : thisRef,");
-                    for (int i=2;i<=theCode.getMaxLocals();i++) {
-                        if (i-1 <=theCurrentMethodSignature.getArguments().length) {
-                            theWriter.println("            local" + i + " : p" + (i - 1) + ",");
-                        } else {
-                            theWriter.println("            local" + i + " : null,");
-                        }
-                    }
+                }
+
+                while(p<=theCode.getMaxStack()) {
+                    theLocalVariables.put("local" + p, "null");
+                    p++;
+                }
+
+                for (Map.Entry<String, String> theEntry : theLocalVariables.entrySet()) {
+                    theWriter.println("            " + theEntry.getKey() + " : "  + theEntry.getValue() + ",");
                 }
 
                 theWriter.println("        };");
