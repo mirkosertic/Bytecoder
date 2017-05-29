@@ -159,9 +159,10 @@ public class JSBackend {
         theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
 
         JSModule theSystemModule = new JSModule();
-        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return new Date().getTime();"));
-        theSystemModule.registerFunction("nanoTime", new JSFunction("return new Date().getTime() * 1000000;"));
+        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
+        theSystemModule.registerFunction("nanoTime", new JSFunction("return Date.now() * 1000000;"));
         theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
+        theSystemModule.registerFunction("logDebug", new JSFunction("bytecoder.logDebug(p1);"));
 
         modules.register("math", theMathModule);
         modules.register("system", theSystemModule);
@@ -248,6 +249,11 @@ public class JSBackend {
         theWriter.println("'use strict';");
 
         theWriter.println("var bytecoder = {");
+
+        theWriter.println();
+        theWriter.println("     logDebug : function(aValue) { ");
+        theWriter.println("         console.log(aValue);");
+        theWriter.println("     }, ");
 
         theWriter.println();
         theWriter.println("     logByteArrayAsString : function(aArray) { ");

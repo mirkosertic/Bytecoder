@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
+import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 
 public class TPrintStream extends TFilterOutputStream {
@@ -25,6 +26,13 @@ public class TPrintStream extends TFilterOutputStream {
 
     public TPrintStream(TOutputStream aTarget) {
         target = aTarget;
+    }
+
+    @Import(module = "system", name = "logDebug")
+    public native void logDebug(long aValue);
+
+    public void println(long aValue) {
+        logDebug(aValue);
     }
 
     public void println(TString aValue) throws TIOException {

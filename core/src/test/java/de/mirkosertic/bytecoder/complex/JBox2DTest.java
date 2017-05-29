@@ -66,7 +66,7 @@ public class JBox2DTest {
 
                 @Override
                 public void endContact(Contact contact) {
-                    System.out.println("Begin contact");
+                    System.out.println("end contact");
                 }
 
                 @Override
@@ -206,7 +206,7 @@ public class JBox2DTest {
     public void testSceneAndRun() {
         Scene theScene = new Scene();
         long startTime = 0;
-        long currentTime = 800;
+        long currentTime = 600;
         long lastCalculated = 500;
         int timeToCalculate = (int) (currentTime - lastCalculated);
         long relativeTime = currentTime - startTime;
