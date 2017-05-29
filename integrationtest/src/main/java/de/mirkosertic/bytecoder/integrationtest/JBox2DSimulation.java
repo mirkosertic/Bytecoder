@@ -45,7 +45,7 @@ public class JBox2DSimulation {
             initAxis();
             initReel();
             joinReelToAxis();
-            initBalls();
+            //initBalls();
             lastCalculated = System.currentTimeMillis();
             startTime = lastCalculated;
         }
@@ -147,13 +147,18 @@ public class JBox2DSimulation {
             long currentTime = System.currentTimeMillis();
             int timeToCalculate = (int) (currentTime - lastCalculated);
             long relativeTime = currentTime - startTime;
+            System.out.println("Start of calculation");
             while (timeToCalculate > 10) {
+                System.out.println("Single 10ms step");
                 int period = (int) ((relativeTime + 5000) / 10000);
+                System.out.println("Torque");
                 reel.applyTorque(period % 2 == 0 ? 8f : -8f);
+                System.out.println("World simulation");
                 world.step(0.01f, 20, 40);
                 lastCalculated += 10;
                 timeToCalculate -= 10;
             }
+            System.out.println("End");
         }
 
         public int timeUntilNextStep() {

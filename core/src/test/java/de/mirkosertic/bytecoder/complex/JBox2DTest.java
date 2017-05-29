@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.complex;
 
+import org.jbox2d.callbacks.ContactImpulse;
+import org.jbox2d.callbacks.ContactListener;
+import org.jbox2d.collision.Manifold;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.ShapeType;
@@ -54,6 +57,26 @@ public class JBox2DTest {
             initBalls();
             lastCalculated = System.currentTimeMillis();
             startTime = lastCalculated;
+
+            world.setContactListener(new ContactListener() {
+                @Override
+                public void beginContact(Contact contact) {
+                    System.out.println("Begin contact");
+                }
+
+                @Override
+                public void endContact(Contact contact) {
+                    System.out.println("Begin contact");
+                }
+
+                @Override
+                public void preSolve(Contact contact, Manifold oldManifold) {
+                }
+
+                @Override
+                public void postSolve(Contact contact, ContactImpulse impulse) {
+                }
+            });
         }
 
         private void initAxis() {
@@ -182,9 +205,20 @@ public class JBox2DTest {
     @Test
     public void testSceneAndRun() {
         Scene theScene = new Scene();
-        int period = (int) ((100 + 5000) / 10000);
-        theScene.reel.applyTorque(period % 2 == 0 ? 8f : -8f);
-        theScene.world.step(0.01f, 20, 40);
+        long startTime = 0;
+        long currentTime = 800;
+        long lastCalculated = 500;
+        int timeToCalculate = (int) (currentTime - lastCalculated);
+        long relativeTime = currentTime - startTime;
+        while (timeToCalculate > 10) {
+            System.out.println("Calculating");
+            int period = (int) ((relativeTime + 5000) / 10000);
+            theScene.reel.applyTorque(period % 2 == 0 ? 8f : -8f);
+            theScene.world.step(0.01f, 20, 40);
+            lastCalculated += 10;
+            timeToCalculate -= 10;
+            System.out.println("done");
+        }
     }
 
     @Test

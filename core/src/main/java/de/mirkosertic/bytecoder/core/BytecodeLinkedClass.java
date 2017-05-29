@@ -382,4 +382,8 @@ public class BytecodeLinkedClass {
     public boolean hasClassInitializer() {
         return classInitializer != null;
     }
+
+    public boolean containsVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
+        return linkedMethods.containsKey(aIdentifier);
+    }
 }

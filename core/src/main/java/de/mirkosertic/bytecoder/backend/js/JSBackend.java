@@ -18,8 +18,11 @@ package de.mirkosertic.bytecoder.backend.js;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
@@ -157,7 +160,7 @@ public class JSBackend {
 
         JSModule theSystemModule = new JSModule();
         theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return new Date().getTime();"));
-        theSystemModule.registerFunction("nanoTime", new JSFunction("return new Date().getTime();"));
+        theSystemModule.registerFunction("nanoTime", new JSFunction("return new Date().getTime() * 1000000;"));
         theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
 
         modules.register("math", theMathModule);
@@ -226,6 +229,9 @@ public class JSBackend {
     }
 
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
+
+        final AtomicLong theNumberOfVirtualCalls = new AtomicLong(0);
+        final AtomicLong theNumberOfRealVirtualCalls = new AtomicLong(0);
 
         ASTGenerator theAST = new ASTGenerator();
         JSASTCodeGenerator theASTCodeGenerator = new JSASTCodeGenerator(aLinkerContext);
@@ -446,7 +452,7 @@ public class JSBackend {
                 theWriter.println();
                 theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
 
-                // theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
+                //theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
 
                 theWriter.println("        var frame = {");
                 theWriter.println("            stack : [], // " + theCode.getMaxStack() + " max stack depth");
@@ -675,7 +681,17 @@ public class JSBackend {
                                 theWriter.print(theInset + "frame.stack.push(");
                             }
 
-                            theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
+                            theNumberOfVirtualCalls.incrementAndGet();
+                            List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
+                            if (theLinkedClasses.size() > 1 || BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()).name().equals(TClass.class.getName())) {
+                                theNumberOfRealVirtualCalls.incrementAndGet();
+                                // More than one class implementing the method, we use a virtual call
+                                theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
+                            } else {
+                                // Only one class, we use a direct call
+                                theWriter.print(toClassName(theLinkedClasses.get(0).getClassName()) + "." + toMethodName(theName.stringValue(), theSig) +  "(callsite");
+                            }
+
                             for (int i=1;i<=theInvokeArguments.length;i++) {
                                 theWriter.print(",");
                                 theWriter.print("arg" + i);
@@ -1225,6 +1241,9 @@ public class JSBackend {
         });
 
         theWriter.flush();
+
+        System.out.println("Total number of virtual method calls : " + theNumberOfVirtualCalls.get());
+        System.out.println("Remaining virtual method calls " + theNumberOfRealVirtualCalls.get());
 
         return theStrWriter.toString();
     }
