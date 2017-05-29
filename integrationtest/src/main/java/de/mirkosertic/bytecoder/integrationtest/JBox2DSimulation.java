@@ -45,7 +45,7 @@ public class JBox2DSimulation {
             initAxis();
             initReel();
             joinReelToAxis();
-            //initBalls();
+            initBalls();
             lastCalculated = System.currentTimeMillis();
             startTime = lastCalculated;
         }
@@ -100,7 +100,7 @@ public class JBox2DSimulation {
             float ballRadius = 0.15f;
 
             BodyDef ballDef = new BodyDef();
-            ballDef.type = BodyType.DYNAMIC;
+            ballDef.type = BodyType.STATIC;
             FixtureDef fixtureDef = new FixtureDef();
             fixtureDef.friction = 0.3f;
             fixtureDef.restitution = 0.3f;
@@ -148,7 +148,10 @@ public class JBox2DSimulation {
             int timeToCalculate = (int) (currentTime - lastCalculated);
             long relativeTime = currentTime - startTime;
             System.out.println("Start of calculation");
-            while (timeToCalculate > 10) {
+            System.out.println(currentTime);
+            if (timeToCalculate > 10) {
+                System.out.println("Need to run");
+                System.out.println((long) timeToCalculate);
                 System.out.println("Single 10ms step");
                 int period = (int) ((relativeTime + 5000) / 10000);
                 System.out.println("Torque");
