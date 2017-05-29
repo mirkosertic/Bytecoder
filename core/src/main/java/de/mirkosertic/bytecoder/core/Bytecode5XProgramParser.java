@@ -637,7 +637,7 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 144: { // d2f = 144 (0x90)
-                    theResult.addInstruction(new BytecodeInstructionD2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
+                    theResult.addInstruction(new BytecodeInstructionD2Generic(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 145: { // i2b = 145 (0x91)

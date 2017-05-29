@@ -42,6 +42,10 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         return data;
     }
 
+    public char charAt(int aIndex) {
+        return (char) data[aIndex];
+    }
+
     @Override
     public int compareTo(TString o) {
         return 0;

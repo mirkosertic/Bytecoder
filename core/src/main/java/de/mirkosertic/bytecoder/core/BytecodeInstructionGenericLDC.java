@@ -35,13 +35,17 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
 
     @Override
     public void performLinking(BytecodeLinkerContext aLinkerContext) {
-        if (constant() instanceof BytecodeStringConstant) {
+        BytecodeConstant theConstant = constant();
+        if (theConstant instanceof BytecodeStringConstant) {
             aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
 
             BytecodeObjectTypeRef theObjectTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
-            aLinkerContext.linkConstructorInvocation(theObjectTypeRef,
-                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+            aLinkerContext.linkClass(theObjectTypeRef).linkConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                             new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+        }
+        if (theConstant instanceof BytecodeClassinfoConstant) {
+            BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
+            aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
         }
     }
 }

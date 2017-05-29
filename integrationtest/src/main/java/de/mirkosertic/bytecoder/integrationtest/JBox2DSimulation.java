@@ -15,15 +15,21 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
-import de.mirkosertic.bytecoder.annotations.Export;
-import de.mirkosertic.bytecoder.annotations.Import;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.Shape;
 import org.jbox2d.collision.shapes.ShapeType;
 import org.jbox2d.common.Vec2;
-import org.jbox2d.dynamics.*;
+import org.jbox2d.dynamics.Body;
+import org.jbox2d.dynamics.BodyDef;
+import org.jbox2d.dynamics.BodyType;
+import org.jbox2d.dynamics.Fixture;
+import org.jbox2d.dynamics.FixtureDef;
+import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
+
+import de.mirkosertic.bytecoder.annotations.Export;
+import de.mirkosertic.bytecoder.annotations.Import;
 
 public class JBox2DSimulation {
 
@@ -174,8 +180,6 @@ public class JBox2DSimulation {
 
         long theDuration = System.currentTimeMillis() - theNow;
         logRuntime((int) theDuration);
-
-
     }
 
     @Import(module = "canvas", name = "canvasClear")

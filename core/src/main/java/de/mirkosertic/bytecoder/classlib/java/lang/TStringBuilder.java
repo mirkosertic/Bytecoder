@@ -71,6 +71,11 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         return this;
     }
 
+    public TStringBuilder append(char aValue) {
+        internalAdd(new byte[] {(byte) aValue});
+        return this;
+    }
+
     public TStringBuilder append(float aValue) {
         // TODO: Implement this
         return this;

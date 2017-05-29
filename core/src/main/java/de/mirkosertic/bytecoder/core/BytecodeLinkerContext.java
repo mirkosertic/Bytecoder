@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.annotations.Export;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import de.mirkosertic.bytecoder.annotations.Export;
 
 public class BytecodeLinkerContext {
 
@@ -78,17 +78,6 @@ public class BytecodeLinkerContext {
                     } else {
                         theLinkedClass.linkVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
                     }
-                } else {
-                    // Brute force: link everything
-                   if (!theMethod.isClassInitializer()) {
-                        if (theMethod.isConstructor()) {
-                            theLinkedClass.linkConstructorInvocation(theMethod.getSignature());
-                        } else if (theMethod.getAccessFlags().isStatic()) {
-                            theLinkedClass.linkStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature());
-                        } else {
-                            theLinkedClass.linkVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
-                        }
-                   }
                 }
             }
 
@@ -102,26 +91,26 @@ public class BytecodeLinkerContext {
                 linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
+            // Ok, we know that this class is newly linked
+            // We automatically link every virtual method for the superclasses and implementing interfaces
+            final BytecodeLinkedClass theFinalClass = theLinkedClass;
+            for (BytecodeLinkedClass theSuperClassOrType : theLinkedClass.getImplementingTypes(true, false)) {
+                // Makre sure all fields are known
+                theSuperClassOrType.forEachMemberField(
+                        aEntry -> theFinalClass.linkField(new BytecodeUtf8Constant(aEntry.getKey())));
+
+                // Also link the virtual methods
+                theSuperClassOrType.forEachVirtualMethod(
+                        aEntry -> {
+                            BytecodeMethod theMethod1 = aEntry.getValue().getTargetMethod();
+                            theFinalClass.linkVirtualMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
+                        });
+            }
+
             return theLinkedClass;
         } catch (Exception e) {
             throw new RuntimeException("Error linking class " + aTypeRef.name(), e);
         }
-    }
-
-    public void linkClassMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkStaticMethod(aMethodName, aSignature);
-    }
-
-    public void linkConstructorInvocation(BytecodeObjectTypeRef aTypeRef, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkConstructorInvocation(aSignature);
-    }
-
-    public void linkVirtualMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkVirtualMethod(aMethodName, aSignature);
-    }
-
-    public void linkPrivateMethod(BytecodeObjectTypeRef aTypeRef, String aMethodName, BytecodeMethodSignature aSignature) {
-        linkClass(aTypeRef).linkPrivateMethod(aMethodName, aSignature);
     }
 
     public void forEachClass(Consumer<Map.Entry<BytecodeObjectTypeRef, BytecodeLinkedClass>> aConsumer) {
@@ -138,37 +127,6 @@ public class BytecodeLinkerContext {
         return theResult;
     }
 
-    private void propagateVirtualMethodsAndFields(BytecodeLinkedClass aClass) {
-
-        aClass.propagateVirtualMethodsAndFields();
-
-        List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(aClass);
-        for (BytecodeLinkedClass theEntry : theClasses) {
-            propagateVirtualMethodsAndFields(theEntry);
-        }
-    }
-
-    public void propagateVirtualMethodsAndFields() {
-
-        Set<BytecodeLinkedClass> theKnownClasses = new HashSet<>(linkedClasses.values());
-
-        // First, we search for used interface and link the used methods to all classes implementing this interface
-        for (BytecodeLinkedClass theLinkedClass : theKnownClasses) {
-            if (theLinkedClass.getAccessFlags().isInterface()) {
-                for (BytecodeLinkedClass theOtherClass : theKnownClasses) {
-                    if (theOtherClass.getImplementingTypes().contains(theLinkedClass)) {
-                        theLinkedClass.forEachMethod(bytecodeMethod -> theOtherClass.linkVirtualMethod(bytecodeMethod.getName().stringValue(), bytecodeMethod.getSignature()));
-                    }
-                }
-            }
-        }
-
-        List<BytecodeLinkedClass> theClasses = findLinkedClassWithParent(null);
-        for (BytecodeLinkedClass theEntry : theClasses) {
-            propagateVirtualMethodsAndFields(theEntry);
-        }
-    }
-
     public void linkTypeRef(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isVoid()) {
             return;
@@ -183,5 +141,30 @@ public class BytecodeLinkerContext {
         }
         BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
         linkClass(theTypeRef);
+    }
+
+    public void addSubclassesOfToSet(Set<BytecodeLinkedClass> aTarget, BytecodeLinkedClass aSuperClass) {
+        for (BytecodeLinkedClass theClass : linkedClasses.values()) {
+            if (theClass.getSuperClass() == aSuperClass) {
+                aTarget.add(theClass);
+                aTarget.addAll(getSubclassesOf(theClass));
+            }
+        }
+    }
+
+    public Set<BytecodeLinkedClass> getSubclassesOf(BytecodeLinkedClass aParentClass) {
+        Set<BytecodeLinkedClass> theClasses = new HashSet<>();
+        addSubclassesOfToSet(theClasses, aParentClass);
+        return theClasses;
+    }
+
+    public Set<BytecodeLinkedClass> getImplementingClassesOf(BytecodeLinkedClass aInterface) {
+        Set<BytecodeLinkedClass> theClasses = new HashSet<>();
+        for (BytecodeLinkedClass theClass : linkedClasses.values()) {
+            if (theClass.getImplementingTypes(true, false).contains(aInterface)) {
+                theClasses.add(theClass);
+            }
+        }
+        return theClasses;
     }
 }

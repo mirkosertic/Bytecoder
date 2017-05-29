@@ -16,8 +16,29 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.annotations.Import;
+import de.mirkosertic.bytecoder.classlib.java.io.TIOException;
+import de.mirkosertic.bytecoder.classlib.java.io.TOutputStream;
+import de.mirkosertic.bytecoder.classlib.java.io.TPrintStream;
 
 public class TSystem {
+
+    public static final TPrintStream out = new TPrintStream(new TOutputStream() {
+
+        private TStringBuilder currentLine = new TStringBuilder();
+
+        @Import(module = "system", name = "logByteArrayAsString")
+        public native void writeByteArrayToConsole(byte[] aBytes);
+
+        @Override
+        public void write(int aValue) throws TIOException {
+            if (aValue != TPrintStream.NEWLINE) {
+                currentLine.append((char) aValue);
+            } else {
+                writeByteArrayToConsole(currentLine.getBytes());
+                currentLine = new TStringBuilder();
+            }
+        }
+    });
 
     @Import(module = "system", name = "nanoTime")
     public static native long nanoTime();
