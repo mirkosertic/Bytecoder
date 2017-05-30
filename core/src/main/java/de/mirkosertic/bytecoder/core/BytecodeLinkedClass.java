@@ -386,4 +386,8 @@ public class BytecodeLinkedClass {
     public boolean containsVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
         return linkedMethods.containsKey(aIdentifier);
     }
+
+    public BytecodeMethod virtualMethodByIdentifier(BytecodeVirtualMethodIdentifier aIdentifier) {
+        return linkedMethods.get(aIdentifier).getTargetMethod();
+    }
 }

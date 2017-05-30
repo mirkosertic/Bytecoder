@@ -204,6 +204,7 @@ public class JBox2DTest {
 
     @Test
     public void testSceneAndRun() {
+        long theStart = System.currentTimeMillis();
         Scene theScene = new Scene();
         long startTime = 0;
         long currentTime = 600;
@@ -212,6 +213,7 @@ public class JBox2DTest {
         long relativeTime = currentTime - startTime;
         while (timeToCalculate > 10) {
             System.out.println("Calculating");
+            System.out.println((long) timeToCalculate);
             int period = (int) ((relativeTime + 5000) / 10000);
             theScene.reel.applyTorque(period % 2 == 0 ? 8f : -8f);
             theScene.world.step(0.01f, 20, 40);
@@ -219,6 +221,9 @@ public class JBox2DTest {
             timeToCalculate -= 10;
             System.out.println("done");
         }
+        long theTotalDuration = System.currentTimeMillis() - theStart;
+        System.out.println("Ran");
+        System.out.println(theTotalDuration);
     }
 
     @Test

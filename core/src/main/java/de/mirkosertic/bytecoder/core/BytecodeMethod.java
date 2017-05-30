@@ -73,4 +73,8 @@ public class BytecodeMethod {
     public boolean isClassInitializer() {
         return name.stringValue().equals("<clinit>");
     }
+
+    public boolean canThrowAnyException() {
+        return false;
+    }
 }
