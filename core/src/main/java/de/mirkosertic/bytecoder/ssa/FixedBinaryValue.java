@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public abstract class BytecodeRefConstant implements BytecodeConstant {
+public class FixedBinaryValue extends Value {
 
-    private final BytecodeClassIndex classIndex;
-    private final BytecodeNameAndTypeIndex nameAndTypeIndex;
-
-    protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
-        classIndex = aClassIndex;
-        nameAndTypeIndex = aNameAndTypeIndex;
+    public enum Operator {
+        ISNULL,
+        ISZERO,
     }
 
-    public BytecodeClassIndex getClassIndex() {
-        return classIndex;
-    }
+    private final Variable value1;
+    private final Operator operator;
 
-    public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
-        return nameAndTypeIndex;
+    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
+        value1 = aValue1;
+        operator = aOperator;
     }
 }

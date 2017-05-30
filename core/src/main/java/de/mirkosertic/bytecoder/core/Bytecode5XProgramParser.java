@@ -229,19 +229,19 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 46: {// iaload = 46 (0x2e)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 47: {// laload = 47 (0x2f)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 48: {// faload = 48 (0x30)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 49: {// daload = 49 (0x31)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 50: { // aaload = 50 (0x32)
@@ -249,15 +249,15 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 51: { //baload = 51 (0x33)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.BYTE));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.BYTE));
                     break;
                 }
                 case 52: { // caload = 52 (0x34)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.CHAR));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.CHAR));
                     break;
                 }
                 case 53: { // saload = 53 (0x35)
-                    theResult.addInstruction(new BytecodeInstructionGenericALOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.SHORT));
+                    theResult.addInstruction(new BytecodeInstructionGenericArrayLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.SHORT));
                     break;
                 }
                 case 54: { // istore = 54 (0x36)
@@ -371,19 +371,19 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 79: { // iastore = 79 (0x4f)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.INT));
                     break;
                 }
                 case 80: { // lastore = 80 (0x50)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG));
                     break;
                 }
                 case 81: { // fastore = 81 (0x51)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT));
                     break;
                 }
                 case 82: { // dastore = 82 (0x52)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE));
                     break;
                 }
                 case 83: { // aastore = 83 (0x53)
@@ -391,15 +391,15 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 84: { // bastore = 84 (0x54)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.BYTE));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.BYTE));
                     break;
                 }
                 case 85: { // castore = 85 (0x55)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.CHAR));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.CHAR));
                     break;
                 }
                 case 86: { // sastore = 86 (0x56)
-                    theResult.addInstruction(new BytecodeInstructionGenericASTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.SHORT));
+                    theResult.addInstruction(new BytecodeInstructionGenericArraySTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.SHORT));
                     break;
                 }
                 case 87: { // pop = 87 (0x57)
