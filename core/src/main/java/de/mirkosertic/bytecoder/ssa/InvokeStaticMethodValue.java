@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public abstract class BytecodeRefConstant implements BytecodeConstant {
+import java.util.List;
 
-    private final BytecodeClassIndex classIndex;
-    private final BytecodeNameAndTypeIndex nameAndTypeIndex;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 
-    protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
-        classIndex = aClassIndex;
-        nameAndTypeIndex = aNameAndTypeIndex;
-    }
+public class InvokeStaticMethodValue extends Value {
 
-    public BytecodeClassIndex getClassIndex() {
-        return classIndex;
-    }
+    private final BytecodeMethodRefConstant method;
+    private final List<Variable> arguments;
 
-    public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
-        return nameAndTypeIndex;
+    public InvokeStaticMethodValue(BytecodeMethodRefConstant aMethod, List<Variable> aArguments) {
+        method = aMethod;
+        arguments = aArguments;
     }
 }

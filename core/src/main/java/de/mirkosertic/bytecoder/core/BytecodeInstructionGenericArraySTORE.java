@@ -15,21 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public abstract class BytecodeRefConstant implements BytecodeConstant {
+public class BytecodeInstructionGenericArraySTORE extends BytecodeInstruction {
 
-    private final BytecodeClassIndex classIndex;
-    private final BytecodeNameAndTypeIndex nameAndTypeIndex;
+    private final BytecodePrimitiveTypeRef type;
 
-    protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
-        classIndex = aClassIndex;
-        nameAndTypeIndex = aNameAndTypeIndex;
-    }
-
-    public BytecodeClassIndex getClassIndex() {
-        return classIndex;
-    }
-
-    public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
-        return nameAndTypeIndex;
+    public BytecodeInstructionGenericArraySTORE(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
+        super(aOpcodeIndex);
+        type = aType;
     }
 }

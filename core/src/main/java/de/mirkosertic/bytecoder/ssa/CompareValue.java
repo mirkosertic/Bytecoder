@@ -13,23 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public abstract class BytecodeRefConstant implements BytecodeConstant {
+public class CompareValue extends Value {
 
-    private final BytecodeClassIndex classIndex;
-    private final BytecodeNameAndTypeIndex nameAndTypeIndex;
+    private final Variable value1;
+    private final Variable value2;
 
-    protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
-        classIndex = aClassIndex;
-        nameAndTypeIndex = aNameAndTypeIndex;
-    }
-
-    public BytecodeClassIndex getClassIndex() {
-        return classIndex;
-    }
-
-    public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
-        return nameAndTypeIndex;
+    public CompareValue(Variable aValue1, Variable aValue2) {
+        this.value1 = aValue1;
+        this.value2 = aValue2;
     }
 }

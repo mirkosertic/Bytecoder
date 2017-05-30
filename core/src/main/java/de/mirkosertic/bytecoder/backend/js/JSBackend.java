@@ -20,14 +20,14 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
-import de.mirkosertic.bytecoder.ast.ASTGenerator;
+import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.ssa.SSABlockGenerator;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -140,7 +140,7 @@ public class JSBackend {
         final AtomicLong theNumberOfVirtualCalls = new AtomicLong(0);
         final AtomicLong theNumberOfRealVirtualCalls = new AtomicLong(0);
 
-        ASTGenerator theAST = new ASTGenerator();
+        SSABlockGenerator theAST = new SSABlockGenerator();
         JSASTCodeGenerator theASTCodeGenerator = new JSASTCodeGenerator(aLinkerContext);
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
@@ -409,19 +409,14 @@ public class JSBackend {
                 theWriter.println("        var currentLabel = " + theFlowGraph.getBlocks().get(0).getStartAddress().getAddress() + ";");
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
 
-                ASTGenerator.GenerationResult theLastGeneration = null;
-
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
+                    Block theTree = theAST.generateFrom(theBlock);
+
                     if (codeType == CodeType.AST) {
-                        if (theLastGeneration == null) {
-                            theLastGeneration = theAST.generateFrom(theBlock);
-                        } else {
-                            theLastGeneration = theLastGeneration.continueWith(theBlock);
-                        }
-                        theASTCodeGenerator.generateFor(theLastGeneration.getBlock(), new JSWriter("            ", theWriter));
+                        theASTCodeGenerator.generateFor(theTree, new JSWriter("            ", theWriter));
                         theWriter.println("         }");
                         continue;
                     }
@@ -737,7 +732,7 @@ public class JSBackend {
                             theWriter.println(theInset + "frame.stack.push(" + thePush.getShortValue() + ");");
                         } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                             BytecodeInstructionGenericLOAD theLoad = (BytecodeInstructionGenericLOAD) theInstruction;
-                            theWriter.println(theInset + "frame.stack.push(frame.local" + (theLoad.getLocalVariableIndex() + 1) + ");");
+                            theWriter.println(theInset + "frame.stack.push(frame.local" + (theLoad.getVariableIndex() + 1) + ");");
                         } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
                             BytecodeInstructionGenericSTORE theStore = (BytecodeInstructionGenericSTORE) theInstruction;
                             theWriter.println(theInset + "frame.local" + (theStore.getVariableIndex() + 1)+" = frame.stack.pop();");
@@ -897,8 +892,8 @@ public class JSBackend {
                             BytecodeInstructionGenericNEG theNeg = (BytecodeInstructionGenericNEG) theInstruction;
                             theWriter.println(theInset + "var temp = - frame.stack.pop();");
                             theWriter.println(theInset + "frame.stack.push(temp);");
-                        } else if (theInstruction instanceof BytecodeInstructionGenericASTORE) {
-                            BytecodeInstructionGenericASTORE theStore = (BytecodeInstructionGenericASTORE) theInstruction;
+                        } else if (theInstruction instanceof BytecodeInstructionGenericArraySTORE) {
+                            BytecodeInstructionGenericArraySTORE theStore = (BytecodeInstructionGenericArraySTORE) theInstruction;
                             theWriter.println(theInset + "var theValue = frame.stack.pop();");
                             theWriter.println(theInset + "var theIndex = frame.stack.pop();");
                             theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
@@ -909,8 +904,8 @@ public class JSBackend {
                             theWriter.println(theInset + "var theIndex = frame.stack.pop();");
                             theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
                             theWriter.println(theInset + "theArrayRef.data[theIndex] = theValue;");
-                        } else if (theInstruction instanceof BytecodeInstructionGenericALOAD) {
-                            BytecodeInstructionGenericALOAD theLoad = (BytecodeInstructionGenericALOAD) theInstruction;
+                        } else if (theInstruction instanceof BytecodeInstructionGenericArrayLOAD) {
+                            BytecodeInstructionGenericArrayLOAD theLoad = (BytecodeInstructionGenericArrayLOAD) theInstruction;
                             theWriter.println(theInset + "var theIndex = frame.stack.pop();");
                             theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
                             theWriter.println(theInset + "frame.stack.push(theArrayRef.data[theIndex]);");
@@ -1069,7 +1064,7 @@ public class JSBackend {
                         } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                             BytecodeInstructionIFICMP theCond = (BytecodeInstructionIFICMP) theInstruction;
 
-                            BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
+                            BytecodeOpcodeAddress theTarget = theCond.getJumpTarget();
                             theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
                             theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
                             switch (theCond.getType()) {
@@ -1107,7 +1102,7 @@ public class JSBackend {
 
                         } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                             BytecodeInstructionIFCOND theCond = (BytecodeInstructionIFCOND) theInstruction;
-                            BytecodeOpcodeAddress theTarget = theCond.getJumpOffset();
+                            BytecodeOpcodeAddress theTarget = theCond.getJumpTarget();
                             theWriter.println(theInset + "var theValue = frame.stack.pop();");
                             switch (theCond.getType()) {
                                 case eq:

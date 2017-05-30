@@ -34,13 +34,13 @@ public class BytecodeInstructionIFCOND extends BytecodeInstruction {
         return type;
     }
 
-    public BytecodeOpcodeAddress getJumpOffset() {
+    public BytecodeOpcodeAddress getJumpTarget() {
         return getOpcodeAddress().add(jumpOffset);
     }
 
     @Override
     public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
-        return new BytecodeOpcodeAddress[] { getJumpOffset() };
+        return new BytecodeOpcodeAddress[] { getJumpTarget() };
     }
 
     @Override

@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public class BytecodeInstructionGenericLOAD extends BytecodeInstruction {
-
-    private final BytecodePrimitiveTypeRef type;
-    private final int localVariableIndex;
-
-    public BytecodeInstructionGenericLOAD(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType, int aVariableIndex) {
-        super(aOpcodeIndex);
-        type = aType;
-        localVariableIndex = aVariableIndex;
-    }
-
-    public int getVariableIndex() {
-        return localVariableIndex;
-    }
+public class ReturnExpression extends Expression {
 }

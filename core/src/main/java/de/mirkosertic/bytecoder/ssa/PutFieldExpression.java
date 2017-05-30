@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public abstract class BytecodeRefConstant implements BytecodeConstant {
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 
-    private final BytecodeClassIndex classIndex;
-    private final BytecodeNameAndTypeIndex nameAndTypeIndex;
+public class PutFieldExpression extends Expression {
 
-    protected BytecodeRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
-        classIndex = aClassIndex;
-        nameAndTypeIndex = aNameAndTypeIndex;
-    }
+    private final BytecodeFieldRefConstant field;
+    private final Variable target;
+    private final Variable value;
 
-    public BytecodeClassIndex getClassIndex() {
-        return classIndex;
-    }
-
-    public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
-        return nameAndTypeIndex;
+    public PutFieldExpression(BytecodeFieldRefConstant aField, Variable aTarget, Variable aValue) {
+        field = aField;
+        target = aTarget;
+        value = aValue;
     }
 }
