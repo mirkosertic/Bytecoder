@@ -39,6 +39,14 @@ public class LongMathTest {
         return a - b;
     }
 
+    public static long sleft(long aValue, int aOtherValue) {
+        return aValue >>> aOtherValue;
+    }
+
+    public static long sright(long aValue, int aOtherValue) {
+        return aValue << aOtherValue;
+    }
+
     @Test
     public void testAdd() {
         float theResult = add(10L, 20L);
@@ -61,6 +69,18 @@ public class LongMathTest {
     public void testDiv() {
         float theResult = div(30, 10);
         Assert.assertEquals(3, theResult, 0);
+    }
+
+    @Test
+    public void testShiftRight() {
+        int theResult = (int) sleft(1000L, 1);
+        Assert.assertEquals(500, theResult, 0);
+    }
+
+    @Test
+    public void testShiftLeft() {
+        int theResult = (int) sright(1000L, 1);
+        Assert.assertEquals(2000, theResult, 0);
     }
 
 }
