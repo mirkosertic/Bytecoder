@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
+public class BytecodeInstructionObjectArrayLOAD extends BytecodeInstruction {
 
-public class ConstantValue extends Value {
-
-    private final BytecodeConstant constant;
-
-    public ConstantValue(BytecodeConstant constant) {
-        this.constant = constant;
+    public BytecodeInstructionObjectArrayLOAD(BytecodeOpcodeAddress aOpcodeIndex) {
+        super(aOpcodeIndex);
     }
 }

@@ -23,7 +23,7 @@ public class BytecodeIntegerConstant implements BytecodeConstant {
         value = aValue;
     }
 
-    public int integerValue() {
+    public int getIntegerValue() {
         return value;
     }
 }

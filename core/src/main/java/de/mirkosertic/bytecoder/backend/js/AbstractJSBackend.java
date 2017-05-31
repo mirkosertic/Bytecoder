@@ -15,25 +15,46 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public class JSASTCodeGenerator {
+public abstract class AbstractJSBackend {
 
-    private final BytecodeLinkerContext linkerContext;
+    protected final BytecodeMethodSignature theRegisterExceptionOutcomeSignature;
+    protected final BytecodeMethodSignature theGetLastExceptionOutcomeSignature;
+    protected final JSModules modules;
 
-    public JSASTCodeGenerator(BytecodeLinkerContext aLinkerContext) {
-        linkerContext = aLinkerContext;
-    }
+    public AbstractJSBackend() {
+        theRegisterExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
+        theGetLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
+        modules = new JSModules();
 
-    public void generateFor(Block aBlock, JSWriter aWriter) {
+        JSModule theMathModule = new JSModule();
+        theMathModule.registerFunction("ceil", new JSFunction("return Math.ceil(p1);"));
+        theMathModule.registerFunction("floor", new JSFunction("return Math.floor(p1);"));
+        theMathModule.registerFunction("sin", new JSFunction("return Math.sin(p1);"));
+        theMathModule.registerFunction("cos", new JSFunction("return Math.cos(p1);"));
+        theMathModule.registerFunction("sqrt", new JSFunction("return Math.sqrt(p1);"));
+        theMathModule.registerFunction("round", new JSFunction("return Math.round(p1);"));
+        theMathModule.registerFunction("NaN", new JSFunction("return NaN;"));
+        theMathModule.registerFunction("atan2", new JSFunction("return Math.atan2(p1, p2);"));
+        theMathModule.registerFunction("max", new JSFunction("return Math.max(p1, p2);"));
+        theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
+
+        JSModule theSystemModule = new JSModule();
+        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
+        theSystemModule.registerFunction("nanoTime", new JSFunction("return Date.now() * 1000000;"));
+        theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
+        theSystemModule.registerFunction("logDebug", new JSFunction("bytecoder.logDebug(p1);"));
+
+        modules.register("math", theMathModule);
+        modules.register("system", theSystemModule);
     }
 
     private String typeRefToString(BytecodeTypeRef aTypeRef) {
@@ -84,7 +105,5 @@ public class JSASTCodeGenerator {
         return theResult.toString();
     }
 
-    private String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
-        return "currentLabel = " + aTarget.getAddress()+"; continue controlflowloop;";
-    }
+    public abstract String generateCodeFor(BytecodeLinkerContext aLinkerContext);
 }

@@ -15,19 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FixedBinaryValue extends Value {
+import java.util.List;
 
-    public enum Operator {
-        ISNULL,
-        ISNONNULL,
-        ISZERO,
-    }
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-    private final Variable value1;
-    private final Operator operator;
+public class NewMultiArrayValue extends Value {
 
-    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
-        operator = aOperator;
+    private final BytecodeTypeRef type;
+    private final List<Variable> dimensions;
+
+    public NewMultiArrayValue(BytecodeTypeRef aType, List<Variable> aDimensions) {
+        type = aType;
+        dimensions = aDimensions;
     }
 }

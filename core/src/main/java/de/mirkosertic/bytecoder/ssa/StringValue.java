@@ -15,19 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FixedBinaryValue extends Value {
+public class StringValue extends Value {
 
-    public enum Operator {
-        ISNULL,
-        ISNONNULL,
-        ISZERO,
-    }
+    private final String stringValue;
 
-    private final Variable value1;
-    private final Operator operator;
-
-    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
-        operator = aOperator;
+    public StringValue(String aStringValue) {
+        stringValue = aStringValue;
     }
 }

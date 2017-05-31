@@ -26,100 +26,109 @@ import java.util.concurrent.atomic.AtomicLong;
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
-import de.mirkosertic.bytecoder.ssa.Block;
-import de.mirkosertic.bytecoder.ssa.SSABlockGenerator;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
+import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArrayLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArraySTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericUSHR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInterfaceRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
-public class JSBackend {
+public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
-    public enum CodeType {
-        STACK, AST
-    }
-
-    private final BytecodeMethodSignature theRegisterExceptionOutcomeSignature;
-    private final BytecodeMethodSignature theGetLastExceptionOutcomeSignature;
-    private final JSModules modules;
-    private final CodeType codeType;
-
-    public JSBackend(CodeType aCodeType) {
-        codeType = aCodeType;
-        theRegisterExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
-        theGetLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
-        modules = new JSModules();
-
-        JSModule theMathModule = new JSModule();
-        theMathModule.registerFunction("ceil", new JSFunction("return Math.ceil(p1);"));
-        theMathModule.registerFunction("floor", new JSFunction("return Math.floor(p1);"));
-        theMathModule.registerFunction("sin", new JSFunction("return Math.sin(p1);"));
-        theMathModule.registerFunction("cos", new JSFunction("return Math.cos(p1);"));
-        theMathModule.registerFunction("sqrt", new JSFunction("return Math.sqrt(p1);"));
-        theMathModule.registerFunction("round", new JSFunction("return Math.round(p1);"));
-        theMathModule.registerFunction("NaN", new JSFunction("return NaN;"));
-        theMathModule.registerFunction("atan2", new JSFunction("return Math.atan2(p1, p2);"));
-        theMathModule.registerFunction("max", new JSFunction("return Math.max(p1, p2);"));
-        theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
-
-        JSModule theSystemModule = new JSModule();
-        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
-        theSystemModule.registerFunction("nanoTime", new JSFunction("return Date.now() * 1000000;"));
-        theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
-        theSystemModule.registerFunction("logDebug", new JSFunction("bytecoder.logDebug(p1);"));
-
-        modules.register("math", theMathModule);
-        modules.register("system", theSystemModule);
-    }
-
-    private String typeRefToString(BytecodeTypeRef aTypeRef) {
-        if (aTypeRef.isPrimitive()) {
-            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
-            return thePrimitive.name();
-        }
-        if (aTypeRef.isArray()) {
-            BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
-            return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
-        }
-        BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
-        return toClassName(theObjectRef);
-    }
-
-    public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
-        String theName = typeRefToString(aSignature.getReturnType());
-        theName += aMethodName.replace("<", "").replace(">", "");
-
-        for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
-            theName += typeRefToString(theTypeRef);
-        }
-        return theName;
-    }
-
-    private String toClassNameInternal(String aClassName) {
-        int p = aClassName.lastIndexOf(".");
-        return aClassName.substring(p + 1);
-    }
-
-    public String toClassName(BytecodeObjectTypeRef aTypeRef) {
-        return toClassNameInternal(aTypeRef.name());
-    }
-
-    public String toClassName(BytecodeClassinfoConstant aTypeRef) {
-        return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
-    }
-
-    public String toArray(byte[] aData) {
-        StringBuilder theResult = new StringBuilder("[");
-        for (int i=0;i<aData.length;i++) {
-            if (i>0) {
-                theResult.append(",");
-            }
-            theResult.append(aData[i]);
-        }
-        theResult.append("]");
-        return theResult.toString();
+    public JSStackMachineInterpreterBackend() {
     }
 
     public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
@@ -135,13 +144,11 @@ public class JSBackend {
         return null;
     }
 
+    @Override
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
 
         final AtomicLong theNumberOfVirtualCalls = new AtomicLong(0);
         final AtomicLong theNumberOfRealVirtualCalls = new AtomicLong(0);
-
-        SSABlockGenerator theAST = new SSABlockGenerator();
-        JSASTCodeGenerator theASTCodeGenerator = new JSASTCodeGenerator(aLinkerContext);
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -412,14 +419,6 @@ public class JSBackend {
                 for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
-
-                    Block theTree = theAST.generateFrom(theBlock);
-
-                    if (codeType == CodeType.AST) {
-                        theASTCodeGenerator.generateFor(theTree, new JSWriter("            ", theWriter));
-                        theWriter.println("         }");
-                        continue;
-                    }
 
                     for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
                         if (theInstruction instanceof BytecodeInstructionNOP) {
@@ -749,8 +748,8 @@ public class JSBackend {
                         } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                             BytecodeInstructionALOAD theStore = (BytecodeInstructionALOAD) theInstruction;
                             theWriter.println(theInset + "frame.stack.push(frame.local" + (theStore.getVariableIndex() + 1) + ");");
-                        } else if (theInstruction instanceof BytecodeInstructionAALOAD) {
-                            BytecodeInstructionAALOAD theLoad = (BytecodeInstructionAALOAD) theInstruction;
+                        } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
+                            BytecodeInstructionObjectArrayLOAD theLoad = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                             theWriter.println(theInset + "var theIndex = frame.stack.pop();");
                             theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
                             theWriter.println(theInset + "frame.stack.push(theArrayRef.data[theIndex]);");
@@ -898,8 +897,8 @@ public class JSBackend {
                             theWriter.println(theInset + "var theIndex = frame.stack.pop();");
                             theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
                             theWriter.println(theInset + "theArrayRef.data[theIndex] = theValue;");
-                        } else if (theInstruction instanceof BytecodeInstructionAASTORE) {
-                            BytecodeInstructionAASTORE theStore = (BytecodeInstructionAASTORE) theInstruction;
+                        } else if (theInstruction instanceof BytecodeInstructionObjectArraySTORE) {
+                            BytecodeInstructionObjectArraySTORE theStore = (BytecodeInstructionObjectArraySTORE) theInstruction;
                             theWriter.println(theInset + "var theValue = frame.stack.pop();");
                             theWriter.println(theInset + "var theIndex = frame.stack.pop();");
                             theWriter.println(theInset + "var theArrayRef = frame.stack.pop();");
@@ -1025,7 +1024,7 @@ public class JSBackend {
                                 theWriter.println(theInset + "frame.stack.push(" + toClassName(theClassInfo) + ".runtimeClass);");
                             } else if (theConstant instanceof BytecodeIntegerConstant) {
                                 BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
-                                theWriter.println(theInset + "frame.stack.push(" + theInteger.integerValue() + ");");
+                                theWriter.println(theInset + "frame.stack.push(" + theInteger.getIntegerValue() + ");");
                             } else if (theConstant instanceof BytecodeStringConstant) {
                                 try {
                                     BytecodeStringConstant theStr = (BytecodeStringConstant) theConstant;
@@ -1046,7 +1045,7 @@ public class JSBackend {
                             theWriter.println(theInset + generateJumpCodeFor(theGoto.getJumpAddress()));
                         } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                             BytecodeInstructionIFACMP theCond = (BytecodeInstructionIFACMP) theInstruction;
-                            BytecodeOpcodeAddress theTarget = theCond.getJumpAddress();
+                            BytecodeOpcodeAddress theTarget = theCond.getJumpTarget();
                             theWriter.println(theInset + "var theValue2 = frame.stack.pop();");
                             theWriter.println(theInset + "var theValue1 = frame.stack.pop();");
                             switch (theCond.getType()) {

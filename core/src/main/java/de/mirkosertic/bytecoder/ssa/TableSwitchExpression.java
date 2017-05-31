@@ -15,19 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FixedBinaryValue extends Value {
+import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 
-    public enum Operator {
-        ISNULL,
-        ISNONNULL,
-        ISZERO,
-    }
+public class TableSwitchExpression extends Expression {
 
-    private final Variable value1;
-    private final Operator operator;
+    private final Variable variable;
+    private final BytecodeInstructionTABLESWITCH instruction;
 
-    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
-        operator = aOperator;
+    public TableSwitchExpression(Variable aVariable, BytecodeInstructionTABLESWITCH aInstruction) {
+        variable = aVariable;
+        instruction = aInstruction;
     }
 }

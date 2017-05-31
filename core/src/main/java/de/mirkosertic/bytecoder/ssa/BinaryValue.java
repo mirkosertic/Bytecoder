@@ -30,6 +30,14 @@ public class BinaryValue extends Value {
         DIV,
         MUL,
         REMAINDER,
+
+        BINARYXOR,
+        BINARYOR,
+        BINARYAND,
+
+        BINARYSHIFTLEFT,
+        BINARYUNSIGNEDSHIFTRIGHT,
+        BINARYSHIFTRIGHT,
     }
 
     private final Variable value1;

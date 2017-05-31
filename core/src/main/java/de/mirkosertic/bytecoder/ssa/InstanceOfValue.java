@@ -15,19 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FixedBinaryValue extends Value {
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
-    public enum Operator {
-        ISNULL,
-        ISNONNULL,
-        ISZERO,
-    }
+public class InstanceOfValue extends Value {
 
-    private final Variable value1;
-    private final Operator operator;
+    private final Variable variable;
+    private final BytecodeClassinfoConstant type;
 
-    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
-        operator = aOperator;
+    public InstanceOfValue(Variable aVariable, BytecodeClassinfoConstant aType) {
+        variable = aVariable;
+        type = aType;
     }
 }

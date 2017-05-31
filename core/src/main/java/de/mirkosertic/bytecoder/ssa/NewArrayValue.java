@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class NewArrayValue extends Value {
 
-    private final BytecodePrimitiveTypeRef type;
+    private final BytecodeTypeRef type;
     private final Variable length;
 
-    public NewArrayValue(BytecodePrimitiveTypeRef aType, Variable aLength) {
+    public NewArrayValue(BytecodeTypeRef aType, Variable aLength) {
         type = aType;
         length = aLength;
     }
