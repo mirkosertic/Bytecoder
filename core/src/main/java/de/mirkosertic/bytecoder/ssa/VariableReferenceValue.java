@@ -17,9 +17,13 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class VariableReferenceValue extends Value {
 
-    private final int variableIndex;
+    private final Variable variable;
 
-    public VariableReferenceValue(int aVariableIndex) {
-        variableIndex = aVariableIndex;
+    public VariableReferenceValue(Variable aVariable) {
+        variable = aVariable;
+    }
+
+    public Variable getVariable() {
+        return variable;
     }
 }

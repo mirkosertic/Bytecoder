@@ -15,11 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class InvokeMethodExpression extends Expression {
+public class InvokeVirtualMethodExpression extends Expression {
 
-    private final InvokeMethodValue value;
+    private final InvokeVirtualMethodValue value;
 
-    public InvokeMethodExpression(InvokeMethodValue value) {
+    public InvokeVirtualMethodExpression(InvokeVirtualMethodValue value) {
         this.value = value;
+    }
+
+    public InvokeVirtualMethodValue getValue() {
+        return value;
     }
 }

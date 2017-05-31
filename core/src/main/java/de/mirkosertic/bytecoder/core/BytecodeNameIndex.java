@@ -20,9 +20,9 @@ public class BytecodeNameIndex {
     private final int index;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeNameIndex(int index, BytecodeConstantPool constantPool) {
-        this.index = index;
-        this.constantPool = constantPool;
+    public BytecodeNameIndex(int aIndex, BytecodeConstantPool aConstantPool) {
+        index = aIndex;
+        constantPool = aConstantPool;
     }
 
     public BytecodeUtf8Constant getName() {

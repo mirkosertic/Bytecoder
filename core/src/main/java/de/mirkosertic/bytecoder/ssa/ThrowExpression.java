@@ -22,4 +22,8 @@ public class ThrowExpression extends Expression {
     public ThrowExpression(Variable aVariable) {
         this.variable = aVariable;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
 }

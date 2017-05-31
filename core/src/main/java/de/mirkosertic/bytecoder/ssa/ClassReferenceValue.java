@@ -24,4 +24,8 @@ public class ClassReferenceValue extends Value {
     public ClassReferenceValue(BytecodeObjectTypeRef aType) {
         type = aType;
     }
+
+    public BytecodeObjectTypeRef getType() {
+        return type;
+    }
 }

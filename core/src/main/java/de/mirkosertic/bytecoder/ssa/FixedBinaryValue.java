@@ -30,4 +30,12 @@ public class FixedBinaryValue extends Value {
         value1 = aValue1;
         operator = aOperator;
     }
+
+    public Variable getValue1() {
+        return value1;
+    }
+
+    public Operator getOperator() {
+        return operator;
+    }
 }

@@ -15,20 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+public class TypeConversionValue extends Value {
 
-public class InvokeMethodValue extends Value {
+    private final Variable variable;
+    private final BytecodePrimitiveTypeRef targetType;
 
-    private final BytecodeNameAndTypeConstant method;
-    private final Variable target;
-    private final List<Variable> arguments;
+    public TypeConversionValue(Variable aVariable, BytecodePrimitiveTypeRef aTargetType) {
+        variable = aVariable;
+        targetType = aTargetType;
+    }
 
-    public InvokeMethodValue(BytecodeNameAndTypeConstant aMethod, Variable aTarget,
-            List<Variable> aArguments) {
-        method = aMethod;
-        target = aTarget;
-        arguments = aArguments;
+    public Variable getVariable() {
+        return variable;
+    }
+
+    public BytecodePrimitiveTypeRef getTargetType() {
+        return targetType;
     }
 }

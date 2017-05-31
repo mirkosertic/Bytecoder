@@ -22,4 +22,8 @@ public class InitVariableExpression extends Expression {
     public InitVariableExpression(Variable aVariable) {
         variable = aVariable;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
 }

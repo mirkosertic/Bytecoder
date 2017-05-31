@@ -24,4 +24,12 @@ public class ArrayEntryValue extends Value {
         array = aArray;
         index = aIndex;
     }
+
+    public Variable getArray() {
+        return array;
+    }
+
+    public Variable getIndex() {
+        return index;
+    }
 }

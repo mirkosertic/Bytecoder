@@ -22,4 +22,8 @@ public class StringValue extends Value {
     public StringValue(String aStringValue) {
         stringValue = aStringValue;
     }
+
+    public String getStringValue() {
+        return stringValue;
+    }
 }

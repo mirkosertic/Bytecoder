@@ -15,10 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Block {
 
@@ -59,5 +63,31 @@ public class Block {
 
     public void addExpression(Expression aExpression) {
         expressions.add(aExpression);
+    }
+
+    public List<Expression> getExpressions() {
+        return expressions;
+    }
+
+    public Set<BytecodeObjectTypeRef> getStaticReferences() {
+        Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
+        for (Variable theVariable : variables.values()) {
+            Value theValue = theVariable.getValue();
+            if (theValue instanceof GetStaticValue) {
+                GetStaticValue theStaticValue = (GetStaticValue) theValue;
+                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
+            }
+            if (theValue instanceof NewObjectValue) {
+                NewObjectValue theNewObjectValue = (NewObjectValue) theValue;
+                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
+            }
+        }
+        for (Expression theExpression : expressions) {
+            if (theExpression instanceof PutStaticExpression) {
+                PutStaticExpression theE = (PutStaticExpression) theExpression;
+                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
+            }
+        }
+        return theResult;
     }
 }

@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.lang.reflect.Method;
-
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -27,6 +25,8 @@ import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
+import java.lang.reflect.Method;
+
 public class JSCompileTarget {
 
     public enum BackendType {
@@ -35,19 +35,23 @@ public class JSCompileTarget {
             public AbstractJSBackend createBackend() {
                 return new JSStackMachineInterpreterBackend();
             }
+        },
+        ssacompiler {
+            @Override
+            public AbstractJSBackend createBackend() {
+                return new JSSSACompilerBackend();
+            }
         };
 
         public abstract AbstractJSBackend createBackend();
     }
 
     private final AbstractJSBackend backend;
-    private final BytecodePackageReplacer packageReplacer;
     private final BytecodeLoader bytecodeLoader;
 
     public JSCompileTarget(BackendType aType) {
         backend = aType.createBackend();
-        packageReplacer = new BytecodePackageReplacer();
-        bytecodeLoader = new BytecodeLoader(packageReplacer);
+        bytecodeLoader = new BytecodeLoader(new BytecodePackageReplacer());
     }
 
     public String compileToJS(Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
@@ -66,11 +70,11 @@ public class JSCompileTarget {
     }
 
     public String toClassName(BytecodeObjectTypeRef aTypeRef) {
-        return backend.toClassName(aTypeRef);
+        return JSWriterUtils.toClassName(aTypeRef);
     }
 
     public String toMethodName(String aName, BytecodeMethodSignature aSignature) {
-        return backend.toMethodName(aName, aSignature);
+        return JSWriterUtils.toMethodName(aName, aSignature);
     }
 
     public BytecodeMethodSignature toMethodSignature(Method aMethod) {

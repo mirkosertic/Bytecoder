@@ -22,4 +22,8 @@ public class DoubleValue extends Value {
     public DoubleValue(double aDoubleValue) {
         doubleValue = aDoubleValue;
     }
+
+    public double getDoubleValue() {
+        return doubleValue;
+    }
 }

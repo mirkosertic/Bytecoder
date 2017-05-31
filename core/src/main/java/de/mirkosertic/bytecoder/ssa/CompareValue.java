@@ -24,4 +24,12 @@ public class CompareValue extends Value {
         this.value1 = aValue1;
         this.value2 = aValue2;
     }
+
+    public Variable getValue1() {
+        return value1;
+    }
+
+    public Variable getValue2() {
+        return value2;
+    }
 }

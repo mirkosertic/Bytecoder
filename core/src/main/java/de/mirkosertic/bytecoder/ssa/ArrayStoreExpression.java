@@ -17,13 +17,25 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ArrayStoreExpression extends Expression {
 
-    private final Variable target;
+    private final Variable array;
     private final Variable index;
     private final Variable value;
 
-    public ArrayStoreExpression(Variable aTarget, Variable aIndex, Variable aValue) {
-        target = aTarget;
+    public ArrayStoreExpression(Variable aArray, Variable aIndex, Variable aValue) {
+        array = aArray;
         index = aIndex;
         value = aValue;
+    }
+
+    public Variable getArray() {
+        return array;
+    }
+
+    public Variable getIndex() {
+        return index;
+    }
+
+    public Variable getValue() {
+        return value;
     }
 }

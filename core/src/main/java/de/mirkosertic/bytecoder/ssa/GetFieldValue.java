@@ -26,4 +26,12 @@ public class GetFieldValue extends Value {
         field = aField;
         target = aTarget;
     }
+
+    public BytecodeFieldRefConstant getField() {
+        return field;
+    }
+
+    public Variable getTarget() {
+        return target;
+    }
 }

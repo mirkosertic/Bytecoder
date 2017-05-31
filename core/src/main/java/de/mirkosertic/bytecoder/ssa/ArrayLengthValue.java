@@ -17,9 +17,13 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ArrayLengthValue extends Value {
 
-    private final Variable target;
+    private final Variable array;
 
-    public ArrayLengthValue(Variable aTarget) {
-        target = aTarget;
+    public ArrayLengthValue(Variable aArray) {
+        array = aArray;
+    }
+
+    public Variable getArray() {
+        return array;
     }
 }

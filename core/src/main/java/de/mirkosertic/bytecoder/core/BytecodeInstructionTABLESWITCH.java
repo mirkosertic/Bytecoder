@@ -62,4 +62,8 @@ public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
     public boolean isJumpSource() {
         return true;
     }
+
+    public BytecodeOpcodeAddress getDefaultJumpTarget() {
+        return getOpcodeAddress().add((int) getDefaultValue());
+    }
 }

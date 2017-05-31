@@ -24,4 +24,8 @@ public class GetStaticValue extends Value {
     public GetStaticValue(BytecodeFieldRefConstant aField) {
         field = aField;
     }
+
+    public BytecodeFieldRefConstant getField() {
+        return field;
+    }
 }

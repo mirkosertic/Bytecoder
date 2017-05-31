@@ -15,17 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
-
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
-import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -33,7 +24,6 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
@@ -126,6 +116,14 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
     public JSStackMachineInterpreterBackend() {
@@ -133,15 +131,6 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
     public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
-    }
-
-    private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
-        BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAnnotations().getAnnotationByType(OverrideParentClass.class.getName());
-        if (theDelegatesTo != null) {
-            BytecodeAnnotation.ElementValue theParentOverride = (BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
-            return theParentOverride.stringValue().replace("/",".");
-        }
-        return null;
     }
 
     @Override
@@ -187,17 +176,17 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                 new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
 
         // Construct a String
-        theWriter.println("          var theNewString = " + toClassName(theStringTypeRef) + ".emptyInstance();");
-        theWriter.println("          var theBytes = " + toClassName(theArrayTypeRef) + ".emptyInstance();");
+        theWriter.println("          var theNewString = " + JSWriterUtils.toClassName(theStringTypeRef) + ".emptyInstance();");
+        theWriter.println("          var theBytes = " + JSWriterUtils.toClassName(theArrayTypeRef) + ".emptyInstance();");
         theWriter.println("          theBytes.data = aByteArray;");
-        theWriter.println("          " + toClassName(theStringTypeRef) + "." + toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
+        theWriter.println("          " + JSWriterUtils.toClassName(theStringTypeRef) + "." + JSWriterUtils.toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
         theWriter.println("          return theNewString;");
         theWriter.println("     },");
         theWriter.println();
         theWriter.println("     newArray : function(aLength, aDefault) {");
 
         BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
-        theWriter.println("          var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
+        theWriter.println("          var theInstance = " + JSWriterUtils.toClassName(theArrayType)+ ".emptyInstance();");
         theWriter.println("          theInstance.data = [];");
         theWriter.println("          theInstance.data.length = aLength;");
         theWriter.println("          for (var i=0;i<aLength;i++) {");
@@ -215,7 +204,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
             final String theOverriddenParentClassName = getOverriddenParentClassFor(aEntry.getValue().getBytecodeClass());
 
-            String theJSClassName = toClassName(aEntry.getKey());
+            String theJSClassName = JSWriterUtils.toClassName(aEntry.getKey());
             theWriter.println("var " + theJSClassName + " = {");
 
             if (!aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
@@ -242,7 +231,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             theWriter.println("                    case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
                             if ("getClass".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println(
-                                        "                        return " + toClassName(theClassLinkedCass.getClassName()));
+                                        "                        return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
                             } else if ("toString".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                     theWriter.println("                        throw 'Not implemented';");
                             } else if ("equals".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
@@ -273,7 +262,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                     theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
                     if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
                         theWriter.println(
-                                "                return " + toClassName(theLinkTarget.getDeclaringType()) + "." + toMethodName(
+                                "                return " + JSWriterUtils.toClassName(theLinkTarget.getDeclaringType()) + "." + JSWriterUtils.toMethodName(
                                         theLinkTarget.getTargetMethod().getName().stringValue(),
                                         theLinkTarget.getTargetMethod().getSignature()) + ";");
                     } else {
@@ -304,7 +293,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                 }
                 theWriter.println("        return {data: {");
                 aEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
-                theWriter.println("        }, clazz: " + toClassName(aEntry.getKey())+ "};");
+                theWriter.println("        }, clazz: " + JSWriterUtils.toClassName(aEntry.getKey())+ "};");
                 theWriter.println("    },");
                 theWriter.println();
 
@@ -360,7 +349,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                     JSModule theModule = modules.resolveModule(theImportAnnotation.getElementValueByName("module").stringValue());
                     JSFunction theFunction = theModule.resolveFunction(theImportAnnotation.getElementValueByName("name").stringValue());
                     theWriter.println();
-                    theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                    theWriter.println("    " + JSWriterUtils.toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                     theWriter.println("         " + theFunction.generateCode(theCurrentMethodSignature));
                     theWriter.println("    },");
                     return;
@@ -369,7 +358,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                 BytecodeCodeAttributeInfo theCode = aMethod.getCode(aEntry.getValue().getBytecodeClass());
 
                 theWriter.println();
-                theWriter.println("    " + toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                theWriter.println("    " + JSWriterUtils.toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
 
                 //theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
 
@@ -396,7 +385,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                     }
                 }
 
-                while(p<=theCode.getMaxStack()) {
+                while(p<=theCode.getMaxLocals()) {
                     theLocalVariables.put("local" + p, "null");
                     p++;
                 }
@@ -443,7 +432,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
 
                             BytecodeClassinfoConstant theConstant = theNew.getClassInfoForObjectToCreate();
-                            theWriter.println(theInset + "frame.stack.push(" + toClassName(theConstant)+ ".emptyInstance());");
+                            theWriter.println(theInset + "frame.stack.push(" + JSWriterUtils.toClassName(theConstant)+ ".emptyInstance());");
 
                         } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                             BytecodeInstructionNEWARRAY theNew = (BytecodeInstructionNEWARRAY) theInstruction;
@@ -469,7 +458,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             for (int i=0;i<theNew.getDimensions();i++) {
                                 theWriter.println(theInset + "theDimensions.push(frame.stack.pop());");
                             }
-                            theWriter.println(theInset + "var theInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                            theWriter.println(theInset + "var theInstance = " + JSWriterUtils.toClassName(theConstant)+ ".emptyInstance();");
                             theWriter.println(theInset + "theInstance.data = new Array(theDimensions[0]);");
 
                             theWriter.println(theInset + "for (var filler=0;filler<theDimensions[0];filler++) {");
@@ -485,7 +474,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             theWriter.println(theInset + "  var theNumberOfInstances = theDimensions[theLevel - 1];");
                             theWriter.println(theInset + "  var theRequestedDimension = theDimensions[i];");
                             theWriter.println(theInset + "  for (var j=0;j<theNumberOfInstances;j++) {");
-                            theWriter.println(theInset + "      var theSubInstance = " + toClassName(theConstant)+ ".emptyInstance();");
+                            theWriter.println(theInset + "      var theSubInstance = " + JSWriterUtils.toClassName(theConstant)+ ".emptyInstance();");
                             theWriter.println(theInset + "      theSubInstance.data = new Array(theRequestedDimension);");
 
                             theWriter.println(theInset + "      for (var filler=0;filler<theRequestedDimension;filler++) {");
@@ -507,7 +496,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             Object theDefaultValue = theArrayType.defaultValue();
 
                             theWriter.println(theInset + "var theLength = frame.stack.pop()");
-                            theWriter.println(theInset + "var theInstance = " + toClassName(theArrayType)+ ".emptyInstance();");
+                            theWriter.println(theInset + "var theInstance = " + JSWriterUtils.toClassName(theArrayType)+ ".emptyInstance();");
                             theWriter.println(theInset + "theInstance.data = new Array(theLength);");
                             theWriter.println(theInset + "for (var i=0;i<theLength;i++) {");
                             if (theDefaultValue == null) {
@@ -538,9 +527,9 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             }
 
                             if (theOverriddenParentClassName != null) {
-                                theWriter.print(theOverriddenParentClassName.replace(".","_") + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
+                                theWriter.print(theOverriddenParentClassName.replace(".","_") + "." + JSWriterUtils.toMethodName(theName.stringValue(), theSig) + "(callsite");
                             } else {
-                                theWriter.print(toClassName(theConstant.getClassIndex().getClassConstant()) + "." + toMethodName(theName.stringValue(), theSig) + "(callsite");
+                                theWriter.print(JSWriterUtils.toClassName(theConstant.getClassIndex().getClassConstant()) + "." + JSWriterUtils.toMethodName(theName.stringValue(), theSig) + "(callsite");
                             }
                             for (int i=1;i<=theInvokeArguments.length;i++) {
                                 theWriter.print(",");
@@ -553,7 +542,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.println("));");
                             }
 
-                            theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
+                            theWriter.println(theInset + "var theLastException = " + JSWriterUtils.toClassName(theExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                             theWriter.println(theInset + "if (theLastException) {");
 
                             writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theProgram,
@@ -595,7 +584,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
                             } else {
                                 // Only one class, we use a direct call
-                                theWriter.print(toClassName(theLinkedClasses.get(0).getClassName()) + "." + toMethodName(theName.stringValue(), theSig) +  "(callsite");
+                                theWriter.print(JSWriterUtils.toClassName(theLinkedClasses.get(0).getClassName()) + "." + JSWriterUtils.toMethodName(theName.stringValue(), theSig) +  "(callsite");
                             }
 
                             for (int i=1;i<=theInvokeArguments.length;i++) {
@@ -608,7 +597,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.println("));");
                             }
 
-                            theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
+                            theWriter.println(theInset + "var theLastException = " + JSWriterUtils.toClassName(theExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                             theWriter.println(theInset + "if (theLastException) {");
 
                             writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theProgram,
@@ -649,7 +638,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
                             } else {
                                 // Only one class, we use a direct call
-                                theWriter.print(toClassName(theLinkedClasses.get(0).getClassName()) + "." + toMethodName(theName.stringValue(), theSig) +  "(callsite");
+                                theWriter.print(JSWriterUtils.toClassName(theLinkedClasses.get(0).getClassName()) + "." + JSWriterUtils.toMethodName(theName.stringValue(), theSig) +  "(callsite");
                             }
 
                             for (int i=1;i<=theInvokeArguments.length;i++) {
@@ -662,7 +651,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.println("));");
                             }
 
-                            theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
+                            theWriter.println(theInset + "var theLastException = " + JSWriterUtils.toClassName(theExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                             theWriter.println(theInset + "if (theLastException) {");
 
                             writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theProgram,
@@ -687,7 +676,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             } else {
                                 theWriter.print(theInset + "frame.stack.push(");
                             }
-                            theWriter.print(toClassName((theClassConstant)) + "." + toMethodName(theName.stringValue(), theSig) +"(");
+                            theWriter.print(JSWriterUtils.toClassName((theClassConstant)) + "." + JSWriterUtils.toMethodName(theName.stringValue(), theSig) +"(");
                             for (int i=1;i<=theInvokeArguments.length;i++) {
                                 if (i>1) {
                                     theWriter.print(",");
@@ -701,7 +690,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.println("));");
                             }
 
-                            theWriter.println(theInset + "var theLastException = " + toClassName(theExceptionRethrower.getClassName()) + "." + toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
+                            theWriter.println(theInset + "var theLastException = " + JSWriterUtils.toClassName(theExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature) + "();");
                             theWriter.println(theInset + "if (theLastException) {");
 
                             writeExceptionHandlerCode(aLinkerContext, theExceptionRethrower, theWriter, theProgram,
@@ -759,8 +748,8 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             BytecodeClassinfoConstant theClassName = theConstant.getClassIndex().getClassConstant();
                             BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName();
                             theWriter.println(
-                                    theInset + toClassName(theClassName) + ".classInitCheck();");
-                            theWriter.println(theInset + toClassName(theClassName) + ".staticFields." + theFieldName.stringValue() + " = frame.stack.pop();");
+                                    theInset + JSWriterUtils.toClassName(theClassName) + ".classInitCheck();");
+                            theWriter.println(theInset + JSWriterUtils.toClassName(theClassName) + ".staticFields." + theFieldName.stringValue() + " = frame.stack.pop();");
                         } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                             BytecodeInstructionGETSTATIC theGet = (BytecodeInstructionGETSTATIC) theInstruction;
                             BytecodeFieldRefConstant theConstant = theGet.getConstant();
@@ -768,9 +757,9 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex()
                                     .getName();
                             theWriter.println(
-                                    theInset + toClassName(theClassName) + ".classInitCheck();");
+                                    theInset + JSWriterUtils.toClassName(theClassName) + ".classInitCheck();");
                             theWriter.println(
-                                    theInset + "frame.stack.push(" + toClassName(theClassName) + ".staticFields." + theFieldName
+                                    theInset + "frame.stack.push(" + JSWriterUtils.toClassName(theClassName) + ".staticFields." + theFieldName
                                             .stringValue() + ");");
                         } else if (theInstruction instanceof BytecodeInstructionPUTFIELD) {
                             BytecodeInstructionPUTFIELD theGet = (BytecodeInstructionPUTFIELD) theInstruction;
@@ -930,7 +919,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             theWriter.println("// tableswitch");
                             theWriter.println(theInset + "var theCurrentValue = frame.stack.pop();");
                             theWriter.println(theInset + "if (theCurrentValue < " + theSwitch.getLowValue() + " || theCurrentValue > " + theSwitch.getHighValue() + ") {");
-                            theWriter.println(theInset + "  currentLabel = " + (theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue()) + ";");
+                            theWriter.println(theInset + "  currentLabel = " + theSwitch.getDefaultJumpTarget().getAddress() + ";");
                             theWriter.println(theInset + "  continue controlflowloop;");
                             theWriter.println(theInset + "}");
                             theWriter.println(theInset + "var theOffset = theCurrentValue - " + theSwitch.getLowValue() + ";");
@@ -951,10 +940,11 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             theWriter.println(theInset + "switch(theCurrentValue) {");
                             for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theSwitch.getPairs()) {
                                 theWriter.println(theInset + "  case " + thePair.getMatch() + ":");
-                                theWriter.println(theInset +"    return " + (theSwitch.getOpcodeAddress().getAddress() + thePair.getOffset()) + ";");
+                                theWriter.println(theInset + "    currentLabel = " + (theSwitch.getOpcodeAddress().getAddress() + thePair.getOffset()) + ";");
+                                theWriter.println(theInset + "    continue controlflowloop;");
                             }
                             theWriter.println(theInset + "}");
-                            theWriter.println(theInset + "return " + (theSwitch.getOpcodeAddress().getAddress() + theSwitch.getDefaultValue()) + ";");
+                            theWriter.println(theInset + "return " + theSwitch.getDefaultJumpTarget().getAddress() + ";");
                         } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                             BytecodeInstructionFCONST theConst = (BytecodeInstructionFCONST) theInstruction;
                             theWriter.println(theInset + "frame.stack.push(" + theConst.getFloatValue() + ");");
@@ -1020,8 +1010,8 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.println(theInset + "frame.stack.push(" + theLong.getLongValue() + ");");
                             } else if (theConstant instanceof BytecodeClassinfoConstant) {
                                 BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
-                                theWriter.println(theInset + toClassName(theClassInfo) + ".classInitCheck();");
-                                theWriter.println(theInset + "frame.stack.push(" + toClassName(theClassInfo) + ".runtimeClass);");
+                                theWriter.println(theInset + JSWriterUtils.toClassName(theClassInfo) + ".classInitCheck();");
+                                theWriter.println(theInset + "frame.stack.push(" + JSWriterUtils.toClassName(theClassInfo) + ".runtimeClass);");
                             } else if (theConstant instanceof BytecodeIntegerConstant) {
                                 BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;
                                 theWriter.println(theInset + "frame.stack.push(" + theInteger.getIntegerValue() + ");");
@@ -1033,7 +1023,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
                                     // Construct a String
                                     theWriter.println(theInset + "// new String from constant pool : " + theValue);
-                                    theWriter.println(theInset + "frame.stack.push(bytecoder.newString(" + toArray(theBytes) + "));");
+                                    theWriter.println(theInset + "frame.stack.push(bytecoder.newString(" + JSWriterUtils.toArray(theBytes) + "));");
                                 } catch (UnsupportedEncodingException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -1170,7 +1160,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
         BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aProgram.getExceptionHandlers());
         if (theActiveHandlers.length == 0) {
             // Missing catch block
-            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + "." + toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
             aWriter.println(aInset + "return;");
         } else {
             for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
@@ -1187,7 +1177,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                     }
                 }
             }
-            aWriter.println(aInset + toClassName(aExceptionRethrower.getClassName()) + "." + toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
             aWriter.println(aInset + "return;");
         }
     }

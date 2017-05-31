@@ -26,4 +26,12 @@ public class IFExpression extends Expression {
         booleanExpression = aBooleanExpression;
         jumpTarget = aJumpTarget;
     }
+
+    public Variable getBooleanExpression() {
+        return booleanExpression;
+    }
+
+    public BytecodeOpcodeAddress getJumpTarget() {
+        return jumpTarget;
+    }
 }

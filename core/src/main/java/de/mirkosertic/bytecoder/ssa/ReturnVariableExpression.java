@@ -22,4 +22,8 @@ public class ReturnVariableExpression extends Expression {
     public ReturnVariableExpression(Variable aVariable) {
         variable = aVariable;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
 }

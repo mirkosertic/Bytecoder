@@ -22,4 +22,8 @@ public class ShortValue extends Value {
     public ShortValue(short aShortValue) {
         shortValue = aShortValue;
     }
+
+    public short getShortValue() {
+        return shortValue;
+    }
 }

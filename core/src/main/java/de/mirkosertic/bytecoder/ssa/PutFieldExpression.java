@@ -28,4 +28,16 @@ public class PutFieldExpression extends Expression {
         target = aTarget;
         value = aValue;
     }
+
+    public BytecodeFieldRefConstant getField() {
+        return field;
+    }
+
+    public Variable getTarget() {
+        return target;
+    }
+
+    public Variable getValue() {
+        return value;
+    }
 }
