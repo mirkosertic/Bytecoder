@@ -167,12 +167,14 @@ public class SSABlockGenerator {
                 theVariablesStack.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                 BytecodeInstructionASTORE theINS = (BytecodeInstructionASTORE) theInstruction;
-                Variable theValue = theVariablesStack.pop();
-                theLocalVariables.put(theINS.getVariableIndex(), theValue);
+                Variable theVariable = theVariablesStack.pop();
+                theLocalVariables.put(theINS.getVariableIndex(), theVariable);
+                theSingleAssignmentBlock.addExpression(new SetFrameVariableExpression(theINS.getVariableIndex(), theVariable));
             } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
                 BytecodeInstructionGenericSTORE theINS = (BytecodeInstructionGenericSTORE) theInstruction;
                 Variable theVariable = theVariablesStack.pop();
                 theLocalVariables.put(theINS.getVariableIndex(), theVariable);
+                theSingleAssignmentBlock.addExpression(new SetFrameVariableExpression(theINS.getVariableIndex(), theVariable));
             } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
                 BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                 Variable theIndex = theVariablesStack.pop();
@@ -306,7 +308,8 @@ public class SSABlockGenerator {
                 Variable theVariable = theLocalVariables.get(theINS.getIndex());
                 Variable theAmount = theSingleAssignmentBlock.newVariable(new IntegerValue(theINS.getConstant()));
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(new BinaryValue(theVariable, BinaryValue.Operator.ADD, theAmount));
-                theVariablesStack.push(theNewVariable);
+                theLocalVariables.put(theINS.getIndex(), theNewVariable);
+                theSingleAssignmentBlock.addExpression(new SetFrameVariableExpression(theINS.getIndex(), theNewVariable));
             } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                 BytecodeInstructionGenericREM theINS = (BytecodeInstructionGenericREM) theInstruction;
                 Variable theValue2 = theVariablesStack.pop();
@@ -529,9 +532,10 @@ public class SSABlockGenerator {
 
                 List<Variable> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
-                for (int i=theArgumentTypes.length - 1; i>=0;i--) {
+                for (int i=0;i<theArgumentTypes.length;i++) {
                     theArguments.add(theVariablesStack.pop());
                 }
+                Collections.reverse(theArguments);
 
                 Variable theTarget = theVariablesStack.pop();
 
@@ -548,9 +552,10 @@ public class SSABlockGenerator {
 
                 List<Variable> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
-                for (int i=theArgumentTypes.length - 1; i>=0;i--) {
+                for (int i=0;i<theArgumentTypes.length;i++) {
                     theArguments.add(theVariablesStack.pop());
                 }
+                Collections.reverse(theArguments);
 
                 Variable theTarget = theVariablesStack.pop();
 
@@ -568,9 +573,10 @@ public class SSABlockGenerator {
 
                 List<Variable> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
-                for (int i=theArgumentTypes.length - 1; i>=0;i--) {
+                for (int i=0;i<theArgumentTypes.length;i++) {
                     theArguments.add(theVariablesStack.pop());
                 }
+                Collections.reverse(theArguments);
 
                 Variable theTarget = theVariablesStack.pop();
 
@@ -588,9 +594,10 @@ public class SSABlockGenerator {
 
                 List<Variable> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
-                for (int i=theArgumentTypes.length - 1; i>=0;i--) {
+                for (int i=0;i<theArgumentTypes.length;i++) {
                     theArguments.add(theVariablesStack.pop());
                 }
+                Collections.reverse(theArguments);
 
                 InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theINS.getMethodReference(), theArguments);
                 if (theSignature.getReturnType().isVoid()) {

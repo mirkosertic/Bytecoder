@@ -55,6 +55,7 @@ import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.SetFrameVariableExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -371,6 +372,13 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                         if (theExpression instanceof ReturnExpression) {
                             ReturnExpression theE = (ReturnExpression) theExpression;
                             theJSWriter.print("return");
+                            theJSWriter.println(";");
+                        } else if (theExpression instanceof SetFrameVariableExpression) {
+                            SetFrameVariableExpression theE = (SetFrameVariableExpression) theExpression;
+                            theJSWriter.print("frame.local");
+                            theJSWriter.print(theE.getIndex() + 1);
+                            theJSWriter.print(" = ");
+                            theJSWriter.printVariableName(theE.getVariable());
                             theJSWriter.println(";");
                         } else if (theExpression instanceof InitVariableExpression) {
                             InitVariableExpression theE = (InitVariableExpression) theExpression;
