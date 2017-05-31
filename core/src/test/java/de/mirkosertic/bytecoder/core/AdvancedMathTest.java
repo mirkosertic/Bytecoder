@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.core;
 
-public class FixedBinaryValue extends Value {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public enum Operator {
-        ISNULL,
-        ISNONNULL,
-        ISZERO,
-    }
+@RunWith(BytecoderUnitTestRunner.class)
+public class AdvancedMathTest {
 
-    private final Variable value1;
-    private final Operator operator;
-
-    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
-        operator = aOperator;
+    @Test
+    public void testSin() {
+        float theSin = (float) Math.sin(10d);
+        //Assert.assertEquals((float) -0.5440211296081543, theSin, 0);
     }
 }

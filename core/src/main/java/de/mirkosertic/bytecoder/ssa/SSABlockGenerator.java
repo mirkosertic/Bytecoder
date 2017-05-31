@@ -16,15 +16,32 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericUSHR;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
@@ -32,6 +49,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
@@ -39,6 +57,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArrayLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArraySTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
@@ -47,27 +66,38 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class SSABlockGenerator {
@@ -106,7 +136,10 @@ public class SSABlockGenerator {
         StackHelper theVariablesStack = new StackHelper(theAST);
 
         for (BytecodeInstruction theInstruction : aBasicBlock.getInstructions()) {
-            if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
+            if (theInstruction instanceof BytecodeInstructionNOP) {
+                BytecodeInstructionNOP theINS = (BytecodeInstructionNOP) theInstruction;
+                // Completely ignored
+            } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
                 BytecodeInstructionCHECKCAST theINS = (BytecodeInstructionCHECKCAST) theInstruction;
                 Variable theVariable = theVariablesStack.peek();
                 theAST.addExpression(new CheckCastExpression(theVariable, theINS.getTypeCheck()));
@@ -117,6 +150,15 @@ public class SSABlockGenerator {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
                 Variable theVariable = theVariablesStack.peek();
                 Variable theClone = theAST.newVariable(new VariableReferenceValue(theVariable.getIndex()));
+                theVariablesStack.push(theClone);
+            } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
+                BytecodeInstructionDUPX1 theINS = (BytecodeInstructionDUPX1) theInstruction;
+                Variable theValue1 = theVariablesStack.peek();
+                Variable theValue2 = theVariablesStack.peek();
+
+                theVariablesStack.push(theValue1);
+                theVariablesStack.push(theValue2);
+                Variable theClone = theAST.newVariable(new VariableReferenceValue(theValue1.getIndex()));
                 theVariablesStack.push(theClone);
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 BytecodeInstructionGETSTATIC theINS = (BytecodeInstructionGETSTATIC) theInstruction;
@@ -131,6 +173,12 @@ public class SSABlockGenerator {
                 BytecodeInstructionGenericSTORE theINS = (BytecodeInstructionGenericSTORE) theInstruction;
                 Variable theVariable = theVariablesStack.pop();
                 theLocalVariables.put(theINS.getVariableIndex(), theVariable);
+            } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
+                BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
+                Variable theIndex = theVariablesStack.pop();
+                Variable theTarget = theVariablesStack.pop();
+                Variable theVariable = theAST.newVariable(new ArrayEntryValue(theTarget, theIndex));
+                theVariablesStack.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericArrayLOAD) {
                 BytecodeInstructionGenericArrayLOAD theINS = (BytecodeInstructionGenericArrayLOAD) theInstruction;
                 Variable theIndex = theVariablesStack.pop();
@@ -139,6 +187,12 @@ public class SSABlockGenerator {
                 theVariablesStack.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericArraySTORE) {
                 BytecodeInstructionGenericArraySTORE theINS = (BytecodeInstructionGenericArraySTORE) theInstruction;
+                Variable theValue = theVariablesStack.pop();
+                Variable theIndex = theVariablesStack.pop();
+                Variable theTarget = theVariablesStack.pop();
+                theAST.addExpression(new ArrayStoreExpression(theTarget, theIndex, theValue));
+            } else if (theInstruction instanceof BytecodeInstructionObjectArraySTORE) {
+                BytecodeInstructionObjectArraySTORE theINS = (BytecodeInstructionObjectArraySTORE) theInstruction;
                 Variable theValue = theVariablesStack.pop();
                 Variable theIndex = theVariablesStack.pop();
                 Variable theTarget = theVariablesStack.pop();
@@ -163,11 +217,41 @@ public class SSABlockGenerator {
                 theAST.addExpression(new PutStaticExpression(theINS.getConstant(), theValue));
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                 BytecodeInstructionGenericLDC theINS = (BytecodeInstructionGenericLDC) theInstruction;
-                Variable theVariable = theAST.newVariable(new ConstantValue(theINS.constant()));
-                theVariablesStack.push(theVariable);
+                BytecodeConstant theConstant = theINS.constant();
+                if (theConstant instanceof BytecodeDoubleConstant) {
+                    BytecodeDoubleConstant theC = (BytecodeDoubleConstant) theConstant;
+                    Variable theVariable = theAST.newVariable(new DoubleValue(theC.getDoubleValue()));
+                    theVariablesStack.push(theVariable);
+                } else if (theConstant instanceof BytecodeLongConstant) {
+                    BytecodeLongConstant theC = (BytecodeLongConstant) theConstant;
+                    Variable theVariable = theAST.newVariable(new LongValue(theC.getLongValue()));
+                    theVariablesStack.push(theVariable);
+                } else if (theConstant instanceof BytecodeFloatConstant) {
+                    BytecodeFloatConstant theC = (BytecodeFloatConstant) theConstant;
+                    Variable theVariable = theAST.newVariable(new FloatValue(theC.getFloatValue()));
+                    theVariablesStack.push(theVariable);
+                } else if (theConstant instanceof BytecodeIntegerConstant) {
+                    BytecodeIntegerConstant theC = (BytecodeIntegerConstant) theConstant;
+                    Variable theVariable = theAST.newVariable(new IntegerValue(theC.getIntegerValue()));
+                    theVariablesStack.push(theVariable);
+                } else if (theConstant instanceof BytecodeStringConstant) {
+                    BytecodeStringConstant theC = (BytecodeStringConstant) theConstant;
+                    Variable theVariable = theAST.newVariable(new StringValue(theC.getValue().stringValue()));
+                    theVariablesStack.push(theVariable);
+                } else if (theConstant instanceof BytecodeClassinfoConstant) {
+                    BytecodeClassinfoConstant theC = (BytecodeClassinfoConstant) theConstant;
+                    Variable theVariable = theAST.newVariable(new ClassReferenceValue(BytecodeObjectTypeRef.fromUtf8Constant(theC.getConstant())));
+                    theVariablesStack.push(theVariable);
+                } else {
+                    throw new IllegalArgumentException("Unsupported constant type : " + theConstant);
+                }
             } else if (theInstruction instanceof BytecodeInstructionBIPUSH) {
                 BytecodeInstructionBIPUSH theINS = (BytecodeInstructionBIPUSH) theInstruction;
                 Variable theVariable = theAST.newVariable(new ByteValue(theINS.getByteValue()));
+                theVariablesStack.push(theVariable);
+            } else if (theInstruction instanceof BytecodeInstructionSIPUSH) {
+                BytecodeInstructionSIPUSH theINS = (BytecodeInstructionSIPUSH) theInstruction;
+                Variable theVariable = theAST.newVariable(new ShortValue(theINS.getShortValue()));
                 theVariablesStack.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionICONST) {
                 BytecodeInstructionICONST theINS = (BytecodeInstructionICONST) theInstruction;
@@ -176,6 +260,14 @@ public class SSABlockGenerator {
             } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                 BytecodeInstructionFCONST theINS = (BytecodeInstructionFCONST) theInstruction;
                 Variable theVariable = theAST.newVariable(new FloatValue(theINS.getFloatValue()));
+                theVariablesStack.push(theVariable);
+            } else if (theInstruction instanceof BytecodeInstructionDCONST) {
+                BytecodeInstructionDCONST theINS = (BytecodeInstructionDCONST) theInstruction;
+                Variable theVariable = theAST.newVariable(new DoubleValue(theINS.getDoubleConst()));
+                theVariablesStack.push(theVariable);
+            } else if (theInstruction instanceof BytecodeInstructionLCONST) {
+                BytecodeInstructionLCONST theINS = (BytecodeInstructionLCONST) theInstruction;
+                Variable theVariable = theAST.newVariable(new LongValue(theINS.getLongConst()));
                 theVariablesStack.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericNEG) {
                 BytecodeInstructionGenericNEG theINS = (BytecodeInstructionGenericNEG) theInstruction;
@@ -245,10 +337,52 @@ public class SSABlockGenerator {
                 Variable theValue1 = theVariablesStack.pop();
                 Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.SUB, theValue2));
                 theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionGenericXOR) {
+                BytecodeInstructionGenericXOR theINS = (BytecodeInstructionGenericXOR) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.BINARYXOR, theValue2));
+                theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionGenericOR) {
+                BytecodeInstructionGenericOR theINS = (BytecodeInstructionGenericOR) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.BINARYOR, theValue2));
+                theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionGenericAND) {
+                BytecodeInstructionGenericAND theINS = (BytecodeInstructionGenericAND) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.BINARYAND, theValue2));
+                theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionGenericSHL) {
+                BytecodeInstructionGenericSHL theINS = (BytecodeInstructionGenericSHL) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.BINARYSHIFTLEFT, theValue2));
+                theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionGenericSHR) {
+                BytecodeInstructionGenericSHR theINS = (BytecodeInstructionGenericSHR) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.BINARYSHIFTRIGHT, theValue2));
+                theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionGenericUSHR) {
+                BytecodeInstructionGenericUSHR theINS = (BytecodeInstructionGenericUSHR) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.BINARYUNSIGNEDSHIFTRIGHT, theValue2));
+                theVariablesStack.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                 BytecodeInstructionIFNULL theINS = (BytecodeInstructionIFNULL) theInstruction;
                 Variable theValue = theVariablesStack.pop();
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNULL);
+                Variable theResult = theAST.newVariable(theBinaryValue);
+                theAST.addExpression(new IFExpression(theResult, theINS.getJumpTarget()));
+            } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
+                BytecodeInstructionIFNONNULL theINS = (BytecodeInstructionIFNONNULL) theInstruction;
+                Variable theValue = theVariablesStack.pop();
+                FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNONNULL);
                 Variable theResult = theAST.newVariable(theBinaryValue);
                 theAST.addExpression(new IFExpression(theResult, theINS.getJumpTarget()));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
@@ -271,6 +405,24 @@ public class SSABlockGenerator {
                     break;
                 case le:
                     theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.LESSTHANOREQUALS, theValue2);
+                    break;
+                case ne:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.NOTEQUALS, theValue2);
+                    break;
+                default:
+                    throw new IllegalStateException("Not supported operation : " + theINS.getType());
+                }
+                Variable theNewVariable = theAST.newVariable(theBinaryValue);
+                theAST.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget()));
+
+            } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
+                BytecodeInstructionIFACMP theINS = (BytecodeInstructionIFACMP) theInstruction;
+                Variable theValue2 = theVariablesStack.pop();
+                Variable theValue1 = theVariablesStack.pop();
+                BinaryValue theBinaryValue;
+                switch (theINS.getType()) {
+                case eq:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.EQUALS, theValue2);
                     break;
                 case ne:
                     theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.NOTEQUALS, theValue2);
@@ -334,6 +486,20 @@ public class SSABlockGenerator {
                 Variable theLength = theVariablesStack.pop();
                 Variable theNewVariable = theAST.newVariable(new NewArrayValue(theINS.getPrimitiveType(), theLength));
                 theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionNEWMULTIARRAY) {
+                BytecodeInstructionNEWMULTIARRAY theINS = (BytecodeInstructionNEWMULTIARRAY) theInstruction;
+                List<Variable> theDimensions = new ArrayList<>();
+                for (int i=0;i<theINS.getDimensions();i++) {
+                    theDimensions.add(theVariablesStack.pop());
+                }
+                Collections.reverse(theDimensions);
+                Variable theNewVariable = theAST.newVariable(new NewMultiArrayValue(BytecodeObjectTypeRef.fromUtf8Constant(theINS.getTypeConstant().getConstant()), theDimensions));
+                theVariablesStack.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
+                BytecodeInstructionANEWARRAY theINS = (BytecodeInstructionANEWARRAY) theInstruction;
+                Variable theLength = theVariablesStack.pop();
+                Variable theNewVariable = theAST.newVariable(new NewArrayValue(BytecodeObjectTypeRef.fromUtf8Constant(theINS.getTypeConstant().getConstant()), theLength));
+                theVariablesStack.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theINS = (BytecodeInstructionGOTO) theInstruction;
                 theAST.addExpression(new GotoExpression(theINS.getJumpAddress()));
@@ -369,7 +535,7 @@ public class SSABlockGenerator {
 
                 Variable theTarget = theVariablesStack.pop();
 
-                InvokeMethodValue theValue = new InvokeMethodValue(theINS.getMethodReference(), theTarget, theArguments);
+                InvokeMethodValue theValue = new InvokeMethodValue(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
                 if (theSignature.getReturnType().isVoid()) {
                     theAST.addExpression(new InvokeMethodExpression(theValue));
                 } else {
@@ -388,13 +554,34 @@ public class SSABlockGenerator {
 
                 Variable theTarget = theVariablesStack.pop();
 
-                InvokeMethodValue theValue = new InvokeMethodValue(theINS.getMethodReference(), theTarget, theArguments);
+                InvokeMethodValue theValue = new InvokeMethodValue(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
                 if (theSignature.getReturnType().isVoid()) {
                     theAST.addExpression(new InvokeMethodExpression(theValue));
                 } else {
                     Variable theNewVariable = theAST.newVariable(theValue);
                     theVariablesStack.push(theNewVariable);
                 }
+
+            } else if (theInstruction instanceof BytecodeInstructionINVOKEINTERFACE) {
+                BytecodeInstructionINVOKEINTERFACE theINS = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
+                BytecodeMethodSignature theSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                List<Variable> theArguments = new ArrayList<>();
+                BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
+                for (int i=theArgumentTypes.length - 1; i>=0;i--) {
+                    theArguments.add(theVariablesStack.pop());
+                }
+
+                Variable theTarget = theVariablesStack.pop();
+
+                InvokeMethodValue theValue = new InvokeMethodValue(theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
+                if (theSignature.getReturnType().isVoid()) {
+                    theAST.addExpression(new InvokeMethodExpression(theValue));
+                } else {
+                    Variable theNewVariable = theAST.newVariable(theValue);
+                    theVariablesStack.push(theNewVariable);
+                }
+
             } else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
                 BytecodeInstructionINVOKESTATIC theINS = (BytecodeInstructionINVOKESTATIC) theInstruction;
                 BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
@@ -412,6 +599,22 @@ public class SSABlockGenerator {
                     Variable theNewVariable = theAST.newVariable(theValue);
                     theVariablesStack.push(theNewVariable);
                 }
+            } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
+                BytecodeInstructionINSTANCEOF theINS = (BytecodeInstructionINSTANCEOF) theInstruction;
+
+                Variable theVariable = theVariablesStack.pop();
+                InstanceOfValue theValue = new InstanceOfValue(theVariable, theINS.getTypeRef());
+
+                Variable theCheckResult = theAST.newVariable(theValue);
+                theVariablesStack.push(theCheckResult);
+            } else if (theInstruction instanceof BytecodeInstructionTABLESWITCH) {
+                BytecodeInstructionTABLESWITCH theINS = (BytecodeInstructionTABLESWITCH) theInstruction;
+                Variable theVariable = theVariablesStack.pop();
+                theAST.addExpression(new TableSwitchExpression(theVariable, theINS));
+            } else if (theInstruction instanceof BytecodeInstructionLOOKUPSWITCH) {
+                BytecodeInstructionLOOKUPSWITCH theINS = (BytecodeInstructionLOOKUPSWITCH) theInstruction;
+                Variable theVariable = theVariablesStack.pop();
+                theAST.addExpression(new LookupSwitchExpression(theVariable, theINS));
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }

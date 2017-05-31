@@ -37,7 +37,6 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import de.mirkosertic.bytecoder.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.backend.js.JSCompileTarget;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
@@ -111,13 +110,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-    private void testJSBackendFrameworkMethod(JSBackend.CodeType aCodeType, FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Target " + aCodeType);
+    private void testJSBackendFrameworkMethod(JSCompileTarget.BackendType aBackendType, FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
+        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend " + aBackendType);
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
 
-            JSCompileTarget theCompileTarget = new JSCompileTarget(aCodeType);
+            JSCompileTarget theCompileTarget = new JSCompileTarget(aBackendType);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
@@ -127,7 +126,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             String theCode = theCompileTarget.compileToJS(testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
-            String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aCodeType + ".html";
+            String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aBackendType + ".html";
 
             theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());\n";
@@ -193,7 +192,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        testJSBackendFrameworkMethod(JSBackend.CodeType.STACK, aFrameworkMethod, aRunNotifier);
+        testJSBackendFrameworkMethod(JSCompileTarget.BackendType.interpreter, aFrameworkMethod, aRunNotifier);
         //testJSBackendFrameworkMethod(JSBackend.CodeType.AST, aFrameworkMethod, aRunNotifier);
         testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
     }

@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public class BytecodeInstructionAALOAD extends BytecodeInstruction {
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-    public BytecodeInstructionAALOAD(BytecodeOpcodeAddress aOpcodeIndex) {
-        super(aOpcodeIndex);
+public class ClassReferenceValue extends Value {
+
+    private final BytecodeObjectTypeRef type;
+
+    public ClassReferenceValue(BytecodeObjectTypeRef aType) {
+        type = aType;
     }
 }

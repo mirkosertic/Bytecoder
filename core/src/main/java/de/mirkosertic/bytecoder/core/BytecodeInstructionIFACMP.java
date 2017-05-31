@@ -34,13 +34,13 @@ public class BytecodeInstructionIFACMP extends BytecodeInstruction {
         return type;
     }
 
-    public BytecodeOpcodeAddress getJumpAddress() {
+    public BytecodeOpcodeAddress getJumpTarget() {
         return getOpcodeAddress().add(jumpOffset);
     }
 
     @Override
     public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
-        return new BytecodeOpcodeAddress[] { getJumpAddress() };
+        return new BytecodeOpcodeAddress[] { getJumpTarget() };
     }
 
     @Override

@@ -245,7 +245,7 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 50: { // aaload = 50 (0x32)
-                    theResult.addInstruction(new BytecodeInstructionAALOAD(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionObjectArrayLOAD(theOpcodeIndex));
                     break;
                 }
                 case 51: { //baload = 51 (0x33)
@@ -387,7 +387,7 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 83: { // aastore = 83 (0x53)
-                    theResult.addInstruction(new BytecodeInstructionAASTORE(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionObjectArraySTORE(theOpcodeIndex));
                     break;
                 }
                 case 84: { // bastore = 84 (0x54)

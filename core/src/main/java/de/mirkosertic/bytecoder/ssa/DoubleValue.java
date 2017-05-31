@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public class BytecodeInstructionAASTORE extends BytecodeInstruction {
+public class DoubleValue extends Value {
 
-    public BytecodeInstructionAASTORE(BytecodeOpcodeAddress aOpcodeIndex) {
-        super(aOpcodeIndex);
+    private final double doubleValue;
+
+    public DoubleValue(double aDoubleValue) {
+        doubleValue = aDoubleValue;
     }
 }

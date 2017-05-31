@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class AdcancedMathTest {
+public class LookupSwitchExpression extends Expression {
 
-    @Test
-    public void testSin() {
-        float theSin = (float) Math.sin(10d);
-        //Assert.assertEquals((float) -0.5440211296081543, theSin, 0);
+    private final Variable variable;
+    private final BytecodeInstructionLOOKUPSWITCH instruction;
+
+    public LookupSwitchExpression(Variable aVariable, BytecodeInstructionLOOKUPSWITCH aInstruction) {
+        variable = aVariable;
+        instruction = aInstruction;
     }
 }

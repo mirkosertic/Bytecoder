@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.ssa.SSABlockGenerator;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -32,10 +34,10 @@ public class BytecodeControlFlowGraph {
                 // Jump target, start a new basic block
                 currentBlock = null;
             }
-            if (aProgramm.isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
+            //if (aProgramm.isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
                 // start of try block, hence new basic block
-                currentBlock = null;
-            }
+                //currentBlock = null;
+            //}
             if (currentBlock == null) {
                 BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
                 for (BytecodeExceptionTableEntry theHandler : aProgramm.getExceptionHandlers()) {
@@ -73,6 +75,11 @@ public class BytecodeControlFlowGraph {
                 // invocation, start new basic block
   //              currentBlock = null;
             }
+        }
+
+        SSABlockGenerator theGenerator = new SSABlockGenerator();
+        for (BytecodeBasicBlock theBlock : blocks) {
+            theBlock.setSsaBlock(theGenerator.generateFrom(theBlock));
         }
     }
 
