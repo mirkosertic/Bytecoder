@@ -173,7 +173,7 @@ public class JSSSAWriter extends JSWriter {
     public void print(CompareValue aValue) {
         Variable theVariable1 = aValue.getValue1();
         Variable theVariable2 = aValue.getValue2();
-        print("((");
+        print("(");
         printVariableName(theVariable1);
         print(" > ");
         printVariableName(theVariable2);
@@ -182,7 +182,7 @@ public class JSSSAWriter extends JSWriter {
         printVariableName(theVariable1);
         print(" < ");
         printVariableName(theVariable2);
-        print(" ? -1 : 0)");
+        print(" ? -1 : 0))");
     }
 
     public void print(NewArrayValue aValue) {
@@ -365,7 +365,9 @@ public class JSSSAWriter extends JSWriter {
         print("(");
 
         for (int i = 0; i < theVariables.size(); i++) {
-            print(",");
+            if (i> 0) {
+                print(",");
+            }
             printVariableName(theVariables.get(i));
         }
         print(")");
