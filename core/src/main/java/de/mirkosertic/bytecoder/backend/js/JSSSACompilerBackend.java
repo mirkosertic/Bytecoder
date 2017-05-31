@@ -146,6 +146,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 return;
             }
 
+            // Fix constructor invocation delegation
             final String theOverriddenParentClassName = getOverriddenParentClassFor(aEntry.getValue().getBytecodeClass());
 
             String theJSClassName = JSWriterUtils.toClassName(aEntry.getKey());
@@ -469,6 +470,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                             theJSWriter.print(" > ");
                             theJSWriter.print(theIns.getHighValue());
                             theJSWriter.println(") {");
+                            theJSWriter.print(" ");
                             theJSWriter.println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
                             theJSWriter.println("}");
                             theJSWriter.print("switch(");
@@ -481,6 +483,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                             for (int i=0;i<theOffsets.length;i++) {
                                 theJSWriter.print(" case ");
                                 theJSWriter.print(i);
+                                theJSWriter.println(":");
                                 theJSWriter.print("     ");
                                 theJSWriter.println(generateJumpCodeFor(theIns.getOpcodeAddress().add((int) theOffsets[i])));
                             }

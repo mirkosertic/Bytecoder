@@ -306,6 +306,10 @@ public class SSABlockGenerator {
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 BytecodeInstructionIINC theINS = (BytecodeInstructionIINC) theInstruction;
                 Variable theVariable = theLocalVariables.get(theINS.getIndex());
+                if (theVariable == null) {
+                    theVariable = theSingleAssignmentBlock.newImportedLocalVariable(theINS.getIndex());
+                    theLocalVariables.put(theINS.getIndex(), theVariable);
+                }
                 Variable theAmount = theSingleAssignmentBlock.newVariable(new IntegerValue(theINS.getConstant()));
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(new BinaryValue(theVariable, BinaryValue.Operator.ADD, theAmount));
                 theLocalVariables.put(theINS.getIndex(), theNewVariable);

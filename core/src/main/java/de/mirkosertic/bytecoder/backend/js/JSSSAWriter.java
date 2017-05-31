@@ -138,6 +138,7 @@ public class JSSSAWriter extends JSWriter {
 
     public void print(ClassReferenceValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
+        print(".runtimeClass");
     }
 
     public void print(InstanceOfValue aValue) {
@@ -146,7 +147,7 @@ public class JSSSAWriter extends JSWriter {
         printVariableName(theVariable);
         print(" == null ? false : ");
         printVariableName(theVariable);
-        print(".instanceOfType(");
+        print(".clazz.instanceOfType(");
 
         BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
         print(theLinkedClass.getUniqueId());
