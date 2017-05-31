@@ -22,4 +22,8 @@ public class InvokeStaticMethodExpression extends Expression {
     public InvokeStaticMethodExpression(InvokeStaticMethodValue value) {
         this.value = value;
     }
+
+    public InvokeStaticMethodValue getValue() {
+        return value;
+    }
 }

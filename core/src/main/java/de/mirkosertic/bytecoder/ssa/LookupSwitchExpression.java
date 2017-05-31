@@ -26,4 +26,12 @@ public class LookupSwitchExpression extends Expression {
         variable = aVariable;
         instruction = aInstruction;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
+
+    public BytecodeInstructionLOOKUPSWITCH getInstruction() {
+        return instruction;
+    }
 }

@@ -22,4 +22,8 @@ public class ExternalReferenceValue extends Value {
     public ExternalReferenceValue(int variableIndex) {
         this.variableIndex = variableIndex;
     }
+
+    public int getVariableIndex() {
+        return variableIndex;
+    }
 }

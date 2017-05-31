@@ -26,4 +26,12 @@ public class TableSwitchExpression extends Expression {
         variable = aVariable;
         instruction = aInstruction;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
+
+    public BytecodeInstructionTABLESWITCH getInstruction() {
+        return instruction;
+    }
 }

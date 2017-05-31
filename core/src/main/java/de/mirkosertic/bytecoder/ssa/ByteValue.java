@@ -22,4 +22,8 @@ public class ByteValue extends Value {
     public ByteValue(byte aByteValue) {
         byteValue = aByteValue;
     }
+
+    public byte getByteValue() {
+        return byteValue;
+    }
 }

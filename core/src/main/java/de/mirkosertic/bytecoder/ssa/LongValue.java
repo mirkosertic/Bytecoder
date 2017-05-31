@@ -22,4 +22,8 @@ public class LongValue extends Value {
     public LongValue(long aLongValue) {
         longValue = aLongValue;
     }
+
+    public long getLongValue() {
+        return longValue;
+    }
 }

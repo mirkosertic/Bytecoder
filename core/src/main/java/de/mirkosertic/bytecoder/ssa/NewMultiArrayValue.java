@@ -28,4 +28,12 @@ public class NewMultiArrayValue extends Value {
         type = aType;
         dimensions = aDimensions;
     }
+
+    public BytecodeTypeRef getType() {
+        return type;
+    }
+
+    public List<Variable> getDimensions() {
+        return dimensions;
+    }
 }

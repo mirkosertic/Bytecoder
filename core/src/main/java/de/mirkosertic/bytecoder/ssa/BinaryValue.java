@@ -49,4 +49,16 @@ public class BinaryValue extends Value {
         operator = aOperator;
         value2 = aValue2;
     }
+
+    public Variable getValue1() {
+        return value1;
+    }
+
+    public Operator getOperator() {
+        return operator;
+    }
+
+    public Variable getValue2() {
+        return value2;
+    }
 }

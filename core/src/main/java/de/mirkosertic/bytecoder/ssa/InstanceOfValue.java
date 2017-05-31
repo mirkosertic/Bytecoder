@@ -26,4 +26,12 @@ public class InstanceOfValue extends Value {
         variable = aVariable;
         type = aType;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
+
+    public BytecodeClassinfoConstant getType() {
+        return type;
+    }
 }

@@ -15,25 +15,39 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 
 import java.util.List;
 
-public class InvokeStaticMethodValue extends Value {
+public class DirectInvokeMethodValue extends Value {
 
-    private final BytecodeMethodRefConstant method;
+    private final BytecodeClassinfoConstant classInfo;
+    private final BytecodeNameAndTypeConstant method;
+    private final Variable target;
     private final List<Variable> arguments;
 
-    public InvokeStaticMethodValue(BytecodeMethodRefConstant aMethod, List<Variable> aArguments) {
+    public DirectInvokeMethodValue(BytecodeClassinfoConstant aClassInfo, BytecodeNameAndTypeConstant aMethod, Variable aTarget,
+                                   List<Variable> aArguments) {
         method = aMethod;
+        target = aTarget;
         arguments = aArguments;
+        classInfo = aClassInfo;
     }
 
-    public BytecodeMethodRefConstant getMethod() {
+    public BytecodeNameAndTypeConstant getMethod() {
         return method;
+    }
+
+    public Variable getTarget() {
+        return target;
     }
 
     public List<Variable> getArguments() {
         return arguments;
+    }
+
+    public BytecodeClassinfoConstant getClassInfo() {
+        return classInfo;
     }
 }

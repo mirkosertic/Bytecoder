@@ -15,15 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+public class DirectInvokeMethodExpression extends Expression {
 
-public class TypeConvertionValue extends Value {
+    private final DirectInvokeMethodValue value;
 
-    private final Variable variable;
-    private final BytecodePrimitiveTypeRef targetType;
+    public DirectInvokeMethodExpression(DirectInvokeMethodValue value) {
+        this.value = value;
+    }
 
-    public TypeConvertionValue(Variable aVariable, BytecodePrimitiveTypeRef aTargetType) {
-        variable = aVariable;
-        targetType = aTargetType;
+    public DirectInvokeMethodValue getValue() {
+        return value;
     }
 }

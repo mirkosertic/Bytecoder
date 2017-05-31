@@ -26,4 +26,12 @@ public class NewArrayValue extends Value {
         type = aType;
         length = aLength;
     }
+
+    public BytecodeTypeRef getType() {
+        return type;
+    }
+
+    public Variable getLength() {
+        return length;
+    }
 }

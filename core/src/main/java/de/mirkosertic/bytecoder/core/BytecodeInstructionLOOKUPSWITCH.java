@@ -56,6 +56,10 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
         return pairs;
     }
 
+    public BytecodeOpcodeAddress getDefaultJumpTarget() {
+        return getOpcodeAddress().add((int ) getDefaultValue());
+    }
+
     @Override
     public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
         Set<BytecodeOpcodeAddress> theResult = new HashSet<>();

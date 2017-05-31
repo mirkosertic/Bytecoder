@@ -15,9 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -57,52 +58,13 @@ public abstract class AbstractJSBackend {
         modules.register("system", theSystemModule);
     }
 
-    private String typeRefToString(BytecodeTypeRef aTypeRef) {
-        if (aTypeRef.isPrimitive()) {
-            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
-            return thePrimitive.name();
+    protected String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
+        BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAnnotations().getAnnotationByType(OverrideParentClass.class.getName());
+        if (theDelegatesTo != null) {
+            BytecodeAnnotation.ElementValue theParentOverride = (BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
+            return theParentOverride.stringValue().replace("/",".");
         }
-        if (aTypeRef.isArray()) {
-            BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
-            return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
-        }
-        BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
-        return toClassName(theObjectRef);
-    }
-
-    public String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
-        String theName = typeRefToString(aSignature.getReturnType());
-        theName += aMethodName.replace("<", "").replace(">", "");
-
-        for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
-            theName += typeRefToString(theTypeRef);
-        }
-        return theName;
-    }
-
-    private String toClassNameInternal(String aClassName) {
-        int p = aClassName.lastIndexOf(".");
-        return aClassName.substring(p + 1);
-    }
-
-    public String toClassName(BytecodeObjectTypeRef aTypeRef) {
-        return toClassNameInternal(aTypeRef.name());
-    }
-
-    public String toClassName(BytecodeClassinfoConstant aTypeRef) {
-        return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
-    }
-
-    public String toArray(byte[] aData) {
-        StringBuilder theResult = new StringBuilder("[");
-        for (int i=0;i<aData.length;i++) {
-            if (i>0) {
-                theResult.append(",");
-            }
-            theResult.append(aData[i]);
-        }
-        theResult.append("]");
-        return theResult.toString();
+        return null;
     }
 
     public abstract String generateCodeFor(BytecodeLinkerContext aLinkerContext);

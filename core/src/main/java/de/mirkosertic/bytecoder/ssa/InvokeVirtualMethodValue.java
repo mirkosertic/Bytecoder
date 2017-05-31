@@ -15,22 +15,29 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 
 import java.util.List;
 
-public class InvokeStaticMethodValue extends Value {
+public class InvokeVirtualMethodValue extends Value {
 
-    private final BytecodeMethodRefConstant method;
+    private final BytecodeNameAndTypeConstant method;
+    private final Variable target;
     private final List<Variable> arguments;
 
-    public InvokeStaticMethodValue(BytecodeMethodRefConstant aMethod, List<Variable> aArguments) {
+    public InvokeVirtualMethodValue(BytecodeNameAndTypeConstant aMethod, Variable aTarget,
+                                    List<Variable> aArguments) {
         method = aMethod;
+        target = aTarget;
         arguments = aArguments;
     }
 
-    public BytecodeMethodRefConstant getMethod() {
+    public BytecodeNameAndTypeConstant getMethod() {
         return method;
+    }
+
+    public Variable getTarget() {
+        return target;
     }
 
     public List<Variable> getArguments() {

@@ -22,4 +22,8 @@ public class FloatValue extends Value {
     public FloatValue(float aFloatValue) {
         floatValue = aFloatValue;
     }
+
+    public float getFloatValue() {
+        return floatValue;
+    }
 }

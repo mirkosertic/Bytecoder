@@ -26,4 +26,12 @@ public class PutStaticExpression extends Expression {
         field = aField;
         variable = aVariable;
     }
+
+    public BytecodeFieldRefConstant getField() {
+        return field;
+    }
+
+    public Variable getVariable() {
+        return variable;
+    }
 }

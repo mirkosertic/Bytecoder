@@ -22,4 +22,8 @@ public class NegatedValue extends Value {
     public NegatedValue(Variable aVariable) {
         variable = aVariable;
     }
+
+    public Variable getVariable() {
+        return variable;
+    }
 }

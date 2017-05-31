@@ -22,4 +22,8 @@ public class IntegerValue extends Value {
     public IntegerValue(int aIntValue) {
         intValue = aIntValue;
     }
+
+    public int getIntValue() {
+        return intValue;
+    }
 }

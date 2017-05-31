@@ -24,4 +24,8 @@ public class NewObjectValue extends Value {
     public NewObjectValue(BytecodeClassinfoConstant type) {
         this.type = type;
     }
+
+    public BytecodeClassinfoConstant getType() {
+        return type;
+    }
 }
