@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.ssa.SSABlockGenerator;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -62,7 +60,7 @@ public class BytecodeControlFlowGraph {
             } else if (theInstruction instanceof BytecodeInstructionRETURN) {
                 // returning, start new basic block
                 currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionARETURN) {
+            } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
                 // returning, start new basic block
                 currentBlock = null;
             } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
@@ -75,11 +73,6 @@ public class BytecodeControlFlowGraph {
                 // invocation, start new basic block
   //              currentBlock = null;
             }
-        }
-
-        SSABlockGenerator theGenerator = new SSABlockGenerator();
-        for (BytecodeBasicBlock theBlock : blocks) {
-            theBlock.setSsaBlock(theGenerator.generateFrom(theBlock));
         }
     }
 

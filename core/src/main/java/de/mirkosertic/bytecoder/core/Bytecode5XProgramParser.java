@@ -852,7 +852,7 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 176: {// areturn = 176 (0xb0)
-                    theResult.addInstruction(new BytecodeInstructionARETURN(theOpcodeIndex));
+                    theResult.addInstruction(new BytecodeInstructionObjectRETURN(theOpcodeIndex));
                     break;
                 }
                 case 177: {// return = 177 (0xb1)

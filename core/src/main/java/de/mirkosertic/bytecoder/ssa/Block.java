@@ -15,48 +15,46 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class Block {
 
-    private final Map<Integer, Variable> variables;
+    private final BytecodeOpcodeAddress startAddress;
     private final List<Expression> expressions;
     private final List<Variable> importedStack;
+    private final List<Variable> exitStack;
+    private final Program program;
 
-    public Block() {
-        variables = new HashMap<>();
+    public Block(Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+        startAddress = aStartAddress;
+        program = aProgram;
+        exitStack = new ArrayList<>();
         expressions = new ArrayList<>();
         importedStack = new ArrayList<>();
     }
 
+    public BytecodeOpcodeAddress getStartAddress() {
+        return startAddress;
+    }
+
     public Variable newImportedStackVariable() {
-        int theIndex = variables.size();
-        Variable theNewVariable = new Variable(theIndex, new NullValue());
-        variables.put(theIndex, theNewVariable);
+        Variable theNewVariable = program.createVariable(new NullValue());
         importedStack.add(theNewVariable);
         expressions.add(new InitVariableExpression(theNewVariable));
         return theNewVariable;
     }
 
     public Variable newImportedLocalVariable(int aIndex) {
-        int theIndex = variables.size();
-        Variable theNewVariable = new Variable(theIndex, new ExternalReferenceValue(aIndex));
-        variables.put(theIndex, theNewVariable);
+        Variable theNewVariable = program.createVariable(new ExternalReferenceValue(aIndex));
         expressions.add(new InitVariableExpression(theNewVariable));
         return theNewVariable;
     }
 
     public Variable newVariable(Value aValue)  {
-        int theIndex = variables.size();
-        Variable theNewVariable = new Variable(theIndex, aValue);
-        variables.put(theIndex, theNewVariable);
+        Variable theNewVariable = program.createVariable(aValue);
         expressions.add(new InitVariableExpression(theNewVariable));
         return theNewVariable;
     }
@@ -69,25 +67,15 @@ public class Block {
         return expressions;
     }
 
-    public Set<BytecodeObjectTypeRef> getStaticReferences() {
-        Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
-        for (Variable theVariable : variables.values()) {
-            Value theValue = theVariable.getValue();
-            if (theValue instanceof GetStaticValue) {
-                GetStaticValue theStaticValue = (GetStaticValue) theValue;
-                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
-            }
-            if (theValue instanceof NewObjectValue) {
-                NewObjectValue theNewObjectValue = (NewObjectValue) theValue;
-                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
-            }
-        }
-        for (Expression theExpression : expressions) {
-            if (theExpression instanceof PutStaticExpression) {
-                PutStaticExpression theE = (PutStaticExpression) theExpression;
-                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
-            }
-        }
-        return theResult;
+    public List<Variable> getImportedStack() {
+        return importedStack;
+    }
+
+    public void addToExitStack(Variable aVariable) {
+        exitStack.add(aVariable);
+    }
+
+    public List<Variable> getExitStack() {
+        return exitStack;
     }
 }

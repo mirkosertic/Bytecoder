@@ -19,9 +19,9 @@ import java.io.PrintWriter;
 
 public class JSWriter {
 
-    private final String indent;
-    private final PrintWriter writer;
-    private boolean newLine;
+    protected final String indent;
+    protected final PrintWriter writer;
+    protected boolean newLine;
 
     public JSWriter(String aIndent, PrintWriter aWriter) {
         indent = aIndent;

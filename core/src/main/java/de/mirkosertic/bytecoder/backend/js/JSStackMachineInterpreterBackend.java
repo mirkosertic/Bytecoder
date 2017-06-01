@@ -36,7 +36,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
@@ -904,8 +904,8 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                         } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                             BytecodeInstructionGenericRETURN theReturn = (BytecodeInstructionGenericRETURN) theInstruction;
                             theWriter.println(theInset + "return frame.stack.pop();");
-                        } else if (theInstruction instanceof BytecodeInstructionARETURN) {
-                            BytecodeInstructionARETURN theReturn = (BytecodeInstructionARETURN) theInstruction;
+                        } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
+                            BytecodeInstructionObjectRETURN theReturn = (BytecodeInstructionObjectRETURN) theInstruction;
                             theWriter.println(theInset + "return frame.stack.pop();");
                         } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                             BytecodeInstructionATHROW theThrow = (BytecodeInstructionATHROW) theInstruction;
