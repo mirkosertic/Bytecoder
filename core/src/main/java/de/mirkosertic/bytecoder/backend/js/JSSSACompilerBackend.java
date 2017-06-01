@@ -15,6 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
@@ -23,58 +30,26 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.Block;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.SetFrameVariableExpression;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class JSSSACompilerBackend extends AbstractJSBackend {
 
     public JSSSACompilerBackend() {
-    }
-
-    public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
-        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
     @Override
@@ -125,6 +100,19 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
         theWriter.println("          theBytes.data = aByteArray;");
         theWriter.println("          " + JSWriterUtils.toClassName(theStringTypeRef) + "." + JSWriterUtils.toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
         theWriter.println("          return theNewString;");
+        theWriter.println("     },");
+        theWriter.println();
+        theWriter.println("     newMultiArray : function(aDimensions, aDefault) {");
+        theWriter.println("         var theLength = aDimensions[0];");
+        theWriter.println("         var theArray = bytecoder.newArray(theLength, aDefault);");
+        theWriter.println("         if (aDimensions.length > 1) {");
+        theWriter.println("             var theNewDimensions = aDimensions.slice(0);");
+        theWriter.println("             theNewDimensions.shift();");
+        theWriter.println("             for (var i=0;i<theLength;i++) {");
+        theWriter.println("                 theArray.data[i] = bytecoder.newMultiArray(theNewDimensions, aDefault);");
+        theWriter.println("             }");
+        theWriter.println("         }");
+        theWriter.println("         return theArray;");
         theWriter.println("     },");
         theWriter.println();
         theWriter.println("     newArray : function(aLength, aDefault) {");
@@ -342,174 +330,48 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
+                ProgramGenerator theGenerator = new ProgramGenerator();
+                Program theSSAProgram = theGenerator.generateFrom(theFlowGraph);
 
-                String theInset = "            ";
                 theWriter.println("        // Brute force static references init");
-                Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
-                for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
-                    Block theSSABlock = theBlock.getSsaBlock();
-                    theStaticReferences.addAll(theSSABlock.getStaticReferences());
-                }
+                Set<BytecodeObjectTypeRef> theStaticReferences = theSSAProgram.getStaticReferences();
                 for (BytecodeObjectTypeRef theRef : theStaticReferences) {
                     theWriter.print("        ");
                     theWriter.print(JSWriterUtils.toClassName(theRef));
                     theWriter.println(".classInitCheck();");
                 }
 
-                theWriter.println("        // Begin name code");
                 theWriter.println("        // # basic blocks in flow graph : " + theFlowGraph.getBlocks().size());
-                theWriter.println("        var currentLabel = " + theFlowGraph.getBlocks().get(0).getStartAddress().getAddress() + ";");
+
+                JSSSAWriter theVariablesWriter = new JSSSAWriter("        ", theWriter, aLinkerContext);
+                for (Variable theVariable : theSSAProgram.getVariables()) {
+                    theVariablesWriter.print("var ");
+                    theVariablesWriter.printVariableName(theVariable);
+                    theVariablesWriter.println(" = null;");
+                }
+
+                theWriter.println();
+                theWriter.println("        var currentLabel = " + theSSAProgram.getBlocks().get(0).getStartAddress().getAddress() + ";");
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
 
-                for (BytecodeBasicBlock theBlock : theFlowGraph.getBlocks()) {
-
-                    Block theSSABlock = theBlock.getSsaBlock();
+                for (Block theBlock : theSSAProgram.getBlocks()) {
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
                     JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
 
-                    for (Expression theExpression : theSSABlock.getExpressions()) {
-                        if (theExpression instanceof ReturnExpression) {
-                            ReturnExpression theE = (ReturnExpression) theExpression;
-                            theJSWriter.print("return");
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof SetFrameVariableExpression) {
-                            SetFrameVariableExpression theE = (SetFrameVariableExpression) theExpression;
-                            theJSWriter.print("frame.local");
-                            theJSWriter.print(theE.getIndex() + 1);
-                            theJSWriter.print(" = ");
-                            theJSWriter.printVariableName(theE.getVariable());
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof InitVariableExpression) {
-                            InitVariableExpression theE = (InitVariableExpression) theExpression;
-                            Variable theVariable = theE.getVariable();
-                            theJSWriter.print("var ");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.print(" = ");
-                            theJSWriter.print(theVariable.getValue());
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof PutStaticExpression) {
-                            PutStaticExpression theE = (PutStaticExpression) theExpression;
-                            BytecodeFieldRefConstant theField = theE.getField();
-                            Variable theVariable = theE.getVariable();
-                            theJSWriter.printStaticFieldReference(theField);
-                            theJSWriter.print(" = ");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof ReturnVariableExpression) {
-                            ReturnVariableExpression theE = (ReturnVariableExpression) theExpression;
-                            Variable theVariable = theE.getVariable();
-                            theJSWriter.print("return ");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof ThrowExpression) {
-                            ThrowExpression theE = (ThrowExpression) theExpression;
-                            Variable theVariable = theE.getVariable();
-                            theJSWriter.print("throw ");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof InvokeVirtualMethodExpression) {
-                            InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
-                            theJSWriter.print(theE.getValue());
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof DirectInvokeMethodExpression) {
-                            DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
-                            theJSWriter.print(theE.getValue());
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof InvokeStaticMethodExpression) {
-                            InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
-                            theJSWriter.print(theE.getValue());
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof PutFieldExpression) {
-                            PutFieldExpression theE = (PutFieldExpression) theExpression;
-                            Variable theTarget = theE.getTarget();
-                            BytecodeFieldRefConstant theField = theE.getField();
-                            Variable thevalue = theE.getValue();
-                            theJSWriter.printVariableName(theTarget);
-                            theJSWriter.printInstanceFieldReference(theField);
-                            theJSWriter.print(" = ");
-                            theJSWriter.printVariableName(thevalue);
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof IFExpression) {
-                            IFExpression theE = (IFExpression) theExpression;
-                            Variable theBooleanExpression = theE.getBooleanExpression();
-                            theJSWriter.print("if (");
-                            theJSWriter.printVariableName(theBooleanExpression);
-                            theJSWriter.println(") {");
-                            theJSWriter.print(" ");
-                            theJSWriter.println(generateJumpCodeFor(theE.getJumpTarget()));
-                            theJSWriter.println("}");
-                        } else if (theExpression instanceof GotoExpression) {
-                            GotoExpression theE = (GotoExpression) theExpression;
-                            theJSWriter.println(generateJumpCodeFor(theE.getJumpTarget()));
-                        } else if (theExpression instanceof ArrayStoreExpression) {
-                            ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
-                            Variable theArray = theE.getArray();
-                            Variable theIndex = theE.getIndex();
-                            Variable theValue = theE.getValue();
-                            theJSWriter.printVariableName(theArray);
-                            theJSWriter.printArrayIndexReference(theIndex);
-                            theJSWriter.print(" = ");
-                            theJSWriter.printVariableName(theValue);
-                            theJSWriter.println(";");
-                        } else if (theExpression instanceof CheckCastExpression) {
-                            CheckCastExpression theE = (CheckCastExpression) theExpression;
-                            // Completely ignored
-                        } else if (theExpression instanceof TableSwitchExpression) {
-                            TableSwitchExpression theE = (TableSwitchExpression) theExpression;
-                            Variable theVariable = theE.getVariable();
-                            BytecodeInstructionTABLESWITCH theIns = theE.getInstruction();
+                    for (Variable theVariable : theBlock.getImportedStack()) {
+                        theJSWriter.print("// ");
+                        theJSWriter.printVariableName(theVariable);
+                        theJSWriter.println(" required on stack");
+                    }
 
-                            theJSWriter.print("if (");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.print(" < ");
-                            theJSWriter.print(theIns.getLowValue());
-                            theJSWriter.print(" || ");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.print(" > ");
-                            theJSWriter.print(theIns.getHighValue());
-                            theJSWriter.println(") {");
-                            theJSWriter.print(" ");
-                            theJSWriter.println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
-                            theJSWriter.println("}");
-                            theJSWriter.print("switch(");
-                            theJSWriter.printVariableName(theVariable);
-                            theJSWriter.print(" - ");
-                            theJSWriter.print(theIns.getLowValue());
-                            theJSWriter.println(") {");
+                    theJSWriter.writeExpressions(theBlock.getExpressions());
 
-                            long[] theOffsets = theIns.getOffsets();
-                            for (int i=0;i<theOffsets.length;i++) {
-                                theJSWriter.print(" case ");
-                                theJSWriter.print(i);
-                                theJSWriter.println(":");
-                                theJSWriter.print("     ");
-                                theJSWriter.println(generateJumpCodeFor(theIns.getOpcodeAddress().add((int) theOffsets[i])));
-                            }
-
-                            theJSWriter.println("}");
-                            theJSWriter.println("throw 'Illegal jump target!';");
-                        } else if (theExpression instanceof LookupSwitchExpression) {
-                            LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
-                            BytecodeInstructionLOOKUPSWITCH theIns = theE.getInstruction();
-                            theJSWriter.print("switch(");
-                            theJSWriter.printVariableName(theE.getVariable());
-                            theJSWriter.println(") {");
-
-                            for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theIns.getPairs()) {
-                                theJSWriter.print(" case ");
-                                theJSWriter.print(thePair.getMatch());
-                                theJSWriter.println(":");
-
-                                theJSWriter.println("       " + generateJumpCodeFor(theIns.getOpcodeAddress().add((int) thePair.getOffset())));
-                            }
-
-                            theJSWriter.println("}");
-                            theJSWriter.println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
-                        } else {
-                            throw new IllegalStateException("Not implemented : " + theExpression);
-                        }
+                    for (Variable theExitVariable : theBlock.getExitStack()) {
+                        theJSWriter.print("// ");
+                        theJSWriter.printVariableName(theExitVariable);
+                        theJSWriter.println(" still on stack");
                     }
 
                     theWriter.println("         }");

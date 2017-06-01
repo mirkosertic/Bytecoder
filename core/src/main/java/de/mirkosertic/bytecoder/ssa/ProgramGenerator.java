@@ -15,16 +15,24 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
+
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
 import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
 import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARETURN;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
@@ -93,14 +101,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
-
-public class SSABlockGenerator {
+public class ProgramGenerator {
 
     private static class StackHelper {
 
@@ -119,6 +120,10 @@ public class SSABlockGenerator {
             return stack.pop();
         }
 
+        public List<Variable> cloneContent() {
+            return new ArrayList<>(stack);
+        }
+
         public Variable peek() {
             return stack.peek();
         }
@@ -128,9 +133,18 @@ public class SSABlockGenerator {
         }
     }
 
-    public Block generateFrom(BytecodeBasicBlock aBasicBlock) {
+    public Program generateFrom(BytecodeControlFlowGraph aFlowGraph) {
+        Program theProgram = new Program();
+        for (BytecodeBasicBlock theBlock : aFlowGraph.getBlocks()) {
+            Block theSSABlock = generateFrom(theBlock, theProgram);
+            theProgram.add(theSSABlock);
+        }
+        return theProgram;
+    }
 
-        Block theSingleAssignmentBlock = new Block();
+    public Block generateFrom(BytecodeBasicBlock aBasicBlock, Program aProgram) {
+
+        Block theSingleAssignmentBlock = new Block(aProgram, aBasicBlock.getStartAddress());
 
         Map<Integer, Variable> theLocalVariables = new HashMap<>();
         StackHelper theVariablesStack = new StackHelper(theSingleAssignmentBlock);
@@ -385,13 +399,21 @@ public class SSABlockGenerator {
                 Variable theValue = theVariablesStack.pop();
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNULL);
                 Variable theResult = theSingleAssignmentBlock.newVariable(theBinaryValue);
-                theSingleAssignmentBlock.addExpression(new IFExpression(theResult, theINS.getJumpTarget()));
+
+                List<Expression> theExpressions = new ArrayList<>();
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
+
+                theSingleAssignmentBlock.addExpression(new IFExpression(theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
                 BytecodeInstructionIFNONNULL theINS = (BytecodeInstructionIFNONNULL) theInstruction;
                 Variable theValue = theVariablesStack.pop();
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNONNULL);
                 Variable theResult = theSingleAssignmentBlock.newVariable(theBinaryValue);
-                theSingleAssignmentBlock.addExpression(new IFExpression(theResult, theINS.getJumpTarget()));
+
+                List<Expression> theExpressions = new ArrayList<>();
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
+
+                theSingleAssignmentBlock.addExpression(new IFExpression(theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theINS = (BytecodeInstructionIFICMP) theInstruction;
                 Variable theValue2 = theVariablesStack.pop();
@@ -420,7 +442,11 @@ public class SSABlockGenerator {
                     throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(theBinaryValue);
-                theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget()));
+
+                List<Expression> theExpressions = new ArrayList<>();
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
+
+                theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theINS = (BytecodeInstructionIFACMP) theInstruction;
@@ -438,7 +464,11 @@ public class SSABlockGenerator {
                     throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(theBinaryValue);
-                theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget()));
+
+                List<Expression> theExpressions = new ArrayList<>();
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
+
+                theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theINS = (BytecodeInstructionIFCOND) theInstruction;
@@ -468,9 +498,13 @@ public class SSABlockGenerator {
                         throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(theBinaryValue);
-                theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget()));
-            } else if (theInstruction instanceof BytecodeInstructionARETURN) {
-                BytecodeInstructionARETURN theINS = (BytecodeInstructionARETURN) theInstruction;
+
+                List<Expression> theExpressions = new ArrayList<>();
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
+
+                theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
+            } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
+                BytecodeInstructionObjectRETURN theINS = (BytecodeInstructionObjectRETURN) theInstruction;
                 Variable theVariable = theVariablesStack.pop();
                 theSingleAssignmentBlock.addExpression(new ReturnVariableExpression(theVariable));
             } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
@@ -509,7 +543,7 @@ public class SSABlockGenerator {
                 theVariablesStack.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theINS = (BytecodeInstructionGOTO) theInstruction;
-                theSingleAssignmentBlock.addExpression(new GotoExpression(theINS.getJumpAddress()));
+                theSingleAssignmentBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), theVariablesStack.cloneContent()));
             } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
                 BytecodeInstructionL2Generic theINS = (BytecodeInstructionL2Generic) theInstruction;
                 Variable theValue = theVariablesStack.pop();
@@ -629,6 +663,11 @@ public class SSABlockGenerator {
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
+        }
+
+        List<Variable> theRemainingStack = theVariablesStack.cloneContent();
+        for (int i=0;i<theRemainingStack.size();i++) {
+            theSingleAssignmentBlock.addToExitStack(theRemainingStack.get(i));
         }
 
         return theSingleAssignmentBlock;

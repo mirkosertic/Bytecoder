@@ -15,45 +15,65 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.util.List;
+
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExternalReferenceValue;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GetStaticValue;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.SetFrameVariableExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
-
-import java.io.PrintWriter;
-import java.util.List;
 
 public class JSSSAWriter extends JSWriter {
 
@@ -62,6 +82,10 @@ public class JSSSAWriter extends JSWriter {
     public JSSSAWriter(String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         super(aIndent, aWriter);
         linkerContext = aLinkerContext;
+    }
+
+    public JSSSAWriter withDeeperIndent() {
+        return new JSSSAWriter(indent + "    ", writer, linkerContext);
     }
 
     public void print(Value aValue) {
@@ -125,12 +149,19 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void print(NewMultiArrayValue aValue) {
-        //TODO: replace this bad implementation
         BytecodeTypeRef theType = aValue.getType();
         Object theDefaultValue = theType.defaultValue();
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
-        print("bytecoder.newArray(");
-        print(1);
+        print("bytecoder.newMultiArray(");
+        print("[");
+        List<Variable> theDimensions = aValue.getDimensions();
+        for (int i=0;i<theDimensions.size();i++) {
+            if (i>0) {
+                print(",");
+            }
+            printVariableName(theDimensions.get(i));
+        }
+        print("]");
         print(",");
         print(theStrDefault);
         print(")");
@@ -441,5 +472,159 @@ public class JSSSAWriter extends JSWriter {
     public void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
         print(".data.");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+    }
+
+    public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
+        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
+    }
+
+    public void writeExpressions(List<Expression> aExpressions) {
+        for (Expression theExpression : aExpressions) {
+            if (theExpression instanceof ReturnExpression) {
+                ReturnExpression theE = (ReturnExpression) theExpression;
+                print("return");
+                println(";");
+            } else if (theExpression instanceof SetFrameVariableExpression) {
+                SetFrameVariableExpression theE = (SetFrameVariableExpression) theExpression;
+                print("frame.local");
+                print(theE.getIndex() + 1);
+                print(" = ");
+                printVariableName(theE.getVariable());
+                println(";");
+            } else if (theExpression instanceof InitVariableExpression) {
+                InitVariableExpression theE = (InitVariableExpression) theExpression;
+                Variable theVariable = theE.getVariable();
+                printVariableName(theVariable);
+                print(" = ");
+                print(theVariable.getValue());
+                println(";");
+            } else if (theExpression instanceof PutStaticExpression) {
+                PutStaticExpression theE = (PutStaticExpression) theExpression;
+                BytecodeFieldRefConstant theField = theE.getField();
+                Variable theVariable = theE.getVariable();
+                printStaticFieldReference(theField);
+                print(" = ");
+                printVariableName(theVariable);
+                println(";");
+            } else if (theExpression instanceof ReturnVariableExpression) {
+                ReturnVariableExpression theE = (ReturnVariableExpression) theExpression;
+                Variable theVariable = theE.getVariable();
+                print("return ");
+                printVariableName(theVariable);
+                println(";");
+            } else if (theExpression instanceof ThrowExpression) {
+                ThrowExpression theE = (ThrowExpression) theExpression;
+                Variable theVariable = theE.getVariable();
+                print("throw ");
+                printVariableName(theVariable);
+                println(";");
+            } else if (theExpression instanceof InvokeVirtualMethodExpression) {
+                InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
+                print(theE.getValue());
+                println(";");
+            } else if (theExpression instanceof DirectInvokeMethodExpression) {
+                DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
+                print(theE.getValue());
+                println(";");
+            } else if (theExpression instanceof InvokeStaticMethodExpression) {
+                InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
+                print(theE.getValue());
+                println(";");
+            } else if (theExpression instanceof PutFieldExpression) {
+                PutFieldExpression theE = (PutFieldExpression) theExpression;
+                Variable theTarget = theE.getTarget();
+                BytecodeFieldRefConstant theField = theE.getField();
+                Variable thevalue = theE.getValue();
+                printVariableName(theTarget);
+                printInstanceFieldReference(theField);
+                print(" = ");
+                printVariableName(thevalue);
+                println(";");
+            } else if (theExpression instanceof IFExpression) {
+                IFExpression theE = (IFExpression) theExpression;
+                Variable theBooleanExpression = theE.getBooleanExpression();
+                print("if (");
+                printVariableName(theBooleanExpression);
+                println(") {");
+
+                withDeeperIndent().writeExpressions(theE.getExpressions());
+
+                println("}");
+            } else if (theExpression instanceof GotoExpression) {
+                GotoExpression theE = (GotoExpression) theExpression;
+                for (Variable theVariable : theE.getRemainingStack()) {
+                    print(" // " );
+                    printVariableName(theVariable);
+                    println(" remaining on stack");
+                }
+                println(generateJumpCodeFor(theE.getJumpTarget()));
+            } else if (theExpression instanceof ArrayStoreExpression) {
+                ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
+                Variable theArray = theE.getArray();
+                Variable theIndex = theE.getIndex();
+                Variable theValue = theE.getValue();
+                printVariableName(theArray);
+                printArrayIndexReference(theIndex);
+                print(" = ");
+                printVariableName(theValue);
+                println(";");
+            } else if (theExpression instanceof CheckCastExpression) {
+                CheckCastExpression theE = (CheckCastExpression) theExpression;
+                // Completely ignored
+            } else if (theExpression instanceof TableSwitchExpression) {
+                TableSwitchExpression theE = (TableSwitchExpression) theExpression;
+                Variable theVariable = theE.getVariable();
+                BytecodeInstructionTABLESWITCH theIns = theE.getInstruction();
+
+                print("if (");
+                printVariableName(theVariable);
+                print(" < ");
+                print(theIns.getLowValue());
+                print(" || ");
+                printVariableName(theVariable);
+                print(" > ");
+                print(theIns.getHighValue());
+                println(") {");
+                print(" ");
+                println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
+                println("}");
+                print("switch(");
+                printVariableName(theVariable);
+                print(" - ");
+                print(theIns.getLowValue());
+                println(") {");
+
+                long[] theOffsets = theIns.getOffsets();
+                for (int i=0;i<theOffsets.length;i++) {
+                    print(" case ");
+                    print(i);
+                    println(":");
+                    print("     ");
+                    println(generateJumpCodeFor(theIns.getOpcodeAddress().add((int) theOffsets[i])));
+                }
+
+                println("}");
+                println("throw 'Illegal jump target!';");
+            } else if (theExpression instanceof LookupSwitchExpression) {
+                LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
+                BytecodeInstructionLOOKUPSWITCH theIns = theE.getInstruction();
+                print("switch(");
+                printVariableName(theE.getVariable());
+                println(") {");
+
+                for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theIns.getPairs()) {
+                    print(" case ");
+                    print(thePair.getMatch());
+                    println(":");
+
+                    println("       " + generateJumpCodeFor(theIns.getOpcodeAddress().add((int) thePair.getOffset())));
+                }
+
+                println("}");
+                println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
+            } else {
+                throw new IllegalStateException("Not implemented : " + theExpression);
+            }
+        }
     }
 }

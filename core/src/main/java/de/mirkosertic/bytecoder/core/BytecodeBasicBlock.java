@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.ssa.Block;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +29,6 @@ public class BytecodeBasicBlock {
     private final List<BytecodeInstruction> instructions;
     private final List<BytecodeBasicBlock> successors;
     private final Type type;
-    private Block ssaBlock;
 
     public BytecodeBasicBlock(Type aType) {
         instructions = new ArrayList<>();
@@ -63,18 +60,10 @@ public class BytecodeBasicBlock {
         return instructions.get(instructions.size() - 1).isJumpSource();
     }
 
-    public Block getSsaBlock() {
-        return ssaBlock;
-    }
-
-    public void setSsaBlock(Block ssaBlock) {
-        this.ssaBlock = ssaBlock;
-    }
-
     public boolean endsWithReturn() {
         BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionRETURN ||
                 theLastInstruction instanceof BytecodeInstructionGenericRETURN ||
-                theLastInstruction instanceof BytecodeInstructionARETURN;
+                theLastInstruction instanceof BytecodeInstructionObjectRETURN;
     }
 }

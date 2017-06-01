@@ -15,23 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import java.util.List;
 
 public class IFExpression extends Expression {
 
     private final Variable booleanExpression;
-    private final BytecodeOpcodeAddress jumpTarget;
+    private final List<Expression> expressions;
 
-    public IFExpression(Variable aBooleanExpression, BytecodeOpcodeAddress aJumpTarget) {
+    public IFExpression(Variable aBooleanExpression, List<Expression> aExpressions) {
         booleanExpression = aBooleanExpression;
-        jumpTarget = aJumpTarget;
+        expressions = aExpressions;
     }
 
     public Variable getBooleanExpression() {
         return booleanExpression;
     }
 
-    public BytecodeOpcodeAddress getJumpTarget() {
-        return jumpTarget;
+    public List<Expression> getExpressions() {
+        return expressions;
     }
 }
