@@ -22,18 +22,50 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class Block {
 
+    public enum Type {
+        NORMAL,
+        EXCEPTION_HANDLER,
+        FINALLY
+    }
+
     private final BytecodeOpcodeAddress startAddress;
-    private final List<Expression> expressions;
+    private final ExpressionList expressions;
     private final List<Variable> importedStack;
     private final List<Variable> exitStack;
     private final Program program;
+    private final List<Block> successors;
+    private final Type type;
 
-    public Block(Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+    public Block(Type aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+        type = aType;
         startAddress = aStartAddress;
         program = aProgram;
         exitStack = new ArrayList<>();
-        expressions = new ArrayList<>();
+        expressions = new ExpressionList();
         importedStack = new ArrayList<>();
+        successors = new ArrayList<>();
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public List<Block> getPredecessors() {
+        List<Block> theResult = new ArrayList<>();
+        for (Block theBlock: program.getBlocks()) {
+            if (theBlock.getSuccessors().contains(this)) {
+                theResult.add(theBlock);
+            }
+        }
+        return theResult;
+    }
+
+    public void addSuccessor(Block aBlock) {
+        successors.add(aBlock);
+    }
+
+    public List<Block> getSuccessors() {
+        return successors;
     }
 
     public BytecodeOpcodeAddress getStartAddress() {
@@ -41,7 +73,7 @@ public class Block {
     }
 
     public Variable newImportedStackVariable() {
-        Variable theNewVariable = program.createVariable(new NullValue());
+        Variable theNewVariable = program.createVariable(new PHIFunction());
         importedStack.add(theNewVariable);
         expressions.add(new InitVariableExpression(theNewVariable));
         return theNewVariable;
@@ -63,7 +95,7 @@ public class Block {
         expressions.add(aExpression);
     }
 
-    public List<Expression> getExpressions() {
+    public ExpressionList getExpressions() {
         return expressions;
     }
 
@@ -75,7 +107,17 @@ public class Block {
         exitStack.add(aVariable);
     }
 
-    public List<Variable> getExitStack() {
+    public List<Variable> getRemainingStack() {
         return exitStack;
+    }
+
+    public boolean endWithNeverReturningExpression() {
+        Expression theLastExpression = expressions.lastExpression();
+        return theLastExpression instanceof ReturnExpression ||
+                theLastExpression instanceof ReturnVariableExpression ||
+                theLastExpression instanceof TableSwitchExpression ||
+                theLastExpression instanceof LookupSwitchExpression ||
+                theLastExpression instanceof ThrowExpression ||
+                theLastExpression instanceof GotoExpression;
     }
 }

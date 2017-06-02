@@ -17,10 +17,10 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
@@ -54,9 +54,6 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
     @Override
     public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
-
-        final AtomicLong theNumberOfVirtualCalls = new AtomicLong(0);
-        final AtomicLong theNumberOfRealVirtualCalls = new AtomicLong(0);
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -128,27 +125,27 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
         theWriter.println("     }");
         theWriter.println("}");
         theWriter.println();
-        aLinkerContext.forEachClass(aEntry -> {
+        aLinkerContext.forEachClass(theEntry -> {
 
-            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+            if (theEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
 
             // Fix constructor invocation delegation
-            final String theOverriddenParentClassName = getOverriddenParentClassFor(aEntry.getValue().getBytecodeClass());
+            final String theOverriddenParentClassName = getOverriddenParentClassFor(theEntry.getValue().getBytecodeClass());
 
-            String theJSClassName = JSWriterUtils.toClassName(aEntry.getKey());
+            String theJSClassName = JSWriterUtils.toClassName(theEntry.getKey());
             theWriter.println("var " + theJSClassName + " = {");
 
-            if (!aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+            if (!theEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
 
                 theWriter.println("    staticFields : {");
 
-                theWriter.println("        name : '" + aEntry.getValue().getClassName().name() + "',");
-                if (aEntry.getValue().hasClassInitializer()) {
+                theWriter.println("        name : '" + theEntry.getValue().getClassName().name() + "',");
+                if (theEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        classInitialized : false,");
                 }
-                aEntry.getValue().forEachStaticField(
+                theEntry.getValue().forEachStaticField(
                         aFieldEntry -> theWriter.println("        " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
                 theWriter.println("    },");
                 theWriter.println();
@@ -190,7 +187,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 theWriter.println("    resolveVirtualMethod : function(aIdentifier) {");
                 theWriter.println("        switch(aIdentifier) {");
-                aEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
+                theEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
                     BytecodeLinkedClass.LinkedMethod theLinkTarget = aVirtualMethod.getValue();
                     theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
                     if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
@@ -210,7 +207,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println();
 
                 theWriter.println("    classInitCheck : function() {");
-                if (aEntry.getValue().hasClassInitializer()) {
+                if (theEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
                     theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
                     theWriter.println("            " + theJSClassName + ".VOIDclinit();");
@@ -221,24 +218,24 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
 
                 theWriter.println("    emptyInstance : function() {");
-                if (aEntry.getValue().hasClassInitializer()) {
+                if (theEntry.getValue().hasClassInitializer()) {
                     theWriter.println("        " + theJSClassName + ".classInitCheck();");
                 }
                 theWriter.println("        return {data: {");
-                aEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
-                theWriter.println("        }, clazz: " + JSWriterUtils.toClassName(aEntry.getKey())+ "};");
+                theEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
+                theWriter.println("        }, clazz: " + JSWriterUtils.toClassName(theEntry.getKey())+ "};");
                 theWriter.println("    },");
                 theWriter.println();
 
                 theWriter.println("    thisIdentifier : function() {");
-                theWriter.println("        return " + aEntry.getValue().getUniqueId());
+                theWriter.println("        return " + theEntry.getValue().getUniqueId());
                 theWriter.println("    },");
                 theWriter.println();
 
                 theWriter.println("    instanceOfType : function(aType) {");
                 theWriter.println("        switch(aType) {");
 
-                for (BytecodeLinkedClass theType : aEntry.getValue().getImplementingTypes()) {
+                for (BytecodeLinkedClass theType : theEntry.getValue().getImplementingTypes()) {
                     theWriter.println("            case " + theType.getUniqueId() +":");
                     theWriter.println("                return 1;");
                 }
@@ -250,17 +247,17 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println();
             }
 
-            aEntry.getValue().forEachMethod(aMethod -> {
+            theEntry.getValue().forEachMethod(theMethod -> {
 
                 // Do not generate code for abstract methods
-                if (aMethod.getAccessFlags().isAbstract()) {
+                if (theMethod.getAccessFlags().isAbstract()) {
                     return;
                 }
 
-                BytecodeMethodSignature theCurrentMethodSignature = aMethod.getSignature();
+                BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
                 BytecodeTypeRef[] theMethodArguments = theCurrentMethodSignature.getArguments();
                 StringBuffer theArguments = new StringBuffer();
-                if (!aMethod.getAccessFlags().isStatic()) {
+                if (!theMethod.getAccessFlags().isStatic()) {
                     theArguments.append("thisRef");
                 }
                 for (int i=1;i<=theMethodArguments.length;i++) {
@@ -270,11 +267,11 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                     theArguments.append("p" + i);
                 }
 
-                if (aMethod.getAccessFlags().isNative()) {
-                    if (aEntry.getValue().getBytecodeClass().getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                if (theMethod.getAccessFlags().isNative()) {
+                    if (theEntry.getValue().getBytecodeClass().getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
-                    BytecodeAnnotation theImportAnnotation = aMethod.getAnnotations().getAnnotationByType(Import.class.getName());
+                    BytecodeAnnotation theImportAnnotation = theMethod.getAnnotations().getAnnotationByType(Import.class.getName());
                     if (theImportAnnotation == null) {
                         throw new IllegalStateException("No @Import annotation found. Potential linker error!");
                     }
@@ -282,16 +279,16 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                     JSModule theModule = modules.resolveModule(theImportAnnotation.getElementValueByName("module").stringValue());
                     JSFunction theFunction = theModule.resolveFunction(theImportAnnotation.getElementValueByName("name").stringValue());
                     theWriter.println();
-                    theWriter.println("    " + JSWriterUtils.toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                    theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                     theWriter.println("         " + theFunction.generateCode(theCurrentMethodSignature));
                     theWriter.println("    },");
                     return;
                 }
 
-                BytecodeCodeAttributeInfo theCode = aMethod.getCode(aEntry.getValue().getBytecodeClass());
+                BytecodeCodeAttributeInfo theCode = theMethod.getCode(theEntry.getValue().getBytecodeClass());
 
                 theWriter.println();
-                theWriter.println("    " + JSWriterUtils.toMethodName(aMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
 
                 //theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
 
@@ -299,7 +296,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 Map<String, String> theLocalVariables = new TreeMap<>();
                 int p = 1;
-                if (!aMethod.getAccessFlags().isStatic()) {
+                if (!theMethod.getAccessFlags().isStatic()) {
                     theLocalVariables.put("local1", "thisRef");
                     p++;
                 }
@@ -322,15 +319,15 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                     p++;
                 }
 
-                for (Map.Entry<String, String> theEntry : theLocalVariables.entrySet()) {
-                    theWriter.println("            " + theEntry.getKey() + " : "  + theEntry.getValue() + ",");
+                for (Map.Entry<String, String> theVariableEntry : theLocalVariables.entrySet()) {
+                    theWriter.println("            " + theVariableEntry.getKey() + " : "  + theVariableEntry.getValue() + ",");
                 }
 
                 theWriter.println("        };");
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
-                ProgramGenerator theGenerator = new ProgramGenerator();
+                ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theFlowGraph);
 
                 theWriter.println("        // Brute force static references init");
@@ -360,15 +357,25 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                     JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
 
+
                     for (Variable theVariable : theBlock.getImportedStack()) {
                         theJSWriter.print("// ");
                         theJSWriter.printVariableName(theVariable);
-                        theJSWriter.println(" required on stack");
+                        theJSWriter.print(" required on stack with PHI(");
+                        List<Block> thePredecessors = theBlock.getPredecessors();
+                        for (int i=0;i<thePredecessors.size();i++) {
+                            if (i>0) {
+                                theJSWriter.print(",");
+                            }
+                            theJSWriter.print("#");
+                            theJSWriter.print(thePredecessors.get(i).getStartAddress().getAddress());
+                        }
+                        theJSWriter.println(")");
                     }
 
                     theJSWriter.writeExpressions(theBlock.getExpressions());
 
-                    for (Variable theExitVariable : theBlock.getExitStack()) {
+                    for (Variable theExitVariable : theBlock.getRemainingStack()) {
                         theJSWriter.print("// ");
                         theJSWriter.printVariableName(theExitVariable);
                         theJSWriter.println(" still on stack");
@@ -385,9 +392,6 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
         });
 
         theWriter.flush();
-
-        System.out.println("Total number of virtual method calls : " + theNumberOfVirtualCalls.get());
-        System.out.println("Remaining virtual method calls " + theNumberOfRealVirtualCalls.get());
 
         return theStrWriter.toString();
     }
