@@ -22,16 +22,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class Program {
 
     private final List<Block> blocks;
     private final Map<Integer, Variable> variables;
+    private final BytecodeLinkerContext linkerContext;
 
-    public Program() {
+    public Program(BytecodeLinkerContext aLinkerContext) {
         blocks = new ArrayList<>();
         variables = new HashMap<>();
+        linkerContext = aLinkerContext;
     }
 
     public void add(Block aBlock) {
@@ -73,8 +78,9 @@ public class Program {
             }
             if (theValue instanceof NewMultiArrayValue) {
                 NewMultiArrayValue theNewArray = (NewMultiArrayValue) theValue;
-                if (theNewArray.getType() instanceof BytecodeObjectTypeRef) {
-                    theResult.add((BytecodeObjectTypeRef) theNewArray.getType());
+                BytecodeTypeRef theTypeRef = theNewArray.getType();
+                if (theTypeRef instanceof BytecodeObjectTypeRef) {
+                    theResult.add((BytecodeObjectTypeRef) theTypeRef);
                 }
             }
             if (theValue instanceof NewObjectValue) {
@@ -83,7 +89,7 @@ public class Program {
             }
         }
         for (Block theBlock : blocks) {
-            for (Expression theExpression : theBlock.getExpressions()) {
+            for (Expression theExpression : theBlock.getExpressions().toList()) {
                 if (theExpression instanceof PutStaticExpression) {
                     PutStaticExpression theE = (PutStaticExpression) theExpression;
                     theResult.add(BytecodeObjectTypeRef
@@ -92,5 +98,14 @@ public class Program {
             }
         }
         return theResult;
+    }
+
+    public Block blockStartingAt(BytecodeOpcodeAddress aAddress) {
+        for (Block theBlock : blocks) {
+            if (aAddress.equals(theBlock.getStartAddress())) {
+                return theBlock;
+            }
+        }
+        throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
     }
 }

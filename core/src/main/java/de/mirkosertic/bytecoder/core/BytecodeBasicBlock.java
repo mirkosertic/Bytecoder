@@ -36,6 +36,14 @@ public class BytecodeBasicBlock {
         type = aType;
     }
 
+    public void addSuccessor(BytecodeBasicBlock aBasicBlock) {
+        successors.add(aBasicBlock);
+    }
+
+    public List<BytecodeBasicBlock> getSuccessors() {
+        return successors;
+    }
+
     public Type getType() {
         return type;
     }
@@ -65,5 +73,10 @@ public class BytecodeBasicBlock {
         return theLastInstruction instanceof BytecodeInstructionRETURN ||
                 theLastInstruction instanceof BytecodeInstructionGenericRETURN ||
                 theLastInstruction instanceof BytecodeInstructionObjectRETURN;
+    }
+
+    public boolean endsWithThrow() {
+        BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
+        return theLastInstruction instanceof BytecodeInstructionATHROW;
     }
 }

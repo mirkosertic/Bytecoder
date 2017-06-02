@@ -15,14 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
 public class IFExpression extends Expression {
 
     private final Variable booleanExpression;
-    private final List<Expression> expressions;
+    private final ExpressionList expressions;
 
-    public IFExpression(Variable aBooleanExpression, List<Expression> aExpressions) {
+    public IFExpression(Variable aBooleanExpression, ExpressionList aExpressions) {
         booleanExpression = aBooleanExpression;
         expressions = aExpressions;
     }
@@ -31,7 +29,7 @@ public class IFExpression extends Expression {
         return booleanExpression;
     }
 
-    public List<Expression> getExpressions() {
+    public ExpressionList getExpressions() {
         return expressions;
     }
 }

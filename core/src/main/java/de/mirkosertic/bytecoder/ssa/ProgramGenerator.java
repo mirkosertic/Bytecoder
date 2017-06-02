@@ -32,7 +32,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
@@ -88,6 +87,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
@@ -95,11 +95,13 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
 public class ProgramGenerator {
 
@@ -133,18 +135,136 @@ public class ProgramGenerator {
         }
     }
 
+    private final BytecodeLinkerContext linkerContext;
+
+    public ProgramGenerator(BytecodeLinkerContext aLinkerContext) {
+        linkerContext = aLinkerContext;
+    }
+
     public Program generateFrom(BytecodeControlFlowGraph aFlowGraph) {
-        Program theProgram = new Program();
+        Program theProgram = new Program(linkerContext);
+
         for (BytecodeBasicBlock theBlock : aFlowGraph.getBlocks()) {
             Block theSSABlock = generateFrom(theBlock, theProgram);
             theProgram.add(theSSABlock);
         }
+
+        for (BytecodeBasicBlock theBasicBlock : aFlowGraph.getBlocks()) {
+            Block theBlock = theProgram.blockStartingAt(theBasicBlock.getStartAddress());
+            for (BytecodeBasicBlock theSuccessor : theBasicBlock.getSuccessors()) {
+                theBlock.addSuccessor(theProgram.blockStartingAt(theSuccessor.getStartAddress()));
+            }
+        }
+
+        for (Block theBlock : theProgram.getBlocks()) {
+            processPhiFunctionsOf(theProgram, theBlock.getExpressions());
+
+            // TODO: Correctly handle SWITCHES HERE!
+            if (!theBlock.endWithNeverReturningExpression()) {
+                List<Block> theSuccessors = theBlock.getSuccessors();
+                if (theSuccessors.size() != 1) {
+                    throw new IllegalStateException("Expected one successor, got " + theSuccessors.size());
+                }
+
+                List<Variable> theRemainingStack = theBlock.getRemainingStack();
+
+                Block theTarget = theSuccessors.get(0);
+                List<Variable> theExpectedStack = theTarget.getImportedStack();
+
+                ExpressionList theExpressions = theBlock.getExpressions();
+
+                for (int i=0;i<theRemainingStack.size();i++) {
+                    if (i>=theExpectedStack.size()) {
+                        // Have something on the stack, but nothing in target
+                        // Need to create a new imported variable
+                        Variable theNew = theTarget.newImportedStackVariable();
+                        Variable thePHIResolver = new Variable(theNew.getIndex(), new VariableReferenceValue(theRemainingStack.get(i)));
+
+                        InitVariableExpression theInit = new InitVariableExpression(thePHIResolver);
+                        theExpressions.add(theInit);
+
+                        theTarget.addToExitStack(theNew);
+                    } else {
+                        Variable theExpected = theExpectedStack.get(i);
+                        Variable thePHIResolver = new Variable(theExpected.getIndex(), new VariableReferenceValue(theRemainingStack.get(i)));
+
+                        InitVariableExpression theInit = new InitVariableExpression(thePHIResolver);
+                        theExpressions.add(theInit);
+                    }
+                }
+            }
+        }
+
         return theProgram;
+    }
+
+    private void processPhiFunctionsOf(Program aProgram, ExpressionList aExpressions) {
+        List<Expression> theExpressions = aExpressions.toList();
+        for (Expression theExpression : theExpressions) {
+            if (theExpression instanceof IFExpression) {
+                IFExpression theIf = (IFExpression) theExpression;
+
+                processPhiFunctionsOf(aProgram, theIf.getExpressions());
+            }
+            if (theExpression instanceof GotoExpression) {
+                GotoExpression theGoto = (GotoExpression) theExpression;
+
+                List<Variable> theRemainingStack = theGoto.getRemainingStack();
+
+                Block theTarget = aProgram.blockStartingAt(theGoto.getJumpTarget());
+                List<Variable> theExpectedStack = theTarget.getImportedStack();
+                for (int i=0;i<theRemainingStack.size();i++) {
+                    if (i>=theExpectedStack.size()) {
+                        // Have something on the stack, but nothing in target
+                        // Need to create a new imported variable
+                        Variable theNew = theTarget.newImportedStackVariable();
+                        Variable thePHIResolver = new Variable(theNew.getIndex(), new VariableReferenceValue(theRemainingStack.get(i)));
+
+                        InitVariableExpression theInit = new InitVariableExpression(thePHIResolver);
+                        aExpressions.addExpressionBefore(theInit, theGoto);
+
+                        theTarget.addToExitStack(theNew);
+                    } else {
+                        Variable theExpected = theExpectedStack.get(i);
+                        Variable thePHIResolver = new Variable(theExpected.getIndex(), new VariableReferenceValue(theRemainingStack.get(i)));
+
+                        InitVariableExpression theInit = new InitVariableExpression(thePHIResolver);
+                        aExpressions.addExpressionBefore(theInit, theGoto);
+                    }
+                }
+                // TODO: Propapate correct number and fill up imports in case of target block expects less than remaining items on stack
+/*                List<Variable> theExpectedStack = theTarget.getImportedStack();
+                if (theExpectedStack.size() != theRemainingStack.size()) {
+                    throw new IllegalStateException("Cannot compile, expected " + theExpectedStack.size() + " as PHI function, got " + theRemainingStack.size());
+                }
+
+                for (int i=0;i<theExpectedStack.size();i++) {
+                    Variable theExpected = theExpectedStack.get(i);
+                    Variable thePHIResolver = new Variable(theExpected.getIndex(), new VariableReferenceValue(theRemainingStack.get(i)));
+
+                    InitVariableExpression theInit = new InitVariableExpression(thePHIResolver);
+                    aExpressions.addExpressionBefore(theInit, theGoto);
+                }*/
+            }
+        }
     }
 
     public Block generateFrom(BytecodeBasicBlock aBasicBlock, Program aProgram) {
 
-        Block theSingleAssignmentBlock = new Block(aProgram, aBasicBlock.getStartAddress());
+        Block theSingleAssignmentBlock;
+        switch (aBasicBlock.getType()) {
+            case NORMAL:
+                theSingleAssignmentBlock = new Block(Block.Type.NORMAL, aProgram, aBasicBlock.getStartAddress());
+                break;
+            case EXCEPTION_HANDLER:
+                theSingleAssignmentBlock = new Block(Block.Type.EXCEPTION_HANDLER, aProgram, aBasicBlock.getStartAddress());
+                break;
+            case FINALLY:
+                theSingleAssignmentBlock = new Block(Block.Type.FINALLY, aProgram, aBasicBlock.getStartAddress());
+                break;
+            default:
+                throw new IllegalStateException("Unsupported block type : " + aBasicBlock.getType());
+        }
 
         Map<Integer, Variable> theLocalVariables = new HashMap<>();
         StackHelper theVariablesStack = new StackHelper(theSingleAssignmentBlock);
@@ -167,8 +287,8 @@ public class ProgramGenerator {
                 theVariablesStack.push(theClone);
             } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                 BytecodeInstructionDUPX1 theINS = (BytecodeInstructionDUPX1) theInstruction;
-                Variable theValue1 = theVariablesStack.peek();
-                Variable theValue2 = theVariablesStack.peek();
+                Variable theValue1 = theVariablesStack.pop();
+                Variable theValue2 = theVariablesStack.pop();
 
                 theVariablesStack.push(theValue1);
                 theVariablesStack.push(theValue2);
@@ -400,7 +520,7 @@ public class ProgramGenerator {
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNULL);
                 Variable theResult = theSingleAssignmentBlock.newVariable(theBinaryValue);
 
-                List<Expression> theExpressions = new ArrayList<>();
+                ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
 
                 theSingleAssignmentBlock.addExpression(new IFExpression(theResult, theExpressions));
@@ -410,7 +530,7 @@ public class ProgramGenerator {
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNONNULL);
                 Variable theResult = theSingleAssignmentBlock.newVariable(theBinaryValue);
 
-                List<Expression> theExpressions = new ArrayList<>();
+                ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
 
                 theSingleAssignmentBlock.addExpression(new IFExpression(theResult, theExpressions));
@@ -443,7 +563,7 @@ public class ProgramGenerator {
                 }
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(theBinaryValue);
 
-                List<Expression> theExpressions = new ArrayList<>();
+                ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
 
                 theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
@@ -465,7 +585,7 @@ public class ProgramGenerator {
                 }
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(theBinaryValue);
 
-                List<Expression> theExpressions = new ArrayList<>();
+                ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
 
                 theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
@@ -499,7 +619,7 @@ public class ProgramGenerator {
                 }
                 Variable theNewVariable = theSingleAssignmentBlock.newVariable(theBinaryValue);
 
-                List<Expression> theExpressions = new ArrayList<>();
+                ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theVariablesStack.cloneContent()));
 
                 theSingleAssignmentBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
@@ -534,7 +654,8 @@ public class ProgramGenerator {
                     theDimensions.add(theVariablesStack.pop());
                 }
                 Collections.reverse(theDimensions);
-                Variable theNewVariable = theSingleAssignmentBlock.newVariable(new NewMultiArrayValue(BytecodeObjectTypeRef.fromUtf8Constant(theINS.getTypeConstant().getConstant()), theDimensions));
+                BytecodeTypeRef theTypeRef = linkerContext.getSignatureParser().toFieldType(new BytecodeUtf8Constant(theINS.getTypeConstant().getConstant().stringValue()));
+                Variable theNewVariable = theSingleAssignmentBlock.newVariable(new NewMultiArrayValue(theTypeRef, theDimensions));
                 theVariablesStack.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                 BytecodeInstructionANEWARRAY theINS = (BytecodeInstructionANEWARRAY) theInstruction;

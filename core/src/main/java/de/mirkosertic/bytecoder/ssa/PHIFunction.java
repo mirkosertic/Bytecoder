@@ -15,7 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ReturnExpression extends Expression {
-
-
+public class PHIFunction extends Value {
 }

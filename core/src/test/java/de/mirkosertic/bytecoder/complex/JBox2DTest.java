@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.complex;
 import org.jbox2d.callbacks.ContactImpulse;
 import org.jbox2d.callbacks.ContactListener;
 import org.jbox2d.collision.Manifold;
+import org.jbox2d.collision.ManifoldPoint;
+import org.jbox2d.collision.broadphase.DynamicTree;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.ShapeType;
@@ -235,5 +237,16 @@ public class JBox2DTest {
     public void testLinkShapeType() throws TRuntimeException {
         ShapeType[] theTypes = ShapeType.values();
         Assert.assertEquals(4, theTypes.length, 0);
+    }
+
+    @Test
+    public void testManifoldConstructor() {
+        ManifoldPoint thePoint = new ManifoldPoint();
+        Assert.assertNotNull(thePoint.id);
+    }
+
+    @Test
+    public void testDynamicTreeConstructor() {
+        DynamicTree theTree = new DynamicTree();
     }
 }

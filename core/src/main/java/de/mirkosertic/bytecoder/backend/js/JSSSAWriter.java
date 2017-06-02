@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExternalReferenceValue;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
@@ -61,6 +62,7 @@ import de.mirkosertic.bytecoder.ssa.NewArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIFunction;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
@@ -478,8 +480,8 @@ public class JSSSAWriter extends JSWriter {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
-    public void writeExpressions(List<Expression> aExpressions) {
-        for (Expression theExpression : aExpressions) {
+    public void writeExpressions(ExpressionList aExpressions) {
+        for (Expression theExpression : aExpressions.toList()) {
             if (theExpression instanceof ReturnExpression) {
                 ReturnExpression theE = (ReturnExpression) theExpression;
                 print("return");
@@ -494,10 +496,16 @@ public class JSSSAWriter extends JSWriter {
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();
-                printVariableName(theVariable);
-                print(" = ");
-                print(theVariable.getValue());
-                println(";");
+                if (theVariable.getValue() instanceof PHIFunction) {
+                    print("// ");
+                    printVariableName(theVariable);
+                    println(" is PHI function and initialized from predecessor block in flow graph");
+                } else {
+                    printVariableName(theVariable);
+                    print(" = ");
+                    print(theVariable.getValue());
+                    println(";");
+                }
             } else if (theExpression instanceof PutStaticExpression) {
                 PutStaticExpression theE = (PutStaticExpression) theExpression;
                 BytecodeFieldRefConstant theField = theE.getField();
@@ -552,11 +560,13 @@ public class JSSSAWriter extends JSWriter {
                 println("}");
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
-                for (Variable theVariable : theE.getRemainingStack()) {
+                List<Variable> theRemainingStack = theE.getRemainingStack();
+                for (Variable theVariable : theRemainingStack) {
                     print(" // " );
                     printVariableName(theVariable);
                     println(" remaining on stack");
                 }
+
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;

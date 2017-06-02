@@ -74,6 +74,37 @@ public class BytecodeControlFlowGraph {
   //              currentBlock = null;
             }
         }
+
+        // Now, we have to build the successors of each block
+        for (int i=0;i<blocks.size();i++) {
+            BytecodeBasicBlock theBlock = blocks.get(i);
+            if (!theBlock.endsWithReturn() && !theBlock.endsWithThrow()) {
+                if (theBlock.endsWithJump()) {
+                    for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
+                        if (theInstruction.isJumpSource()) {
+                            for (BytecodeOpcodeAddress theBlockJumpTarget : theInstruction.getPotentialJumpTargets()) {
+                                theBlock.addSuccessor(blockByStartAddress(theBlockJumpTarget));
+                            }
+                        }
+                    }
+                } else {
+                    if (i<blocks.size()-1) {
+                        theBlock.addSuccessor(blocks.get(i + 1));
+                    } else {
+                        throw new IllegalStateException("Block at end with no jump target!");
+                    }
+                }
+            }
+        }
+    }
+
+    private BytecodeBasicBlock blockByStartAddress(BytecodeOpcodeAddress aAddress) {
+        for (BytecodeBasicBlock theBlock : blocks) {
+            if (aAddress.equals(theBlock.getStartAddress())) {
+                return theBlock;
+            }
+        }
+        return null;
     }
 
     public List<BytecodeBasicBlock> getBlocks() {
