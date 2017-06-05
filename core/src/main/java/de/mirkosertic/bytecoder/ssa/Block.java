@@ -17,11 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Block {
 
@@ -36,7 +32,8 @@ public class Block {
     private final Program program;
     private final Set<Block> successors;
     private final Type type;
-    private BlockFinalState finalState;
+    private final Map<Variable, VariableDescription> imported;
+    private final Map<Variable, VariableDescription> exported;
 
     public Block(Type aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -44,21 +41,12 @@ public class Block {
         program = aProgram;
         expressions = new ExpressionList();
         successors = new HashSet<>();
+        imported = new HashMap<>();
+        exported = new HashMap<>();
     }
 
     public boolean isStartBlock() {
         return program.getBlocks().indexOf(this) == 0;
-    }
-
-    public BlockFinalState getFinalState() {
-        return finalState;
-    }
-
-    public void setFinalState(BlockFinalState aFinalState) {
-        finalState = aFinalState;
-        for (Map.Entry<Integer, Variable> theEntry : aFinalState.getLocalVariables().entrySet()) {
-            System.out.println(theEntry.getKey() +  " -> " + theEntry.getValue());
-        }
     }
 
     public Type getType() {
@@ -93,12 +81,34 @@ public class Block {
         return theNewVariable;
     }
 
+    public Variable newImportedVariable(Value aValue, VariableDescription aDescription) {
+        Variable theVariable = newVariable(aValue);
+        imported.put(theVariable, aDescription);
+        return theVariable;
+    }
+
+    public void addToExportedList(Variable aVariable, VariableDescription aDescription) {
+        exported.put(aVariable, aDescription);
+    }
+
+    public void removeFromExportedList(Variable aVariable) {
+        exported.remove(aVariable);
+    }
+
     public void addExpression(Expression aExpression) {
         expressions.add(aExpression);
     }
 
     public ExpressionList getExpressions() {
         return expressions;
+    }
+
+    public BlockState toFinalState() {
+        return new BlockState(exported);
+    }
+
+    public BlockState toStartState() {
+        return new BlockState(imported);
     }
 
     public boolean endWithNeverReturningExpression() {

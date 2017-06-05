@@ -18,21 +18,15 @@ package de.mirkosertic.bytecoder.ssa;
 import java.util.List;
 import java.util.Map;
 
-public class BlockFinalState {
+public class BlockState {
 
-    private final List<Variable> remainingStack;
-    private final Map<Integer, Variable> localVariables;
+    private final Map<Variable, VariableDescription> exports;
 
-    public BlockFinalState(List<Variable> aRemainingStackItems, Map<Integer, Variable> aLocalVariables) {
-        remainingStack = aRemainingStackItems;
-        localVariables = aLocalVariables;
+    public BlockState(Map<Variable, VariableDescription> aExports) {
+        exports = aExports;
     }
 
-    public List<Variable> getRemainingStack() {
-        return remainingStack;
-    }
-
-    public Map<Integer, Variable> getLocalVariables() {
-        return localVariables;
+    public Map<Variable, VariableDescription> getExports() {
+        return exports;
     }
 }

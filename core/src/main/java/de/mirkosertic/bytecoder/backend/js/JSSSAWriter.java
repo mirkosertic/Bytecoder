@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Map;
 
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
@@ -28,56 +29,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExternalReferenceValue;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
+import de.mirkosertic.bytecoder.ssa.*;
 
 public class JSSSAWriter extends JSWriter {
 
@@ -153,9 +105,15 @@ public class JSSSAWriter extends JSWriter {
             print((MethodParameterValue) aValue);
         } else if (aValue instanceof CurrentExceptionValue) {
             print((CurrentExceptionValue) aValue);
+        } else if (aValue instanceof UnknownValue) {
+            print((UnknownValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    public void print(UnknownValue aValue) {
+        print("undefined");
     }
 
     public void print(CurrentExceptionValue aValue) {
@@ -482,7 +440,7 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void printVariableName(Variable aVariable) {
-        print(aVariable.getName() + 1);
+        print(aVariable.getName());
     }
 
     public void printStaticFieldReference(BytecodeFieldRefConstant aField) {
@@ -573,11 +531,11 @@ public class JSSSAWriter extends JSWriter {
                 println("}");
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
-                List<Variable> theRemainingStack = theE.getFinalStateAtJump().getRemainingStack();
-                for (Variable theVariable : theRemainingStack) {
+                for (Map.Entry<Variable, VariableDescription> theEntry : theE.getFinalStateAtJump().getExports().entrySet()) {
                     print(" // " );
-                    printVariableName(theVariable);
-                    println(" remaining on stack");
+                    printVariableName(theEntry.getKey());
+                    print(" exported as ");
+                    println(theEntry.getValue().toString());
                 }
 
                 println(generateJumpCodeFor(theE.getJumpTarget()));
