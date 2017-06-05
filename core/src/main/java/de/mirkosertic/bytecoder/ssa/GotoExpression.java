@@ -15,25 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class GotoExpression extends Expression {
 
     private final BytecodeOpcodeAddress jumpTarget;
-    private final List<Variable> remainingStack;
+    private final BlockFinalState finalStateAtJump;
 
-    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, List<Variable> aRemainingStack) {
+    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, BlockFinalState aFinalStateAtJump) {
         jumpTarget = aJumpTarget;
-        remainingStack = aRemainingStack;
+        finalStateAtJump = aFinalStateAtJump;
     }
 
     public BytecodeOpcodeAddress getJumpTarget() {
         return jumpTarget;
     }
 
-    public List<Variable> getRemainingStack() {
-        return remainingStack;
+    public BlockFinalState getFinalStateAtJump() {
+        return finalStateAtJump;
     }
 }

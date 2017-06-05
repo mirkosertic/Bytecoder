@@ -38,6 +38,10 @@ public class ExpressionList {
         expressions.add(expressions.indexOf(aExpressionToInsertItBefore), aExpressionToInsert);
     }
 
+    public int size() {
+        return expressions.size();
+    }
+
     public Expression lastExpression() {
         return expressions.get(expressions.size() - 1);
     }

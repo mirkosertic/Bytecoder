@@ -15,21 +15,24 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Variable {
+import java.util.List;
+import java.util.Map;
 
-    private final String name;
-    private final Value value;
+public class BlockFinalState {
 
-    public Variable(String aName, Value aValue) {
-        name = aName;
-        value = aValue;
+    private final List<Variable> remainingStack;
+    private final Map<Integer, Variable> localVariables;
+
+    public BlockFinalState(List<Variable> aRemainingStackItems, Map<Integer, Variable> aLocalVariables) {
+        remainingStack = aRemainingStackItems;
+        localVariables = aLocalVariables;
     }
 
-    public String getName() {
-        return name;
+    public List<Variable> getRemainingStack() {
+        return remainingStack;
     }
 
-    public Value getValue() {
-        return value;
+    public Map<Integer, Variable> getLocalVariables() {
+        return localVariables;
     }
 }

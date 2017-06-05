@@ -15,21 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class SetFrameVariableExpression extends Expression {
-
-    private final int index;
-    private final Variable variable;
-
-    public SetFrameVariableExpression(int aIndex, Variable aVariable) {
-        index = aIndex;
-        variable = aVariable;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public Variable getVariable() {
-        return variable;
-    }
+public class SelfReferenceParameterValue extends Value {
 }

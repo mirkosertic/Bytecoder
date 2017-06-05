@@ -68,6 +68,15 @@ public class BytecodeBasicBlock {
         return instructions.get(instructions.size() - 1).isJumpSource();
     }
 
+    public boolean endsWithConditionalJump() {
+        BytecodeInstruction theInstruction = instructions.get(instructions.size() - 1);
+        return theInstruction instanceof BytecodeInstructionIFICMP ||
+                theInstruction instanceof BytecodeInstructionIFNULL ||
+                theInstruction instanceof BytecodeInstructionIFCOND ||
+                theInstruction instanceof BytecodeInstructionIFACMP ||
+                theInstruction instanceof BytecodeInstructionIFNONNULL;
+    }
+
     public boolean endsWithReturn() {
         BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionRETURN ||
