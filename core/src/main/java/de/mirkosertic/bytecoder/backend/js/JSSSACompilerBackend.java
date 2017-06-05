@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -292,43 +291,12 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 //theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
 
-                theWriter.println("        var frame = {");
-
-                Map<String, String> theLocalVariables = new TreeMap<>();
-                int p = 1;
-                if (!theMethod.getAccessFlags().isStatic()) {
-                    theLocalVariables.put("local1", "thisRef");
-                    p++;
-                }
-
-                for (int i=0;i<theMethodArguments.length;i++) {
-                    BytecodeTypeRef theRef = theMethodArguments[i];
-                    if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
-                        theLocalVariables.put("local" + p, "p" + (i+1));
-                        p++;
-                        theLocalVariables.put("local" + p, "null");
-                        p++;
-                    } else {
-                        theLocalVariables.put("local" + p, "p" + (i+1));
-                        p++;
-                    }
-                }
-
-                while(p<=theCode.getMaxLocals()) {
-                    theLocalVariables.put("local" + p, "null");
-                    p++;
-                }
-
-                for (Map.Entry<String, String> theVariableEntry : theLocalVariables.entrySet()) {
-                    theWriter.println("            " + theVariableEntry.getKey() + " : "  + theVariableEntry.getValue() + ",");
-                }
-
-                theWriter.println("        };");
+                System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 BytecodeProgram theProgram = theCode.getProgramm();
                 BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
-                Program theSSAProgram = theGenerator.generateFrom(theFlowGraph);
+                Program theSSAProgram = theGenerator.generateFrom(theFlowGraph, theMethod.getSignature(), theMethod.getAccessFlags());
 
                 theWriter.println("        // Brute force static references init");
                 Set<BytecodeObjectTypeRef> theStaticReferences = theSSAProgram.getStaticReferences();
@@ -355,27 +323,19 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
-                    JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
-
-
-                    for (Variable theVariable : theBlock.getImportedStack()) {
-                        theJSWriter.print("// ");
-                        theJSWriter.printVariableName(theVariable);
-                        theJSWriter.print(" required on stack with PHI(");
-                        List<Block> thePredecessors = theBlock.getPredecessors();
-                        for (int i=0;i<thePredecessors.size();i++) {
-                            if (i>0) {
-                                theJSWriter.print(",");
-                            }
-                            theJSWriter.print("#");
-                            theJSWriter.print(thePredecessors.get(i).getStartAddress().getAddress());
-                        }
-                        theJSWriter.println(")");
+                    for (Block thePrececessor : theBlock.getPredecessors()) {
+                        theWriter.println("         // Predecessor if this block is " + thePrececessor.getStartAddress().getAddress());
                     }
+                    for (Block theSuccessor : theBlock.getSuccessors()) {
+                        theWriter.println("         // Successor if this block is " + theSuccessor.getStartAddress().getAddress());
+                    }
+
+
+                    JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
 
                     theJSWriter.writeExpressions(theBlock.getExpressions());
 
-                    for (Variable theExitVariable : theBlock.getRemainingStack()) {
+                    for (Variable theExitVariable : theBlock.getFinalState().getRemainingStack()) {
                         theJSWriter.print("// ");
                         theJSWriter.printVariableName(theExitVariable);
                         theJSWriter.println(" still on stack");

@@ -15,21 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Variable {
-
-    private final String name;
-    private final Value value;
-
-    public Variable(String aName, Value aValue) {
-        name = aName;
-        value = aValue;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Value getValue() {
-        return value;
-    }
+public class CurrentExceptionValue extends Value {
 }

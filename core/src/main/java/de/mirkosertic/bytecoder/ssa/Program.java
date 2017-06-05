@@ -39,8 +39,10 @@ public class Program {
         linkerContext = aLinkerContext;
     }
 
-    public void add(Block aBlock) {
-        blocks.add(aBlock);
+    public Block createAt(BytecodeOpcodeAddress aAddress, Block.Type aType) {
+        Block theNewBlock = new Block(aType, this, aAddress);
+        blocks.add(theNewBlock);
+        return theNewBlock;
     }
 
     public List<Block> getBlocks() {
@@ -53,7 +55,7 @@ public class Program {
 
     public Variable createVariable(Value aValue) {
         int theIndex = variables.size();
-        Variable theNewVariable = new Variable(theIndex, aValue);
+        Variable theNewVariable = new Variable("var" + theIndex, aValue);
         variables.put(theIndex, theNewVariable);
         return theNewVariable;
     }

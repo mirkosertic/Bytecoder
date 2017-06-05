@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class Block {
 
@@ -30,28 +33,40 @@ public class Block {
 
     private final BytecodeOpcodeAddress startAddress;
     private final ExpressionList expressions;
-    private final List<Variable> importedStack;
-    private final List<Variable> exitStack;
     private final Program program;
-    private final List<Block> successors;
+    private final Set<Block> successors;
     private final Type type;
+    private BlockFinalState finalState;
 
     public Block(Type aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
         startAddress = aStartAddress;
         program = aProgram;
-        exitStack = new ArrayList<>();
         expressions = new ExpressionList();
-        importedStack = new ArrayList<>();
-        successors = new ArrayList<>();
+        successors = new HashSet<>();
+    }
+
+    public boolean isStartBlock() {
+        return program.getBlocks().indexOf(this) == 0;
+    }
+
+    public BlockFinalState getFinalState() {
+        return finalState;
+    }
+
+    public void setFinalState(BlockFinalState aFinalState) {
+        finalState = aFinalState;
+        for (Map.Entry<Integer, Variable> theEntry : aFinalState.getLocalVariables().entrySet()) {
+            System.out.println(theEntry.getKey() +  " -> " + theEntry.getValue());
+        }
     }
 
     public Type getType() {
         return type;
     }
 
-    public List<Block> getPredecessors() {
-        List<Block> theResult = new ArrayList<>();
+    public Set<Block> getPredecessors() {
+        Set<Block> theResult = new HashSet<>();
         for (Block theBlock: program.getBlocks()) {
             if (theBlock.getSuccessors().contains(this)) {
                 theResult.add(theBlock);
@@ -64,25 +79,12 @@ public class Block {
         successors.add(aBlock);
     }
 
-    public List<Block> getSuccessors() {
+    public Set<Block> getSuccessors() {
         return successors;
     }
 
     public BytecodeOpcodeAddress getStartAddress() {
         return startAddress;
-    }
-
-    public Variable newImportedStackVariable() {
-        Variable theNewVariable = program.createVariable(new PHIFunction());
-        importedStack.add(theNewVariable);
-        expressions.add(new InitVariableExpression(theNewVariable));
-        return theNewVariable;
-    }
-
-    public Variable newImportedLocalVariable(int aIndex) {
-        Variable theNewVariable = program.createVariable(new ExternalReferenceValue(aIndex));
-        expressions.add(new InitVariableExpression(theNewVariable));
-        return theNewVariable;
     }
 
     public Variable newVariable(Value aValue)  {
@@ -97,18 +99,6 @@ public class Block {
 
     public ExpressionList getExpressions() {
         return expressions;
-    }
-
-    public List<Variable> getImportedStack() {
-        return importedStack;
-    }
-
-    public void addToExitStack(Variable aVariable) {
-        exitStack.add(aVariable);
-    }
-
-    public List<Variable> getRemainingStack() {
-        return exitStack;
     }
 
     public boolean endWithNeverReturningExpression() {

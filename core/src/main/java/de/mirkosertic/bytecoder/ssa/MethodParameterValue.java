@@ -15,21 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Variable {
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-    private final String name;
-    private final Value value;
+public class MethodParameterValue extends Value {
 
-    public Variable(String aName, Value aValue) {
-        name = aName;
-        value = aValue;
+    private final int parameterIndex;
+    private final BytecodeTypeRef typeRef;
+
+    public MethodParameterValue(int aParameterIndex, BytecodeTypeRef aType) {
+        parameterIndex = aParameterIndex;
+        typeRef = aType;
     }
 
-    public String getName() {
-        return name;
+    public int getParameterIndex() {
+        return parameterIndex;
     }
 
-    public Value getValue() {
-        return value;
+    public BytecodeTypeRef getTypeRef() {
+        return typeRef;
     }
 }

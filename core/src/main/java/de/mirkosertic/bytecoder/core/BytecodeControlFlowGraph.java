@@ -69,9 +69,9 @@ public class BytecodeControlFlowGraph {
             } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                 // thowing an exception, start new basic block
                 currentBlock = null;
-//            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
+            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
                 // invocation, start new basic block
-  //              currentBlock = null;
+                currentBlock = null;
             }
         }
 
@@ -87,6 +87,13 @@ public class BytecodeControlFlowGraph {
                             }
                         }
                     }
+                    if (theBlock.endsWithConditionalJump()) {
+                        if (i<blocks.size()-1) {
+                            theBlock.addSuccessor(blocks.get(i + 1));
+                        } else {
+                            throw new IllegalStateException("Block at end with no jump target!");
+                        }
+                    }
                 } else {
                     if (i<blocks.size()-1) {
                         theBlock.addSuccessor(blocks.get(i + 1));
@@ -98,7 +105,7 @@ public class BytecodeControlFlowGraph {
         }
     }
 
-    private BytecodeBasicBlock blockByStartAddress(BytecodeOpcodeAddress aAddress) {
+    public BytecodeBasicBlock blockByStartAddress(BytecodeOpcodeAddress aAddress) {
         for (BytecodeBasicBlock theBlock : blocks) {
             if (aAddress.equals(theBlock.getStartAddress())) {
                 return theBlock;

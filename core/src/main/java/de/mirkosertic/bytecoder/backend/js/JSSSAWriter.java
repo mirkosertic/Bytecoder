@@ -36,6 +36,7 @@ import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
@@ -57,6 +58,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NegatedValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
@@ -67,7 +69,7 @@ import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.SetFrameVariableExpression;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
@@ -145,9 +147,28 @@ public class JSSSAWriter extends JSWriter {
             print((ClassReferenceValue) aValue);
         } else if (aValue instanceof NewMultiArrayValue) {
             print((NewMultiArrayValue) aValue);
+        } else if (aValue instanceof SelfReferenceParameterValue) {
+            print((SelfReferenceParameterValue) aValue);
+        } else if (aValue instanceof MethodParameterValue) {
+            print((MethodParameterValue) aValue);
+        } else if (aValue instanceof CurrentExceptionValue) {
+            print((CurrentExceptionValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    public void print(CurrentExceptionValue aValue) {
+        //TODO: Fix this
+        print("'current exception'");
+    }
+
+    public void print(MethodParameterValue aValue) {
+        print("p" + (aValue.getParameterIndex() + 1));
+    }
+
+    public void print(SelfReferenceParameterValue aValue) {
+        print("thisRef");
     }
 
     public void print(NewMultiArrayValue aValue) {
@@ -461,8 +482,7 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void printVariableName(Variable aVariable) {
-        print("blockLocal");
-        print(aVariable.getIndex() + 1);
+        print(aVariable.getName() + 1);
     }
 
     public void printStaticFieldReference(BytecodeFieldRefConstant aField) {
@@ -485,13 +505,6 @@ public class JSSSAWriter extends JSWriter {
             if (theExpression instanceof ReturnExpression) {
                 ReturnExpression theE = (ReturnExpression) theExpression;
                 print("return");
-                println(";");
-            } else if (theExpression instanceof SetFrameVariableExpression) {
-                SetFrameVariableExpression theE = (SetFrameVariableExpression) theExpression;
-                print("frame.local");
-                print(theE.getIndex() + 1);
-                print(" = ");
-                printVariableName(theE.getVariable());
                 println(";");
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
@@ -560,7 +573,7 @@ public class JSSSAWriter extends JSWriter {
                 println("}");
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
-                List<Variable> theRemainingStack = theE.getRemainingStack();
+                List<Variable> theRemainingStack = theE.getFinalStateAtJump().getRemainingStack();
                 for (Variable theVariable : theRemainingStack) {
                     print(" // " );
                     printVariableName(theVariable);
