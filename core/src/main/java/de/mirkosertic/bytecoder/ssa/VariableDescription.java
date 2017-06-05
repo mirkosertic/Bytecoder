@@ -15,23 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-
-public class GotoExpression extends Expression {
-
-    private final BytecodeOpcodeAddress jumpTarget;
-    private final BlockState finalStateAtJump;
-
-    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, BlockState aFinalStateAtJump) {
-        jumpTarget = aJumpTarget;
-        finalStateAtJump = aFinalStateAtJump;
-    }
-
-    public BytecodeOpcodeAddress getJumpTarget() {
-        return jumpTarget;
-    }
-
-    public BlockState getFinalStateAtJump() {
-        return finalStateAtJump;
-    }
+public interface VariableDescription {
 }

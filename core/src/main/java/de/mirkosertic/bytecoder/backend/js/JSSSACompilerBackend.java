@@ -41,10 +41,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.Block;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.*;
 
 public class JSSSACompilerBackend extends AbstractJSBackend {
 
@@ -323,22 +320,29 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                     theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
+                    JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
+
+                    for (Map.Entry<Variable, VariableDescription> theExported : theBlock.toStartState().getExports().entrySet()) {
+                        theJSWriter.print("// ");
+                        theJSWriter.printVariableName(theExported.getKey());
+                        theJSWriter.print(" is imported as ");
+                        theJSWriter.println(theExported.getValue().toString());
+                    }
+
                     for (Block thePrececessor : theBlock.getPredecessors()) {
-                        theWriter.println("         // Predecessor if this block is " + thePrececessor.getStartAddress().getAddress());
+                        theJSWriter.println("// Predecessor if this block is " + thePrececessor.getStartAddress().getAddress());
                     }
                     for (Block theSuccessor : theBlock.getSuccessors()) {
-                        theWriter.println("         // Successor if this block is " + theSuccessor.getStartAddress().getAddress());
+                        theJSWriter.println("// Successor if this block is " + theSuccessor.getStartAddress().getAddress());
                     }
-
-
-                    JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
 
                     theJSWriter.writeExpressions(theBlock.getExpressions());
 
-                    for (Variable theExitVariable : theBlock.getFinalState().getRemainingStack()) {
+                    for (Map.Entry<Variable, VariableDescription> theExported : theBlock.toFinalState().getExports().entrySet()) {
                         theJSWriter.print("// ");
-                        theJSWriter.printVariableName(theExitVariable);
-                        theJSWriter.println(" still on stack");
+                        theJSWriter.printVariableName(theExported.getKey());
+                        theJSWriter.print(" is exorted as ");
+                        theJSWriter.println(theExported.getValue().toString());
                     }
 
                     theWriter.println("         }");

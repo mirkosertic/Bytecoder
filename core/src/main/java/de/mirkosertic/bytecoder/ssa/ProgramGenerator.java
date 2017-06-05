@@ -110,19 +110,24 @@ public class ProgramGenerator {
 
     private static class ParsingHelper {
 
-        protected final ParsingHelper predecessorParsingHelper;
-        protected final Block block;
-        protected final Stack<Variable> stack;
-        protected final Map<Integer, Variable> localVariables;
+        private final Block block;
+        private final Stack<Variable> stack;
+        private final Map<Integer, Variable> localVariables;
+        private int alienStackCounter;
 
-        public ParsingHelper(Block aBlock, ParsingHelper aPredecessorParsingHelper) {
+        public ParsingHelper(Block aBlock) {
             stack = new Stack();
             block = aBlock;
+            alienStackCounter = 0;
             localVariables = new HashMap<>();
-            predecessorParsingHelper = aPredecessorParsingHelper;
         }
 
         public Variable pop() {
+            if (stack.isEmpty()) {
+                Variable theImported = block.newImportedVariable(new UnknownValue(),
+                        new StackVariableDescription(alienStackCounter++));
+                return theImported;
+            }
             return stack.pop();
         }
 
@@ -137,20 +142,16 @@ public class ProgramGenerator {
             stack.push(aValue);
         }
 
-        public Variable importFromBlockOrPredecessor(int aIndex) {
-            Variable theLocalVariable = localVariables.get(aIndex);
-            if (theLocalVariable == null) {
-                if (predecessorParsingHelper == null) {
-                    throw new IllegalStateException("Variable at " + aIndex + " is null and no predecrssor in " + this);
-                }
-                theLocalVariable = predecessorParsingHelper.importFromBlockOrPredecessor(aIndex);
-                localVariables.put(aIndex, theLocalVariable);
-            }
-            return theLocalVariable;
-        }
-
         public Variable getLocalVariable(int aIndex) {
-            Variable theVariable = importFromBlockOrPredecessor(aIndex);
+            Variable theVariable = localVariables.get(aIndex);
+            if (theVariable == null) {
+                VariableDescription theDesc = new LocalVariableDescription(aIndex);
+                theVariable = block.newImportedVariable(new UnknownValue(),
+                        theDesc);
+                localVariables.put(aIndex, theVariable);
+                block.addToExportedList(theVariable, theDesc);
+                return theVariable;
+            }
             if (theVariable == null) {
                 throw new IllegalStateException("local variable " + aIndex + " is null in " + this);
             }
@@ -161,74 +162,12 @@ public class ProgramGenerator {
             if (aValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
             }
+            Variable theOld = localVariables.get(aIndex);
+            if (theOld != null) {
+                block.removeFromExportedList(theOld);
+            }
             localVariables.put(aIndex, aValue);
-        }
-
-        public void initializeFrom(BlockFinalState aFinalState) {
-            stack.clear();
-            localVariables.clear();
-
-            for (Variable theVariable : aFinalState.getRemainingStack()) {
-                stack.push(theVariable);
-            }
-            for (Map.Entry<Integer, Variable> theEntry : aFinalState.getLocalVariables().entrySet()) {
-                localVariables.put(theEntry.getKey(), theEntry.getValue());
-            }
-        }
-
-        public BlockFinalState toFinalState() {
-            Map<Integer, Variable> theVariables = new HashMap<>();
-            theVariables.putAll(localVariables);
-            List<Variable> theRemainingStack = new ArrayList<>();
-            for (int i=0;i<stack.size();i++) {
-                theRemainingStack.add(stack.get(i));
-            }
-            return new BlockFinalState(theRemainingStack, theVariables);
-        }
-    }
-
-    private static class PHIInsertingParsingHelper extends ParsingHelper {
-
-        private final Set<Integer> processedLocalVariables;
-
-        public PHIInsertingParsingHelper(Block aBlock) {
-            super(aBlock, null);
-            processedLocalVariables = new HashSet<>();
-        }
-
-        @Override
-        public Variable pop() {
-            if (stack.isEmpty()) {
-                return block.newVariable(new PHIFunction());
-            }
-            return super.pop();
-        }
-
-        @Override
-        public Variable peek() {
-            if (stack.isEmpty()) {
-                Variable theVariable = block.newVariable(new PHIFunction());
-                stack.push(theVariable);
-                return theVariable;
-            }
-
-            return super.peek();
-        }
-
-        @Override
-        public void setLocalVariable(int aIndex, Variable aValue) {
-            processedLocalVariables.add(aIndex);
-            super.setLocalVariable(aIndex, aValue);
-        }
-
-        @Override
-        public Variable importFromBlockOrPredecessor(int aIndex) {
-            if (!processedLocalVariables.contains(aIndex)) {
-                Variable thePHIFunction = block.newVariable(new PHIFunction());
-                setLocalVariable(aIndex, thePHIFunction);
-                return thePHIFunction;
-            }
-            return localVariables.get(aIndex);
+            block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
         }
     }
 
@@ -272,28 +211,23 @@ public class ProgramGenerator {
             }
         }
 
-        Map<Block, ParsingHelper> theParsingHelper = new HashMap<>();
-
-
         for (Map.Entry<BytecodeBasicBlock, Block> theEntry : theCreatedBlocks.entrySet()) {
-            initializeBlockWith(theParsingHelper, theEntry.getValue(), aFlowGraph, aSignature, aAccessFlags);
+            initializeBlockWith(theEntry.getValue(), aFlowGraph, aSignature, aAccessFlags);
         }
 
         return theProgram;
     }
 
-    private void initializeBlockWith(Map<Block, ParsingHelper> aParsingHelper, Block aTargetBlock, BytecodeControlFlowGraph aControlFlowGraph, BytecodeMethodSignature aSignature, BytecodeAccessFlags aAccessFlags) {
+    private void initializeBlockWith(Block aTargetBlock, BytecodeControlFlowGraph aControlFlowGraph, BytecodeMethodSignature aSignature, BytecodeAccessFlags aAccessFlags) {
 
         if (aTargetBlock.getExpressions().size() > 0) {
             return;
         }
 
-        ParsingHelper theHelper;
+        ParsingHelper theHelper = new ParsingHelper(aTargetBlock);
 
 
         if (aTargetBlock.isStartBlock()) {
-            // Start block of control flow, we are fine here!
-            theHelper = new ParsingHelper(aTargetBlock, null);
 
             // At this point, local variables are initialized based on the method signature
             // The stack is empty
@@ -309,46 +243,22 @@ public class ProgramGenerator {
 
             Set<Block> thePredecessors = aTargetBlock.getPredecessors();
 
-            for (Block theBlock : thePredecessors) {
-                if (theBlock != aTargetBlock) {
-                    initializeBlockWith(aParsingHelper, theBlock, aControlFlowGraph, aSignature, aAccessFlags);
-                }
-            }
-
             if (thePredecessors.size() == 1) {
                 Block theOnlyPredecessor = thePredecessors.iterator().next();
-                // There is only one successor
-                if (theOnlyPredecessor == aTargetBlock) {
-                    //  Block is its own successor, what do do now?
-                    throw new IllegalStateException("not implemented!");
-                } else {
-                    // Predecessor is another block
-                    // We inherit the remaining stack and assigned variables of that block before we
-                    // start parsing
-                    ParsingHelper thePredecessorParsingHelper = aParsingHelper.get(theOnlyPredecessor);
-                    if (thePredecessorParsingHelper == null) {
-                        throw new IllegalStateException("No ParsingHelper found for predecessor block " + theOnlyPredecessor.getStartAddress().getAddress());
-                    }
-
-                    theHelper = new ParsingHelper(aTargetBlock, thePredecessorParsingHelper);
-                    theHelper.initializeFrom(theOnlyPredecessor.getFinalState());
-                }
+                // There is only one predescessor
             } else if (thePredecessors.size() > 1) {
+                // More than one predescessor, we need to generate PHI functions
 
-                theHelper = new PHIInsertingParsingHelper(aTargetBlock);
+                //TODO: be implemented
 
             } else {
-                // TODO: Further analyze what this is
-
-                theHelper = new PHIInsertingParsingHelper(aTargetBlock);
+                // TODO: Further analyze what this is, maybe exception handler or something else
 
                 if (aTargetBlock.getType() != Block.Type.NORMAL) {
                     theHelper.push(aTargetBlock.newVariable(new CurrentExceptionValue()));
                 }
             }
         }
-
-        aParsingHelper.put(aTargetBlock, theHelper);
 
         System.out.println("Parsing block at " + aTargetBlock.getStartAddress().getAddress() + " with pred ");
         for (Block thePred : aTargetBlock.getPredecessors()) {
@@ -598,7 +508,7 @@ public class ProgramGenerator {
                 Variable theResult = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theHelper.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
 
                 aTargetBlock.addExpression(new IFExpression(theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
@@ -608,7 +518,7 @@ public class ProgramGenerator {
                 Variable theResult = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theHelper.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
 
                 aTargetBlock.addExpression(new IFExpression(theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
@@ -641,7 +551,7 @@ public class ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theHelper.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
 
                 aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
 
@@ -663,7 +573,7 @@ public class ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theHelper.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
 
                 aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
 
@@ -697,7 +607,7 @@ public class ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), theHelper.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
 
                 aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
@@ -741,7 +651,7 @@ public class ProgramGenerator {
                 theHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theINS = (BytecodeInstructionGOTO) theInstruction;
-                aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), theHelper.toFinalState()));
+                aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), aTargetBlock.toFinalState()));
             } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
                 BytecodeInstructionL2Generic theINS = (BytecodeInstructionL2Generic) theInstruction;
                 Variable theValue = theHelper.pop();
@@ -862,7 +772,5 @@ public class ProgramGenerator {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
         }
-
-        aTargetBlock.setFinalState(theHelper.toFinalState());
     }
 }

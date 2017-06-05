@@ -15,23 +15,16 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+public class StackVariableDescription implements VariableDescription {
 
-public class GotoExpression extends Expression {
+    private final int pos;
 
-    private final BytecodeOpcodeAddress jumpTarget;
-    private final BlockState finalStateAtJump;
-
-    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, BlockState aFinalStateAtJump) {
-        jumpTarget = aJumpTarget;
-        finalStateAtJump = aFinalStateAtJump;
+    public StackVariableDescription(int aPos) {
+        pos = aPos;
     }
 
-    public BytecodeOpcodeAddress getJumpTarget() {
-        return jumpTarget;
-    }
-
-    public BlockState getFinalStateAtJump() {
-        return finalStateAtJump;
+    @Override
+    public String toString() {
+        return "Stack position " + pos;
     }
 }
