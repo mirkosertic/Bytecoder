@@ -131,6 +131,10 @@ public class ProgramGenerator {
             return stack.pop();
         }
 
+        public boolean isStackEmpty() {
+            return stack.isEmpty();
+        }
+
         public Variable peek() {
             return stack.peek();
         }
@@ -168,6 +172,10 @@ public class ProgramGenerator {
             }
             localVariables.put(aIndex, aValue);
             block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
+        }
+
+        public Variable popOnly() {
+            return stack.pop();
         }
     }
 
@@ -771,6 +779,12 @@ public class ProgramGenerator {
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
+        }
+
+        int theExportedStackPos = 0;
+        while(!theHelper.isStackEmpty()) {
+            Variable theVar = theHelper.popOnly();
+            aTargetBlock.addToExportedList(theVar, new StackVariableDescription(theExportedStackPos++));
         }
     }
 }
