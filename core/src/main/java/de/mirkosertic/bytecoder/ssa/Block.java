@@ -102,6 +102,10 @@ public class Block {
         exported.put(aDescription, aVariable);
     }
 
+    public void addToImportedList(Variable aVariable, VariableDescription aDescription) {
+        imported.put(aDescription, aVariable);
+    }
+
     public void addExpression(Expression aExpression) {
         expressions.add(aExpression);
     }
