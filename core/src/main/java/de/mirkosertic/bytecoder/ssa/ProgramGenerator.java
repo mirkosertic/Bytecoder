@@ -121,21 +121,28 @@ public class ProgramGenerator {
             localVariables = new HashMap<>();
         }
 
-        private ParsingHelper(Block aBlock, ParsingHelper aHelperToImportFrom) {
-            this(aBlock);
-            localVariables.putAll(aHelperToImportFrom.localVariables);
-            for (int i=0;i<aHelperToImportFrom.stack.size();i++) {
-                stack.push(aHelperToImportFrom.stack.get(i));
-            }
-        }
-
         public ParsingHelper cloneToHewFor(Block aBlock) {
-            return new ParsingHelper(aBlock, this);
+            ParsingHelper theNew = new ParsingHelper(aBlock);
+            theNew.localVariables.putAll(localVariables);
+            for (int i=0;i<stack.size();i++) {
+                theNew.stack.push(stack.get(i));
+            }
+            return theNew;
         }
 
         public ParsingHelper cloneToNewWithPHIFunctions(Block aBlock, Program aProgram) {
-            // TODO: Implement this!!!
-            return new ParsingHelper(aBlock, this);
+            ParsingHelper theNew = new ParsingHelper(aBlock);
+            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
+                Variable theVar = aProgram.createVariable(new PHIFunction());
+                aBlock.addToImportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
+                theNew.localVariables.put(theEntry.getKey(), theVar);
+            }
+            for (int i=stack.size() - 1 ; i>= 0; i--) {
+                Variable theVar = aProgram.createVariable(new PHIFunction());
+                aBlock.addToImportedList(theVar, new StackVariableDescription(i));
+                theNew.stack.push(stack.get(i));
+            }
+            return theNew;
         }
 
         public Variable pop() {
