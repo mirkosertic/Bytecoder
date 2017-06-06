@@ -15,14 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
@@ -101,9 +93,19 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 public class ProgramGenerator {
 
@@ -112,34 +114,35 @@ public class ProgramGenerator {
         private final Block block;
         private final Stack<Variable> stack;
         private final Map<Integer, Variable> localVariables;
-        private int alienStackCounter;
 
         public ParsingHelper(Block aBlock) {
             stack = new Stack();
             block = aBlock;
-            alienStackCounter = 0;
             localVariables = new HashMap<>();
         }
 
-        public Variable pop() {
-            if (stack.isEmpty()) {
-                Variable theImported = block.newImportedVariable(new UnknownValue(),
-                        new StackVariableDescription(alienStackCounter++));
-                return theImported;
+        private ParsingHelper(Block aBlock, ParsingHelper aHelperToImportFrom) {
+            this(aBlock);
+            localVariables.putAll(aHelperToImportFrom.localVariables);
+            for (int i=0;i<aHelperToImportFrom.stack.size();i++) {
+                stack.push(aHelperToImportFrom.stack.get(i));
             }
+        }
+
+        public ParsingHelper cloneToHewFor(Block aBlock) {
+            return new ParsingHelper(aBlock, this);
+        }
+
+        public ParsingHelper cloneToNewWithPHIFunctions(Block aBlock, Program aProgram) {
+            // TODO: Implement this!!!
+            return new ParsingHelper(aBlock, this);
+        }
+
+        public Variable pop() {
             return stack.pop();
         }
 
-        public boolean isStackEmpty() {
-            return stack.isEmpty();
-        }
-
         public Variable peek() {
-            if (stack.isEmpty()) {
-                Variable theImported = block.newImportedVariable(new UnknownValue(),
-                        new StackVariableDescription(alienStackCounter++));
-                stack.push(theImported);
-            }
             return stack.peek();
         }
 
@@ -172,10 +175,6 @@ public class ProgramGenerator {
             }
             localVariables.put(aIndex, aValue);
             block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
-        }
-
-        public Variable popOnly() {
-            return stack.pop();
         }
     }
 
@@ -219,144 +218,63 @@ public class ProgramGenerator {
             }
         }
 
-        // Build the basic blocks
+        Set<Block> theVisited = new HashSet<>();
+        Block theStart = theCreatedBlocks.get(aFlowGraph.blockByStartAddress(new BytecodeOpcodeAddress(0)));
+        ParsingHelper theHelper = new ParsingHelper(theStart);
+
+        // At this point, local variables are initialized based on the method signature
+        // The stack is empty
+        int theCurrentIndex = 0;
+        if (!aAccessFlags.isStatic()) {
+            theHelper.setLocalVariable(theCurrentIndex++, theStart.newVariable(new SelfReferenceParameterValue()));
+        }
+        BytecodeTypeRef[] theTypes = aSignature.getArguments();
+        for (int i=0;i<theTypes.length;i++) {
+            theHelper.setLocalVariable(theCurrentIndex++, theStart.newVariable(new MethodParameterValue(i, theTypes[i])));
+        }
+
+        // This will traverse the CFG from top to bottom
+        initializeBlock(theProgram, theStart, theVisited, theHelper, aFlowGraph);
+
+        // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
+        // finally blocks
         for (Map.Entry<BytecodeBasicBlock, Block> theEntry : theCreatedBlocks.entrySet()) {
-            initializeBlockWith(theEntry.getValue(), aFlowGraph, aSignature, aAccessFlags);
-        }
-
-        // Pass thru stacks
-        boolean modified = false;
-        while(modified) {
-            modified = false;
-
-            for (Block theBlock : theCreatedBlocks.values()) {
-
-                BlockState theFinalState = theBlock.toFinalState();
-
-                Set<Block> theSuccessors = theBlock.getSuccessors();
-                for (Block theSuccessor : theSuccessors) {
-                    BlockState theImporting = theSuccessor.toStartState();
-                    for (Map.Entry<VariableDescription,Variable> theEntry : theFinalState.getPorts().entrySet()) {
-                        if (theEntry.getKey() instanceof StackVariableDescription) {
-                            StackVariableDescription theDesc = (StackVariableDescription) theEntry.getKey();
-                            Variable theNewImportedVariable = theImporting.findBySlot(theDesc);
-                            if (theNewImportedVariable == null) {
-                                // Stack exported, but not consumed
-                                if (theSuccessor.getPredecessors().size() == 1) {
-                                    theNewImportedVariable = theSuccessor.newImportedVariable(new VariableReferenceValue(theEntry.getValue()), theDesc);
-                                } else {
-                                    theNewImportedVariable = theSuccessor.newImportedVariable(new PHIFunction(), theDesc);
-                                }
-                                // And also needs to be exported as it is pass-thru
-                                theSuccessor.addToExportedList(theNewImportedVariable, theDesc);
-                                modified = true;
-                            }
-                        }
-                    }
+            Block theNewBlock = theEntry.getValue();
+            if (theVisited.add(theNewBlock)) {
+                ParsingHelper theNewHelper = new ParsingHelper(theNewBlock);
+                if (theNewBlock.getType() != Block.Type.NORMAL) {
+                    theHelper.push(theNewBlock.newVariable(new CurrentExceptionValue()));
                 }
-            }
-        }
-
-        // Every blocks propagates its exporting internal variables to the receiving blocks
-        modified = false;
-        while(modified) {
-            modified = false;
-            for (Block theBlock : theCreatedBlocks.values()) {
-                Set<Block> theSuccessors = theBlock.getSuccessors();
-                for (Map.Entry<VariableDescription, Variable> theEntry : theBlock.toFinalState().getPorts().entrySet()) {
-                    if (theEntry.getKey() instanceof LocalVariableDescription) {
-                        LocalVariableDescription theDesc = (LocalVariableDescription) theEntry.getKey();
-                        for (Block theSuccessor : theSuccessors) {
-                            Variable theNewImportedVariable = theSuccessor.toStartState().findBySlot(theDesc);
-                            if (theNewImportedVariable == null) {
-                                // Needs to be imported!
-                                if (theSuccessor.getPredecessors().size() == 1) {
-                                    theNewImportedVariable = theSuccessor.newImportedVariable(new VariableReferenceValue(theEntry.getValue()), theDesc);
-                                } else {
-                                    theNewImportedVariable = theSuccessor.newImportedVariable(new PHIFunction(), theDesc);
-                                }
-                                modified = true;
-                            }
-                            if (!theSuccessor.endsWithReturnOrThrow()) {
-                                Variable theExported = theSuccessor.toFinalState().findBySlot(theDesc);
-                                if (theExported == null) {
-                                    // Nothing exported at the same slot, so we need to export it!
-                                    theSuccessor.addToExportedList(theNewImportedVariable, theDesc);
-                                    modified = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Link the basic blocks
-        for (Block theBlock : theCreatedBlocks.values()) {
-            Set<Block> thePredecessors = theBlock.getPredecessors();
-            if (thePredecessors.size() == 1) {
-                Block theOnlyPredescessor = thePredecessors.iterator().next();
-
-                BlockState thePredescessorState = theOnlyPredescessor.toFinalState();
-                BlockState theSuccessorState = theBlock.toStartState();
-
-                // Try to map the imported variables to the exported ones
-                for (Map.Entry<VariableDescription, Variable> theEntry : theSuccessorState.getPorts().entrySet()) {
-                    Variable theExported = thePredescessorState.findBySlot(theEntry.getKey());
-                    if (theExported != null) {
-                        // Found something
-                        theBlock.initVariableWith(theEntry.getValue(), new VariableReferenceValue(theExported));
-                    } else {
-                        // Issue a warning
-                        System.out.println("Cannot resolve " + theEntry.getKey() + " from block " + theOnlyPredescessor.getStartAddress().getAddress() + " for " + theBlock.getStartAddress().getAddress());
-                    }
-                }
+                // TODO: Check what exception handler might reference from here!!!
+                initializeBlock(theProgram, theNewBlock, theVisited, theNewHelper, aFlowGraph);
             }
         }
 
         return theProgram;
     }
 
-    private void initializeBlockWith(Block aTargetBlock, BytecodeControlFlowGraph aControlFlowGraph, BytecodeMethodSignature aSignature, BytecodeAccessFlags aAccessFlags) {
+    private void initializeBlock(Program aProgram, Block aCurrentBlock, Set<Block> aAlreadyVisited, ParsingHelper aHelper, BytecodeControlFlowGraph aGraph) {
+        if (aAlreadyVisited.add(aCurrentBlock)) {
 
-        if (aTargetBlock.getExpressions().size() > 0) {
-            return;
-        }
+            initializeBlockWith(aCurrentBlock, aGraph, aHelper);
 
-        ParsingHelper theHelper = new ParsingHelper(aTargetBlock);
-
-        if (aTargetBlock.isStartBlock()) {
-
-            // At this point, local variables are initialized based on the method signature
-            // The stack is empty
-            int theCurrentIndex = 0;
-            if (!aAccessFlags.isStatic()) {
-                theHelper.setLocalVariable(theCurrentIndex++, aTargetBlock.newVariable(new SelfReferenceParameterValue()));
-            }
-            BytecodeTypeRef[] theTypes = aSignature.getArguments();
-            for (int i=0;i<theTypes.length;i++) {
-                theHelper.setLocalVariable(theCurrentIndex++, aTargetBlock.newVariable(new MethodParameterValue(i, theTypes[i])));
-            }
-        } else {
-
-            Set<Block> thePredecessors = aTargetBlock.getPredecessors();
-
-            if (thePredecessors.size() == 1) {
-                Block theOnlyPredecessor = thePredecessors.iterator().next();
-                // There is only one predescessor
-            } else if (thePredecessors.size() > 1) {
-                // More than one predescessor, we need to generate PHI functions
-
-                //TODO: be implemented
-
-            } else {
-                // TODO: Further analyze what this is, maybe exception handler or something else
-
-                if (aTargetBlock.getType() != Block.Type.NORMAL) {
-                    theHelper.push(aTargetBlock.newVariable(new CurrentExceptionValue()));
+            for (Block theSuccessor : aCurrentBlock.getSuccessors()) {
+                ParsingHelper theNewHelper;
+                if (theSuccessor.getPredecessors().size() == 1) {
+                    // Everything is ok
+                    theNewHelper = aHelper.cloneToHewFor(theSuccessor);
+                } else {
+                    // We have a join point, so we have to introduce PHI function for everything that was imported
+                    // This is the naive implementation that can be vastly improved
+                    theNewHelper = aHelper.cloneToNewWithPHIFunctions(theSuccessor, aProgram);
                 }
+
+                initializeBlock(aProgram, theSuccessor, aAlreadyVisited, theNewHelper, aGraph);
             }
         }
+    }
+
+    private void initializeBlockWith(Block aTargetBlock, BytecodeControlFlowGraph aControlFlowGraph,  ParsingHelper theHelper) {
 
         // Finally we can start to parse the program
         BytecodeBasicBlock theBytecodeBlock = aControlFlowGraph.blockByStartAddress(aTargetBlock.getStartAddress());
@@ -869,11 +787,5 @@ public class ProgramGenerator {
         }
 
         aTargetBlock.addExpression(new CommentExpression("Final stack size is " + theHelper.stack.size()));
-
-        int theExportedStackPos = 0;
-        while(!theHelper.isStackEmpty()) {
-            Variable theVar = theHelper.popOnly();
-            aTargetBlock.addToExportedList(theVar, new StackVariableDescription(theExportedStackPos++));
-        }
     }
 }
