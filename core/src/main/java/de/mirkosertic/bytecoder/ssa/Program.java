@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -31,12 +30,10 @@ public class Program {
 
     private final List<Block> blocks;
     private final Map<Integer, Variable> variables;
-    private final BytecodeLinkerContext linkerContext;
 
-    public Program(BytecodeLinkerContext aLinkerContext) {
+    public Program() {
         blocks = new ArrayList<>();
         variables = new HashMap<>();
-        linkerContext = aLinkerContext;
     }
 
     public Block createAt(BytecodeOpcodeAddress aAddress, Block.Type aType) {

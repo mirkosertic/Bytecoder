@@ -19,7 +19,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
@@ -41,7 +40,11 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
 public class JSSSACompilerBackend extends AbstractJSBackend {
 
@@ -322,27 +325,27 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                     JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
 
-                    for (Map.Entry<Variable, VariableDescription> theExported : theBlock.toStartState().getExports().entrySet()) {
+                    for (Map.Entry<VariableDescription, Variable> theImported : theBlock.toStartState().getPorts().entrySet()) {
                         theJSWriter.print("// ");
-                        theJSWriter.printVariableName(theExported.getKey());
+                        theJSWriter.printVariableName(theImported.getValue());
                         theJSWriter.print(" is imported as ");
-                        theJSWriter.println(theExported.getValue().toString());
+                        theJSWriter.println(theImported.getKey().toString());
                     }
 
                     for (Block thePrececessor : theBlock.getPredecessors()) {
-                        theJSWriter.println("// Predecessor if this block is " + thePrececessor.getStartAddress().getAddress());
+                        theJSWriter.printlnComment("Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
                     }
                     for (Block theSuccessor : theBlock.getSuccessors()) {
-                        theJSWriter.println("// Successor if this block is " + theSuccessor.getStartAddress().getAddress());
+                        theJSWriter.printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
                     }
 
                     theJSWriter.writeExpressions(theBlock.getExpressions());
 
-                    for (Map.Entry<Variable, VariableDescription> theExported : theBlock.toFinalState().getExports().entrySet()) {
+                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
                         theJSWriter.print("// ");
-                        theJSWriter.printVariableName(theExported.getKey());
+                        theJSWriter.printVariableName(theExported.getValue());
                         theJSWriter.print(" is exported as ");
-                        theJSWriter.println(theExported.getValue().toString());
+                        theJSWriter.println(theExported.getKey().toString());
                     }
 
                     theWriter.println("         }");

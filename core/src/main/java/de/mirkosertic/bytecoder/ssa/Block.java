@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-import java.util.*;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class Block {
 
@@ -32,8 +35,8 @@ public class Block {
     private final Program program;
     private final Set<Block> successors;
     private final Type type;
-    private final Map<Variable, VariableDescription> imported;
-    private final Map<Variable, VariableDescription> exported;
+    private final Map<VariableDescription, Variable> imported;
+    private final Map<VariableDescription, Variable> exported;
 
     public Block(Type aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -76,23 +79,27 @@ public class Block {
     }
 
     public Variable newVariable(Value aValue)  {
+        return newVariable(aValue, false);
+    }
+
+    public Variable newVariable(Value aValue, boolean aAddfirst)  {
         Variable theNewVariable = program.createVariable(aValue);
-        expressions.add(new InitVariableExpression(theNewVariable));
+        if (aAddfirst) {
+            expressions.addFirst(new InitVariableExpression(theNewVariable));
+        } else {
+            expressions.add(new InitVariableExpression(theNewVariable));
+        }
         return theNewVariable;
     }
 
     public Variable newImportedVariable(Value aValue, VariableDescription aDescription) {
-        Variable theVariable = newVariable(aValue);
-        imported.put(theVariable, aDescription);
+        Variable theVariable = newVariable(aValue, true);
+        imported.put(aDescription, theVariable);
         return theVariable;
     }
 
     public void addToExportedList(Variable aVariable, VariableDescription aDescription) {
-        exported.put(aVariable, aDescription);
-    }
-
-    public void removeFromExportedList(Variable aVariable) {
-        exported.remove(aVariable);
+        exported.put(aDescription, aVariable);
     }
 
     public void addExpression(Expression aExpression) {
@@ -104,11 +111,30 @@ public class Block {
     }
 
     public BlockState toFinalState() {
-        return new BlockState(exported);
+        BlockState theState = new BlockState();
+        for (Map.Entry<VariableDescription, Variable> theEntry : exported.entrySet()) {
+            theState.assignToPort(theEntry.getKey(), theEntry.getValue());
+        }
+        return theState;
     }
 
     public BlockState toStartState() {
-        return new BlockState(imported);
+        BlockState theState = new BlockState();
+        for (Map.Entry<VariableDescription, Variable> theEntry : imported.entrySet()) {
+            theState.assignToPort(theEntry.getKey(), theEntry.getValue());
+        }
+        return theState;
+    }
+
+    public void initVariableWith(Variable aVariable, Value aNewValue) {
+        aVariable.changeValueTo(aNewValue);
+    }
+
+    public boolean endsWithReturnOrThrow() {
+        Expression theLastExpression = expressions.lastExpression();
+        return theLastExpression instanceof ReturnExpression ||
+                theLastExpression instanceof ReturnVariableExpression ||
+                theLastExpression instanceof ThrowExpression;
     }
 
     public boolean endWithNeverReturningExpression() {

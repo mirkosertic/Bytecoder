@@ -27,4 +27,24 @@ public class StackVariableDescription implements VariableDescription {
     public String toString() {
         return "Stack position " + pos;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        StackVariableDescription that = (StackVariableDescription) o;
+
+        if (pos != that.pos)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return pos;
+    }
 }
