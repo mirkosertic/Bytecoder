@@ -47,6 +47,12 @@ public class JSWriter {
         newLine = true;
     }
 
+    public void printlnComment(String aComment) {
+        checkNewLine();
+        writer.print("// ");
+        println(aComment);
+    }
+
     public void println(String s) {
         checkNewLine();
         writer.println(s);

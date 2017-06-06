@@ -29,7 +29,60 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
+import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BlockState;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.CommentExpression;
+import de.mirkosertic.bytecoder.ssa.CompareValue;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExternalReferenceValue;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GetStaticValue;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.NegatedValue;
+import de.mirkosertic.bytecoder.ssa.NewArrayValue;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
+import de.mirkosertic.bytecoder.ssa.NewObjectValue;
+import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIFunction;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
+import de.mirkosertic.bytecoder.ssa.UnknownValue;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableDescription;
+import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class JSSSAWriter extends JSWriter {
 
@@ -464,13 +517,17 @@ public class JSSSAWriter extends JSWriter {
                 ReturnExpression theE = (ReturnExpression) theExpression;
                 print("return");
                 println(";");
+            } else if (theExpression instanceof CommentExpression) {
+                CommentExpression theE = (CommentExpression) theExpression;
+                print("// ");
+                println(theE.getValue());
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();
                 if (theVariable.getValue() instanceof PHIFunction) {
                     print("// ");
                     printVariableName(theVariable);
-                    println(" is PHI function and initialized from predecessor block in flow graph");
+                    printlnComment(" is PHI function and initialized from predecessor block in flow graph");
                 } else {
                     printVariableName(theVariable);
                     print(" = ");
@@ -531,11 +588,13 @@ public class JSSSAWriter extends JSWriter {
                 println("}");
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
-                for (Map.Entry<Variable, VariableDescription> theEntry : theE.getFinalStateAtJump().getExports().entrySet()) {
-                    print(" // " );
-                    printVariableName(theEntry.getKey());
+                BlockState theFinalState = theE.getSourceBlock().toFinalState();
+
+                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
+                    print(" // ");
+                    printVariableName(theEntry.getValue());
                     print(" exported as ");
-                    println(theEntry.getValue().toString());
+                    println(theEntry.getKey().toString());
                 }
 
                 println(generateJumpCodeFor(theE.getJumpTarget()));

@@ -20,18 +20,18 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 public class GotoExpression extends Expression {
 
     private final BytecodeOpcodeAddress jumpTarget;
-    private final BlockState finalStateAtJump;
+    private final Block sourceBlock;
 
-    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, BlockState aFinalStateAtJump) {
+    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, Block aSourceBlock) {
         jumpTarget = aJumpTarget;
-        finalStateAtJump = aFinalStateAtJump;
+        sourceBlock = aSourceBlock;
+    }
+
+    public Block getSourceBlock() {
+        return sourceBlock;
     }
 
     public BytecodeOpcodeAddress getJumpTarget() {
         return jumpTarget;
-    }
-
-    public BlockState getFinalStateAtJump() {
-        return finalStateAtJump;
     }
 }

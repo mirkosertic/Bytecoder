@@ -15,18 +15,26 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 public class BlockState {
 
-    private final Map<Variable, VariableDescription> exports;
+    private final Map<VariableDescription, Variable> ports;
 
-    public BlockState(Map<Variable, VariableDescription> aExports) {
-        exports = aExports;
+    public BlockState() {
+        ports = new HashMap<>();
     }
 
-    public Map<Variable, VariableDescription> getExports() {
-        return exports;
+    public Map<VariableDescription, Variable> getPorts() {
+        return ports;
+    }
+
+    public void assignToPort(VariableDescription aDescription, Variable aVariable) {
+        ports.put(aDescription, aVariable);
+    }
+
+    public Variable findBySlot(VariableDescription aDescription) {
+        return ports.get(aDescription);
     }
 }

@@ -15,6 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
@@ -97,15 +105,6 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-
 public class ProgramGenerator {
 
     private static class ParsingHelper {
@@ -136,6 +135,11 @@ public class ProgramGenerator {
         }
 
         public Variable peek() {
+            if (stack.isEmpty()) {
+                Variable theImported = block.newImportedVariable(new UnknownValue(),
+                        new StackVariableDescription(alienStackCounter++));
+                stack.push(theImported);
+            }
             return stack.peek();
         }
 
@@ -166,10 +170,6 @@ public class ProgramGenerator {
             if (aValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
             }
-            Variable theOld = localVariables.get(aIndex);
-            if (theOld != null) {
-                block.removeFromExportedList(theOld);
-            }
             localVariables.put(aIndex, aValue);
             block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
         }
@@ -186,7 +186,7 @@ public class ProgramGenerator {
     }
 
     public Program generateFrom(BytecodeControlFlowGraph aFlowGraph, BytecodeMethodSignature aSignature, BytecodeAccessFlags aAccessFlags) {
-        Program theProgram = new Program(linkerContext);
+        Program theProgram = new Program();
 
         // Initialize SSA Block structure
         Map<BytecodeBasicBlock, Block> theCreatedBlocks = new HashMap<>();
@@ -219,8 +219,99 @@ public class ProgramGenerator {
             }
         }
 
+        // Build the basic blocks
         for (Map.Entry<BytecodeBasicBlock, Block> theEntry : theCreatedBlocks.entrySet()) {
             initializeBlockWith(theEntry.getValue(), aFlowGraph, aSignature, aAccessFlags);
+        }
+
+        // Pass thru stacks
+        boolean modified = false;
+        while(modified) {
+            modified = false;
+
+            for (Block theBlock : theCreatedBlocks.values()) {
+
+                BlockState theFinalState = theBlock.toFinalState();
+
+                Set<Block> theSuccessors = theBlock.getSuccessors();
+                for (Block theSuccessor : theSuccessors) {
+                    BlockState theImporting = theSuccessor.toStartState();
+                    for (Map.Entry<VariableDescription,Variable> theEntry : theFinalState.getPorts().entrySet()) {
+                        if (theEntry.getKey() instanceof StackVariableDescription) {
+                            StackVariableDescription theDesc = (StackVariableDescription) theEntry.getKey();
+                            Variable theNewImportedVariable = theImporting.findBySlot(theDesc);
+                            if (theNewImportedVariable == null) {
+                                // Stack exported, but not consumed
+                                if (theSuccessor.getPredecessors().size() == 1) {
+                                    theNewImportedVariable = theSuccessor.newImportedVariable(new VariableReferenceValue(theEntry.getValue()), theDesc);
+                                } else {
+                                    theNewImportedVariable = theSuccessor.newImportedVariable(new PHIFunction(), theDesc);
+                                }
+                                // And also needs to be exported as it is pass-thru
+                                theSuccessor.addToExportedList(theNewImportedVariable, theDesc);
+                                modified = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Every blocks propagates its exporting internal variables to the receiving blocks
+        modified = false;
+        while(modified) {
+            modified = false;
+            for (Block theBlock : theCreatedBlocks.values()) {
+                Set<Block> theSuccessors = theBlock.getSuccessors();
+                for (Map.Entry<VariableDescription, Variable> theEntry : theBlock.toFinalState().getPorts().entrySet()) {
+                    if (theEntry.getKey() instanceof LocalVariableDescription) {
+                        LocalVariableDescription theDesc = (LocalVariableDescription) theEntry.getKey();
+                        for (Block theSuccessor : theSuccessors) {
+                            Variable theNewImportedVariable = theSuccessor.toStartState().findBySlot(theDesc);
+                            if (theNewImportedVariable == null) {
+                                // Needs to be imported!
+                                if (theSuccessor.getPredecessors().size() == 1) {
+                                    theNewImportedVariable = theSuccessor.newImportedVariable(new VariableReferenceValue(theEntry.getValue()), theDesc);
+                                } else {
+                                    theNewImportedVariable = theSuccessor.newImportedVariable(new PHIFunction(), theDesc);
+                                }
+                                modified = true;
+                            }
+                            if (!theSuccessor.endsWithReturnOrThrow()) {
+                                Variable theExported = theSuccessor.toFinalState().findBySlot(theDesc);
+                                if (theExported == null) {
+                                    // Nothing exported at the same slot, so we need to export it!
+                                    theSuccessor.addToExportedList(theNewImportedVariable, theDesc);
+                                    modified = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Link the basic blocks
+        for (Block theBlock : theCreatedBlocks.values()) {
+            Set<Block> thePredecessors = theBlock.getPredecessors();
+            if (thePredecessors.size() == 1) {
+                Block theOnlyPredescessor = thePredecessors.iterator().next();
+
+                BlockState thePredescessorState = theOnlyPredescessor.toFinalState();
+                BlockState theSuccessorState = theBlock.toStartState();
+
+                // Try to map the imported variables to the exported ones
+                for (Map.Entry<VariableDescription, Variable> theEntry : theSuccessorState.getPorts().entrySet()) {
+                    Variable theExported = thePredescessorState.findBySlot(theEntry.getKey());
+                    if (theExported != null) {
+                        // Found something
+                        theBlock.initVariableWith(theEntry.getValue(), new VariableReferenceValue(theExported));
+                    } else {
+                        // Issue a warning
+                        System.out.println("Cannot resolve " + theEntry.getKey() + " from block " + theOnlyPredescessor.getStartAddress().getAddress() + " for " + theBlock.getStartAddress().getAddress());
+                    }
+                }
+            }
         }
 
         return theProgram;
@@ -233,7 +324,6 @@ public class ProgramGenerator {
         }
 
         ParsingHelper theHelper = new ParsingHelper(aTargetBlock);
-
 
         if (aTargetBlock.isStartBlock()) {
 
@@ -268,17 +358,12 @@ public class ProgramGenerator {
             }
         }
 
-        System.out.println("Parsing block at " + aTargetBlock.getStartAddress().getAddress() + " with pred ");
-        for (Block thePred : aTargetBlock.getPredecessors()) {
-            System.out.println("   " + thePred.getStartAddress().getAddress());
-        }
-
         // Finally we can start to parse the program
         BytecodeBasicBlock theBytecodeBlock = aControlFlowGraph.blockByStartAddress(aTargetBlock.getStartAddress());
 
         for (BytecodeInstruction theInstruction : theBytecodeBlock.getInstructions()) {
 
-            System.out.println("Parsing instruction at " + theInstruction.getOpcodeAddress().getAddress());
+            aTargetBlock.addExpression(new CommentExpression(theInstruction.toString()));
 
             if (theInstruction instanceof BytecodeInstructionNOP) {
                 BytecodeInstructionNOP theINS = (BytecodeInstructionNOP) theInstruction;
@@ -516,7 +601,7 @@ public class ProgramGenerator {
                 Variable theResult = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
                 aTargetBlock.addExpression(new IFExpression(theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
@@ -526,7 +611,7 @@ public class ProgramGenerator {
                 Variable theResult = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
                 aTargetBlock.addExpression(new IFExpression(theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
@@ -559,7 +644,7 @@ public class ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
                 aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
 
@@ -581,7 +666,7 @@ public class ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
                 aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
 
@@ -615,7 +700,7 @@ public class ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock.toFinalState()));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
                 aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
@@ -659,7 +744,7 @@ public class ProgramGenerator {
                 theHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theINS = (BytecodeInstructionGOTO) theInstruction;
-                aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), aTargetBlock.toFinalState()));
+                aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), aTargetBlock));
             } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
                 BytecodeInstructionL2Generic theINS = (BytecodeInstructionL2Generic) theInstruction;
                 Variable theValue = theHelper.pop();
@@ -779,7 +864,11 @@ public class ProgramGenerator {
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
+
+            aTargetBlock.addExpression(new CommentExpression("Stack size is " + theHelper.stack.size()));
         }
+
+        aTargetBlock.addExpression(new CommentExpression("Final stack size is " + theHelper.stack.size()));
 
         int theExportedStackPos = 0;
         while(!theHelper.isStackEmpty()) {

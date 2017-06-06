@@ -15,34 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.List;
+public class CommentExpression extends Expression {
 
-public class ExpressionList {
+    private final String value;
 
-    private final List<Expression> expressions;
-
-    public ExpressionList() {
-        expressions = new ArrayList<>();
+    public CommentExpression(String aValue) {
+        value = aValue;
     }
 
-    public void add(Expression aExpression) {
-        expressions.add(aExpression);
-    }
-
-    public void addFirst(Expression aExpression) {
-        expressions.add(0, aExpression);
-    }
-
-    public List<Expression> toList() {
-        return new ArrayList<>(expressions);
-    }
-
-    public int size() {
-        return expressions.size();
-    }
-
-    public Expression lastExpression() {
-        return expressions.get(expressions.size() - 1);
+    public String getValue() {
+        return value;
     }
 }
