@@ -100,7 +100,7 @@ public class JBox2DSimulation {
             float ballRadius = 0.15f;
 
             BodyDef ballDef = new BodyDef();
-            ballDef.type = BodyType.STATIC;
+            ballDef.type = BodyType.DYNAMIC;
             FixtureDef fixtureDef = new FixtureDef();
             fixtureDef.friction = 0.3f;
             fixtureDef.restitution = 0.3f;
@@ -149,7 +149,7 @@ public class JBox2DSimulation {
             long relativeTime = currentTime - startTime;
             System.out.println("Start of calculation");
             System.out.println(currentTime);
-            if (timeToCalculate > 10) {
+            while (timeToCalculate > 10) {
                 System.out.println("Need to run");
                 System.out.println((long) timeToCalculate);
                 System.out.println("Single 10ms step");
