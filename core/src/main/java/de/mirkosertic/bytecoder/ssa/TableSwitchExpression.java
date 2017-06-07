@@ -15,23 +15,52 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class TableSwitchExpression extends Expression {
+public class TableSwitchExpression extends Expression implements ExpressionListContainer {
 
     private final Variable variable;
-    private final BytecodeInstructionTABLESWITCH instruction;
+    private final long lowValue;
+    private final long highValue;
+    private final ExpressionList defaultExpressions;
+    private final Map<Long, ExpressionList> offsets;
 
-    public TableSwitchExpression(Variable aVariable, BytecodeInstructionTABLESWITCH aInstruction) {
+    public TableSwitchExpression(Variable aVariable, long aLowValue, long aHighValue,
+            ExpressionList aDefaultPath, Map<Long, ExpressionList> aPathPerOffset) {
         variable = aVariable;
-        instruction = aInstruction;
+        lowValue = aLowValue;
+        highValue = aHighValue;
+        defaultExpressions = aDefaultPath;
+        offsets = aPathPerOffset;
     }
 
     public Variable getVariable() {
         return variable;
     }
 
-    public BytecodeInstructionTABLESWITCH getInstruction() {
-        return instruction;
+    public long getLowValue() {
+        return lowValue;
+    }
+
+    public long getHighValue() {
+        return highValue;
+    }
+
+    public ExpressionList getDefaultExpressions() {
+        return defaultExpressions;
+    }
+
+    public Map<Long, ExpressionList> getOffsets() {
+        return offsets;
+    }
+
+    @Override
+    public Set<ExpressionList> getExpressionLists() {
+        Set<ExpressionList> theResult = new HashSet<>();
+        theResult.add(defaultExpressions);
+        theResult.addAll(offsets.values());
+        return theResult;
     }
 }

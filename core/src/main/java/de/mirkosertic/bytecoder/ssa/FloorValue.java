@@ -15,25 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Variable {
+public class FloorValue extends Value {
 
-    private final String name;
     private final Value value;
 
-    public Variable(String aName, Value aValue) {
-        name = aName;
-        value = aValue;
-    }
-
-    public String getName() {
-        return name;
+    public FloorValue(Value value) {
+        this.value = value;
     }
 
     public Value getValue() {
         return value;
-    }
-
-    public Variable withNewValue(Value aNewValue) {
-        return new Variable(name, aNewValue);
     }
 }

@@ -972,7 +972,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 case CHAR:
                                 case INT:
                                 case LONG:
-                                    theWriter.println(theInset + "frame.stack.push(Math.round(theDouble));");
+                                    theWriter.println(theInset + "frame.stack.push(Math.floor(theDouble));");
                                     break;
                                 case FLOAT:
                                     theWriter.println(theInset + "frame.stack.push(theDouble);");
@@ -990,7 +990,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 case CHAR:
                                 case INT:
                                 case LONG:
-                                    theWriter.println(theInset + "frame.stack.push(Math.round(theFloat));");
+                                    theWriter.println(theInset + "frame.stack.push(Math.floor(theFloat));");
                                     break;
                                 default:
                                     theWriter.println(theInset + "frame.stack.push(theFloat);");

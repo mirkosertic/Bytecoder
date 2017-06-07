@@ -30,10 +30,6 @@ public class ExpressionList {
         expressions.add(aExpression);
     }
 
-    public void addFirst(Expression aExpression) {
-        expressions.add(0, aExpression);
-    }
-
     public List<Expression> toList() {
         return new ArrayList<>(expressions);
     }
@@ -43,6 +39,22 @@ public class ExpressionList {
     }
 
     public Expression lastExpression() {
-        return expressions.get(expressions.size() - 1);
+        if (expressions.isEmpty()) {
+            return null;
+        }
+        int theLastIndex = expressions.size() - 1;
+        Expression theLast = expressions.get(theLastIndex);
+        while(theLast instanceof CommentExpression) {
+            theLastIndex--;
+            if (theLastIndex < 0) {
+                return null;
+            }
+            theLast = expressions.get(theLastIndex);
+        }
+        return theLast;
+    }
+
+    public void addBefore(Expression aNewExpression, Expression aTarget) {
+        expressions.add(expressions.indexOf(aTarget), aNewExpression);
     }
 }

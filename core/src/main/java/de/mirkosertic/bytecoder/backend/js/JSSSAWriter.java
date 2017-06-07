@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -72,6 +70,7 @@ import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
@@ -81,7 +80,6 @@ import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.UnknownValue;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableDescription;
 import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class JSSSAWriter extends JSWriter {
@@ -160,9 +158,17 @@ public class JSSSAWriter extends JSWriter {
             print((CurrentExceptionValue) aValue);
         } else if (aValue instanceof UnknownValue) {
             print((UnknownValue) aValue);
+        } else if (aValue instanceof FloorValue) {
+            print((FloorValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    public void print(FloorValue aValue) {
+        print("Math.floor(");
+        print(aValue.getValue());
+        print(")");
     }
 
     public void print(UnknownValue aValue) {
@@ -312,7 +318,7 @@ public class JSSSAWriter extends JSWriter {
                 printVariableName(theValue);
                 break;
             default:
-                print("Math.round(");
+                print("Math.floor(");
                 printVariableName(theValue);
                 print(")");
                 break;
@@ -590,12 +596,12 @@ public class JSSSAWriter extends JSWriter {
                 GotoExpression theE = (GotoExpression) theExpression;
                 BlockState theFinalState = theE.getSourceBlock().toFinalState();
 
-                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
+/*                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
                     print(" // ");
                     printVariableName(theEntry.getValue());
                     print(" exported as ");
                     println(theEntry.getKey().toString());
-                }
+                }*/
 
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
@@ -614,54 +620,55 @@ public class JSSSAWriter extends JSWriter {
             } else if (theExpression instanceof TableSwitchExpression) {
                 TableSwitchExpression theE = (TableSwitchExpression) theExpression;
                 Variable theVariable = theE.getVariable();
-                BytecodeInstructionTABLESWITCH theIns = theE.getInstruction();
 
                 print("if (");
                 printVariableName(theVariable);
                 print(" < ");
-                print(theIns.getLowValue());
+                print(theE.getLowValue());
                 print(" || ");
                 printVariableName(theVariable);
                 print(" > ");
-                print(theIns.getHighValue());
+                print(theE.getHighValue());
                 println(") {");
                 print(" ");
-                println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
+
+                writeExpressions(theE.getDefaultExpressions());
+
                 println("}");
                 print("switch(");
                 printVariableName(theVariable);
                 print(" - ");
-                print(theIns.getLowValue());
+                print(theE.getLowValue());
                 println(") {");
 
-                long[] theOffsets = theIns.getOffsets();
-                for (int i=0;i<theOffsets.length;i++) {
+                for (Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
                     print(" case ");
-                    print(i);
+                    print(theEntry.getKey());
                     println(":");
                     print("     ");
-                    println(generateJumpCodeFor(theIns.getOpcodeAddress().add((int) theOffsets[i])));
+                    writeExpressions(theEntry.getValue());
                 }
 
                 println("}");
                 println("throw 'Illegal jump target!';");
             } else if (theExpression instanceof LookupSwitchExpression) {
                 LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
-                BytecodeInstructionLOOKUPSWITCH theIns = theE.getInstruction();
                 print("switch(");
                 printVariableName(theE.getVariable());
                 println(") {");
 
-                for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theIns.getPairs()) {
+                for (Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
                     print(" case ");
-                    print(thePair.getMatch());
+                    print(theEntry.getKey());
                     println(":");
 
-                    println("       " + generateJumpCodeFor(theIns.getOpcodeAddress().add((int) thePair.getOffset())));
+                    print("     ");
+                    writeExpressions(theEntry.getValue());
                 }
 
                 println("}");
-                println(generateJumpCodeFor(theIns.getDefaultJumpTarget()));
+
+                writeExpressions(theE.getDefaultExpressions());
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }

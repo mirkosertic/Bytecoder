@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
@@ -94,18 +103,10 @@ import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
 
 public class ProgramGenerator {
 
@@ -121,9 +122,13 @@ public class ProgramGenerator {
             localVariables = new HashMap<>();
         }
 
-        public ParsingHelper cloneToHewFor(Block aBlock) {
+        public ParsingHelper cloneToNewFor(Block aBlock) {
             ParsingHelper theNew = new ParsingHelper(aBlock);
-            theNew.localVariables.putAll(localVariables);
+            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
+                theNew.localVariables.put(theEntry.getKey(), theEntry.getValue());
+                aBlock.addToImportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
+                aBlock.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
+            }
             for (int i=0;i<stack.size();i++) {
                 theNew.stack.push(stack.get(i));
             }
@@ -135,12 +140,13 @@ public class ProgramGenerator {
             for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
                 Variable theVar = aProgram.createVariable(new PHIFunction());
                 aBlock.addToImportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
+                aBlock.addToExportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
                 theNew.localVariables.put(theEntry.getKey(), theVar);
             }
             for (int i=stack.size() - 1 ; i>= 0; i--) {
                 Variable theVar = aProgram.createVariable(new PHIFunction());
                 aBlock.addToImportedList(theVar, new StackVariableDescription(i));
-                theNew.stack.push(stack.get(i));
+                theNew.stack.push(theVar);
             }
             return theNew;
         }
@@ -183,6 +189,16 @@ public class ProgramGenerator {
             localVariables.put(aIndex, aValue);
             block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
         }
+
+        public void finalizeExportState() {
+            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
+                block.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
+            }
+            for (int i=stack.size() - 1 ; i>= 0; i--) {
+                // Numbering must be consistent here!!
+                block.addToExportedList(stack.get(i), new StackVariableDescription(stack.size() - 1 - i));
+            }
+        }
     }
 
     private final BytecodeLinkerContext linkerContext;
@@ -219,7 +235,7 @@ public class ProgramGenerator {
             for (BytecodeBasicBlock theSuccessor : theEntry.getKey().getSuccessors()) {
                 Block theSuccessorBlock = theCreatedBlocks.get(theSuccessor);
                 if (theSuccessorBlock == null) {
-                    throw new IllegalStateException("Cannot find successor block!");
+                    throw new IllegalStateException("Cannot find successor block");
                 }
                 theEntry.getValue().addSuccessor(theSuccessorBlock);
             }
@@ -237,7 +253,11 @@ public class ProgramGenerator {
         }
         BytecodeTypeRef[] theTypes = aSignature.getArguments();
         for (int i=0;i<theTypes.length;i++) {
+            BytecodeTypeRef theRef = theTypes[i];
             theHelper.setLocalVariable(theCurrentIndex++, theStart.newVariable(new MethodParameterValue(i, theTypes[i])));
+            if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
+                theCurrentIndex++;
+            }
         }
 
         // This will traverse the CFG from top to bottom
@@ -257,7 +277,89 @@ public class ProgramGenerator {
             }
         }
 
+        // Check for blocks with an conditional jump at the end and the successor has PHI functions
+        // For these cases we have resolve the PHIs
+        for (Map.Entry<BytecodeBasicBlock, Block> theEntry : theCreatedBlocks.entrySet()) {
+            Block theBlock = theEntry.getValue();
+            if (!theBlock.endWithNeverReturningExpression() && !theBlock.getSuccessors().isEmpty()) {
+                // This is a block
+                BlockState theFinalState = theBlock.toFinalState();
+
+                BytecodeBasicBlock theNext = aFlowGraph.getBlocks().get(aFlowGraph.getBlocks().indexOf(theEntry.getKey()) + 1);
+                Block theDirectSuccessor = theCreatedBlocks.get(theNext);
+
+                BlockState theImportingState = theDirectSuccessor.toStartState();
+
+                theBlock.getExpressions().add(new CommentExpression("Code to jump to " + theDirectSuccessor.getStartAddress().getAddress()));
+
+                for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
+                    Variable theVariable = theImport.getValue();
+                    if (theVariable.getValue() instanceof PHIFunction) {
+                        // We found one, we need to resolve a variable from the final state that satisfied the required constraints
+                        Variable theFinalVariable = theFinalState.findBySlot(theImport.getKey());
+                        if (theFinalVariable == null) {
+                            // Variable is not present, hence we assume it is null
+                            InitVariableExpression theExpression = new InitVariableExpression(theVariable.withNewValue(new NullValue()));
+                            theBlock.getExpressions().add(theExpression);
+                        } else {
+                            if (!theVariable.getName().equals(theFinalVariable.getName())) {
+                                InitVariableExpression theExpression = new InitVariableExpression(
+                                        theVariable.withNewValue(new VariableReferenceValue(theFinalVariable)));
+                                theBlock.getExpressions().add(new CommentExpression("Resolving " + theImport.getKey()));
+                                theBlock.getExpressions().add(theExpression);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (Block theBlock : theVisited) {
+            processGotosIn(theBlock, theBlock.getExpressions());
+        }
+
         return theProgram;
+    }
+
+    private void processGotosIn(Block aBlock, ExpressionList aList) {
+        for (Expression theExpression : aList.toList()) {
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                    processGotosIn(aBlock, theList);
+                }
+            }
+            if (theExpression instanceof GotoExpression) {
+                GotoExpression theGOTO = (GotoExpression) theExpression;
+                Block theTargetBlock = aBlock.successorByJumpTarget(theGOTO.getJumpTarget());
+
+                BlockState theImportingState = theTargetBlock.toStartState();
+
+                Expression theComment = new CommentExpression("Code to jump to " + theTargetBlock.getStartAddress().getAddress());
+                aList.addBefore(theComment, theExpression);
+
+                BlockState theFinalState = aBlock.toFinalState();
+
+                for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
+                    Variable theVariable = theImport.getValue();
+                    if (theVariable.getValue() instanceof PHIFunction) {
+                        // We found one, we need to resolve a variable from the final state that satisfied the required constraints
+                        Variable theFinalVariable = theFinalState.findBySlot(theImport.getKey());
+                        if (theFinalVariable == null) {
+                            // Variable is not present, hence we assume it is null
+                            InitVariableExpression theInitExpression = new InitVariableExpression(theVariable.withNewValue(new NullValue()));
+                            aList.addBefore(theInitExpression, theGOTO);
+                        } else {
+                            if (!theVariable.getName().equals(theFinalVariable.getName())) {
+                                InitVariableExpression theInitExpression = new InitVariableExpression(
+                                        theVariable.withNewValue(new VariableReferenceValue(theFinalVariable)));
+                                aList.addBefore(theInitExpression, theGOTO);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void initializeBlock(Program aProgram, Block aCurrentBlock, Set<Block> aAlreadyVisited, ParsingHelper aHelper, BytecodeControlFlowGraph aGraph) {
@@ -266,17 +368,19 @@ public class ProgramGenerator {
             initializeBlockWith(aCurrentBlock, aGraph, aHelper);
 
             for (Block theSuccessor : aCurrentBlock.getSuccessors()) {
-                ParsingHelper theNewHelper;
-                if (theSuccessor.getPredecessors().size() == 1) {
-                    // Everything is ok
-                    theNewHelper = aHelper.cloneToHewFor(theSuccessor);
-                } else {
-                    // We have a join point, so we have to introduce PHI function for everything that was imported
-                    // This is the naive implementation that can be vastly improved
-                    theNewHelper = aHelper.cloneToNewWithPHIFunctions(theSuccessor, aProgram);
-                }
+                if (!aAlreadyVisited.contains(theSuccessor)) {
+                    ParsingHelper theNewHelper;
+                    if (theSuccessor.getPredecessors().size() == 1) {
+                        // Everything is ok
+                        theNewHelper = aHelper.cloneToNewFor(theSuccessor);
+                    } else {
+                        // We have a join point, so we have to introduce PHI function for everything that was imported
+                        // This is the naive implementation that can be vastly improved
+                        theNewHelper = aHelper.cloneToNewWithPHIFunctions(theSuccessor, aProgram);
+                    }
 
-                initializeBlock(aProgram, theSuccessor, aAlreadyVisited, theNewHelper, aGraph);
+                    initializeBlock(aProgram, theSuccessor, aAlreadyVisited, theNewHelper, aGraph);
+                }
             }
         }
     }
@@ -287,8 +391,6 @@ public class ProgramGenerator {
         BytecodeBasicBlock theBytecodeBlock = aControlFlowGraph.blockByStartAddress(aTargetBlock.getStartAddress());
 
         for (BytecodeInstruction theInstruction : theBytecodeBlock.getInstructions()) {
-
-            aTargetBlock.addExpression(new CommentExpression(theInstruction.toString()));
 
             if (theInstruction instanceof BytecodeInstructionNOP) {
                 BytecodeInstructionNOP theINS = (BytecodeInstructionNOP) theInstruction;
@@ -469,7 +571,21 @@ public class ProgramGenerator {
                 BytecodeInstructionGenericDIV theINS = (BytecodeInstructionGenericDIV) theInstruction;
                 Variable theValue2 = theHelper.pop();
                 Variable theValue1 = theHelper.pop();
-                Variable theNewVariable = aTargetBlock.newVariable(new BinaryValue(theValue1, BinaryValue.Operator.DIV, theValue2));
+
+                Variable theNewVariable;
+                Value theDivValue = new BinaryValue(theValue1, BinaryValue.Operator.DIV, theValue2);
+                switch (theINS.getType()) {
+                    case FLOAT:
+                        theNewVariable = aTargetBlock.newVariable(theDivValue);
+                        break;
+                    case DOUBLE:
+                        theNewVariable = aTargetBlock.newVariable(theDivValue);
+                        break;
+                    default:
+                        theNewVariable = aTargetBlock.newVariable(new FloorValue(theDivValue));
+                        break;
+                }
+
                 theHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
                 BytecodeInstructionGenericMUL theINS = (BytecodeInstructionGenericMUL) theInstruction;
@@ -781,18 +897,42 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionTABLESWITCH) {
                 BytecodeInstructionTABLESWITCH theINS = (BytecodeInstructionTABLESWITCH) theInstruction;
                 Variable theVariable = theHelper.pop();
-                aTargetBlock.addExpression(new TableSwitchExpression(theVariable, theINS));
+
+                ExpressionList theDefault = new ExpressionList();
+                theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget(), aTargetBlock));
+
+                Map<Long, ExpressionList> theOffsets = new HashMap<>();
+                long[] theJumpTargets = theINS.getOffsets();
+                for (int i=0;i<theJumpTargets.length;i++) {
+                    ExpressionList theJump = new ExpressionList();
+                    theJump.add(new GotoExpression(theINS.getOpcodeAddress().add((int) theJumpTargets[i]), aTargetBlock));
+                    theOffsets.put((long) i, theJump);
+                }
+
+                aTargetBlock.addExpression(new TableSwitchExpression(theVariable, theINS.getLowValue(), theINS.getHighValue(),
+                        theDefault, theOffsets));
             } else if (theInstruction instanceof BytecodeInstructionLOOKUPSWITCH) {
                 BytecodeInstructionLOOKUPSWITCH theINS = (BytecodeInstructionLOOKUPSWITCH) theInstruction;
                 Variable theVariable = theHelper.pop();
-                aTargetBlock.addExpression(new LookupSwitchExpression(theVariable, theINS));
+
+                ExpressionList theDefault = new ExpressionList();
+                theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget(), aTargetBlock));
+
+                Map<Long, ExpressionList> thePairs = new HashMap<>();
+                for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theINS.getPairs()) {
+                    ExpressionList thePairExpressions = new ExpressionList();
+                    thePairExpressions.add(new GotoExpression(theINS.getOpcodeAddress().add((int) thePair.getOffset()), aTargetBlock));
+                    thePairs.put((long) thePair.getMatch(), thePairExpressions);
+                }
+
+                aTargetBlock.addExpression(new LookupSwitchExpression(theVariable, theDefault, thePairs));
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
-
-            aTargetBlock.addExpression(new CommentExpression("Stack size is " + theHelper.stack.size()));
         }
 
         aTargetBlock.addExpression(new CommentExpression("Final stack size is " + theHelper.stack.size()));
+
+        theHelper.finalizeExportState();
     }
 }

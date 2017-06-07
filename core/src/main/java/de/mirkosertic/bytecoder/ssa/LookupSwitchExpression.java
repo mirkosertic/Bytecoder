@@ -15,23 +15,40 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class LookupSwitchExpression extends Expression {
+public class LookupSwitchExpression extends Expression implements ExpressionListContainer {
 
     private final Variable variable;
-    private final BytecodeInstructionLOOKUPSWITCH instruction;
+    private final ExpressionList defaultExpressions;
+    private final Map<Long, ExpressionList> pairs;
 
-    public LookupSwitchExpression(Variable aVariable, BytecodeInstructionLOOKUPSWITCH aInstruction) {
+    public LookupSwitchExpression(Variable aVariable, ExpressionList aDefaultExpressions,
+            Map<Long, ExpressionList> aPairs) {
         variable = aVariable;
-        instruction = aInstruction;
+        defaultExpressions = aDefaultExpressions;
+        pairs = aPairs;
     }
 
     public Variable getVariable() {
         return variable;
     }
 
-    public BytecodeInstructionLOOKUPSWITCH getInstruction() {
-        return instruction;
+    public ExpressionList getDefaultExpressions() {
+        return defaultExpressions;
+    }
+
+    public Map<Long, ExpressionList> getPairs() {
+        return pairs;
+    }
+
+    @Override
+    public Set<ExpressionList> getExpressionLists() {
+        Set<ExpressionList> theResult = new HashSet<>();
+        theResult.add(defaultExpressions);
+        theResult.addAll(pairs.values());
+        return theResult;
     }
 }

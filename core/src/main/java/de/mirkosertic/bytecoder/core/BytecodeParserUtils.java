@@ -38,10 +38,10 @@ public class BytecodeParserUtils {
     }
 
     public static long longFromByteArray(byte[] aData, int aOffset) {
-        int theByte1 = aData[aOffset++];
-        int theByte2 = aData[aOffset++];
-        int theByte3 = aData[aOffset++];
-        int theByte4 = aData[aOffset];
+        int theByte1 = aData[aOffset++] & 0xFF;
+        int theByte2 = aData[aOffset++] & 0xFF;
+        int theByte3 = aData[aOffset++] & 0xFF;
+        int theByte4 = aData[aOffset] & 0xFF;
 
         return ((theByte1 << 24) | (theByte2 << 16) | (theByte3 << 8) | theByte4);
     }
