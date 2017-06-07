@@ -15,25 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Variable {
+import java.util.Set;
 
-    private final String name;
-    private final Value value;
+public interface ExpressionListContainer {
 
-    public Variable(String aName, Value aValue) {
-        name = aName;
-        value = aValue;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Value getValue() {
-        return value;
-    }
-
-    public Variable withNewValue(Value aNewValue) {
-        return new Variable(name, aNewValue);
-    }
+    Set<ExpressionList> getExpressionLists();
 }

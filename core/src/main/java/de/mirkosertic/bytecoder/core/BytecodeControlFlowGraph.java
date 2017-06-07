@@ -32,10 +32,10 @@ public class BytecodeControlFlowGraph {
                 // Jump target, start a new basic block
                 currentBlock = null;
             }
-            //if (aProgramm.isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
+            if (aProgramm.isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
                 // start of try block, hence new basic block
-                //currentBlock = null;
-            //}
+                currentBlock = null;
+            }
             if (currentBlock == null) {
                 BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
                 for (BytecodeExceptionTableEntry theHandler : aProgramm.getExceptionHandlers()) {

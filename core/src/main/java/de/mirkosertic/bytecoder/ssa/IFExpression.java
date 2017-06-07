@@ -15,7 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class IFExpression extends Expression {
+import java.util.HashSet;
+import java.util.Set;
+
+public class IFExpression extends Expression implements ExpressionListContainer {
 
     private final Variable booleanExpression;
     private final ExpressionList expressions;
@@ -31,5 +34,12 @@ public class IFExpression extends Expression {
 
     public ExpressionList getExpressions() {
         return expressions;
+    }
+
+    @Override
+    public Set<ExpressionList> getExpressionLists() {
+        Set<ExpressionList> theResult = new HashSet<>();
+        theResult.add(expressions);
+        return theResult;
     }
 }

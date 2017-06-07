@@ -329,7 +329,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                         theJSWriter.print("// ");
                         theJSWriter.printVariableName(theImported.getValue());
                         theJSWriter.print(" is imported as ");
-                        theJSWriter.println(theImported.getKey().toString());
+                        theJSWriter.println(theImported.getKey().toString() + " and type " + theImported.getValue().getValue());
                     }
 
                     for (Block thePrececessor : theBlock.getPredecessors()) {
@@ -341,12 +341,12 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                     theJSWriter.writeExpressions(theBlock.getExpressions());
 
-                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
+/*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
                         theJSWriter.print("// ");
                         theJSWriter.printVariableName(theExported.getValue());
                         theJSWriter.print(" is exported as ");
                         theJSWriter.println(theExported.getKey().toString());
-                    }
+                    }*/
 
                     theWriter.println("         }");
                 }

@@ -33,10 +33,6 @@ public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
         offsets = aOffsets;
     }
 
-    public long getDefaultValue() {
-        return defaultValue;
-    }
-
     public long getLowValue() {
         return lowValue;
     }
@@ -55,7 +51,8 @@ public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
         for (long theOffset : getOffsets()) {
             theResult.add(getOpcodeAddress().add((int) theOffset));
         }
-        return super.getPotentialJumpTargets();
+        theResult.add(getDefaultJumpTarget());
+        return theResult.toArray(new BytecodeOpcodeAddress[theResult.size()]);
     }
 
     @Override
@@ -64,6 +61,6 @@ public class BytecodeInstructionTABLESWITCH extends BytecodeInstruction {
     }
 
     public BytecodeOpcodeAddress getDefaultJumpTarget() {
-        return getOpcodeAddress().add((int) getDefaultValue());
+        return getOpcodeAddress().add((int) defaultValue);
     }
 }

@@ -48,16 +48,12 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
         pairs = aPairs;
     }
 
-    public long getDefaultValue() {
-        return defaultValue;
-    }
-
     public Pair[] getPairs() {
         return pairs;
     }
 
     public BytecodeOpcodeAddress getDefaultJumpTarget() {
-        return getOpcodeAddress().add((int ) getDefaultValue());
+        return getOpcodeAddress().add((int ) defaultValue);
     }
 
     @Override
@@ -66,7 +62,8 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
         for (Pair thePair : pairs) {
             theResult.add(getOpcodeAddress().add((int) thePair.offset));
         }
-        return super.getPotentialJumpTargets();
+        theResult.add(getDefaultJumpTarget());
+        return theResult.toArray(new BytecodeOpcodeAddress[theResult.size()]);
     }
 
     @Override

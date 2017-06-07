@@ -82,11 +82,9 @@ public class Block {
         return newVariable(aValue, false);
     }
 
-    public Variable newVariable(Value aValue, boolean aAddfirst)  {
+    public Variable newVariable(Value aValue, boolean aIsImport)  {
         Variable theNewVariable = program.createVariable(aValue);
-        if (aAddfirst) {
-            expressions.addFirst(new InitVariableExpression(theNewVariable));
-        } else {
+        if (!aIsImport) {
             expressions.add(new InitVariableExpression(theNewVariable));
         }
         return theNewVariable;
@@ -130,15 +128,13 @@ public class Block {
         return theState;
     }
 
-    public void initVariableWith(Variable aVariable, Value aNewValue) {
-        aVariable.changeValueTo(aNewValue);
-    }
-
-    public boolean endsWithReturnOrThrow() {
-        Expression theLastExpression = expressions.lastExpression();
-        return theLastExpression instanceof ReturnExpression ||
-                theLastExpression instanceof ReturnVariableExpression ||
-                theLastExpression instanceof ThrowExpression;
+    public Block successorByJumpTarget(BytecodeOpcodeAddress aTarget) {
+        for (Block theSuccessor : getSuccessors()) {
+            if (aTarget.equals(theSuccessor.getStartAddress())) {
+                return theSuccessor;
+            }
+        }
+        throw new IllegalStateException("Successor not found for " + aTarget.getAddress());
     }
 
     public boolean endWithNeverReturningExpression() {
