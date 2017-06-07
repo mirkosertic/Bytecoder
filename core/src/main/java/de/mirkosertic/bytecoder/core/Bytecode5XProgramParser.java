@@ -823,8 +823,8 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     BytecodeInstructionLOOKUPSWITCH.Pair thePairs[] = new BytecodeInstructionLOOKUPSWITCH.Pair[(int) theNumPairs];
 
                     for (long i=0; i<theNumPairs; i++) {
-                        int theMatch = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
-                        offset+=2;
+                        long theMatch = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
+                        offset+=4;
 
                         long theOffset = BytecodeParserUtils.longFromByteArray(aBytecodes, offset);
                         offset+=4;
