@@ -22,15 +22,15 @@ public class BytecodeInstructionLOOKUPSWITCH extends BytecodeInstruction {
 
     public static class Pair {
 
-        private final int match;
+        private final long match;
         private final long offset;
 
-        public Pair(int match, long offset) {
+        public Pair(long match, long offset) {
             this.match = match;
             this.offset = offset;
         }
 
-        public int getMatch() {
+        public long getMatch() {
             return match;
         }
 
