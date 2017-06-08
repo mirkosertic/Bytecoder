@@ -23,4 +23,8 @@ public class BytecodeInstructionGenericREM extends BytecodeInstruction {
         super(aOpcodeIndex);
         type = aType;
     }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
+    }
 }

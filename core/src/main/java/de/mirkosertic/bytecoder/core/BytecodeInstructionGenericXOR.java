@@ -23,4 +23,8 @@ public class BytecodeInstructionGenericXOR extends BytecodeInstruction {
         super(aOffset);
         type = aType;
     }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
+    }
 }

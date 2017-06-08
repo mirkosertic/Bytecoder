@@ -36,7 +36,7 @@ public class Program {
         variables = new HashMap<>();
     }
 
-    public Block createAt(BytecodeOpcodeAddress aAddress, Block.Type aType) {
+    public Block createAt(BytecodeOpcodeAddress aAddress, Block.BlockType aType) {
         Block theNewBlock = new Block(aType, this, aAddress);
         blocks.add(theNewBlock);
         return theNewBlock;
@@ -50,9 +50,9 @@ public class Program {
         return new ArrayList<>(variables.values());
     }
 
-    public Variable createVariable(Value aValue) {
+    public Variable createVariable(Type aType, Value aValue) {
         int theIndex = variables.size();
-        Variable theNewVariable = new Variable("var" + theIndex, aValue);
+        Variable theNewVariable = new Variable(aType, "var" + theIndex, aValue);
         variables.put(theIndex, theNewVariable);
         return theNewVariable;
     }
