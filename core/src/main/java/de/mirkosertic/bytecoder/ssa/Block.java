@@ -24,7 +24,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class Block {
 
-    public enum Type {
+    public enum BlockType {
         NORMAL,
         EXCEPTION_HANDLER,
         FINALLY
@@ -34,11 +34,11 @@ public class Block {
     private final ExpressionList expressions;
     private final Program program;
     private final Set<Block> successors;
-    private final Type type;
+    private final BlockType type;
     private final Map<VariableDescription, Variable> imported;
     private final Map<VariableDescription, Variable> exported;
 
-    public Block(Type aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+    public Block(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
         startAddress = aStartAddress;
         program = aProgram;
@@ -52,7 +52,7 @@ public class Block {
         return program.getBlocks().indexOf(this) == 0;
     }
 
-    public Type getType() {
+    public BlockType getType() {
         return type;
     }
 
@@ -78,20 +78,20 @@ public class Block {
         return startAddress;
     }
 
-    public Variable newVariable(Value aValue)  {
-        return newVariable(aValue, false);
+    public Variable newVariable(Type aType, Value aValue)  {
+        return newVariable(aType, aValue, false);
     }
 
-    public Variable newVariable(Value aValue, boolean aIsImport)  {
-        Variable theNewVariable = program.createVariable(aValue);
+    public Variable newVariable(Type aType, Value aValue, boolean aIsImport)  {
+        Variable theNewVariable = program.createVariable(aType, aValue);
         if (!aIsImport) {
             expressions.add(new InitVariableExpression(theNewVariable));
         }
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(Value aValue, VariableDescription aDescription) {
-        Variable theVariable = newVariable(aValue, true);
+    public Variable newImportedVariable(Type aType, Value aValue, VariableDescription aDescription) {
+        Variable theVariable = newVariable(aType, aValue, true);
         imported.put(aDescription, theVariable);
         return theVariable;
     }

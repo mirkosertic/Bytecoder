@@ -13,18 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.ssa;
 
-public class BytecodeInstructionGenericArrayLOAD extends BytecodeInstruction {
-
-    private final BytecodePrimitiveTypeRef type;
-
-    public BytecodeInstructionGenericArrayLOAD(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType) {
-        super(aOpcodeIndex);
-        type = aType;
-    }
-
-    public BytecodePrimitiveTypeRef getType() {
-        return type;
-    }
+public enum Type {
+    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE
 }

@@ -17,12 +17,18 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class Variable {
 
+    private final Type type;
     private final String name;
     private Value value;
 
-    public Variable(String aName, Value aValue) {
+    public Variable(Type aType, String aName, Value aValue) {
+        type = aType;
         name = aName;
         value = aValue;
+    }
+
+    public Type getType() {
+        return type;
     }
 
     public String getName() {
@@ -34,7 +40,7 @@ public class Variable {
     }
 
     public Variable withNewValue(Value aNewValue) {
-        return new Variable(name, aNewValue);
+        return new Variable(type, name, aNewValue);
     }
 
     public void setValue(Value aNewValue) {

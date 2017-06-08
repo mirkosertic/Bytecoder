@@ -30,4 +30,8 @@ public class BytecodeDescriptorIndex {
     public BytecodeMethodSignature methodSignature() {
         return signatureParser.toMethodSignature((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
     }
+
+    public BytecodeTypeRef fieldType() {
+        return signatureParser.toFieldType((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
+    }
 }

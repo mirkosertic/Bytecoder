@@ -23,4 +23,8 @@ public class BytecodeInstructionGenericSHL extends BytecodeInstruction {
         super(aOpcodeIndex);
         type = aType;
     }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
+    }
 }
