@@ -57,4 +57,10 @@ public class ExpressionList {
     public void addBefore(Expression aNewExpression, Expression aTarget) {
         expressions.add(expressions.indexOf(aTarget), aNewExpression);
     }
+
+    public void replace(Expression aExpressionToReplace, Expression aNewExpression) {
+        int p = expressions.indexOf(aExpressionToReplace);
+        expressions.remove(p);
+        expressions.add(p, aNewExpression);
+    }
 }

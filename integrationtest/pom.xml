@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>bytecoder-integrationtest</artifactId>
-    <packaging>jar</packaging>
+    <packaging>war</packaging>
     <name>Bytecoder Integrationtest</name>
 
     <dependencies>
@@ -43,6 +43,7 @@
                 <version>${project.version}</version>
                 <configuration>
                     <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
+                    <backend>ssacompiler</backend>
                 </configuration>
                 <executions>
                     <execution>
@@ -51,27 +52,11 @@
                         </goals>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>de.mirkosertic.bytecoder</groupId>
-                        <artifactId>bytecoder-integrationtest</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>make-a-war</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>war</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <webResources>
                         <webResource>

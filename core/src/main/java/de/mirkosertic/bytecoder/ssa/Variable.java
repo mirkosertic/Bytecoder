@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 public class Variable {
 
     private final String name;
-    private final Value value;
+    private Value value;
 
     public Variable(String aName, Value aValue) {
         name = aName;
@@ -35,5 +35,9 @@ public class Variable {
 
     public Variable withNewValue(Value aNewValue) {
         return new Variable(name, aNewValue);
+    }
+
+    public void setValue(Value aNewValue) {
+        value = aNewValue;
     }
 }

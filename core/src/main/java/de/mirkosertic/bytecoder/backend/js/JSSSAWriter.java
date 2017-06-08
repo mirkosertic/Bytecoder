@@ -43,9 +43,9 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExternalReferenceValue;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GetStaticValue;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
@@ -70,7 +70,6 @@ import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
@@ -96,9 +95,7 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void print(Value aValue) {
-        if (aValue instanceof ExternalReferenceValue) {
-            print((ExternalReferenceValue) aValue);
-        } else if (aValue instanceof GetStaticValue) {
+        if (aValue instanceof GetStaticValue) {
             print((GetStaticValue) aValue);
         } else if (aValue instanceof NullValue) {
             print((NullValue) aValue);
@@ -446,12 +443,12 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void print(DirectInvokeMethodValue aValue) {
-        String theMethodName = aValue.getMethod().getNameIndex().getName().stringValue();
-        BytecodeMethodSignature theSignature = aValue.getMethod().getDescriptorIndex().methodSignature();
+        String theMethodName = aValue.getMethodName();
+        BytecodeMethodSignature theSignature = aValue.getMethodSignature();
         Variable theTarget = aValue.getTarget();
         List<Variable> theVariables = aValue.getArguments();
 
-        print(JSWriterUtils.toClassName(aValue.getClassInfo()));
+        print(JSWriterUtils.toClassName(aValue.getClazz()));
         print(".");
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
         print("(");
@@ -491,11 +488,6 @@ public class JSSSAWriter extends JSWriter {
 
     public void print(GetStaticValue aValue) {
         printStaticFieldReference(aValue.getField());
-    }
-
-    public void print(ExternalReferenceValue aValue) {
-        print("frame.local");
-        print(aValue.getVariableIndex() + 1);
     }
 
     public void printVariableName(Variable aVariable) {

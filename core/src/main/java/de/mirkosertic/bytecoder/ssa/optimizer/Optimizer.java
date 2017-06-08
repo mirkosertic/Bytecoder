@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.ssa.optimizer;
 
-public class ExternalReferenceValue extends Value {
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.ssa.Program;
 
-    private final int variableIndex;
+public interface Optimizer {
 
-    public ExternalReferenceValue(int variableIndex) {
-        this.variableIndex = variableIndex;
-    }
-
-    public int getVariableIndex() {
-        return variableIndex;
-    }
+    void optimize(Program aProgram, BytecodeLinkerContext aLinkerContext);
 }

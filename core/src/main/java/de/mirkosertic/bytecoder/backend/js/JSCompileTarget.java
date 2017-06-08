@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.lang.reflect.Method;
+
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -24,8 +26,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-
-import java.lang.reflect.Method;
 
 public class JSCompileTarget {
 
@@ -49,9 +49,9 @@ public class JSCompileTarget {
     private final AbstractJSBackend backend;
     private final BytecodeLoader bytecodeLoader;
 
-    public JSCompileTarget(BackendType aType) {
+    public JSCompileTarget(ClassLoader aClassLoader, BackendType aType) {
         backend = aType.createBackend();
-        bytecodeLoader = new BytecodeLoader(new BytecodePackageReplacer());
+        bytecodeLoader = new BytecodeLoader(aClassLoader, new BytecodePackageReplacer());
     }
 
     public String compileToJS(Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
