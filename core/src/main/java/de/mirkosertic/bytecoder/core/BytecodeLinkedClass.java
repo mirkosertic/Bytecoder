@@ -99,6 +99,10 @@ public class BytecodeLinkedClass {
         memberFields = new HashMap<>();
     }
 
+    public boolean emulatedByRuntime() {
+        return bytecodeClass.getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null;
+    }
+
     public BytecodeObjectTypeRef getClassName() {
         return className;
     }

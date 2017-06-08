@@ -107,6 +107,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.ssa.optimizer.InvokeVirtualOptimizer;
 
 public class ProgramGenerator {
 
@@ -317,6 +318,10 @@ public class ProgramGenerator {
         for (Block theBlock : theVisited) {
             processGotosIn(theBlock, theBlock.getExpressions());
         }
+
+        InvokeVirtualOptimizer theOptimizer = new InvokeVirtualOptimizer();
+        theOptimizer.optimize(theProgram, linkerContext);
+
 
         return theProgram;
     }
@@ -819,7 +824,10 @@ public class ProgramGenerator {
 
                 Variable theTarget = theHelper.pop();
 
-                DirectInvokeMethodValue theValue = new DirectInvokeMethodValue(theINS.getMethodReference().getClassIndex().getClassConstant(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
+                BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
+                String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+
+                DirectInvokeMethodValue theValue = new DirectInvokeMethodValue(theType, theMethodName, theSignature, theTarget, theArguments);
                 if (theSignature.getReturnType().isVoid()) {
                     aTargetBlock.addExpression(new DirectInvokeMethodExpression(theValue));
                 } else {

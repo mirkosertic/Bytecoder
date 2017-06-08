@@ -85,4 +85,8 @@ public class TInteger extends TNumber {
     public static TInteger valueOf(int aValue) {
         return new TInteger(aValue);
     }
+
+    public static int parseInt(String aString) {
+        return 0;
+    }
 }

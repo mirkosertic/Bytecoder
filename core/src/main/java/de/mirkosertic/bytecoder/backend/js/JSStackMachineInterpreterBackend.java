@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
@@ -36,7 +45,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
@@ -93,6 +101,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
@@ -115,14 +124,6 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
@@ -400,7 +401,15 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                 BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
 
                 String theInset = "            ";
-                theWriter.println("        // Begin name code");
+
+                theWriter.println("        // Brute force static references init");
+                Set<BytecodeObjectTypeRef> theStaticReferences = theFlowGraph.getStaticReferences();
+                for (BytecodeObjectTypeRef theRef : theStaticReferences) {
+                    theWriter.print("        ");
+                    theWriter.print(JSWriterUtils.toClassName(theRef));
+                    theWriter.println(".classInitCheck();");
+                }
+
                 theWriter.println("        // # basic blocks in flow graph : " + theFlowGraph.getBlocks().size());
                 theWriter.println("        var currentLabel = " + theFlowGraph.getBlocks().get(0).getStartAddress().getAddress() + ";");
                 theWriter.println("        controlflowloop: while(true) switch(currentLabel) {");
@@ -578,7 +587,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
                             theNumberOfVirtualCalls.incrementAndGet();
                             List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
-                            if (theLinkedClasses.size() > 1 || BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()).name().equals(TClass.class.getName())) {
+                            if (theLinkedClasses.size() > 1 || theLinkedClasses.get(0).emulatedByRuntime()) {
                                 theNumberOfRealVirtualCalls.incrementAndGet();
                                 // More than one class implementing the method, we use a virtual call
                                 theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
@@ -632,7 +641,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
 
                             theNumberOfVirtualCalls.incrementAndGet();
                             List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
-                            if (theLinkedClasses.size() > 1 || BytecodeObjectTypeRef.fromUtf8Constant(theInterfaceInvoke.getMethodDescriptor().getClassIndex().getClassConstant().getConstant()).name().equals(TClass.class.getName())) {
+                            if (theLinkedClasses.size() > 1 || theLinkedClasses.get(0).emulatedByRuntime()) {
                                 theNumberOfRealVirtualCalls.incrementAndGet();
                                 // More than one class implementing the method, we use a virtual call
                                 theWriter.print("callsite.clazz.resolveVirtualMethod(" + theIdentifier.getIdentifier() + ")(callsite");
@@ -747,8 +756,6 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             BytecodeFieldRefConstant theConstant = thePut.getConstant();
                             BytecodeClassinfoConstant theClassName = theConstant.getClassIndex().getClassConstant();
                             BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName();
-                            theWriter.println(
-                                    theInset + JSWriterUtils.toClassName(theClassName) + ".classInitCheck();");
                             theWriter.println(theInset + JSWriterUtils.toClassName(theClassName) + ".staticFields." + theFieldName.stringValue() + " = frame.stack.pop();");
                         } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                             BytecodeInstructionGETSTATIC theGet = (BytecodeInstructionGETSTATIC) theInstruction;
@@ -756,8 +763,6 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                             BytecodeClassinfoConstant theClassName = theConstant.getClassIndex().getClassConstant();
                             BytecodeUtf8Constant theFieldName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex()
                                     .getName();
-                            theWriter.println(
-                                    theInset + JSWriterUtils.toClassName(theClassName) + ".classInitCheck();");
                             theWriter.println(
                                     theInset + "frame.stack.push(" + JSWriterUtils.toClassName(theClassName) + ".staticFields." + theFieldName
                                             .stringValue() + ");");
@@ -1010,7 +1015,6 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                                 theWriter.println(theInset + "frame.stack.push(" + theLong.getLongValue() + ");");
                             } else if (theConstant instanceof BytecodeClassinfoConstant) {
                                 BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
-                                theWriter.println(theInset + JSWriterUtils.toClassName(theClassInfo) + ".classInitCheck();");
                                 theWriter.println(theInset + "frame.stack.push(" + JSWriterUtils.toClassName(theClassInfo) + ".runtimeClass);");
                             } else if (theConstant instanceof BytecodeIntegerConstant) {
                                 BytecodeIntegerConstant theInteger = (BytecodeIntegerConstant) theConstant;

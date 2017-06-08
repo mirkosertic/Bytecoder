@@ -24,8 +24,10 @@ public class BytecodeLoader {
 
     private final BytecodePackageReplacer packageReplacer;
     private final BytecodeSignatureParser signatureParser;
+    private final ClassLoader classLoader;
 
-    public BytecodeLoader(BytecodePackageReplacer aPackageReplacer) {
+    public BytecodeLoader(ClassLoader aClassLoader, BytecodePackageReplacer aPackageReplacer) {
+        classLoader = aClassLoader;
         packageReplacer = aPackageReplacer;
         signatureParser = new BytecodeSignatureParser(aPackageReplacer);
     }
@@ -36,8 +38,8 @@ public class BytecodeLoader {
 
     public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
 
-        String theResourceName = "/" + packageReplacer.replaceTypeIn(aTypeRef).name().replace(".", "/") + ".class";
-        InputStream theStream = getClass().getResourceAsStream(theResourceName);
+        String theResourceName = packageReplacer.replaceTypeIn(aTypeRef).name().replace(".", "/") + ".class";
+        InputStream theStream = classLoader.getResourceAsStream(theResourceName);
         if (theStream == null) {
             throw new ClassNotFoundException(theResourceName);
         }

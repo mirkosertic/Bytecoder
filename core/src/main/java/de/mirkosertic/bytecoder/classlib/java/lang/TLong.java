@@ -72,4 +72,8 @@ public class TLong extends TNumber {
     public double doubleValue() {
         return longValue;
     }
+
+    public static long parseLong(String aValue) {
+        return 0L;
+    }
 }

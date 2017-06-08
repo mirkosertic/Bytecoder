@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -116,5 +117,59 @@ public class BytecodeControlFlowGraph {
 
     public List<BytecodeBasicBlock> getBlocks() {
         return blocks;
+    }
+
+    public Set<BytecodeObjectTypeRef> getStaticReferences() {
+        Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
+        for (BytecodeBasicBlock theBlock : blocks) {
+
+            for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
+                if (theInstruction instanceof BytecodeInstructionNEW) {
+                    BytecodeInstructionNEW theNew = (BytecodeInstructionNEW) theInstruction;
+
+                    BytecodeClassinfoConstant theConstant = theNew.getClassInfoForObjectToCreate();
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theConstant.getConstant()));
+
+                } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
+                    BytecodeInstructionANEWARRAY theNew = (BytecodeInstructionANEWARRAY) theInstruction;
+
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNew.getTypeConstant().getConstant()));
+
+                }else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {
+                    BytecodeInstructionINVOKESTATIC theStaticInvoke = (BytecodeInstructionINVOKESTATIC) theInstruction;
+
+                    BytecodeMethodRefConstant theMethodRefConstant = theStaticInvoke.getMethodReference();
+
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theMethodRefConstant.getClassIndex().getClassConstant().getConstant()));
+
+                } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
+                    BytecodeInstructionINSTANCEOF theInstanceOf = (BytecodeInstructionINSTANCEOF) theInstruction;
+
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceOf.getTypeRef().getConstant()));
+
+                } else if (theInstruction instanceof BytecodeInstructionPUTSTATIC) {
+                    BytecodeInstructionPUTSTATIC thePut = (BytecodeInstructionPUTSTATIC) theInstruction;
+                    BytecodeFieldRefConstant theConstant = thePut.getConstant();
+
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theConstant.getClassIndex().getClassConstant().getConstant()));
+
+                } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
+                    BytecodeInstructionGETSTATIC theGet = (BytecodeInstructionGETSTATIC) theInstruction;
+                    BytecodeFieldRefConstant theConstant = theGet.getConstant();
+
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theConstant.getClassIndex().getClassConstant().getConstant()));
+
+                } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
+                    BytecodeInstructionGenericLDC theLoad = (BytecodeInstructionGenericLDC) theInstruction;
+                    BytecodeConstant theConstant = theLoad.constant();
+                    if (theConstant instanceof BytecodeClassinfoConstant) {
+                        BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
+                        theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
+                    }
+                }
+            }
+        }
+
+        return theResult;
     }
 }

@@ -13,24 +13,24 @@ Rich Domain Model for Java Bytecode and Framework to interpret and transpile it 
 
 Before compiling to the target language, a dead code removal is done to reduce the amount of generated code. Starting
 from an application entry point, the referenced classes, fields, methods and interfaces are searched. Only detected used
-items are then compiled by a language specific backend. The gathered class and method dependency information are later 
+items are then compiled by a target language specific backend. The gathered class and method dependency information are later 
 used for further optimizations such as optimizing virtual method invocation if there is in fact only
 one implementation available.
 
 ## Compiling strategies
 
-*JVM* Bytecode is basically a typed stack machine. For JavaScript compile target, a stack machine is emulated in the first step. Later other
-optimizations will be applied to generate faster and more efficient code.
+The JVM Bytecode is parsed and transformed into an intermediate representation which has the single static assignment property.
+This intermediate representation is passed thru optimizer stages and sent to a backend implementation for target code generation.
 
-*WebAssembly* is also a stack maschine. The idea is to translate the JVM stack machine into a WebAssemvly stack machine for the WebAssembly compile target.
+The *JavaScript* backend transforms the intermediate representation into JavaScript.
 
-There are currently no plans to implement Bytecode optimization strategies. The reasoning is that the current status of the project is MVP, the goal is to create a minimul viable product. The WebAssembly Browser Runtime also includes optimization strategies, so for the MVP we will rely on them. This also holds true for optimizations build into the C compiler like emscripten.
+The *WebAssembly* backend transforms the intermediate representation into C code, which can easily compiled into WebAssembly.
 
 ## Memory management
 
-*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has no GC support on the current MVP. Also plain C has no garbage collection build in. So the WebAssembly and C compile targets must include garbage collection code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
+*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has no GC support on the current MVP. Also plain C has no garbage collection build in. So the WebAssembly and C backends must include garbage collection code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
 
-The JavaScript compile target will rely on JavaScript garbage collection provided by the browser.
+The JavaScript backend relies on JavaScript garbage collection provided by the browser.
 
 ## Unit testing
 
@@ -58,7 +58,7 @@ counterpart. This mechanism is the core tool to test the compiler and the Classl
 
 ## Maven Plugin
 
-There is Maven plugin available. It currently supports only the JavaScript compile target. Basically it can be used as follows:
+There is Maven plugin available. It currently supports only the JavaScript backend. Basically it can be used as follows:
 
 
 ```
@@ -70,6 +70,7 @@ There is Maven plugin available. It currently supports only the JavaScript compi
                 <version>${project.version}</version>
                 <configuration>
                     <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
+                    <backend>ssacompiler</backend>                    
                 </configuration>
                 <executions>
                     <execution>
@@ -78,9 +79,6 @@ There is Maven plugin available. It currently supports only the JavaScript compi
                         </goals>
                     </execution>
                 </executions>
-                <dependencies>
-                    <!-- Include all bytecode dependencies here !!-->
-                </dependencies>
             </plugin>
         </plugins>
     </build>

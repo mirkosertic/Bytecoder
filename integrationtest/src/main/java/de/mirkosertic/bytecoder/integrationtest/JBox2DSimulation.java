@@ -109,8 +109,8 @@ public class JBox2DSimulation {
             shape.m_radius = ballRadius;
             fixtureDef.shape = shape;
 
-            for (int i = 0; i < 5; ++i) {
-                for (int j = 0; j < 5; ++j) {
+            for (int i = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j) {
                     float x = (j + 0.5f) * (ballRadius * 2 + 0.01f);
                     float y = (i + 0.5f) * (ballRadius * 2 + 0.01f);
                     ballDef.position.x = 3 + x;
@@ -150,13 +150,9 @@ public class JBox2DSimulation {
             System.out.println("Start of calculation");
             System.out.println(currentTime);
             while (timeToCalculate > 10) {
-                System.out.println("Need to run");
                 System.out.println((long) timeToCalculate);
-                System.out.println("Single 10ms step");
                 int period = (int) ((relativeTime + 5000) / 10000);
-                System.out.println("Torque");
                 reel.applyTorque(period % 2 == 0 ? 8f : -8f);
-                System.out.println("World simulation");
                 world.step(0.01f, 20, 40);
                 lastCalculated += 10;
                 timeToCalculate -= 10;

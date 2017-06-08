@@ -15,28 +15,26 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-
 import java.util.List;
+
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class DirectInvokeMethodValue extends Value {
 
-    private final BytecodeClassinfoConstant classInfo;
-    private final BytecodeNameAndTypeConstant method;
+    private final BytecodeObjectTypeRef clazz;
+    private final String methodName;
+    private final BytecodeMethodSignature methodSignature;
     private final Variable target;
     private final List<Variable> arguments;
 
-    public DirectInvokeMethodValue(BytecodeClassinfoConstant aClassInfo, BytecodeNameAndTypeConstant aMethod, Variable aTarget,
-                                   List<Variable> aArguments) {
-        method = aMethod;
+    public DirectInvokeMethodValue(BytecodeObjectTypeRef aClazz, String aMethodName,
+            BytecodeMethodSignature aMethodSignature, Variable aTarget, List<Variable> aArguments) {
+        clazz = aClazz;
+        methodName = aMethodName;
+        methodSignature = aMethodSignature;
         target = aTarget;
         arguments = aArguments;
-        classInfo = aClassInfo;
-    }
-
-    public BytecodeNameAndTypeConstant getMethod() {
-        return method;
     }
 
     public Variable getTarget() {
@@ -47,7 +45,15 @@ public class DirectInvokeMethodValue extends Value {
         return arguments;
     }
 
-    public BytecodeClassinfoConstant getClassInfo() {
-        return classInfo;
+    public BytecodeObjectTypeRef getClazz() {
+        return clazz;
+    }
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public BytecodeMethodSignature getMethodSignature() {
+        return methodSignature;
     }
 }
