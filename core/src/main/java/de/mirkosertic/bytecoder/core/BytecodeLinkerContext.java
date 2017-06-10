@@ -113,7 +113,9 @@ public class BytecodeLinkerContext {
             if (theBootstraps != null) {
                 for (int i=0;i<theBootstraps.getMethodCount();i++) {
                     BytecodeBootstrapMethod theBSMethod = theBootstraps.methodByIndex(i);
-                    System.out.println(" BS Method " +  i + " points to " + theBSMethod.getMethodRefIndex() + " which is " + theLinkedClass.getConstantPool().constantByIndex(theBSMethod.getMethodRefIndex()));
+                    BytecodeConstant theConstant = theLinkedClass.getConstantPool().constantByIndex(theBSMethod.getMethodRefIndex());
+                    System.out.println(" BS Method " +  i + " points to " + theBSMethod.getMethodRefIndex() + " which is " + theConstant);
+                    System.out.println(" has " + theBSMethod.getArguments().length + " arguments");
                 }
             }
 

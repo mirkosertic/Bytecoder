@@ -60,28 +60,23 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
 
         BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
 
-        link(aLinkerContext, theMethodRef.getReferenceKind(), theMethodRef.getReferenceIndex().getConstant());
+        switch (theMethodRef.getReferenceKind()) {
+            case REF_invokeStatic: {
+                // in this case we assume that the invoke dynamic can be replaced by an invokestatic
+                // to the implementing method, but only indirectly using a callsite object aka function pointer
+                BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapMethod.getArguments()[0];
+                BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
 
-        for (BytecodeConstant theArgument : theBootstrapMethod.getArguments()) {
+                BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
+                aLinkerContext.linkClass(theClass).linkStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                        theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
 
-            if (theArgument instanceof BytecodeMethodRefConstant) {
-                BytecodeMethodRefConstant theRef = (BytecodeMethodRefConstant) theArgument;
-                BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theRef.getClassIndex().getClassConstant().getConstant()));
-                BytecodeNameAndTypeConstant theNameAndType = theRef.getNameAndTypeIndex().getNameAndType();
-
-                String theMethodName = theNameAndType.getNameIndex().getName().stringValue();
-
-                if (theMethodName.equals("<init>")) {
-                    theLinkedClass.linkConstructorInvocation(theNameAndType.getDescriptorIndex().methodSignature());
-                } else {
-                    theLinkedClass.linkVirtualMethod(theNameAndType.getNameIndex().getName().stringValue(),
-                            theNameAndType.getDescriptorIndex().methodSignature());
-                }
+                break;
             }
-            if (theArgument instanceof BytecodeMethodHandleConstant) {
-                BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theArgument;
-                link(aLinkerContext, theHandle.getReferenceKind(), theHandle.getReferenceIndex().getConstant());
-            }
+            default:
+                throw new IllegalStateException("Nut supported reference kind for invoke dynamic : " + theMethodRef.getReferenceKind());
         }
+
+        link(aLinkerContext, theMethodRef.getReferenceKind(), theMethodRef.getReferenceIndex().getConstant());
     }
 }

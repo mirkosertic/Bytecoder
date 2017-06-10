@@ -299,7 +299,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             int theMethodRef = aDis.readUnsignedShort();
             int theNumArguments = aDis.readUnsignedShort();
             int[] theArguments = new int[theNumArguments];
-            for (int j=0;j<theNumMethods;j++) {
+            for (int j=0;j<theNumArguments;j++) {
                 theArguments[j] = aDis.readUnsignedShort();
             }
             theMethods.add(new BytecodeBootstrapMethod(theMethodRef, theArguments, aConstantPool));

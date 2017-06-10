@@ -74,7 +74,7 @@ public class BytecodeControlFlowGraph {
                 currentBlock = null;
             } else if (theInstruction instanceof BytecodeInstructionInvoke) {
                 // invocation, start new basic block
-                currentBlock = null;
+                // currentBlock = null;
             }
         }
 
