@@ -33,7 +33,7 @@ public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction impl
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeInterfaceRefConstant theMethodRefConstant = getMethodDescriptor();
         BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();

@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
-import de.mirkosertic.bytecoder.classlib.java.io.TIOException;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
 
@@ -51,13 +50,13 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     @Override
-    public TStringBuilder append(TCharSequence aCharSequence) throws TIOException {
+    public TStringBuilder append(TCharSequence aCharSequence) {
         byte[] theOtherData = aCharSequence.getBytes();
         internalAdd(theOtherData);
         return this;
     }
 
-    public TStringBuilder append(TString aString) throws TIOException {
+    public TStringBuilder append(TString aString) {
         byte[] theOtherData = aString.getBytes();
         internalAdd(theOtherData);
         return this;
@@ -77,6 +76,11 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     public TStringBuilder append(float aValue) {
+        // TODO: Implement this
+        return this;
+    }
+
+    public TStringBuilder append(long aValue) {
         // TODO: Implement this
         return this;
     }

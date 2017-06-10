@@ -18,15 +18,14 @@ package de.mirkosertic.bytecoder.classlib.org.junit;
 import de.mirkosertic.bytecoder.classlib.java.lang.TDouble;
 import de.mirkosertic.bytecoder.classlib.java.lang.TFloat;
 import de.mirkosertic.bytecoder.classlib.java.lang.TMath;
-import de.mirkosertic.bytecoder.classlib.java.lang.TRuntimeException;
 
 public class TAssert {
 
-    public static void fail(String message) throws TRuntimeException {
+    public static void fail(String message) {
         if (message != null) {
-            throw new TRuntimeException(message);
+            throw new RuntimeException(message);
         } else {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
@@ -39,11 +38,11 @@ public class TAssert {
         return formatted + "expected:<" + expected + "> but was:<" + actual + ">";
     }
 
-    public static void failNotEquals(String message, Object expected, Object actual) throws TRuntimeException {
+    public static void failNotEquals(String message, Object expected, Object actual) {
         fail(format(message, expected, actual));
     }
 
-    public static void assertEquals(String message, float expected, float actual, float delta) throws TRuntimeException {
+    public static void assertEquals(String message, float expected, float actual, float delta) {
         if  (TFloat.compare(expected, actual) != 0) {
             if (TMath.abs(expected - actual) > delta) {
                 failNotEquals(message, new TFloat(expected), new TFloat(actual));
@@ -51,7 +50,7 @@ public class TAssert {
         }
     }
 
-    public static void assertEquals(String message, double expected, double actual, double delta) throws TRuntimeException {
+    public static void assertEquals(String message, double expected, double actual, double delta) {
         if  (TDouble.compare(expected, actual) != 0) {
             if (TMath.abs(expected - actual) > delta) {
                 failNotEquals(message, new TDouble(expected), new TDouble(actual));
@@ -59,53 +58,53 @@ public class TAssert {
         }
     }
 
-    public static void assertEquals(float expected, float actual, float delta) throws TRuntimeException {
+    public static void assertEquals(float expected, float actual, float delta) {
         assertEquals((String)null, expected, actual, delta);
     }
 
-    public static void assertEquals(double expected, double actual, double delta) throws TRuntimeException {
+    public static void assertEquals(double expected, double actual, double delta) {
         assertEquals(null, expected, actual, delta);
     }
 
-    public static void assertTrue(boolean aValue) throws TRuntimeException {
+    public static void assertTrue(boolean aValue) {
         if (!aValue) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
-    public static void assertFalse(boolean aValue) throws TRuntimeException {
+    public static void assertFalse(boolean aValue) {
         if (aValue) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
-    public static void assertNotNull(Object aValue) throws TRuntimeException {
+    public static void assertNotNull(Object aValue) {
         if (aValue == null) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
-    public static void assertNull(Object aValue) throws TRuntimeException {
+    public static void assertNull(Object aValue) {
         if (aValue != null) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
-    public static void assertEquals(Object aValue1, Object aValue2) throws TRuntimeException {
+    public static void assertEquals(Object aValue1, Object aValue2) {
         if (!aValue1.equals(aValue2)) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
-    public static void assertSame(Object aValue1, Object aValue2) throws TRuntimeException {
+    public static void assertSame(Object aValue1, Object aValue2) {
         if (!(aValue1 == aValue2)) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 
-    public static void assertNotSame(Object aValue1, Object aValue2) throws TRuntimeException {
+    public static void assertNotSame(Object aValue1, Object aValue2) {
         if (aValue1 == aValue2) {
-            throw new TRuntimeException();
+            throw new RuntimeException();
         }
     }
 }

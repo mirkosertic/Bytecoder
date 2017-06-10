@@ -234,7 +234,7 @@ public class JBox2DTest {
     }
 
     @Test
-    public void testLinkShapeType() throws TRuntimeException {
+    public void testLinkShapeType() {
         ShapeType[] theTypes = ShapeType.values();
         Assert.assertEquals(4, theTypes.length, 0);
     }

@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArrayIndexOutOfBoundsException;
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 
 public class TArrayList<T> implements TList<T> {
@@ -56,9 +55,9 @@ public class TArrayList<T> implements TList<T> {
     }
 
     @Override
-    public T get(int aIndex) throws TArrayIndexOutOfBoundsException {
+    public T get(int aIndex) throws ArrayIndexOutOfBoundsException {
         if (aIndex >=currentLength || aIndex < 0) {
-            throw new TArrayIndexOutOfBoundsException();
+            throw new ArrayIndexOutOfBoundsException();
         }
         return (T) data[aIndex];
     }
@@ -109,5 +108,35 @@ public class TArrayList<T> implements TList<T> {
     @Override
     public int size() {
         return currentLength;
+    }
+
+    @Override
+    public TIterator<T> iterator() {
+        return new TIterator<T>() {
+
+            private int index = 0;
+
+            @Override
+            public T next() {
+                return (T) data[index++];
+            }
+
+            @Override
+            public boolean hasNext() {
+                return index < currentLength;
+            }
+        };
+    }
+
+    @Override
+    public boolean addAll(TCollection<T> aOtherCollection) {
+        // TODO: Implement this
+        return false;
+    }
+
+    @Override
+    public boolean removeAll(TCollection<T> aOtherCollection) {
+        // TODO: Implement this
+        return false;
     }
 }

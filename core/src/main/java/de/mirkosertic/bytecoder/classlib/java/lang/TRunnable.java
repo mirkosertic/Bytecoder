@@ -13,27 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public interface TCollection<T> extends TIterable<T> {
+public interface TRunnable {
 
-    boolean add(T aObject);
-
-    void clear();
-
-    boolean contains(T aObject);
-
-    boolean isEmpty();
-
-    boolean remove(T aObject);
-
-    int size();
-
-    Object[] toArray();
-
-    Object[] toArray(Object[] aTarget);
-
-    boolean addAll(TCollection<T> aOtherCollection);
-
-    boolean removeAll(TCollection<T> aOtherCollection);
+    void run();
 }

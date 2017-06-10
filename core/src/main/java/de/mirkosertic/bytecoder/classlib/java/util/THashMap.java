@@ -15,8 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
-import de.mirkosertic.bytecoder.classlib.java.lang.TArrayIndexOutOfBoundsException;
 import de.mirkosertic.bytecoder.classlib.java.lang.TCloneable;
 
 public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable, TCloneable {
@@ -31,7 +32,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
             values = new TArrayList<>();
         }
 
-        public boolean containsKey(K aKey) throws TArrayIndexOutOfBoundsException {
+        public boolean containsKey(K aKey) {
             for (int i=0;i<values.size();i++) {
                 Entry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
@@ -41,7 +42,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
             return false;
         }
 
-        public V put(K aKey, V aValue) throws TArrayIndexOutOfBoundsException {
+        public V put(K aKey, V aValue) {
             for (int i=0;i<values.size();i++) {
                 Entry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
@@ -55,7 +56,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
             return null;
         }
 
-        public V get(K aKey) throws TArrayIndexOutOfBoundsException {
+        public V get(K aKey) {
             for (int i=0;i<values.size();i++) {
                 Entry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
@@ -63,6 +64,22 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
                 }
             }
             return null;
+        }
+
+        public V remove(K aKey) {
+            for (int i=0;i<values.size();i++) {
+                Entry<K, V> theEntry = values.get(i);
+                if (theEntry.key.equals(aKey)) {
+                    V theOldValue = theEntry.value;
+                    values.remove(theEntry);
+                    return theOldValue;
+                }
+            }
+            return null;
+        }
+
+        public boolean isEmpty() {
+            return values.isEmpty();
         }
     }
 
@@ -72,7 +89,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         buckets = new TArrayList<>();
     }
 
-    private Bucket<K, V> findByHashCode(int aHashCode) throws TArrayIndexOutOfBoundsException {
+    private Bucket<K, V> findByHashCode(int aHashCode) {
         for (int i=0;i<buckets.size();i++) {
             Bucket<K, V> theBuckets = buckets.get(i);
             if (theBuckets.hashCode == aHashCode) {
@@ -83,7 +100,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
     }
 
     @Override
-    public boolean containsKey(K aKey) throws TArrayIndexOutOfBoundsException {
+    public boolean containsKey(K aKey) {
         Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
         if (theBucket != null) {
             return theBucket.containsKey(aKey);
@@ -92,7 +109,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
     }
 
     @Override
-    public V put(K aKey, V aValue) throws TArrayIndexOutOfBoundsException {
+    public V put(K aKey, V aValue) {
         int theHashCode = aKey.hashCode();
         Bucket<K, V> theBucket = findByHashCode(theHashCode);
         if (theBucket == null) {
@@ -103,11 +120,36 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
     }
 
     @Override
-    public V get(K aKey) throws TArrayIndexOutOfBoundsException {
+    public V get(K aKey) {
         Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
         if (theBucket != null) {
             return theBucket.get(aKey);
         }
+        return null;
+    }
+
+    @Override
+    public V remove(K aKey) {
+        Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
+        if (theBucket != null) {
+            V theOldValue = theBucket.remove(aKey);
+            if (theBucket.isEmpty()) {
+                buckets.remove(theBucket);
+            }
+            return theOldValue;
+        }
+        return null;
+    }
+
+    @Override
+    public TCollection<V> values() {
+        // TODO: Implement this
+        return null;
+    }
+
+    @Override
+    public Set<TMap.Entry> entrySet() {
+        // TODO: Implement this
         return null;
     }
 }

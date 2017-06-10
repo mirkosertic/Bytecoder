@@ -17,6 +17,10 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TBoolean extends TObject implements TSerializable {
 
+    public static final TBoolean TRUE = new TBoolean(true);
+
+    public static final TBoolean FALSE = new TBoolean(false);
+
     private boolean booleanValue;
 
     public TBoolean(boolean aBooleanValue) {
@@ -25,5 +29,20 @@ public class TBoolean extends TObject implements TSerializable {
 
     public boolean booleanValue() {
         return booleanValue;
+    }
+
+    public static TBoolean valueOf(TString aValue) {
+        return FALSE;
+    }
+
+    public static TBoolean valueOf(boolean aValue) {
+        if (aValue) {
+            return TRUE;
+        }
+        return FALSE;
+    }
+
+    public static boolean parseBoolean(TString aValue) {
+        return false;
     }
 }

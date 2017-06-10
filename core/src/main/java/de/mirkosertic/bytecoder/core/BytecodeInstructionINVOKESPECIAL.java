@@ -22,7 +22,7 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();

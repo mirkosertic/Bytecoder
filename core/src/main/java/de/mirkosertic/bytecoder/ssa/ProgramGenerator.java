@@ -15,17 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
+import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethodsAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
@@ -43,6 +36,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
@@ -77,11 +71,13 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEDYNAMIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
@@ -92,14 +88,18 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodHandleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -108,6 +108,15 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.optimizer.InvokeVirtualOptimizer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 public class ProgramGenerator {
 
@@ -228,9 +237,10 @@ public class ProgramGenerator {
                     return Type.INT;
                 case DOUBLE:
                     return Type.DOUBLE;
+                case VOID:
+                    return Type.VOID;
                 default:
                     throw new IllegalArgumentException("Not supported : " + aRef);
-
             }
         }
         return Type.REFERENCE;
@@ -435,11 +445,44 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionPOP) {
                 BytecodeInstructionPOP theINS = (BytecodeInstructionPOP) theInstruction;
                 theHelper.pop();
+            } else if (theInstruction instanceof BytecodeInstructionPOP2) {
+                BytecodeInstructionPOP2 theINS = (BytecodeInstructionPOP2) theInstruction;
+                Variable theVariable = theHelper.pop();
+                switch (theVariable.getType()) {
+                    case LONG:
+                        break;
+                    case DOUBLE:
+                        break;
+                    default:
+                        theHelper.pop();
+                }
             } else if (theInstruction instanceof BytecodeInstructionDUP) {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
                 Variable theVariable = theHelper.peek();
                 Variable theClone = aTargetBlock.newVariable(theVariable.getType(), new VariableReferenceValue(theVariable));
                 theHelper.push(theClone);
+            } else if (theInstruction instanceof BytecodeInstructionDUP2X1) {
+                BytecodeInstructionDUP2X1 theINS = (BytecodeInstructionDUP2X1) theInstruction;
+                Variable theValue1 = theHelper.pop();
+                if (theValue1.getType() == Type.LONG || theValue1.getType() == Type.DOUBLE) {
+                    Variable theValue2 = theHelper.pop();
+                    Variable theClone1 = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue2));
+
+                    theHelper.push(theValue1);
+                    theHelper.push(theValue2);
+                    theHelper.push(theClone1);
+                } else {
+                    Variable theValue2 = theHelper.pop();
+                    Variable theValue3 = theHelper.pop();
+                    Variable theClone1 = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue2));
+                    Variable theClone2 = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue2));
+
+                    theHelper.push(theValue2);
+                    theHelper.push(theValue1);
+                    theHelper.push(theValue3);
+                    theHelper.push(theClone2);
+                    theHelper.push(theClone1);
+                }
             } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                 BytecodeInstructionDUPX1 theINS = (BytecodeInstructionDUPX1) theInstruction;
                 Variable theValue1 = theHelper.pop();
@@ -578,6 +621,12 @@ public class ProgramGenerator {
                 theHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericCMP) {
                 BytecodeInstructionGenericCMP theINS = (BytecodeInstructionGenericCMP) theInstruction;
+                Variable theValue2 = theHelper.pop();
+                Variable theValue1 = theHelper.pop();
+                Variable theNewVariable = aTargetBlock.newVariable(Type.INT, new CompareValue(theValue1, theValue2));
+                theHelper.push(theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionLCMP) {
+                BytecodeInstructionLCMP theINS = (BytecodeInstructionLCMP) theInstruction;
                 Variable theValue2 = theHelper.pop();
                 Variable theValue1 = theHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(Type.INT, new CompareValue(theValue1, theValue2));
@@ -962,6 +1011,41 @@ public class ProgramGenerator {
                 }
 
                 aTargetBlock.addExpression(new LookupSwitchExpression(theVariable, theDefault, thePairs));
+            } else if (theInstruction instanceof BytecodeInstructionINVOKEDYNAMIC) {
+                BytecodeInstructionINVOKEDYNAMIC theINS = (BytecodeInstructionINVOKEDYNAMIC) theInstruction;
+
+                BytecodeInvokeDynamicConstant theConstant = theINS.getCallSite();
+
+                BytecodeMethodSignature theSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aControlFlowGraph.getOwningClass().getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
+                BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
+                BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
+
+                switch (theMethodRef.getReferenceKind()) {
+                    case REF_invokeStatic: {
+                        // in this case we assume that the invoke dynamic can be replaced by an invokestatic
+                        // to the implementing method
+                        BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapMethod.getArguments()[0];
+                        BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
+
+                        List<Variable> theArguments = new ArrayList<>();
+                        BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
+                        for (int i=0;i<theArgumentTypes.length;i++) {
+                            theArguments.add(theHelper.pop());
+                        }
+                        Collections.reverse(theArguments);
+
+                        InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theImplementingMethodRef, theArguments);
+
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        theHelper.push(theNewVariable);
+
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException("Nut supported reference kind for invoke dynamic : " + theMethodRef.getReferenceKind());
+                }
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }

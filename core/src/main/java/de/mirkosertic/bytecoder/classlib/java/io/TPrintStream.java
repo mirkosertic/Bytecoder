@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
+import java.io.IOException;
+
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 
@@ -35,19 +37,23 @@ public class TPrintStream extends TFilterOutputStream {
         logDebug(aValue);
     }
 
-    public void println(TString aValue) throws TIOException {
+    public void println(TString aValue) throws IOException {
         for (int i=0;i<aValue.length();i++) {
             print((char) aValue.charAt(i));
         }
         print(NEWLINE);
     }
 
-    public void print(char aChar) throws TIOException {
+    public void print(char aChar) throws IOException {
         target.write(aChar);
     }
 
     @Override
-    public void write(int aValue) throws TIOException {
+    public void write(int aValue) throws IOException {
         target.write(aValue);
+    }
+
+    @Override
+    public void close() throws IOException {
     }
 }

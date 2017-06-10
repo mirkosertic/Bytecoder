@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeAnnotations {
+public class BytecodeAttributes {
 
     private final BytecodeAttributeInfo[] attributes;
 
-    public BytecodeAnnotations(BytecodeAttributeInfo[] aAttributes) {
+    public BytecodeAttributes(BytecodeAttributeInfo[] aAttributes) {
         this.attributes = aAttributes;
     }
 
@@ -36,4 +36,12 @@ public class BytecodeAnnotations {
         return null;
     }
 
+    public <T extends BytecodeAttributeInfo> T getByType(Class<T> aType) {
+        for (BytecodeAttributeInfo theInfo : attributes) {
+            if (theInfo.getClass() == aType) {
+                return (T) theInfo;
+            }
+        }
+        return null;
+    }
 }

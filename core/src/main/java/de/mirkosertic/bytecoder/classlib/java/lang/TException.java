@@ -17,17 +17,10 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 public class TException extends TThrowable {
 
-    private String message;
-
     public TException() {
     }
 
     public TException(String aMessage) {
-        message = aMessage;
-    }
-
-    @Override
-    public String getMessage() {
-        return message;
+        super(aMessage);
     }
 }

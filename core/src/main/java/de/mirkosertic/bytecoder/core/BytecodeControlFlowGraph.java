@@ -22,9 +22,11 @@ import java.util.Set;
 
 public class BytecodeControlFlowGraph {
 
+    private final BytecodeClass owningClass;
     private final List<BytecodeBasicBlock> blocks;
 
-    public BytecodeControlFlowGraph(BytecodeProgram aProgramm) {
+    public BytecodeControlFlowGraph(BytecodeClass aOwningClass, BytecodeProgram aProgramm) {
+        owningClass = aOwningClass;
         blocks = new ArrayList<>();
         Set<BytecodeOpcodeAddress> theJumpTarget = aProgramm.getJumpTargets();
         BytecodeBasicBlock currentBlock = null;
@@ -171,5 +173,9 @@ public class BytecodeControlFlowGraph {
         }
 
         return theResult;
+    }
+
+    public BytecodeClass getOwningClass() {
+        return owningClass;
     }
 }

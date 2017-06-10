@@ -37,7 +37,7 @@ public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeClassinfoConstant theConstant = getTypeConstant();
         aLinkerContext.linkClass(getObjectType());
         aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant.getConstant()));

@@ -15,8 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import java.io.IOException;
+
 import de.mirkosertic.bytecoder.annotations.Import;
-import de.mirkosertic.bytecoder.classlib.java.io.TIOException;
 import de.mirkosertic.bytecoder.classlib.java.io.TOutputStream;
 import de.mirkosertic.bytecoder.classlib.java.io.TPrintStream;
 
@@ -30,13 +31,17 @@ public class TSystem {
         public native void writeByteArrayToConsole(byte[] aBytes);
 
         @Override
-        public void write(int aValue) throws TIOException {
+        public void write(int aValue) throws IOException {
             if (aValue != TPrintStream.NEWLINE) {
                 currentLine.append((char) aValue);
             } else {
                 writeByteArrayToConsole(currentLine.getBytes());
                 currentLine = new TStringBuilder();
             }
+        }
+
+        @Override
+        public void close() throws IOException {
         }
     });
 

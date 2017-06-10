@@ -267,10 +267,10 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {
-                    if (theEntry.getValue().getBytecodeClass().getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                    if (theEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
-                    BytecodeAnnotation theImportAnnotation = theMethod.getAnnotations().getAnnotationByType(Import.class.getName());
+                    BytecodeAnnotation theImportAnnotation = theMethod.getAttributes().getAnnotationByType(Import.class.getName());
                     if (theImportAnnotation == null) {
                         throw new IllegalStateException("No @Import annotation found. Potential linker error!");
                     }
@@ -294,7 +294,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 BytecodeProgram theProgram = theCode.getProgramm();
-                BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
+                BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theEntry.getValue().getBytecodeClass(), theProgram);
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theFlowGraph, theMethod.getSignature(), theMethod.getAccessFlags());
 

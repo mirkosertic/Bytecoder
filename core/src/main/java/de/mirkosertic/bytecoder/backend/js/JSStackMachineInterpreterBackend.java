@@ -339,10 +339,10 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                 }
 
                 if (aMethod.getAccessFlags().isNative()) {
-                    if (aEntry.getValue().getBytecodeClass().getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                    if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
-                    BytecodeAnnotation theImportAnnotation = aMethod.getAnnotations().getAnnotationByType(Import.class.getName());
+                    BytecodeAnnotation theImportAnnotation = aMethod.getAttributes().getAnnotationByType(Import.class.getName());
                     if (theImportAnnotation == null) {
                         throw new IllegalStateException("No @Import annotation found. Potential linker error!");
                     }
@@ -398,7 +398,7 @@ public class JSStackMachineInterpreterBackend extends AbstractJSBackend {
                 theWriter.println("        };");
 
                 BytecodeProgram theProgram = theCode.getProgramm();
-                BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theProgram);
+                BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(aEntry.getValue().getBytecodeClass(), theProgram);
 
                 String theInset = "            ";
 

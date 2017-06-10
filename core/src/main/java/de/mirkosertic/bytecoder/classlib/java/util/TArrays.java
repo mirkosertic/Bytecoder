@@ -21,4 +21,12 @@ public class TArrays {
 
     public static void sort(TObject[] aData, int aStart, int aEnd) {
     }
+
+    public static <T> TList<T> asList(T... aValues) {
+        TArrayList<T> theResult = new TArrayList<>();
+        for (T theValue : aValues) {
+            theResult.add(theValue);
+        }
+        return theResult;
+    }
 }
