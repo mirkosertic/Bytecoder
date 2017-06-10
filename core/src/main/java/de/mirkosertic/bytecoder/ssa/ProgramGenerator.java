@@ -964,12 +964,25 @@ public class ProgramGenerator {
                 }
                 Collections.reverse(theArguments);
 
-                InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theINS.getMethodReference(), theArguments);
-                if (theSignature.getReturnType().isVoid()) {
-                    aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
+                if (theArguments.size() > 0 && theArguments.get(0).getType() == Type.METHODTYPE) {
+                    // We are invoking a method pointer here,
+                    Variable theTarget = theArguments.get(0);
+                    List<Variable> theRemainingArguments = theArguments.subList(1, theArguments.size());
+                    InvokeMethodTypeValue theValue = new InvokeMethodTypeValue(theTarget, theRemainingArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.addExpression(new InvokeMethodTypeExpression(theValue));
+                    } else {
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        theHelper.push(theNewVariable);
+                    }
                 } else {
-                    Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
-                    theHelper.push(theNewVariable);
+                    InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theINS.getMethodReference(), theArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
+                    } else {
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        theHelper.push(theNewVariable);
+                    }
                 }
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
                 BytecodeInstructionINSTANCEOF theINS = (BytecodeInstructionINSTANCEOF) theInstruction;
@@ -1036,9 +1049,8 @@ public class ProgramGenerator {
                         }
                         Collections.reverse(theArguments);
 
-                        InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theImplementingMethodRef, theArguments);
-
-                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        MethodTypeValue theValue = new MethodTypeValue(theImplementingMethodRef);
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.METHODTYPE, theValue);
                         theHelper.push(theNewVariable);
 
                         break;

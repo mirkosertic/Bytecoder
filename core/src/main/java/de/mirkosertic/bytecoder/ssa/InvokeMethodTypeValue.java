@@ -15,6 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, METHODTYPE
+import java.util.List;
+
+public class InvokeMethodTypeValue extends Value {
+
+    private final Variable target;
+    private final List<Variable> arguments;
+
+    public InvokeMethodTypeValue(Variable aTarget, List<Variable> aArguments) {
+        target = aTarget;
+        arguments = aArguments;
+    }
+
+    public Variable getTarget() {
+        return target;
+    }
+
+    public List<Variable> getArguments() {
+        return arguments;
+    }
 }
