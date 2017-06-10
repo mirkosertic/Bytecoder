@@ -15,6 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, METHODTYPE
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+
+public class MethodTypeValue extends Value {
+
+    private final BytecodeMethodRefConstant methodRef;
+
+    public MethodTypeValue(BytecodeMethodRefConstant aMethodRef) {
+        methodRef = aMethodRef;
+    }
+
+    public BytecodeMethodRefConstant getMethodRef() {
+        return methodRef;
+    }
 }

@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, METHODTYPE
+public class InvokeMethodTypeExpression extends Expression {
+
+    private final InvokeMethodTypeValue value;
+
+    public InvokeMethodTypeExpression(InvokeMethodTypeValue aValue) {
+        this.value = aValue;
+    }
+
+    public InvokeMethodTypeValue getValue() {
+        return value;
+    }
 }
