@@ -31,7 +31,7 @@ public class BytecodeInstructionINSTANCEOF extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeClassinfoConstant theType = getTypeRef();
         aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theType.getConstant()));
     }

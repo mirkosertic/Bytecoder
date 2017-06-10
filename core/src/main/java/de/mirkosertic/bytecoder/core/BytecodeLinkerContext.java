@@ -70,7 +70,7 @@ public class BytecodeLinkerContext {
             linkedClasses.put(aTypeRef, theLinkedClass);
 
             for (BytecodeMethod theMethod : theLoadedClass.getMethods()) {
-                BytecodeAnnotation theAnnotation = theMethod.getAnnotations().getAnnotationByType(Export.class.getName());
+                BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                 if (theAnnotation != null) {
                     // The method should be exported
                     if (theMethod.getAccessFlags().isStatic()) {
@@ -105,6 +105,16 @@ public class BytecodeLinkerContext {
                             BytecodeMethod theMethod1 = aEntry.getValue().getTargetMethod();
                             theFinalClass.linkVirtualMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
                         });
+            }
+
+            System.out.println("Linked " + theLinkedClass.getClassName().name());
+
+            BytecodeBootstrapMethodsAttributeInfo theBootstraps = theLinkedClass.getBytecodeClass().getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
+            if (theBootstraps != null) {
+                for (int i=0;i<theBootstraps.getMethodCount();i++) {
+                    BytecodeBootstrapMethod theBSMethod = theBootstraps.methodByIndex(i);
+                    System.out.println(" BS Method " +  i + " points to " + theBSMethod.getMethodRefIndex() + " which is " + theLinkedClass.getConstantPool().constantByIndex(theBSMethod.getMethodRefIndex()));
+                }
             }
 
             return theLinkedClass;

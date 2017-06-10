@@ -43,7 +43,7 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         aLinkerContext.linkClass(getObjectType());
 
         BytecodeClassinfoConstant theConstant = getTypeConstant();

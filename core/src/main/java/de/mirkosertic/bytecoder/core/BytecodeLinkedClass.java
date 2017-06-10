@@ -100,7 +100,7 @@ public class BytecodeLinkedClass {
     }
 
     public boolean emulatedByRuntime() {
-        return bytecodeClass.getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) != null;
+        return bytecodeClass.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null;
     }
 
     public BytecodeObjectTypeRef getClassName() {
@@ -342,8 +342,8 @@ public class BytecodeLinkedClass {
 
         if (!aMethod.getAccessFlags().isAbstract()) {
             if (aMethod.getAccessFlags().isNative()) {
-                if (bytecodeClass.getAnnotations().getAnnotationByType(EmulatedByRuntime.class.getName()) == null) {
-                    if (aMethod.getAnnotations().getAnnotationByType(Import.class.getName()) == null) {
+                if (bytecodeClass.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) == null) {
+                    if (aMethod.getAttributes().getAnnotationByType(Import.class.getName()) == null) {
                         throw new IllegalStateException("Method " + aMethod.getName().stringValue()
                                 + " declared as native, but no @Import annotation found");
                     }
@@ -352,7 +352,7 @@ public class BytecodeLinkedClass {
                 BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
                 BytecodeProgram theProgram = theCode.getProgramm();
                 for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
-                    theInstruction.performLinking(linkerContext);
+                    theInstruction.performLinking(bytecodeClass, linkerContext);
                 }
             }
         }

@@ -64,7 +64,7 @@ public class StringTest {
         Assert.assertEquals(theResult.length(), 0, 0);
     }
 
-    public void testStringBuilderAppend() throws TIOException {
+    public void testStringBuilderAppend() {
         TStringBuilder theBuilder = new TStringBuilder();
         theBuilder.append(new TString("123".getBytes()));
         String theResult = theBuilder.toString();

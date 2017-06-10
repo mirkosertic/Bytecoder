@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.annotations.IsObject;
-
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mirkosertic.bytecoder.annotations.IsObject;
 
 // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7
 public class Bytecode5xClassParser implements BytecodeClassParser {
@@ -67,8 +67,8 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
         BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
 
-        BytecodeAnnotations theAnnotations = new BytecodeAnnotations(theClassAttributes);
-        if (theAnnotations.getAnnotationByType(IsObject.class.getName()) != null) {
+        BytecodeAttributes theAttributes = new BytecodeAttributes(theClassAttributes);
+        if (theAttributes.getAnnotationByType(IsObject.class.getName()) != null) {
             theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
         }
 
@@ -209,31 +209,31 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         int theReferenceIndex = aDis.readUnsignedShort();
         switch (theReferenceKind) {
             case 1:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_getField, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_getField, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 2:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_getStatic, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_getStatic, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 3:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_putField, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_putField, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 4:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_putStatic, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_putStatic, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 5:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeVirtual, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeVirtual, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 6:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeStatic, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeStatic, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 7:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeSpecial, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeSpecial, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 8:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_newInvokeSpecial, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_newInvokeSpecial, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             case 9:
-                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeInterface, new BytecodeReferenceIndex(theReferenceIndex)));
+                aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_invokeInterface, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
                 break;
             default:
                 throw new IllegalStateException("Unknown reference kind : " + theReferenceKind);
@@ -290,6 +290,22 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             theInterfaces.add(new BytecodeInterface((BytecodeClassinfoConstant) theConstant));
         }
         return theInterfaces.toArray(new BytecodeInterface[theInterfaces.size()]);
+    }
+
+    private BytecodeBootstrapMethodsAttributeInfo parseBootstrapAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+        int theNumMethods = aDis.readUnsignedShort();
+        List<BytecodeBootstrapMethod> theMethods = new ArrayList<>();
+        for (int i=0;i<theNumMethods;i++) {
+            int theMethodRef = aDis.readUnsignedShort();
+            int theNumArguments = aDis.readUnsignedShort();
+            int[] theArguments = new int[theNumArguments];
+            for (int j=0;j<theNumMethods;j++) {
+                theArguments[j] = aDis.readUnsignedShort();
+            }
+            theMethods.add(new BytecodeBootstrapMethod(theMethodRef, theArguments, aConstantPool));
+        }
+
+        return new BytecodeBootstrapMethodsAttributeInfo(theMethods.toArray(new BytecodeBootstrapMethod[theMethods.size()]));
     }
 
     private BytecodeAnnotationAttributeInfo parseAnnotationAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
@@ -368,6 +384,9 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                     break;
                 case "RuntimeVisibleAnnotations":
                     theAttributes.add(parseAnnotationAttribute(aDis, aConstantPool));
+                    break;
+                case "BootstrapMethods":
+                    theAttributes.add(parseBootstrapAttribute(aDis, aConstantPool));
                     break;
                 default:
                     byte[] theAttributeData = new byte[theAttributeLength];

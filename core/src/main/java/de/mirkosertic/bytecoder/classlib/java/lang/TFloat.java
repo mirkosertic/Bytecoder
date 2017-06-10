@@ -178,4 +178,20 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         float value = mantissa * binaryExponent(rawExp - 127 - 23);
         return !negative ? value : -value;
     }
+
+    public static float parseFloat(TString aValue) {
+        return 0f;
+    }
+
+    public static TFloat valueOf(float aValue) {
+        return new TFloat(aValue);
+    }
+
+    public static TFloat valueOf(TString aValue) {
+        return null;
+    }
+
+    public static TString toString(float aValue) {
+        return null;
+    }
 }

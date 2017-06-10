@@ -17,12 +17,28 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.annotations.DelegatesTo;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.classlib.java.io.TPrintStream;
 
-@OverrideParentClass(parentClass = TObject.class)
-public class TThrowable extends Exception {
+public class TThrowable {
+
+    private String message;
 
     @DelegatesTo(methodName = "doNothingAgain")
     public TThrowable() {
+    }
+
+    public TThrowable(String aMessage) {
+        message = aMessage;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void printStackTrace(TPrintStream aStream) {
+    }
+
+    public void addSuppressed(TThrowable aThrowable) {
     }
 
     private void doNothingAgain() {

@@ -21,9 +21,13 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
     public BytecodeProgram parse(byte[] aBytecodes, BytecodeConstantPool aConstantPool) {
         BytecodeProgram theResult = new BytecodeProgram();
         int offset = 0;
+        boolean wide = false;
+        boolean isWideOperator;
         while(offset < aBytecodes.length) {
             BytecodeOpcodeAddress theOpcodeIndex = new BytecodeOpcodeAddress(offset);
             int theOpcode = aBytecodes[offset++]  & 0xFF;
+            isWideOperator = wide;
+            wide = false;
             switch (theOpcode) {
                 case 0: { // nop = 0 (0x0)
                     theResult.addInstruction(new BytecodeInstructionNOP(theOpcodeIndex));
@@ -919,11 +923,11 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 186: { // invokedynamic = 186 (0xba)
-                    byte theIndexByte1 = aBytecodes[offset++];
-                    byte theIndexByte2 = aBytecodes[offset++];
+                    int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
+                    offset+=2;
                     byte theNull1 = aBytecodes[offset++];
                     byte theNull2 = aBytecodes[offset++];
-                    theResult.addInstruction(new BytecodeInstructionINVOKEDYNAMIC(theOpcodeIndex, theIndexByte1, theIndexByte2));
+                    theResult.addInstruction(new BytecodeInstructionINVOKEDYNAMIC(theOpcodeIndex, theIndex, aConstantPool));
                     break;
                 }
                 case 187: { // new = 187 (0xbb)
@@ -1004,7 +1008,10 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     theResult.addInstruction(new BytecodeInstructionMONITOREXIT(theOpcodeIndex));
                     break;
                 }
-                // TODO: 196
+                case 196: { // wide operator = 193
+                    wide = true;
+                    break;
+                }
                 case 197: { // multianewarray = 197 (0xc5)
                     int theIndex = BytecodeParserUtils.integerFromByteArray(aBytecodes, offset);
                     offset+=2;

@@ -15,21 +15,19 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeMethodHandleConstant implements BytecodeConstant {
+public class BytecodeBootstrapMethodsAttributeInfo implements BytecodeAttributeInfo {
 
-    private final BytecodeReferenceKind referenceKind;
-    private final BytecodeReferenceIndex referenceIndex;
+    private final BytecodeBootstrapMethod[] methods;
 
-    public BytecodeMethodHandleConstant(BytecodeReferenceKind aReferenceKind, BytecodeReferenceIndex aReferenceIndex) {
-        referenceKind = aReferenceKind;
-        referenceIndex = aReferenceIndex;
+    public BytecodeBootstrapMethodsAttributeInfo(BytecodeBootstrapMethod[] aMethods) {
+        methods = aMethods;
     }
 
-    public BytecodeReferenceKind getReferenceKind() {
-        return referenceKind;
+    public int getMethodCount() {
+        return methods.length;
     }
 
-    public BytecodeReferenceIndex getReferenceIndex() {
-        return referenceIndex;
+    public BytecodeBootstrapMethod methodByIndex(int aIndex) {
+        return methods[aIndex];
     }
 }

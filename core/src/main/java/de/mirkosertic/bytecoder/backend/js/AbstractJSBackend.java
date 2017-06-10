@@ -47,6 +47,9 @@ public abstract class AbstractJSBackend {
         theMathModule.registerFunction("atan2", new JSFunction("return Math.atan2(p1, p2);"));
         theMathModule.registerFunction("max", new JSFunction("return Math.max(p1, p2);"));
         theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
+        theMathModule.registerFunction("tan", new JSFunction("return Math.tan(p1);"));
+        theMathModule.registerFunction("toRadians", new JSFunction("return Math.toRadians(p1);"));
+        theMathModule.registerFunction("min", new JSFunction("return Math.min(p1, p2);"));
 
         JSModule theSystemModule = new JSModule();
         theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
@@ -59,7 +62,7 @@ public abstract class AbstractJSBackend {
     }
 
     protected String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
-        BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAnnotations().getAnnotationByType(OverrideParentClass.class.getName());
+        BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
         if (theDelegatesTo != null) {
             BytecodeAnnotation.ElementValue theParentOverride = (BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
             return theParentOverride.stringValue().replace("/",".");

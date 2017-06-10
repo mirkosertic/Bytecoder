@@ -62,8 +62,20 @@ public class TMath extends TObject {
     @Import(module = "math", name = "random")
     public static native double random();
 
+    @Import(module = "math", name = "toRadians")
+    public static native double toRadians(double aValue);
+
+    @Import(module = "math", name = "tan")
+    public static native double tan(double aValue);
+
     @Import(module = "math", name = "max")
     public static native long max(long aValue1, long aValue2);
+
+    @Import(module = "math", name = "max")
+    public static native int max(int aValue1, int aValue2);
+
+    @Import(module = "math", name = "min")
+    public static native int min(int aValue1, int aValue2);
 
     public static int getExponent(float f) {
         f = abs(f);

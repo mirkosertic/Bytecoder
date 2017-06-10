@@ -31,7 +31,7 @@ public class BytecodeInstructionGETSTATIC extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeFieldRefConstant theConstant = getConstant();
         BytecodeClassinfoConstant theClass = theConstant.getClassIndex().getClassConstant();
         BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();

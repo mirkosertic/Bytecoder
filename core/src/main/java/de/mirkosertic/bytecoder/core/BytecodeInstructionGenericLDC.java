@@ -34,7 +34,7 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeConstant theConstant = constant();
         if (theConstant instanceof BytecodeStringConstant) {
             aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
@@ -45,7 +45,12 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
         }
         if (theConstant instanceof BytecodeClassinfoConstant) {
             BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
-            aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
+            if (theClassInfo.getConstant().stringValue().startsWith("[")) {
+                BytecodeTypeRef theType = aLinkerContext.getSignatureParser().toFieldType(theClassInfo.getConstant());
+                aLinkerContext.linkTypeRef(theType);
+            } else {
+                aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
+            }
         }
     }
 }

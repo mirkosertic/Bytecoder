@@ -16,5 +16,5 @@
 package de.mirkosertic.bytecoder.ssa;
 
 public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE
+    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID
 }

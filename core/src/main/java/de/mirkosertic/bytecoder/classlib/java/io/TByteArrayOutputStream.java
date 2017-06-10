@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.io;
 
-public class BytecodeMethodHandleConstant implements BytecodeConstant {
+import java.io.IOException;
 
-    private final BytecodeReferenceKind referenceKind;
-    private final BytecodeReferenceIndex referenceIndex;
+public class TByteArrayOutputStream extends TOutputStream {
 
-    public BytecodeMethodHandleConstant(BytecodeReferenceKind aReferenceKind, BytecodeReferenceIndex aReferenceIndex) {
-        referenceKind = aReferenceKind;
-        referenceIndex = aReferenceIndex;
+    @Override
+    public void write(int aValue) throws IOException {
     }
 
-    public BytecodeReferenceKind getReferenceKind() {
-        return referenceKind;
+    @Override
+    public void close() throws IOException {
     }
 
-    public BytecodeReferenceIndex getReferenceIndex() {
-        return referenceIndex;
+    public byte[] toByteArray() throws IOException {
+        return null;
     }
 }

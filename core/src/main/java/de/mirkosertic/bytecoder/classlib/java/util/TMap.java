@@ -15,13 +15,26 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArrayIndexOutOfBoundsException;
+import java.util.Set;
 
 public interface TMap<K, V> {
 
-    boolean containsKey(K aKey) throws TArrayIndexOutOfBoundsException;
+    interface Entry<K, V> {
 
-    V put(K aKey, V aValue) throws TArrayIndexOutOfBoundsException;
+        K getKey();
 
-    V get(K aKey) throws TArrayIndexOutOfBoundsException;
+        V getValue();
+    }
+
+    boolean containsKey(K aKey);
+
+    V put(K aKey, V aValue);
+
+    V get(K aKey);
+
+    V remove(K aKey);
+
+    TCollection<V> values();
+
+    Set<Entry> entrySet();
 }

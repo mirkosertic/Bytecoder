@@ -86,4 +86,8 @@ public class TDouble extends TNumber {
     public static double parseDouble(String aValue) {
         return 0d;
     }
+
+    public static TDouble valueOf(double aValue) {
+        return new TDouble(aValue);
+    }
 }

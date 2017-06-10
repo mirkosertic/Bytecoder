@@ -15,25 +15,5 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-public interface TCollection<T> extends TIterable<T> {
-
-    boolean add(T aObject);
-
-    void clear();
-
-    boolean contains(T aObject);
-
-    boolean isEmpty();
-
-    boolean remove(T aObject);
-
-    int size();
-
-    Object[] toArray();
-
-    Object[] toArray(Object[] aTarget);
-
-    boolean addAll(TCollection<T> aOtherCollection);
-
-    boolean removeAll(TCollection<T> aOtherCollection);
+public interface TSet<T> extends TCollection<T> {
 }

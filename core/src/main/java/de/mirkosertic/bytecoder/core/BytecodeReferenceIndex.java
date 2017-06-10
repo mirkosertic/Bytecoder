@@ -18,8 +18,14 @@ package de.mirkosertic.bytecoder.core;
 public class BytecodeReferenceIndex {
 
     private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeReferenceIndex(int aIndex) {
+    public BytecodeReferenceIndex(int aIndex, BytecodeConstantPool aConstantPool) {
         index = aIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeConstant getConstant() {
+        return constantPool.constantByIndex(index - 1);
     }
 }

@@ -31,8 +31,8 @@ public class BytecodeMethod {
         attributes = aAttributes;
     }
 
-    public BytecodeAnnotations getAnnotations() {
-        return new BytecodeAnnotations(attributes);
+    public BytecodeAttributes getAttributes() {
+        return new BytecodeAttributes(attributes);
     }
 
     public BytecodeUtf8Constant getName() {
@@ -44,7 +44,7 @@ public class BytecodeMethod {
     }
 
     public BytecodeCodeAttributeInfo getCode(BytecodeClass aContextClass) {
-        BytecodeAnnotation theDelegatesTo = getAnnotations().getAnnotationByType(DelegatesTo.class.getName());
+        BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(DelegatesTo.class.getName());
         if (theDelegatesTo != null) {
             BytecodeAnnotation.ElementValue theMethodToDelegate = theDelegatesTo.getElementValueByName("methodName");
             String theDelegatingMethod = theMethodToDelegate.stringValue();

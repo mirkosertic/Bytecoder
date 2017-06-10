@@ -15,9 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArrayIndexOutOfBoundsException;
-
 public interface TList<T> extends TCollection<T> {
 
-    T get(int aIndex) throws TArrayIndexOutOfBoundsException;
+    T get(int aIndex);
 }

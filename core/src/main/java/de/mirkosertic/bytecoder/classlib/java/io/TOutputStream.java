@@ -15,7 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
+import java.io.IOException;
+
 public abstract class TOutputStream {
 
-    public abstract void write(int aValue) throws TIOException;
+    public abstract void write(int aValue) throws IOException;
+
+    public abstract void close() throws IOException;
 }

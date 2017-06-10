@@ -13,20 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TFloatTest {
+public class InvokeDynamicTest {
+
+    private static int compute(int a, int b) {
+        return a + b;
+    }
+
+    public interface Computer {
+        int compute(int a, int b);
+    }
+
+    private static int computeWith(Computer aComputer, int a, int b) {
+        return aComputer.compute(a, b);
+    }
 
     @Test
-    public void testCompare() {
-        TAssert.assertEquals(TFloat.compare(10f, 20f), -1, 0);
-        TAssert.assertEquals(TFloat.compare(10f, 10f), 0, 0);
-        TAssert.assertEquals(TFloat.compare(20f, 10f), 1, 0);
+    public void testLambda() {
+        final int x = 1;
+        final int y = 2;
+        Runnable theRun = () -> {
+            compute(x, y);
+        };
+    }
+
+    @Test
+    public void testLambdaArguments() {
+        int theResult = computeWith((x,y) -> x + y, 10, 20);
+        Assert.assertEquals(theResult, 30, 0);
     }
 }

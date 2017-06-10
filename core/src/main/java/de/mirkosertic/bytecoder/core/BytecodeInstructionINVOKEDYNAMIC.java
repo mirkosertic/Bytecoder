@@ -17,12 +17,71 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implements BytecodeInstructionInvoke {
 
-    private final byte index1;
-    private final byte index2;
+    private final int index;
+    private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKEDYNAMIC(BytecodeOpcodeAddress aIndex, byte aIndex1, byte aIndex2) {
+    public BytecodeInstructionINVOKEDYNAMIC(BytecodeOpcodeAddress aIndex, int aConstantIndex, BytecodeConstantPool aConstantPool) {
         super(aIndex);
-        index1 = aIndex1;
-        index2 = aIndex2;
+        index = aConstantIndex;
+        constantPool = aConstantPool;
+    }
+
+    public BytecodeInvokeDynamicConstant getCallSite() {
+        return (BytecodeInvokeDynamicConstant) constantPool.constantByIndex(index - 1);
+    }
+
+    private void link(BytecodeLinkerContext aLinkerContext, BytecodeReferenceKind aKind, BytecodeConstant aReference) {
+        switch (aKind) {
+            case REF_invokeStatic:
+                BytecodeMethodRefConstant theStaticReference = (BytecodeMethodRefConstant) aReference;
+
+                BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theStaticReference.getClassIndex().getClassConstant().getConstant()));
+                BytecodeNameAndTypeConstant theNameAndType = theStaticReference.getNameAndTypeIndex().getNameAndType();
+                theLinkedClass.linkVirtualMethod(theNameAndType.getNameIndex().getName().stringValue(),
+                        theNameAndType.getDescriptorIndex().methodSignature());
+                break;
+            default:
+                throw new IllegalStateException("Not implemented refkind for invokedynamic : " + aKind);
+        }
+
+    }
+
+    @Override
+    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
+
+        System.out.println(" callsite index is " + index);
+
+        BytecodeInvokeDynamicConstant theConstant = getCallSite();
+
+        System.out.println("   and maps to bs method " + theConstant.getBootstrapMethodAttributeIndex().getIndex());
+
+        BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
+        BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
+
+        BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
+
+        link(aLinkerContext, theMethodRef.getReferenceKind(), theMethodRef.getReferenceIndex().getConstant());
+
+        for (BytecodeConstant theArgument : theBootstrapMethod.getArguments()) {
+
+            if (theArgument instanceof BytecodeMethodRefConstant) {
+                BytecodeMethodRefConstant theRef = (BytecodeMethodRefConstant) theArgument;
+                BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theRef.getClassIndex().getClassConstant().getConstant()));
+                BytecodeNameAndTypeConstant theNameAndType = theRef.getNameAndTypeIndex().getNameAndType();
+
+                String theMethodName = theNameAndType.getNameIndex().getName().stringValue();
+
+                if (theMethodName.equals("<init>")) {
+                    theLinkedClass.linkConstructorInvocation(theNameAndType.getDescriptorIndex().methodSignature());
+                } else {
+                    theLinkedClass.linkVirtualMethod(theNameAndType.getNameIndex().getName().stringValue(),
+                            theNameAndType.getDescriptorIndex().methodSignature());
+                }
+            }
+            if (theArgument instanceof BytecodeMethodHandleConstant) {
+                BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theArgument;
+                link(aLinkerContext, theHandle.getReferenceKind(), theHandle.getReferenceIndex().getConstant());
+            }
+        }
     }
 }

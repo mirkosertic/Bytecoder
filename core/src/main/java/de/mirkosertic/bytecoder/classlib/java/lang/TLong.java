@@ -73,7 +73,23 @@ public class TLong extends TNumber {
         return longValue;
     }
 
+    public String toString() {
+        return "";
+    }
+
     public static long parseLong(String aValue) {
         return 0L;
+    }
+
+    public static TLong valueOf(TString aValue) {
+        return new TLong(0L);
+    }
+
+    public static TLong valueOf(long aValue) {
+        return new TLong(aValue);
+    }
+
+    public static TString toString(long aValue) {
+        return null;
     }
 }
