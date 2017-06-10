@@ -6,7 +6,7 @@ Rich Domain Model for Java Bytecode and Framework to interpret and transpile it 
 
 * Ability to cross-compile JVM Bytecode to JavaScript and other languages
 * Primary compile targets are JavaScript and WebAssembly
-* Use other toolchains such as clang or emscripten to further optimize generated code
+* Use other toolchains such as Google Closure Compiler or Clang to further optimize generated code
 * Reuse or implement cross-compileable Java Classlib
 
 ## Dead Code removal and brute force optimizations
@@ -84,6 +84,6 @@ There is Maven plugin available. It currently supports only the JavaScript backe
     </build>
 ```
 
-You have to set a main class with a valid "public static void main(String[] args)" method as an entry point. 
+You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
 The plugin will invoke the JSCompileTarget which will do all the heavy lifting. The generated
-JavaScript will be placed in the Maven "target/bytecoder" directory.
+JavaScript will be placed in the Maven `target/bytecoder` directory.
