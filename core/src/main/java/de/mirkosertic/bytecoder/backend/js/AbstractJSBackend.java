@@ -49,6 +49,7 @@ public abstract class AbstractJSBackend {
         theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
         theMathModule.registerFunction("tan", new JSFunction("return Math.tan(p1);"));
         theMathModule.registerFunction("toRadians", new JSFunction("return Math.toRadians(p1);"));
+        theMathModule.registerFunction("toDegrees", new JSFunction("return Math.toDegrees(p1);"));
         theMathModule.registerFunction("min", new JSFunction("return Math.min(p1, p2);"));
 
         JSModule theSystemModule = new JSModule();
