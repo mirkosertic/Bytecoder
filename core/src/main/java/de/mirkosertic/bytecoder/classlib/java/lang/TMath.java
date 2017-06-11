@@ -65,6 +65,9 @@ public class TMath extends TObject {
     @Import(module = "math", name = "toRadians")
     public static native double toRadians(double aValue);
 
+    @Import(module = "math", name = "toDegrees")
+    public static native double toDegrees(double aValue);
+
     @Import(module = "math", name = "tan")
     public static native double tan(double aValue);
 

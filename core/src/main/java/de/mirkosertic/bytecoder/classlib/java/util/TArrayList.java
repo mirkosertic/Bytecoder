@@ -24,6 +24,10 @@ public class TArrayList<T> implements TList<T> {
     private Object[] data;
     private int currentLength;
 
+    public TArrayList(TCollection<T> aData) {
+        this();
+    }
+
     public TArrayList() {
         data = new Object[INITIAL_CAPACITY];
         currentLength =0;

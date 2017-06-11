@@ -123,32 +123,62 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 21: { // iload = 21 (0x15)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericLOAD(theOpcodeIndex,BytecodePrimitiveTypeRef.INT, theIndex));
                     break;
                 }
                 case 22: { // lload = 22 (0x16)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericLOAD(theOpcodeIndex,BytecodePrimitiveTypeRef.LONG, theIndex));
                     break;
                 }
                 case 23: { // fload = 23 (0x17)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT, theIndex));
                     break;
                 }
                 case 24: { // dload = 24 (0x18)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericLOAD(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE, theIndex));
                     break;
                 }
                 case 25: { // aload = 25 (0x19)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionALOAD(theOpcodeIndex, theIndex));
                     break;
                 }
@@ -265,32 +295,62 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 54: { // istore = 54 (0x36)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericSTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.INT, theIndex));
                     break;
                 }
                 case 55: { // lstore = 55 (0x37)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericSTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.LONG, theIndex));
                     break;
                 }
                 case 56: { // fstore = 56 (0x38)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericSTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT, theIndex));
                     break;
                 }
                 case 57: { // dstore = 57 (0x39)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionGenericSTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.FLOAT, theIndex));
                     break;
                 }
                 case 58: { // astore = 58 (0x3a)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionASTORE(theOpcodeIndex, theIndex));
                     break;
                 }
@@ -587,11 +647,22 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 132: { // iinc = 132 (0x84)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    int theConstant;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
 
-                    int theConstant = BytecodeParserUtils.signedByteFromByteArray(aBytecodes, offset);
-                    offset++;
+                        theConstant = BytecodeParserUtils.signedShortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+
+                        theConstant = BytecodeParserUtils.signedByteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
 
                     theResult.addInstruction(new BytecodeInstructionIINC(theOpcodeIndex, theIndex, theConstant));
                     break;
@@ -779,8 +850,14 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 169: { // ret = 169 (0xa9)
-                    int theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
-                    offset++;
+                    int theIndex;
+                    if (isWideOperator) {
+                        theIndex = BytecodeParserUtils.shortFromByteArray(aBytecodes, offset);
+                        offset+=2;
+                    } else {
+                        theIndex = BytecodeParserUtils.byteFromByteArray(aBytecodes, offset);
+                        offset++;
+                    }
                     theResult.addInstruction(new BytecodeInstructionRET(theOpcodeIndex, theIndex));
                     break;
                 }
@@ -1010,21 +1087,6 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                 }
                 case 196: { // wide = 196 (0xc4)
                     wide = true;
-
-                    // Form 1
-                    // wide
-                    // <opcode>
-                    // indexbyte1
-                    // indexbyte2
-                    // where <opcode> is one of iload, fload, aload, lload, dload, istore, fstore, astore, lstore, dstore, or ret
-
-                    // Form 2
-                    // wide
-                    // iinc
-                    // indexbyte1
-                    // indexbyte2
-                    // constbyte1
-                    // constbyte2
                     break;
                 }
                 case 197: { // multianewarray = 197 (0xc5)

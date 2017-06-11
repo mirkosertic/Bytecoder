@@ -23,6 +23,11 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
     private byte[] data;
 
     @NoExceptionCheck
+    public TString(char[] aData) {
+        this();
+    }
+
+    @NoExceptionCheck
     public TString(byte[] aData) {
         data = aData;
     }
@@ -98,5 +103,9 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
 
     public TString replace(char aOldChar, char aNewChar) {
         return this;
+    }
+
+    public char[] toCharArray() {
+        return null;
     }
 }

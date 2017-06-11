@@ -29,6 +29,12 @@ public class BytecodeParserUtils {
         return (short)( ((theByte1 & 0xFF) << 8) | (theByte2 & 0xFF) );
     }
 
+    public static short signedShortFromByteArray(byte[] aData, int aOffset) {
+        byte theByte1 = aData[aOffset++];
+        byte theByte2 = aData[aOffset];
+        return (short)( (theByte1 << 8) | theByte2);
+    }
+
     public static int byteFromByteArray(byte[] aData, int aOffset) {
         return aData[aOffset] & 0xFF;
     }

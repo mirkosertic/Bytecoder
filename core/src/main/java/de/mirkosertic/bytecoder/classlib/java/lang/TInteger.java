@@ -97,4 +97,8 @@ public class TInteger extends TNumber {
     public static TString toString(int aValue) {
         return null;
     }
+
+    public static TString toHexString(int aValue) {
+        return null;
+    }
 }

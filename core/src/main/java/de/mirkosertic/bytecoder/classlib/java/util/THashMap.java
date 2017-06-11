@@ -152,4 +152,9 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         // TODO: Implement this
         return null;
     }
+
+    @Override
+    public Set<K> keySet() {
+        return null;
+    }
 }

@@ -36,5 +36,7 @@ public interface TMap<K, V> {
 
     TCollection<V> values();
 
+    Set<K> keySet();
+
     Set<Entry> entrySet();
 }
