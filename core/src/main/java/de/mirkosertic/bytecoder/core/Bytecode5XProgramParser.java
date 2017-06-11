@@ -1008,8 +1008,23 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     theResult.addInstruction(new BytecodeInstructionMONITOREXIT(theOpcodeIndex));
                     break;
                 }
-                case 196: { // wide operator = 193
+                case 196: { // wide = 196 (0xc4)
                     wide = true;
+
+                    // Form 1
+                    // wide
+                    // <opcode>
+                    // indexbyte1
+                    // indexbyte2
+                    // where <opcode> is one of iload, fload, aload, lload, dload, istore, fstore, astore, lstore, dstore, or ret
+
+                    // Form 2
+                    // wide
+                    // iinc
+                    // indexbyte1
+                    // indexbyte2
+                    // constbyte1
+                    // constbyte2
                     break;
                 }
                 case 197: { // multianewarray = 197 (0xc5)
