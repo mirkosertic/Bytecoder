@@ -15,23 +15,21 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class MemoryLocationValue extends Value {
+public class ComputedMemoryLocationWriteValue extends Value {
 
-    private final Value address;
+    private final Variable origin;
+    private final Variable offset;
 
-    public MemoryLocationValue() {
-        address = null;
+    public ComputedMemoryLocationWriteValue(Variable aOrigin, Variable aOffset) {
+        origin = aOrigin;
+        offset = aOffset;
     }
 
-    public MemoryLocationValue(Value aAddress) {
-        address = aAddress;
+    public Variable getOrigin() {
+        return origin;
     }
 
-    public boolean isDefined() {
-        return address != null;
-    }
-
-    public Value getAddress() {
-        return address;
+    public Variable getOffset() {
+        return offset;
     }
 }

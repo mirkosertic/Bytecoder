@@ -65,6 +65,10 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
         theWriter.println("'use strict';");
 
+        theWriter.println();
+        theWriter.println("var bytecoderGlobalMemory = [];");
+        theWriter.println();
+
         theWriter.println("var bytecoder = {");
 
         theWriter.println();

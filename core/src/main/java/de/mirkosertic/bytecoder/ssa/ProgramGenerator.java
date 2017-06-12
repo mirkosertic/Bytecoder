@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -428,6 +429,15 @@ public class ProgramGenerator {
                 }
             }
         }
+    }
+
+    protected Variable rootFor(Variable aVariable) {
+        Value theValue = aVariable.getValue();
+        if (theValue instanceof VariableReferenceValue) {
+            VariableReferenceValue theRef = (VariableReferenceValue) theValue;
+            return rootFor(theRef.getVariable());
+        }
+        return aVariable;
     }
 
     private void initializeBlockWith(Block aTargetBlock, BytecodeControlFlowGraph aControlFlowGraph,  ParsingHelper theHelper) {
@@ -851,8 +861,18 @@ public class ProgramGenerator {
                 aTargetBlock.addExpression(new ReturnExpression());
             } else if (theInstruction instanceof BytecodeInstructionNEW) {
                 BytecodeInstructionNEW theINS = (BytecodeInstructionNEW) theInstruction;
-                Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, new NewObjectValue(theINS.getClassInfoForObjectToCreate()));
-                theHelper.push(theNewVariable);
+
+                BytecodeClassinfoConstant theClassInfo = theINS.getClassInfoForObjectToCreate();
+                BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant());
+                if (theObjectType.name().equals(Address.class.getName())) {
+                    // At this time the exact location is unknown, the value
+                    // will be set at constructor invocation time
+                    Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new UnknownValue());
+                    theHelper.push(theNewVariable);
+                } else {
+                    Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, new NewObjectValue(theClassInfo));
+                    theHelper.push(theNewVariable);
+                }
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
                 Variable theLength = theHelper.pop();
@@ -910,14 +930,20 @@ public class ProgramGenerator {
                 Variable theTarget = theHelper.pop();
 
                 BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+                if (theType.name().equals(Address.class.getName())) {
+                    Variable theRoot = rootFor(theTarget);
+                    theRoot.setValue(theArguments.get(0).getValue());
 
-                DirectInvokeMethodValue theValue = new DirectInvokeMethodValue(theType, theMethodName, theSignature, theTarget, theArguments);
-                if (theSignature.getReturnType().isVoid()) {
-                    aTargetBlock.addExpression(new DirectInvokeMethodExpression(theValue));
                 } else {
-                    Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
-                    theHelper.push(theNewVariable);
+                    String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+
+                    DirectInvokeMethodValue theValue = new DirectInvokeMethodValue(theType, theMethodName, theSignature, theTarget, theArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.addExpression(new DirectInvokeMethodExpression(theValue));
+                    } else {
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        theHelper.push(theNewVariable);
+                    }
                 }
             } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                 BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
@@ -932,14 +958,61 @@ public class ProgramGenerator {
 
                 Variable theTarget = theHelper.pop();
 
-                InvokeVirtualMethodValue theValue = new InvokeVirtualMethodValue(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
-                if (theSignature.getReturnType().isVoid()) {
-                    aTargetBlock.addExpression(new InvokeVirtualMethodExpression(theValue));
-                } else {
-                    Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
-                    theHelper.push(theNewVariable);
-                }
+                BytecodeClassinfoConstant theTargetClass = theINS.getMethodReference().getClassIndex().getClassConstant();
+                BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theTargetClass.getConstant());
+                if (theObjectType.name().equals(Address.class.getName())) {
+                    String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+                    switch (theMethodName) {
+                        case "setIntValue": {
 
+                            Variable theOffset = theArguments.get(0);
+
+                            ComputedMemoryLocationWriteValue theLocation = new ComputedMemoryLocationWriteValue(theTarget, theOffset);
+                            Variable theNewVariable = aTargetBlock.newVariable(Type.INT, theLocation);
+                            aTargetBlock.addExpression(new SetMemoryLocationExpression(theNewVariable, theArguments.get(1)));
+                            break;
+                        }
+                        case "setObjectValue": {
+
+                            Variable theOffset = theArguments.get(0);
+
+                            ComputedMemoryLocationWriteValue theLocation = new ComputedMemoryLocationWriteValue(theTarget, theOffset);
+                            Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, theLocation);
+                            aTargetBlock.addExpression(new SetMemoryLocationExpression(theNewVariable, theArguments.get(1)));
+                            break;
+                        }
+                        case "getStart": {
+                            theHelper.push(theTarget);
+                            break;
+                        }
+                        case "getIntValue": {
+                            Variable theOffset = theArguments.get(0);
+                            ComputedMemoryLocationReadValue theLocation = new ComputedMemoryLocationReadValue(theTarget, theOffset);
+                            Variable theNewVariable = aTargetBlock.newVariable(Type.INT, theLocation);
+                            theHelper.push(theNewVariable);
+
+                            break;
+                        }
+                        case "getObjectValue": {
+                            Variable theOffset = theArguments.get(0);
+                            ComputedMemoryLocationReadValue theLocation = new ComputedMemoryLocationReadValue(theTarget, theOffset);
+                            Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, theLocation);
+                            theHelper.push(theNewVariable);
+
+                            break;
+                        }
+                        default:
+                            throw new IllegalStateException("Not implemented : " + theMethodName);
+                    }
+                } else {
+                    InvokeVirtualMethodValue theValue = new InvokeVirtualMethodValue(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.addExpression(new InvokeVirtualMethodExpression(theValue));
+                    } else {
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        theHelper.push(theNewVariable);
+                    }
+                }
             } else if (theInstruction instanceof BytecodeInstructionINVOKEINTERFACE) {
                 BytecodeInstructionINVOKEINTERFACE theINS = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
                 BytecodeMethodSignature theSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();

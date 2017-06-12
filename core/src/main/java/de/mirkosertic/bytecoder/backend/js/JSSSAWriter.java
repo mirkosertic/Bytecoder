@@ -27,65 +27,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.BlockState;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeMethodTypeExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeMethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MemoryLocationValue;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
-import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.Type;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.UnknownValue;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
+import de.mirkosertic.bytecoder.ssa.*;
 
 public class JSSSAWriter extends JSWriter {
 
@@ -167,16 +109,28 @@ public class JSSSAWriter extends JSWriter {
             print((MethodTypeValue) aValue);
         } else if (aValue instanceof InvokeMethodTypeValue) {
             print((InvokeMethodTypeValue) aValue);
-        } else if (aValue instanceof MemoryLocationValue) {
-            print((MemoryLocationValue) aValue);
+        } else if (aValue instanceof ComputedMemoryLocationReadValue) {
+            print((ComputedMemoryLocationReadValue) aValue);
+        } else if (aValue instanceof ComputedMemoryLocationWriteValue) {
+            print((ComputedMemoryLocationWriteValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    public void print(MemoryLocationValue aValue) {
+    public void print(ComputedMemoryLocationWriteValue aValue) {
         print("bytecoderGlobalMemory[");
-        print(aValue.getAddress());
+        printVariableName(aValue.getOrigin());
+        print(" + ");
+        printVariableName(aValue.getOffset());
+        print("]");
+    }
+
+    public void print(ComputedMemoryLocationReadValue aValue) {
+        print("bytecoderGlobalMemory[");
+        printVariableName(aValue.getOrigin());
+        print(" + ");
+        printVariableName(aValue.getOffset());
         print("]");
     }
 
@@ -578,15 +532,8 @@ public class JSSSAWriter extends JSWriter {
                     printVariableName(theVariable);
                     printlnComment(" is PHI function and initialized from predecessor block in flow graph");
                 } else {
-                    if (theVariable.getType() == Type.MEMORYLOCATION) {
-                        Value theValue = resolveRealValue(theVariable);
-                        if (!(theValue instanceof MemoryLocationValue)) {
-                            continue;
-                        }
-                        MemoryLocationValue theLocation = (MemoryLocationValue) theValue;
-                        if (!theLocation.isDefined()) {
-                            continue;
-                        }
+                    if (theVariable.getValue() instanceof ComputedMemoryLocationWriteValue) {
+                        continue;
                     }
                     printVariableName(theVariable);
                     print(" = ");
@@ -729,9 +676,8 @@ public class JSSSAWriter extends JSWriter {
             } else if (theExpression instanceof SetMemoryLocationExpression) {
                 SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
-                print("bytecoderGlobalMemory[");
-                printVariableName(theE.getAddress());
-                print("] = ");
+                print(theE.getAddress().getValue());
+                print(" = ");
 
                 printVariableName(theE.getValue());
                 println(";");
