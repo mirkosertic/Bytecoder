@@ -13,9 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.core;
 
-public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, METHODTYPE,
-    MEMORYLOCATION
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
+@RunWith(BytecoderUnitTestRunner.class)
+public class SynchronizedTest {
+
+    @Test
+    public void testSynchronizedBlock() {
+        synchronized (this) {
+            int x = 1 + 2;
+        }
+    }
 }
