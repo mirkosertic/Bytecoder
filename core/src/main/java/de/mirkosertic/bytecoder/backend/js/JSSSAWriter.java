@@ -61,6 +61,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MemoryLocationValue;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
 import de.mirkosertic.bytecoder.ssa.NegatedValue;
@@ -74,10 +75,12 @@ import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.Type;
 import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.UnknownValue;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -164,9 +167,17 @@ public class JSSSAWriter extends JSWriter {
             print((MethodTypeValue) aValue);
         } else if (aValue instanceof InvokeMethodTypeValue) {
             print((InvokeMethodTypeValue) aValue);
+        } else if (aValue instanceof MemoryLocationValue) {
+            print((MemoryLocationValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    public void print(MemoryLocationValue aValue) {
+        print("bytecoderGlobalMemory[");
+        print(aValue.getAddress());
+        print("]");
     }
 
     public void print(InvokeMethodTypeValue aValue) {
@@ -537,6 +548,18 @@ public class JSSSAWriter extends JSWriter {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
+    private Value resolveRealValue(Value aValue) {
+        if (aValue instanceof VariableReferenceValue) {
+            VariableReferenceValue theRef = (VariableReferenceValue) aValue;
+            return resolveRealValue(theRef.getVariable());
+        }
+        return aValue;
+    }
+
+    private Value resolveRealValue(Variable aVariable) {
+        return resolveRealValue(aVariable.getValue());
+    }
+
     public void writeExpressions(ExpressionList aExpressions) {
         for (Expression theExpression : aExpressions.toList()) {
             if (theExpression instanceof ReturnExpression) {
@@ -555,6 +578,16 @@ public class JSSSAWriter extends JSWriter {
                     printVariableName(theVariable);
                     printlnComment(" is PHI function and initialized from predecessor block in flow graph");
                 } else {
+                    if (theVariable.getType() == Type.MEMORYLOCATION) {
+                        Value theValue = resolveRealValue(theVariable);
+                        if (!(theValue instanceof MemoryLocationValue)) {
+                            continue;
+                        }
+                        MemoryLocationValue theLocation = (MemoryLocationValue) theValue;
+                        if (!theLocation.isDefined()) {
+                            continue;
+                        }
+                    }
                     printVariableName(theVariable);
                     print(" = ");
                     print(theVariable.getValue());
@@ -622,7 +655,7 @@ public class JSSSAWriter extends JSWriter {
 
 /*                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
                     print(" // ");
-                    printVariableName(theEntry.getValue());
+                    printVariableName(theEntry.getAddress());
                     print(" exported as ");
                     println(theEntry.getKey().toString());
                 }*/
@@ -693,6 +726,15 @@ public class JSSSAWriter extends JSWriter {
                 println("}");
 
                 writeExpressions(theE.getDefaultExpressions());
+            } else if (theExpression instanceof SetMemoryLocationExpression) {
+                SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
+
+                print("bytecoderGlobalMemory[");
+                printVariableName(theE.getAddress());
+                print("] = ");
+
+                printVariableName(theE.getValue());
+                println(";");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }

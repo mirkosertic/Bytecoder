@@ -343,7 +343,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
 /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
                         theJSWriter.print("// ");
-                        theJSWriter.printVariableName(theExported.getValue());
+                        theJSWriter.printVariableName(theExported.getAddress());
                         theJSWriter.print(" is exported as ");
                         theJSWriter.println(theExported.getKey().toString());
                     }*/

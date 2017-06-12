@@ -13,9 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.core;
 
-public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, METHODTYPE,
-    MEMORYLOCATION
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
+@RunWith(BytecoderUnitTestRunner.class)
+public class DirectMemoryAccessTest {
+
+    @Test
+    public void testReadAndWrite() {
+        Address theAddress = new Address(20, 100);
+        theAddress.setIntValue(5, 10);
+        int theStored = theAddress.getIntValue(5);
+        Assert.assertEquals(10, theStored, 0);
+    }
 }

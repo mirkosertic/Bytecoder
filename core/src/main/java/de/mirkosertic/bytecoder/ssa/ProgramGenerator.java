@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -80,6 +89,8 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionMONITORENTER;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionMONITOREXIT;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
@@ -107,16 +118,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.ssa.optimizer.InvokeVirtualOptimizer;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
 public class ProgramGenerator {
 
@@ -357,7 +359,7 @@ public class ProgramGenerator {
             processGotosIn(theBlock, theBlock.getExpressions());
         }
 
-        InvokeVirtualOptimizer theOptimizer = new InvokeVirtualOptimizer();
+        AllOptimizer theOptimizer = new AllOptimizer();
         theOptimizer.optimize(theProgram, linkerContext);
 
 
@@ -437,6 +439,12 @@ public class ProgramGenerator {
 
             if (theInstruction instanceof BytecodeInstructionNOP) {
                 BytecodeInstructionNOP theINS = (BytecodeInstructionNOP) theInstruction;
+                // Completely ignored
+            } else if (theInstruction instanceof BytecodeInstructionMONITORENTER) {
+                BytecodeInstructionMONITORENTER theINS = (BytecodeInstructionMONITORENTER) theInstruction;
+                // Completely ignored
+            } else if (theInstruction instanceof BytecodeInstructionMONITOREXIT) {
+                BytecodeInstructionMONITOREXIT theINS = (BytecodeInstructionMONITOREXIT) theInstruction;
                 // Completely ignored
             } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
                 BytecodeInstructionCHECKCAST theINS = (BytecodeInstructionCHECKCAST) theInstruction;

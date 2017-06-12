@@ -15,7 +15,21 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public enum Type {
-    UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, METHODTYPE,
-    MEMORYLOCATION
+public class SetMemoryLocationExpression extends Expression {
+
+    private final Variable address;
+    private final Variable value;
+
+    public SetMemoryLocationExpression(Variable aAddress, Variable aValue) {
+        address = aAddress;
+        value = aValue;
+    }
+
+    public Variable getAddress() {
+        return address;
+    }
+
+    public Variable getValue() {
+        return value;
+    }
 }
