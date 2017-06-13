@@ -15,33 +15,34 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+
+@EmulatedByRuntime
 public class Address {
 
     private int start;
-    private Object[] data;
 
-    public Address(int aStart, int aSize) {
+    public Address(int aStart) {
         start = aStart;
-        data = new Object[aSize];
     }
 
-    public int getStart() {
-        return start;
+    public static int getStart(Address aAddress) {
+        return aAddress.start;
     }
 
-    public int getIntValue(int aIndex) {
-        return (int) data[aIndex];
+    public static int getIntValue(Address aAddress, int aIndex) {
+        return (int) GC.data[aAddress.start + aIndex];
     }
 
-    public Object getObjectValue(int aIndex) {
-        return (Address) data[aIndex];
+    public static void setIntValue(Address aAddress, int aIndex, int aValue) {
+        GC.data[aAddress.start + aIndex] = aValue;
     }
 
-    public void setIntValue(int aIndex, int aValue) {
-        data[aIndex] = aValue;
+    public static Object getObjectValue(Address aAddress, int aIndex) {
+        return GC.data[aAddress.start + aIndex];
     }
 
-    public void setObjectValue(int aIndex, Address aValue) {
-        data[aIndex] = aValue;
+    public static void setObjectValue(Address aAddress, int aIndex, Object aValue) {
+        GC.data[aAddress.start + aIndex] = aValue;
     }
 }

@@ -43,7 +43,7 @@
                 <version>${project.version}</version>
                 <configuration>
                     <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                    <backend>ssacompiler</backend>
+                    <backend>jsssacompiler</backend>
                 </configuration>
                 <executions>
                     <execution>

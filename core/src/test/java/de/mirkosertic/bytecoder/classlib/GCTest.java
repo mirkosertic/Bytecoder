@@ -32,11 +32,19 @@ public class GCTest {
         Address theAlloc1 = GC.malloc(100);
         Assert.assertEquals(100, GC.usedMem(), 0);
         Assert.assertEquals(9900, GC.freeMem(), 0);
-        Assert.assertEquals(0, theAlloc1.getStart(), 0);
+        Assert.assertEquals(0, Address.getStart(theAlloc1), 0);
         Address theAlloc2 = GC.malloc(50);
-        Assert.assertEquals(100, theAlloc2.getStart(), 0);
+        Assert.assertEquals(100, Address.getStart(theAlloc2), 0);
         Assert.assertEquals(150, GC.usedMem(), 0);
         Assert.assertEquals(9850, GC.freeMem(), 0);
+    }
+
+    @Test
+    public void testMallocFree2() {
+        GC.initWithSize(10000);
+        Address thePointer = GC.malloc(100);
+        Assert.assertEquals(9900, GC.freeMem(), 0);
+        Assert.assertEquals(100, GC.usedMem(), 0);
     }
 
     @Test
@@ -47,6 +55,6 @@ public class GCTest {
         Assert.assertEquals(10000, GC.freeMem(), 0);
         Assert.assertEquals(0, GC.usedMem(), 0);
         Address theNew = GC.malloc(50);
-        Assert.assertEquals(0, theNew.getStart(), 0);
+        Assert.assertEquals(0, Address.getStart(theNew), 0);
     }
 }

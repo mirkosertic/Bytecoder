@@ -137,6 +137,18 @@ public class Block {
         throw new IllegalStateException("Successor not found for " + aTarget.getAddress());
     }
 
+    public void removeVariable(Variable aVariable) {
+        for (Expression theExpression : expressions.toList()) {
+            if (theExpression instanceof InitVariableExpression) {
+                InitVariableExpression theInit = (InitVariableExpression) theExpression;
+                if (theInit.getVariable() == aVariable) {
+                    expressions.remove(theExpression);
+                }
+            }
+        }
+        program.removeVariable(aVariable);
+    }
+
     public boolean endWithNeverReturningExpression() {
         Expression theLastExpression = expressions.lastExpression();
         return theLastExpression instanceof ReturnExpression ||

@@ -37,7 +37,7 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import de.mirkosertic.bytecoder.backend.js.JSCompileTarget;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -110,13 +110,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-    private void testJSBackendFrameworkMethod(JSCompileTarget.BackendType aBackendType, FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
+    private void testJSBackendFrameworkMethod(CompileTarget.BackendType aBackendType, FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
         Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend " + aBackendType);
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
 
-            JSCompileTarget theCompileTarget = new JSCompileTarget(testClass.getJavaClass().getClassLoader(), aBackendType);
+            CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), aBackendType);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
@@ -193,7 +193,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
         //testJSBackendFrameworkMethod(JSCompileTarget.BackendType.interpreter, aFrameworkMethod, aRunNotifier);
-        testJSBackendFrameworkMethod(JSCompileTarget.BackendType.ssacompiler, aFrameworkMethod, aRunNotifier);
+        testJSBackendFrameworkMethod(CompileTarget.BackendType.jsssacompiler, aFrameworkMethod, aRunNotifier);
         testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
     }
 }

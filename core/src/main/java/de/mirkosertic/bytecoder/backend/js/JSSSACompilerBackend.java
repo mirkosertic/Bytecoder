@@ -316,7 +316,9 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 for (Variable theVariable : theSSAProgram.getVariables()) {
                     theVariablesWriter.print("var ");
                     theVariablesWriter.printVariableName(theVariable);
-                    theVariablesWriter.println(" = null;");
+                    theVariablesWriter.print(" = null;");
+                    theVariablesWriter.print(" // type is ");
+                    theVariablesWriter.println(theVariable.getType().name());
                 }
 
                 theWriter.println();

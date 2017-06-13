@@ -20,13 +20,20 @@ public class GC {
     private static final int OFFSET_SIZE = 0;
     private static final int OFFSET_NEXT = 1;
 
+    public static Object[] data;
+
     private static Address FREE;
     private static Address USED;
 
+    public static void initTestMemory(int aSize) {
+        data = new Object[aSize];
+    }
+
     public static void initWithSize(int aSize) {
-        FREE = new Address(0, aSize);
-        FREE.setIntValue(OFFSET_SIZE, aSize);
-        FREE.setObjectValue(OFFSET_NEXT, null);
+        initTestMemory(aSize);
+        FREE = new Address(0);
+        Address.setIntValue(FREE, OFFSET_SIZE, aSize);
+        Address.setObjectValue(FREE, OFFSET_NEXT, null);
         USED = null;
     }
 
@@ -34,8 +41,8 @@ public class GC {
         long theResult = 0;
         Address theCurrent = FREE;
         while(theCurrent != null) {
-            theResult+=(int) theCurrent.getIntValue(OFFSET_SIZE);
-            theCurrent = (Address) theCurrent.getObjectValue(OFFSET_NEXT);
+            theResult+=(int) Address.getIntValue(theCurrent, OFFSET_SIZE);
+            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
         }
         return theResult;
     }
@@ -44,8 +51,8 @@ public class GC {
         long theResult = 0;
         Address theCurrent = USED;
         while(theCurrent != null) {
-            theResult+=(int) theCurrent.getIntValue(OFFSET_SIZE);
-            theCurrent = (Address) theCurrent.getObjectValue(OFFSET_NEXT);
+            theResult+=(int) Address.getIntValue(theCurrent, OFFSET_SIZE);
+            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
         }
         return theResult;
     }
@@ -54,20 +61,20 @@ public class GC {
         Address theCurrent = USED;
         Address thePrevious = null;
         while(theCurrent != null) {
-            if (theCurrent.getStart() == aPointer.getStart()) {
+            if (Address.getStart(theCurrent) == Address.getStart(aPointer)) {
                 if (thePrevious != null) {
-                    thePrevious.setIntValue(OFFSET_NEXT, theCurrent.getIntValue(OFFSET_NEXT));
+                    Address.setIntValue(thePrevious, OFFSET_NEXT, Address.getIntValue(theCurrent, OFFSET_NEXT));
                 } else {
-                    USED = (Address) theCurrent.getObjectValue(OFFSET_NEXT);
+                    USED = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
                 }
 
-                theCurrent.setObjectValue(OFFSET_NEXT, FREE);
+                Address.setObjectValue(theCurrent, OFFSET_NEXT, FREE);
                 FREE = theCurrent;
 
                 return;
             }
             thePrevious = theCurrent;
-            theCurrent = (Address) theCurrent.getObjectValue(OFFSET_NEXT);
+            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
         }
     }
 
@@ -75,16 +82,17 @@ public class GC {
         Address thePrevious = null;
         Address theCurrent = FREE;
         while(theCurrent != null) {
-            if ((int) theCurrent.getIntValue(OFFSET_SIZE) > aSize) {
+            int theCurrentSize = Address.getIntValue(theCurrent, OFFSET_SIZE);
+            if ((int) theCurrentSize > aSize) {
 
-                Address theALLOCATED = new Address(theCurrent.getStart(), aSize);
-                theALLOCATED.setIntValue(OFFSET_SIZE, aSize);
+                Address theALLOCATED = new Address(Address.getStart(theCurrent));
+                Address.setIntValue(theALLOCATED, OFFSET_SIZE, aSize);
 
-                Address theNewFree = new Address(theCurrent.getStart() + aSize, aSize);
-                theNewFree.setIntValue(OFFSET_SIZE, (int) theCurrent.getIntValue(OFFSET_SIZE) - aSize);
+                Address theNewFree = new Address(Address.getStart(theCurrent) + aSize);
+                Address.setIntValue(theNewFree, OFFSET_SIZE, theCurrentSize - aSize);
 
                 if (thePrevious != null) {
-                    thePrevious.setObjectValue(OFFSET_NEXT, theNewFree);
+                    Address.setObjectValue(thePrevious, OFFSET_NEXT, theNewFree);
                 } else {
                     FREE = theNewFree;
                 }
@@ -92,7 +100,7 @@ public class GC {
                 if (USED == null) {
                     USED = theALLOCATED;
                 } else {
-                    theALLOCATED.setObjectValue(OFFSET_NEXT, USED);
+                    Address.setObjectValue(theALLOCATED, OFFSET_NEXT, USED);
                     USED = theALLOCATED;
                 }
 
@@ -100,7 +108,7 @@ public class GC {
             }
 
             thePrevious = theCurrent;
-            theCurrent = (Address) theCurrent.getObjectValue(OFFSET_NEXT);
+            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
         }
         return null;
     }

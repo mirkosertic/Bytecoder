@@ -35,7 +35,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
-import de.mirkosertic.bytecoder.backend.js.JSCompileTarget;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -65,7 +65,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     /**
      * Backend to be used.
      */
-    @Parameter(required = true, defaultValue = "ssacompiler")
+    @Parameter(required = true, defaultValue = "jsssacompiler")
     protected String backend;
 
     /**
@@ -86,7 +86,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             ClassLoader theLoader = prepareClassLoader();
             Class theTargetClass = theLoader.loadClass(mainClass);
 
-            JSCompileTarget theCompileTarget = new JSCompileTarget(theLoader, JSCompileTarget.BackendType.valueOf(backend));
+            CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(backend));
 
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });

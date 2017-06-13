@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.GC;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -27,9 +28,10 @@ public class DirectMemoryAccessTest {
 
     @Test
     public void testReadAndWrite() {
-        Address theAddress = new Address(20, 100);
-        theAddress.setIntValue(5, 10);
-        int theStored = theAddress.getIntValue(5);
+        GC.initWithSize(100);
+        Address theAddress = new Address(20);
+        Address.setIntValue(theAddress, 5, 10);
+        int theStored = Address.getIntValue(theAddress, 5);
         Assert.assertEquals(10, theStored, 0);
     }
 }

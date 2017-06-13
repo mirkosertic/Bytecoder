@@ -63,4 +63,8 @@ public class ExpressionList {
         expressions.remove(p);
         expressions.add(p, aNewExpression);
     }
+
+    public void remove(Expression aExpression) {
+        expressions.remove(aExpression);
+    }
 }

@@ -30,10 +30,12 @@ public class Program {
 
     private final List<Block> blocks;
     private final Map<Integer, Variable> variables;
+    private int varCounter;
 
     public Program() {
         blocks = new ArrayList<>();
         variables = new HashMap<>();
+        varCounter = 0;
     }
 
     public Block createAt(BytecodeOpcodeAddress aAddress, Block.BlockType aType) {
@@ -51,7 +53,7 @@ public class Program {
     }
 
     public Variable createVariable(Type aType, Value aValue) {
-        int theIndex = variables.size();
+        int theIndex = varCounter++;
         Variable theNewVariable = new Variable(aType, "var" + theIndex, aValue);
         variables.put(theIndex, theNewVariable);
         return theNewVariable;
@@ -108,4 +110,12 @@ public class Program {
         throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
     }
 
+    public void removeVariable(Variable aVariable) {
+        for (Map.Entry<Integer, Variable> theEntry : variables.entrySet()) {
+            if (theEntry.getValue() == aVariable) {
+                variables.remove(theEntry.getKey());
+                return;
+            }
+        }
+    }
 }
