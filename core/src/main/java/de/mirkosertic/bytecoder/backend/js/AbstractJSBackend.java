@@ -16,16 +16,16 @@
 package de.mirkosertic.bytecoder.backend.js;
 
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public abstract class AbstractJSBackend {
+public abstract class AbstractJSBackend implements CompileBackend {
 
     protected final BytecodeMethodSignature theRegisterExceptionOutcomeSignature;
     protected final BytecodeMethodSignature theGetLastExceptionOutcomeSignature;
@@ -70,6 +70,4 @@ public abstract class AbstractJSBackend {
         }
         return null;
     }
-
-    public abstract String generateCodeFor(BytecodeLinkerContext aLinkerContext);
 }

@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.js;
+package de.mirkosertic.bytecoder.backend;
 
 import java.lang.reflect.Method;
 
+import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
+import de.mirkosertic.bytecoder.backend.js.JSStackMachineInterpreterBackend;
+import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
+import de.mirkosertic.bytecoder.backend.wasm.WASMSSACompilerBackend;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -27,29 +31,35 @@ import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public class JSCompileTarget {
+public class CompileTarget {
 
     public enum BackendType {
         interpreter {
             @Override
-            public AbstractJSBackend createBackend() {
+            public CompileBackend createBackend() {
                 return new JSStackMachineInterpreterBackend();
             }
         },
-        ssacompiler {
+        jsssacompiler {
             @Override
-            public AbstractJSBackend createBackend() {
+            public CompileBackend createBackend() {
                 return new JSSSACompilerBackend();
+            }
+        },
+        wasmssacompiler {
+            @Override
+            public CompileBackend createBackend() {
+                return new WASMSSACompilerBackend();
             }
         };
 
-        public abstract AbstractJSBackend createBackend();
+        public abstract CompileBackend createBackend();
     }
 
-    private final AbstractJSBackend backend;
+    private final CompileBackend backend;
     private final BytecodeLoader bytecodeLoader;
 
-    public JSCompileTarget(ClassLoader aClassLoader, BackendType aType) {
+    public CompileTarget(ClassLoader aClassLoader, BackendType aType) {
         backend = aType.createBackend();
         bytecodeLoader = new BytecodeLoader(aClassLoader, new BytecodePackageReplacer());
     }

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class Variable {
 
-    private final Type type;
+    private Type type;
     private final String name;
     private Value value;
 
@@ -45,5 +45,9 @@ public class Variable {
 
     public void setValue(Value aNewValue) {
         value = aNewValue;
+    }
+
+    public void setType(Type aType) {
+        type = aType;
     }
 }
