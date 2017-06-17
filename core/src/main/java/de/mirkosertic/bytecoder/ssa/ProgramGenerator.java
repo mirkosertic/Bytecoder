@@ -258,38 +258,12 @@ public class ProgramGenerator {
         Program theProgram = new Program();
 
         // Initialize SSA Block structure
-        Map<BytecodeBasicBlock, Block> theCreatedBlocks = new HashMap<>();
-        for (BytecodeBasicBlock theBlock : aFlowGraph.getBlocks()) {
-            Block theSingleAssignmentBlock;
-            switch (theBlock.getType()) {
-                case NORMAL:
-                    theSingleAssignmentBlock = theProgram.createAt(theBlock.getStartAddress(), Block.BlockType.NORMAL);
-                    break;
-                case EXCEPTION_HANDLER:
-                    theSingleAssignmentBlock = theProgram.createAt(theBlock.getStartAddress(), Block.BlockType.EXCEPTION_HANDLER);
-                    break;
-                case FINALLY:
-                    theSingleAssignmentBlock = theProgram.createAt(theBlock.getStartAddress(), Block.BlockType.FINALLY);
-                    break;
-                default:
-                    throw new IllegalStateException("Unsupported block type : " + theBlock.getType());
-            }
-            theCreatedBlocks.put(theBlock, theSingleAssignmentBlock);
-        }
-
-        // Initialize Block dependency graph
-        for (Map.Entry<BytecodeBasicBlock, Block> theEntry : theCreatedBlocks.entrySet()) {
-            for (BytecodeBasicBlock theSuccessor : theEntry.getKey().getSuccessors()) {
-                Block theSuccessorBlock = theCreatedBlocks.get(theSuccessor);
-                if (theSuccessorBlock == null) {
-                    throw new IllegalStateException("Cannot find successor block");
-                }
-                theEntry.getValue().addSuccessor(theSuccessorBlock);
-            }
-        }
+        Relooper theRelooper = new Relooper();
+        Map<BytecodeBasicBlock, Block> theCreatedBlocks = theRelooper.initializeBlocksFor(theProgram, aFlowGraph);
 
         Set<Block> theVisited = new HashSet<>();
-        Block theStart = theCreatedBlocks.get(aFlowGraph.blockByStartAddress(new BytecodeOpcodeAddress(0)));
+        Block theStart = theProgram.blockStartingAt(new BytecodeOpcodeAddress(0));
+
         ParsingHelper theHelper = new ParsingHelper(theStart);
 
         // At this point, local variables are initialized based on the method signature
@@ -371,7 +345,6 @@ public class ProgramGenerator {
 
         AllOptimizer theOptimizer = new AllOptimizer();
         theOptimizer.optimize(theProgram, linkerContext);
-
 
         return theProgram;
     }

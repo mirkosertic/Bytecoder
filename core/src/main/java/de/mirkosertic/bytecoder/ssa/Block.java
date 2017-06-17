@@ -48,10 +48,6 @@ public class Block {
         exported = new HashMap<>();
     }
 
-    public boolean isStartBlock() {
-        return program.getBlocks().indexOf(this) == 0;
-    }
-
     public BlockType getType() {
         return type;
     }
