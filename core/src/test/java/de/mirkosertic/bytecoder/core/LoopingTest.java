@@ -39,4 +39,12 @@ public class LoopingTest {
 
         byteData = theNewData;
     }
+
+    @Test
+    public void testSimpleSum() {
+        int theSum = 0;
+        for (int i=0;i<10;i++) {
+            theSum+=i;
+        }
+    }
 }

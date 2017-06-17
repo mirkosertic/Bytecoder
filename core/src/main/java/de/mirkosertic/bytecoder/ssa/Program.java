@@ -15,37 +15,30 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public class Program {
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-    private final List<Block> blocks;
+public class Program extends SimpleControlFlowBlock {
+
     private final Map<Integer, Variable> variables;
     private int varCounter;
 
     public Program() {
-        blocks = new ArrayList<>();
         variables = new HashMap<>();
         varCounter = 0;
     }
 
     public Block createAt(BytecodeOpcodeAddress aAddress, Block.BlockType aType) {
         Block theNewBlock = new Block(aType, this, aAddress);
-        blocks.add(theNewBlock);
+        add(theNewBlock);
         return theNewBlock;
-    }
-
-    public List<Block> getBlocks() {
-        return blocks;
     }
 
     public List<Variable> getVariables() {
@@ -59,8 +52,9 @@ public class Program {
         return theNewVariable;
     }
 
+    @Override
     public Set<BytecodeObjectTypeRef> getStaticReferences() {
-        Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
+        Set<BytecodeObjectTypeRef> theResult = super.getStaticReferences();
         for (Variable theVariable : variables.values()) {
             Value theValue = theVariable.getValue();
             if (theValue instanceof GetStaticValue) {
@@ -89,25 +83,7 @@ public class Program {
                 theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
             }
         }
-        for (Block theBlock : blocks) {
-            for (Expression theExpression : theBlock.getExpressions().toList()) {
-                if (theExpression instanceof PutStaticExpression) {
-                    PutStaticExpression theE = (PutStaticExpression) theExpression;
-                    theResult.add(BytecodeObjectTypeRef
-                            .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
-                }
-            }
-        }
         return theResult;
-    }
-
-    public Block blockStartingAt(BytecodeOpcodeAddress aAddress) {
-        for (Block theBlock : blocks) {
-            if (aAddress.equals(theBlock.getStartAddress())) {
-                return theBlock;
-            }
-        }
-        throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
     }
 
     public void removeVariable(Variable aVariable) {
