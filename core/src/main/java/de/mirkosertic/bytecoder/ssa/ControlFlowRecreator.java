@@ -21,9 +21,9 @@ import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Relooper {
+public class ControlFlowRecreator {
 
-    public Relooper() {
+    public ControlFlowRecreator() {
     }
 
     public Map<BytecodeBasicBlock, Block> initializeBlocksFor(Program aProgram, BytecodeControlFlowGraph aFlowGraph) {

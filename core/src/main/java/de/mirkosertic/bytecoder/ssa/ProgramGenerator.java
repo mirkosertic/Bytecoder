@@ -258,8 +258,8 @@ public class ProgramGenerator {
         Program theProgram = new Program();
 
         // Initialize SSA Block structure
-        Relooper theRelooper = new Relooper();
-        Map<BytecodeBasicBlock, Block> theCreatedBlocks = theRelooper.initializeBlocksFor(theProgram, aFlowGraph);
+        ControlFlowRecreator theControlFlowRecreator = new ControlFlowRecreator();
+        Map<BytecodeBasicBlock, Block> theCreatedBlocks = theControlFlowRecreator.initializeBlocksFor(theProgram, aFlowGraph);
 
         Set<Block> theVisited = new HashSet<>();
         Block theStart = theProgram.blockStartingAt(new BytecodeOpcodeAddress(0));
