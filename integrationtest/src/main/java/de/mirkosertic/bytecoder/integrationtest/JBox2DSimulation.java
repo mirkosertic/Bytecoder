@@ -157,6 +157,7 @@ public class JBox2DSimulation {
                 lastCalculated += 10;
                 timeToCalculate -= 10;
             }
+            lastCalculated = System.currentTimeMillis();
             System.out.println("End");
         }
 
