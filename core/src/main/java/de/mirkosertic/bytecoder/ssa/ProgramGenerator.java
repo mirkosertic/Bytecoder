@@ -339,6 +339,9 @@ public class ProgramGenerator {
             }
         }
 
+        // Try to recreate higher level control flow constructs
+        theControlFlowRecreator.tryToRecreateControlFlowsIn(theCreatedBlocks);
+
         for (Block theBlock : theVisited) {
             processGotosIn(theBlock, theBlock.getExpressions());
         }
@@ -349,8 +352,44 @@ public class ProgramGenerator {
         return theProgram;
     }
 
+    private void insertCodeToJumpFrom(Block aSource, Block aTarget, Expression aExpressionToInsertBefore, ExpressionList aExpressionList) {
+        BlockState theImportingState = aTarget.toStartState();
+
+        Expression theComment = new CommentExpression("Code to jump to " + aTarget.getStartAddress().getAddress());
+        aExpressionList.addBefore(theComment, aExpressionToInsertBefore);
+
+        BlockState theFinalState = aSource.toFinalState();
+
+        for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
+            Variable theVariable = theImport.getValue();
+            if (theVariable.getValue() instanceof PHIFunction) {
+                // We found one, we need to resolve a variable from the final state that satisfied the required constraints
+                Variable theFinalVariable = theFinalState.findBySlot(theImport.getKey());
+                if (theFinalVariable == null) {
+                    // Variable is not present, hence we assume it is null
+                    InitVariableExpression theInitExpression = new InitVariableExpression(theVariable.withNewValue(new NullValue()));
+                    aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
+                } else {
+                    if (!theVariable.getName().equals(theFinalVariable.getName())) {
+                        InitVariableExpression theInitExpression = new InitVariableExpression(
+                                theVariable.withNewValue(new VariableReferenceValue(theFinalVariable)));
+                        aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
+                    }
+                }
+            }
+        }
+
+    }
+
     private void processGotosIn(Block aBlock, ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
+            if (theExpression instanceof HighLevelIFExpression) {
+                // Do nothing here yet!
+                HighLevelIFExpression theIf = (HighLevelIFExpression) theExpression;
+                insertCodeToJumpFrom(aBlock, theIf.getThenBlock(), theIf.getThenBlock().getExpressions().firstExpression(), theIf.getThenBlock().getExpressions());
+                insertCodeToJumpFrom(aBlock, theIf.getElseBlock(), theIf.getElseBlock().getExpressions().firstExpression(), theIf.getElseBlock().getExpressions());
+                continue;
+            }
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (ExpressionList theList : theContainer.getExpressionLists()) {
@@ -361,31 +400,7 @@ public class ProgramGenerator {
                 GotoExpression theGOTO = (GotoExpression) theExpression;
                 Block theTargetBlock = aBlock.successorByJumpTarget(theGOTO.getJumpTarget());
 
-                BlockState theImportingState = theTargetBlock.toStartState();
-
-                Expression theComment = new CommentExpression("Code to jump to " + theTargetBlock.getStartAddress().getAddress());
-                aList.addBefore(theComment, theExpression);
-
-                BlockState theFinalState = aBlock.toFinalState();
-
-                for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
-                    Variable theVariable = theImport.getValue();
-                    if (theVariable.getValue() instanceof PHIFunction) {
-                        // We found one, we need to resolve a variable from the final state that satisfied the required constraints
-                        Variable theFinalVariable = theFinalState.findBySlot(theImport.getKey());
-                        if (theFinalVariable == null) {
-                            // Variable is not present, hence we assume it is null
-                            InitVariableExpression theInitExpression = new InitVariableExpression(theVariable.withNewValue(new NullValue()));
-                            aList.addBefore(theInitExpression, theGOTO);
-                        } else {
-                            if (!theVariable.getName().equals(theFinalVariable.getName())) {
-                                InitVariableExpression theInitExpression = new InitVariableExpression(
-                                        theVariable.withNewValue(new VariableReferenceValue(theFinalVariable)));
-                                aList.addBefore(theInitExpression, theGOTO);
-                            }
-                        }
-                    }
-                }
+                insertCodeToJumpFrom(aBlock, theTargetBlock, theGOTO, aList);
             }
         }
     }
@@ -726,7 +741,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theResult, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theResult, theINS.getJumpTarget(), theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
                 BytecodeInstructionIFNONNULL theINS = (BytecodeInstructionIFNONNULL) theInstruction;
                 Variable theValue = theHelper.pop();
@@ -736,7 +751,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theResult, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theResult, theINS.getJumpTarget(), theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theINS = (BytecodeInstructionIFICMP) theInstruction;
                 Variable theValue2 = theHelper.pop();
@@ -769,7 +784,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget(), theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theINS = (BytecodeInstructionIFACMP) theInstruction;
@@ -791,7 +806,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget(), theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theINS = (BytecodeInstructionIFCOND) theInstruction;
@@ -825,7 +840,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theNewVariable, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget(), theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
                 BytecodeInstructionObjectRETURN theINS = (BytecodeInstructionObjectRETURN) theInstruction;
                 Variable theVariable = theHelper.pop();

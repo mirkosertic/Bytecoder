@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
-
-import java.util.HashMap;
-import java.util.Map;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ControlFlowRecreator {
 
@@ -59,5 +62,41 @@ public class ControlFlowRecreator {
         }
 
         return theCreatedBlocks;
+    }
+
+    public void tryToRecreateControlFlowsIn(Map<BytecodeBasicBlock, Block> aCreatedBlocks) {
+        // We try to find blocks what may be an if statement
+        for (Map.Entry<BytecodeBasicBlock, Block> theEntry : aCreatedBlocks.entrySet()) {
+            Block theBlock = theEntry.getValue();
+            if (!theBlock.endWithNeverReturningExpression()) {
+                Set<Block> theSuccessors = theBlock.getSuccessors();
+                if (theSuccessors.size() == 2) {
+                    Iterator<Block> theIt = theSuccessors.iterator();
+                    Block theBlock1 = theIt.next();
+                    Block theBlock2 = theIt.next();
+
+                    Set<Block> theBlock1Predecessors = theBlock1.getPredecessors();
+                    Set<Block> theBlock2Predecessors = theBlock2.getPredecessors();
+                    Expression theLastExpression = theBlock.getExpressions().lastExpression();
+                    if (theBlock1Predecessors.size() == 1 && theBlock2Predecessors.size() == 1 && theLastExpression instanceof IFExpression) {
+                        // This might be one
+                        IFExpression theIF = (IFExpression) theLastExpression;
+                        BytecodeOpcodeAddress theJumpTarget = theIF.getJumpTarget();
+                        Block theThenBlock;
+                        Block theElseBlock;
+                        if (theBlock1.getStartAddress().equals(theJumpTarget)) {
+                            theThenBlock = theBlock1;
+                            theElseBlock = theBlock2;
+                        } else {
+                            theThenBlock = theBlock2;
+                            theElseBlock = theBlock1;
+                        }
+
+                        HighLevelIFExpression theHLIF = new HighLevelIFExpression(theIF.getBooleanExpression(), theThenBlock, theElseBlock);
+                        theBlock.getExpressions().replace(theIF, theHLIF);
+                    }
+                }
+            }
+        }
     }
 }

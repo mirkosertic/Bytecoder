@@ -15,22 +15,25 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Program extends SimpleControlFlowBlock {
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
+public class Program {
+
+    private final List<Block> blocks;
     private final Map<Integer, Variable> variables;
     private int varCounter;
 
     public Program() {
+        blocks = new ArrayList<>();
         variables = new HashMap<>();
         varCounter = 0;
     }
@@ -39,6 +42,23 @@ public class Program extends SimpleControlFlowBlock {
         Block theNewBlock = new Block(aType, this, aAddress);
         add(theNewBlock);
         return theNewBlock;
+    }
+
+    public void add(Block aBlock) {
+        blocks.add(aBlock);
+    }
+
+    public List<Block> getBlocks() {
+        return blocks;
+    }
+
+    public Block blockStartingAt(BytecodeOpcodeAddress aAddress) {
+        for (Block theBlock : blocks) {
+            if (aAddress.equals(theBlock.getStartAddress())) {
+                return theBlock;
+            }
+        }
+        throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
     }
 
     public List<Variable> getVariables() {
@@ -52,9 +72,18 @@ public class Program extends SimpleControlFlowBlock {
         return theNewVariable;
     }
 
-    @Override
     public Set<BytecodeObjectTypeRef> getStaticReferences() {
-        Set<BytecodeObjectTypeRef> theResult = super.getStaticReferences();
+        Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
+        for (Block theBlock : getBlocks()) {
+            for (Expression theExpression : theBlock.getExpressions().toList()) {
+                if (theExpression instanceof PutStaticExpression) {
+                    PutStaticExpression theE = (PutStaticExpression) theExpression;
+                    theResult.add(BytecodeObjectTypeRef
+                            .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
+                }
+            }
+        }
+
         for (Variable theVariable : variables.values()) {
             Value theValue = theVariable.getValue();
             if (theValue instanceof GetStaticValue) {
