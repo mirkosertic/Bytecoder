@@ -84,6 +84,11 @@ public class BytecodeBasicBlock {
                 theLastInstruction instanceof BytecodeInstructionObjectRETURN;
     }
 
+    public boolean endsWithGoto() {
+        BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
+        return theLastInstruction instanceof BytecodeInstructionGOTO;
+    }
+
     public boolean endsWithThrow() {
         BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionATHROW;

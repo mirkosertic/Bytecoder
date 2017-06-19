@@ -18,36 +18,37 @@ package de.mirkosertic.bytecoder.ssa;
 import java.util.HashSet;
 import java.util.Set;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-
-public class IFExpression extends Expression implements ExpressionListContainer {
+public class HighLevelIFExpression extends Expression implements ExpressionListContainer {
 
     private final Variable booleanExpression;
-    private final ExpressionList expressions;
-    private final BytecodeOpcodeAddress jumpTarget;
+    private final Block thenBlock;
+    private final Block elseBlock;
 
-    public IFExpression(Variable aBooleanExpression, BytecodeOpcodeAddress aJumpTarget, ExpressionList aExpressions) {
+    public HighLevelIFExpression(Variable aBooleanExpression, Block aThenBlock, Block aElseBlock) {
         booleanExpression = aBooleanExpression;
-        expressions = aExpressions;
-        jumpTarget = aJumpTarget;
-    }
-
-    public BytecodeOpcodeAddress getJumpTarget() {
-        return jumpTarget;
+        thenBlock = aThenBlock;
+        elseBlock = aElseBlock;
+        thenBlock.consumeByHighLevelControlFlowExpression();
+        elseBlock.consumeByHighLevelControlFlowExpression();
     }
 
     public Variable getBooleanExpression() {
         return booleanExpression;
     }
 
-    public ExpressionList getExpressions() {
-        return expressions;
+    public Block getThenBlock() {
+        return thenBlock;
+    }
+
+    public Block getElseBlock() {
+        return elseBlock;
     }
 
     @Override
     public Set<ExpressionList> getExpressionLists() {
         Set<ExpressionList> theResult = new HashSet<>();
-        theResult.add(expressions);
+        theResult.add(thenBlock.getExpressions());
+        theResult.add(elseBlock.getExpressions());
         return theResult;
     }
 }

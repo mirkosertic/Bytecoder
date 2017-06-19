@@ -50,7 +50,11 @@ public class BytecodeControlFlowGraph {
                         }
                     }
                 }
+                BytecodeBasicBlock theCurrentTemp = currentBlock;
                 currentBlock = new BytecodeBasicBlock(theType);
+                if (theCurrentTemp != null && !theCurrentTemp.endsWithReturn() && !theCurrentTemp.endsWithThrow() && theCurrentTemp.endsWithGoto() && !theCurrentTemp.endsWithConditionalJump()) {
+                    theCurrentTemp.addSuccessor(currentBlock);
+                }
                 blocks.add(currentBlock);
             }
             currentBlock.addInstruction(theInstruction);

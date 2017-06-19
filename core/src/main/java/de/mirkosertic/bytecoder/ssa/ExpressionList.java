@@ -38,6 +38,10 @@ public class ExpressionList {
         return expressions.size();
     }
 
+    public Expression firstExpression() {
+        return expressions.get(0);
+    }
+
     public Expression lastExpression() {
         if (expressions.isEmpty()) {
             return null;

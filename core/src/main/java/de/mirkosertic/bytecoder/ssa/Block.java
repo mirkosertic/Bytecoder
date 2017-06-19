@@ -37,6 +37,7 @@ public class Block {
     private final BlockType type;
     private final Map<VariableDescription, Variable> imported;
     private final Map<VariableDescription, Variable> exported;
+    private boolean consumedByHighLevelControlFlowExpression;
 
     public Block(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -46,6 +47,14 @@ public class Block {
         successors = new HashSet<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
+    }
+
+    public void consumeByHighLevelControlFlowExpression() {
+        consumedByHighLevelControlFlowExpression = true;
+    }
+
+    public boolean isConsumedByHighLevelControlFlowExpression() {
+        return consumedByHighLevelControlFlowExpression;
     }
 
     public BlockType getType() {
@@ -143,6 +152,10 @@ public class Block {
             }
         }
         program.removeVariable(aVariable);
+    }
+
+    public Program getProgram() {
+        return program;
     }
 
     public boolean endWithNeverReturningExpression() {
