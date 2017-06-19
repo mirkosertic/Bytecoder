@@ -292,9 +292,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 theWriter.println();
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
-                theWriter.println("console.log('" + JSWriterUtils.toClassName(theEntry.getValue().getClassName()) + "." + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + "');");
-
-                //theWriter.println("        console.log('" + theJSClassName + "." + aMethod.getName().stringValue() + "');");
+                // theWriter.println("console.log('" + JSWriterUtils.toClassName(theEntry.getValue().getClassName()) + "." + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + "');");
 
                 System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
@@ -324,7 +322,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 theWriter.println();
                 theWriter.println("        var currentLabel = " + theSSAProgram.getBlocks().get(0).getStartAddress().getAddress() + ";");
-                theWriter.println("        controlflowloop: while(true) {console.log('in loop at ' + currentLabel); switch(currentLabel) {");
+                theWriter.println("        controlflowloop: while(true) {switch(currentLabel) {");
 
                 for (Block theBlock : theSSAProgram.getBlocks()) {
 

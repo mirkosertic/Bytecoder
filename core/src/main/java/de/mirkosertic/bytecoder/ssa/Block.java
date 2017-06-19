@@ -49,6 +49,32 @@ public class Block {
         exported = new HashMap<>();
     }
 
+    public Block fallThruSuccessor() {
+        if (successors.size() == 1) {
+            return successors.iterator().next();
+        }
+        Set<Block> theSuccessors = new HashSet<>(successors);
+        Expression theLastExpression = expressions.lastExpression();
+        Set<Block> theBlocksToRemove = new HashSet<>();
+        if (theLastExpression instanceof GotoExpression) {
+            GotoExpression theGoto = (GotoExpression) theLastExpression;
+            return successorByJumpTarget(theGoto.getJumpTarget());
+        }
+        if (theLastExpression instanceof IFExpression) {
+            IFExpression theIf = (IFExpression) theLastExpression;
+            for (Block theBlock : theSuccessors) {
+                if (theBlock.getStartAddress().equals(theIf.getJumpTarget())) {
+                    theBlocksToRemove.add(theBlock);
+                }
+            }
+        }
+        theSuccessors.removeAll(theBlocksToRemove);
+        if (theSuccessors.size() != 1) {
+            throw new IllegalStateException("Expected one successor, got " + theSuccessors);
+        }
+        return theSuccessors.iterator().next();
+    }
+
     public void consumeByHighLevelControlFlowExpression() {
         consumedByHighLevelControlFlowExpression = true;
     }
@@ -165,6 +191,7 @@ public class Block {
                 theLastExpression instanceof TableSwitchExpression ||
                 theLastExpression instanceof LookupSwitchExpression ||
                 theLastExpression instanceof ThrowExpression ||
-                theLastExpression instanceof GotoExpression;
+                theLastExpression instanceof GotoExpression ||
+                theLastExpression instanceof HighLevelIFExpression;
     }
 }
