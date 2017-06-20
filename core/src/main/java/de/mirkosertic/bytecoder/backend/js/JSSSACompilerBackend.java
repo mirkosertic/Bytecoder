@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -247,7 +248,6 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println("                return 0;");
                 theWriter.println("        }");
                 theWriter.println("    },");
-                theWriter.println();
             }
 
             theEntry.getValue().forEachMethod(theMethod -> {
@@ -320,13 +320,20 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                     theVariablesWriter.println(theVariable.getType().name());
                 }
 
-                theWriter.println();
-                theWriter.println("        var currentLabel = " + theSSAProgram.getBlocks().get(0).getStartAddress().getAddress() + ";");
-                theWriter.println("        controlflowloop: while(true) {switch(currentLabel) {");
+                List<Block> theBlocksToRender = theSSAProgram.getBlocksNotAlreadyConsumedByHighLevelConstructs();
+                if (theBlocksToRender.size() == 1) {
 
-                for (Block theBlock : theSSAProgram.getBlocks()) {
+                    JSSSAWriter theJSWriter = new JSSSAWriter("        ", theWriter, aLinkerContext);
+                    theJSWriter.writeExpressions(theBlocksToRender.get(0).getExpressions());
 
-                    if (!theBlock.isConsumedByHighLevelControlFlowExpression()) {
+                } else {
+                    theWriter.println();
+                    theWriter.println(
+                            "        var currentLabel = " + theSSAProgram.getBlocks().get(0).getStartAddress().getAddress()
+                                    + ";");
+                    theWriter.println("        controlflowloop: while(true) {switch(currentLabel) {");
+
+                    for (Block theBlock : theBlocksToRender) {
                         theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
 
                         JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
@@ -360,9 +367,9 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                         theWriter.println("         }");
                     }
+                    theWriter.println("         default: throw 'Illegal state exception ' + currentLabel;");
+                    theWriter.println("        }}");
                 }
-                theWriter.println("                 default: throw 'Illegal state exception ' + currentLabel;");
-                theWriter.println("        }}");
                 theWriter.println("    },");
             });
 
