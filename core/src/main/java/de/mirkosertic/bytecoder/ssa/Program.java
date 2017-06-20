@@ -52,6 +52,16 @@ public class Program {
         return blocks;
     }
 
+    public List<Block> getBlocksNotAlreadyConsumedByHighLevelConstructs() {
+        List<Block> theResult = new ArrayList<>();
+        for (Block theBlock : blocks) {
+            if (!theBlock.isConsumedByHighLevelControlFlowExpression()) {
+                theResult.add(theBlock);
+            }
+        }
+        return theResult;
+    }
+
     public Block blockStartingAt(BytecodeOpcodeAddress aAddress) {
         for (Block theBlock : blocks) {
             if (aAddress.equals(theBlock.getStartAddress())) {

@@ -74,6 +74,19 @@
             var debug = {
                 logRuntime : function(a) {
                     console.log("Runtime was " + a + " ms");
+
+                    var theBenchmarkBody = document.getElementById("results");
+
+                    var theRow = document.createElement("tr");
+                    theBenchmarkBody.appendChild(theRow);
+
+                    var theSecondCell = document.createElement("td");
+                    theRow.appendChild(theSecondCell);
+                    theSecondCell.appendChild(document.createTextNode("" + Date.now()));
+
+                    var theTimeCell = document.createElement("td");
+                    theRow.appendChild(theTimeCell);
+                    theTimeCell.appendChild(document.createTextNode("" + a));
                 }
             };
 
@@ -92,5 +105,16 @@
 
         </script>
         <button onclick="stepFunction()" value="Click me">Click Me</button>
+        <table >
+            <thead>
+                <tr>
+                    <th>Second</th>
+                    <th>Simulation run in ms</th>
+                </tr>
+            </thead>
+            <tbody id="results">
+
+            </tbody>
+        </table>
     </body>
 </html>
