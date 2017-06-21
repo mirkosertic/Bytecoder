@@ -15,16 +15,25 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Variable {
 
     private Type type;
     private final String name;
     private Value value;
+    private final List<Expression> usages;
 
     public Variable(Type aType, String aName, Value aValue) {
         type = aType;
         name = aName;
         value = aValue;
+        usages = new ArrayList<>();
+    }
+
+    public void usedBy(Expression aExpression) {
+        usages.add(aExpression);
     }
 
     public Type getType() {
