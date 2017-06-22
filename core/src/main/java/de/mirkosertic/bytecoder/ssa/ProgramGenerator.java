@@ -270,12 +270,12 @@ public class ProgramGenerator {
         // The stack is empty
         int theCurrentIndex = 0;
         if (!aAccessFlags.isStatic()) {
-            theHelper.setLocalVariable(theCurrentIndex++, theStart.newVariable(Type.REFERENCE, new SelfReferenceParameterValue()));
+            theHelper.setLocalVariable(theCurrentIndex++, new Variable(Type.REFERENCE, "thisRef", new SelfReferenceParameterValue()));
         }
         BytecodeTypeRef[] theTypes = aSignature.getArguments();
         for (int i=0;i<theTypes.length;i++) {
             BytecodeTypeRef theRef = theTypes[i];
-            theHelper.setLocalVariable(theCurrentIndex++, theStart.newVariable(toType(theTypes[i]), new MethodParameterValue(i, theTypes[i])));
+            theHelper.setLocalVariable(theCurrentIndex++, new Variable(toType(theTypes[i]), "p" + (i + 1), new MethodParameterValue(i, theTypes[i])));
             if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
                 theCurrentIndex++;
             }

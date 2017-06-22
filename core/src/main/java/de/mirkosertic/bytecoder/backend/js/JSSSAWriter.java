@@ -673,11 +673,6 @@ public class JSSSAWriter extends JSWriter {
                             .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
                 }
 
-                if (!theThenBlock.endWithNeverReturningExpression()) {
-                    Block theDirectSuccessor = theThenBlock.fallThruSuccessor();
-                    theThenWriter.println(generateJumpCodeFor(theDirectSuccessor.getStartAddress()));
-                }
-
                 println("} else {");
 
                 Block theElseBlock = theE.getElseBlock();
@@ -688,11 +683,6 @@ public class JSSSAWriter extends JSWriter {
                 for (Block theSuccessor : theElseBlock.getSuccessors()) {
                     theElseWriter
                             .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
-                }
-
-                if (!theElseBlock.endWithNeverReturningExpression()) {
-                    Block theDirectSuccessor = theElseBlock.fallThruSuccessor();
-                    theElseWriter.println(generateJumpCodeFor(theDirectSuccessor.getStartAddress()));
                 }
 
                 println("}");

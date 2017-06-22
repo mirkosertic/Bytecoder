@@ -93,6 +93,17 @@ public class ControlFlowRecreator {
                         }
 
                         HighLevelIFExpression theHLIF = new HighLevelIFExpression(theIF.getBooleanExpression(), theThenBlock, theElseBlock);
+
+                        if (!theThenBlock.endWithNeverReturningExpression()) {
+                            Block theDirectSuccessor = theThenBlock.fallThruSuccessor();
+                            theThenBlock.addExpression(new GotoExpression(theDirectSuccessor.getStartAddress(), theThenBlock));
+                        }
+
+                        if (!theElseBlock.endWithNeverReturningExpression()) {
+                            Block theDirectSuccessor = theElseBlock.fallThruSuccessor();
+                            theElseBlock.addExpression(new GotoExpression(theDirectSuccessor.getStartAddress(), theElseBlock));
+                        }
+
                         theBlock.getExpressions().replace(theIF, theHLIF);
                     }
                 }

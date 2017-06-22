@@ -15,13 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.io.TIOException;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.classlib.java.lang.TStringBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+import de.mirkosertic.bytecoder.classlib.java.lang.TStringBuilder;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
