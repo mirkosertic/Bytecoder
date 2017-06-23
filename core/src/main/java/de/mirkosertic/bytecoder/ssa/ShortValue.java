@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ShortValue extends Value {
+public class ShortValue extends PrimitiveValue {
 
     private final short shortValue;
 

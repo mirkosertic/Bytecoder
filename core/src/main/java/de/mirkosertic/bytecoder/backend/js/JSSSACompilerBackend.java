@@ -42,6 +42,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -313,13 +314,15 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
                 JSSSAWriter theVariablesWriter = new JSSSAWriter("        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.getVariables()) {
-                    theVariablesWriter.print("var ");
-                    theVariablesWriter.printVariableName(theVariable);
-                    theVariablesWriter.print(" = null;");
-                    theVariablesWriter.print(" // type is ");
-                    theVariablesWriter.print(theVariable.getType().name());
-                    theVariablesWriter.print(" used #");
-                    theVariablesWriter.println("" + theVariable.getUsageCount());
+                    if (!(theVariable.getValue() instanceof PrimitiveValue)) {
+                        theVariablesWriter.print("var ");
+                        theVariablesWriter.print(theVariable.getName());
+                        theVariablesWriter.print(" = null;");
+                        theVariablesWriter.print(" // type is ");
+                        theVariablesWriter.print(theVariable.getType().name());
+                        theVariablesWriter.print(" used #");
+                        theVariablesWriter.println("" + theVariable.getUsageCount());
+                    }
                 }
 
                 List<Block> theBlocksToRender = theSSAProgram.getBlocksNotAlreadyConsumedByHighLevelConstructs();
@@ -343,7 +346,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                         for (Map.Entry<VariableDescription, Variable> theImported : theBlock.toStartState().getPorts()
                                 .entrySet()) {
                             theJSWriter.print("// ");
-                            theJSWriter.printVariableName(theImported.getValue());
+                            theJSWriter.printVariableNameOrValue(theImported.getValue());
                             theJSWriter.print(" is imported as ");
                             theJSWriter
                                     .println(theImported.getKey().toString() + " and type " + theImported.getValue().getValue());
@@ -362,7 +365,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
     /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
                             theJSWriter.print("// ");
-                            theJSWriter.printVariableName(theExported.getAddress());
+                            theJSWriter.printVariableNameOrValue(theExported.getAddress());
                             theJSWriter.print(" is exported as ");
                             theJSWriter.println(theExported.getKey().toString());
                         }*/

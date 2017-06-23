@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class NullValue extends Value {
+public class NullValue extends PrimitiveValue {
 }

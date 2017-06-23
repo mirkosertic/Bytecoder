@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class LongValue extends Value {
+public class LongValue extends PrimitiveValue {
 
     private final long longValue;
 

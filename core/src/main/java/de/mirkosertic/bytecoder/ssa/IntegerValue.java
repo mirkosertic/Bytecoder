@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class IntegerValue extends Value {
+public class IntegerValue extends PrimitiveValue {
 
     private final int intValue;
 

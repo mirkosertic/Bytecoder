@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-public class ClassReferenceValue extends Value {
+public class ClassReferenceValue extends PrimitiveValue {
 
     private final BytecodeObjectTypeRef type;
 

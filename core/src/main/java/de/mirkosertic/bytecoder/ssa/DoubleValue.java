@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class DoubleValue extends Value {
+public class DoubleValue extends PrimitiveValue {
 
     private final double doubleValue;
 
