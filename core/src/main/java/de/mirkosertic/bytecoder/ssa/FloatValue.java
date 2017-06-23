@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FloatValue extends Value {
+public class FloatValue extends PrimitiveValue {
 
     private final float floatValue;
 

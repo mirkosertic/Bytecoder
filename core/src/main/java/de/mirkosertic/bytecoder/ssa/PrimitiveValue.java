@@ -15,15 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class InitVariableExpression extends Expression {
-
-    private final Variable variable;
-
-    public InitVariableExpression(Variable aVariable) {
-        variable = aVariable.usedBy(this);
-    }
-
-    public Variable getVariable() {
-        return variable;
-    }
+public class PrimitiveValue extends Value {
 }

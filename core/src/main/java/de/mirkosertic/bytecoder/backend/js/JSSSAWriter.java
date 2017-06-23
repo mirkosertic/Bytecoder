@@ -73,6 +73,7 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIFunction;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
@@ -180,29 +181,29 @@ public class JSSSAWriter extends JSWriter {
 
     public void print(ComputedMemoryLocationWriteValue aValue) {
         print("bytecoderGlobalMemory[");
-        printVariableName(aValue.getOrigin());
+        printVariableNameOrValue(aValue.getOrigin());
         print(" + ");
-        printVariableName(aValue.getOffset());
+        printVariableNameOrValue(aValue.getOffset());
         print("]");
     }
 
     public void print(ComputedMemoryLocationReadValue aValue) {
         print("bytecoderGlobalMemory[");
-        printVariableName(aValue.getOrigin());
+        printVariableNameOrValue(aValue.getOrigin());
         print(" + ");
-        printVariableName(aValue.getOffset());
+        printVariableNameOrValue(aValue.getOffset());
         print("]");
     }
 
     public void print(InvokeMethodTypeValue aValue) {
         List<Variable> theVariables = aValue.getArguments();
-        printVariableName(aValue.getTarget());
+        printVariableNameOrValue(aValue.getTarget());
         print("(");
         for (int i = 0; i < theVariables.size(); i++) {
             if (i> 0) {
                 print(",");
             }
-            printVariableName(theVariables.get(i));
+            printVariableNameOrValue(theVariables.get(i));
         }
         print(")");
     }
@@ -249,7 +250,7 @@ public class JSSSAWriter extends JSWriter {
             if (i>0) {
                 print(",");
             }
-            printVariableName(theDimensions.get(i));
+            printVariableNameOrValue(theDimensions.get(i));
         }
         print("]");
         print(",");
@@ -265,9 +266,9 @@ public class JSSSAWriter extends JSWriter {
     public void print(InstanceOfValue aValue) {
         Variable theVariable = aValue.getVariable();
         print("(");
-        printVariableName(theVariable);
+        printVariableNameOrValue(theVariable);
         print(" == null ? false : ");
-        printVariableName(theVariable);
+        printVariableNameOrValue(theVariable);
         print(".clazz.instanceOfType(");
 
         BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
@@ -288,7 +289,7 @@ public class JSSSAWriter extends JSWriter {
     public void print(NegatedValue aValue) {
         Variable theVariable = aValue.getVariable();
         print("(-");
-        printVariableName(theVariable);
+        printVariableNameOrValue(theVariable);
         print(")");
     }
 
@@ -296,14 +297,14 @@ public class JSSSAWriter extends JSWriter {
         Variable theVariable1 = aValue.getValue1();
         Variable theVariable2 = aValue.getValue2();
         print("(");
-        printVariableName(theVariable1);
+        printVariableNameOrValue(theVariable1);
         print(" > ");
-        printVariableName(theVariable2);
+        printVariableNameOrValue(theVariable2);
         print(" ? 1 ");
         print(" : (");
-        printVariableName(theVariable1);
+        printVariableNameOrValue(theVariable1);
         print(" < ");
-        printVariableName(theVariable2);
+        printVariableNameOrValue(theVariable2);
         print(" ? -1 : 0))");
     }
 
@@ -313,7 +314,7 @@ public class JSSSAWriter extends JSWriter {
         Object theDefaultValue = theType.defaultValue();
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
         print("bytecoder.newArray(");
-        printVariableName(theLength);
+        printVariableNameOrValue(theLength);
         print(",");
         print(theStrDefault);
         print(")");
@@ -340,20 +341,20 @@ public class JSSSAWriter extends JSWriter {
 
     public void print(ArrayLengthValue aValue) {
         Variable theArray = aValue.getArray();
-        printVariableName(theArray);
+        printVariableNameOrValue(theArray);
         print(".data.length");
     }
 
     public void printArrayIndexReference(Variable aVariable) {
         print(".data[");
-        printVariableName(aVariable);
+        printVariableNameOrValue(aVariable);
         print("]");
     }
 
     public void print(ArrayEntryValue aValue) {
         Variable theArray = aValue.getArray();
         Variable theIndex = aValue.getIndex();
-        printVariableName(theArray);
+        printVariableNameOrValue(theArray);
         printArrayIndexReference(theIndex);
     }
 
@@ -362,14 +363,14 @@ public class JSSSAWriter extends JSWriter {
         Variable theValue = aValue.getVariable();
         switch (theTargetType) {
             case FLOAT:
-                printVariableName(theValue);
+                printVariableNameOrValue(theValue);
                 break;
             case DOUBLE:
-                printVariableName(theValue);
+                printVariableNameOrValue(theValue);
                 break;
             default:
                 print("Math.floor(");
-                printVariableName(theValue);
+                printVariableNameOrValue(theValue);
                 print(")");
                 break;
         }
@@ -378,13 +379,13 @@ public class JSSSAWriter extends JSWriter {
     public void print(GetFieldValue aValue) {
         Variable theTarget = aValue.getTarget();
         BytecodeFieldRefConstant theField = aValue.getField();
-        printVariableName(theTarget);
+        printVariableNameOrValue(theTarget);
         printInstanceFieldReference(theField);
     }
 
     public void print(BinaryValue aValue) {
         Variable theValue1 = aValue.getValue1();
-        printVariableName(theValue1);
+        printVariableNameOrValue(theValue1);
         switch (aValue.getOperator()) {
             case ADD:
                 print(" + ");
@@ -441,12 +442,12 @@ public class JSSSAWriter extends JSWriter {
                 throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
         }
         Variable theValue2 = aValue.getValue2();
-        printVariableName(theValue2);
+        printVariableNameOrValue(theValue2);
     }
 
     public void print(FixedBinaryValue aValue) {
         Variable theValue1 = aValue.getValue1();
-        printVariableName(theValue1);
+        printVariableNameOrValue(theValue1);
         switch (aValue.getOperator()) {
             case ISNONNULL:
                 print(" != null ");
@@ -468,7 +469,7 @@ public class JSSSAWriter extends JSWriter {
 
     public void print(VariableReferenceValue aValue) {
         Variable theVariable = aValue.getVariable();
-        printVariableName(theVariable);
+        printVariableNameOrValue(theVariable);
     }
 
     public void print(NewObjectValue aValue) {
@@ -490,7 +491,7 @@ public class JSSSAWriter extends JSWriter {
             if (i> 0) {
                 print(",");
             }
-            printVariableName(theVariables.get(i));
+            printVariableNameOrValue(theVariables.get(i));
         }
         print(")");
     }
@@ -506,10 +507,10 @@ public class JSSSAWriter extends JSWriter {
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
         print("(");
 
-        printVariableName(theTarget);
+        printVariableNameOrValue(theTarget);
         for (int i = 0; i < theVariables.size(); i++) {
             print(",");
-            printVariableName(theVariables.get(i));
+            printVariableNameOrValue(theVariables.get(i));
         }
         print(")");
     }
@@ -522,15 +523,15 @@ public class JSSSAWriter extends JSWriter {
 
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
 
-        printVariableName(theTarget);
+        printVariableNameOrValue(theTarget);
         print(".clazz.resolveVirtualMethod(");
         print(theMethodIdentifier.getIdentifier());
         print(")(");
 
-        printVariableName(theTarget);
+        printVariableNameOrValue(theTarget);
         for (int i = 0; i < theVariables.size(); i++) {
             print(",");
-            printVariableName(theVariables.get(i));
+            printVariableNameOrValue(theVariables.get(i));
         }
         print(")");
     }
@@ -543,8 +544,12 @@ public class JSSSAWriter extends JSWriter {
         printStaticFieldReference(aValue.getField());
     }
 
-    public void printVariableName(Variable aVariable) {
-        print(aVariable.getName());
+    public void printVariableNameOrValue(Variable aVariable) {
+        if (aVariable.getValue() instanceof PrimitiveValue) {
+            print(aVariable.getValue());
+        } else {
+            print(aVariable.getName());
+        }
     }
 
     public void printStaticFieldReference(BytecodeFieldRefConstant aField) {
@@ -589,13 +594,17 @@ public class JSSSAWriter extends JSWriter {
                 Variable theVariable = theE.getVariable();
                 if (theVariable.getValue() instanceof PHIFunction) {
                     print("// ");
-                    printVariableName(theVariable);
+                    printVariableNameOrValue(theVariable);
                     println(" is PHI function and initialized from predecessor block in flow graph");
                 } else {
                     if (theVariable.getValue() instanceof ComputedMemoryLocationWriteValue) {
                         continue;
                     }
-                    printVariableName(theVariable);
+                    if (theVariable.getValue() instanceof PrimitiveValue) {
+                        continue;
+                    }
+
+                    print(theVariable.getName());
                     print(" = ");
                     print(theVariable.getValue());
                     println(";");
@@ -606,19 +615,19 @@ public class JSSSAWriter extends JSWriter {
                 Variable theVariable = theE.getVariable();
                 printStaticFieldReference(theField);
                 print(" = ");
-                printVariableName(theVariable);
+                printVariableNameOrValue(theVariable);
                 println(";");
             } else if (theExpression instanceof ReturnVariableExpression) {
                 ReturnVariableExpression theE = (ReturnVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();
                 print("return ");
-                printVariableName(theVariable);
+                printVariableNameOrValue(theVariable);
                 println(";");
             } else if (theExpression instanceof ThrowExpression) {
                 ThrowExpression theE = (ThrowExpression) theExpression;
                 Variable theVariable = theE.getVariable();
                 print("throw ");
-                printVariableName(theVariable);
+                printVariableNameOrValue(theVariable);
                 println(";");
             } else if (theExpression instanceof InvokeVirtualMethodExpression) {
                 InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
@@ -641,16 +650,16 @@ public class JSSSAWriter extends JSWriter {
                 Variable theTarget = theE.getTarget();
                 BytecodeFieldRefConstant theField = theE.getField();
                 Variable thevalue = theE.getValue();
-                printVariableName(theTarget);
+                printVariableNameOrValue(theTarget);
                 printInstanceFieldReference(theField);
                 print(" = ");
-                printVariableName(thevalue);
+                printVariableNameOrValue(thevalue);
                 println(";");
             } else if (theExpression instanceof IFExpression) {
                 IFExpression theE = (IFExpression) theExpression;
                 Variable theBooleanExpression = theE.getBooleanExpression();
                 print("if (");
-                printVariableName(theBooleanExpression);
+                printVariableNameOrValue(theBooleanExpression);
                 println(") {");
 
                 withDeeperIndent().writeExpressions(theE.getExpressions());
@@ -660,7 +669,7 @@ public class JSSSAWriter extends JSWriter {
                 HighLevelIFExpression theE = (HighLevelIFExpression) theExpression;
                 Variable theBooleanExpression = theE.getBooleanExpression();
                 print("if (");
-                printVariableName(theBooleanExpression);
+                printVariableNameOrValue(theBooleanExpression);
                 println(") {");
 
                 JSSSAWriter theThenWriter = withDeeperIndent();
@@ -692,7 +701,7 @@ public class JSSSAWriter extends JSWriter {
 
 /*                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
                     print(" // ");
-                    printVariableName(theEntry.getAddress());
+                    printVariableNameOrValue(theEntry.getAddress());
                     print(" exported as ");
                     println(theEntry.getKey().toString());
                 }*/
@@ -703,10 +712,10 @@ public class JSSSAWriter extends JSWriter {
                 Variable theArray = theE.getArray();
                 Variable theIndex = theE.getIndex();
                 Variable theValue = theE.getValue();
-                printVariableName(theArray);
+                printVariableNameOrValue(theArray);
                 printArrayIndexReference(theIndex);
                 print(" = ");
-                printVariableName(theValue);
+                printVariableNameOrValue(theValue);
                 println(";");
             } else if (theExpression instanceof CheckCastExpression) {
                 CheckCastExpression theE = (CheckCastExpression) theExpression;
@@ -716,11 +725,11 @@ public class JSSSAWriter extends JSWriter {
                 Variable theVariable = theE.getVariable();
 
                 print("if (");
-                printVariableName(theVariable);
+                printVariableNameOrValue(theVariable);
                 print(" < ");
                 print(theE.getLowValue());
                 print(" || ");
-                printVariableName(theVariable);
+                printVariableNameOrValue(theVariable);
                 print(" > ");
                 print(theE.getHighValue());
                 println(") {");
@@ -730,7 +739,7 @@ public class JSSSAWriter extends JSWriter {
 
                 println("}");
                 print("switch(");
-                printVariableName(theVariable);
+                printVariableNameOrValue(theVariable);
                 print(" - ");
                 print(theE.getLowValue());
                 println(") {");
@@ -748,7 +757,7 @@ public class JSSSAWriter extends JSWriter {
             } else if (theExpression instanceof LookupSwitchExpression) {
                 LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
                 print("switch(");
-                printVariableName(theE.getVariable());
+                printVariableNameOrValue(theE.getVariable());
                 println(") {");
 
                 for (Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
@@ -769,7 +778,7 @@ public class JSSSAWriter extends JSWriter {
                 print(theE.getAddress().getValue());
                 print(" = ");
 
-                printVariableName(theE.getValue());
+                printVariableNameOrValue(theE.getValue());
                 println(";");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);

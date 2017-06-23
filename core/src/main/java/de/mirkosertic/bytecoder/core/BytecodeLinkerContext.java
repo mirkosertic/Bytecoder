@@ -183,7 +183,7 @@ public class BytecodeLinkerContext {
     public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
         List<BytecodeLinkedClass> theResult = new ArrayList<>();
         for (BytecodeLinkedClass theClass : linkedClasses.values()) {
-            if (theClass.containsVirtualMethod(aIdentifier)) {
+            if (theClass.containsVirtualMethod(aIdentifier) && !theClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theResult.add(theClass);
             }
         }
