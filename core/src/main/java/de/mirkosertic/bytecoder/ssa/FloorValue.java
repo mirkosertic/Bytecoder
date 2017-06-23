@@ -19,8 +19,8 @@ public class FloorValue extends Value {
 
     private final Value value;
 
-    public FloorValue(Value value) {
-        this.value = value;
+    public FloorValue(Value aValue) {
+        value = aValue;
     }
 
     public Value getValue() {

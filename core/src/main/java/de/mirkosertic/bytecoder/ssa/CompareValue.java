@@ -21,8 +21,8 @@ public class CompareValue extends Value {
     private final Variable value2;
 
     public CompareValue(Variable aValue1, Variable aValue2) {
-        this.value1 = aValue1;
-        this.value2 = aValue2;
+        value1 = aValue1.usedBy(this);
+        value2 = aValue2.usedBy(this);
     }
 
     public Variable getValue1() {

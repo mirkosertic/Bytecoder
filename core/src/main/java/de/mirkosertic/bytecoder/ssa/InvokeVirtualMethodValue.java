@@ -28,8 +28,11 @@ public class InvokeVirtualMethodValue extends Value {
     public InvokeVirtualMethodValue(BytecodeNameAndTypeConstant aMethod, Variable aTarget,
                                     List<Variable> aArguments) {
         method = aMethod;
-        target = aTarget;
+        target = aTarget.usedBy(this);
         arguments = aArguments;
+        for (Variable theVariable : aArguments) {
+            theVariable.usedBy(this);
+        }
     }
 
     public BytecodeNameAndTypeConstant getMethod() {

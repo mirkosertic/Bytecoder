@@ -27,7 +27,7 @@ public class IFExpression extends Expression implements ExpressionListContainer 
     private final BytecodeOpcodeAddress jumpTarget;
 
     public IFExpression(Variable aBooleanExpression, BytecodeOpcodeAddress aJumpTarget, ExpressionList aExpressions) {
-        booleanExpression = aBooleanExpression;
+        booleanExpression = aBooleanExpression.usedBy(this);
         expressions = aExpressions;
         jumpTarget = aJumpTarget;
     }

@@ -20,7 +20,7 @@ public class VariableReferenceValue extends Value {
     private final Variable variable;
 
     public VariableReferenceValue(Variable aVariable) {
-        variable = aVariable;
+        variable = aVariable.usedBy(this);
     }
 
     public Variable getVariable() {

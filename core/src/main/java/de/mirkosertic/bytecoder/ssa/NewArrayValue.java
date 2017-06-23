@@ -24,7 +24,7 @@ public class NewArrayValue extends Value {
 
     public NewArrayValue(BytecodeTypeRef aType, Variable aLength) {
         type = aType;
-        length = aLength;
+        length = aLength.usedBy(this);
     }
 
     public BytecodeTypeRef getType() {

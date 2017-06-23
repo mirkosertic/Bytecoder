@@ -24,7 +24,7 @@ public class PutStaticExpression extends Expression {
 
     public PutStaticExpression(BytecodeFieldRefConstant aField, Variable aVariable) {
         field = aField;
-        variable = aVariable;
+        variable = aVariable.usedBy(this);
     }
 
     public BytecodeFieldRefConstant getField() {

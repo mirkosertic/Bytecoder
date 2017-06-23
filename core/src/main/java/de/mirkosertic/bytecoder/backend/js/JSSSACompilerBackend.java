@@ -317,7 +317,9 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                     theVariablesWriter.printVariableName(theVariable);
                     theVariablesWriter.print(" = null;");
                     theVariablesWriter.print(" // type is ");
-                    theVariablesWriter.println(theVariable.getType().name());
+                    theVariablesWriter.print(theVariable.getType().name());
+                    theVariablesWriter.print(" used #");
+                    theVariablesWriter.println("" + theVariable.getUsageCount());
                 }
 
                 List<Block> theBlocksToRender = theSSAProgram.getBlocksNotAlreadyConsumedByHighLevelConstructs();

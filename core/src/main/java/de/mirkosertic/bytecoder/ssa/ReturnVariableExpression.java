@@ -20,7 +20,7 @@ public class ReturnVariableExpression extends Expression {
     private final Variable variable;
 
     public ReturnVariableExpression(Variable aVariable) {
-        variable = aVariable;
+        variable = aVariable.usedBy(this);
     }
 
     public Variable getVariable() {

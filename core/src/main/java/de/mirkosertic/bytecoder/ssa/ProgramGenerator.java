@@ -474,29 +474,25 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionDUP) {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
                 Variable theVariable = theHelper.peek();
-                Variable theClone = aTargetBlock.newVariable(theVariable.getType(), new VariableReferenceValue(theVariable));
-                theHelper.push(theClone);
+                theHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionDUP2X1) {
                 BytecodeInstructionDUP2X1 theINS = (BytecodeInstructionDUP2X1) theInstruction;
                 Variable theValue1 = theHelper.pop();
                 if (theValue1.getType() == Type.LONG || theValue1.getType() == Type.DOUBLE) {
                     Variable theValue2 = theHelper.pop();
-                    Variable theClone1 = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue2));
 
                     theHelper.push(theValue1);
                     theHelper.push(theValue2);
-                    theHelper.push(theClone1);
+                    theHelper.push(theValue2);
                 } else {
                     Variable theValue2 = theHelper.pop();
                     Variable theValue3 = theHelper.pop();
-                    Variable theClone1 = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue2));
-                    Variable theClone2 = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue2));
 
                     theHelper.push(theValue2);
                     theHelper.push(theValue1);
                     theHelper.push(theValue3);
-                    theHelper.push(theClone2);
-                    theHelper.push(theClone1);
+                    theHelper.push(theValue2);
+                    theHelper.push(theValue2);
                 }
             } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                 BytecodeInstructionDUPX1 theINS = (BytecodeInstructionDUPX1) theInstruction;
@@ -505,8 +501,8 @@ public class ProgramGenerator {
 
                 theHelper.push(theValue1);
                 theHelper.push(theValue2);
-                Variable theClone = aTargetBlock.newVariable(theValue1.getType(), new VariableReferenceValue(theValue1));
-                theHelper.push(theClone);
+                theHelper.push(theValue1);
+
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 BytecodeInstructionGETSTATIC theINS = (BytecodeInstructionGETSTATIC) theInstruction;
                 GetStaticValue theValue = new GetStaticValue(theINS.getConstant());

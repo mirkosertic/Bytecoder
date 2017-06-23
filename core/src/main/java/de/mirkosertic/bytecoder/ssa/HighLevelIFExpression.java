@@ -25,7 +25,7 @@ public class HighLevelIFExpression extends Expression implements ExpressionListC
     private final Block elseBlock;
 
     public HighLevelIFExpression(Variable aBooleanExpression, Block aThenBlock, Block aElseBlock) {
-        booleanExpression = aBooleanExpression;
+        booleanExpression = aBooleanExpression.usedBy(this);
         thenBlock = aThenBlock;
         elseBlock = aElseBlock;
         thenBlock.consumeByHighLevelControlFlowExpression();
