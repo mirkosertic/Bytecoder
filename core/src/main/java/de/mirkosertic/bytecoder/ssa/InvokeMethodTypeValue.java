@@ -23,8 +23,11 @@ public class InvokeMethodTypeValue extends Value {
     private final List<Variable> arguments;
 
     public InvokeMethodTypeValue(Variable aTarget, List<Variable> aArguments) {
-        target = aTarget;
+        target = aTarget.usedBy(this);
         arguments = aArguments;
+        for (Variable theVariable : aArguments) {
+            theVariable.usedBy(this);
+        }
     }
 
     public Variable getTarget() {

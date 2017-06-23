@@ -21,8 +21,8 @@ public class ComputedMemoryLocationWriteValue extends Value {
     private final Variable offset;
 
     public ComputedMemoryLocationWriteValue(Variable aOrigin, Variable aOffset) {
-        origin = aOrigin;
-        offset = aOffset;
+        origin = aOrigin.usedBy(this);
+        offset = aOffset.usedBy(this);
     }
 
     public Variable getOrigin() {

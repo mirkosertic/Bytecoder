@@ -27,7 +27,7 @@ public class FixedBinaryValue extends Value {
     private final Operator operator;
 
     public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
+        value1 = aValue1.usedBy(this);
         operator = aOperator;
     }
 

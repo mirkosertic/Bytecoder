@@ -21,8 +21,8 @@ public class ArrayEntryValue extends Value {
     private final Variable index;
 
     public ArrayEntryValue(Variable aArray, Variable aIndex) {
-        array = aArray;
-        index = aIndex;
+        array = aArray.usedBy(this);
+        index = aIndex.usedBy(this);
     }
 
     public Variable getArray() {

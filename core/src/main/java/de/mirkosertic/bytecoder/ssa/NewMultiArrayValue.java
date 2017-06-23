@@ -27,6 +27,9 @@ public class NewMultiArrayValue extends Value {
     public NewMultiArrayValue(BytecodeTypeRef aType, List<Variable> aDimensions) {
         type = aType;
         dimensions = aDimensions;
+        for (Variable theVariable : aDimensions) {
+            theVariable.usedBy(this);
+        }
     }
 
     public BytecodeTypeRef getType() {

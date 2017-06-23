@@ -24,7 +24,7 @@ public class GetFieldValue extends Value {
 
     public GetFieldValue(BytecodeFieldRefConstant aField, Variable aTarget) {
         field = aField;
-        target = aTarget;
+        target = aTarget.usedBy(this);
     }
 
     public BytecodeFieldRefConstant getField() {

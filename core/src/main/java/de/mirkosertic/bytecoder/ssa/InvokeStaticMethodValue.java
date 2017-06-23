@@ -27,6 +27,9 @@ public class InvokeStaticMethodValue extends Value {
     public InvokeStaticMethodValue(BytecodeMethodRefConstant aMethod, List<Variable> aArguments) {
         method = aMethod;
         arguments = aArguments;
+        for (Variable theVariable : aArguments) {
+            theVariable.usedBy(this);
+        }
     }
 
     public BytecodeMethodRefConstant getMethod() {

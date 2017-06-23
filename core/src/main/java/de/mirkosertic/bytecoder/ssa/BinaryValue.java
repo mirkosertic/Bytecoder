@@ -45,9 +45,9 @@ public class BinaryValue extends Value {
     private final Variable value2;
 
     public BinaryValue(Variable aValue1, Operator aOperator, Variable aValue2) {
-        value1 = aValue1;
+        value1 = aValue1.usedBy(this);
         operator = aOperator;
-        value2 = aValue2;
+        value2 = aValue2.usedBy(this);
     }
 
     public Variable getValue1() {

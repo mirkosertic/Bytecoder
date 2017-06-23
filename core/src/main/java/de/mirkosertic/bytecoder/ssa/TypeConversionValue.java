@@ -23,7 +23,7 @@ public class TypeConversionValue extends Value {
     private final BytecodePrimitiveTypeRef targetType;
 
     public TypeConversionValue(Variable aVariable, BytecodePrimitiveTypeRef aTargetType) {
-        variable = aVariable;
+        variable = aVariable.usedBy(this);
         targetType = aTargetType;
     }
 
