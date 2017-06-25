@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -127,6 +128,16 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
         theWriter.println("             theInstance.data[i] = aDefault;");
         theWriter.println("          }");
         theWriter.println("          return theInstance;");
+        theWriter.println("     },");
+        theWriter.println();
+        theWriter.println("     bootstrap : function() {");
+        aLinkerContext.forEachClass(theEntry -> {
+            if (!theEntry.getValue().getAccessFlags().isInterface()) {
+                theWriter.print("          ");
+                theWriter.print(JSWriterUtils.toClassName(theEntry.getKey()));
+                theWriter.println(".classInitCheck();");
+            }
+        });
         theWriter.println("     }");
         theWriter.println("}");
         theWriter.println();
@@ -147,9 +158,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println("    staticFields : {");
 
                 theWriter.println("        name : '" + theEntry.getValue().getClassName().name() + "',");
-                if (theEntry.getValue().hasClassInitializer()) {
-                    theWriter.println("        classInitialized : false,");
-                }
+                theWriter.println("        classInitialized : false,");
                 theEntry.getValue().forEachStaticField(
                         aFieldEntry -> theWriter.println("        " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
                 theWriter.println("    },");
@@ -211,21 +220,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    classInitCheck : function() {");
-                if (theEntry.getValue().hasClassInitializer()) {
-                    theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
-                    theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
-                    theWriter.println("            " + theJSClassName + ".VOIDclinit();");
-                    theWriter.println("        }");
-                }
-                theWriter.println("    },");
-                theWriter.println();
-
-
                 theWriter.println("    emptyInstance : function() {");
-                if (theEntry.getValue().hasClassInitializer()) {
-                    theWriter.println("        " + theJSClassName + ".classInitCheck();");
-                }
                 theWriter.println("        return {data: {");
                 theEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
                 theWriter.println("        }, clazz: " + JSWriterUtils.toClassName(theEntry.getKey())+ "};");
@@ -250,6 +245,8 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println("        }");
                 theWriter.println("    },");
             }
+
+            Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
 
             theEntry.getValue().forEachMethod(theMethod -> {
 
@@ -302,13 +299,7 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theFlowGraph, theMethod.getSignature(), theMethod.getAccessFlags());
 
-                theWriter.println("        // Brute force static references init");
-                Set<BytecodeObjectTypeRef> theStaticReferences = theSSAProgram.getStaticReferences();
-                for (BytecodeObjectTypeRef theRef : theStaticReferences) {
-                    theWriter.print("        ");
-                    theWriter.print(JSWriterUtils.toClassName(theRef));
-                    theWriter.println(".classInitCheck();");
-                }
+                theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
                 theWriter.println("        // # basic blocks in flow graph : " + theFlowGraph.getBlocks().size());
 
@@ -377,6 +368,24 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 }
                 theWriter.println("    },");
             });
+
+
+            theWriter.println();
+            theWriter.println("    classInitCheck : function() {");
+            theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
+            theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
+            for (BytecodeObjectTypeRef theRef : theStaticReferences) {
+                theWriter.print("            ");
+                theWriter.print(JSWriterUtils.toClassName(theRef));
+                theWriter.println(".classInitCheck();");
+            }
+            if (theEntry.getValue().hasClassInitializer()) {
+                theWriter.println("            " + theJSClassName + ".VOIDclinit();");
+            }
+            theWriter.println("        }");
+
+            theWriter.println("    },");
+            theWriter.println();
 
             theWriter.println("}");
             theWriter.println();
