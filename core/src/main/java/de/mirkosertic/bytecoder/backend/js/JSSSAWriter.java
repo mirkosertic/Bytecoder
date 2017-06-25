@@ -559,7 +559,7 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
-        print(".data.");
+        print(".");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 

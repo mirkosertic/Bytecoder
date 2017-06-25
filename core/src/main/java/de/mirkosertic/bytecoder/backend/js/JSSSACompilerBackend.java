@@ -221,9 +221,9 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                 theWriter.println();
 
                 theWriter.println("    emptyInstance : function() {");
-                theWriter.println("        return {data: {");
+                theWriter.println("        return {");
                 theEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
-                theWriter.println("        }, clazz: " + JSWriterUtils.toClassName(theEntry.getKey())+ "};");
+                theWriter.println("            clazz: " + JSWriterUtils.toClassName(theEntry.getKey())+ "};");
                 theWriter.println("    },");
                 theWriter.println();
 
