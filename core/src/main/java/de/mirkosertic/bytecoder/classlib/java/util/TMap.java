@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import java.util.Set;
-
 public interface TMap<K, V> {
 
     interface Entry<K, V> {
@@ -36,7 +34,7 @@ public interface TMap<K, V> {
 
     TCollection<V> values();
 
-    Set<K> keySet();
+    TSet<K> keySet();
 
-    Set<Entry> entrySet();
+    TSet<Entry<K, V>> entrySet();
 }
