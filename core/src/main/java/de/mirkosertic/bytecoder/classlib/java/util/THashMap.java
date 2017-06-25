@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
@@ -143,18 +146,34 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
 
     @Override
     public TCollection<V> values() {
-        // TODO: Implement this
-        return null;
+        TSet<V> theResult = new THashSet<>();
+        for (int i=0;i<buckets.size();i++) {
+            TArrayList<Map.Entry<K,V>> theEntries = buckets.get(i).values;
+            for (int k=0;k<theEntries.size();k++) {
+                theResult.add(theEntries.get(k).getValue());
+            }
+        }
+        return theResult;
     }
 
     @Override
-    public Set<TMap.Entry> entrySet() {
-        // TODO: Implement this
-        return null;
+    public TSet<TMap.Entry<K, V>> entrySet() {
+        TSet<TMap.Entry<K,V>> theResult = new THashSet<>();
+        for (int i=0;i<buckets.size();i++) {
+            theResult.addAll(buckets.get(i).values);
+        }
+        return theResult;
     }
 
     @Override
-    public Set<K> keySet() {
-        return null;
+    public TSet<K> keySet() {
+        TSet<K> theResult = new THashSet<>();
+        for (int i=0;i<buckets.size();i++) {
+            TArrayList<Map.Entry<K,V>> theEntries = buckets.get(i).values;
+            for (int k=0;k<theEntries.size();k++) {
+                theResult.add(theEntries.get(k).getKey());
+            }
+        }
+        return theResult;
     }
 }

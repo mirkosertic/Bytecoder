@@ -87,15 +87,17 @@ public class TInteger extends TNumber {
     }
 
     public static TInteger valueOf(String aValue) {
-        return null;
+        return new TInteger((int) stringToLong(aValue));
     }
 
     public static int parseInt(String aString) {
-        return 0;
+        return (int) stringToLong(aString);
     }
 
-    public static TString toString(int aValue) {
-        return null;
+    public static String toString(int aValue) {
+        TStringBuilder theBuffer = new TStringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
     }
 
     public static TString toHexString(int aValue) {

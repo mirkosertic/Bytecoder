@@ -96,6 +96,12 @@ public class TAssert {
         }
     }
 
+    public static void assertNotEquals(Object aValue1, Object aValue2) {
+        if (aValue1.equals(aValue2)) {
+            throw new RuntimeException();
+        }
+    }
+
     public static void assertSame(Object aValue1, Object aValue2) {
         if (!(aValue1 == aValue2)) {
             throw new RuntimeException();
