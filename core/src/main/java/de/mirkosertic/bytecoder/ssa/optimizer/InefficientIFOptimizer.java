@@ -37,8 +37,8 @@ public class InefficientIFOptimizer implements Optimizer {
                 if (theBoolean.getValue() instanceof BinaryValue) {
                     BinaryValue theBinary = (BinaryValue) theBoolean.getValue();
                     if (theBinary.getValue1().getValue() instanceof CompareValue && theBinary.getValue2().getValue() instanceof PrimitiveValue) {
-                        CompareValue theComare = (CompareValue) theBinary.getValue1().getValue();
-                        PrimitiveValue thePrimitive = (PrimitiveValue) theBinary.getValue1().getValue();
+                        CompareValue theCompare = (CompareValue) theBinary.getValue1().getValue();
+                        PrimitiveValue thePrimitive = (PrimitiveValue) theBinary.getValue2().getValue();
                     }
                 }
             }

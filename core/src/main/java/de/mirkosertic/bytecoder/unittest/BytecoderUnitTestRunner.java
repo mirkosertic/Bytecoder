@@ -135,7 +135,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                     ExceptionRethrower.class)) + "." + theCompileTarget.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionSignature) + "();\n";
             theCode += "if (theLastException) {\n";
 
-            theCode += "var theStringData = theLastException.data.message.data.data.data;\n"
+            theCode += "var theStringData = theLastException.message.data.data;\n"
                     + "   var theMessage = \"\";\n"
                     + "   for (var i=0;i<theStringData.length;i++) {\n"
                     + "     theMessage += String.fromCharCode(theStringData[i]);\n"
