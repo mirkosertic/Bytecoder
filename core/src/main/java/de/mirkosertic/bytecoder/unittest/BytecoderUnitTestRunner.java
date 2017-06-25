@@ -129,6 +129,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aBackendType + ".html";
 
             theCode += "\nconsole.log(\"Starting test\");\n";
+            theCode += "bytecoder.bootstrap();\n";
             theCode += theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());\n";
             theCode += "var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
                     ExceptionRethrower.class)) + "." + theCompileTarget.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionSignature) + "();\n";
