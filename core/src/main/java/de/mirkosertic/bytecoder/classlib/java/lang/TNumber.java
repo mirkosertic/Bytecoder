@@ -32,10 +32,14 @@ public abstract class TNumber extends TObject {
     public static long stringToLong(String aString) {
         long theResult = 0;
         int theMultiplier = 1;
-        for (int k=aString.length()-1;k>=0;k++) {
+        for (int k=aString.length()-1;k>=0;k--) {
             char theCharAt = aString.charAt(k);
-            theResult += charValue(theCharAt) * theMultiplier;
-            theMultiplier*=10;
+            if (k==0 && theCharAt == '-') {
+                theResult=-theResult;
+            } else {
+                theResult += charValue(theCharAt) * theMultiplier;
+                theMultiplier *= 10;
+            }
         }
         return theResult;
     }

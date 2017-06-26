@@ -15,11 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.*;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class TIntegerTest {
@@ -81,5 +83,15 @@ public class TIntegerTest {
     @Test
     public void testValueOfString() {
         assertEquals(123, Integer.valueOf("123").intValue(), 0);
+    }
+
+    @Test
+    public void testValueOfNegativeString() {
+        assertEquals(-123, Integer.valueOf("-123").intValue(), 0);
+    }
+
+    @Test
+    public void testParseInt() {
+        assertEquals(-123, Integer.parseInt("-123"), 0);
     }
 }
