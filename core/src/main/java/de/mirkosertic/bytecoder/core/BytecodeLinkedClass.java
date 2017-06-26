@@ -313,20 +313,29 @@ public class BytecodeLinkedClass {
     }
 
     public void linkStaticMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
-        try {
-            BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
-            if (theMethod == null) {
-                throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aMethodSignature);
-            }
-            if (!theMethod.isClassInitializer()) {
-                BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
-                linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
+        BytecodeClass theClass = bytecodeClass;
+        BytecodeObjectTypeRef theClassName = className;
+        while(theClass != null) {
+            BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
+            if (theMethod != null) {
+                if (!theMethod.isClassInitializer()) {
+                    BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
+                    linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
+                }
+
+                linkMethodInternal(theMethod, true);
+                return;
             }
 
-            linkMethodInternal(theMethod, true);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error while linking static name " + aMethodName + " for " + className.name(), e);
+            if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getSuperClass().getConstant());
+                theClass = linkerContext.linkClass(theClassName).bytecodeClass;
+            } else {
+                theClass = null;
+            }
+
         }
+        throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aMethodSignature);
     }
 
     public void linkMethodInternal(BytecodeMethod aMethod, boolean isLocal) {
