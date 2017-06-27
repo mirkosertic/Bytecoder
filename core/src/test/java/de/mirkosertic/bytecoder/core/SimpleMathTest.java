@@ -137,6 +137,11 @@ public class SimpleMathTest {
     }
 
     @Test
+    public void testAbs() {
+        Assert.assertEquals(10f, Math.abs(-10.0), 0);
+    }
+
+    @Test
     public void testLongSum() {
         Assert.assertEquals(300, longSum(getLong(), 60), 0);
     }
