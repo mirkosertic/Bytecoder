@@ -20,24 +20,19 @@ import java.util.Set;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class IFExpression extends Expression implements ExpressionListContainer {
+public class IFExpression extends AbstractIFExpression implements ExpressionListContainer {
 
-    private final Variable booleanExpression;
     private final ExpressionList expressions;
     private final BytecodeOpcodeAddress jumpTarget;
 
     public IFExpression(Variable aBooleanExpression, BytecodeOpcodeAddress aJumpTarget, ExpressionList aExpressions) {
-        booleanExpression = aBooleanExpression.usedBy(this);
+        super(aBooleanExpression);
         expressions = aExpressions;
         jumpTarget = aJumpTarget;
     }
 
     public BytecodeOpcodeAddress getJumpTarget() {
         return jumpTarget;
-    }
-
-    public Variable getBooleanExpression() {
-        return booleanExpression;
     }
 
     public ExpressionList getExpressions() {

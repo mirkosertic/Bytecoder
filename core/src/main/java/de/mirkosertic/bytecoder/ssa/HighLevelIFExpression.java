@@ -18,22 +18,17 @@ package de.mirkosertic.bytecoder.ssa;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HighLevelIFExpression extends Expression implements ExpressionListContainer {
+public class HighLevelIFExpression extends AbstractIFExpression implements ExpressionListContainer {
 
-    private final Variable booleanExpression;
     private final Block thenBlock;
     private final Block elseBlock;
 
     public HighLevelIFExpression(Variable aBooleanExpression, Block aThenBlock, Block aElseBlock) {
-        booleanExpression = aBooleanExpression.usedBy(this);
+        super(aBooleanExpression);
         thenBlock = aThenBlock;
         elseBlock = aElseBlock;
         thenBlock.consumeByHighLevelControlFlowExpression();
         elseBlock.consumeByHighLevelControlFlowExpression();
-    }
-
-    public Variable getBooleanExpression() {
-        return booleanExpression;
     }
 
     public Block getThenBlock() {

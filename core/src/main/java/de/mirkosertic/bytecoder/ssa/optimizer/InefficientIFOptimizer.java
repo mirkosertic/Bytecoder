@@ -16,20 +16,7 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.Block;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.*;
 
 public class InefficientIFOptimizer implements Optimizer {
 
@@ -43,8 +30,8 @@ public class InefficientIFOptimizer implements Optimizer {
     private void optimizeExpressionList(ExpressionList aExpressions, BytecodeLinkerContext aLinkerContext) {
         for (Expression theExpression : aExpressions.toList()) {
 
-            if (theExpression instanceof IFExpression) {
-                IFExpression theIf = (IFExpression) theExpression;
+            if (theExpression instanceof AbstractIFExpression) {
+                AbstractIFExpression theIf = (AbstractIFExpression) theExpression;
 
                 Variable theBoolean = theIf.getBooleanExpression();
                 if (theBoolean.getValue() instanceof BinaryValue) {
@@ -66,6 +53,23 @@ public class InefficientIFOptimizer implements Optimizer {
 
                         if (isZero) {
                             switch (theBinary.getOperator()) {
+                                case GREATEROREQUALS: {
+                                    // Means value1 == value2 || value2 > value2
+                                    // hence value1>=value2;
+                                    theBoolean.setValue(
+                                            new BinaryValue(theCompare.getValue1(), BinaryValue.Operator.GREATEROREQUALS,
+                                                    theCompare.getValue2()));
+
+                                    for (Expression theE : aExpressions.toList()) {
+                                        if (theE instanceof InitVariableExpression) {
+                                            InitVariableExpression theI = (InitVariableExpression) theE;
+                                            if (theI.getVariable().getValue() == theCompare) {
+                                                aExpressions.remove(theE);
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
                                 case LESSTHANOREQUALS: {
                                     // Means value1 == value2 || value1 < value2
                                     // hence value1<=value2
