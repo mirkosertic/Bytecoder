@@ -94,4 +94,9 @@ public class TIntegerTest {
     public void testParseInt() {
         assertEquals(-123, Integer.parseInt("-123"), 0);
     }
+
+    @Test
+    public void testToHexString() {
+        assertEquals("3039", Integer.toHexString(12345));
+    }
 }

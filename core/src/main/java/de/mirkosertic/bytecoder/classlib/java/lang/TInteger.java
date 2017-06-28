@@ -100,7 +100,7 @@ public class TInteger extends TNumber {
         return theBuffer.toString();
     }
 
-    public static TString toHexString(int aValue) {
-        return null;
+    public static String toHexString(int aValue) {
+        return longToHex(aValue);
     }
 }
