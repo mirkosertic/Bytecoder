@@ -93,11 +93,24 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         return h;
     }
 
+    public int indexOf(int aChar) {
+        for (int i=0;i<data.length;i++) {
+            if (data[i] == aChar) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public int lastIndexOf(TString aValue) {
         return -1;
     }
 
-    public TString substring(int aIndex) {
+    public TString substring(int aStart) {
+        return null;
+    }
+
+    public TString substring(int aStart, int aEnd) {
         return null;
     }
 

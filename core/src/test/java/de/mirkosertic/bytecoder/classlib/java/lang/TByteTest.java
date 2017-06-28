@@ -89,7 +89,7 @@ public class TByteTest {
     }
 
     @Test
-    public void testParseInt() {
+    public void testParseByte() {
         assertEquals(-123, Byte.parseByte("-123"), 0);
     }
 }

@@ -89,7 +89,7 @@ public class TShortTest {
     }
 
     @Test
-    public void testParseInt() {
+    public void testParseShort() {
         assertEquals(-123, Short.parseShort("-123"), 0);
     }
 }
