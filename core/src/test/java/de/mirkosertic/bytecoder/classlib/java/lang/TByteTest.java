@@ -67,4 +67,29 @@ public class TByteTest {
     public void testDoubleValue() throws Exception {
         assertEquals(10, new Byte((byte) 10).doubleValue(), 0);
     }
+
+    @Test
+    public void testToString() {
+        assertEquals("123", new Byte((byte) 123).toString());
+    }
+
+    @Test
+    public void testValueOfInt() {
+        assertEquals(123, Byte.valueOf((byte) 123).intValue(), 0);
+    }
+
+    @Test
+    public void testValueOfString() {
+        assertEquals(123, Byte.valueOf("123").intValue(), 0);
+    }
+
+    @Test
+    public void testValueOfNegativeString() {
+        assertEquals(-123, Byte.valueOf("-123").intValue(), 0);
+    }
+
+    @Test
+    public void testParseInt() {
+        assertEquals(-123, Byte.parseByte("-123"), 0);
+    }
 }

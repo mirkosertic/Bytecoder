@@ -73,23 +73,32 @@ public class TLong extends TNumber {
         return longValue;
     }
 
+    @Override
     public String toString() {
-        return "";
-    }
-
-    public static long parseLong(String aValue) {
-        return 0L;
-    }
-
-    public static TLong valueOf(TString aValue) {
-        return new TLong(0L);
+        StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(longValue);
+        return theBuffer.toString();
     }
 
     public static TLong valueOf(long aValue) {
         return new TLong(aValue);
     }
 
-    public static TString toString(long aValue) {
-        return null;
+    public static TLong valueOf(String aValue) {
+        return new TLong(stringToLong(aValue));
+    }
+
+    public static long parseLong(String aString) {
+        return stringToLong(aString);
+    }
+
+    public static String toString(long aValue) {
+        TStringBuilder theBuffer = new TStringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
+    }
+
+    public static String toHexString(long aValue) {
+        return longToHex(aValue);
     }
 }

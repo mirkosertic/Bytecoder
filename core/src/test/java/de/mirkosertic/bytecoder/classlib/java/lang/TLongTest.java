@@ -22,74 +22,79 @@ import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TShortTest {
+public class TLongTest {
 
     @Test
     public void testEquals() throws Exception {
-        Short theShort = new Short((short) 10);
+        Long theShort = new Long((int) 10);
         assertEquals(theShort,theShort);
-        assertNotEquals(theShort, new Short((short) 11));
+        assertNotEquals(theShort, new Long((int) 11));
         assertNotEquals(theShort, null);
         assertNotEquals(theShort, "");
     }
 
     @Test
     public void testHashCode() throws Exception {
-        assertEquals(new Short((short) 10), new Short((short) 10));
+        assertEquals(new Long((int) 10), new Long((int) 10));
     }
 
     @Test
     public void testIntValue() throws Exception {
-        assertEquals(10, new Short((short) 10).intValue(), 0);
+        assertEquals(10, new Long((int) 10).intValue(), 0);
     }
 
     @Test
     public void restBbyteValue() throws Exception {
-        assertEquals(10, new Short((short) 10).byteValue(), 0);
+        assertEquals(10, new Long((int) 10).byteValue(), 0);
     }
 
     @Test
     public void testShortValue() throws Exception {
-        assertEquals(10, new Short((short) 10).shortValue(), 0);
+        assertEquals(10, new Long((int) 10).shortValue(), 0);
     }
 
     @Test
     public void testFloatValue() throws Exception {
-        assertEquals(10, new Short((short) 10).floatValue(), 0);
+        assertEquals(10, new Long((int) 10).floatValue(), 0);
     }
 
     @Test
     public void testLongValue() throws Exception {
-        assertEquals(10, new Short((short) 10).longValue(), 0);
+        assertEquals(10, new Long((int) 10).longValue(), 0);
     }
 
     @Test
     public void testDoubleValue() throws Exception {
-        assertEquals(10, new Short((short) 10).doubleValue(), 0);
+        assertEquals(10, new Long((int) 10).doubleValue(), 0);
     }
 
     @Test
     public void testToString() {
-        assertEquals("123", new Short((short) 123).toString());
+        assertEquals("123", new Long(123).toString());
     }
 
     @Test
     public void testValueOfInt() {
-        assertEquals(123, Short.valueOf((short) 123).intValue(), 0);
+        assertEquals(123, Long.valueOf(123).intValue(), 0);
     }
 
     @Test
     public void testValueOfString() {
-        assertEquals(123, Short.valueOf("123").intValue(), 0);
+        assertEquals(123, Long.valueOf("123").intValue(), 0);
     }
 
     @Test
     public void testValueOfNegativeString() {
-        assertEquals(-123, Short.valueOf("-123").intValue(), 0);
+        assertEquals(-123, Long.valueOf("-123").intValue(), 0);
     }
 
     @Test
     public void testParseInt() {
-        assertEquals(-123, Short.parseShort("-123"), 0);
+        assertEquals(-123, Long.parseLong("-123"), 0);
+    }
+
+    @Test
+    public void testToHexString() {
+        assertEquals("3039", Long.toHexString(12345));
     }
 }
