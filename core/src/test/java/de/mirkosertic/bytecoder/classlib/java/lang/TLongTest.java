@@ -89,7 +89,7 @@ public class TLongTest {
     }
 
     @Test
-    public void testParseInt() {
+    public void testParseLong() {
         assertEquals(-123, Long.parseLong("-123"), 0);
     }
 

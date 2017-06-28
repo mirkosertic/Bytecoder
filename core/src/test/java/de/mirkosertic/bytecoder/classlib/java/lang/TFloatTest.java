@@ -20,6 +20,9 @@ import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 @RunWith(BytecoderUnitTestRunner.class)
 public class TFloatTest {
 
@@ -29,4 +32,84 @@ public class TFloatTest {
         TAssert.assertEquals(TFloat.compare(10f, 10f), 0, 0);
         TAssert.assertEquals(TFloat.compare(20f, 10f), 1, 0);
     }
+
+    @Test
+    public void testEquals() throws Exception {
+        Integer theShort = new Integer((int) 10);
+        assertEquals(theShort,theShort);
+        assertNotEquals(theShort, new Integer((int) 11));
+        assertNotEquals(theShort, null);
+        assertNotEquals(theShort, "");
+    }
+
+    @Test
+    public void testHashCode() throws Exception {
+        assertEquals(new Float((int) 10), new Float((int) 10));
+    }
+
+    @Test
+    public void testIntValue() throws Exception {
+        assertEquals(10, new Float((int) 10).intValue(), 0);
+    }
+
+    @Test
+    public void restBbyteValue() throws Exception {
+        assertEquals(10, new Float((int) 10).byteValue(), 0);
+    }
+
+    @Test
+    public void testShortValue() throws Exception {
+        assertEquals(10, new Float((int) 10).shortValue(), 0);
+    }
+
+    @Test
+    public void testFloatValue() throws Exception {
+        assertEquals(10, new Float((int) 10).floatValue(), 0);
+    }
+
+    @Test
+    public void testLongValue() throws Exception {
+        assertEquals(10, new Float((int) 10).longValue(), 0);
+    }
+
+    @Test
+    public void testDoubleValue() throws Exception {
+        assertEquals(10, new Float((int) 10).doubleValue(), 0);
+    }
+
+    @Test
+    public void testToString() {
+        assertEquals("123.45", new Float(123.45).toString());
+    }
+
+    @Test
+    public void testValueOfInt() {
+        assertEquals(123, Float.valueOf(123).intValue(), 0);
+    }
+
+    @Test
+    public void testValueOfString1() {
+        assertEquals(123.25, TFloat.valueOf("123.25").floatValue(), 0);
+    }
+
+    @Test
+    public void testValueOfString2() {
+        assertEquals(-123.25, TFloat.valueOf("-123.25").floatValue(), 0);
+    }
+
+    @Test
+    public void testValueOfString() {
+        assertEquals(123.25, Float.valueOf("123.25").floatValue(), 0);
+    }
+
+    @Test
+    public void testValueOfNegativeString() {
+        assertEquals(-123.25, Float.valueOf("-123.25").floatValue(), 0);
+    }
+
+    @Test
+    public void testParseFloat() {
+        assertEquals(-123, Float.parseFloat("-123"), 0);
+    }
+
 }
