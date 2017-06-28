@@ -75,4 +75,29 @@ public class TByte extends TNumber {
     public double doubleValue() {
         return byteValue;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(byteValue);
+        return theBuffer.toString();
+    }
+
+    public static TByte valueOf(byte aValue) {
+        return new TByte(aValue);
+    }
+
+    public static TByte valueOf(String aValue) {
+        return new TByte((byte) stringToLong(aValue));
+    }
+
+    public static byte parseByte(String aString) {
+        return (byte) stringToLong(aString);
+    }
+
+    public static String toString(byte aValue) {
+        TStringBuilder theBuffer = new TStringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
+    }
 }

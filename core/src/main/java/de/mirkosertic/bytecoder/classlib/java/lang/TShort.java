@@ -75,4 +75,29 @@ public class TShort extends TNumber {
     public double doubleValue() {
         return shortValue;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(shortValue);
+        return theBuffer.toString();
+    }
+
+    public static TShort valueOf(short aValue) {
+        return new TShort(aValue);
+    }
+
+    public static TShort valueOf(String aValue) {
+        return new TShort((short) stringToLong(aValue));
+    }
+
+    public static short parseShort(String aString) {
+        return (short) stringToLong(aString);
+    }
+
+    public static String toString(short aValue) {
+        TStringBuilder theBuffer = new TStringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
+    }
 }
