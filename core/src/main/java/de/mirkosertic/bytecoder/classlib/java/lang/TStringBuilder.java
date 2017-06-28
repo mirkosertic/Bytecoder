@@ -49,6 +49,15 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         byteData = theNewData;
     }
 
+    public TStringBuilder reverse() {
+        byte[] theReversed = new byte[byteData.length];
+        for (int i=0;i<byteData.length;i++) {
+            theReversed[byteData.length -1 -i] = byteData[i];
+        }
+        byteData = theReversed;
+        return this;
+    }
+
     @Override
     public TStringBuilder append(TCharSequence aCharSequence) {
         byte[] theOtherData = aCharSequence.getBytes();
@@ -81,11 +90,6 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     public TStringBuilder append(long aValue) {
-        // TODO: Implement this
-        return this;
-    }
-
-    public TStringBuilder append(int aValue) {
         boolean isNegative = false;
         if (aValue < 0) {
             isNegative = true;
@@ -94,7 +98,7 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         byte[] theBytes = new byte[20];
         int theOffset = 0;
         do {
-            int theRemainder = aValue % 10;
+            int theRemainder = (int) aValue % 10;
             theBytes[theOffset++] = (byte) theRemainder;
             aValue = aValue / 10;
         } while (aValue > 0);
@@ -114,6 +118,10 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
 
         internalAdd(theNewData);
         return this;
+    }
+
+    public TStringBuilder append(int aValue) {
+        return append((long) aValue);
     }
 
     @Override
