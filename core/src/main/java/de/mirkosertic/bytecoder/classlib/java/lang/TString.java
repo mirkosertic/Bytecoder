@@ -24,7 +24,10 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
 
     @NoExceptionCheck
     public TString(char[] aData) {
-        this();
+        data = new byte[aData.length];
+        for (int i=0;i<aData.length;i++) {
+            data[i] = (byte) aData[i];
+        }
     }
 
     @NoExceptionCheck
@@ -107,18 +110,40 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
     }
 
     public TString substring(int aStart) {
-        return null;
+        int theLength = data.length - aStart;
+        byte[] theNewData = new byte[theLength];
+        for (int i=0;i<theLength;i++) {
+            theNewData[i] = data[i + aStart];
+        }
+        return new TString(theNewData);
     }
 
     public TString substring(int aStart, int aEnd) {
-        return null;
+        int theLength = aEnd - aStart;
+        byte[] theNewData = new byte[theLength];
+        for (int i=0;i<theLength;i++) {
+            theNewData[i] = data[i + aStart];
+        }
+        return new TString(theNewData);
     }
 
     public TString replace(char aOldChar, char aNewChar) {
-        return this;
+        byte[] theNewData = new byte[data.length];
+        for (int i=0;i<data.length;i++) {
+            byte theData = data[i];
+            if (theData == aOldChar) {
+                theData = (byte) aNewChar;
+            }
+            theNewData[i] = theData;
+        }
+        return new TString(theNewData);
     }
 
     public char[] toCharArray() {
-        return null;
+        char[] theResult = new char[data.length];
+        for (int i=0;i<data.length;i++) {
+            theResult[i] = (char) data[i];
+        }
+        return theResult;
     }
 }

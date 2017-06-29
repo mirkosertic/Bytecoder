@@ -19,18 +19,19 @@ import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class TByteTest {
 
     @Test
     public void testEquals() throws Exception {
-        Byte theShort = new Byte((byte) 10);
-        assertEquals(theShort,theShort);
-        assertNotEquals(theShort, new Short((short) 11));
-        assertNotEquals(theShort, null);
-        assertNotEquals(theShort, "");
+        Byte theByte = new Byte((byte) 10);
+        assertEquals(theByte,theByte);
+        assertNotEquals(theByte, new Short((short) 11));
+        assertNotEquals(theByte, null);
+        assertNotEquals(theByte, "");
     }
 
     @Test
@@ -44,7 +45,7 @@ public class TByteTest {
     }
 
     @Test
-    public void restBbyteValue() throws Exception {
+    public void testByteValue() throws Exception {
         assertEquals(10, new Byte((byte) 10).byteValue(), 0);
     }
 

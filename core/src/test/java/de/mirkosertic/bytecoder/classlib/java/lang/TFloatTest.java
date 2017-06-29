@@ -35,11 +35,11 @@ public class TFloatTest {
 
     @Test
     public void testEquals() throws Exception {
-        Integer theShort = new Integer((int) 10);
-        assertEquals(theShort,theShort);
-        assertNotEquals(theShort, new Integer((int) 11));
-        assertNotEquals(theShort, null);
-        assertNotEquals(theShort, "");
+        Float theFloat = new Float(10f);
+        assertEquals(theFloat,theFloat);
+        assertNotEquals(theFloat, new Float((int) 11));
+        assertNotEquals(theFloat, null);
+        assertNotEquals(theFloat, "");
     }
 
     @Test
@@ -53,7 +53,7 @@ public class TFloatTest {
     }
 
     @Test
-    public void restBbyteValue() throws Exception {
+    public void testByteValue() throws Exception {
         assertEquals(10, new Float((int) 10).byteValue(), 0);
     }
 

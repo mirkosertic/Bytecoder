@@ -84,10 +84,42 @@ public class TDouble extends TNumber {
     }
 
     public static double parseDouble(String aValue) {
-        return 0d;
+        int p = aValue.indexOf('.');
+        if (p<0) {
+            return stringToLong(aValue);
+        }
+        String thePrefix = aValue.substring(0, p);
+        String theSuffix = aValue.substring(p + 1);
+        long theA = stringToLong(thePrefix);
+        long theB = stringToLong(theSuffix);
+        int theMultiplier = 1;
+        int theLength = Long.toString(theB).length();
+        while(theLength > 0) {
+            theMultiplier *= 10;
+            theLength--;
+        }
+        if (theA > 0) {
+            return theA + ((double) theB) / theMultiplier;
+        }
+        return theA - ((double) theB) / theMultiplier;
+    }
+
+    @Override
+    public String toString() {
+        return toString(doubleValue);
+    }
+
+    public static TDouble valueOf(String aValue) {
+        return new TDouble(parseDouble(aValue));
     }
 
     public static TDouble valueOf(double aValue) {
         return new TDouble(aValue);
+    }
+
+    public static String toString(double aValue) {
+        TStringBuilder theBuffer = new TStringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
     }
 }
