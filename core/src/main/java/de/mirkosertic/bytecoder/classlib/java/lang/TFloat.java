@@ -30,6 +30,11 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         floatValue = aValue;
     }
 
+    @NoExceptionCheck
+    public TFloat(double aValue) {
+        floatValue = (float) aValue;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -101,6 +106,11 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
     @Override
     public double doubleValue() {
         return floatValue;
+    }
+
+    @Override
+    public String toString() {
+        return toString(floatValue);
     }
 
     private static float binaryExponent(int n) {
@@ -209,6 +219,8 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
     }
 
     public static String toString(float aValue) {
-        return "";
+        TStringBuilder theBuffer = new TStringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
     }
 }

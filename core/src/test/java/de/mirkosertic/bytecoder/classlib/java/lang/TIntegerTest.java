@@ -15,24 +15,23 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class TIntegerTest {
 
     @Test
     public void testEquals() throws Exception {
-        Integer theShort = new Integer((int) 10);
-        assertEquals(theShort,theShort);
-        assertNotEquals(theShort, new Integer((int) 11));
-        assertNotEquals(theShort, null);
-        assertNotEquals(theShort, "");
+        Integer theInteger = new Integer((int) 10);
+        assertEquals(theInteger,theInteger);
+        assertNotEquals(theInteger, new Integer((int) 11));
+        assertNotEquals(theInteger, null);
+        assertNotEquals(theInteger, "");
     }
 
     @Test
@@ -46,7 +45,7 @@ public class TIntegerTest {
     }
 
     @Test
-    public void restBbyteValue() throws Exception {
+    public void testByteValue() throws Exception {
         assertEquals(10, new Integer((int) 10).byteValue(), 0);
     }
 

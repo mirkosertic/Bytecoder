@@ -77,9 +77,7 @@ public class TInteger extends TNumber {
 
     @Override
     public String toString() {
-        StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(integerValue);
-        return theBuffer.toString();
+        return toString(integerValue);
     }
 
     public static TInteger valueOf(int aValue) {

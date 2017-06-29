@@ -71,20 +71,17 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         return this;
     }
 
-    public TStringBuilder append(Object aObject) {
-        String theOtherObject = aObject != null ? aObject.toString() : "null";
-        byte[] theOtherData = theOtherObject.getBytes();
-
-        internalAdd(theOtherData);
-        return this;
-    }
-
     public TStringBuilder append(char aValue) {
         internalAdd(new byte[] {(byte) aValue});
         return this;
     }
 
     public TStringBuilder append(float aValue) {
+        // TODO: Implement this
+        return this;
+    }
+
+    public TStringBuilder append(double aValue) {
         // TODO: Implement this
         return this;
     }
@@ -122,6 +119,14 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
 
     public TStringBuilder append(int aValue) {
         return append((long) aValue);
+    }
+
+    public TStringBuilder append(Object aObject) {
+        String theOtherObject = aObject != null ? aObject.toString() : "null";
+        byte[] theOtherData = theOtherObject.getBytes();
+
+        internalAdd(theOtherData);
+        return this;
     }
 
     @Override

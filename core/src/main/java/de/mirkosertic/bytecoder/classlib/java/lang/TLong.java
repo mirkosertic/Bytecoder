@@ -75,9 +75,7 @@ public class TLong extends TNumber {
 
     @Override
     public String toString() {
-        StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(longValue);
-        return theBuffer.toString();
+        return toString(longValue);
     }
 
     public static TLong valueOf(long aValue) {

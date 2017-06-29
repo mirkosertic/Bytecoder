@@ -78,9 +78,7 @@ public class TByte extends TNumber {
 
     @Override
     public String toString() {
-        StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(byteValue);
-        return theBuffer.toString();
+        return toString(byteValue);
     }
 
     public static TByte valueOf(byte aValue) {

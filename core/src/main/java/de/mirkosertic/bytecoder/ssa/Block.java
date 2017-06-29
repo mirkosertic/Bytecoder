@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class Block {
 
@@ -38,6 +38,7 @@ public class Block {
     private final Map<VariableDescription, Variable> imported;
     private final Map<VariableDescription, Variable> exported;
     private boolean consumedByHighLevelControlFlowExpression;
+    private Block fallThruSuccessor;
 
     public Block(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -49,30 +50,15 @@ public class Block {
         exported = new HashMap<>();
     }
 
+    public void setFallThruSuccessor(Block fallThruSuccessor) {
+        this.fallThruSuccessor = fallThruSuccessor;
+    }
+
     public Block fallThruSuccessor() {
-        if (successors.size() == 1) {
-            return successors.iterator().next();
+        if (fallThruSuccessor == null) {
+            throw new IllegalStateException("No fallthru successor");
         }
-        Set<Block> theSuccessors = new HashSet<>(successors);
-        Expression theLastExpression = expressions.lastExpression();
-        Set<Block> theBlocksToRemove = new HashSet<>();
-        if (theLastExpression instanceof GotoExpression) {
-            GotoExpression theGoto = (GotoExpression) theLastExpression;
-            return successorByJumpTarget(theGoto.getJumpTarget());
-        }
-        if (theLastExpression instanceof IFExpression) {
-            IFExpression theIf = (IFExpression) theLastExpression;
-            for (Block theBlock : theSuccessors) {
-                if (theBlock.getStartAddress().equals(theIf.getJumpTarget())) {
-                    theBlocksToRemove.add(theBlock);
-                }
-            }
-        }
-        theSuccessors.removeAll(theBlocksToRemove);
-        if (theSuccessors.size() != 1) {
-            throw new IllegalStateException("Expected one successor, got " + theSuccessors);
-        }
-        return theSuccessors.iterator().next();
+        return fallThruSuccessor;
     }
 
     public void consumeByHighLevelControlFlowExpression() {

@@ -15,15 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.GC;
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
@@ -121,6 +112,15 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 public class ProgramGenerator {
 
@@ -310,6 +310,8 @@ public class ProgramGenerator {
                 Block theDirectSuccessor = theCreatedBlocks.get(theNext);
 
                 BlockState theImportingState = theDirectSuccessor.toStartState();
+
+                theBlock.setFallThruSuccessor(theDirectSuccessor);
 
                 theBlock.getExpressions().add(new CommentExpression("Code to jump to " + theDirectSuccessor.getStartAddress().getAddress()));
 

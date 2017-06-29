@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,74 +24,92 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TShortTest {
+public class TDoubleTest {
+
+    @Test
+    public void testCompare() {
+        TAssert.assertEquals(TDouble.compare(10d, 20d), -1, 0);
+        TAssert.assertEquals(TDouble.compare(10d, 10d), 0, 0);
+        TAssert.assertEquals(TDouble.compare(20d, 10d), 1, 0);
+    }
 
     @Test
     public void testEquals() throws Exception {
-        Short theShort = new Short((short) 10);
-        assertEquals(theShort,theShort);
-        assertNotEquals(theShort, new Short((short) 11));
-        assertNotEquals(theShort, null);
-        assertNotEquals(theShort, "");
+        Double theDouble = new Double(10d);
+        assertEquals(theDouble,theDouble);
+        assertNotEquals(theDouble, new Double(11d));
+        assertNotEquals(theDouble, null);
+        assertNotEquals(theDouble, "");
     }
 
     @Test
     public void testHashCode() throws Exception {
-        assertEquals(new Short((short) 10), new Short((short) 10));
+        assertEquals(new Double(10d), new Double(10d), 0);
     }
 
     @Test
     public void testIntValue() throws Exception {
-        assertEquals(10, new Short((short) 10).intValue(), 0);
+        assertEquals(10, new Double(10d).intValue(), 0);
     }
 
     @Test
     public void testByteValue() throws Exception {
-        assertEquals(10, new Short((short) 10).byteValue(), 0);
+        assertEquals(10, new Double(10d).byteValue(), 0);
     }
 
     @Test
     public void testShortValue() throws Exception {
-        assertEquals(10, new Short((short) 10).shortValue(), 0);
+        assertEquals(10, new Double(10d).shortValue(), 0);
     }
 
     @Test
     public void testFloatValue() throws Exception {
-        assertEquals(10, new Short((short) 10).floatValue(), 0);
+        assertEquals(10, new Double(10d).floatValue(), 0);
     }
 
     @Test
     public void testLongValue() throws Exception {
-        assertEquals(10, new Short((short) 10).longValue(), 0);
+        assertEquals(10, new Double(10d).longValue(), 0);
     }
 
     @Test
     public void testDoubleValue() throws Exception {
-        assertEquals(10, new Short((short) 10).doubleValue(), 0);
+        assertEquals(10, new Double(10d).doubleValue(), 0);
     }
 
     @Test
     public void testToString() {
-        assertEquals("123", new Short((short) 123).toString());
+        assertEquals("123.45", new Double(123.45d).toString());
     }
 
     @Test
     public void testValueOfInt() {
-        assertEquals(123, Short.valueOf((short) 123).intValue(), 0);
+        assertEquals(123, Double.valueOf(123).intValue(), 0);
+    }
+
+    @Test
+    public void testValueOfString1() {
+        assertEquals(123.25d, Double.valueOf("123.25").doubleValue(), 0);
+    }
+
+    @Test
+    public void testValueOfString2() {
+        assertEquals(-123.25, Double.valueOf("-123.25").doubleValue(), 0);
     }
 
     @Test
     public void testValueOfString() {
-        assertEquals(123, Short.valueOf("123").intValue(), 0);
+        assertEquals(123.25d, Double.valueOf("123.25").doubleValue(), 0);
     }
 
     @Test
     public void testValueOfNegativeString() {
-        assertEquals(-123, Short.valueOf("-123").intValue(), 0);
+        assertEquals(-123.25, Double.valueOf("-123.25").doubleValue(), 0);
     }
 
     @Test
-    public void testParseShort() {
-        assertEquals(-123, Short.parseShort("-123"), 0);
+    public void testParseDouble() {
+        assertEquals(-123, Double.parseDouble("-123"), 0);
     }
+
 }

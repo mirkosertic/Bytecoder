@@ -78,9 +78,7 @@ public class TShort extends TNumber {
 
     @Override
     public String toString() {
-        StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(shortValue);
-        return theBuffer.toString();
+        return toString(shortValue);
     }
 
     public static TShort valueOf(short aValue) {
