@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.Collection;
+
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 
 public class TArrayList<T> implements TList<T> {
@@ -133,14 +135,24 @@ public class TArrayList<T> implements TList<T> {
     }
 
     @Override
-    public boolean addAll(TCollection<T> aOtherCollection) {
-        // TODO: Implement this
-        return false;
+    public boolean addAll(Collection<T> aOtherCollection) {
+        boolean theChanged = false;
+        for (T aValue : aOtherCollection) {
+            if (add(aValue)) {
+                theChanged = true;
+            }
+        }
+        return theChanged;
     }
 
     @Override
-    public boolean removeAll(TCollection<T> aOtherCollection) {
-        // TODO: Implement this
-        return false;
+    public boolean removeAll(Collection<T> aOtherCollection) {
+        boolean theChanged = false;
+        for (T aValue : aOtherCollection) {
+            if (remove(aValue)) {
+                theChanged = true;
+            }
+        }
+        return theChanged;
     }
 }

@@ -84,6 +84,24 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         return true;
     }
 
+    public boolean equalsIgnoreCase(TString aOtherObject) {
+        if (this == aOtherObject) {
+            return true;
+        }
+        if (aOtherObject == null) {
+            return false;
+        }
+        if (!(aOtherObject.length() == data.length)) {
+            return false;
+        }
+        for (int i=0;i<data.length;i++) {
+            if (TCharacter.toLowerCase((char)data[i]) != TCharacter.toLowerCase((char) aOtherObject.data[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public int hashCode() {
         int h = computedHash;

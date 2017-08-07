@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
 import de.mirkosertic.bytecoder.classlib.java.lang.TCloneable;
@@ -28,7 +25,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
     private static class Bucket<K, V> {
 
         private final int hashCode;
-        private final TArrayList<Entry<K, V>> values;
+        private final TArrayList<AbstractEntry<K, V>> values;
 
         public Bucket(int aHashCode) {
             hashCode = aHashCode;
@@ -38,7 +35,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         public boolean containsKey(K aKey) {
             for (int i=0;i<values.size();i++) {
                 Entry<K, V> theEntry = values.get(i);
-                if (theEntry.key.equals(aKey)) {
+                if (theEntry.getKey().equals(aKey)) {
                     return true;
                 }
             }
@@ -47,21 +44,21 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
 
         public V put(K aKey, V aValue) {
             for (int i=0;i<values.size();i++) {
-                Entry<K, V> theEntry = values.get(i);
+                AbstractEntry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
                     V theOldValue = theEntry.value;
                     theEntry.value = aValue;
                     return theOldValue;
                 }
             }
-            Entry<K, V> theNewEntry = new Entry<>(aKey, aValue);
+            AbstractEntry<K, V> theNewEntry = new AbstractEntry<>(aKey, aValue);
             values.add(theNewEntry);
             return null;
         }
 
         public V get(K aKey) {
             for (int i=0;i<values.size();i++) {
-                Entry<K, V> theEntry = values.get(i);
+                AbstractEntry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
                     return theEntry.value;
                 }
@@ -71,7 +68,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
 
         public V remove(K aKey) {
             for (int i=0;i<values.size();i++) {
-                Entry<K, V> theEntry = values.get(i);
+                AbstractEntry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
                     V theOldValue = theEntry.value;
                     values.remove(theEntry);
@@ -160,7 +157,10 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
     public TSet<TMap.Entry<K, V>> entrySet() {
         TSet<TMap.Entry<K,V>> theResult = new THashSet<>();
         for (int i=0;i<buckets.size();i++) {
-            theResult.addAll(buckets.get(i).values);
+            TArrayList<AbstractEntry<K, V>> theValues = buckets.get(i).values;
+            for (int j=0;j<theValues.size();j++) {
+                theResult.add(theValues.get(j));
+            }
         }
         return theResult;
     }
@@ -169,9 +169,9 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
     public TSet<K> keySet() {
         TSet<K> theResult = new THashSet<>();
         for (int i=0;i<buckets.size();i++) {
-            TArrayList<Map.Entry<K,V>> theEntries = buckets.get(i).values;
+            TArrayList<AbstractEntry<K,V>> theEntries = buckets.get(i).values;
             for (int k=0;k<theEntries.size();k++) {
-                theResult.add(theEntries.get(k).getKey());
+                theResult.add(theEntries.get(k).key);
             }
         }
         return theResult;

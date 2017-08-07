@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.Collection;
+
 public interface TCollection<T> extends TIterable<T> {
 
     boolean add(T aObject);
@@ -33,7 +35,7 @@ public interface TCollection<T> extends TIterable<T> {
 
     Object[] toArray(Object[] aTarget);
 
-    boolean addAll(TCollection<T> aOtherCollection);
+    boolean addAll(Collection<T> aOtherCollection);
 
-    boolean removeAll(TCollection<T> aOtherCollection);
+    boolean removeAll(Collection<T> aOtherCollection);
 }

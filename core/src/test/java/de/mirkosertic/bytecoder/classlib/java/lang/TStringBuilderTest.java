@@ -59,4 +59,32 @@ public class TStringBuilderTest {
         theBuilder.append(-123);
         assertEquals(4, theBuilder.length(), 0);
     }
+
+    @Test
+    public void testAppendFloat() {
+        TStringBuilder theBuilder = new TStringBuilder();
+        theBuilder.append(123.123f);
+        assertEquals("123.123", theBuilder.toString());
+    }
+
+    @Test
+    public void testAppendNegativeFloat() {
+        TStringBuilder theBuilder = new TStringBuilder();
+        theBuilder.append(-123.123f);
+        assertEquals("-123.123", theBuilder.toString());
+    }
+
+    @Test
+    public void testAppendDouble() {
+        TStringBuilder theBuilder = new TStringBuilder();
+        theBuilder.append(123.123d);
+        assertEquals("123.123", theBuilder.toString());
+    }
+
+    @Test
+    public void testAppendNegativeDouble() {
+        TStringBuilder theBuilder = new TStringBuilder();
+        theBuilder.append(-123.123d);
+        assertEquals("-123.123", theBuilder.toString());
+    }
 }
