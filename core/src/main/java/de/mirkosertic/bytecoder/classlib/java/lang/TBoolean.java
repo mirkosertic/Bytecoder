@@ -31,7 +31,10 @@ public class TBoolean extends TObject implements TSerializable {
         return booleanValue;
     }
 
-    public static TBoolean valueOf(TString aValue) {
+    public static TBoolean valueOf(String aValue) {
+        if (parseBoolean(aValue)) {
+            return TRUE;
+        }
         return FALSE;
     }
 
@@ -42,7 +45,10 @@ public class TBoolean extends TObject implements TSerializable {
         return FALSE;
     }
 
-    public static boolean parseBoolean(TString aValue) {
+    public static boolean parseBoolean(String aValue) {
+        if (aValue != null && aValue.equalsIgnoreCase("true")) {
+            return true;
+        }
         return false;
     }
 }

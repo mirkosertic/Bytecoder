@@ -77,12 +77,10 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     public TStringBuilder append(float aValue) {
-        // TODO: Implement this
         return this;
     }
 
     public TStringBuilder append(double aValue) {
-        // TODO: Implement this
         return this;
     }
 

@@ -28,17 +28,17 @@ public class TArrayListTest {
     @Test
     public void add() throws Exception {
         TArrayList theList = new TArrayList();
-        theList.add(new Integer(1));
-        theList.add(new Integer(2));
-        theList.add(new Integer(3));
-        theList.add(new Integer(4));
-        theList.add(new Integer(5));
-        theList.add(new Integer(6));
-        theList.add(new Integer(7));
-        theList.add(new Integer(8));
-        theList.add(new Integer(9));
-        theList.add(new Integer(10));
-        theList.add(new Integer(11));
+        Assert.assertTrue(theList.add(new Integer(1)));
+        Assert.assertTrue(theList.add(new Integer(2)));
+        Assert.assertTrue(theList.add(new Integer(3)));
+        Assert.assertTrue(theList.add(new Integer(4)));
+        Assert.assertTrue(theList.add(new Integer(5)));
+        Assert.assertTrue(theList.add(new Integer(6)));
+        Assert.assertTrue(theList.add(new Integer(7)));
+        Assert.assertTrue(theList.add(new Integer(8)));
+        Assert.assertTrue(theList.add(new Integer(9)));
+        Assert.assertTrue(theList.add(new Integer(10)));
+        Assert.assertTrue(theList.add(new Integer(11)));
         Assert.assertEquals(11, theList.size(), 0);
         Assert.assertEquals(new Integer(1), theList.get(0));
         Assert.assertEquals(new Integer(2), theList.get(1));
