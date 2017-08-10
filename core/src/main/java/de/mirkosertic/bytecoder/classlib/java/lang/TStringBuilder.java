@@ -16,8 +16,11 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.annotations.NoExceptionCheck;
+import de.mirkosertic.bytecoder.classlib.java.text.TDecimalFormatSymbols;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
+
+    private static final TDecimalFormatSymbols FORMAT_SYMBOLS = TDecimalFormatSymbols.getInstance();
 
     private byte[] byteData;
 
@@ -35,6 +38,11 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     @NoExceptionCheck
     public int length() {
         return byteData.length;
+    }
+
+    @Override
+    public char charAt(int aIndex) {
+        return (char) byteData[aIndex];
     }
 
     public void internalAdd(byte[] aOtherData) {
@@ -77,11 +85,43 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     public TStringBuilder append(float aValue) {
+        appendInternal(aValue, 1000000000);
         return this;
     }
 
     public TStringBuilder append(double aValue) {
+        appendInternal(aValue, 1000000000);
         return this;
+    }
+
+    public void appendInternal(double aValue, long aMultiplier) {
+        long theA;
+        long theB;
+        if (aValue < 0) {
+            theA = (long) Math.ceil(aValue);
+            theB = - (long) Math.ceil((aValue % 1) * 10000);
+        } else {
+            theA = (long) Math.floor(aValue);
+            theB = (long) Math.floor((aValue % 1) * 10000);
+        }
+        append(theA);
+
+        StringBuilder theTemp = new StringBuilder();
+        theTemp.append(theB);
+
+        for (int i=theTemp.length()-1;i>=0;i--) {
+            char theChar = theTemp.charAt(i);
+            if (theChar != '0') {
+                append(FORMAT_SYMBOLS.getDecimalSeparator());
+                for (int j=0;j<=i;j++) {
+                    append(theTemp.charAt(j));
+                }
+                return;
+            }
+        }
+
+        append(FORMAT_SYMBOLS.getDecimalSeparator());
+        append('0');
     }
 
     public TStringBuilder append(long aValue) {
@@ -99,16 +139,17 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         } while (aValue > 0);
 
         byte[] theNewData;
-        int theStart = 0;
+        int theStart;
         if (isNegative) {
             theNewData = new byte[theOffset + 1];
             theNewData[0] = '-';
             theStart = 1;
         } else {
             theNewData = new byte[theOffset];
-            for (int i=0;i<theOffset;i++) {
-                theNewData[theStart + i] = (byte) (48 + theBytes[theOffset - 1 - i]);
-            }
+            theStart = 0;
+        }
+        for (int i=0;i<theOffset;i++) {
+            theNewData[theStart + i] = (byte) (48 + theBytes[theOffset - 1 - i]);
         }
 
         internalAdd(theNewData);

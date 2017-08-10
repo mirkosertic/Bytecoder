@@ -35,6 +35,12 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
+import com.google.javascript.jscomp.CommandLineRunner;
+import com.google.javascript.jscomp.CompilationLevel;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.SourceFile;
+
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -74,6 +80,19 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}")
     protected String buldDirectory;
 
+    /**
+     * Shall the JavaScript be optimized with the Google closure compiler?
+     */
+    @Parameter(required = false, defaultValue = "false")
+    protected boolean optimizeWithGoogleClosure;
+
+    /**
+     * The closure optimization level.
+     */
+    @Parameter(required = false, defaultValue = "SIMPLE_OPTIMIZATIONS")
+    protected String closureOptimizationLevel;
+
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         File theBaseDirectory = new File(buldDirectory);
@@ -95,6 +114,27 @@ public class BytecoderMavenMojo extends AbstractMojo {
             try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
                 theWriter.println(theCode);
             }
+
+            if (optimizeWithGoogleClosure) {
+                Compiler theCompiler = new Compiler();
+                CompilerOptions theOptions = new CompilerOptions();
+                theOptions.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
+                theOptions.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
+
+                CompilationLevel.valueOf(closureOptimizationLevel).setOptionsForCompilationLevel(theOptions);
+
+                List<SourceFile> theSourceFiles = CommandLineRunner.getBuiltinExterns(CompilerOptions.Environment.BROWSER);
+                theSourceFiles.add(SourceFile.fromCode("bytecoder.js", theCode));
+                theCompiler.compile(new ArrayList<>(), theSourceFiles, theOptions);
+                String theClosureCode = theCompiler.toSource();
+
+                File theBytecoderClosureFileName = new File(theBytecoderDirectory, "bytecoder-closure.js");
+
+                try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderClosureFileName))) {
+                    theWriter.println(theClosureCode);
+                }
+            }
+
         } catch (Exception e) {
             throw new MojoExecutionException("Error running bytecoder", e);
         }

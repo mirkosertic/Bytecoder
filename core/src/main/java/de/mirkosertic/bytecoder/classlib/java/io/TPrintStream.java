@@ -37,6 +37,14 @@ public class TPrintStream extends TFilterOutputStream {
         logDebug(aValue);
     }
 
+    public void println(int aValue) {
+        logDebug(aValue);
+    }
+
+    public void println() throws IOException {
+        print(NEWLINE);
+    }
+
     public void println(TString aValue) throws IOException {
         for (int i=0;i<aValue.length();i++) {
             print((char) aValue.charAt(i));
