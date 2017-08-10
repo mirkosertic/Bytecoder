@@ -50,6 +50,7 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         return data;
     }
 
+    @Override
     public char charAt(int aIndex) {
         return (char) data[aIndex];
     }

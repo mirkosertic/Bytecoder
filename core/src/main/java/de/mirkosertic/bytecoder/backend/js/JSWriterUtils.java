@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -53,6 +54,10 @@ public class JSWriterUtils {
     }
 
     public static String toClassName(BytecodeObjectTypeRef aTypeRef) {
+        if (aTypeRef.name().endsWith(";")) {
+            // This seems to be an array
+            return toClassName(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
+        }
         return toClassNameInternal(aTypeRef.name());
     }
 

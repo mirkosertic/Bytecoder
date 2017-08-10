@@ -78,9 +78,20 @@ public class TDoubleTest {
     }
 
     @Test
-    public void testToString() {
+    public void testToStringPositive() {
         assertEquals("123.45", new Double(123.45d).toString());
     }
+
+    @Test
+    public void testToString() {
+        assertEquals("123.0", new Double(123.00d).toString());
+    }
+
+    @Test
+    public void testToStringNegative() {
+        assertEquals("-123.45", new Double(-123.45d).toString());
+    }
+
 
     @Test
     public void testValueOfInt() {
