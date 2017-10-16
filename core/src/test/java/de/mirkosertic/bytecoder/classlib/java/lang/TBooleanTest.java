@@ -43,4 +43,13 @@ public class TBooleanTest {
         assertSame(Boolean.TRUE, Boolean.valueOf("TRUE"));
         assertSame(Boolean.TRUE, Boolean.valueOf("true"));
     }
+
+    @Test
+    public void testParseBoolean() {
+        assertSame(Boolean.TRUE, Boolean.parseBoolean("true"));
+        assertSame(Boolean.TRUE, Boolean.parseBoolean("TRUE"));
+        assertSame(Boolean.TRUE, Boolean.parseBoolean("TrUE"));
+        assertSame(Boolean.FALSE, Boolean.parseBoolean(null));
+        assertSame(Boolean.FALSE, Boolean.parseBoolean("false"));
+    }
 }
