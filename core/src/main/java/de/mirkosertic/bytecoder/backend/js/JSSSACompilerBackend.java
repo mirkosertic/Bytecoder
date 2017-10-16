@@ -24,12 +24,16 @@ import java.util.Set;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
+import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
@@ -49,9 +53,51 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
-public class JSSSACompilerBackend extends AbstractJSBackend {
+public class JSSSACompilerBackend implements CompileBackend {
+
+    protected final BytecodeMethodSignature registerExceptionOutcomeSignature;
+    protected final BytecodeMethodSignature getLastExceptionOutcomeSignature;
+    protected final JSModules modules;
 
     public JSSSACompilerBackend() {
+
+        registerExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
+        getLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
+        modules = new JSModules();
+
+        JSModule theMathModule = new JSModule();
+        theMathModule.registerFunction("ceil", new JSFunction("return Math.ceil(p1);"));
+        theMathModule.registerFunction("floor", new JSFunction("return Math.floor(p1);"));
+        theMathModule.registerFunction("sin", new JSFunction("return Math.sin(p1);"));
+        theMathModule.registerFunction("cos", new JSFunction("return Math.cos(p1);"));
+        theMathModule.registerFunction("sqrt", new JSFunction("return Math.sqrt(p1);"));
+        theMathModule.registerFunction("round", new JSFunction("return Math.round(p1);"));
+        theMathModule.registerFunction("NaN", new JSFunction("return NaN;"));
+        theMathModule.registerFunction("atan2", new JSFunction("return Math.atan2(p1, p2);"));
+        theMathModule.registerFunction("max", new JSFunction("return Math.max(p1, p2);"));
+        theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
+        theMathModule.registerFunction("tan", new JSFunction("return Math.tan(p1);"));
+        theMathModule.registerFunction("toRadians", new JSFunction("return Math.toRadians(p1);"));
+        theMathModule.registerFunction("toDegrees", new JSFunction("return Math.toDegrees(p1);"));
+        theMathModule.registerFunction("min", new JSFunction("return Math.min(p1, p2);"));
+
+        JSModule theSystemModule = new JSModule();
+        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
+        theSystemModule.registerFunction("nanoTime", new JSFunction("return Date.now() * 1000000;"));
+        theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
+        theSystemModule.registerFunction("logDebug", new JSFunction("bytecoder.logDebug(p1);"));
+
+        modules.register("math", theMathModule);
+        modules.register("system", theSystemModule);
+    }
+
+    private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
+        BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
+        if (theDelegatesTo != null) {
+            BytecodeAnnotation.ElementValue theParentOverride = (BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
+            return theParentOverride.stringValue().replace("/",".");
+        }
+        return null;
     }
 
     @Override
@@ -61,8 +107,8 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
 
         BytecodeLinkedClass theExceptionRethrower = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 ExceptionRethrower.class));
-        theExceptionRethrower.linkStaticMethod("registerExceptionOutcome", theRegisterExceptionOutcomeSignature);
-        theExceptionRethrower.linkStaticMethod("getLastOutcomeOrNullAndReset", theGetLastExceptionOutcomeSignature);
+        theExceptionRethrower.linkStaticMethod("registerExceptionOutcome", registerExceptionOutcomeSignature);
+        theExceptionRethrower.linkStaticMethod("getLastOutcomeOrNullAndReset", getLastExceptionOutcomeSignature);
 
         StringWriter theStrWriter = new StringWriter();
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
@@ -402,7 +448,8 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
         BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aProgram.getExceptionHandlers());
         if (theActiveHandlers.length == 0) {
             // Missing catch block
-            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome",
+                    registerExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
             aWriter.println(aInset + "return;");
         } else {
             for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
@@ -419,7 +466,8 @@ public class JSSSACompilerBackend extends AbstractJSBackend {
                     }
                 }
             }
-            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome", theRegisterExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome",
+                    registerExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
             aWriter.println(aInset + "return;");
         }
     }

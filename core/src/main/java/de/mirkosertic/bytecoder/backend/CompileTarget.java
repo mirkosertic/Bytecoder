@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.backend;
 import java.lang.reflect.Method;
 
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
-import de.mirkosertic.bytecoder.backend.js.JSStackMachineInterpreterBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSACompilerBackend;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -34,12 +33,6 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 public class CompileTarget {
 
     public enum BackendType {
-        interpreter {
-            @Override
-            public CompileBackend createBackend() {
-                return new JSStackMachineInterpreterBackend();
-            }
-        },
         jsssacompiler {
             @Override
             public CompileBackend createBackend() {

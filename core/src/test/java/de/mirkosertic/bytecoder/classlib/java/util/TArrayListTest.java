@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -92,5 +95,63 @@ public class TArrayListTest {
         Assert.assertEquals(1, theList.size(), 0);
         Assert.assertFalse(theList.contains(new Integer(1)));
         Assert.assertTrue(theList.contains(new Integer(2)));
+    }
+
+    @Test
+    public void testToArray() {
+        TArrayList theList = new TArrayList();
+        theList.add("A");
+        theList.add("B");
+        Object[] theArray = theList.toArray();
+        Assert.assertEquals(2, theArray.length, 0);
+        Assert.assertEquals("A", theArray[0]);
+        Assert.assertEquals("B", theArray[1]);
+
+        theArray = theList.toArray(new Object[theList.size()]);
+        Assert.assertEquals(2, theArray.length, 0);
+        Assert.assertEquals("A", theArray[0]);
+        Assert.assertEquals("B", theArray[1]);
+    }
+
+    @Test
+    public void testIterator() {
+        ArrayList theList = new ArrayList();
+        theList.add("A");
+        theList.add("B");
+        AtomicLong theLong = new AtomicLong(0);
+        for (Object a : theList) {
+            theLong.incrementAndGet();
+        }
+        Assert.assertEquals(2, theLong.get(), 0);
+    }
+
+    @Test
+    public void testAddAll() {
+        ArrayList theList = new ArrayList();
+        theList.add("A");
+
+        ArrayList theList2 = new ArrayList();
+        theList2.add("B");
+
+        Assert.assertTrue(theList.addAll(theList2));
+        Assert.assertEquals(2, theList.size(), 0);
+        Assert.assertTrue(theList.contains("A"));
+        Assert.assertTrue(theList.contains("B"));
+    }
+
+    @Test
+    public void testRemoveAll() {
+        ArrayList theList = new ArrayList();
+        theList.add("A");
+        theList.add("B");
+        theList.add("C");
+
+        ArrayList theList2 = new ArrayList();
+        theList2.add("B");
+
+        Assert.assertTrue(theList.removeAll(theList2));
+        Assert.assertEquals(2, theList.size(), 0);
+        Assert.assertTrue(theList.contains("A"));
+        Assert.assertTrue(theList.contains("C"));
     }
 }
