@@ -16,14 +16,27 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.AbstractIFExpression;
+import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.CompareValue;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class InefficientIFOptimizer implements Optimizer {
 
     @Override
-    public void optimize(Program aProgram, BytecodeLinkerContext aLinkerContext) {
-        for (Block theBlock : aProgram.getBlocks()) {
-            optimizeExpressionList(theBlock.getExpressions(), aLinkerContext);
+    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
+        for (GraphNode theNode : aGraph.getDominatedNodes()) {
+            optimizeExpressionList(theNode.getExpressions(), aLinkerContext);
         }
     }
 

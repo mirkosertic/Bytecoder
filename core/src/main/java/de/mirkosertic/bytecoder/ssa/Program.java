@@ -23,52 +23,22 @@ import java.util.Map;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class Program {
 
-    private final List<Block> blocks;
+    private final ControlFlowGraph controlFlowGraph;
     private final Map<Integer, Variable> variables;
     private int varCounter;
 
     public Program() {
-        blocks = new ArrayList<>();
+        controlFlowGraph = new ControlFlowGraph(this);
         variables = new HashMap<>();
         varCounter = 0;
     }
 
-    public Block createAt(BytecodeOpcodeAddress aAddress, Block.BlockType aType) {
-        Block theNewBlock = new Block(aType, this, aAddress);
-        add(theNewBlock);
-        return theNewBlock;
-    }
-
-    public void add(Block aBlock) {
-        blocks.add(aBlock);
-    }
-
-    public List<Block> getBlocks() {
-        return blocks;
-    }
-
-    public List<Block> getBlocksNotAlreadyConsumedByHighLevelConstructs() {
-        List<Block> theResult = new ArrayList<>();
-        for (Block theBlock : blocks) {
-            if (!theBlock.isConsumedByHighLevelControlFlowExpression()) {
-                theResult.add(theBlock);
-            }
-        }
-        return theResult;
-    }
-
-    public Block blockStartingAt(BytecodeOpcodeAddress aAddress) {
-        for (Block theBlock : blocks) {
-            if (aAddress.equals(theBlock.getStartAddress())) {
-                return theBlock;
-            }
-        }
-        throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
+    public ControlFlowGraph getControlFlowGraph() {
+        return controlFlowGraph;
     }
 
     public List<Variable> getVariables() {
@@ -84,8 +54,8 @@ public class Program {
 
     public Set<BytecodeObjectTypeRef> getStaticReferences() {
         Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
-        for (Block theBlock : getBlocks()) {
-            for (Expression theExpression : theBlock.getExpressions().toList()) {
+        for (GraphNode theNode : controlFlowGraph.getDominatedNodes()) {
+            for (Expression theExpression : theNode.getExpressions().toList()) {
                 if (theExpression instanceof PutStaticExpression) {
                     PutStaticExpression theE = (PutStaticExpression) theExpression;
                     theResult.add(BytecodeObjectTypeRef

@@ -31,7 +31,8 @@ import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
@@ -52,7 +53,6 @@ import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GetStaticValue;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.HighLevelIFExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
@@ -88,6 +88,7 @@ import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.UnknownValue;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableDescription;
 import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class JSSSAWriter extends JSWriter {
@@ -665,36 +666,7 @@ public class JSSSAWriter extends JSWriter {
                 withDeeperIndent().writeExpressions(theE.getExpressions());
 
                 println("}");
-            } else if (theExpression instanceof HighLevelIFExpression) {
-                HighLevelIFExpression theE = (HighLevelIFExpression) theExpression;
-                Variable theBooleanExpression = theE.getBooleanExpression();
-                print("if (");
-                printVariableNameOrValue(theBooleanExpression);
-                println(") {");
 
-                JSSSAWriter theThenWriter = withDeeperIndent();
-                Block theThenBlock = theE.getThenBlock();
-                theThenWriter.printlnComment("Then block starting at " + theThenBlock.getStartAddress().getAddress());
-                theThenWriter.writeExpressions(theThenBlock.getExpressions());
-
-                for (Block theSuccessor : theThenBlock.getSuccessors()) {
-                    theThenWriter
-                            .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
-                }
-
-                println("} else {");
-
-                Block theElseBlock = theE.getElseBlock();
-                JSSSAWriter theElseWriter = withDeeperIndent();
-                theElseWriter.printlnComment("Else block starting at " + theElseBlock.getStartAddress().getAddress());
-                theElseWriter.writeExpressions(theElseBlock.getExpressions());
-
-                for (Block theSuccessor : theElseBlock.getSuccessors()) {
-                    theElseWriter
-                            .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
-                }
-
-                println("}");
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
                 BlockState theFinalState = theE.getSourceBlock().toFinalState();
@@ -784,5 +756,70 @@ public class JSSSAWriter extends JSWriter {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }
         }
+    }
+
+    public void print(ControlFlowGraph.Node aNode) {
+        if (aNode instanceof ControlFlowGraph.SequenceOfSimpleNodes) {
+            printSimpleSequenceNode((ControlFlowGraph.SequenceOfSimpleNodes) aNode);
+            return;
+        }
+        if (aNode instanceof ControlFlowGraph.SimpleNode) {
+            printSimpleNode((ControlFlowGraph.SimpleNode) aNode);
+            return;
+        }
+        throw new IllegalArgumentException("Not supported node type : " + aNode.getClass());
+    }
+
+    public void printSimpleSequenceNode(ControlFlowGraph.SequenceOfSimpleNodes aSequence) {
+        List<ControlFlowGraph.SimpleNode> theNodes = aSequence.getNodes();
+        println();
+        println(
+                "var currentLabel = " + theNodes.get(0).getNode().getStartAddress().getAddress()
+                        + ";");
+        println("controlflowloop: while(true) {switch(currentLabel) {");
+
+        for (ControlFlowGraph.SimpleNode theBlock : theNodes) {
+
+            GraphNode theGraphNode = theBlock.getNode();
+
+            println("    case " + theGraphNode.getStartAddress().getAddress() + ": {");
+
+            JSSSAWriter theJSWriter = new JSSSAWriter(indent + "        ", writer, linkerContext);
+
+            for (Map.Entry<VariableDescription, Variable> theImported : theGraphNode.toStartState().getPorts()
+                    .entrySet()) {
+                theJSWriter.print("// ");
+                theJSWriter.printVariableNameOrValue(theImported.getValue());
+                theJSWriter.print(" is imported as ");
+                theJSWriter
+                        .println(theImported.getKey().toString() + " and type " + theImported.getValue().getValue());
+            }
+
+            for (GraphNode thePrececessor : theGraphNode.getPredecessors()) {
+                theJSWriter.printlnComment(
+                        "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
+            }
+            for (GraphNode theSuccessor : theGraphNode.getSuccessors()) {
+                theJSWriter
+                        .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
+            }
+
+            theJSWriter.writeExpressions(theGraphNode.getExpressions());
+
+    /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
+                            theJSWriter.print("// ");
+                            theJSWriter.printVariableNameOrValue(theExported.getAddress());
+                            theJSWriter.print(" is exported as ");
+                            theJSWriter.println(theExported.getKey().toString());
+                        }*/
+
+            println("    }");
+        }
+        println("    default: throw 'Illegal state exception ' + currentLabel;");
+        println("}}");
+    }
+
+    public void printSimpleNode(ControlFlowGraph.SimpleNode aSimpleNode) {
+        writeExpressions(aSimpleNode.getNode().getExpressions());
     }
 }
