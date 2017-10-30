@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Block {
+public class GraphNode {
 
     public enum BlockType {
         NORMAL,
@@ -33,14 +33,13 @@ public class Block {
     private final BytecodeOpcodeAddress startAddress;
     private final ExpressionList expressions;
     private final Program program;
-    private final Set<Block> successors;
+    private final Set<GraphNode> successors;
     private final BlockType type;
     private final Map<VariableDescription, Variable> imported;
     private final Map<VariableDescription, Variable> exported;
-    private boolean consumedByHighLevelControlFlowExpression;
-    private Block fallThruSuccessor;
+    private GraphNode fallThruSuccessor;
 
-    public Block(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+    public GraphNode(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
         startAddress = aStartAddress;
         program = aProgram;
@@ -50,32 +49,24 @@ public class Block {
         exported = new HashMap<>();
     }
 
-    public void setFallThruSuccessor(Block fallThruSuccessor) {
+    public void setFallThruSuccessor(GraphNode fallThruSuccessor) {
         this.fallThruSuccessor = fallThruSuccessor;
     }
 
-    public Block fallThruSuccessor() {
+    public GraphNode fallThruSuccessor() {
         if (fallThruSuccessor == null) {
             throw new IllegalStateException("No fallthru successor");
         }
         return fallThruSuccessor;
     }
 
-    public void consumeByHighLevelControlFlowExpression() {
-        consumedByHighLevelControlFlowExpression = true;
-    }
-
-    public boolean isConsumedByHighLevelControlFlowExpression() {
-        return consumedByHighLevelControlFlowExpression;
-    }
-
     public BlockType getType() {
         return type;
     }
 
-    public Set<Block> getPredecessors() {
-        Set<Block> theResult = new HashSet<>();
-        for (Block theBlock: program.getBlocks()) {
+    public Set<GraphNode> getPredecessors() {
+        Set<GraphNode> theResult = new HashSet<>();
+        for (GraphNode theBlock: program.getControlFlowGraph().getDominatedNodes()) {
             if (theBlock.getSuccessors().contains(this)) {
                 theResult.add(theBlock);
             }
@@ -83,11 +74,11 @@ public class Block {
         return theResult;
     }
 
-    public void addSuccessor(Block aBlock) {
+    public void addSuccessor(GraphNode aBlock) {
         successors.add(aBlock);
     }
 
-    public Set<Block> getSuccessors() {
+    public Set<GraphNode> getSuccessors() {
         return successors;
     }
 
@@ -145,8 +136,8 @@ public class Block {
         return theState;
     }
 
-    public Block successorByJumpTarget(BytecodeOpcodeAddress aTarget) {
-        for (Block theSuccessor : getSuccessors()) {
+    public GraphNode successorByJumpTarget(BytecodeOpcodeAddress aTarget) {
+        for (GraphNode theSuccessor : getSuccessors()) {
             if (aTarget.equals(theSuccessor.getStartAddress())) {
                 return theSuccessor;
             }
@@ -166,10 +157,6 @@ public class Block {
         program.removeVariable(aVariable);
     }
 
-    public Program getProgram() {
-        return program;
-    }
-
     public boolean endWithNeverReturningExpression() {
         Expression theLastExpression = expressions.lastExpression();
         return theLastExpression instanceof ReturnExpression ||
@@ -177,7 +164,6 @@ public class Block {
                 theLastExpression instanceof TableSwitchExpression ||
                 theLastExpression instanceof LookupSwitchExpression ||
                 theLastExpression instanceof ThrowExpression ||
-                theLastExpression instanceof GotoExpression ||
-                theLastExpression instanceof HighLevelIFExpression;
+                theLastExpression instanceof GotoExpression;
     }
 }

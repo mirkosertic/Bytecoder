@@ -15,13 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -31,27 +24,16 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeControlFlowGraph;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableDescription;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 public class JSSSACompilerBackend implements CompileBackend {
 
@@ -340,14 +322,12 @@ public class JSSSACompilerBackend implements CompileBackend {
 
                 System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
-                BytecodeProgram theProgram = theCode.getProgramm();
-                BytecodeControlFlowGraph theFlowGraph = new BytecodeControlFlowGraph(theEntry.getValue().getBytecodeClass(), theProgram);
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
-                Program theSSAProgram = theGenerator.generateFrom(theFlowGraph, theMethod.getSignature(), theMethod.getAccessFlags());
+                Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
-                theWriter.println("        // # basic blocks in flow graph : " + theFlowGraph.getBlocks().size());
+                theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
 
                 JSSSAWriter theVariablesWriter = new JSSSAWriter("        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.getVariables()) {
@@ -362,56 +342,8 @@ public class JSSSACompilerBackend implements CompileBackend {
                     }
                 }
 
-                List<Block> theBlocksToRender = theSSAProgram.getBlocksNotAlreadyConsumedByHighLevelConstructs();
-                if (theBlocksToRender.size() == 1) {
+                theVariablesWriter.print(theSSAProgram.getControlFlowGraph().toRootNode());
 
-                    JSSSAWriter theJSWriter = new JSSSAWriter("        ", theWriter, aLinkerContext);
-                    theJSWriter.writeExpressions(theBlocksToRender.get(0).getExpressions());
-
-                } else {
-                    theWriter.println();
-                    theWriter.println(
-                            "        var currentLabel = " + theSSAProgram.getBlocks().get(0).getStartAddress().getAddress()
-                                    + ";");
-                    theWriter.println("        controlflowloop: while(true) {switch(currentLabel) {");
-
-                    for (Block theBlock : theBlocksToRender) {
-                        theWriter.println("         case " + theBlock.getStartAddress().getAddress() + ": {");
-
-                        JSSSAWriter theJSWriter = new JSSSAWriter("             ", theWriter, aLinkerContext);
-
-                        for (Map.Entry<VariableDescription, Variable> theImported : theBlock.toStartState().getPorts()
-                                .entrySet()) {
-                            theJSWriter.print("// ");
-                            theJSWriter.printVariableNameOrValue(theImported.getValue());
-                            theJSWriter.print(" is imported as ");
-                            theJSWriter
-                                    .println(theImported.getKey().toString() + " and type " + theImported.getValue().getValue());
-                        }
-
-                        for (Block thePrececessor : theBlock.getPredecessors()) {
-                            theJSWriter.printlnComment(
-                                    "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
-                        }
-                        for (Block theSuccessor : theBlock.getSuccessors()) {
-                            theJSWriter
-                                    .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
-                        }
-
-                        theJSWriter.writeExpressions(theBlock.getExpressions());
-
-    /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
-                            theJSWriter.print("// ");
-                            theJSWriter.printVariableNameOrValue(theExported.getAddress());
-                            theJSWriter.print(" is exported as ");
-                            theJSWriter.println(theExported.getKey().toString());
-                        }*/
-
-                        theWriter.println("         }");
-                    }
-                    theWriter.println("         default: throw 'Illegal state exception ' + currentLabel;");
-                    theWriter.println("        }}");
-                }
                 theWriter.println("    },");
             });
 

@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 
 public class AllOptimizer implements Optimizer {
 
@@ -32,9 +32,9 @@ public class AllOptimizer implements Optimizer {
     }
 
     @Override
-    public void optimize(Program aProgram, BytecodeLinkerContext aLinkerContext) {
+    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
         for (Optimizer theOptimzer : optimizer) {
-            theOptimzer.optimize(aProgram, aLinkerContext);
+            theOptimzer.optimize(aGraph, aLinkerContext);
         }
     }
 }

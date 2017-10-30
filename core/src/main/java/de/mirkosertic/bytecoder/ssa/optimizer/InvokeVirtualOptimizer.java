@@ -23,25 +23,25 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.Block;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
-import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class InvokeVirtualOptimizer implements Optimizer {
 
     @Override
-    public void optimize(Program aProgram, BytecodeLinkerContext aLinkerContext) {
-        for (Block theBlock : aProgram.getBlocks()) {
-            optimizeExpressionList(theBlock.getExpressions(), aLinkerContext);
+    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
+        for (GraphNode theNode : aGraph.getDominatedNodes()) {
+            optimizeExpressionList(theNode.getExpressions(), aLinkerContext);
         }
     }
 
