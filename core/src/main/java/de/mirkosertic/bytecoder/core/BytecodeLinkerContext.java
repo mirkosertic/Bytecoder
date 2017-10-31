@@ -109,16 +109,6 @@ public class BytecodeLinkerContext {
 
             System.out.println("Linked " + theLinkedClass.getClassName().name());
 
-            BytecodeBootstrapMethodsAttributeInfo theBootstraps = theLinkedClass.getBytecodeClass().getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
-            if (theBootstraps != null) {
-                for (int i=0;i<theBootstraps.getMethodCount();i++) {
-                    BytecodeBootstrapMethod theBSMethod = theBootstraps.methodByIndex(i);
-                    BytecodeConstant theConstant = theLinkedClass.getConstantPool().constantByIndex(theBSMethod.getMethodRefIndex());
-                    System.out.println(" BS Method " +  i + " points to " + theBSMethod.getMethodRefIndex() + " which is " + theConstant);
-                    System.out.println(" has " + theBSMethod.getArguments().length + " arguments");
-                }
-            }
-
             return theLinkedClass;
         } catch (Exception e) {
             throw new RuntimeException("Error linking class " + aTypeRef.name(), e);

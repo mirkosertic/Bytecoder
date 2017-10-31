@@ -59,17 +59,30 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
         BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
 
         BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
+        BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
+
+        // Link the bootstrap method
+        System.out.println("      which is " + theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant().stringValue() + "." + theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         switch (theMethodRef.getReferenceKind()) {
             case REF_invokeStatic: {
+                // Link the static method
+                aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()))
+                        .linkStaticMethod(theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+
                 // in this case we assume that the invoke dynamic can be replaced by an invokestatic
                 // to the implementing method, but only indirectly using a callsite object aka function pointer
-                BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapMethod.getArguments()[0];
-                BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
+                for (BytecodeConstant theBootstrapArgument : theBootstrapMethod.getArguments()) {
+                    if (theBootstrapArgument instanceof BytecodeMethodHandleConstant) {
+                        BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapArgument;
+                        BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
 
-                BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
-                aLinkerContext.linkClass(theClass).linkStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                        theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                        BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
+                        aLinkerContext.linkClass(theClass).linkStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                    }
+                }
 
                 break;
             }
