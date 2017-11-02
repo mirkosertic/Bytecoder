@@ -13,11 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
+package de.mirkosertic.bytecoder.ssa;
 
-public abstract class TCallSite {
+import java.util.List;
 
-    public abstract TMethodHandle getTarget();
+public class InvokeCallsiteValue extends Value {
 
-    public abstract TMethodType type();
+    private final Variable target;
+    private final List<Variable> arguments;
+
+    public InvokeCallsiteValue(Variable aTarget, List<Variable> aArguments) {
+        target = aTarget.usedBy(this);
+        arguments = aArguments;
+        for (Variable theVariable : aArguments) {
+            theVariable.usedBy(this);
+        }
+    }
+
+    public Variable getTarget() {
+        return target;
+    }
+
+    public List<Variable> getArguments() {
+        return arguments;
+    }
 }

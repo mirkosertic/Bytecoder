@@ -23,6 +23,6 @@ public class TLambdaMetafactory {
                                         TMethodType aSamMethodType,
                                         TMethodHandle aImplMethod,
                                         TMethodType aInstantiatedMethodType) {
-        return null;
+        return new TConstantCallSite(aImplMethod, aInvokedType);
     }
 }
