@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
-public class InvokeMethodTypeExpression extends Expression {
+public class TConstantCallSite extends TCallSite {
 
-    private final InvokeMethodTypeValue value;
+    private final TMethodHandle methodHandle;
+    private final TMethodType methodType;
 
-    public InvokeMethodTypeExpression(InvokeMethodTypeValue aValue) {
-        this.value = aValue;
+    public TConstantCallSite(TMethodHandle aMethodHandle, TMethodType aMethodType) {
+        methodHandle = aMethodHandle;
+        methodType = aMethodType;
     }
 
-    public InvokeMethodTypeValue getValue() {
-        return value;
+    @Override
+    public TMethodHandle getTarget() {
+        return methodHandle;
+    }
+
+    @Override
+    public TMethodType type() {
+        return methodType;
     }
 }

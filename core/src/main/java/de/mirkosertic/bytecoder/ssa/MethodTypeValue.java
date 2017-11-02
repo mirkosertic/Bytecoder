@@ -15,17 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
 public class MethodTypeValue extends Value {
 
-    private final BytecodeMethodRefConstant methodRef;
+    private final BytecodeMethodSignature signature;
 
-    public MethodTypeValue(BytecodeMethodRefConstant aMethodRef) {
-        methodRef = aMethodRef;
+    public MethodTypeValue(BytecodeMethodSignature aSignature) {
+        signature = aSignature;
     }
 
-    public BytecodeMethodRefConstant getMethodRef() {
-        return methodRef;
+    public BytecodeMethodSignature getSignature() {
+        return signature;
     }
 }

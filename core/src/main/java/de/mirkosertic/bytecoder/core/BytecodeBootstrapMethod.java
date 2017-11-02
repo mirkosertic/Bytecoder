@@ -27,10 +27,6 @@ public class BytecodeBootstrapMethod {
         constantPool = aConstantPool;
     }
 
-    public int getMethodRefIndex() {
-        return methodRef;
-    }
-
     public BytecodeMethodHandleConstant getMethodRef() {
         return (BytecodeMethodHandleConstant) constantPool.constantByIndex(methodRef - 1);
     }
@@ -38,7 +34,7 @@ public class BytecodeBootstrapMethod {
     public BytecodeConstant[] getArguments() {
         BytecodeConstant[] theResult = new BytecodeConstant[arguments.length];
         for (int i=0;i<arguments.length;i++) {
-            theResult[i] = constantPool.constantByIndex(arguments[i]);
+            theResult[i] = constantPool.constantByIndex(arguments[i] - 1);
         }
         return theResult;
     }

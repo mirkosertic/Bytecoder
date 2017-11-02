@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
+package de.mirkosertic.bytecoder.ssa;
 
-public abstract class TCallSite {
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 
-    public abstract TMethodHandle getTarget();
+public class MethodRefValue extends Value {
 
-    public abstract TMethodType type();
+    private final BytecodeMethodRefConstant methodRef;
+
+    public MethodRefValue(BytecodeMethodRefConstant aMethodRef) {
+        methodRef = aMethodRef;
+    }
+
+    public BytecodeMethodRefConstant getMethodRef() {
+        return methodRef;
+    }
 }

@@ -57,15 +57,17 @@ import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeMethodTypeExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeMethodTypeValue;
+import de.mirkosertic.bytecoder.ssa.InvokeMethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeCallsiteValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.MethodRefValue;
 import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
 import de.mirkosertic.bytecoder.ssa.NegatedValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayValue;
@@ -167,17 +169,31 @@ public class JSSSAWriter extends JSWriter {
             print((UnknownValue) aValue);
         } else if (aValue instanceof FloorValue) {
             print((FloorValue) aValue);
-        } else if (aValue instanceof MethodTypeValue) {
-            print((MethodTypeValue) aValue);
-        } else if (aValue instanceof InvokeMethodTypeValue) {
-            print((InvokeMethodTypeValue) aValue);
+        } else if (aValue instanceof MethodRefValue) {
+            print((MethodRefValue) aValue);
+        } else if (aValue instanceof InvokeCallsiteValue) {
+            print((InvokeCallsiteValue) aValue);
         } else if (aValue instanceof ComputedMemoryLocationReadValue) {
             print((ComputedMemoryLocationReadValue) aValue);
         } else if (aValue instanceof ComputedMemoryLocationWriteValue) {
             print((ComputedMemoryLocationWriteValue) aValue);
+        } else if (aValue instanceof MethodHandlesGeneratedLookupValue) {
+            print((MethodHandlesGeneratedLookupValue) aValue);
+        } else if (aValue instanceof MethodTypeValue) {
+            print((MethodTypeValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    public void print(MethodTypeValue aValue) {
+        print("'");
+        print(aValue.getSignature().toString());
+        print("'");
+    }
+
+    public void print(MethodHandlesGeneratedLookupValue aValue) {
+        print("null");
     }
 
     public void print(ComputedMemoryLocationWriteValue aValue) {
@@ -196,10 +212,10 @@ public class JSSSAWriter extends JSWriter {
         print("]");
     }
 
-    public void print(InvokeMethodTypeValue aValue) {
+    public void print(InvokeCallsiteValue aValue) {
         List<Variable> theVariables = aValue.getArguments();
         printVariableNameOrValue(aValue.getTarget());
-        print("(");
+        print(".methodHandle(");
         for (int i = 0; i < theVariables.size(); i++) {
             if (i> 0) {
                 print(",");
@@ -209,7 +225,7 @@ public class JSSSAWriter extends JSWriter {
         print(")");
     }
 
-    public void print(MethodTypeValue aValue) {
+    public void print(MethodRefValue aValue) {
         String theMethodName = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         BytecodeMethodSignature theSignature = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         print(JSWriterUtils.toClassName(aValue.getMethodRef().getClassIndex().getClassConstant()));
@@ -509,9 +525,9 @@ public class JSSSAWriter extends JSWriter {
         print("(");
 
         printVariableNameOrValue(theTarget);
-        for (int i = 0; i < theVariables.size(); i++) {
+        for (Variable theVariable : theVariables) {
             print(",");
-            printVariableNameOrValue(theVariables.get(i));
+            printVariableNameOrValue(theVariable);
         }
         print(")");
     }
@@ -530,9 +546,9 @@ public class JSSSAWriter extends JSWriter {
         print(")(");
 
         printVariableNameOrValue(theTarget);
-        for (int i = 0; i < theVariables.size(); i++) {
+        for (Variable theVariable : theVariables) {
             print(",");
-            printVariableNameOrValue(theVariables.get(i));
+            printVariableNameOrValue(theVariable);
         }
         print(")");
     }
@@ -642,8 +658,8 @@ public class JSSSAWriter extends JSWriter {
                 InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
                 print(theE.getValue());
                 println(";");
-            } else if (theExpression instanceof InvokeMethodTypeExpression) {
-                InvokeMethodTypeExpression theE = (InvokeMethodTypeExpression) theExpression;
+            } else if (theExpression instanceof InvokeMethodRefExpression) {
+                InvokeMethodRefExpression theE = (InvokeMethodRefExpression) theExpression;
                 print(theE.getValue());
                 println(";");
             } else if (theExpression instanceof PutFieldExpression) {

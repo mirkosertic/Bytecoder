@@ -15,26 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
+public class InvokeMethodRefExpression extends Expression {
 
-public class InvokeMethodTypeValue extends Value {
+    private final InvokeCallsiteValue value;
 
-    private final Variable target;
-    private final List<Variable> arguments;
-
-    public InvokeMethodTypeValue(Variable aTarget, List<Variable> aArguments) {
-        target = aTarget.usedBy(this);
-        arguments = aArguments;
-        for (Variable theVariable : aArguments) {
-            theVariable.usedBy(this);
-        }
+    public InvokeMethodRefExpression(InvokeCallsiteValue aValue) {
+        this.value = aValue;
     }
 
-    public Variable getTarget() {
-        return target;
-    }
-
-    public List<Variable> getArguments() {
-        return arguments;
+    public InvokeCallsiteValue getValue() {
+        return value;
     }
 }
