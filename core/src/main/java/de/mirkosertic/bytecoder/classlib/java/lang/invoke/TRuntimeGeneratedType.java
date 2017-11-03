@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
-public class InvokeMethodRefExpression extends Expression {
+public class TRuntimeGeneratedType {
 
-    private final InvokeCallsiteValue value;
+    private final TMethodType type;
+    private final TMethodHandle implementation;
 
-    public InvokeMethodRefExpression(InvokeCallsiteValue aValue) {
-        this.value = aValue;
-    }
-
-    public InvokeCallsiteValue getValue() {
-        return value;
+    public TRuntimeGeneratedType(TMethodType aType, TMethodHandle aImplementation) {
+        type = aType;
+        implementation = aImplementation;
     }
 }

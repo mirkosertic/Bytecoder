@@ -15,19 +15,28 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 
 import java.util.List;
 
 public class InvokeVirtualMethodValue extends Value {
 
-    private final BytecodeNameAndTypeConstant method;
+    private final String methodName;
+    private final BytecodeMethodSignature signature;
     private final Variable target;
     private final List<Variable> arguments;
 
     public InvokeVirtualMethodValue(BytecodeNameAndTypeConstant aMethod, Variable aTarget,
                                     List<Variable> aArguments) {
-        method = aMethod;
+        this(aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
+                aTarget, aArguments);
+    }
+
+    public InvokeVirtualMethodValue(String aMethodName, BytecodeMethodSignature aSignature, Variable aTarget,
+            List<Variable> aArguments) {
+        methodName = aMethodName;
+        signature = aSignature;
         target = aTarget.usedBy(this);
         arguments = aArguments;
         for (Variable theVariable : aArguments) {
@@ -35,8 +44,13 @@ public class InvokeVirtualMethodValue extends Value {
         }
     }
 
-    public BytecodeNameAndTypeConstant getMethod() {
-        return method;
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public BytecodeMethodSignature getSignature() {
+        return signature;
     }
 
     public Variable getTarget() {

@@ -37,6 +37,7 @@ public class InvokeDynamicTest {
 
     @Test
     public void testLambda() {
+        String theLala = "";
         final int x = 1;
         final int y = 2;
         Runnable theRun = () -> {

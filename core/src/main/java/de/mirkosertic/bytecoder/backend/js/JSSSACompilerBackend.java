@@ -15,6 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashSet;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -24,16 +29,23 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.Set;
 
 public class JSSSACompilerBackend implements CompileBackend {
 
@@ -76,7 +88,7 @@ public class JSSSACompilerBackend implements CompileBackend {
     private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
         BytecodeAnnotation theDelegatesTo = aBytecodeClass.getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
         if (theDelegatesTo != null) {
-            BytecodeAnnotation.ElementValue theParentOverride = (BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
+            BytecodeAnnotation.ElementValue theParentOverride = theDelegatesTo.getElementValueByName("parentClass");
             return theParentOverride.stringValue().replace("/",".");
         }
         return null;
@@ -186,9 +198,24 @@ public class JSSSACompilerBackend implements CompileBackend {
                 theWriter.println("    staticFields : {");
 
                 theWriter.println("        name : '" + theEntry.getValue().getClassName().name() + "',");
+                theWriter.println("        staticCallSites : [],");
                 theWriter.println("        classInitialized : false,");
                 theEntry.getValue().forEachStaticField(
                         aFieldEntry -> theWriter.println("        " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
+                theWriter.println("    },");
+                theWriter.println();
+
+                theWriter.println("    resolveStaticCallSiteObject: function(aKey, aProducerFunction) {");
+                theWriter.print("        var resolvedCallsiteObject = ");
+                theWriter.print(theJSClassName);
+                theWriter.println(".staticFields.staticCallSites[aKey];");
+                theWriter.println("        if (resolvedCallsiteObject == null) {");
+                theWriter.println("            resolvedCallsiteObject = aProducerFunction();");
+                theWriter.print("            ");
+                theWriter.println(theJSClassName);
+                theWriter.println(".staticFields.staticCallSites[aKey] = resolvedCallsiteObject;");
+                theWriter.println("        }");
+                theWriter.println("        return resolvedCallsiteObject;");
                 theWriter.println("    },");
                 theWriter.println();
 
@@ -285,7 +312,7 @@ public class JSSSACompilerBackend implements CompileBackend {
 
                 BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
                 BytecodeTypeRef[] theMethodArguments = theCurrentMethodSignature.getArguments();
-                StringBuffer theArguments = new StringBuffer();
+                StringBuilder theArguments = new StringBuilder();
                 if (!theMethod.getAccessFlags().isStatic()) {
                     theArguments.append("thisRef");
                 }
@@ -313,8 +340,6 @@ public class JSSSACompilerBackend implements CompileBackend {
                     theWriter.println("    },");
                     return;
                 }
-
-                BytecodeCodeAttributeInfo theCode = theMethod.getCode(theEntry.getValue().getBytecodeClass());
 
                 theWriter.println();
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
