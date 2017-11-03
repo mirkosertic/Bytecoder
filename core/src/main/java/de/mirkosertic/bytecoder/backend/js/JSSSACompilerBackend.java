@@ -212,7 +212,7 @@ public class JSSSACompilerBackend implements CompileBackend {
                 theWriter.println("        if (resolvedCallsiteObject == null) {");
                 theWriter.println("            resolvedCallsiteObject = aProducerFunction();");
                 theWriter.print("            ");
-                theWriter.println(theJSClassName);
+                theWriter.print(theJSClassName);
                 theWriter.println(".staticFields.staticCallSites[aKey] = resolvedCallsiteObject;");
                 theWriter.println("        }");
                 theWriter.println("        return resolvedCallsiteObject;");
