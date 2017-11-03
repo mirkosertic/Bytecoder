@@ -15,5 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
-public class TMethodHandle {
+public abstract class TMethodHandle {
+
+    public abstract Object invokeExact(Object[] args);
 }

@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.GC;
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
+import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
 import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
@@ -311,7 +313,7 @@ public class ProgramGenerator {
         }
 
         // This will traverse the CFG from top to bottom
-        initializeBlock(aOwningClass, theProgram, theStart, theVisited, theHelper, theBasicBlockByAddress);
+        initializeBlock(aOwningClass, aMethod, theProgram, theStart, theVisited, theHelper, theBasicBlockByAddress);
 
         // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
         // finally blocks
@@ -323,7 +325,7 @@ public class ProgramGenerator {
                     theHelper.push(theNewBlock.newVariable(Type.REFERENCE, new CurrentExceptionValue()));
                 }
                 // TODO: Check what exception handler might reference from here!!!
-                initializeBlock(aOwningClass, theProgram, theNewBlock, theVisited, theNewHelper, theBasicBlockByAddress);
+                initializeBlock(aOwningClass, aMethod, theProgram, theNewBlock, theVisited, theNewHelper, theBasicBlockByAddress);
             }
         }
 
@@ -429,10 +431,10 @@ public class ProgramGenerator {
         }
     }
 
-    private void initializeBlock(BytecodeClass aOwningClass, Program aProgram, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelper aHelper, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
+    private void initializeBlock(BytecodeClass aOwningClass, BytecodeMethod aMethod, Program aProgram, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelper aHelper, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
         if (aAlreadyVisited.add(aCurrentBlock)) {
 
-            initializeBlockWith(aOwningClass, aCurrentBlock, aBlocksByAddress, aHelper);
+            initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aBlocksByAddress, aHelper);
 
             for (GraphNode theSuccessor : aCurrentBlock.getSuccessors()) {
                 if (!aAlreadyVisited.contains(theSuccessor)) {
@@ -446,7 +448,7 @@ public class ProgramGenerator {
                         theNewHelper = aHelper.cloneToNewWithPHIFunctions(theSuccessor, aProgram);
                     }
 
-                    initializeBlock(aOwningClass, aProgram, theSuccessor, aAlreadyVisited, theNewHelper, aBlocksByAddress);
+                    initializeBlock(aOwningClass, aMethod, aProgram, theSuccessor, aAlreadyVisited, theNewHelper, aBlocksByAddress);
                 }
             }
         }
@@ -461,7 +463,7 @@ public class ProgramGenerator {
         return aVariable;
     }
 
-    private void initializeBlockWith(BytecodeClass aOwningClass, GraphNode aTargetBlock, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress,  ParsingHelper aHelper) {
+    private void initializeBlockWith(BytecodeClass aOwningClass, BytecodeMethod aMethod, GraphNode aTargetBlock, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress,  ParsingHelper aHelper) {
         // Finally we can start to parse the program
         BytecodeBasicBlock theBytecodeBlock = aBlocksByAddress.apply(aTargetBlock.getStartAddress());
 
@@ -886,8 +888,13 @@ public class ProgramGenerator {
                     Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new UnknownValue());
                     aHelper.push(theNewVariable);
                 } else {
-                    Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, new NewObjectValue(theClassInfo));
-                    aHelper.push(theNewVariable);
+                    if (theObjectType.equals(BytecodeObjectTypeRef.fromRuntimeClass(TRuntimeGeneratedType.class))) {
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, new RuntimeGeneratedTypeValue());
+                        aHelper.push(theNewVariable);
+                    } else {
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, new NewObjectValue(theClassInfo));
+                        aHelper.push(theNewVariable);
+                    }
                 }
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
@@ -945,7 +952,11 @@ public class ProgramGenerator {
 
                 Variable theTarget = aHelper.pop();
                 BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                if (theType.name().equals(Address.class.getName())) {
+                if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(TRuntimeGeneratedType.class))) {
+                    RuntimeGeneratedTypeValue theValue = (RuntimeGeneratedTypeValue) theTarget.getValue();
+                    theValue.setType(theArguments.get(0));
+                    theValue.setMethodRef(theArguments.get(1));
+                } else if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     Variable theRoot = rootFor(theTarget);
                     theRoot.setValue(theArguments.get(0).getValue());
 
@@ -1073,25 +1084,12 @@ public class ProgramGenerator {
                         throw new IllegalStateException("Not implemented : " + theMethodName);
                     }
                 } else {
-                    if (theArguments.size() > 0 && theArguments.get(0).getType() == Type.CALLSITE) {
-                        // We are invoking a method pointer here,
-                        Variable theTarget = theArguments.get(0);
-                        List<Variable> theRemainingArguments = theArguments.subList(1, theArguments.size());
-                        InvokeCallsiteValue theValue = new InvokeCallsiteValue(theTarget, theRemainingArguments);
-                        if (theSignature.getReturnType().isVoid()) {
-                            aTargetBlock.addExpression(new InvokeMethodRefExpression(theValue));
-                        } else {
-                            Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
-                            aHelper.push(theNewVariable);
-                        }
+                    InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theINS.getMethodReference(), theArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
                     } else {
-                        InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theINS.getMethodReference(), theArguments);
-                        if (theSignature.getReturnType().isVoid()) {
-                            aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
-                        } else {
-                            Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
-                            aHelper.push(theNewVariable);
-                        }
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
                     }
                 }
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
@@ -1145,98 +1143,143 @@ public class ProgramGenerator {
                 BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
                 BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
 
+                Program theProgram = new Program();
+                GraphNode theInitNode = new GraphNode(GraphNode.BlockType.NORMAL, theProgram, new BytecodeOpcodeAddress(0));
+
                 switch (theMethodRef.getReferenceKind()) {
-                    case REF_invokeStatic: {
-                        BytecodeObjectTypeRef theClassWithBootstrapMethod = BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant());
-                        String theMethodName = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+                case REF_invokeStatic: {
 
-                        BytecodeMethodSignature theSignature = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+                    BytecodeObjectTypeRef theClassWithBootstrapMethod = BytecodeObjectTypeRef
+                            .fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant());
+                    String theMethodName = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex()
+                            .getName().stringValue();
 
-                        List<Variable> theArguments = new ArrayList<>();
-                        // Add the three default constants
-                        // TMethodHandles.Lookup aCaller,
-                        theArguments.add(aTargetBlock.newVariable(Type.REFERENCE, new MethodHandlesGeneratedLookupValue(theClassWithBootstrapMethod)));
-                        // String aName,
-                        theArguments.add(aTargetBlock.newVariable(Type.REFERENCE, new StringValue(theMethodName)));
-                        // TMethodType aInvokedType,
-                        theArguments.add(aTargetBlock.newVariable(Type.REFERENCE, new MethodTypeValue(theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature())));
+                    BytecodeMethodSignature theSignature = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType()
+                            .getDescriptorIndex().methodSignature();
 
-                        // Revolve the static arguments
-                        for (BytecodeConstant theArgumentConstant : theBootstrapMethod.getArguments()) {
+                    List<Variable> theArguments = new ArrayList<>();
+                    // Add the three default constants
+                    // TMethodHandles.Lookup aCaller,
+                    theArguments.add(theInitNode
+                            .newVariable(Type.REFERENCE, new MethodHandlesGeneratedLookupValue(theClassWithBootstrapMethod)));
+                    // String aName this can be ignored hence we pass in null here,
+                    theArguments.add(theInitNode.newVariable(Type.REFERENCE, new StringValue(theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())));
+                    // TMethodType aInvokedType,
+                    theArguments.add(theInitNode.newVariable(Type.REFERENCE, new MethodTypeValue(
+                            theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex()
+                                    .methodSignature())));
 
-                            if (theArgumentConstant instanceof BytecodeMethodTypeConstant) {
-                                BytecodeMethodTypeConstant theMethodType = (BytecodeMethodTypeConstant) theArgumentConstant;
-                                theArguments.add(aTargetBlock.newVariable(Type.REFERENCE, new MethodTypeValue(theMethodType.getDescriptorIndex().methodSignature())));
-                                continue;
-                            }
-                            if (theArgumentConstant instanceof BytecodeStringConstant) {
-                                BytecodeStringConstant thePrimitive = (BytecodeStringConstant) theArgumentConstant;
-                                theArguments.add(aTargetBlock.newVariable(Type.REFERENCE, new StringValue(thePrimitive.getValue().stringValue())));
-                                continue;
-                            }
-                            if (theArgumentConstant instanceof BytecodeLongConstant) {
-                                BytecodeLongConstant thePrimitive = (BytecodeLongConstant) theArgumentConstant;
-                                theArguments.add(aTargetBlock.newVariable(Type.LONG, new LongValue(thePrimitive.getLongValue())));
-                                continue;
-                            }
-                            if (theArgumentConstant instanceof BytecodeIntegerConstant) {
-                                BytecodeIntegerConstant thePrimitive = (BytecodeIntegerConstant) theArgumentConstant;
-                                theArguments.add(aTargetBlock.newVariable(Type.INT, new LongValue(thePrimitive.getIntegerValue())));
-                                continue;
-                            }
-                            if (theArgumentConstant instanceof BytecodeFloatConstant) {
-                                BytecodeFloatConstant thePrimitive = (BytecodeFloatConstant) theArgumentConstant;
-                                theArguments.add(aTargetBlock.newVariable(Type.FLOAT, new FloatValue(thePrimitive.getFloatValue())));
-                                continue;
-                            }
-                            if (theArgumentConstant instanceof BytecodeDoubleConstant) {
-                                BytecodeDoubleConstant thePrimitive = (BytecodeDoubleConstant) theArgumentConstant;
-                                theArguments.add(aTargetBlock.newVariable(Type.DOUBLE, new DoubleValue(thePrimitive.getDoubleValue())));
-                                continue;
-                            }
-                            if (theArgumentConstant instanceof BytecodeMethodHandleConstant) {
-                                BytecodeMethodHandleConstant theMethodHandle = (BytecodeMethodHandleConstant) theArgumentConstant;
-                                BytecodeReferenceIndex theReference = theMethodHandle.getReferenceIndex();
-                                BytecodeMethodRefConstant theReferenceConstant = (BytecodeMethodRefConstant) theReference.getConstant();
-                                theArguments.add(aTargetBlock.newVariable(Type.REFERENCE, new MethodRefValue(theReferenceConstant)));
-                                continue;
-                            }
-                            throw new IllegalStateException("Unsupported argument type : " + theArgumentConstant);
+                    // Revolve the static arguments
+                    for (BytecodeConstant theArgumentConstant : theBootstrapMethod.getArguments()) {
+
+                        if (theArgumentConstant instanceof BytecodeMethodTypeConstant) {
+                            BytecodeMethodTypeConstant theMethodType = (BytecodeMethodTypeConstant) theArgumentConstant;
+                            theArguments.add(theInitNode.newVariable(Type.REFERENCE,
+                                    new MethodTypeValue(theMethodType.getDescriptorIndex().methodSignature())));
+                            continue;
                         }
-
-                        // If there are arguments missing, we need to pop them from the stack
-                        while(theArguments.size() < theSignature.getArguments().length) {
-                            theArguments.add(aHelper.pop());
+                        if (theArgumentConstant instanceof BytecodeStringConstant) {
+                            BytecodeStringConstant thePrimitive = (BytecodeStringConstant) theArgumentConstant;
+                            theArguments.add(theInitNode
+                                    .newVariable(Type.REFERENCE, new StringValue(thePrimitive.getValue().stringValue())));
+                            continue;
                         }
-
-                        // Ok, is the last argument of the bootstrap method a vararg argument
-                        BytecodeTypeRef theLastArgument = theSignature.getArguments()[theSignature.getArguments().length - 1];
-                        if (theLastArgument.isArray()) {
-                            // Yes, so we have to wrap everything from this position on in an array
-                            int theSignatureLength = theSignature.getArguments().length;
-                            int theArgumentsLength = theArguments.size();
-
-                            int theVarArgsLength = theArgumentsLength - theSignatureLength + 1;
-                            Variable theLength = aTargetBlock.newVariable(Type.INT, new IntegerValue(theVarArgsLength));
-                            Variable theNewVarargsArray = aTargetBlock.newVariable(Type.REFERENCE, new NewArrayValue(
-                                    BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), theLength));
-                            for (int i=theSignatureLength-1; i<theArgumentsLength;i++) {
-                                Variable theVariable = theArguments.get(i);
-                                Variable theIndex = aTargetBlock.newVariable(Type.INT, new IntegerValue(i-theSignatureLength+1));
-                                theArguments.remove(theVariable);
-                                aTargetBlock.addExpression(new ArrayStoreExpression(theNewVarargsArray, theIndex, theVariable));
-                            }
-                            theArguments.add(theNewVarargsArray);
+                        if (theArgumentConstant instanceof BytecodeLongConstant) {
+                            BytecodeLongConstant thePrimitive = (BytecodeLongConstant) theArgumentConstant;
+                            theArguments.add(theInitNode.newVariable(Type.LONG, new LongValue(thePrimitive.getLongValue())));
+                            continue;
                         }
-
-                        InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theBootstrapMethodToInvoke, theArguments);
-                        Variable theNewVariable = aTargetBlock.newVariable(Type.CALLSITE, theValue);
-                        aHelper.push(theNewVariable);
-
-                        break;
+                        if (theArgumentConstant instanceof BytecodeIntegerConstant) {
+                            BytecodeIntegerConstant thePrimitive = (BytecodeIntegerConstant) theArgumentConstant;
+                            theArguments.add(theInitNode.newVariable(Type.INT, new LongValue(thePrimitive.getIntegerValue())));
+                            continue;
+                        }
+                        if (theArgumentConstant instanceof BytecodeFloatConstant) {
+                            BytecodeFloatConstant thePrimitive = (BytecodeFloatConstant) theArgumentConstant;
+                            theArguments.add(theInitNode.newVariable(Type.FLOAT, new FloatValue(thePrimitive.getFloatValue())));
+                            continue;
+                        }
+                        if (theArgumentConstant instanceof BytecodeDoubleConstant) {
+                            BytecodeDoubleConstant thePrimitive = (BytecodeDoubleConstant) theArgumentConstant;
+                            theArguments
+                                    .add(theInitNode.newVariable(Type.DOUBLE, new DoubleValue(thePrimitive.getDoubleValue())));
+                            continue;
+                        }
+                        if (theArgumentConstant instanceof BytecodeMethodHandleConstant) {
+                            BytecodeMethodHandleConstant theMethodHandle = (BytecodeMethodHandleConstant) theArgumentConstant;
+                            BytecodeReferenceIndex theReference = theMethodHandle.getReferenceIndex();
+                            BytecodeMethodRefConstant theReferenceConstant = (BytecodeMethodRefConstant) theReference
+                                    .getConstant();
+                            theArguments.add(theInitNode.newVariable(Type.REFERENCE, new MethodRefValue(theReferenceConstant)));
+                            continue;
+                        }
+                        throw new IllegalStateException("Unsupported argument type : " + theArgumentConstant);
                     }
-                    default:
-                        throw new IllegalStateException("Nut supported reference kind for invoke dynamic : " + theMethodRef.getReferenceKind());
+
+                    // Ok, is the last argument of the bootstrap method a vararg argument
+                    BytecodeTypeRef theLastArgument = theSignature.getArguments()[theSignature.getArguments().length - 1];
+                    if (theLastArgument.isArray()) {
+                        // Yes, so we have to wrap everything from this position on in an array
+                        int theSignatureLength = theSignature.getArguments().length;
+                        int theArgumentsLength = theArguments.size();
+
+                        int theVarArgsLength = theArgumentsLength - theSignatureLength + 1;
+                        Variable theLength = theInitNode.newVariable(Type.INT, new IntegerValue(theVarArgsLength));
+                        Variable theNewVarargsArray = theInitNode.newVariable(Type.REFERENCE, new NewArrayValue(
+                                BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), theLength));
+                        for (int i = theSignatureLength - 1; i < theArgumentsLength; i++) {
+                            Variable theVariable = theArguments.get(i);
+                            Variable theIndex = theInitNode.newVariable(Type.INT, new IntegerValue(i - theSignatureLength + 1));
+                            theArguments.remove(theVariable);
+                            theInitNode.addExpression(new ArrayStoreExpression(theNewVarargsArray, theIndex, theVariable));
+                        }
+                        theArguments.add(theNewVarargsArray);
+                    }
+
+                    InvokeStaticMethodValue theInvokeStaticValue = new InvokeStaticMethodValue(theBootstrapMethodToInvoke, theArguments);
+                    Variable theNewVariable = theInitNode.newVariable(Type.CALLSITE, theInvokeStaticValue);
+                    theInitNode.addExpression(new ReturnVariableExpression(theNewVariable));
+
+                    // First step, we construct a callsitre
+                    ResolveCallsiteObjectValue theValue = new ResolveCallsiteObjectValue(aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);
+                    Variable theCallsiteVariable = aTargetBlock.newVariable(Type.CALLSITE, theValue);
+
+                    // Second step, we invoke the callsite to get whatever we are searching
+                    InvokeVirtualMethodValue theGetTargetValue = new InvokeVirtualMethodValue("getTarget",
+                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TMethodHandle.class),
+                                    new BytecodeTypeRef[0]),
+                            theCallsiteVariable, new ArrayList<>());
+                    Variable theMethodHandleVariable = aTargetBlock.newVariable(Type.REFERENCE, theGetTargetValue);
+
+                    BytecodeMethodSignature theCallSiteSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                    List<Variable> theInvokeArguments = new ArrayList<>();
+
+                    Variable theLength = aTargetBlock.newVariable(Type.INT, new IntegerValue(theSignature.getArguments().length));
+                    Variable theArray = aTargetBlock.newVariable(Type.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), theLength));
+
+//                    for (int i=0;i<theCallSiteSignature.getArguments().length;i++) {
+//                        Variable theIndex = aTargetBlock.newVariable(Type.INT, new IntegerValue(i));
+//                        aTargetBlock.addExpression(new ArrayStoreExpression(theArray, theIndex, aHelper.pop()));
+//                        theInvokeArguments.add(aHelper.pop());
+//                    }
+
+                    theInvokeArguments.add(theArray);
+
+                    InvokeVirtualMethodValue theInvokeValue = new InvokeVirtualMethodValue("invokeExact",
+                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class),
+                                    new BytecodeTypeRef[] {
+                                            new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), 1) }),
+                            theMethodHandleVariable, theInvokeArguments);
+
+                    Variable theInvokeExactResult = aTargetBlock.newVariable(Type.REFERENCE, theInvokeValue);
+                    aHelper.push(theInvokeExactResult);
+
+                    break;
+                }
+                default:
+                    throw new IllegalStateException(
+                            "Nut supported reference kind for invoke dynamic : " + theMethodRef.getReferenceKind());
                 }
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);

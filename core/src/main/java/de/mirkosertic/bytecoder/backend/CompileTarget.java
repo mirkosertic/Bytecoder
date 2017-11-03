@@ -21,6 +21,10 @@ import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSACompilerBackend;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TCallSite;
+import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -60,10 +64,18 @@ public class CompileTarget {
     public String compileToJS(Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader);
 
-        // We need these intrinsics
         BytecodeLinkedClass theClassLinkedCass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
         theClassLinkedCass.linkConstructorInvocation(new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
+
+        // Lambda handling
+        BytecodeLinkedClass theCallsite = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TCallSite.class));
+        theCallsite.linkVirtualMethod("getTarget", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                TMethodHandle.class), new BytecodeTypeRef[0]));
+
+        BytecodeLinkedClass theMethodHandle = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TMethodHandle.class));
+        theMethodHandle.linkVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class),
+                new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), 1)}));
 
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 

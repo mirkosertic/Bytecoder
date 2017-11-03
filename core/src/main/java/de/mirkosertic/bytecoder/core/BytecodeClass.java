@@ -39,6 +39,10 @@ public class BytecodeClass {
         classAttributes = aClassAttributes;
     }
 
+    public BytecodeClassinfoConstant getThisInfo() {
+        return thisClass;
+    }
+
     public BytecodeAccessFlags getAccessFlags() {
         return accessFlags;
     }
@@ -72,7 +76,7 @@ public class BytecodeClass {
     public BytecodeClassinfoConstant getSuperClass() {
         BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
         if (theDelegatesTo != null) {
-            BytecodeAnnotation.ElementValue theParentOverride = ( BytecodeAnnotation.ClassElementValue) theDelegatesTo.getElementValueByName("parentClass");
+            BytecodeAnnotation.ElementValue theParentOverride = theDelegatesTo.getElementValueByName("parentClass");
             return new BytecodeClassinfoConstant(-1, null, null) {
                 @Override
                 public BytecodeUtf8Constant getConstant() {

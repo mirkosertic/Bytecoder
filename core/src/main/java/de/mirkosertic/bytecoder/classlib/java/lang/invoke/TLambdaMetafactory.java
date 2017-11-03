@@ -23,6 +23,14 @@ public class TLambdaMetafactory {
                                         TMethodType aSamMethodType,
                                         TMethodHandle aImplMethod,
                                         TMethodType aInstantiatedMethodType) {
-        return new TConstantCallSite(aImplMethod, aInvokedType);
+
+        TRuntimeGeneratedType theType = new TRuntimeGeneratedType(aInvokedType, aImplMethod);
+
+        return new TConstantCallSite(new TMethodHandle() {
+            @Override
+            public Object invokeExact(Object[] args) {
+                return theType;
+            }
+        }, aInvokedType);
     }
 }

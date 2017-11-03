@@ -20,7 +20,6 @@ import java.util.List;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -52,9 +51,8 @@ public class InvokeVirtualOptimizer implements Optimizer {
                 InvokeVirtualMethodExpression theInvokeVirtual = (InvokeVirtualMethodExpression) theExpression;
                 InvokeVirtualMethodValue theValue = theInvokeVirtual.getValue();
 
-                BytecodeNameAndTypeConstant theNameAndType = theValue.getMethod();
-                String theMethodName = theNameAndType.getNameIndex().getName().stringValue();
-                BytecodeMethodSignature theSignature = theNameAndType.getDescriptorIndex().methodSignature();
+                String theMethodName = theValue.getMethodName();
+                BytecodeMethodSignature theSignature = theValue.getSignature();
 
                 BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
                 List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
@@ -80,9 +78,8 @@ public class InvokeVirtualOptimizer implements Optimizer {
 
                     InvokeVirtualMethodValue theInvokeVirtualValue = (InvokeVirtualMethodValue) theValue;
 
-                    BytecodeNameAndTypeConstant theNameAndType = theInvokeVirtualValue.getMethod();
-                    String theMethodName = theNameAndType.getNameIndex().getName().stringValue();
-                    BytecodeMethodSignature theSignature = theNameAndType.getDescriptorIndex().methodSignature();
+                    String theMethodName = theInvokeVirtualValue.getMethodName();
+                    BytecodeMethodSignature theSignature = theInvokeVirtualValue.getSignature();
 
                     BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
                     List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);

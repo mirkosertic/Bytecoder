@@ -31,8 +31,6 @@ import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
@@ -41,6 +39,7 @@ import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
@@ -53,12 +52,11 @@ import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GetStaticValue;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeMethodRefExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeCallsiteValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
@@ -76,10 +74,13 @@ import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIFunction;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
+import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
@@ -171,8 +172,6 @@ public class JSSSAWriter extends JSWriter {
             print((FloorValue) aValue);
         } else if (aValue instanceof MethodRefValue) {
             print((MethodRefValue) aValue);
-        } else if (aValue instanceof InvokeCallsiteValue) {
-            print((InvokeCallsiteValue) aValue);
         } else if (aValue instanceof ComputedMemoryLocationReadValue) {
             print((ComputedMemoryLocationReadValue) aValue);
         } else if (aValue instanceof ComputedMemoryLocationWriteValue) {
@@ -181,9 +180,43 @@ public class JSSSAWriter extends JSWriter {
             print((MethodHandlesGeneratedLookupValue) aValue);
         } else if (aValue instanceof MethodTypeValue) {
             print((MethodTypeValue) aValue);
+        } else if (aValue instanceof RuntimeGeneratedTypeValue) {
+            print((RuntimeGeneratedTypeValue) aValue);
+        } else if (aValue instanceof ResolveCallsiteObjectValue) {
+            print((ResolveCallsiteObjectValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    public void print(ResolveCallsiteObjectValue aValue) {
+
+        print(JSWriterUtils.toClassName(aValue.getOwningClass().getThisInfo()));
+        print(".resolveStaticCallSiteObject('");
+        print(aValue.getCallsiteId());
+        println("', function() {");
+
+        Program theProgram = aValue.getProgram();
+        GraphNode theBootstrapCode = aValue.getBootstrapMethod();
+
+        JSSSAWriter theNested = new JSSSAWriter(indent + "    ", writer, linkerContext);
+
+        for (Variable theVariable : theProgram.getVariables()) {
+            theNested.print("var ");
+            theNested.print(theVariable.getName());
+            theNested.println(" = null;");
+        }
+
+        theNested.writeExpressions(theBootstrapCode.getExpressions());
+
+        print("})");
+    }
+
+    public void print(RuntimeGeneratedTypeValue aValue) {
+        print("{clazz: { resolveVirtualMethod : function(aIdentifier) {return function(inst, _p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9) {return ");
+        printVariableNameOrValue(aValue.getMethodRef());
+        print("(_p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9);");
+        print("}}}}");
     }
 
     public void print(MethodTypeValue aValue) {
@@ -210,19 +243,6 @@ public class JSSSAWriter extends JSWriter {
         print(" + ");
         printVariableNameOrValue(aValue.getOffset());
         print("]");
-    }
-
-    public void print(InvokeCallsiteValue aValue) {
-        List<Variable> theVariables = aValue.getArguments();
-        printVariableNameOrValue(aValue.getTarget());
-        print(".methodHandle(");
-        for (int i = 0; i < theVariables.size(); i++) {
-            if (i> 0) {
-                print(",");
-            }
-            printVariableNameOrValue(theVariables.get(i));
-        }
-        print(")");
     }
 
     public void print(MethodRefValue aValue) {
@@ -533,17 +553,21 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void print(InvokeVirtualMethodValue aValue) {
-        String theMethodName = aValue.getMethod().getNameIndex().getName().stringValue();
-        BytecodeMethodSignature theSignature = aValue.getMethod().getDescriptorIndex().methodSignature();
+        String theMethodName = aValue.getMethodName();
+        BytecodeMethodSignature theSignature = aValue.getSignature();
         Variable theTarget = aValue.getTarget();
         List<Variable> theVariables = aValue.getArguments();
 
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
 
-        printVariableNameOrValue(theTarget);
-        print(".clazz.resolveVirtualMethod(");
-        print(theMethodIdentifier.getIdentifier());
-        print(")(");
+        if (aValue.getMethodName().equals("invokeWithMagicBehindTheScenes")) {
+            print("(");
+        } else {
+            printVariableNameOrValue(theTarget);
+            print(".clazz.resolveVirtualMethod(");
+            print(theMethodIdentifier.getIdentifier());
+            print(")(");
+        }
 
         printVariableNameOrValue(theTarget);
         for (Variable theVariable : theVariables) {
@@ -656,10 +680,6 @@ public class JSSSAWriter extends JSWriter {
                 println(";");
             } else if (theExpression instanceof InvokeStaticMethodExpression) {
                 InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
-                print(theE.getValue());
-                println(";");
-            } else if (theExpression instanceof InvokeMethodRefExpression) {
-                InvokeMethodRefExpression theE = (InvokeMethodRefExpression) theExpression;
                 print(theE.getValue());
                 println(";");
             } else if (theExpression instanceof PutFieldExpression) {

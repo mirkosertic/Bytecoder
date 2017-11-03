@@ -15,26 +15,24 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
+public class RuntimeGeneratedTypeValue extends Value {
 
-public class InvokeCallsiteValue extends Value {
+    private Variable type;
+    private Variable methodRef;
 
-    private final Variable target;
-    private final List<Variable> arguments;
-
-    public InvokeCallsiteValue(Variable aTarget, List<Variable> aArguments) {
-        target = aTarget.usedBy(this);
-        arguments = aArguments;
-        for (Variable theVariable : aArguments) {
-            theVariable.usedBy(this);
-        }
+    public Variable getType() {
+        return type;
     }
 
-    public Variable getTarget() {
-        return target;
+    public void setType(Variable type) {
+        this.type = type;
     }
 
-    public List<Variable> getArguments() {
-        return arguments;
+    public Variable getMethodRef() {
+        return methodRef;
+    }
+
+    public void setMethodRef(Variable methodRef) {
+        this.methodRef = methodRef;
     }
 }
