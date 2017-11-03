@@ -1136,6 +1136,8 @@ public class ProgramGenerator {
                 BytecodeInstructionINVOKEDYNAMIC theINS = (BytecodeInstructionINVOKEDYNAMIC) theInstruction;
 
                 BytecodeInvokeDynamicConstant theConstant = theINS.getCallSite();
+                BytecodeMethodSignature theInitSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
 
                 BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
                 BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
@@ -1151,8 +1153,6 @@ public class ProgramGenerator {
 
                     BytecodeObjectTypeRef theClassWithBootstrapMethod = BytecodeObjectTypeRef
                             .fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant());
-                    String theMethodName = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex()
-                            .getName().stringValue();
 
                     BytecodeMethodSignature theSignature = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType()
                             .getDescriptorIndex().methodSignature();
@@ -1166,8 +1166,7 @@ public class ProgramGenerator {
                     theArguments.add(theInitNode.newVariable(Type.REFERENCE, new StringValue(theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())));
                     // TMethodType aInvokedType,
                     theArguments.add(theInitNode.newVariable(Type.REFERENCE, new MethodTypeValue(
-                            theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex()
-                                    .methodSignature())));
+                            theInitSignature)));
 
                     // Revolve the static arguments
                     for (BytecodeConstant theArgumentConstant : theBootstrapMethod.getArguments()) {
@@ -1251,18 +1250,15 @@ public class ProgramGenerator {
                             theCallsiteVariable, new ArrayList<>());
                     Variable theMethodHandleVariable = aTargetBlock.newVariable(Type.REFERENCE, theGetTargetValue);
 
-                    BytecodeMethodSignature theCallSiteSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
-
                     List<Variable> theInvokeArguments = new ArrayList<>();
 
-                    Variable theLength = aTargetBlock.newVariable(Type.INT, new IntegerValue(theSignature.getArguments().length));
+                    Variable theLength = aTargetBlock.newVariable(Type.INT, new IntegerValue(theInitSignature.getArguments().length));
                     Variable theArray = aTargetBlock.newVariable(Type.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), theLength));
 
-//                    for (int i=0;i<theCallSiteSignature.getArguments().length;i++) {
-//                        Variable theIndex = aTargetBlock.newVariable(Type.INT, new IntegerValue(i));
-//                        aTargetBlock.addExpression(new ArrayStoreExpression(theArray, theIndex, aHelper.pop()));
-//                        theInvokeArguments.add(aHelper.pop());
-//                    }
+                    for (int i=0;i<theInitSignature.getArguments().length;i++) {
+                        Variable theIndex = aTargetBlock.newVariable(Type.INT, new IntegerValue(i));
+                        aTargetBlock.addExpression(new ArrayStoreExpression(theArray, theIndex, aHelper.pop()));
+                    }
 
                     theInvokeArguments.add(theArray);
 
