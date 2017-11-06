@@ -90,7 +90,10 @@ public class ControlFlowGraph {
 
     public Node toRootNode() {
         if (dominatedNodes.size() == 1) {
-            return new SimpleNode(dominatedNodes.get(0));
+            GraphNode theSingleNode = dominatedNodes.get(0);
+            if (!theSingleNode.containsGoto()) {
+                return new SimpleNode(theSingleNode);
+            }
         }
         List<SimpleNode> theNodes = new ArrayList<>();
         for (GraphNode theNode : dominatedNodes) {

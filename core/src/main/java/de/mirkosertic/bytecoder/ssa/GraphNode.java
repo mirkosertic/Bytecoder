@@ -159,4 +159,31 @@ public class GraphNode {
         Set<GraphNode> thePredecessors = getPredecessors();
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
+
+    public boolean containsGoto() {
+        return containsGoto(expressions);
+    }
+
+    private boolean containsGoto(ExpressionList aExpressionList) {
+        for (Expression theExpression : aExpressionList.toList()) {
+            if (theExpression instanceof GotoExpression) {
+                return true;
+            }
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                    if (containsGoto(theList)) {
+                        return true;
+                    }
+                }
+            }
+            if (theExpression instanceof InlinedNodeExpression) {
+                InlinedNodeExpression theInline = (InlinedNodeExpression) theExpression;
+                if (theInline.getNode().containsGoto()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
