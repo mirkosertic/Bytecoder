@@ -50,11 +50,13 @@ public class ControlFlowGraph {
     }
 
     private final List<GraphNode> dominatedNodes;
+    private final List<GraphNode> knownNodes;
     private final Program program;
 
     public ControlFlowGraph(Program aProgram) {
         program = aProgram;
         dominatedNodes = new ArrayList<>();
+        knownNodes = new ArrayList<>();
     }
 
     public GraphNode createAt(BytecodeOpcodeAddress aAddress, GraphNode.BlockType aType) {
@@ -65,10 +67,11 @@ public class ControlFlowGraph {
 
     public void addDominatedNode(GraphNode aGraphNode) {
         dominatedNodes.add(aGraphNode);
+        knownNodes.add(aGraphNode);
     }
 
     public GraphNode nodeStartingAt(BytecodeOpcodeAddress aAddress) {
-        for (GraphNode theBlock : dominatedNodes) {
+        for (GraphNode theBlock : knownNodes) {
             if (aAddress.equals(theBlock.getStartAddress())) {
                 return theBlock;
             }
@@ -78,7 +81,11 @@ public class ControlFlowGraph {
 
 
     public List<GraphNode> getDominatedNodes() {
-        return dominatedNodes;
+        return new ArrayList<>(dominatedNodes);
+    }
+
+    public List<GraphNode> getKnownNodes() {
+        return new ArrayList<>(knownNodes);
     }
 
     public Node toRootNode() {
@@ -90,5 +97,9 @@ public class ControlFlowGraph {
             theNodes.add(new SimpleNode(theNode));
         }
         return new SequenceOfSimpleNodes(theNodes);
+    }
+
+    public void removeDominatedNode(GraphNode aNode) {
+        dominatedNodes.remove(aNode);
     }
 }

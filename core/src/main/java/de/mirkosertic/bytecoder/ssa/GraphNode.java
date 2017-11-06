@@ -54,9 +54,6 @@ public class GraphNode {
     }
 
     public GraphNode fallThruSuccessor() {
-        if (fallThruSuccessor == null) {
-            throw new IllegalStateException("No fallthru successor");
-        }
         return fallThruSuccessor;
     }
 
@@ -66,7 +63,7 @@ public class GraphNode {
 
     public Set<GraphNode> getPredecessors() {
         Set<GraphNode> theResult = new HashSet<>();
-        for (GraphNode theBlock: program.getControlFlowGraph().getDominatedNodes()) {
+        for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
             if (theBlock.getSuccessors().contains(this)) {
                 theResult.add(theBlock);
             }
@@ -136,15 +133,6 @@ public class GraphNode {
         return theState;
     }
 
-    public GraphNode successorByJumpTarget(BytecodeOpcodeAddress aTarget) {
-        for (GraphNode theSuccessor : getSuccessors()) {
-            if (aTarget.equals(theSuccessor.getStartAddress())) {
-                return theSuccessor;
-            }
-        }
-        throw new IllegalStateException("Successor not found for " + aTarget.getAddress());
-    }
-
     public void removeVariable(Variable aVariable) {
         for (Expression theExpression : expressions.toList()) {
             if (theExpression instanceof InitVariableExpression) {
@@ -165,5 +153,10 @@ public class GraphNode {
                 theLastExpression instanceof LookupSwitchExpression ||
                 theLastExpression instanceof ThrowExpression ||
                 theLastExpression instanceof GotoExpression;
+    }
+
+    public boolean isStrictlyDominatedBy(GraphNode aNode) {
+        Set<GraphNode> thePredecessors = getPredecessors();
+        return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
 }

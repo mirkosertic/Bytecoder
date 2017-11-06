@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.classlib.java.text.TDecimalFormatSymbols;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
 
-    private static final TDecimalFormatSymbols FORMAT_SYMBOLS = TDecimalFormatSymbols.getInstance();
+    private static final TDecimalFormatSymbols FORMAT_SYMBOLS = new TDecimalFormatSymbols();
 
     private byte[] byteData;
 
