@@ -86,12 +86,12 @@ public class TDouble extends TNumber {
     public static double parseDouble(String aValue) {
         int p = aValue.indexOf('.');
         if (p<0) {
-            return stringToLong(aValue);
+            return TNumber.stringToLong(aValue);
         }
         String thePrefix = aValue.substring(0, p);
         String theSuffix = aValue.substring(p + 1);
-        long theA = stringToLong(thePrefix);
-        long theB = stringToLong(theSuffix);
+        long theA = TNumber.stringToLong(thePrefix);
+        long theB = TNumber.stringToLong(theSuffix);
         int theMultiplier = 1;
         int theLength = Long.toString(theB).length();
         while(theLength > 0) {

@@ -86,11 +86,11 @@ public class TShort extends TNumber {
     }
 
     public static TShort valueOf(String aValue) {
-        return new TShort((short) stringToLong(aValue));
+        return new TShort((short) TNumber.stringToLong(aValue));
     }
 
     public static short parseShort(String aString) {
-        return (short) stringToLong(aString);
+        return (short) TNumber.stringToLong(aString);
     }
 
     public static String toString(short aValue) {

@@ -86,11 +86,11 @@ public class TByte extends TNumber {
     }
 
     public static TByte valueOf(String aValue) {
-        return new TByte((byte) stringToLong(aValue));
+        return new TByte((byte) TNumber.stringToLong(aValue));
     }
 
     public static byte parseByte(String aString) {
-        return (byte) stringToLong(aString);
+        return (byte) TNumber.stringToLong(aString);
     }
 
     public static String toString(byte aValue) {

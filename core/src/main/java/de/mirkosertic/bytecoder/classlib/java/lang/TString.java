@@ -30,6 +30,12 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         }
     }
 
+    @Override
+    public String toString() {
+        Object a = this;
+        return (String) a;
+    }
+
     @NoExceptionCheck
     public TString(byte[] aData) {
         data = aData;

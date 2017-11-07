@@ -103,7 +103,12 @@ public class BytecodeLinkerContext {
                 theSuperClassOrType.forEachVirtualMethod(
                         aEntry -> {
                             BytecodeMethod theMethod1 = aEntry.getValue().getTargetMethod();
-                            theFinalClass.linkVirtualMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
+                            if (theMethod1.getAccessFlags().isStatic()) {
+                                System.out.println("Linking static method "+theMethod1.getName().stringValue() + theMethod1.getSignature() + " " + theFinalClass.getClassName().name());
+                                theFinalClass.linkStaticMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
+                            } else {
+                                theFinalClass.linkVirtualMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
+                            }
                         });
             }
 
