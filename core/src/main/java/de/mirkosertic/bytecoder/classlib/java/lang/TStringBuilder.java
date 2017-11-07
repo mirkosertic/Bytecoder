@@ -161,9 +161,32 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
     }
 
     public TStringBuilder append(Object aObject) {
-        String theOtherObject = aObject != null ? aObject.toString() : "null";
-        byte[] theOtherData = theOtherObject.getBytes();
+        if (aObject == null) {
+            internalAdd("null".getBytes());
+            return this;
+        }
+        if (aObject instanceof String) {
+            internalAdd(((String) aObject).getBytes());
+            return this;
+        }
+        if (aObject instanceof Long) {
+            append(((Long) aObject).longValue());
+            return this;
+        }
+        if (aObject instanceof Integer) {
+            append(((Integer) aObject).intValue());
+            return this;
+        }
+        if (aObject instanceof Float) {
+            append(((Float) aObject).floatValue());
+            return this;
+        }
+        if (aObject instanceof Double) {
+            append(((Double) aObject).doubleValue());
+            return this;
+        }
 
+        byte[] theOtherData = aObject.toString().getBytes();
         internalAdd(theOtherData);
         return this;
     }

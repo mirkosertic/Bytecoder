@@ -28,7 +28,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 public class BytecodeLinkedClass {
 
     public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class), new BytecodeTypeRef[0]);
-    public static final BytecodeMethod GET_CLASS_PLACEHOLDER = new BytecodeMethod(null, null, null, null) {
+    public static final BytecodeMethod GET_CLASS_PLACEHOLDER = new BytecodeMethod(new BytecodeAccessFlags(0x0001), null, null, null) {
         @Override
         public BytecodeUtf8Constant getName() {
             return new BytecodeUtf8Constant("getClass");
@@ -45,6 +45,12 @@ public class BytecodeLinkedClass {
         private final BytecodeMethod targetMethod;
 
         public LinkedMethod(BytecodeObjectTypeRef aDeclaringType, BytecodeMethod aTargetMethod) {
+            if (aDeclaringType == null) {
+                throw new IllegalStateException();
+            }
+            if (aTargetMethod == null) {
+                throw new IllegalStateException();
+            }
             declaringType = aDeclaringType;
             targetMethod = aTargetMethod;
         }
@@ -313,28 +319,23 @@ public class BytecodeLinkedClass {
     }
 
     public void linkStaticMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
-        BytecodeClass theClass = bytecodeClass;
-        BytecodeObjectTypeRef theClassName = className;
-        while(theClass != null) {
-            BytecodeMethod theMethod = theClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
-            if (theMethod != null) {
-                if (!theMethod.isClassInitializer()) {
-                    BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
-                    linkedMethods.put(theIdentifier, new LinkedMethod(theClassName, theMethod));
-                }
 
-                linkMethodInternal(theMethod, true);
-                return;
+        BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
+        if (theMethod != null) {
+            if (!theMethod.isClassInitializer()) {
+                BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().identifierFor(theMethod);
+                linkedMethods.put(theIdentifier, new LinkedMethod(className, theMethod));
             }
 
-            if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getSuperClass().getConstant());
-                theClass = linkerContext.linkClass(theClassName).bytecodeClass;
-            } else {
-                theClass = null;
-            }
-
+            linkMethodInternal(theMethod, true);
+            return;
         }
+
+        if (bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
+            linkerContext.linkClass( BytecodeObjectTypeRef.fromUtf8Constant(bytecodeClass.getSuperClass().getConstant())).linkStaticMethod(aMethodName, aMethodSignature);
+            return;
+        }
+
         throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aMethodSignature);
     }
 

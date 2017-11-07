@@ -17,11 +17,40 @@ package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
 public class TStringConcatFactory {
 
-    public static TCallSite makeConcat(TMethodHandles.Lookup lookup, String name, TMethodType concatType) {
-        return null;
+    public static TCallSite makeConcat(TMethodHandles.Lookup aLookup, String aName, TMethodType aConcatType) {
+        return new TConstantCallSite(new TMethodHandle() {
+            @Override
+            public Object invokeExact(Object[] args) {
+                StringBuilder theResult = new StringBuilder();
+                if (args != null) {
+                    for (int i=0;i<args.length;i++) {
+                        theResult.append(args[i]);
+                    }
+                }
+                return theResult.toString();
+            }
+        }, aConcatType);
     }
 
-    public static TCallSite	makeConcatWithConstants(TMethodHandles.Lookup lookup, String name, TMethodType concatType, String recipe, Object... constants) {
-        return null;
+    public static TCallSite	makeConcatWithConstants(TMethodHandles.Lookup aLookup, String aName, TMethodType aConcatType, String aRecipe, Object... aConstants) {
+        return new TConstantCallSite(new TMethodHandle() {
+            @Override
+            public Object invokeExact(Object[] args) {
+                int theConstIndex = 0;
+                int theDynIndex = 0;
+                StringBuilder theResult = new StringBuilder();
+                for (int i=0;i<aRecipe.length();i++) {
+                    char theChar = aRecipe.charAt(i);
+                    if (theChar == 1) {
+                        theResult.append(args[theDynIndex++]);
+                    } else if (theChar == 2) {
+                        theResult.append(aConstants[theConstIndex++]);
+                    } else {
+                        theResult.append(theChar);
+                    }
+                }
+                return theResult.toString();
+            }
+        }, aConcatType);
     }
 }

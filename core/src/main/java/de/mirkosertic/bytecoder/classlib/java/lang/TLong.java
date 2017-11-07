@@ -83,11 +83,11 @@ public class TLong extends TNumber {
     }
 
     public static TLong valueOf(String aValue) {
-        return new TLong(stringToLong(aValue));
+        return new TLong(TNumber.stringToLong(aValue));
     }
 
     public static long parseLong(String aString) {
-        return stringToLong(aString);
+        return TNumber.stringToLong(aString);
     }
 
     public static String toString(long aValue) {
@@ -97,6 +97,6 @@ public class TLong extends TNumber {
     }
 
     public static String toHexString(long aValue) {
-        return longToHex(aValue);
+        return TNumber.longToHex(aValue);
     }
 }
