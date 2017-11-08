@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.js;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
@@ -42,6 +43,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -95,7 +97,7 @@ public class JSSSACompilerBackend implements CompileBackend {
     }
 
     @Override
-    public String generateCodeFor(BytecodeLinkerContext aLinkerContext) {
+    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext) {
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -228,18 +230,24 @@ public class JSSSACompilerBackend implements CompileBackend {
                 theClassLinkedCass.forEachVirtualMethod(
                         aClassMethod -> {
                             theWriter.println("                    case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
-                            if ("getClass".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println(
                                         "                        return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
-                            } else if ("toString".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            } else if (Objects
+                                    .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                     theWriter.println("                        throw 'Not implemented';");
-                            } else if ("equals".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            } else if (Objects
+                                    .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        throw 'Not implemented';");
-                            } else if ("hashCode".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            } else if (Objects
+                                    .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        throw 'Not implemented';");
-                            } else if ("desiredAssertionStatus".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            } else if (Objects.equals("desiredAssertionStatus",
+                                    aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        return function(callsite) {return false};");
-                            } else if ("getEnumConstants".equals(aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            } else if (Objects
+                                    .equals("getEnumConstants",
+                                            aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
                                 theWriter.println("                        return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
                             } else {
                                 theWriter.println("                        throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
@@ -345,7 +353,7 @@ public class JSSSACompilerBackend implements CompileBackend {
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                 // theWriter.println("console.log('" + JSWriterUtils.toClassName(theEntry.getValue().getClassName()) + "." + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + "');");
 
-                System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
+                aLogger.info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);

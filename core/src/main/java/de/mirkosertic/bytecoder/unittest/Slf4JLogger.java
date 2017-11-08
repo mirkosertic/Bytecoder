@@ -13,16 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.wasm;
+package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.backend.CompileBackend;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.Logger;
+import org.slf4j.LoggerFactory;
 
-public class WASMSSACompilerBackend implements CompileBackend {
+public class Slf4JLogger implements Logger {
+
+    public static final Slf4JLogger INSTANCE = new Slf4JLogger();
+
+    private final org.slf4j.Logger logger;
+
+    public Slf4JLogger() {
+        logger = LoggerFactory.getLogger(Slf4JLogger.class);
+    }
 
     @Override
-    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext) {
-        return null;
+    public void info(String aMessage, Object... aArguments) {
+        logger.info(aMessage, aArguments);
+    }
+
+    @Override
+    public void warn(String aMessage, Object... aArguments) {
+        logger.warn(aMessage, aArguments);
     }
 }

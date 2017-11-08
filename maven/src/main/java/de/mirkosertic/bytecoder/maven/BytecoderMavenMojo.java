@@ -24,6 +24,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -110,7 +111,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-            String theCode = theCompileTarget.compileToJS(theTargetClass, "main", theSignature);
+            String theCode = theCompileTarget.compileToJS(new Slf4JLogger(), theTargetClass, "main", theSignature);
             try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
                 theWriter.println(theCode);
             }

@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.Logger;
 
 public class CompileTarget {
 
@@ -61,8 +62,8 @@ public class CompileTarget {
         bytecodeLoader = new BytecodeLoader(aClassLoader, new BytecodePackageReplacer());
     }
 
-    public String compileToJS(Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader);
+    public String compileToJS(Logger aLogger, Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aLogger);
 
         BytecodeLinkedClass theClassLinkedCass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
         theClassLinkedCass.linkConstructorInvocation(new BytecodeMethodSignature(
@@ -81,7 +82,7 @@ public class CompileTarget {
 
         theLinkerContext.linkClass(theTypeRef).linkStaticMethod(aMethodName, aSignature);
 
-        return backend.generateCodeFor(theLinkerContext);
+        return backend.generateCodeFor(aLogger, theLinkerContext);
     }
 
     public String toClassName(BytecodeObjectTypeRef aTypeRef) {

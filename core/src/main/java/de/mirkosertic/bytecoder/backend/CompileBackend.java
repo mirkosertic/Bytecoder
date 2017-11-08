@@ -16,8 +16,9 @@
 package de.mirkosertic.bytecoder.backend;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.Logger;
 
 public interface CompileBackend {
 
-    String generateCodeFor(BytecodeLinkerContext aLinkerContext);
+    String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext);
 }
