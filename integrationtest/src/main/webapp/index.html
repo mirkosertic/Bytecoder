@@ -4,8 +4,14 @@
     </head>
     <body>
         <canvas id="benchmark-canvas" width="600" height="600"></canvas>
+        <script type="text/javascript" src="stats.min.js"></script>
         <script type="text/javascript" src="bytecoder.js"></script>
         <script type="text/javascript">
+
+            var stats = new Stats();
+            stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+            document.body.appendChild(stats.dom);
+
             var theCanvas = document.getElementById("benchmark-canvas");
             var theCanvasContext = theCanvas.getContext("2d");
 
@@ -74,19 +80,6 @@
             var debug = {
                 logRuntime : function(a) {
                     console.log("Runtime was " + a + " ms");
-
-                    var theBenchmarkBody = document.getElementById("results");
-
-                    var theRow = document.createElement("tr");
-                    theBenchmarkBody.appendChild(theRow);
-
-                    var theSecondCell = document.createElement("td");
-                    theRow.appendChild(theSecondCell);
-                    theSecondCell.appendChild(document.createTextNode("" + Date.now()));
-
-                    var theTimeCell = document.createElement("td");
-                    theRow.appendChild(theTimeCell);
-                    theTimeCell.appendChild(document.createTextNode("" + a));
                 }
             };
 
@@ -97,26 +90,14 @@
             console.log("Ready");
 
             var stepFunction = function(timestamp) {
-                console.log("Running simulation step");
+                stats.begin();
                 JBox2DSimulation.VOIDproceedSimulation();
-
-                console.log("done");
+                stats.end();
 
                 window.requestAnimationFrame(stepFunction);
             };
 
         </script>
         <button onclick="stepFunction()" value="Click me">Click Me</button>
-        <table >
-            <thead>
-                <tr>
-                    <th>Second</th>
-                    <th>Simulation run in ms</th>
-                </tr>
-            </thead>
-            <tbody id="results">
-
-            </tbody>
-        </table>
     </body>
 </html>
