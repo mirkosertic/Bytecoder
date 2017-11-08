@@ -13,16 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.wasm;
+package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.backend.CompileBackend;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.Logger;
+public interface Logger {
 
-public class WASMSSACompilerBackend implements CompileBackend {
+    void info(String aMessage, Object... aArguments);
 
-    @Override
-    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext) {
-        return null;
-    }
+    void warn(String aMessage, Object... aArguments);
 }

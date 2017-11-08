@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.core;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -226,7 +227,7 @@ public class BytecodeLinkedClass {
             BytecodeObjectTypeRef theClassName = className;
             BytecodeClass theClass = bytecodeClass;
 
-            if ("getClass".equals(aMethodName) && GET_CLASS_SIGNATURE.metchesExactlyTo(aSignature)) {
+            if (Objects.equals("getClass", aMethodName) && GET_CLASS_SIGNATURE.metchesExactlyTo(aSignature)) {
 
                 BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection()
                         .identifierFor("getClass", GET_CLASS_SIGNATURE);
@@ -296,7 +297,7 @@ public class BytecodeLinkedClass {
 
         BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull("<init>", aMethodSignature);
         if (theMethod == null) {
-            System.out.println("No constructor with signature " + aMethodSignature + " in " + className.name());
+            linkerContext.getLogger().warn("No constructor with signature {} in  {}", aMethodSignature , className.name());
             return;
         }
 
@@ -309,7 +310,7 @@ public class BytecodeLinkedClass {
 
         BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
         if (theMethod == null) {
-            System.out.println("No method " + aMethodName + " with signature " + aMethodSignature + " in " + className.name());
+            linkerContext.getLogger().warn("No method {} with signature {} in {}", aMethodName, aMethodSignature, className.name());
             return;
         }
 

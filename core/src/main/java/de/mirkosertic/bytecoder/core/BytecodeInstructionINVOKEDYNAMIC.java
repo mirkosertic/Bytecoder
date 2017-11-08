@@ -49,20 +49,13 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
 
-        System.out.println(" callsite index is " + index);
-
         BytecodeInvokeDynamicConstant theConstant = getCallSite();
-
-        System.out.println("   and maps to bs method " + theConstant.getBootstrapMethodAttributeIndex().getIndex());
 
         BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
         BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
 
         BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
         BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
-
-        // Link the bootstrap method
-        System.out.println("      which is " + theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant().stringValue() + "." + theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         switch (theMethodRef.getReferenceKind()) {
             case REF_invokeStatic: {

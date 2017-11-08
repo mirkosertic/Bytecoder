@@ -15,12 +15,16 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.PrintWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -34,16 +38,16 @@ import org.openqa.selenium.phantomjs.PhantomJSDriver;
 import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.PrintWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
+
+    private static final Slf4JLogger LOGGER = new Slf4JLogger();
 
     private static PhantomJSDriver SINGLETONDRIVER;
 
@@ -56,8 +60,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         testMethods = new ArrayList<>();
 
         Method[] classMethods = aClass.getDeclaredMethods();
-        for (int i = 0; i < classMethods.length; i++) {
-            Method classMethod = classMethods[i];
+        for (Method classMethod : classMethods) {
             Class retClass = classMethod.getReturnType();
             int length = classMethod.getParameterTypes().length;
             int modifiers = classMethod.getModifiers();
@@ -123,7 +126,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            String theCode = theCompileTarget.compileToJS(testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            String theCode = theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
             String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aBackendType + ".html";
 
@@ -178,16 +181,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                         thePhantomBinary);
 
                 SINGLETONDRIVER = new PhantomJSDriver(theCapabilities);
-                Runtime.getRuntime().addShutdownHook(new Thread() {
-                    @Override
-                    public void run() {
-                        SINGLETONDRIVER.quit();
-                    }
-                });
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> SINGLETONDRIVER.quit()));
             }
 
             Object theResult = SINGLETONDRIVER.executePhantomJS(theCode);
-            if (!"OK".equals(theResult)) {
+            if (!Objects.equals("OK", theResult)) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException(theResult.toString())));
             }
 

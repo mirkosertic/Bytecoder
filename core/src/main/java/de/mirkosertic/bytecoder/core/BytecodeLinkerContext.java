@@ -30,11 +30,17 @@ public class BytecodeLinkerContext {
     private final Map<BytecodeObjectTypeRef, BytecodeLinkedClass> linkedClasses;
     private final BytecodeLoader loader;
     private final BytecodeMethodCollection methodCollection;
+    private final Logger logger;
 
-    public BytecodeLinkerContext(BytecodeLoader aLoader) {
+    public BytecodeLinkerContext(BytecodeLoader aLoader, Logger aLogger) {
         linkedClasses = new HashMap<>();
         loader = aLoader;
         methodCollection = new BytecodeMethodCollection();
+        logger = aLogger;
+    }
+
+    public Logger getLogger() {
+        return logger;
     }
 
     public BytecodeSignatureParser getSignatureParser() {
@@ -104,7 +110,7 @@ public class BytecodeLinkerContext {
                         aEntry -> {
                             BytecodeMethod theMethod1 = aEntry.getValue().getTargetMethod();
                             if (theMethod1.getAccessFlags().isStatic()) {
-                                System.out.println("Linking static method "+theMethod1.getName().stringValue() + theMethod1.getSignature() + " " + theFinalClass.getClassName().name());
+                                logger.info("Linking static method {} with Signature {} in {}", theMethod1.getName().stringValue() , theMethod1.getSignature(), theFinalClass.getClassName().name());
                                 theFinalClass.linkStaticMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
                             } else {
                                 theFinalClass.linkVirtualMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
@@ -112,7 +118,7 @@ public class BytecodeLinkerContext {
                         });
             }
 
-            System.out.println("Linked " + theLinkedClass.getClassName().name());
+            logger.info("Linked  {}" ,theLinkedClass.getClassName().name());
 
             return theLinkedClass;
         } catch (Exception e) {
@@ -126,9 +132,9 @@ public class BytecodeLinkerContext {
 
     private List<BytecodeLinkedClass> findLinkedClassWithParent(BytecodeLinkedClass aParent) {
         List<BytecodeLinkedClass> theResult = new ArrayList<>();
-        linkedClasses.entrySet().forEach(aEntry -> {
-            if (aEntry.getValue().getSuperClass() == aParent) {
-                theResult.add(aEntry.getValue());
+        linkedClasses.forEach((key, value) -> {
+            if (value.getSuperClass() == aParent) {
+                theResult.add(value);
             }
         });
         return theResult;
