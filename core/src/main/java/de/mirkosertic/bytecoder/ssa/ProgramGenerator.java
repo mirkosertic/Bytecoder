@@ -451,8 +451,6 @@ public class ProgramGenerator {
 
                 BlockState theImportingState = theDirectSuccessor.toStartState();
 
-                theBlock.setFallThruSuccessor(theDirectSuccessor);
-
                 theBlock.getExpressions().add(new CommentExpression("Code to jump to " + theDirectSuccessor.getStartAddress().getAddress()));
 
                 for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
@@ -478,51 +476,20 @@ public class ProgramGenerator {
                         }
                     }
                 }
+
+                theBlock.getExpressions().add(new GotoExpression(theDirectSuccessor.getStartAddress(), theBlock));
             }
         }
 
+        // Insert jumpcode and perform node inlining
         for (GraphNode theNode : theVisited) {
             processGotosIn(theProgram.getControlFlowGraph(), theNode, theNode.getExpressions());
-        }
-
-        // Check if we can inline something
-        for (GraphNode theNode : theProgram.getControlFlowGraph().getDominatedNodes()) {
-            checkForInlining(theProgram.getControlFlowGraph(), theNode, theNode.getExpressions());
         }
 
         AllOptimizer theOptimizer = new AllOptimizer();
         theOptimizer.optimize(theProgram.getControlFlowGraph(), linkerContext);
 
         return theProgram;
-    }
-
-    private void checkForInlining(ControlFlowGraph aFlowGraph, GraphNode aNode, ExpressionList aList) {
-        for (Expression theExpression : aList.toList()) {
-            if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    checkForInlining(aFlowGraph, aNode, theList);
-                }
-            }
-            if (theExpression instanceof GotoExpression) {
-                GotoExpression theGoto = (GotoExpression) theExpression;
-                GraphNode theTarget = aFlowGraph.nodeStartingAt(theGoto.getJumpTarget());
-                if (theTarget.isStrictlyDominatedBy(aNode)) {
-
-                    GraphNode theFallThru = theTarget.fallThruSuccessor();
-                    if (theFallThru != null) {
-                        theTarget.getExpressions().add(new GotoExpression(theFallThru.getStartAddress(), theTarget));
-                    }
-
-                    // Node can be inlined
-                    InlinedNodeExpression theInlined = new InlinedNodeExpression(theTarget);
-                    aList.replace(theGoto, theInlined);
-                    aFlowGraph.removeDominatedNode(theTarget);
-
-
-                }
-            }
-        }
     }
 
     private void insertCodeToJumpFrom(GraphNode aSource, GraphNode aTarget, Expression aExpressionToInsertBefore, ExpressionList aExpressionList) {
@@ -566,7 +533,14 @@ public class ProgramGenerator {
                 GotoExpression theGOTO = (GotoExpression) theExpression;
                 GraphNode theTargetNode = aGraph.nodeStartingAt(theGOTO.getJumpTarget());
 
-                insertCodeToJumpFrom(aNode, theTargetNode, theGOTO, aList);
+                if (theTargetNode.isStrictlyDominatedBy(aNode)) {
+                    // Node can be inlined
+                    InlinedNodeExpression theInlined = new InlinedNodeExpression(theTargetNode);
+                    aList.replace(theGOTO, theInlined);
+                    aGraph.removeDominatedNode(theTargetNode);
+                } else {
+                    insertCodeToJumpFrom(aNode, theTargetNode, theGOTO, aList);
+                }
             }
         }
     }

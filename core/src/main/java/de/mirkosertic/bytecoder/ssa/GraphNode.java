@@ -37,7 +37,6 @@ public class GraphNode {
     private final BlockType type;
     private final Map<VariableDescription, Variable> imported;
     private final Map<VariableDescription, Variable> exported;
-    private GraphNode fallThruSuccessor;
 
     public GraphNode(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -47,14 +46,6 @@ public class GraphNode {
         successors = new HashSet<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
-    }
-
-    public void setFallThruSuccessor(GraphNode fallThruSuccessor) {
-        this.fallThruSuccessor = fallThruSuccessor;
-    }
-
-    public GraphNode fallThruSuccessor() {
-        return fallThruSuccessor;
     }
 
     public BlockType getType() {
