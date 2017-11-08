@@ -15,25 +15,39 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-
 import java.util.List;
+
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class InvokeStaticMethodValue extends Value {
 
-    private final BytecodeMethodRefConstant method;
+    private final BytecodeObjectTypeRef className;
+    private final String methodName;
+    private final BytecodeMethodSignature signature;
     private final List<Variable> arguments;
 
-    public InvokeStaticMethodValue(BytecodeMethodRefConstant aMethod, List<Variable> aArguments) {
-        method = aMethod;
+    public InvokeStaticMethodValue(BytecodeObjectTypeRef aClassName, String aMethodName,
+            BytecodeMethodSignature aSignature, List<Variable> aArguments) {
+        className = aClassName;
+        methodName = aMethodName;
+        signature = aSignature;
         arguments = aArguments;
         for (Variable theVariable : aArguments) {
             theVariable.usedBy(this);
         }
     }
 
-    public BytecodeMethodRefConstant getMethod() {
-        return method;
+    public BytecodeObjectTypeRef getClassName() {
+        return className;
+    }
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public BytecodeMethodSignature getSignature() {
+        return signature;
     }
 
     public List<Variable> getArguments() {

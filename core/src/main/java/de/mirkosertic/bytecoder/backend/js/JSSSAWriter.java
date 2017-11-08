@@ -516,11 +516,11 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void print(InvokeStaticMethodValue aValue) {
-        String theMethodName = aValue.getMethod().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        BytecodeMethodSignature theSignature = aValue.getMethod().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+        String theMethodName = aValue.getMethodName();
+        BytecodeMethodSignature theSignature = aValue.getSignature();
         List<Variable> theVariables = aValue.getArguments();
 
-        print(JSWriterUtils.toClassName(aValue.getMethod().getClassIndex().getClassConstant()));
+        print(JSWriterUtils.toClassName(aValue.getClassName()));
         print(".");
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
         print("(");
