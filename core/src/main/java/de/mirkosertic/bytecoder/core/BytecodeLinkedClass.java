@@ -319,7 +319,7 @@ public class BytecodeLinkedClass {
         }
     }
 
-    public void linkStaticMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
+    public BytecodeLinkedClass linkStaticMethod(String aMethodName, BytecodeMethodSignature aMethodSignature) {
 
         BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aMethodSignature);
         if (theMethod != null) {
@@ -329,18 +329,17 @@ public class BytecodeLinkedClass {
             }
 
             linkMethodInternal(theMethod, true);
-            return;
+            return this;
         }
 
         if (bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-            linkerContext.linkClass( BytecodeObjectTypeRef.fromUtf8Constant(bytecodeClass.getSuperClass().getConstant())).linkStaticMethod(aMethodName, aMethodSignature);
-            return;
+            return linkerContext.linkClass( BytecodeObjectTypeRef.fromUtf8Constant(bytecodeClass.getSuperClass().getConstant())).linkStaticMethod(aMethodName, aMethodSignature);
         }
 
         throw new IllegalArgumentException("No such name : " + aMethodName + " with signature " + aMethodSignature);
     }
 
-    public void linkMethodInternal(BytecodeMethod aMethod, boolean isLocal) {
+    private void linkMethodInternal(BytecodeMethod aMethod, boolean isLocal) {
         BytecodeMethodSignature theSignature = aMethod.getSignature();
         if (isLocal) {
             knownMethods.add(aMethod);
@@ -400,9 +399,5 @@ public class BytecodeLinkedClass {
 
     public boolean containsVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
         return linkedMethods.containsKey(aIdentifier);
-    }
-
-    public BytecodeMethod virtualMethodByIdentifier(BytecodeVirtualMethodIdentifier aIdentifier) {
-        return linkedMethods.get(aIdentifier).getTargetMethod();
     }
 }

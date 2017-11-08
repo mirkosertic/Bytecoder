@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 
-import com.google.common.graph.Graph;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.GC;
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
@@ -118,6 +117,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -1224,7 +1224,16 @@ public class ProgramGenerator {
                         throw new IllegalStateException("Not implemented : " + theMethodName);
                     }
                 } else {
-                    InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(theINS.getMethodReference(), theArguments);
+                    BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
+                    BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theClassToInvoke)
+                            .linkStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                    theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+
+                    InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(
+                            theLinkedClass.getClassName(),
+                            theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                            theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
+                            theArguments);
                     if (theSignature.getReturnType().isVoid()) {
                         aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
                     } else {
@@ -1375,7 +1384,11 @@ public class ProgramGenerator {
                         theArguments.add(theNewVarargsArray);
                     }
 
-                    InvokeStaticMethodValue theInvokeStaticValue = new InvokeStaticMethodValue(theBootstrapMethodToInvoke, theArguments);
+                    InvokeStaticMethodValue theInvokeStaticValue = new InvokeStaticMethodValue(
+                            BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()),
+                            theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                            theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
+                            theArguments);
                     Variable theNewVariable = theInitNode.newVariable(Type.CALLSITE, theInvokeStaticValue);
                     theInitNode.addExpression(new ReturnVariableExpression(theNewVariable));
 
