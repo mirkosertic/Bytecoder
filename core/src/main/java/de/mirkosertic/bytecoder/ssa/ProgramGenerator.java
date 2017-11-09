@@ -482,8 +482,26 @@ public class ProgramGenerator {
         }
 
         // Insert jumpcode and perform node inlining
-        for (GraphNode theNode : theVisited) {
+        for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
             processGotosIn(theProgram.getControlFlowGraph(), theNode, theNode.getExpressions());
+        }
+
+        // Check if there are infinite looping blocks
+        for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+            ExpressionList theCurrentList = theNode.getExpressions();
+            Expression theLast = theCurrentList.lastExpression();
+            while (theLast instanceof InlinedNodeExpression) {
+                InlinedNodeExpression theInlined = (InlinedNodeExpression) theLast;
+                theCurrentList = theInlined.getNode().getExpressions();
+                theLast = theCurrentList.lastExpression();
+            }
+            if (theLast instanceof GotoExpression) {
+                GotoExpression theGoto = (GotoExpression) theLast;
+                if (theGoto.getJumpTarget().equals(theNode.getStartAddress())) {
+                    theCurrentList.remove(theGoto);
+                    theNode.markAsInfiniteLoop();
+                }
+            }
         }
 
         AllOptimizer theOptimizer = new AllOptimizer();

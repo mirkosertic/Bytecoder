@@ -37,11 +37,8 @@ public class InvokeVirtualMethodValue extends Value {
             List<Variable> aArguments) {
         methodName = aMethodName;
         signature = aSignature;
-        target = aTarget.usedBy(this);
+        target = aTarget;
         arguments = aArguments;
-        for (Variable theVariable : aArguments) {
-            theVariable.usedBy(this);
-        }
     }
 
 

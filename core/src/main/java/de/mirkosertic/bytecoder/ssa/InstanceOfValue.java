@@ -23,7 +23,7 @@ public class InstanceOfValue extends Value {
     private final BytecodeClassinfoConstant type;
 
     public InstanceOfValue(Variable aVariable, BytecodeClassinfoConstant aType) {
-        variable = aVariable.usedBy(this);
+        variable = aVariable;
         type = aType;
     }
 

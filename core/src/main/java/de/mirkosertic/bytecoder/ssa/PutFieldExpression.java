@@ -25,8 +25,8 @@ public class PutFieldExpression extends Expression {
 
     public PutFieldExpression(BytecodeFieldRefConstant aField, Variable aTarget, Variable aValue) {
         field = aField;
-        target = aTarget.usedBy(this);
-        value = aValue.usedBy(this);
+        target = aTarget;
+        value = aValue;
     }
 
     public BytecodeFieldRefConstant getField() {

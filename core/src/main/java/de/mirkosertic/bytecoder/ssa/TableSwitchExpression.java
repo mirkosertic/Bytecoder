@@ -29,7 +29,7 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
 
     public TableSwitchExpression(Variable aVariable, long aLowValue, long aHighValue,
             ExpressionList aDefaultPath, Map<Long, ExpressionList> aPathPerOffset) {
-        variable = aVariable.usedBy(this);
+        variable = aVariable;
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;

@@ -15,53 +15,16 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Variable {
-
-    public static class Usage {
-
-    }
-
-    public static class ExpressionUsage extends Usage {
-
-        private final Expression expression;
-
-        public ExpressionUsage(Expression aExpression) {
-            expression = aExpression;
-        }
-    }
-
-    public static class ValueUsage extends Usage {
-
-        private final Value value;
-
-        public ValueUsage(Value aValue) {
-            value = aValue;
-        }
-    }
 
     private Type type;
     private final String name;
     private Value value;
-    private final List<Usage> usages;
 
     public Variable(Type aType, String aName, Value aValue) {
         type = aType;
         name = aName;
         value = aValue;
-        usages = new ArrayList<>();
-    }
-
-    public Variable usedBy(Expression aExpression) {
-        usages.add(new ExpressionUsage(aExpression));
-        return this;
-    }
-
-    public Variable usedBy(Value aValue) {
-        usages.add(new ValueUsage(aValue));
-        return this;
     }
 
     public Type getType() {
@@ -86,9 +49,5 @@ public class Variable {
 
     public void setType(Type aType) {
         type = aType;
-    }
-
-    public int getUsageCount() {
-        return usages.size();
     }
 }

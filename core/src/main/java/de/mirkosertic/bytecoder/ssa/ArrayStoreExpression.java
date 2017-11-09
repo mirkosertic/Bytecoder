@@ -22,9 +22,9 @@ public class ArrayStoreExpression extends Expression {
     private final Variable value;
 
     public ArrayStoreExpression(Variable aArray, Variable aIndex, Variable aValue) {
-        array = aArray.usedBy(this);
-        index = aIndex.usedBy(this);
-        value = aValue.usedBy(this);
+        array = aArray;
+        index = aIndex;
+        value = aValue;
     }
 
     public Variable getArray() {

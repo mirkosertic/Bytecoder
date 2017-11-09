@@ -26,6 +26,7 @@ public class GraphNode {
 
     public enum BlockType {
         NORMAL,
+        INFINITELOOP,
         EXCEPTION_HANDLER,
         FINALLY
     }
@@ -34,7 +35,7 @@ public class GraphNode {
     private final ExpressionList expressions;
     private final Program program;
     private final Set<GraphNode> successors;
-    private final BlockType type;
+    private BlockType type;
     private final Map<VariableDescription, Variable> imported;
     private final Map<VariableDescription, Variable> exported;
 
@@ -46,6 +47,10 @@ public class GraphNode {
         successors = new HashSet<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
+    }
+
+    public void markAsInfiniteLoop() {
+        type = BlockType.INFINITELOOP;
     }
 
     public BlockType getType() {
@@ -147,7 +152,7 @@ public class GraphNode {
     }
 
     public boolean isStrictlyDominatedBy(GraphNode aNode) {
-        Set<GraphNode> thePredecessors = getPredecessors();
+        Set<GraphNode> thePredecessors = new HashSet<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
 

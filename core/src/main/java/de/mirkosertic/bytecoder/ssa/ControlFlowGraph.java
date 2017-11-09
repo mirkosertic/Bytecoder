@@ -105,4 +105,12 @@ public class ControlFlowGraph {
     public void removeDominatedNode(GraphNode aNode) {
         dominatedNodes.remove(aNode);
     }
+
+    public void removeNode(GraphNode aNode) {
+        for (GraphNode thePrecess : aNode.getPredecessors()) {
+            thePrecess.getSuccessors().remove(aNode);
+        }
+        dominatedNodes.remove(aNode);
+        knownNodes.remove(aNode);
+    }
 }

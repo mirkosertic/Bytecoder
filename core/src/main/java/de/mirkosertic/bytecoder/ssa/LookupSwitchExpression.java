@@ -27,7 +27,7 @@ public class LookupSwitchExpression extends Expression implements ExpressionList
 
     public LookupSwitchExpression(Variable aVariable, ExpressionList aDefaultExpressions,
             Map<Long, ExpressionList> aPairs) {
-        variable = aVariable.usedBy(this);
+        variable = aVariable;
         defaultExpressions = aDefaultExpressions;
         pairs = aPairs;
     }
