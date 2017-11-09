@@ -41,6 +41,24 @@ public class Program {
         return controlFlowGraph;
     }
 
+    public Set<Variable> globalVariables() {
+        Set<Variable> theVariables = new HashSet<>();
+        for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
+            BlockState theStartState = theNode.toStartState();
+            theVariables.addAll(theStartState.getPorts().values());
+        }
+        return theVariables;
+    }
+
+    public boolean isGlobalVariable(Variable aVariable) {
+        for (Variable theVar : globalVariables()) {
+            if (theVar.getName().equals(aVariable.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public List<Variable> getVariables() {
         return new ArrayList<>(variables.values());
     }

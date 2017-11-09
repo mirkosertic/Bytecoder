@@ -20,7 +20,7 @@ public class ThrowExpression extends Expression {
     private final Variable variable;
 
     public ThrowExpression(Variable aVariable) {
-        variable = aVariable.usedBy(this);
+        variable = aVariable;
     }
 
     public Variable getVariable() {

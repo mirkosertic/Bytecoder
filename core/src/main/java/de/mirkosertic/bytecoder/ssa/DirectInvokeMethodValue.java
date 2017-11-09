@@ -33,11 +33,8 @@ public class DirectInvokeMethodValue extends Value {
         clazz = aClazz;
         methodName = aMethodName;
         methodSignature = aMethodSignature;
-        target = aTarget.usedBy(this);
+        target = aTarget;
         arguments = aArguments;
-        for (Variable theVariable : aArguments) {
-            theVariable.usedBy(this);
-        }
     }
 
     public Variable getTarget() {

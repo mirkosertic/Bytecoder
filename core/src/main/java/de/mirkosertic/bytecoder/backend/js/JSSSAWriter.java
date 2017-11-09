@@ -97,15 +97,17 @@ import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class JSSSAWriter extends JSWriter {
 
+    private final Program program;
     private final BytecodeLinkerContext linkerContext;
 
-    public JSSSAWriter(String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+    public JSSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         super(aIndent, aWriter);
+        program = aProgram;
         linkerContext = aLinkerContext;
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(indent + "    ", writer, linkerContext);
+        return new JSSSAWriter(program, indent + "    ", writer, linkerContext);
     }
 
     public void print(Value aValue) {
@@ -200,9 +202,9 @@ public class JSSSAWriter extends JSWriter {
         Program theProgram = aValue.getProgram();
         GraphNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        JSSSAWriter theNested = new JSSSAWriter(indent + "    ", writer, linkerContext);
+        JSSSAWriter theNested = withDeeperIndent();
 
-        for (Variable theVariable : theProgram.getVariables()) {
+        for (Variable theVariable : theProgram.globalVariables()) {
             theNested.print("var ");
             theNested.print(theVariable.getName());
             theNested.println(" = null;");
@@ -646,10 +648,15 @@ public class JSSSAWriter extends JSWriter {
                         continue;
                     }
 
+                    if (!program.isGlobalVariable(theVariable)) {
+                        print("var ");
+                    }
+
                     print(theVariable.getName());
                     print(" = ");
                     print(theVariable.getValue());
-                    println(";");
+                    print("; // type is ");
+                    println(theVariable.getType().name());
                 }
             } else if (theExpression instanceof PutStaticExpression) {
                 PutStaticExpression theE = (PutStaticExpression) theExpression;
@@ -826,7 +833,7 @@ public class JSSSAWriter extends JSWriter {
 
             println("    case " + theGraphNode.getStartAddress().getAddress() + ": {");
 
-            JSSSAWriter theJSWriter = new JSSSAWriter(indent + "        ", writer, linkerContext);
+            JSSSAWriter theJSWriter = withDeeperIndent().withDeeperIndent();
 
             for (Map.Entry<VariableDescription, Variable> theImported : theGraphNode.toStartState().getPorts()
                     .entrySet()) {
@@ -846,7 +853,7 @@ public class JSSSAWriter extends JSWriter {
                         .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
             }
 
-            theJSWriter.writeExpressions(theGraphNode.getExpressions());
+            theJSWriter.printGraphNode(theGraphNode);
 
     /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
                             theJSWriter.print("// ");
@@ -862,6 +869,23 @@ public class JSSSAWriter extends JSWriter {
     }
 
     public void printSimpleNode(ControlFlowGraph.SimpleNode aSimpleNode) {
-        writeExpressions(aSimpleNode.getNode().getExpressions());
+        printGraphNode(aSimpleNode.getNode());
+    }
+
+    private void printGraphNode(GraphNode aNode) {
+        switch (aNode.getType()) {
+            case INFINITELOOP: {
+                println("while (true) {");
+
+                withDeeperIndent().writeExpressions(aNode.getExpressions());
+
+                println("}");
+                break;
+            }
+            default: {
+                writeExpressions(aNode.getExpressions());
+                break;
+            }
+        }
     }
 }

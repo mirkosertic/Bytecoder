@@ -20,7 +20,7 @@ public class InitVariableExpression extends Expression {
     private final Variable variable;
 
     public InitVariableExpression(Variable aVariable) {
-        variable = aVariable.usedBy(this);
+        variable = aVariable;
     }
 
     public Variable getVariable() {

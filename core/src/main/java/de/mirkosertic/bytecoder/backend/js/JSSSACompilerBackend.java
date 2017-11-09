@@ -44,9 +44,11 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend {
@@ -362,16 +364,16 @@ public class JSSSACompilerBackend implements CompileBackend {
 
                 theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
 
-                JSSSAWriter theVariablesWriter = new JSSSAWriter("        ", theWriter, aLinkerContext);
-                for (Variable theVariable : theSSAProgram.getVariables()) {
-                    if (!(theVariable.getValue() instanceof PrimitiveValue)) {
+                JSSSAWriter theVariablesWriter = new JSSSAWriter(theSSAProgram,"        ", theWriter, aLinkerContext);
+                for (Variable theVariable : theSSAProgram.globalVariables()) {
+                    if (!(theVariable.getValue() instanceof PrimitiveValue) &&
+                        !(theVariable.getValue() instanceof MethodParameterValue) &&
+                        !(theVariable.getValue() instanceof SelfReferenceParameterValue)) {
                         theVariablesWriter.print("var ");
                         theVariablesWriter.print(theVariable.getName());
                         theVariablesWriter.print(" = null;");
                         theVariablesWriter.print(" // type is ");
-                        theVariablesWriter.print(theVariable.getType().name());
-                        theVariablesWriter.print(" used #");
-                        theVariablesWriter.println("" + theVariable.getUsageCount());
+                        theVariablesWriter.println(theVariable.getType().name());
                     }
                 }
 

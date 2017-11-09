@@ -33,9 +33,6 @@ public class InvokeStaticMethodValue extends Value {
         methodName = aMethodName;
         signature = aSignature;
         arguments = aArguments;
-        for (Variable theVariable : aArguments) {
-            theVariable.usedBy(this);
-        }
     }
 
     public BytecodeObjectTypeRef getClassName() {

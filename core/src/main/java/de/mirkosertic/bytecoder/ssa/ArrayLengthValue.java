@@ -20,7 +20,7 @@ public class ArrayLengthValue extends Value {
     private final Variable array;
 
     public ArrayLengthValue(Variable aArray) {
-        array = aArray.usedBy(this);
+        array = aArray;
     }
 
     public Variable getArray() {

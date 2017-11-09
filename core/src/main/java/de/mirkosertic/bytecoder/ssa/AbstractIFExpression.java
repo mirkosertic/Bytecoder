@@ -20,7 +20,7 @@ public abstract class AbstractIFExpression extends Expression {
     private final Variable booleanExpression;
 
     public AbstractIFExpression(Variable aBooleanExpression) {
-        booleanExpression = aBooleanExpression.usedBy(this);
+        booleanExpression = aBooleanExpression;
     }
 
     public Variable getBooleanExpression() {

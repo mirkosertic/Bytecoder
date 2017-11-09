@@ -21,8 +21,8 @@ public class SetMemoryLocationExpression extends Expression {
     private final Variable value;
 
     public SetMemoryLocationExpression(Variable aAddress, Variable aValue) {
-        address = aAddress.usedBy(this);
-        value = aValue.usedBy(this);
+        address = aAddress;
+        value = aValue;
     }
 
     public Variable getAddress() {

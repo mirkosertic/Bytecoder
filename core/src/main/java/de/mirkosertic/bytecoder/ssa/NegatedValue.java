@@ -20,7 +20,7 @@ public class NegatedValue extends Value {
     private final Variable variable;
 
     public NegatedValue(Variable aVariable) {
-        variable = aVariable.usedBy(this);
+        variable = aVariable;
     }
 
     public Variable getVariable() {
