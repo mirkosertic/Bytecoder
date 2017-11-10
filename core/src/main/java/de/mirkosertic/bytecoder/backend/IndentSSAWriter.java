@@ -13,19 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.js;
+package de.mirkosertic.bytecoder.backend;
+
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.ssa.Program;
 
 import java.io.PrintWriter;
 
-public class JSWriter {
+public class IndentSSAWriter {
 
+    protected final Program program;
+    protected final BytecodeLinkerContext linkerContext;
     protected final String indent;
     protected final PrintWriter writer;
     protected boolean newLine;
 
-    public JSWriter(String aIndent, PrintWriter aWriter) {
-        indent = aIndent;
+    public IndentSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         writer = aWriter;
+        indent = aIndent;
+        program = aProgram;
+        linkerContext = aLinkerContext;
         newLine = true;
     }
 

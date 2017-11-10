@@ -37,7 +37,7 @@ import de.mirkosertic.bytecoder.core.Logger;
 
 public class CompileTarget {
 
-    public enum BackendType {
+    public static enum BackendType {
         jsssacompiler {
             @Override
             public CompileBackend createBackend() {
@@ -60,6 +60,10 @@ public class CompileTarget {
     public CompileTarget(ClassLoader aClassLoader, BackendType aType) {
         backend = aType.createBackend();
         bytecodeLoader = new BytecodeLoader(aClassLoader, new BytecodePackageReplacer());
+    }
+
+    public String generatedFileName() {
+        return backend.generatedFileName();
     }
 
     public String compileToJS(Logger aLogger, Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {

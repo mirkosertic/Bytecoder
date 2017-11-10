@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend;
+package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.Logger;
+public class HelloWorld {
 
-public interface CompileBackend {
-
-    String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext);
-
-    String generatedFileName();
+    public static void main(String[] args) {
+        int x = 10;
+        int y = x + 3;
+        int z = y + y;
+    }
 }

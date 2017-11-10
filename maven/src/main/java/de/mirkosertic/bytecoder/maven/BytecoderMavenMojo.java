@@ -100,13 +100,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
         File theBytecoderDirectory = new File(theBaseDirectory, "bytecoder");
         theBytecoderDirectory.mkdirs();
 
-        File theBytecoderFileName = new File(theBytecoderDirectory, "bytecoder.js");
-
         try {
             ClassLoader theLoader = prepareClassLoader();
             Class theTargetClass = theLoader.loadClass(mainClass);
 
             CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(backend));
+            File theBytecoderFileName = new File(theBytecoderDirectory, theCompileTarget.generatedFileName());
 
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
