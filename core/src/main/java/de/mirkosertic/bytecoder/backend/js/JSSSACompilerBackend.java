@@ -438,4 +438,9 @@ public class JSSSACompilerBackend implements CompileBackend {
             aWriter.println(aInset + "return;");
         }
     }
+
+    @Override
+    public String generatedFileName() {
+        return "bytecoder.js";
+    }
 }

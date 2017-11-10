@@ -130,16 +130,6 @@ public class BytecodeLinkerContext {
         linkedClasses.entrySet().forEach(aConsumer);
     }
 
-    private List<BytecodeLinkedClass> findLinkedClassWithParent(BytecodeLinkedClass aParent) {
-        List<BytecodeLinkedClass> theResult = new ArrayList<>();
-        linkedClasses.forEach((key, value) -> {
-            if (value.getSuperClass() == aParent) {
-                theResult.add(value);
-            }
-        });
-        return theResult;
-    }
-
     public void linkTypeRef(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isVoid()) {
             return;
