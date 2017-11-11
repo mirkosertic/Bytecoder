@@ -21,5 +21,10 @@ public class HelloWorld {
         int x = 10;
         int y = x + 3;
         int z = y + y;
+        int k = 0;
+        if (x + z == 13) {
+            k = 12;
+        }
+        int j = k;
     }
 }

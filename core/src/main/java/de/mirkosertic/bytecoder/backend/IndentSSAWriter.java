@@ -26,7 +26,7 @@ public class IndentSSAWriter {
     protected final BytecodeLinkerContext linkerContext;
     protected final String indent;
     protected final PrintWriter writer;
-    protected boolean newLine;
+    private boolean newLine;
 
     public IndentSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         writer = aWriter;
