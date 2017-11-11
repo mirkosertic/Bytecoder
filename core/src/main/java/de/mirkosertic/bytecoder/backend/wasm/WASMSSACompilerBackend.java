@@ -82,22 +82,22 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
+                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext);
+
                 for (Variable theVariable : theSSAProgram.getVariables()) {
                     if (!(theVariable.getValue() instanceof PrimitiveValue) &&
                             !(theVariable.getValue() instanceof MethodParameterValue) &&
                             !(theVariable.getValue() instanceof SelfReferenceParameterValue)) {
 
-                        theWriter.print("         (local $");
-                        theWriter.print(theVariable.getName());
-                        theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(theVariable.getType()));
-                        theWriter.println(")");
+                        theSSAWriter.print("(local $");
+                        theSSAWriter.print(theVariable.getName());
+                        theSSAWriter.print(" ");
+                        theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
+                        theSSAWriter.println(")");
                     }
                 }
 
                 ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
-
-                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext);
                 theSSAWriter.writeNode(theNode);
 
                 theWriter.println("   )");

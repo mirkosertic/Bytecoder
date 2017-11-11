@@ -36,7 +36,44 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeNode((ControlFlowGraph.SimpleNode) aNode);
             return;
         }
-        throw new IllegalStateException("Not supported!");
+        if (aNode instanceof ControlFlowGraph.SequenceOfSimpleNodes) {
+            ControlFlowGraph.SequenceOfSimpleNodes theSequence = (ControlFlowGraph.SequenceOfSimpleNodes) aNode;
+
+            println("(local $currentLabel i32)");
+            println("(set_local $currentLabel (i32.const 0))");
+            println("(loop $controlflowloop");
+
+            WASMSSAWriter theChild = withDeeperIndent();
+            for (ControlFlowGraph.SimpleNode theJumpTarget : theSequence.getNodes()) {
+                theChild.print("(block $");
+                theChild.print(theJumpTarget.getNode().getStartAddress().getAddress());
+                theChild.println();
+
+                WASMSSAWriter theChild2 = theChild.withDeeperIndent();
+                theChild2.print("(br_if $");
+                theChild2.print(theJumpTarget.getNode().getStartAddress().getAddress());
+                theChild2.println();
+
+                WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
+                theChild3.print("(i32.ne (get_local $currentLabel) (i32.const ");
+                theChild3.print(theJumpTarget.getNode().getStartAddress().getAddress());
+                theChild3.println(")");
+
+                theChild2.println(")");
+
+                theChild2.println("(");
+                theChild2.withDeeperIndent().writeNode(theJumpTarget);
+                theChild2.println(")")
+                ;
+                theChild.println(")");
+            }
+
+            theChild.println("(br $controlflowloop)");
+
+            println(")");
+            return;
+        }
+        throw new IllegalStateException("Not supported!" +  aNode);
     }
 
     private void writeNode(ControlFlowGraph.SimpleNode aNode) {
@@ -115,6 +152,18 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeValue(BinaryValue aValue) {
         switch (aValue.getOperator()) {
+            case NOTEQUALS: {
+                println("(i32.ne ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
             case ADD: {
                 println("(i32.add ");
 
