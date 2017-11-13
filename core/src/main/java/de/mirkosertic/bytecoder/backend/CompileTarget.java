@@ -38,13 +38,13 @@ import de.mirkosertic.bytecoder.core.Logger;
 public class CompileTarget {
 
     public static enum BackendType {
-        jsssacompiler {
+        js {
             @Override
             public CompileBackend createBackend() {
                 return new JSSSACompilerBackend();
             }
         },
-        wasmssacompiler {
+        wasm {
             @Override
             public CompileBackend createBackend() {
                 return new WASMSSACompilerBackend();

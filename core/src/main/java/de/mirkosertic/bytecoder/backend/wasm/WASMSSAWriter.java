@@ -15,11 +15,32 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.io.PrintWriter;
+import java.util.List;
+
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.*;
-
-import java.io.PrintWriter;
+import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CommentExpression;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -33,7 +54,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     public void writeNode(ControlFlowGraph.Node aNode) {
         if (aNode instanceof ControlFlowGraph.SimpleNode) {
-            writeNode((ControlFlowGraph.SimpleNode) aNode);
+            writeExpressionList(((ControlFlowGraph.SimpleNode) aNode).getNode().getExpressions());
             return;
         }
         if (aNode instanceof ControlFlowGraph.SequenceOfSimpleNodes) {
@@ -57,14 +78,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
                 theChild3.print("(i32.ne (get_local $currentLabel) (i32.const ");
                 theChild3.print(theJumpTarget.getNode().getStartAddress().getAddress());
-                theChild3.println(")");
+                theChild3.println("))");
 
                 theChild2.println(")");
 
-                theChild2.println("(");
-                theChild2.withDeeperIndent().writeNode(theJumpTarget);
-                theChild2.println(")")
-                ;
+                theChild2.writeNode(theJumpTarget);
                 theChild.println(")");
             }
 
@@ -76,8 +94,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
         throw new IllegalStateException("Not supported!" +  aNode);
     }
 
-    private void writeNode(ControlFlowGraph.SimpleNode aNode) {
-        for (Expression theExpression : aNode.getNode().getExpressions().toList()) {
+    private void writeExpressionList(ExpressionList aList) {
+        for (Expression theExpression : aList.toList()) {
             writeExpression(theExpression);
         }
     }
@@ -99,11 +117,64 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeExpression((DirectInvokeMethodExpression) aExpression);
             return;
         }
+        if (aExpression instanceof IFExpression) {
+            writeExpression((IFExpression) aExpression);
+            return;
+        }
+        if (aExpression instanceof GotoExpression) {
+            writeExpression((GotoExpression) aExpression);
+            return;
+        }
+        if (aExpression instanceof InlinedNodeExpression) {
+            writeExpression((InlinedNodeExpression) aExpression);
+            return;
+        }
+        if (aExpression instanceof ReturnVariableExpression) {
+            writeExpression((ReturnVariableExpression) aExpression);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aExpression);
     }
 
+    private void writeExpression(InlinedNodeExpression aExpression) {
+        writeExpressionList(aExpression.getNode().getExpressions());
+    }
+
+    private void writeExpression(GotoExpression aExpression) {
+        print("(set_local $currentLabel (i32.const ");
+        print(aExpression.getJumpTarget().getAddress());
+        println("))");
+        println("(br $controlflowloop)");
+    }
+
+    private void writeExpression(IFExpression aExpression) {
+        aExpression.getBooleanExpression();
+        print("(block $");
+        print(aExpression.getAddress().getAddress());
+        println();
+
+        WASMSSAWriter theChild = withDeeperIndent();
+
+        theChild.print("(br_if $");
+        theChild.print(aExpression.getAddress().getAddress());
+        theChild.println();
+
+        WASMSSAWriter theChild3 = theChild.withDeeperIndent();
+        theChild3.print("(i32.ne ");
+        theChild3.printVariableNameOrValue(aExpression.getBooleanExpression());
+        theChild3.print(" (i32.const 1)");
+        theChild3.println(")");
+
+        theChild.println(")");
+
+        theChild.writeExpressionList(aExpression.getExpressions());
+
+        println(")");
+    }
+
     private void writeExpression(DirectInvokeMethodExpression aExpression) {
-        println(";; invoke " + aExpression.getValue());
+        writeValue(aExpression.getValue());
+        println();
     }
 
     private void writeExpression(InitVariableExpression aExpression) {
@@ -119,6 +190,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMSSAWriter theChild = withDeeperIndent();
         theChild.writeValue(theVariable.getValue());
 
+        println();
         println(")");
     }
 
@@ -135,7 +207,50 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeValue((IntegerValue) aValue);
             return;
         }
+        if (aValue instanceof VariableReferenceValue) {
+            writeValue((VariableReferenceValue) aValue);
+            return;
+        }
+        if (aValue instanceof DirectInvokeMethodValue) {
+            writeValue((DirectInvokeMethodValue) aValue);
+            return;
+        }
+        if (aValue instanceof InvokeStaticMethodValue) {
+            writeValue((InvokeStaticMethodValue) aValue);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private void writeValue(DirectInvokeMethodValue aValue) {
+        print("(call $");
+        print(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getMethodSignature()));
+
+        print(" ");
+        printVariableNameOrValue(aValue.getTarget());
+
+        for (Variable theVariable : aValue.getArguments()) {
+            print(" ");
+            printVariableNameOrValue(theVariable);
+        }
+
+        print(")");
+    }
+
+    private void writeValue(InvokeStaticMethodValue aValue) {
+        print("(call $");
+        print(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+
+        for (Variable theVariable : aValue.getArguments()) {
+            print(" ");
+            printVariableNameOrValue(theVariable);
+        }
+
+        print(")");
+    }
+
+    private void writeValue(VariableReferenceValue aValue) {
+        printVariableNameOrValue(aValue.getVariable());
     }
 
     private void writeValue(ByteValue aValue) {
@@ -188,6 +303,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeExpression(ReturnExpression aExpression) {
         println("(return)");
+    }
+
+    private void writeExpression(ReturnVariableExpression aExpression) {
+        print("(return ");
+
+        printVariableNameOrValue(aExpression.getVariable());
+
+        println(")");
     }
 
     private void printVariableNameOrValue(Variable aVariable) {

@@ -199,7 +199,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        testJSBackendFrameworkMethod(CompileTarget.BackendType.jsssacompiler, aFrameworkMethod, aRunNotifier);
+        testJSBackendFrameworkMethod(CompileTarget.BackendType.js, aFrameworkMethod, aRunNotifier);
         testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
     }
 }
