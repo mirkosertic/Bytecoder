@@ -22,39 +22,39 @@ import org.junit.runner.RunWith;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class GCTest {
+public class MemoryManagerTest {
 
     @Test
     public void testMalloc() {
-        GC.initWithSize(10000);
-        Assert.assertEquals(0, GC.usedMem(), 0);
-        Assert.assertEquals(10000, GC.freeMem(), 0);
-        Address theAlloc1 = GC.malloc(100);
-        Assert.assertEquals(100, GC.usedMem(), 0);
-        Assert.assertEquals(9900, GC.freeMem(), 0);
+        MemoryManager.initWithSize(10000);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
+        Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
+        Address theAlloc1 = MemoryManager.malloc(100);
+        Assert.assertEquals(100, MemoryManager.usedMem(), 0);
+        Assert.assertEquals(9900, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, Address.getStart(theAlloc1), 0);
-        Address theAlloc2 = GC.malloc(50);
+        Address theAlloc2 = MemoryManager.malloc(50);
         Assert.assertEquals(100, Address.getStart(theAlloc2), 0);
-        Assert.assertEquals(150, GC.usedMem(), 0);
-        Assert.assertEquals(9850, GC.freeMem(), 0);
+        Assert.assertEquals(150, MemoryManager.usedMem(), 0);
+        Assert.assertEquals(9850, MemoryManager.freeMem(), 0);
     }
 
     @Test
     public void testMallocFree2() {
-        GC.initWithSize(10000);
-        Address thePointer = GC.malloc(100);
-        Assert.assertEquals(9900, GC.freeMem(), 0);
-        Assert.assertEquals(100, GC.usedMem(), 0);
+        MemoryManager.initWithSize(10000);
+        Address thePointer = MemoryManager.malloc(100);
+        Assert.assertEquals(9900, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(100, MemoryManager.usedMem(), 0);
     }
 
     @Test
     public void testMallocFree() {
-        GC.initWithSize(10000);
-        Address thePointer = GC.malloc(100);
-        GC.free(thePointer);
-        Assert.assertEquals(10000, GC.freeMem(), 0);
-        Assert.assertEquals(0, GC.usedMem(), 0);
-        Address theNew = GC.malloc(50);
+        MemoryManager.initWithSize(10000);
+        Address thePointer = MemoryManager.malloc(100);
+        MemoryManager.free(thePointer);
+        Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
+        Address theNew = MemoryManager.malloc(50);
         Assert.assertEquals(0, Address.getStart(theNew), 0);
     }
 }

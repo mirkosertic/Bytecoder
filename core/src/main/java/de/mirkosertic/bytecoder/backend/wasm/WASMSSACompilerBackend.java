@@ -20,10 +20,14 @@ import java.io.StringWriter;
 
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -40,6 +44,17 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
     @Override
     public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext) {
+
+        // Link required mamory management code
+        BytecodeLinkedClass theManagerClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
+        theManagerClass.linkStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
+        theManagerClass.linkStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
+
+        theManagerClass.linkStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(
+                Address.class)}));
+        theManagerClass.linkStaticMethod("malloc", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+
         StringWriter theStringWriter = new StringWriter();
         PrintWriter theWriter = new PrintWriter(theStringWriter);
         theWriter.println("(module");
@@ -49,6 +64,9 @@ public class WASMSSACompilerBackend implements CompileBackend {
             System.out.println(aEntry.getKey().name());
 
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
 
