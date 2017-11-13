@@ -16,17 +16,46 @@
 package de.mirkosertic.bytecoder.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.Type;
 
 public class WASMWriterUtils {
 
+    public static String typeRefToString(BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
+            return thePrimitive.name();
+        }
+        if (aTypeRef.isArray()) {
+            BytecodeArrayTypeRef theRef = (BytecodeArrayTypeRef) aTypeRef;
+            return "A" + theRef.getDepth() + typeRefToString(theRef.getType());
+        }
+        BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
+        return toClassName(theObjectRef);
+    }
+
+    public static String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
+        String theName = typeRefToString(aSignature.getReturnType());
+        theName += aMethodName.replace("<", "").replace(">", "");
+
+        for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
+            theName += typeRefToString(theTypeRef);
+        }
+        return theName;
+    }
+
+    public static String toMethodName(BytecodeObjectTypeRef aClassName, String aMethodName, BytecodeMethodSignature aSignature) {
+        return toClassName(aClassName) + "_" + toMethodName(aMethodName, aSignature);
+    }
+
     public static String toMethodName(BytecodeObjectTypeRef aClassName, BytecodeUtf8Constant aConstant, BytecodeMethodSignature aSignature) {
-        return toClassName(aClassName) + "_" + aConstant.stringValue().replace('<', '_').replace('>', '_');
+        return toClassName(aClassName) + "_" + toMethodName(aConstant.stringValue(), aSignature);
     }
 
     public static String toClassNameInternal(String aClassName) {

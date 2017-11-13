@@ -15,16 +15,26 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import de.mirkosertic.bytecoder.annotations.Export;
+
 public class HelloWorld {
 
+    @Export("compute")
+    public static int compute(int a, int b) {
+        return a + b;
+    }
+
+    public static void call(int result) {
+
+    }
+
+    @Export("main")
     public static void main(String[] args) {
-        int x = 10;
-        int y = x + 3;
-        int z = y + y;
-        int k = 0;
-        if (x + z == 13) {
-            k = 12;
+        int x = compute(10, 20);
+        int z = 1;
+        if (x == 30) {
+            z = 2;
         }
-        int j = k;
+
     }
 }

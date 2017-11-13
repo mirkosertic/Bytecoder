@@ -70,7 +70,7 @@ There is Maven plugin available. It currently supports only the JavaScript backe
                 <version>${project.version}</version>
                 <configuration>
                     <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
-                    <backend>jsssacompiler</backend>                    
+                    <backend>js</backend>                    
                 </configuration>
                 <executions>
                     <execution>

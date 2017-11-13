@@ -894,7 +894,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theResult, theINS.getJumpTarget(), theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
                 BytecodeInstructionIFNONNULL theINS = (BytecodeInstructionIFNONNULL) theInstruction;
                 Variable theValue = aHelper.pop();
@@ -904,7 +904,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theResult, theINS.getJumpTarget(), theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theINS = (BytecodeInstructionIFICMP) theInstruction;
                 Variable theValue2 = aHelper.pop();
@@ -937,7 +937,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget(), theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theINS = (BytecodeInstructionIFACMP) theInstruction;
@@ -959,7 +959,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget(), theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theINS = (BytecodeInstructionIFCOND) theInstruction;
@@ -993,7 +993,7 @@ public class ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theNewVariable, theINS.getJumpTarget(), theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
                 BytecodeInstructionObjectRETURN theINS = (BytecodeInstructionObjectRETURN) theInstruction;
                 Variable theVariable = aHelper.pop();

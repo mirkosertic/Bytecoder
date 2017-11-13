@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.AbstractIFExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -26,6 +25,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
@@ -43,8 +43,8 @@ public class InefficientIFOptimizer implements Optimizer {
     private void optimizeExpressionList(ExpressionList aExpressions, BytecodeLinkerContext aLinkerContext) {
         for (Expression theExpression : aExpressions.toList()) {
 
-            if (theExpression instanceof AbstractIFExpression) {
-                AbstractIFExpression theIf = (AbstractIFExpression) theExpression;
+            if (theExpression instanceof IFExpression) {
+                IFExpression theIf = (IFExpression) theExpression;
 
                 Variable theBoolean = theIf.getBooleanExpression();
                 if (theBoolean.getValue() instanceof BinaryValue) {

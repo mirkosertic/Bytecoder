@@ -15,12 +15,24 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.backend.CompileBackend;
-import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.*;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import de.mirkosertic.bytecoder.annotations.Export;
+import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 // /home/sertic/Development/Projects/wabt/build/wat2wasm -v -o ./testcode.wasm /tmp/bytecoder.wat
 
@@ -57,7 +69,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 theWriter.print(" ");
 
                 if (!t.getAccessFlags().isStatic()) {
-                    theWriter.print("(param $thisref");
+                    theWriter.print("(param $thisRef");
                     theWriter.print(" ");
                     theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
                     theWriter.print(") ");
@@ -66,7 +78,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 for (int i=0;i<theSignature.getArguments().length;i++) {
                     BytecodeTypeRef theParamType = theSignature.getArguments()[i];
                     theWriter.print("(param $p");
-                    theWriter.print(i);
+                    theWriter.print((i + 1));
                     theWriter.print(" ");
                     theWriter.print(WASMWriterUtils.toType(theParamType));
                     theWriter.print(") ");
@@ -104,6 +116,28 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 theWriter.println();
             });
 
+        });
+
+        // Write exports
+        aLinkerContext.forEachClass(aEntry -> {
+
+            System.out.println(aEntry.getKey().name());
+
+            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+
+            aEntry.getValue().forEachMethod(t -> {
+
+                BytecodeAnnotation theExport = t.getAttributes().getAnnotationByType(Export.class.getName());
+                if (theExport != null) {
+                    theWriter.print("   (export \"");
+                    theWriter.print(theExport.getElementValueByName("value").stringValue());
+                    theWriter.print("\" (func $");
+                    theWriter.print(WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), t.getSignature()));
+                    theWriter.println("))");
+                }
+            });
         });
 
         theWriter.println(")");

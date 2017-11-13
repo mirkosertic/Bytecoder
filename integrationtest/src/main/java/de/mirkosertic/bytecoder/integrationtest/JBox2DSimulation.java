@@ -176,7 +176,7 @@ public class JBox2DSimulation {
         scene = new Scene();
     }
 
-    @Export
+    @Export("proceedSimulation")
     public static void proceedSimulation() {
         long theNow = System.currentTimeMillis();
         scene.calculate();
