@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
-public class GC {
+public class MemoryManager {
 
     private static final int OFFSET_SIZE = 0;
     private static final int OFFSET_NEXT = 1;
@@ -85,10 +85,14 @@ public class GC {
             int theCurrentSize = Address.getIntValue(theCurrent, OFFSET_SIZE);
             if ((int) theCurrentSize > aSize) {
 
-                Address theALLOCATED = new Address(Address.getStart(theCurrent));
+                int theCurrentStart = Address.getStart(theCurrent);
+
+                Address theALLOCATED = new Address(theCurrentStart);
                 Address.setIntValue(theALLOCATED, OFFSET_SIZE, aSize);
 
-                Address theNewFree = new Address(Address.getStart(theCurrent) + aSize);
+                int theNewStart = Address.getStart(theCurrent) + aSize;
+
+                Address theNewFree = new Address(theNewStart);
                 Address.setIntValue(theNewFree, OFFSET_SIZE, theCurrentSize - aSize);
 
                 if (thePrevious != null) {

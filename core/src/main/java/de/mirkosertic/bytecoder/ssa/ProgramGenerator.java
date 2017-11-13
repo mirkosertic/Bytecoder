@@ -26,7 +26,7 @@ import java.util.Stack;
 import java.util.function.Function;
 
 import de.mirkosertic.bytecoder.classlib.Address;
-import de.mirkosertic.bytecoder.classlib.GC;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
@@ -1091,7 +1091,6 @@ public class ProgramGenerator {
                 } else if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     Variable theRoot = rootFor(theTarget);
                     theRoot.setValue(theArguments.get(0).getValue());
-
                 } else {
                     String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
 
@@ -1155,7 +1154,7 @@ public class ProgramGenerator {
 
                 BytecodeClassinfoConstant theTargetClass = theINS.getMethodReference().getClassIndex().getClassConstant();
                 BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theTargetClass.getConstant());
-                if (theObjectType.name().equals(GC.class.getName()) && "initTestMemory".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
+                if (theObjectType.name().equals(MemoryManager.class.getName()) && "initTestMemory".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
                     // This invocation can be skipped!!!
                 } else if (theObjectType.name().equals(Address.class.getName())) {
                     String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex()

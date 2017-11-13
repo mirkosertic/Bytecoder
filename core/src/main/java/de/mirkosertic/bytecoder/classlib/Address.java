@@ -31,18 +31,18 @@ public class Address {
     }
 
     public static int getIntValue(Address aAddress, int aIndex) {
-        return (int) GC.data[aAddress.start + aIndex];
+        return (int) MemoryManager.data[aAddress.start + aIndex];
     }
 
     public static void setIntValue(Address aAddress, int aIndex, int aValue) {
-        GC.data[aAddress.start + aIndex] = aValue;
+        MemoryManager.data[aAddress.start + aIndex] = aValue;
     }
 
     public static Object getObjectValue(Address aAddress, int aIndex) {
-        return GC.data[aAddress.start + aIndex];
+        return MemoryManager.data[aAddress.start + aIndex];
     }
 
     public static void setObjectValue(Address aAddress, int aIndex, Object aValue) {
-        GC.data[aAddress.start + aIndex] = aValue;
+        MemoryManager.data[aAddress.start + aIndex] = aValue;
     }
 }
