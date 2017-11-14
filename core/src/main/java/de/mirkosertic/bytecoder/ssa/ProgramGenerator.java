@@ -1171,17 +1171,6 @@ public class ProgramGenerator {
                         aTargetBlock.addExpression(new SetMemoryLocationExpression(theNewVariable, theNewValue));
                         break;
                     }
-                    case "setObjectValue": {
-
-                        Variable theTarget = theArguments.get(0);
-                        Variable theOffset = theArguments.get(1);
-                        Variable theNewValue = theArguments.get(2);
-
-                        ComputedMemoryLocationWriteValue theLocation = new ComputedMemoryLocationWriteValue(theTarget, theOffset);
-                        Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, theLocation);
-                        aTargetBlock.addExpression(new SetMemoryLocationExpression(theNewVariable, theNewValue));
-                        break;
-                    }
                     case "getStart": {
 
                         Variable theTarget = theArguments.get(0);
@@ -1197,16 +1186,6 @@ public class ProgramGenerator {
 
                         ComputedMemoryLocationReadValue theLocation = new ComputedMemoryLocationReadValue(theTarget, theOffset);
                         Variable theNewVariable = aTargetBlock.newVariable(Type.INT, theLocation);
-                        aHelper.push(theNewVariable);
-
-                        break;
-                    }
-                    case "getObjectValue": {
-                        Variable theTarget = theArguments.get(0);
-                        Variable theOffset = theArguments.get(1);
-
-                        ComputedMemoryLocationReadValue theLocation = new ComputedMemoryLocationReadValue(theTarget, theOffset);
-                        Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, theLocation);
                         aHelper.push(theNewVariable);
 
                         break;
