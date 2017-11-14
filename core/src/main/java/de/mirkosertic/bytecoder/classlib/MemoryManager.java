@@ -15,15 +15,15 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import de.mirkosertic.bytecoder.annotations.Export;
+
 public class MemoryManager {
 
     private static final int OFFSET_SIZE = 0;
-    private static final int OFFSET_NEXT = 1;
+    private static final int OFFSET_NEXT = 4;
+    private static final int OFFSET_USED = 8;
 
     public static Object[] data;
-
-    private static Address FREE;
-    private static Address USED;
 
     public static void initTestMemory(int aSize) {
         data = new Object[aSize];
@@ -31,89 +31,107 @@ public class MemoryManager {
 
     public static void initWithSize(int aSize) {
         initTestMemory(aSize);
-        FREE = new Address(0);
-        Address.setIntValue(FREE, OFFSET_SIZE, aSize);
-        Address.setObjectValue(FREE, OFFSET_NEXT, null);
-        USED = null;
+        initNative(aSize);
     }
 
+    @Export("initMemory")
+    public static void initNative(int aSize) {
+        Address theFree = new Address(4);
+        Address.setIntValue(theFree, OFFSET_SIZE, aSize);
+        Address.setIntValue(theFree, OFFSET_NEXT, 0);
+        Address.setIntValue(theFree, OFFSET_USED, 0);
+    }
+
+    @Export("freeMem")
     public static long freeMem() {
         long theResult = 0;
-        Address theCurrent = FREE;
-        while(theCurrent != null) {
-            theResult+=(int) Address.getIntValue(theCurrent, OFFSET_SIZE);
-            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
+        Address theCurrent = new Address(4);
+        while(Address.getStart(theCurrent) != 0) {
+            int theUsedFlag = Address.getIntValue(theCurrent, OFFSET_USED);
+            if (theUsedFlag == 0) {
+                theResult += Address.getIntValue(theCurrent, OFFSET_SIZE);
+            }
+            int theNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
+            theCurrent = new Address(theNext);
         }
         return theResult;
     }
 
+    @Export("usedMem")
     public static long usedMem() {
         long theResult = 0;
-        Address theCurrent = USED;
-        while(theCurrent != null) {
-            theResult+=(int) Address.getIntValue(theCurrent, OFFSET_SIZE);
-            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
+        Address theCurrent = new Address(4);
+        while(Address.getStart(theCurrent) != 0) {
+            int theUsedFlag = Address.getIntValue(theCurrent, OFFSET_USED);
+            if (theUsedFlag == 1) {
+                theResult += Address.getIntValue(theCurrent, OFFSET_SIZE);
+            }
+            int theNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
+            theCurrent = new Address(theNext);
         }
         return theResult;
     }
 
+    @Export("free")
     public static void free(Address aPointer) {
-        Address theCurrent = USED;
-        Address thePrevious = null;
-        while(theCurrent != null) {
-            if (Address.getStart(theCurrent) == Address.getStart(aPointer)) {
-                if (thePrevious != null) {
-                    Address.setIntValue(thePrevious, OFFSET_NEXT, Address.getIntValue(theCurrent, OFFSET_NEXT));
-                } else {
-                    USED = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
-                }
-
-                Address.setObjectValue(theCurrent, OFFSET_NEXT, FREE);
-                FREE = theCurrent;
-
-                return;
-            }
-            thePrevious = theCurrent;
-            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
-        }
+        Address.setIntValue(aPointer, OFFSET_USED, 0);
     }
 
-    public static Address malloc(int aSize) {
-        Address thePrevious = null;
-        Address theCurrent = FREE;
-        while(theCurrent != null) {
+    private static Address mallocInternal(int aSize) {
+
+        // Overhead for header
+        aSize+=12;
+
+        Address theCurrent = new Address(4);
+        while(Address.getStart(theCurrent) != 0) {
+            int theUsed = Address.getIntValue(theCurrent, OFFSET_USED);
             int theCurrentSize = Address.getIntValue(theCurrent, OFFSET_SIZE);
-            if ((int) theCurrentSize > aSize) {
+            if (theCurrentSize >= aSize && theUsed == 0) {
 
-                int theCurrentStart = Address.getStart(theCurrent);
+                // Mark block as used
+                Address.setIntValue(theCurrent, OFFSET_SIZE, aSize);
+                Address.setIntValue(theCurrent, OFFSET_USED, 1);
 
-                Address theALLOCATED = new Address(theCurrentStart);
-                Address.setIntValue(theALLOCATED, OFFSET_SIZE, aSize);
+                if (theCurrentSize > aSize) {
 
-                int theNewStart = Address.getStart(theCurrent) + aSize;
+                    int theCurrentNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
 
-                Address theNewFree = new Address(theNewStart);
-                Address.setIntValue(theNewFree, OFFSET_SIZE, theCurrentSize - aSize);
+                    // Mark remaining as free
+                    int theNewPosition = Address.getStart(theCurrent) + aSize;
 
-                if (thePrevious != null) {
-                    Address.setObjectValue(thePrevious, OFFSET_NEXT, theNewFree);
-                } else {
-                    FREE = theNewFree;
+                    Address theNewFreeAdr = new Address(theNewPosition);
+                    Address.setIntValue(theNewFreeAdr, OFFSET_USED, 0);
+                    Address.setIntValue(theNewFreeAdr, OFFSET_SIZE, theCurrentSize - aSize);
+                    Address.setIntValue(theNewFreeAdr, OFFSET_NEXT, theCurrentNext);
+
+                    Address.setIntValue(theCurrent, OFFSET_NEXT, theNewPosition);
                 }
 
-                if (USED == null) {
-                    USED = theALLOCATED;
-                } else {
-                    Address.setObjectValue(theALLOCATED, OFFSET_NEXT, USED);
-                    USED = theALLOCATED;
-                }
-
-                return theALLOCATED;
+                return theCurrent;
             }
 
-            thePrevious = theCurrent;
-            theCurrent = (Address) Address.getObjectValue(theCurrent, OFFSET_NEXT);
+            int theNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
+            theCurrent = new Address(theNext);
         }
-        return null;
+
+        return new Address(0);
+    }
+
+    @Export("malloc")
+    public static Address malloc(int aSize) {
+        Address theAddress = mallocInternal(aSize);
+        if (Address.getStart(theAddress) == 0) {
+            GC();
+            theAddress = mallocInternal(aSize);
+        }
+        if (Address.getStart(theAddress) == 0) {
+            throw new RuntimeException();
+        }
+        return theAddress;
+    }
+
+    @Export("GC")
+    public static void GC() {
+
     }
 }

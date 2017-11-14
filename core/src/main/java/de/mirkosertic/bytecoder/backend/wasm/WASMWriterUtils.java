@@ -106,7 +106,7 @@ public class WASMWriterUtils {
     }
 
     public static int computeStaticFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        int theOffset = 4;
+        int theOffset = 12;
         List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
         aClass.forEachStaticField(theFields::add);
         for (int i=0;i<theFields.size();i++) {

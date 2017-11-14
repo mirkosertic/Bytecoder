@@ -25,36 +25,47 @@ import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 public class MemoryManagerTest {
 
     @Test
-    public void testMalloc() {
+    public void testAllFreeNothingUsed() {
         MemoryManager.initWithSize(10000);
-        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
         Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
-        Address theAlloc1 = MemoryManager.malloc(100);
-        Assert.assertEquals(100, MemoryManager.usedMem(), 0);
-        Assert.assertEquals(9900, MemoryManager.freeMem(), 0);
-        Assert.assertEquals(0, Address.getStart(theAlloc1), 0);
-        Address theAlloc2 = MemoryManager.malloc(50);
-        Assert.assertEquals(100, Address.getStart(theAlloc2), 0);
-        Assert.assertEquals(150, MemoryManager.usedMem(), 0);
-        Assert.assertEquals(9850, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
     }
 
     @Test
-    public void testMallocFree2() {
+    public void testMallocAndFree() {
         MemoryManager.initWithSize(10000);
-        Address thePointer = MemoryManager.malloc(100);
-        Assert.assertEquals(9900, MemoryManager.freeMem(), 0);
-        Assert.assertEquals(100, MemoryManager.usedMem(), 0);
+        Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
+
+        Address theAllocated = MemoryManager.malloc(100);
+        Assert.assertEquals(9888, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(112, MemoryManager.usedMem(), 0);
+
+        Assert.assertEquals(4, Address.getStart(theAllocated), 0);
+
+        Address theAllocated2 = MemoryManager.malloc(25);
+        Assert.assertEquals(9851, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(149, MemoryManager.usedMem(), 0);
+
+        Assert.assertEquals(116, Address.getStart(theAllocated2), 0);
+
+        MemoryManager.free(theAllocated);
+        Assert.assertEquals(9963, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(37, MemoryManager.usedMem(), 0);
+
+        MemoryManager.free(theAllocated2);
+        Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
     }
 
     @Test
-    public void testMallocFree() {
+    public void testMallocAndFreeSmall() {
         MemoryManager.initWithSize(10000);
-        Address thePointer = MemoryManager.malloc(100);
-        MemoryManager.free(thePointer);
         Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
-        Address theNew = MemoryManager.malloc(50);
-        Assert.assertEquals(0, Address.getStart(theNew), 0);
+
+        Address theAllocated = MemoryManager.malloc(8);
+        Assert.assertEquals(9980, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(20, MemoryManager.usedMem(), 0);
     }
 }

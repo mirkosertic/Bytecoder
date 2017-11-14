@@ -37,12 +37,4 @@ public class Address {
     public static void setIntValue(Address aAddress, int aIndex, int aValue) {
         MemoryManager.data[aAddress.start + aIndex] = aValue;
     }
-
-    public static Object getObjectValue(Address aAddress, int aIndex) {
-        return MemoryManager.data[aAddress.start + aIndex];
-    }
-
-    public static void setObjectValue(Address aAddress, int aIndex, Object aValue) {
-        MemoryManager.data[aAddress.start + aIndex] = aValue;
-    }
 }

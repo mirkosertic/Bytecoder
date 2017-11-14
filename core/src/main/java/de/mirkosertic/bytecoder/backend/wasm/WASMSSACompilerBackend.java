@@ -20,6 +20,7 @@ import java.io.StringWriter;
 
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
@@ -181,6 +182,23 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.println();
         });
 
+        theWriter.println("   (func $bootstrap");
+
+        aLinkerContext.forEachClass(theEntry -> {
+            if (!theEntry.getValue().getAccessFlags().isInterface()) {
+
+                if (!theEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                    theWriter.print("      (call $");
+                    theWriter.print(JSWriterUtils.toClassName(theEntry.getKey()));
+                    theWriter.println("__classinitcheck)");
+                }
+            }
+        });
+
+
+        theWriter.println("   )");
+        theWriter.println();
+
         // Globals for static class data
         aLinkerContext.forEachClass(aEntry -> {
 
@@ -197,13 +215,17 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
                 theWriter.print("   (global $");
                 theWriter.print(theClassName);
-                theWriter.println("__staticdata i32 (i32.const 0))");
+                theWriter.println("__staticdata (mut i32) (i32.const 0))");
             };
 
             theWriter.print("   (global $");
             theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
-            theWriter.println("__initialized i32 (i32.const 0))");
+            theWriter.println("__initialized (mut i32) (i32.const 0))");
         });
+
+        theWriter.println();
+
+        theWriter.println("   (export \"bootstrap\" (func $bootstrap))");
 
         // Write exports
         aLinkerContext.forEachClass(aEntry -> {
