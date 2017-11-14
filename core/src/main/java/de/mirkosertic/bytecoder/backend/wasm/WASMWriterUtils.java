@@ -15,9 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -81,5 +87,35 @@ public class WASMWriterUtils {
 
     public static String toType(Type aType) {
         return "i32";
+    }
+
+    public static int computeObjectSizeFor(BytecodeLinkedClass aClass) {
+        AtomicInteger theSize = new AtomicInteger(4); // 32 Bits Header
+        aClass.forEachMemberField( t -> {
+            theSize.addAndGet(4); // Every member is a pointer to another object or a primitive of 32 bits
+        });
+        return theSize.intValue();
+    }
+
+    public static int computeClassSizeFor(BytecodeLinkedClass aClass) {
+        AtomicInteger theSize = new AtomicInteger(4); // 32 Bits Header
+        aClass.forEachStaticField( t -> {
+            theSize.addAndGet(4); // Every member is a pointer to another object or a primitive of 32 bits
+        });
+        return theSize.intValue();
+    }
+
+    public static int computeStaticFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
+        int theOffset = 4;
+        List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
+        aClass.forEachStaticField(theFields::add);
+        for (int i=0;i<theFields.size();i++) {
+            Map.Entry<String, BytecodeLinkedClass.LinkedField> theField = theFields.get(i);
+            if (theField.getKey().equals(aFieldName)) {
+                return theOffset;
+            }
+            theOffset += 4;
+        }
+        throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
     }
 }
