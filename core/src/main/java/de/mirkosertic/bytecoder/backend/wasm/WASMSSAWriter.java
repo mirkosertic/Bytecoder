@@ -20,7 +20,12 @@ import java.io.PrintWriter;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
@@ -168,8 +173,24 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeExpression(PutStaticExpression aExpression) {
-        print(";;");
-        println("set memory location");
+
+        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        int theMemoryOffset = WASMWriterUtils.computeStaticFieldOffsetOf(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                theLinkedClass);
+
+        String theClassName = WASMWriterUtils.toClassName(aExpression.getField().getClassIndex().getClassConstant());
+        print("(i32.store offset=");
+        print(theMemoryOffset);
+        println();
+
+        WASMSSAWriter theChild = withDeeperIndent();
+        theChild.print("(get_global $");
+        theChild.print(theClassName);
+        theChild.println("__staticdata)");
+
+        theChild.printVariableNameOrValue(aExpression.getVariable());;
+
+        println(")");
     }
 
     private void writeExpression(SetMemoryLocationExpression aExpression) {
@@ -354,11 +375,21 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeValue(GetStaticValue aValue) {
-        print("(i32.const 0) ;; static reference ");
-    }
+        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        int theMemoryOffset = WASMWriterUtils.computeStaticFieldOffsetOf(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                theLinkedClass);
 
-    private int computeObjectSizeFor(BytecodeLinkedClass aClass) {
-        return 100;
+        String theClassName = WASMWriterUtils.toClassName(aValue.getField().getClassIndex().getClassConstant());
+        print("(i32.load offset=");
+        print(theMemoryOffset);
+        println();
+
+        WASMSSAWriter theChild = withDeeperIndent();
+        theChild.print("(get_global $");
+        theChild.print(theClassName);
+        theChild.println("__staticdata)");
+
+        println(")");
     }
 
     private void writeValue(NewObjectValue aValue) {
@@ -373,7 +404,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print("(call $");
         print(theMallocName);
         print(" (i32.const ");
-        print(computeObjectSizeFor(theLinkedClass));
+        print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
         print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
     }
 

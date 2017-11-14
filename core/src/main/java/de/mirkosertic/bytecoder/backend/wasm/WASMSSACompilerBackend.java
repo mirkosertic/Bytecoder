@@ -57,7 +57,10 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         StringWriter theStringWriter = new StringWriter();
         PrintWriter theWriter = new PrintWriter(theStringWriter);
+
         theWriter.println("(module");
+
+        theWriter.println("   (memory 256 256)");
 
         aLinkerContext.forEachClass(aEntry -> {
 
@@ -134,6 +137,72 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 theWriter.println();
             });
 
+            BytecodeLinkedClass theLinkedClass = aEntry.getValue();
+            String theClassName = WASMWriterUtils.toClassName(aEntry.getKey());
+
+            theWriter.print("   (func ");
+            theWriter.print("$");
+            theWriter.print(theClassName);
+            theWriter.println("__classinitcheck");
+
+            theWriter.println("      (block $check");
+            theWriter.print("         (br_if $check (i32.eq (get_global $");
+            theWriter.print(theClassName);
+            theWriter.println("__initialized) (i32.const 1)))");
+
+            if (theLinkedClass.hasStaticFields()) {
+
+                String theMallocName = WASMWriterUtils.toMethodName(
+                        BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                        "malloc",
+                        new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+
+                theWriter.print("         (set_global $");
+                theWriter.print(theClassName);
+                theWriter.print("__staticdata (call $");
+                theWriter.print(theMallocName);
+                theWriter.print(" (i32.const ");
+                theWriter.print(WASMWriterUtils.computeClassSizeFor(theLinkedClass));
+                theWriter.println(")))");
+            }
+
+            if (theLinkedClass.hasClassInitializer()) {
+                theWriter.print("         (call $");
+                theWriter.print(theClassName);
+                theWriter.println("_VOIDclinit)");
+            }
+
+            theWriter.print("         (set_global $");
+            theWriter.print(theClassName);
+            theWriter.println("__initialized (i32.const 1))");
+            theWriter.println("      )");
+            theWriter.println("   )");
+            theWriter.println();
+        });
+
+        // Globals for static class data
+        aLinkerContext.forEachClass(aEntry -> {
+
+            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+
+
+            if (aEntry.getValue().hasStaticFields()) {
+                String theClassName = WASMWriterUtils.toClassName(aEntry.getKey());
+
+                theWriter.print("   (global $");
+                theWriter.print(theClassName);
+                theWriter.println("__staticdata i32 (i32.const 0))");
+            };
+
+            theWriter.print("   (global $");
+            theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
+            theWriter.println("__initialized i32 (i32.const 0))");
         });
 
         // Write exports

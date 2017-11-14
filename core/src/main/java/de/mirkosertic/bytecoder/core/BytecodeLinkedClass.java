@@ -110,6 +110,10 @@ public class BytecodeLinkedClass {
         return bytecodeClass.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null;
     }
 
+    public boolean hasStaticFields() {
+        return !staticFields.isEmpty();
+    }
+
     public BytecodeObjectTypeRef getClassName() {
         return className;
     }
