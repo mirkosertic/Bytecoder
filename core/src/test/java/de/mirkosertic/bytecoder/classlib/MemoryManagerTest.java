@@ -41,13 +41,13 @@ public class MemoryManagerTest {
         Assert.assertEquals(9888, MemoryManager.freeMem(), 0);
         Assert.assertEquals(112, MemoryManager.usedMem(), 0);
 
-        Assert.assertEquals(4, Address.getStart(theAllocated), 0);
+        Assert.assertEquals(16, Address.getStart(theAllocated), 0);
 
         Address theAllocated2 = MemoryManager.malloc(25);
         Assert.assertEquals(9851, MemoryManager.freeMem(), 0);
         Assert.assertEquals(149, MemoryManager.usedMem(), 0);
 
-        Assert.assertEquals(116, Address.getStart(theAllocated2), 0);
+        Assert.assertEquals(128, Address.getStart(theAllocated2), 0);
 
         MemoryManager.free(theAllocated);
         Assert.assertEquals(9963, MemoryManager.freeMem(), 0);
@@ -67,5 +67,26 @@ public class MemoryManagerTest {
         Address theAllocated = MemoryManager.malloc(8);
         Assert.assertEquals(9980, MemoryManager.freeMem(), 0);
         Assert.assertEquals(20, MemoryManager.usedMem(), 0);
+    }
+
+    @Test
+    public void testUsed() {
+        MemoryManager.initWithSize(10000);
+        Address theAllocated1 = MemoryManager.malloc(100);
+        Address theAllocated2 = MemoryManager.malloc(100);
+        Address.setIntValue(theAllocated2, 0, Address.getStart(theAllocated1));
+
+        Assert.assertEquals(9776, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(224, MemoryManager.usedMem(), 0);
+
+        MemoryManager.GC();
+
+        Assert.assertEquals(9888, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(112, MemoryManager.usedMem(), 0);
+
+        MemoryManager.GC();
+
+        Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
     }
 }

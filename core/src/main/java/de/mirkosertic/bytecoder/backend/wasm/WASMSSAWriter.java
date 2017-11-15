@@ -16,6 +16,8 @@
 package de.mirkosertic.bytecoder.backend.wasm;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
@@ -26,20 +28,102 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
+import de.mirkosertic.bytecoder.ssa.CommentExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GetStaticValue;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.NewObjectValue;
+import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIFunction;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
+import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.StackStartValue;
+import de.mirkosertic.bytecoder.ssa.StackTopValue;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.Type;
+import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
+    private final List<Variable> stackVariables;
+
     public WASMSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         super(aProgram, aIndent, aWriter, aLinkerContext);
+        stackVariables = new ArrayList<>();
+        for (Variable theVariable : aProgram.getVariables()) {
+            if (theVariable.getType() == Type.REFERENCE) {
+                stackVariables.add(theVariable);
+            }
+        }
+    }
+
+    private int stackSize() {
+        return stackVariables.size() * 4;
+    }
+
+    public boolean isStackVariable(Variable aVariable) {
+        for (Variable theVariable : stackVariables) {
+            if (theVariable.getName().equals(aVariable.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int stackOffsetFor(Variable aVariable) {
+        int theStart = stackVariables.size() * 4;
+        for (Variable theVariable : stackVariables) {
+            if (theVariable.getName().equals(aVariable.getName())) {
+                return theStart;
+            }
+            theStart += 4;
+        }
+        throw new IllegalStateException("Unknown variable : " + aVariable);
     }
 
     public WASMSSAWriter withDeeperIndent() {
         return new WASMSSAWriter(program, indent + "    ", writer, linkerContext);
     }
 
-    public void writeNode(ControlFlowGraph.Node aNode) {
+    public void writeStartNode(ControlFlowGraph.Node aNode) {
+        writeNode(aNode, true);
+    }
+
+    private void writeNode(ControlFlowGraph.Node aNode, boolean aStart) {
         if (aNode instanceof ControlFlowGraph.SimpleNode) {
+
+            if (aStart) {
+                printStackEnter();
+            }
+
             writeExpressionList(((ControlFlowGraph.SimpleNode) aNode).getNode().getExpressions());
             return;
         }
@@ -47,6 +131,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
             ControlFlowGraph.SequenceOfSimpleNodes theSequence = (ControlFlowGraph.SequenceOfSimpleNodes) aNode;
 
             println("(local $currentLabel i32)");
+
+            if (aStart) {
+                printStackEnter();
+            }
+
             println("(set_local $currentLabel (i32.const 0))");
             println("(loop $controlflowloop");
 
@@ -68,7 +157,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
                 theChild2.println(")");
 
-                theChild2.writeNode(theJumpTarget);
+                theChild2.writeNode(theJumpTarget, false);
                 theChild.println(")");
             }
 
@@ -147,6 +236,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeExpression(ThrowExpression aExpression) {
+        printStackExit();
         println("(unreachable)");
     }
 
@@ -244,15 +334,28 @@ public class WASMSSAWriter extends IndentSSAWriter {
             return;
         }
 
-        print("(set_local $");
-        print(theVariable.getName());
-        println();
+        if (isStackVariable(theVariable)) {
+            print("(i32.store (i32.sub (get_global $STACK) (i32.const ");
+            print(stackOffsetFor(theVariable));
+            println("))");
 
-        WASMSSAWriter theChild = withDeeperIndent();
-        theChild.writeValue(theVariable.getValue());
+            WASMSSAWriter theChild = withDeeperIndent();
+            theChild.writeValue(theVariable.getValue());
 
-        println();
-        println(")");
+            println();
+            println(")");
+
+        } else {
+            print("(set_local $");
+            print(theVariable.getName());
+            println();
+
+            WASMSSAWriter theChild = withDeeperIndent();
+            theChild.writeValue(theVariable.getValue());
+
+            println();
+            println(")");
+        }
     }
 
     private void writeValue(Value aValue) {
@@ -316,7 +419,43 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeValue((NullValue) aValue);
             return;
         }
+        if (aValue instanceof StackStartValue) {
+            writeValue((StackStartValue) aValue);
+            return;
+        }
+        if (aValue instanceof StackTopValue) {
+            writeValue((StackTopValue) aValue);
+            return;
+        }
+        if (aValue instanceof ShortValue) {
+            writeValue((ShortValue) aValue);
+            return;
+        }
+        if (aValue instanceof FloatValue) {
+            writeValue((FloatValue) aValue);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private void writeValue(FloatValue aValue) {
+        print("(f32.const ");
+        print(aValue.getFloatValue());
+        print(")");
+    }
+
+    private void writeValue(ShortValue aValue) {
+        print("(i32.const ");
+        print(aValue.getShortValue());
+        print(")");
+    }
+
+    private void writeValue(StackStartValue aValue) {
+        print("(get_global $STACK)");
+    }
+
+    private void writeValue(StackTopValue aValue) {
+        print("(get_global $STACKTOP)");
     }
 
     private void writeValue(NullValue aValue) {
@@ -512,6 +651,18 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println(")");
                 break;
             }
+            case GREATEROREQUALS: {
+                println("(i32.gt_s ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
             case ADD: {
                 println("(i32.add ");
 
@@ -547,10 +698,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeExpression(ReturnExpression aExpression) {
+        printStackExit();
         println("(return)");
     }
 
     private void writeExpression(ReturnVariableExpression aExpression) {
+        printStackExit();
         print("(return ");
 
         printVariableNameOrValue(aExpression.getVariable());
@@ -562,10 +715,37 @@ public class WASMSSAWriter extends IndentSSAWriter {
         if (aVariable.getValue() instanceof PrimitiveValue) {
             writeValue(aVariable.getValue());
         } else {
-            print("(get_local ");
-            print("$");
-            print(aVariable.getName());
-            print(")");
+            if (isStackVariable(aVariable)) {
+                print("(i32.load (i32.sub (get_global $STACK) (i32.const ");
+                print(stackOffsetFor(aVariable));
+                print(")))");
+            } else {
+                print("(get_local ");
+                print("$");
+                print(aVariable.getName());
+                print(")");
+            }
+        }
+    }
+
+    private void printStackEnter() {
+
+        int theStackSize = stackSize();
+        if (theStackSize > 0) {
+            print("(set_global $STACKTOP (i32.add (get_global $STACKTOP) (i32.const ");
+            print(theStackSize);
+            println(")))");
+        }
+
+    }
+
+    private void printStackExit() {
+
+        int theStackSize = stackSize();
+        if (theStackSize > 0) {
+            print("(set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
+            print(theStackSize);
+            println(")))");
         }
     }
 }

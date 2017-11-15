@@ -99,7 +99,7 @@ public class JSSSACompilerBackend implements CompileBackend {
     }
 
     @Override
-    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext) {
+    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 

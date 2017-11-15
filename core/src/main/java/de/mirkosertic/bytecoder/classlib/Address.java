@@ -37,4 +37,12 @@ public class Address {
     public static void setIntValue(Address aAddress, int aIndex, int aValue) {
         MemoryManager.data[aAddress.start + aIndex] = aValue;
     }
+
+    public static int getStackStart() {
+        return 0;
+    }
+
+    public static int getStackTop() {
+        return 0;
+    }
 }

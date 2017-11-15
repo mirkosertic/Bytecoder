@@ -86,7 +86,7 @@ public class CompileTarget {
 
         theLinkerContext.linkClass(theTypeRef).linkStaticMethod(aMethodName, aSignature);
 
-        return backend.generateCodeFor(aLogger, theLinkerContext);
+        return backend.generateCodeFor(aLogger, theLinkerContext, aClass, aMethodName, aSignature);
     }
 
     public String toClassName(BytecodeObjectTypeRef aTypeRef) {
