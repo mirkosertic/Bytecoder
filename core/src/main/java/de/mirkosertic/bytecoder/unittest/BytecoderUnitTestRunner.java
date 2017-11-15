@@ -112,13 +112,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-    private void testJSBackendFrameworkMethod(CompileTarget.BackendType aBackendType, FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend " + aBackendType);
+    private void testJSBackendFrameworkMethod(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
+        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend ");
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
 
-            CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), aBackendType);
+            CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.js);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
@@ -128,7 +128,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             String theCode = theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
-            String theJSFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aBackendType + ".html";
+            String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
             theCode += "\nconsole.log(\"Starting test\");\n";
             theCode += "bytecoder.bootstrap();\n";
@@ -153,7 +153,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             File theMavenTargetDir = new File(theWorkingDirectory, "target");
             File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
             theGeneratedFilesDir.mkdirs();
-            File theGeneratedFile = new File(theGeneratedFilesDir, theJSFileName);
+            File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
             PrintWriter theWriter = new PrintWriter(theGeneratedFile);
             theWriter.println("<script>");
             theWriter.println(theCode);
@@ -197,9 +197,44 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
+    private void testWASMBackendFrameworkMethod(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
+        Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " WASM Backend ");
+        aRunNotifier.fireTestStarted(theDescription);
+
+        try {
+
+            CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.wasm);
+
+            BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
+            BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
+
+            String theCode = theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+
+            String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_wat.wat";
+
+            File theWorkingDirectory = new File(".");
+
+            File theMavenTargetDir = new File(theWorkingDirectory, "target");
+            File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
+            theGeneratedFilesDir.mkdirs();
+            File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
+            PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+            theWriter.println(theCode);
+            theWriter.flush();
+            theWriter.close();
+
+        } catch (Exception e) {
+            aRunNotifier.fireTestFailure(new Failure(theDescription, e));
+        } finally {
+            aRunNotifier.fireTestFinished(theDescription);
+        }
+    }
+
+
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        testJSBackendFrameworkMethod(CompileTarget.BackendType.js, aFrameworkMethod, aRunNotifier);
+        testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
     }
 }

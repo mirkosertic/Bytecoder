@@ -13,27 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.wasm;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.annotations.Export;
-
-public class HelloWorld {
-
-    @Export("compute")
-    public static int compute(int a, int b) {
-        return a + b;
-    }
-
-    public static void call(int result) {
-
-    }
-
-    public static void main(String[] args) {
-        int x = compute(10, 20);
-        int z = 1;
-        if (x == 30) {
-            z = 2;
-        }
-
-    }
+public class StackStartValue extends Value {
 }

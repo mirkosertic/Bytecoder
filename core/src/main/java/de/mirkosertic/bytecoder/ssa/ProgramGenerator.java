@@ -264,6 +264,9 @@ public class ProgramGenerator {
                     throw new IllegalArgumentException("Not supported : " + aRef);
             }
         }
+        if (BytecodeObjectTypeRef.fromRuntimeClass(Address.class).equals(aRef)) {
+            return Type.MEMORYLOCATION;
+        }
         return Type.REFERENCE;
     }
 
@@ -1174,7 +1177,21 @@ public class ProgramGenerator {
                     case "getStart": {
 
                         Variable theTarget = theArguments.get(0);
-                        Variable theNewVariable = aTargetBlock.newVariable(Type.REFERENCE, new VariableReferenceValue(theTarget));
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.INT, new VariableReferenceValue(theTarget));
+
+                        aHelper.push(theNewVariable);
+                        break;
+                    }
+                    case "getStackStart": {
+
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new StackStartValue());
+
+                        aHelper.push(theNewVariable);
+                        break;
+                    }
+                    case "getStackTop": {
+
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new StackTopValue());
 
                         aHelper.push(theNewVariable);
                         break;

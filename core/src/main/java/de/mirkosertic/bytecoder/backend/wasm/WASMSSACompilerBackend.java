@@ -44,7 +44,7 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 public class WASMSSACompilerBackend implements CompileBackend {
 
     @Override
-    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext) {
+    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         // Link required mamory management code
         BytecodeLinkedClass theManagerClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
@@ -55,6 +55,12 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 Address.class)}));
         theManagerClass.linkStaticMethod("malloc", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+
+        String theMallocName = WASMWriterUtils.toMethodName(
+                BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                "malloc",
+                new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
 
         StringWriter theStringWriter = new StringWriter();
         PrintWriter theWriter = new PrintWriter(theStringWriter);
@@ -119,20 +125,23 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext);
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
+
                     if (!(theVariable.getValue() instanceof PrimitiveValue) &&
                             !(theVariable.getValue() instanceof MethodParameterValue) &&
-                            !(theVariable.getValue() instanceof SelfReferenceParameterValue)) {
+                            !(theVariable.getValue() instanceof SelfReferenceParameterValue) &&
+                            !theSSAWriter.isStackVariable(theVariable)) {
 
                         theSSAWriter.print("(local $");
                         theSSAWriter.print(theVariable.getName());
                         theSSAWriter.print(" ");
                         theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
-                        theSSAWriter.println(")");
+                        theSSAWriter.print(") ;; ");
+                        theSSAWriter.println(theVariable.getType().name());
                     }
                 }
 
                 ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
-                theSSAWriter.writeNode(theNode);
+                theSSAWriter.writeStartNode(theNode);
 
                 theWriter.println("   )");
                 theWriter.println();
@@ -152,12 +161,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.println("__initialized) (i32.const 1)))");
 
             if (theLinkedClass.hasStaticFields()) {
-
-                String theMallocName = WASMWriterUtils.toMethodName(
-                        BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
-                        "malloc",
-                        new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
 
                 theWriter.print("         (set_global $");
                 theWriter.print(theClassName);
@@ -184,6 +187,12 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         theWriter.println("   (func $bootstrap");
 
+        theWriter.print("      (set_global $STACK (call $");
+        theWriter.print(theMallocName);
+        theWriter.print(" (i32.const ");
+        theWriter.print(8192L);
+        theWriter.println(")))");
+
         aLinkerContext.forEachClass(theEntry -> {
             if (!theEntry.getValue().getAccessFlags().isInterface()) {
 
@@ -198,6 +207,10 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         theWriter.println("   )");
         theWriter.println();
+
+
+        theWriter.println("   (global $STACK (mut i32) (i32.const 0))");
+        theWriter.println("   (global $STACKTOP (mut i32) (i32.const 0))");
 
         // Globals for static class data
         aLinkerContext.forEachClass(aEntry -> {
@@ -248,6 +261,11 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 }
             });
         });
+
+        theWriter.print("   (export \"main\" (func $");
+        theWriter.print(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), aEntryPointMethodName, aEntryPointSignatue));
+        theWriter.println("))");
+
 
         theWriter.println(")");
         theWriter.flush();;

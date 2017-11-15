@@ -74,7 +74,9 @@ public class MemoryManager {
 
     @Export("free")
     public static void free(Address aPointer) {
-        Address.setIntValue(aPointer, OFFSET_USED, 0);
+        int theHeaderStart = Address.getStart(aPointer) - 12;
+        Address theHeader = new Address(theHeaderStart);
+        Address.setIntValue(theHeader, OFFSET_USED, 0);
     }
 
     private static Address mallocInternal(int aSize) {
@@ -107,7 +109,18 @@ public class MemoryManager {
                     Address.setIntValue(theCurrent, OFFSET_NEXT, theNewPosition);
                 }
 
-                return theCurrent;
+                int theDataStart = Address.getStart(theCurrent) + 12;
+                Address theNewData = new Address(theDataStart);
+                // Wipeout data
+                int theCleanSize = aSize;
+                int thePosition = 0;
+                while(theCleanSize > 12) {
+                    Address.setIntValue(theNewData, thePosition, 0);
+                    thePosition += 4;
+                    theCleanSize -= 4;
+                }
+
+                return theNewData;
             }
 
             int theNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
@@ -130,8 +143,67 @@ public class MemoryManager {
         return theAddress;
     }
 
+    public static boolean isUsed(Address aOwningBlock) {
+
+        int theOwningStart = Address.getStart(aOwningBlock);
+        int theOwningData = theOwningStart + 12;
+
+        // First of all we check the stack
+        int theStackStart = Address.getStackStart();
+        Address theStack = new Address(theStackStart);
+        int theStackTop = Address.getStackTop();
+        while(theStackStart < theStackTop) {
+            int theReference = Address.getIntValue(theStack, theStackStart);
+            if (theReference == theOwningData) {
+                return true;
+            }
+        }
+
+        Address theCurrent = new Address(4);
+        while(Address.getStart(theCurrent) != 0) {
+            int theCurrentStart = Address.getStart(theCurrent);
+            if (theOwningStart != theCurrentStart) {
+                int theUsed = Address.getIntValue(theCurrent, OFFSET_USED);
+                if (theUsed == 1) {
+                    // Block is used, check content
+                    int theStart = 12;
+                    int theSize = Address.getIntValue(theCurrent, OFFSET_SIZE);
+                    int thePosition = 0;
+                    while(thePosition < theSize) {
+                        int theReference = Address.getIntValue(theCurrent, theStart);
+                        if (theReference == theOwningData) {
+                            return true;
+                        }
+                        theStart += 4;
+                        thePosition += 4;
+                    }
+                }
+            }
+
+            int theNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
+            theCurrent = new Address(theNext);
+        }
+
+        return false;
+    }
+
     @Export("GC")
     public static void GC() {
+        Address theCurrent = new Address(4);
+        while(Address.getStart(theCurrent) != 0) {
+            int theUsed = Address.getIntValue(theCurrent, OFFSET_USED);
+            if (theUsed == 1) {
+                // Block is used, check for reference
+                if (!isUsed(theCurrent)) {
+                    // Block is no longer used
+                    Address.setIntValue(theCurrent, OFFSET_USED, 0);
 
+                    //TODO: Check if it can be merged with the following block
+                }
+            }
+
+            int theNext = Address.getIntValue(theCurrent, OFFSET_NEXT);
+            theCurrent = new Address(theNext);
+        }
     }
 }

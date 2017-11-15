@@ -1,0 +1,32 @@
+<html>
+    <body>
+
+        <h1>Compile result</h1>
+        <textarea id="source" onblur="return compile()">(module)</textarea>
+
+        <h1>Module code</h1>
+        <pre id="result">
+        </pre>
+        <script src="libwabt.js">
+        </script>
+
+        <script>
+            function compile() {
+                try {
+                    var module = wabt.parseWat('test.wast', document.getElementById("source").value);
+                    module.resolveNames();
+                    module.validate();
+
+                    var binaryOutput = module.toBinary({log: true});
+                    document.getElementById("result").innerText = binaryOutput.log;
+
+                    console.log("ok")
+
+                } catch (e) {
+                    document.getElementById("result").innerText = e.toString();
+                    console.log(e.toString());
+                }
+            }
+        </script>
+    </body>
+</html>

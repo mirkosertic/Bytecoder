@@ -24,9 +24,15 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 public class CompilerTest {
 
-    public static void main(String args[]) throws ClassNotFoundException {
+    public static void main(String args[]) throws ClassNotFoundException, IOException, ScriptException {
         ClassLoader theLoader = CompilerTest.class.getClassLoader();
         Class theTargetClass = theLoader.loadClass(HelloWorld.class.getName());
 
@@ -38,6 +44,5 @@ public class CompilerTest {
         String theCode = theCompileTarget.compileToJS(new Slf4JLogger(), theTargetClass, "main", theSignature);
 
         System.out.println(theCode);
-
     }
 }
