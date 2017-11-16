@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.backend.wasm;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -39,8 +41,6 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
-// /home/sertic/Development/Projects/wabt/build/wat2wasm -v -o ./testcode.wasm /tmp/bytecoder.wat
-
 public class WASMSSACompilerBackend implements CompileBackend {
 
     @Override
@@ -55,6 +55,8 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 Address.class)}));
         theManagerClass.linkStaticMethod("malloc", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         String theMallocName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -68,6 +70,89 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.println("(module");
 
         theWriter.println("   (memory 256 256)");
+
+        List<String> theGeneratedFunctions = new ArrayList<>();
+        List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
+        aLinkerContext.forEachClass(aEntry -> {
+
+            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+
+            theLinkedClasses.add(aEntry.getValue());
+
+            String theClassName = WASMWriterUtils.toClassName(aEntry.getKey());
+
+            theGeneratedFunctions.add(theClassName + "__classinitcheck");
+            theGeneratedFunctions.add(theClassName + "__resolvevtableindex");
+
+            aEntry.getValue().forEachMethod(t -> {
+
+                // Do not generate code for abstract methods
+                if (t.getAccessFlags().isAbstract()) {
+                    return;
+                }
+
+                BytecodeMethodSignature theSignature = t.getSignature();
+
+                String theMethodName = WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature);
+                theGeneratedFunctions.add(theMethodName);
+            });
+        });
+
+        // Write virtual method table
+        if (!theGeneratedFunctions.isEmpty()) {
+            theWriter.println();
+            theWriter.print("   (table ");
+            theWriter.print(theGeneratedFunctions.size());
+            theWriter.println(" anyfunc)");
+
+            for (int i=0;i<theGeneratedFunctions.size();i++) {
+                theWriter.print("   (elem (i32.const ");
+                theWriter.print(i);
+                theWriter.print(") $");
+                theWriter.print(theGeneratedFunctions.get(i));
+                theWriter.println(")");
+            }
+
+            theWriter.println();
+        }
+
+        theWriter.println("   (func $virtualTableByClassID (param $p1 i32) (result i32) ");
+
+        aLinkerContext.forEachClass(t -> {
+
+            if (t.getValue().getAccessFlags().isInterface()) {
+                return;
+            }
+            if (t.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+
+            theWriter.println("         ;; " + t.getKey().name());
+            theWriter.println("         (block $b");
+            theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
+            theWriter.print(t.getValue().getUniqueId());
+            theWriter.println(")))");
+
+            String theFullMethodName = WASMWriterUtils.toClassName(t.getKey()) + "__resolvevtableindex";
+            int theIndex = theGeneratedFunctions.indexOf(theFullMethodName);
+            if (theIndex < 0) {
+                throw new IllegalStateException("Unknown index : " + theFullMethodName);
+            }
+
+            theWriter.print("             (return (i32.const ");
+            theWriter.print(theIndex);
+            theWriter.println("))");
+            theWriter.println("         )");
+
+        });
+
+        theWriter.println("         (unreachable)");
+        theWriter.println("   )");
 
         aLinkerContext.forEachClass(aEntry -> {
 
@@ -153,6 +238,41 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.print("   (func ");
             theWriter.print("$");
             theWriter.print(theClassName);
+            theWriter.println("__resolvevtableindex (param $p1 i32) (result i32)");
+
+            theLinkedClass.forEachVirtualMethod(t -> {
+
+                if (!t.getValue().getTargetMethod().getAccessFlags().isAbstract()) {
+                    theWriter.println("         (block $b");
+                    theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
+                    theWriter.print(t.getKey().getIdentifier());
+                    theWriter.println(")))");
+
+                    BytecodeLinkedClass.LinkedMethod theMethod = t.getValue();
+                    String theFullMethodName = WASMWriterUtils.toMethodName(theMethod.getDeclaringType(),
+                            theMethod.getTargetMethod().getName(),
+                            theMethod.getTargetMethod().getSignature());
+
+                    int theIndex = theGeneratedFunctions.indexOf(theFullMethodName);
+                    if (theIndex < 0) {
+                        throw new IllegalStateException("Unknown index : " + theFullMethodName);
+                    }
+
+                    theWriter.print("             (return (i32.const ");
+                    theWriter.print(theIndex);
+                    theWriter.println("))");
+                    theWriter.println("         )");
+                }
+
+            });
+
+            theWriter.println("         (unreachable)");
+            theWriter.println("   )");
+            theWriter.println();
+
+            theWriter.print("   (func ");
+            theWriter.print("$");
+            theWriter.print(theClassName);
             theWriter.println("__classinitcheck");
 
             theWriter.println("      (block $check");
@@ -221,7 +341,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
             if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
-
 
             if (aEntry.getValue().hasStaticFields()) {
                 String theClassName = WASMWriterUtils.toClassName(aEntry.getKey());

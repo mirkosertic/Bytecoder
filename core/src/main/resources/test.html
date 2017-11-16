@@ -20,6 +20,9 @@
                     var binaryOutput = module.toBinary({log: true});
                     document.getElementById("result").innerText = binaryOutput.log;
 
+                    var binaryBuffer = binaryOutput.buffer;
+                    var wasm = new WebAssembly.Module(binaryBuffer);
+
                     console.log("ok")
 
                 } catch (e) {
@@ -27,6 +30,8 @@
                     console.log(e.toString());
                 }
             }
+
+            compile();
         </script>
     </body>
 </html>

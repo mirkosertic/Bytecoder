@@ -268,15 +268,18 @@ public class JSSSACompilerBackend implements CompileBackend {
                 theWriter.println("        switch(aIdentifier) {");
                 theEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
                     BytecodeLinkedClass.LinkedMethod theLinkTarget = aVirtualMethod.getValue();
-                    theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
-                    if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
-                        theWriter.println(
-                                "                return " + JSWriterUtils.toClassName(theLinkTarget.getDeclaringType()) + "." + JSWriterUtils.toMethodName(
-                                        theLinkTarget.getTargetMethod().getName().stringValue(),
-                                        theLinkTarget.getTargetMethod().getSignature()) + ";");
-                    } else {
-                        theWriter.println(
-                                "                return function(callsite) {return " + theJSClassName + ".runtimeClass;};");
+                    if (!aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isAbstract()) {
+                        theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
+                        if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
+                            theWriter.println(
+                                    "                return " + JSWriterUtils.toClassName(theLinkTarget.getDeclaringType()) + "."
+                                            + JSWriterUtils.toMethodName(
+                                            theLinkTarget.getTargetMethod().getName().stringValue(),
+                                            theLinkTarget.getTargetMethod().getSignature()) + ";");
+                        } else {
+                            theWriter.println(
+                                    "                return function(callsite) {return " + theJSClassName + ".runtimeClass;};");
+                        }
                     }
                 });
                 theWriter.println("            default:");

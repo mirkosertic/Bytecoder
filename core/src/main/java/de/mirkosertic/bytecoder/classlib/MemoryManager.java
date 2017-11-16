@@ -143,6 +143,14 @@ public class MemoryManager {
         return theAddress;
     }
 
+    @Export("newObject")
+    public static Address newObject(int aSize, int aType) {
+        Address theAddress = malloc(aSize);
+        Address.setIntValue(theAddress, 0, aType);
+        return theAddress;
+    }
+
+
     public static boolean isUsed(Address aOwningBlock) {
 
         int theOwningStart = Address.getStart(aOwningBlock);
