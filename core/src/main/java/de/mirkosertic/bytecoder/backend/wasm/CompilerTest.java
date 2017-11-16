@@ -15,6 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.io.IOException;
+
+import javax.script.ScriptException;
+
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -23,12 +27,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.io.IOException;
-import java.io.InputStreamReader;
 
 public class CompilerTest {
 

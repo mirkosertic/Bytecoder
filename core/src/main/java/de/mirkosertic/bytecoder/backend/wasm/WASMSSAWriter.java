@@ -15,61 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StackStartValue;
-import de.mirkosertic.bytecoder.ssa.StackTopValue;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.Type;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
+import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.ssa.*;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -542,16 +496,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         String theMallocName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
-                "malloc",
+                "newObject",
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
         print("(call $");
         print(theMallocName);
         print(" (i32.const ");
         print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
+        print(") (i32.const ");
+        print(theLinkedClass.getUniqueId());
         print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
+
     }
 
     private void writeValue(GetFieldValue aValue) {

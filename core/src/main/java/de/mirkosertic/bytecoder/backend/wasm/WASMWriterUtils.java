@@ -90,7 +90,7 @@ public class WASMWriterUtils {
     }
 
     public static int computeObjectSizeFor(BytecodeLinkedClass aClass) {
-        AtomicInteger theSize = new AtomicInteger(4); // 32 Bits Header
+        AtomicInteger theSize = new AtomicInteger(4); // 32 Bits Header for the type
         aClass.forEachMemberField( t -> {
             theSize.addAndGet(4); // Every member is a pointer to another object or a primitive of 32 bits
         });
