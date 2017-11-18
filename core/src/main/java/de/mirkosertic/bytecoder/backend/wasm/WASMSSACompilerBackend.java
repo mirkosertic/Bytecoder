@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.backend.wasm;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -56,7 +58,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theManagerClass.linkStaticMethod("malloc", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         String theMallocName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -68,11 +70,11 @@ public class WASMSSACompilerBackend implements CompileBackend {
         PrintWriter theWriter = new PrintWriter(theStringWriter);
 
         theWriter.println("(module");
-
-        theWriter.println("   (memory 256 256)");
+        theWriter.println("   (type $RESOLVEMETHOD (func (param i32) (result i32)))");
 
         List<String> theGeneratedFunctions = new ArrayList<>();
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
+        Set<String> theGeneratedTypes = new HashSet<>();
         aLinkerContext.forEachClass(aEntry -> {
 
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
@@ -98,10 +100,41 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
                 BytecodeMethodSignature theSignature = t.getSignature();
 
+                String theMethodSignature = WASMWriterUtils.toMethodSignature(theSignature);
+                if (theGeneratedTypes.add(theMethodSignature)) {
+                    theWriter.print("   (type $t_");
+                    theWriter.print(theMethodSignature);
+
+                    theWriter.print(" (func ");
+
+                    theWriter.print("(param $thisRef");
+                    theWriter.print(" ");
+                    theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
+                    theWriter.print(") ");
+
+                    for (int i=0;i<theSignature.getArguments().length;i++) {
+                        BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                        theWriter.print("(param $p");
+                        theWriter.print((i + 1));
+                        theWriter.print(" ");
+                        theWriter.print(WASMWriterUtils.toType(theParamType));
+                        theWriter.print(") ");
+                    }
+
+                    if (!theSignature.getReturnType().isVoid()) {
+                        theWriter.print("(result "); // result
+                        theWriter.print(WASMWriterUtils.toType(theSignature.getReturnType()));
+                        theWriter.print(")");
+                    }
+                    theWriter.println("))");
+                }
+
                 String theMethodName = WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature);
                 theGeneratedFunctions.add(theMethodName);
             });
         });
+
+        theWriter.println("   (memory 256 256)");
 
         // Write virtual method table
         if (!theGeneratedFunctions.isEmpty()) {
@@ -207,7 +240,21 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
-                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext);
+                WASMSSAWriter.IDResolver theResolver = new WASMSSAWriter.IDResolver() {
+                    @Override
+                    public int resolveVTableMethodByType(BytecodeObjectTypeRef aObjectType) {
+                        String theClassName = WASMWriterUtils.toClassName(aObjectType);
+
+                        String theMethodName = theClassName + "__resolvevtableindex";
+                        int theIndex = theGeneratedFunctions.indexOf(theMethodName);
+                        if (theIndex < 0) {
+                            throw new IllegalStateException("Cannot resolve vtable method for " + theClassName);
+                        }
+                        return theIndex;
+                    }
+                };
+
+                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
 
