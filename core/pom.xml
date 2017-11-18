@@ -27,10 +27,9 @@
             <version>1.7.25</version>
         </dependency>
         <dependency>
-            <groupId>com.codeborne</groupId>
-            <artifactId>phantomjsdriver</artifactId>
-            <version>1.4.2</version>
-            <scope>provided</scope>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-chrome-driver</artifactId>
+            <version>3.7.1</version>
         </dependency>
         <dependency>
             <groupId>org.jbox2d</groupId>
