@@ -468,7 +468,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
         theChild2.print(theMethodIdentifier.getIdentifier());
-        theChild2.println(")");
 
         theChild.println(")");
 
