@@ -144,12 +144,12 @@ public class MemoryManager {
     }
 
     @Export("newObject")
-    public static Address newObject(int aSize, int aType) {
+    public static Address newObject(int aSize, int aType, int aVTableIndex) {
         Address theAddress = malloc(aSize);
         Address.setIntValue(theAddress, 0, aType);
+        Address.setIntValue(theAddress, 4, aVTableIndex);
         return theAddress;
     }
-
 
     public static boolean isUsed(Address aOwningBlock) {
 

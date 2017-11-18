@@ -19,20 +19,37 @@ import de.mirkosertic.bytecoder.annotations.Export;
 
 public class HelloWorld {
 
+    public interface Test {
+
+        int getValue();
+    }
+
+    public static class Test1 implements Test {
+        @Override
+        public int getValue() {
+            return 10;
+        }
+    }
+
+    public static class Test2 implements Test {
+        @Override
+        public int getValue() {
+            return 20;
+        }
+    }
+
     @Export("compute")
     public static int compute(int a, int b) {
         return a + b;
-    }
-
-    public static void call(int result) {
-
     }
 
     public static void main(String[] args) {
         int x = compute(10, 20);
         int z = 1;
         if (x == 30) {
-            z = 2;
+            Test theTest1 = new Test1();
+            Test theTest2 = new Test2();
+            z = theTest1.getValue() + theTest2.getValue();
         }
 
     }

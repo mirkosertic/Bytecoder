@@ -33,6 +33,10 @@ import de.mirkosertic.bytecoder.ssa.Type;
 
 public class WASMWriterUtils {
 
+    public static final int CLASS_HEADER_SIZE = 4;
+    public static final int OBJECT_HEADER_SIZE = 8;
+    public static final int OBJECT_FIELDSIZE = 4;
+
     public static String typeRefToString(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
@@ -45,6 +49,16 @@ public class WASMWriterUtils {
         BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
         return toClassName(theObjectRef);
     }
+
+    public static String toMethodSignature(BytecodeMethodSignature aSignature) {
+        String theName = typeRefToString(aSignature.getReturnType()) + "_";
+
+        for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
+            theName += typeRefToString(theTypeRef);
+        }
+        return theName.replace("(", "").replace(")", "");
+    }
+
 
     public static String toMethodName(String aMethodName, BytecodeMethodSignature aSignature) {
         String theName = typeRefToString(aSignature.getReturnType());
@@ -90,23 +104,23 @@ public class WASMWriterUtils {
     }
 
     public static int computeObjectSizeFor(BytecodeLinkedClass aClass) {
-        AtomicInteger theSize = new AtomicInteger(4); // 32 Bits Header for the type
+        AtomicInteger theSize = new AtomicInteger(OBJECT_HEADER_SIZE); // 32 Bits Header for the type + 32 Bits Header for VTableOffset
         aClass.forEachMemberField( t -> {
-            theSize.addAndGet(4); // Every member is a pointer to another object or a primitive of 32 bits
+            theSize.addAndGet(OBJECT_FIELDSIZE); // Every member is a pointer to another object or a primitive of 32 bits
         });
         return theSize.intValue();
     }
 
     public static int computeClassSizeFor(BytecodeLinkedClass aClass) {
-        AtomicInteger theSize = new AtomicInteger(4); // 32 Bits Header
+        AtomicInteger theSize = new AtomicInteger(CLASS_HEADER_SIZE); // 32 Bits Header
         aClass.forEachStaticField( t -> {
-            theSize.addAndGet(4); // Every member is a pointer to another object or a primitive of 32 bits
+            theSize.addAndGet(OBJECT_FIELDSIZE); // Every member is a pointer to another object or a primitive of 32 bits
         });
         return theSize.intValue();
     }
 
     public static int computeStaticFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        int theOffset = 12;
+        int theOffset = CLASS_HEADER_SIZE;
         List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
         aClass.forEachStaticField(theFields::add);
         for (int i=0;i<theFields.size();i++) {
@@ -114,7 +128,7 @@ public class WASMWriterUtils {
             if (theField.getKey().equals(aFieldName)) {
                 return theOffset;
             }
-            theOffset += 4;
+            theOffset += OBJECT_FIELDSIZE;
         }
         throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
     }
