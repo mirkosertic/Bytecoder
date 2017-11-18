@@ -452,15 +452,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeValue(InvokeVirtualMethodValue aValue) {
-        print("(call_indirect (type $t_");
+        print("(call_indirect $t_");
         print(WASMWriterUtils.toMethodSignature(aValue.getSignature()));
-        println(") (");
+        println();
 
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.println("(call_indirect (type $RESOLVEMETHOD)");
+        theChild.println("(call_indirect $RESOLVEMETHOD");
 
-        WASMSSAWriter theChild2 = withDeeperIndent();
-        theChild2.println("(i32.load offset=4 (get_local $thisRef))");   // This is id of the virtual table method
+        WASMSSAWriter theChild2 = theChild.withDeeperIndent();
+        theChild2.print("(i32.load offset=4 ");
+        theChild2.printVariableNameOrValue(aValue.getTarget());
+        theChild2.println(")");   // This is id of the virtual table method
 
         theChild2.print("(i32.const ");
 
@@ -473,7 +475,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theChild.printVariableNameOrValue(aValue.getTarget());
 
         for (Variable theVariable : aValue.getArguments()) {
-            print(" ");
+            theChild.print(" ");
             theChild.printVariableNameOrValue(theVariable);
         }
 
