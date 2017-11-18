@@ -15,16 +15,12 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.PrintWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
-
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -34,22 +30,30 @@ import org.junit.runners.ParentRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
-import org.openqa.selenium.phantomjs.PhantomJSDriver;
-import org.openqa.selenium.phantomjs.PhantomJSDriverService;
-import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.remote.CapabilityType;
 
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.PrintWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
 
-    private static PhantomJSDriver SINGLETONDRIVER;
+    private static WebDriver SINGLETONDRIVER;
 
     private final List<FrameworkMethod> testMethods;
     private final TestClass testClass;
@@ -145,8 +149,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                     + "   console.log(\"Test finished with exception. Message = \" + theMessage);\n";
             theCode += "  throw theLastException;\n";
             theCode += "}\n";
-            theCode += "\nconsole.log(\"Test finished\");\n";
-            theCode += "\nreturn('OK');\n";
+            theCode += "\nconsole.log(\"Test finished OK\");\n";
 
             File theWorkingDirectory = new File(".");
 
@@ -155,40 +158,54 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theGeneratedFilesDir.mkdirs();
             File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
             PrintWriter theWriter = new PrintWriter(theGeneratedFile);
-            theWriter.println("<script>");
+            theWriter.println("<html><body><script>");
             theWriter.println(theCode);
-            theWriter.println("</script>");
+            theWriter.println("</script></body></html>");
             theWriter.flush();
             theWriter.close();
 
             if (SINGLETONDRIVER == null) {
+
                 Properties theProperties = new Properties(System.getProperties());
-                File theConfigFile = new File(theWorkingDirectory, "phantomjs.properties");
+                File theConfigFile = new File(theWorkingDirectory, "testrunner.properties");
                 if (theConfigFile.exists()) {
                     try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
                         theProperties.load(theStream);
                     }
                 }
 
-                String thePhantomBinary = theProperties.getProperty("phantomjs.binary");
-                if (thePhantomBinary == null || thePhantomBinary.length() == 0) {
-                    throw new RuntimeException("No phantomjs binary found!");
+                String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
+                if (theChromeDriverBinary == null || theChromeDriverBinary.length() == 0) {
+                    throw new RuntimeException("No chromedriver binary found!");
                 }
 
-                DesiredCapabilities theCapabilities = new DesiredCapabilities();
-                theCapabilities.setJavascriptEnabled(true);
-                theCapabilities.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
-                        thePhantomBinary);
+                ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
+                theDriverService = theDriverService.withVerbose(false);
+                theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
 
-                SINGLETONDRIVER = new PhantomJSDriver(theCapabilities);
+                ChromeOptions theOptions = new ChromeOptions();
+                LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+                theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+                theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+                SINGLETONDRIVER = new ChromeDriver(theDriverService.build(), theOptions);
+
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> SINGLETONDRIVER.quit()));
             }
 
-            Object theResult = SINGLETONDRIVER.executePhantomJS(theCode);
-            if (!Objects.equals("OK", theResult)) {
-                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException(theResult.toString())));
-            }
+            SINGLETONDRIVER.get(theGeneratedFile.toURI().toURL().toString());
 
+            List<LogEntry> theAll = SINGLETONDRIVER.manage().logs().get(LogType.BROWSER).getAll();
+            if (theAll.size() < 1) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
+            }
+            for (LogEntry theEntry : theAll) {
+                System.out.println(theEntry.getMessage());
+            }
+            LogEntry theLast = theAll.get(theAll.size() - 1);
+
+            if (!theLast.getMessage().contains("Test finished OK")) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
+            }
 
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));

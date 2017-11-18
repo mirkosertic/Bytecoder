@@ -24,7 +24,7 @@ This intermediate representation is passed thru optimizer stages and sent to a b
 
 The *JavaScript* backend transforms the intermediate representation into JavaScript.
 
-The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled into WebAssembly binary code using the WABT toolchain..
+The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled into WebAssembly binary code using the WABT toolchain.
 
 ## Memory management
 
@@ -53,7 +53,7 @@ public class SimpleMathTest {
 }
 ```
 
-Is compiled to JavaScript and executed on a PhantomJS engine. This testrunner will also support comparison of original Java code and its crosscompiled
+Is compiled to JavaScript and executed using a Selenium Chrome driver. This testrunner will also support comparison of original Java code and its crosscompiled
 counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
 ## Maven Plugin
