@@ -107,16 +107,13 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
                     theWriter.print(" (func ");
 
-                    theWriter.print("(param $thisRef");
-                    theWriter.print(" ");
+                    theWriter.print("(param ");
                     theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
                     theWriter.print(") ");
 
                     for (int i=0;i<theSignature.getArguments().length;i++) {
                         BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                        theWriter.print("(param $p");
-                        theWriter.print((i + 1));
-                        theWriter.print(" ");
+                        theWriter.print("(param ");
                         theWriter.print(WASMWriterUtils.toType(theParamType));
                         theWriter.print(") ");
                     }
