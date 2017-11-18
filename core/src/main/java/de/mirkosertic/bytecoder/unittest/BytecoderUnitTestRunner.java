@@ -184,6 +184,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
 
                 ChromeOptions theOptions = new ChromeOptions();
+                theOptions.addArguments("headless");
                 LoggingPreferences theLoggingPreferences = new LoggingPreferences();
                 theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
                 theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
