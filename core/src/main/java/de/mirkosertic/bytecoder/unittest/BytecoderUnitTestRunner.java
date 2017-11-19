@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -39,9 +40,7 @@ import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -116,12 +115,42 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
+    private static void initializeSeleniumDriver(File aWorkingDirectory) throws IOException {
+        if (SINGLETONDRIVER == null) {
+
+            Properties theProperties = new Properties(System.getProperties());
+            File theConfigFile = new File(aWorkingDirectory, "testrunner.properties");
+            if (theConfigFile.exists()) {
+                try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
+                    theProperties.load(theStream);
+                }
+            }
+
+            String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
+            if (theChromeDriverBinary == null || theChromeDriverBinary.length() == 0) {
+                throw new RuntimeException("No chromedriver binary found!");
+            }
+
+            ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
+            theDriverService = theDriverService.withVerbose(false);
+            theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
+
+            ChromeOptions theOptions = new ChromeOptions();
+            theOptions.addArguments("headless");
+            LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+            theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+            theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+            SINGLETONDRIVER = new ChromeDriver(theDriverService.build(), theOptions);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> SINGLETONDRIVER.quit()));
+        }
+    }
+
     private void testJSBackendFrameworkMethod(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
         Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend ");
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
-
             CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.js);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
@@ -153,6 +182,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             File theWorkingDirectory = new File(".");
 
+            initializeSeleniumDriver(theWorkingDirectory);
+
             File theMavenTargetDir = new File(theWorkingDirectory, "target");
             File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
             theGeneratedFilesDir.mkdirs();
@@ -163,35 +194,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("</script></body></html>");
             theWriter.flush();
             theWriter.close();
-
-            if (SINGLETONDRIVER == null) {
-
-                Properties theProperties = new Properties(System.getProperties());
-                File theConfigFile = new File(theWorkingDirectory, "testrunner.properties");
-                if (theConfigFile.exists()) {
-                    try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
-                        theProperties.load(theStream);
-                    }
-                }
-
-                String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
-                if (theChromeDriverBinary == null || theChromeDriverBinary.length() == 0) {
-                    throw new RuntimeException("No chromedriver binary found!");
-                }
-
-                ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
-                theDriverService = theDriverService.withVerbose(false);
-                theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
-
-                ChromeOptions theOptions = new ChromeOptions();
-                theOptions.addArguments("headless");
-                LoggingPreferences theLoggingPreferences = new LoggingPreferences();
-                theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
-                theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
-                SINGLETONDRIVER = new ChromeDriver(theDriverService.build(), theOptions);
-
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> SINGLETONDRIVER.quit()));
-            }
 
             SINGLETONDRIVER.get(theGeneratedFile.toURI().toURL().toString());
 
@@ -220,7 +222,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         aRunNotifier.fireTestStarted(theDescription);
 
         try {
-
             CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.wasm);
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
@@ -228,7 +229,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             String theCode = theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
-            String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_wat.wat";
+            String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
 
             File theWorkingDirectory = new File(".");
 
@@ -236,10 +237,80 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
             theGeneratedFilesDir.mkdirs();
             File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
+
+            // Copy WABT Tools
+            File theWABTFile = new File(theGeneratedFilesDir, "libwabt.js");
+            try (FileOutputStream theOS = new FileOutputStream(theWABTFile)) {
+                IOUtils.copy(getClass().getResourceAsStream("/libwabt.js"), theOS);
+            }
+
             PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+            theWriter.println("<html>\n" +
+                    "    <body>\n" +
+                    "\n" +
+                    "        <h1>Module code</h1>\n" +
+                    "        <pre id=\"modulecode\">");
+
             theWriter.println(theCode);
+
+            theWriter.println("        </pre>\n" +
+                    "\n" +
+                    "        <h1>Compilation result</h1>\n" +
+                    "        <pre id=\"compileresult\">\n" +
+                    "        </pre>\n" +
+                    "        <script src=\"libwabt.js\">\n" +
+                    "        </script>\n" +
+                    "\n" +
+                    "        <script>\n" +
+                    "            function compile() {\n" +
+                    "                console.log('Test started');" +
+                    "                try {\n" +
+                    "                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);\n" +
+                    "                    module.resolveNames();\n" +
+                    "                    module.validate();\n" +
+                    "\n" +
+                    "                    var binaryOutput = module.toBinary({log: true});\n" +
+                    "                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;\n" +
+                    "\n" +
+                    "                    var binaryBuffer = binaryOutput.buffer;\n" +
+                    "                    var wasm = new WebAssembly.Module(binaryBuffer);\n" +
+                    "                    var wasmInstance = new WebAssembly.Instance(wasm, {});\n" +
+                    "                    wasmInstance.exports.initMemory(1024 * 1024);\n" +
+                    "                    console.log(\"Memory initialized\")\n" +
+                    "                    wasmInstance.exports.bootstrap();\n" +
+                    "                    console.log(\"Bootstrapped\")\n" +
+                    "                    wasmInstance.exports.main();\n" +
+                    "                    console.log(\"Test finished OK\")\n" +
+                    "\n" +
+                    "                } catch (e) {\n" +
+                    "                    document.getElementById(\"compileresult\").innerText = e.toString();\n" +
+                    "                    console.log(e.toString());\n" +
+                    "                }\n" +
+                    "            }\n" +
+                    "\n" +
+                    "            compile();\n" +
+                    "        </script>\n" +
+                    "    </body>\n" +
+                    "</html>");
+
             theWriter.flush();
             theWriter.close();
+
+            // Invoke test in browser
+            SINGLETONDRIVER.get(theGeneratedFile.toURI().toURL().toString());
+
+            List<LogEntry> theAll = SINGLETONDRIVER.manage().logs().get(LogType.BROWSER).getAll();
+            if (theAll.size() < 1) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
+            }
+            for (LogEntry theEntry : theAll) {
+                System.out.println(theEntry.getMessage());
+            }
+            LogEntry theLast = theAll.get(theAll.size() - 1);
+
+            if (!theLast.getMessage().contains("Test finished OK")) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
+            }
 
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
