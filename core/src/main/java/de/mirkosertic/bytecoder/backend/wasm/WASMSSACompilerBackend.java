@@ -356,6 +356,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.print(" (i32.const ");
         theWriter.print(8192L);
         theWriter.println(")))");
+        theWriter.println("      (set_global $STACKTOP (get_global $STACK))");
 
         aLinkerContext.forEachClass(theEntry -> {
             if (!theEntry.getValue().getAccessFlags().isInterface()) {

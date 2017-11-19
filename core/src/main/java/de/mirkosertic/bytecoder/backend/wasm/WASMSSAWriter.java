@@ -414,9 +414,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeFloorValue(FloorValue aValue) {
-        print("(f32.floor ");
-        writeValue(aValue.getValue());
-        print(")");
+        println("(i32.trunc_s/f32 (f32.floor ");
+        withDeeperIndent().writeValue(aValue.getValue());
+        println("))");
     }
 
     private void writeInvokeVirtualValue(InvokeVirtualMethodValue aValue) {
@@ -713,9 +713,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(f32.div ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.printVariableNameOrValueAsFloat(aValue.getValue1());
                 theChild.println();
-                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.printVariableNameOrValueAsFloat(aValue.getValue2());
                 theChild.println();
 
                 println(")");
@@ -755,6 +755,20 @@ public class WASMSSAWriter extends IndentSSAWriter {
         printVariableNameOrValue(aExpression.getVariable());
 
         println(")");
+    }
+
+    private void printVariableNameOrValueAsFloat(Variable aVariable) {
+        switch (aVariable.getType()) {
+            case DOUBLE:
+            case FLOAT:
+                printVariableNameOrValue(aVariable);
+                break;
+            default:
+                print("(f32.convert_s/i32 ");
+                printVariableNameOrValue(aVariable);
+                print(")");
+                break;
+        }
     }
 
     private void printVariableNameOrValue(Variable aVariable) {
