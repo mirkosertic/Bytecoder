@@ -835,7 +835,7 @@ public class ProgramGenerator {
                         theNewVariable = aTargetBlock.newVariable(toType(theINS.getType()), theDivValue);
                         break;
                     default:
-                        theNewVariable = aTargetBlock.newVariable(toType(theINS.getType()), new FloorValue(theDivValue));
+                        theNewVariable = aTargetBlock.newVariable(toType(theINS.getType()), new FloorValue(theDivValue, toType(theINS.getType())));
                         break;
                 }
 

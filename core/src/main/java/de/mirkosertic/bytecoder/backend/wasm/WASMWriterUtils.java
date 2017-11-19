@@ -100,7 +100,14 @@ public class WASMWriterUtils {
     }
 
     public static String toType(Type aType) {
-        return "i32";
+        switch (aType) {
+            case DOUBLE:
+                return "f32";
+            case FLOAT:
+                return "f32";
+            default:
+                return "i32";
+        }
     }
 
     public static int computeObjectSizeFor(BytecodeLinkedClass aClass) {
