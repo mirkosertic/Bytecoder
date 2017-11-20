@@ -13,14 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.core;
 
-public class TIllegalStateException extends TRuntimeException {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public TIllegalStateException() {
-    }
+@RunWith(BytecoderUnitTestRunner.class)
+public class SimpleStringTest {
 
-    public TIllegalStateException(String aMessage) {
-        super(aMessage);
+    @Test
+    public void testString() {
+        String theData = "Lala";
+        int theLength = theData.length();
+        if (theLength != 4) {
+            throw new IllegalStateException();
+        }
     }
 }

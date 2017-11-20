@@ -23,11 +23,23 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
     private byte[] data;
 
     @NoExceptionCheck
+    public TString(int aSize) {
+        data = new byte[aSize];
+        for (int i=0;i<aSize;i++) {
+            data[i] = 0;
+        }
+    }
+
+    @NoExceptionCheck
     public TString(char[] aData) {
         data = new byte[aData.length];
         for (int i=0;i<aData.length;i++) {
             data[i] = (byte) aData[i];
         }
+    }
+
+    public void setCharAt(int aIndex, byte aChar) {
+        data[aIndex] = aChar;
     }
 
     @Override

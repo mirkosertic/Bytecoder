@@ -13,14 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.core;
 
-public class TIllegalStateException extends TRuntimeException {
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    public TIllegalStateException() {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
+@RunWith(BytecoderUnitTestRunner.class)
+public class SimpleArrayTest {
+
+    @Test
+    public void testNewPrimitiveAndLength() {
+        int[] theArray = new int[100];
+        int theSize = theArray.length;
     }
 
-    public TIllegalStateException(String aMessage) {
-        super(aMessage);
+    @Test
+    public void testNewObjectAndLength() {
+        Object[] theArray = new Object[100];
+        int theSize = theArray.length;
     }
 }

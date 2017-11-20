@@ -139,4 +139,18 @@ public class WASMWriterUtils {
         }
         throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
     }
+
+    public static int computeFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
+        int theOffset = CLASS_HEADER_SIZE;
+        List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
+        aClass.forEachMemberField(theFields::add);
+        for (int i=0;i<theFields.size();i++) {
+            Map.Entry<String, BytecodeLinkedClass.LinkedField> theField = theFields.get(i);
+            if (theField.getKey().equals(aFieldName)) {
+                return theOffset;
+            }
+            theOffset += OBJECT_FIELDSIZE;
+        }
+        throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
+    }
 }
