@@ -27,6 +27,7 @@ import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -66,6 +67,10 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                         Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
 
+        BytecodeLinkedClass theStringClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TString.class));
+        theStringClass.linkConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theStringClass.linkVirtualMethod("setCharAt", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
         StringWriter theStringWriter = new StringWriter();
         PrintWriter theWriter = new PrintWriter(theStringWriter);
 
@@ -74,7 +79,33 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         List<String> theGeneratedFunctions = new ArrayList<>();
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
+        List<String> theStringCache = new ArrayList<>();
         Set<String> theGeneratedTypes = new HashSet<>();
+
+        WASMSSAWriter.IDResolver theResolver = new WASMSSAWriter.IDResolver() {
+            @Override
+            public int resolveVTableMethodByType(BytecodeObjectTypeRef aObjectType) {
+                String theClassName = WASMWriterUtils.toClassName(aObjectType);
+
+                String theMethodName = theClassName + "__resolvevtableindex";
+                int theIndex = theGeneratedFunctions.indexOf(theMethodName);
+                if (theIndex < 0) {
+                    throw new IllegalStateException("Cannot resolve vtable method for " + theClassName);
+                }
+                return theIndex;
+            }
+
+            @Override
+            public String resolveStringPoolFunctionName(String aValue) {
+                int theIndex = theStringCache.indexOf(aValue);
+                if (theIndex >=0 ) {
+                    return "stringPool" + theIndex;
+                }
+                theStringCache.add(aValue);
+                return "stringPool" + (theStringCache.size() - 1);
+            }
+        };
+
         aLinkerContext.forEachClass(aEntry -> {
 
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
@@ -237,20 +268,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
-                WASMSSAWriter.IDResolver theResolver = new WASMSSAWriter.IDResolver() {
-                    @Override
-                    public int resolveVTableMethodByType(BytecodeObjectTypeRef aObjectType) {
-                        String theClassName = WASMWriterUtils.toClassName(aObjectType);
-
-                        String theMethodName = theClassName + "__resolvevtableindex";
-                        int theIndex = theGeneratedFunctions.indexOf(theMethodName);
-                        if (theIndex < 0) {
-                            throw new IllegalStateException("Cannot resolve vtable method for " + theClassName);
-                        }
-                        return theIndex;
-                    }
-                };
-
                 WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
@@ -349,6 +366,18 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.println();
         });
 
+        theWriter.println("   (func $newArray (param $size i32) (result i32)");
+        theWriter.println("         (local $newRef i32)");
+        theWriter.println("         (set_local $newRef");
+        theWriter.println("            (call $MemoryManager_AddressmallocINT ");
+        theWriter.println("                (i32.mul (i32.add (get_local $size) (i32.const 1)) (i32.const 4))");
+        theWriter.println("            )");
+        theWriter.println("         )");
+        theWriter.println("         (i32.store (get_local $newRef) (get_local $size))");
+        theWriter.println("         (return (get_local $newRef))");
+        theWriter.println("   )");
+        theWriter.println();
+
         theWriter.println("   (func $bootstrap");
 
         theWriter.print("      (set_global $STACK (call $");
@@ -357,6 +386,59 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.print(8192L);
         theWriter.println(")))");
         theWriter.println("      (set_global $STACKTOP (get_global $STACK))");
+
+        for (int i=0;i<theStringCache.size();i++) {
+
+            String theData = theStringCache.get(i);
+
+            theWriter.print("      ;; init of ");
+            theWriter.println(theData);
+            
+            theWriter.print("      (set_global $stringPool");
+            theWriter.print(i);
+            theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINT");
+
+            theWriter.print(" (i32.const ");
+            theWriter.print(WASMWriterUtils.computeObjectSizeFor(theStringClass));
+            theWriter.print(")");
+
+            theWriter.print(" (i32.const ");
+            theWriter.print(theStringClass.getUniqueId());
+            theWriter.print(")");
+
+            theWriter.print(" (i32.const ");
+            theWriter.print(theResolver.resolveVTableMethodByType(theStringClass.getClassName()));
+            theWriter.print(")");
+
+            theWriter.print(")");
+            theWriter.println(")");
+
+            theWriter.print("      (call $TString_VOIDinitINT ");
+            theWriter.print("(get_global $stringPool");
+            theWriter.print(i);
+            theWriter.print(") ");
+            theWriter.print("(i32.const ");
+            theWriter.print(theData.length());
+            theWriter.println("))");
+
+            for (int j=0;j<theData.length();j++) {
+                int theChar = theData.charAt(j);
+
+                theWriter.print("      (call $TString_VOIDsetCharAtINTBYTE ");
+                theWriter.print("(get_global $stringPool");
+                theWriter.print(i);
+                theWriter.print(") ");
+                theWriter.print("(i32.const ");
+                theWriter.print(j);
+                theWriter.print(") ");
+                theWriter.print("(i32.const ");
+                theWriter.print(theChar);
+                theWriter.print(")");
+                theWriter.println(")");
+
+            }
+        }
+
 
         aLinkerContext.forEachClass(theEntry -> {
             if (!theEntry.getValue().getAccessFlags().isInterface()) {
@@ -373,6 +455,12 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.println("   )");
         theWriter.println();
 
+        for (int i=0;i<theStringCache.size();i++) {
+
+            theWriter.print("   (global $stringPool");
+            theWriter.print(i);
+            theWriter.println(" (mut i32) (i32.const 0))");
+        }
 
         theWriter.println("   (global $STACK (mut i32) (i32.const 0))");
         theWriter.println("   (global $STACKTOP (mut i32) (i32.const 0))");

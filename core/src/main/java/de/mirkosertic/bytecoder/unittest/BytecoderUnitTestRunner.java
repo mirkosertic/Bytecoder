@@ -15,12 +15,19 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -40,13 +47,12 @@ import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 
-import java.io.*;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.logging.Level;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -159,26 +165,30 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            String theCode = theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            StringWriter theStrWriter = new StringWriter();
+            PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
+
+            theCodeWriter.println(theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature));
 
             String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
-            theCode += "\nconsole.log(\"Starting test\");\n";
-            theCode += "bytecoder.bootstrap();\n";
-            theCode += theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());\n";
-            theCode += "var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
-                    ExceptionRethrower.class)) + "." + theCompileTarget.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionSignature) + "();\n";
-            theCode += "if (theLastException) {\n";
+            theCodeWriter.println("console.log(\"Starting test\");");
+            theCodeWriter.println("bytecoder.bootstrap();");
+            theCodeWriter.println(theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(" + theCompileTarget.toClassName(theTypeRef) + ".emptyInstance());");
+            theCodeWriter.println("var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
+                    ExceptionRethrower.class)) + "." + theCompileTarget.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionSignature) + "();");
+            theCodeWriter.println("if (theLastException) {");
+            theCodeWriter.println("var theStringData = theLastException.message.data.data;");
+            theCodeWriter.println("   var theMessage = \"\";");
+            theCodeWriter.println("   for (var i=0;i<theStringData.length;i++) {");
+            theCodeWriter.println("     theMessage += String.fromCharCode(theStringData[i]);");
+            theCodeWriter.println("   }");
+            theCodeWriter.println("   console.log(\"Test finished with exception. Message = \" + theMessage);");
+            theCodeWriter.println("  throw theLastException;");
+            theCodeWriter.println("}");
+            theCodeWriter.println("console.log(\"Test finished OK\");");
 
-            theCode += "var theStringData = theLastException.message.data.data;\n"
-                    + "   var theMessage = \"\";\n"
-                    + "   for (var i=0;i<theStringData.length;i++) {\n"
-                    + "     theMessage += String.fromCharCode(theStringData[i]);\n"
-                    + "   }\n"
-                    + "   console.log(\"Test finished with exception. Message = \" + theMessage);\n";
-            theCode += "  throw theLastException;\n";
-            theCode += "}\n";
-            theCode += "\nconsole.log(\"Test finished OK\");\n";
+            theCodeWriter.flush();
 
             File theWorkingDirectory = new File(".");
 
@@ -190,7 +200,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
             PrintWriter theWriter = new PrintWriter(theGeneratedFile);
             theWriter.println("<html><body><script>");
-            theWriter.println(theCode);
+            theWriter.println(theStrWriter.toString());
             theWriter.println("</script></body></html>");
             theWriter.flush();
             theWriter.close();
@@ -245,53 +255,54 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             }
 
             PrintWriter theWriter = new PrintWriter(theGeneratedFile);
-            theWriter.println("<html>\n" +
-                    "    <body>\n" +
-                    "\n" +
-                    "        <h1>Module code</h1>\n" +
-                    "        <pre id=\"modulecode\">");
-
+            theWriter.println("<html>");
+            theWriter.println("    <body>");
+            theWriter.println("        <h1>Module code</h1>");
+            theWriter.println("        <pre id=\"modulecode\">");
             theWriter.println(theCode);
+            theWriter.println("        </pre>");
+            theWriter.println("        <h1>Compilation result</h1>");
+            theWriter.println("        <pre id=\"compileresult\">");
+            theWriter.println("        </pre>");
+            theWriter.println("        <script src=\"libwabt.js\">");
+            theWriter.println("        </script>");
+            theWriter.println("        <script>");
+            theWriter.println("            function compile() {");
+            theWriter.println("                console.log('Test started');");
+            theWriter.println("                try {");
+            theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
+            theWriter.println("                    module.resolveNames();");
+            theWriter.println("                    module.validate();");
+            theWriter.println("                    var binaryOutput = module.toBinary({log: true});");
+            theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
+            theWriter.println("                    var binaryBuffer = binaryOutput.buffer;");
 
-            theWriter.println("        </pre>\n" +
-                    "\n" +
-                    "        <h1>Compilation result</h1>\n" +
-                    "        <pre id=\"compileresult\">\n" +
-                    "        </pre>\n" +
-                    "        <script src=\"libwabt.js\">\n" +
-                    "        </script>\n" +
-                    "\n" +
-                    "        <script>\n" +
-                    "            function compile() {\n" +
-                    "                console.log('Test started');" +
-                    "                try {\n" +
-                    "                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);\n" +
-                    "                    module.resolveNames();\n" +
-                    "                    module.validate();\n" +
-                    "\n" +
-                    "                    var binaryOutput = module.toBinary({log: true});\n" +
-                    "                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;\n" +
-                    "\n" +
-                    "                    var binaryBuffer = binaryOutput.buffer;\n" +
-                    "                    var wasm = new WebAssembly.Module(binaryBuffer);\n" +
-                    "                    var wasmInstance = new WebAssembly.Instance(wasm, {});\n" +
-                    "                    wasmInstance.exports.initMemory(1024 * 1024);\n" +
-                    "                    console.log(\"Memory initialized\")\n" +
-                    "                    wasmInstance.exports.bootstrap();\n" +
-                    "                    console.log(\"Bootstrapped\")\n" +
-                    "                    wasmInstance.exports.main();\n" +
-                    "                    console.log(\"Test finished OK\")\n" +
-                    "\n" +
-                    "                } catch (e) {\n" +
-                    "                    document.getElementById(\"compileresult\").innerText = e.toString();\n" +
-                    "                    console.log(e.toString());\n" +
-                    "                }\n" +
-                    "            }\n" +
-                    "\n" +
-                    "            compile();\n" +
-                    "        </script>\n" +
-                    "    </body>\n" +
-                    "</html>");
+            theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {});");
+            theWriter.println("                    theInstantiatePromise.then(");
+            theWriter.println("                         function (resolved) {");
+            theWriter.println("                             var wasmModule = resolved.module;");
+            theWriter.println("                             var wasmInstance = resolved.instance;");
+            theWriter.println("                             wasmInstance.exports.initMemory(1024 * 1024);");
+            theWriter.println("                             console.log(\"Memory initialized\")");
+            theWriter.println("                             wasmInstance.exports.bootstrap();");
+            theWriter.println("                             console.log(\"Bootstrapped\")");
+            theWriter.println("                             wasmInstance.exports.main();");
+            theWriter.println("                             console.log(\"Test finished OK\")");
+            theWriter.println("                         },");
+            theWriter.println("                         function (rejected) {");
+            theWriter.println("                             console.log(\"Error instantiating webassembly\");");
+            theWriter.println("                             console.log(rejected);");
+            theWriter.println("                         }");
+            theWriter.println("                    );");
+            theWriter.println("                } catch (e) {");
+            theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
+            theWriter.println("                    console.log(e.toString());");
+            theWriter.println("                }");
+            theWriter.println("            }");
+            theWriter.println("            compile();");
+            theWriter.println("        </script>");
+            theWriter.println("    </body>");
+            theWriter.println("</html>");
 
             theWriter.flush();
             theWriter.close();
