@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class StackStartValue extends Value {
+public class MemorySizeValue extends Value {
 }

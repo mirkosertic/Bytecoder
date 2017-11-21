@@ -540,12 +540,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         theWriter.println("   (func $bootstrap");
 
-        theWriter.print("      (set_global $STACK (call $");
-        theWriter.print(theMallocName);
-        theWriter.print(" (i32.const ");
-        theWriter.print(8192L);
-        theWriter.println(")))");
-        theWriter.println("      (set_global $STACKTOP (get_global $STACK))");
+        theWriter.println("      (set_global $STACKTOP (i32.sub (i32.mul (current_memory) (i32.const 65536)) (i32.const 1)))");
 
         for (int i=0;i<theStringCache.size();i++) {
 
@@ -622,7 +617,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.println(" (mut i32) (i32.const 0))");
         }
 
-        theWriter.println("   (global $STACK (mut i32) (i32.const 0))");
         theWriter.println("   (global $STACKTOP (mut i32) (i32.const 0))");
 
         // Globals for static class data

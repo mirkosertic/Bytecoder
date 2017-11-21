@@ -157,9 +157,9 @@ public class MemoryManager {
         int theOwningData = theOwningStart + 12;
 
         // First of all we check the stack
-        int theStackStart = Address.getStackStart();
+        int theStackStart = Address.getStackTop();
         Address theStack = new Address(theStackStart);
-        int theStackTop = Address.getStackTop();
+        int theStackTop = Address.getMemorySize();
         while(theStackStart < theStackTop) {
             int theReference = Address.getIntValue(theStack, theStackStart);
             if (theReference == theOwningData) {

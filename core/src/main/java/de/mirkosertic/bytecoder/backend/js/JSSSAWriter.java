@@ -86,8 +86,8 @@ import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StackStartValue;
 import de.mirkosertic.bytecoder.ssa.StackTopValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
@@ -185,20 +185,20 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((RuntimeGeneratedTypeValue) aValue);
         } else if (aValue instanceof ResolveCallsiteObjectValue) {
             print((ResolveCallsiteObjectValue) aValue);
-        } else if (aValue instanceof StackStartValue) {
-            print((StackStartValue) aValue);
         } else if (aValue instanceof StackTopValue) {
             print((StackTopValue) aValue);
+        } else if (aValue instanceof MemorySizeValue) {
+            print((MemorySizeValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    public void print(StackStartValue aValue) {
+    public void print(StackTopValue aValue) {
         print("0");
     }
 
-    public void print(StackTopValue aValue) {
+    public void print(MemorySizeValue aValue) {
         print("0");
     }
 
