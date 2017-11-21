@@ -277,7 +277,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
             theWriter.println("                    var binaryBuffer = binaryOutput.buffer;");
 
-            theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {});");
+            theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
+            theWriter.println("                         math: {");
+            theWriter.println("                             foor: function(aValue) {return Math.floor(aValue);},");
+            theWriter.println("                             ceil: function(aValue) {return Math.ceil(aValue);},");
+            theWriter.println("                         }");
+            theWriter.println("                    });");
             theWriter.println("                    theInstantiatePromise.then(");
             theWriter.println("                         function (resolved) {");
             theWriter.println("                             var wasmModule = resolved.module;");

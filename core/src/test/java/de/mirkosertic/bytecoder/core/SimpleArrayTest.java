@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class SimpleArrayTest {
@@ -26,7 +26,15 @@ public class SimpleArrayTest {
     @Test
     public void testNewPrimitiveAndLength() {
         int[] theArray = new int[100];
+        theArray[0] = 10;
         int theSize = theArray.length;
+        int theValue = theArray[10];
+    }
+
+    @Test
+    public void testNewPrimitiveAndLengthAssert() {
+        int[] theArray = new int[100];
+        Assert.assertEquals(100, theArray.length, 0);
     }
 
     @Test

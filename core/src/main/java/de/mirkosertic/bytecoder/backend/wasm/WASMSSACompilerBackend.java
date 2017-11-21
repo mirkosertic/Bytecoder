@@ -18,17 +18,24 @@ package de.mirkosertic.bytecoder.backend.wasm;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
+import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.js.JSFunction;
+import de.mirkosertic.bytecoder.backend.js.JSModule;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -37,14 +44,26 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.Type;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class WASMSSACompilerBackend implements CompileBackend {
+
+    private static class CallSite {
+        private final Program program;
+        private final GraphNode bootstrapMethod;
+
+        public CallSite(Program aProgram, GraphNode aBootstrapMethod) {
+            program = aProgram;
+            bootstrapMethod = aBootstrapMethod;
+        }
+    }
 
     @Override
     public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
@@ -75,12 +94,78 @@ public class WASMSSACompilerBackend implements CompileBackend {
         PrintWriter theWriter = new PrintWriter(theStringWriter);
 
         theWriter.println("(module");
+
+        // Print imported functions first
+        aLinkerContext.forEachClass(aEntry -> {
+
+            System.out.println(aEntry.getKey().name());
+
+            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+
+            aEntry.getValue().forEachMethod(t -> {
+
+                BytecodeMethodSignature theSignature = t.getSignature();
+
+                if (t.getAccessFlags().isNative()) {
+                    if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                        return;
+                    }
+                    BytecodeAnnotation theImportAnnotation = t.getAttributes().getAnnotationByType(Import.class.getName());
+                    if (theImportAnnotation == null) {
+                        throw new IllegalStateException("No @Import annotation found. Potential linker error!");
+                    }
+
+                    // Imported function
+
+                    theWriter.print("   (func ");
+                    theWriter.print("$");
+                    theWriter.print(WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature));
+                    theWriter.print(" (import \"");
+                    theWriter.print(theImportAnnotation.getElementValueByName("module").stringValue());
+                    theWriter.print("\" \"");
+                    theWriter.print(theImportAnnotation.getElementValueByName("name").stringValue());
+                    theWriter.print("\") ");
+
+                    if (!t.getAccessFlags().isStatic()) {
+                        theWriter.print("(param $thisRef");
+                        theWriter.print(" ");
+                        theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
+                        theWriter.print(") ");
+                    }
+
+                    for (int i = 0; i < theSignature.getArguments().length; i++) {
+                        BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                        theWriter.print("(param $p");
+                        theWriter.print((i + 1));
+                        theWriter.print(" ");
+                        theWriter.print(WASMWriterUtils.toType(theParamType));
+                        theWriter.print(") ");
+                    }
+
+                    if (!theSignature.getReturnType().isVoid()) {
+                        theWriter.print("(result "); // result
+                        theWriter.print(WASMWriterUtils.toType(theSignature.getReturnType()));
+                        theWriter.print(")");
+                    }
+                    theWriter.println(")");
+                }
+            });
+        });
+
+        theWriter.println();
+
         theWriter.println("   (type $RESOLVEMETHOD (func (param i32) (result i32)))");
 
         List<String> theGeneratedFunctions = new ArrayList<>();
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
         List<String> theStringCache = new ArrayList<>();
         Set<String> theGeneratedTypes = new HashSet<>();
+        Map<String, CallSite> theCallsites = new HashMap<>();
 
         WASMSSAWriter.IDResolver theResolver = new WASMSSAWriter.IDResolver() {
             @Override
@@ -103,6 +188,18 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 }
                 theStringCache.add(aValue);
                 return "stringPool" + (theStringCache.size() - 1);
+            }
+
+            @Override
+            public String resolveCallsiteBootstrapFor(BytecodeClass aOwningClass, String aCallsiteId, Program aProgram,
+                    GraphNode aBootstrapMethod) {
+                String theID = "callsite_" + aCallsiteId.replace("/","_");
+                CallSite theCallsite = theCallsites.get(theID);
+                if (theCallsite == null) {
+                    theCallsite = new CallSite(aProgram, aBootstrapMethod);
+                    theCallsites.put(theID, theCallsite);
+                }
+                return theID;
             }
         };
 
@@ -215,6 +312,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.println("         (unreachable)");
         theWriter.println("   )");
 
+        // Now everything else
         aLinkerContext.forEachClass(aEntry -> {
 
             System.out.println(aEntry.getKey().name());
@@ -236,6 +334,11 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 }
 
                 BytecodeMethodSignature theSignature = t.getSignature();
+
+                if (t.getAccessFlags().isNative()) {
+                    // Already written
+                    return;
+                }
 
                 theWriter.print("   (func ");
                 theWriter.print("$");
@@ -366,15 +469,72 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.println();
         });
 
+        // Render callsites
+        for (Map.Entry<String, CallSite> theEntry : theCallsites.entrySet()) {
+
+            theWriter.print("   (func ");
+            theWriter.print("$");
+            theWriter.print(theEntry.getKey());
+            theWriter.print(" ");
+
+            theWriter.print("(result "); // result
+            theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
+            theWriter.print(")");
+            theWriter.println();
+
+            Program theSSAProgram = theEntry.getValue().program;
+
+            WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+
+            for (Variable theVariable : theSSAProgram.getVariables()) {
+
+                if (!(theVariable.getValue() instanceof PrimitiveValue) &&
+                        !(theVariable.getValue() instanceof MethodParameterValue) &&
+                        !(theVariable.getValue() instanceof SelfReferenceParameterValue) &&
+                        !theSSAWriter.isStackVariable(theVariable)) {
+
+                    theSSAWriter.print("(local $");
+                    theSSAWriter.print(theVariable.getName());
+                    theSSAWriter.print(" ");
+                    theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
+                    theSSAWriter.print(") ;; ");
+                    theSSAWriter.println(theVariable.getType().name());
+                }
+            }
+
+            theSSAWriter.printStackEnter();
+            theSSAWriter.writeExpressionList(theEntry.getValue().bootstrapMethod.getExpressions());
+
+            theWriter.println("   )");
+            theWriter.println();
+        }
+
         theWriter.println("   (func $newArray (param $size i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
         theWriter.println("            (call $MemoryManager_AddressmallocINT ");
-        theWriter.println("                (i32.mul (i32.add (get_local $size) (i32.const 1)) (i32.const 4))");
+        theWriter.println("                (i32.add (i32.const 4) (i32.mul (get_local $size) (i32.const 4)))");
         theWriter.println("            )");
         theWriter.println("         )");
         theWriter.println("         (i32.store (get_local $newRef) (get_local $size))");
         theWriter.println("         (return (get_local $newRef))");
+        theWriter.println("   )");
+        theWriter.println();
+
+        theWriter.println("   (func $compareValueINT32 (param $p1 i32) (param $p2 i32) (result i32)");
+        theWriter.println("     (block $b1");
+        theWriter.println("         (br_if $b1");
+        theWriter.println("             (i32.ne (get_local $p1) (get_local $p1))");
+        theWriter.println("         )");
+        theWriter.println("         (return (i32.const 0))");
+        theWriter.println("     )");
+        theWriter.println("     (block $b2");
+        theWriter.println("         (br_if $b2");
+        theWriter.println("             (i32.ge_s (get_local $p1) (get_local $p2))");
+        theWriter.println("         )");
+        theWriter.println("         (return (i32.const 1))");
+        theWriter.println("     )");
+        theWriter.println("     (return (i32.const -1))");
         theWriter.println("   )");
         theWriter.println();
 
