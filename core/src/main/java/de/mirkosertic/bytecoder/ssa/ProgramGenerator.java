@@ -1182,16 +1182,16 @@ public class ProgramGenerator {
                         aHelper.push(theNewVariable);
                         break;
                     }
-                    case "getStackStart": {
+                    case "getStackTop": {
 
-                        Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new StackStartValue());
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new StackTopValue());
 
                         aHelper.push(theNewVariable);
                         break;
                     }
-                    case "getStackTop": {
+                    case "getMemorySize": {
 
-                        Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new StackTopValue());
+                        Variable theNewVariable = aTargetBlock.newVariable(Type.MEMORYLOCATION, new MemorySizeValue());
 
                         aHelper.push(theNewVariable);
                         break;

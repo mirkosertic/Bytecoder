@@ -79,8 +79,8 @@ import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StackStartValue;
 import de.mirkosertic.bytecoder.ssa.StackTopValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.Type;
@@ -128,12 +128,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private int stackOffsetFor(Variable aVariable) {
-        int theStart = stackVariables.size() * 4;
+        int theStart = 0;
         for (Variable theVariable : stackVariables) {
             if (theVariable.getName().equals(aVariable.getName())) {
                 return theStart;
             }
-            theStart -= 4;
+            theStart += 4;
         }
         throw new IllegalStateException("Unknown variable : " + aVariable);
     }
@@ -413,9 +413,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
 
         if (isStackVariable(theVariable)) {
-            print("(i32.store (i32.sub (get_global $STACKTOP) (i32.const ");
+            print("(i32.store offset=");
             print(stackOffsetFor(theVariable));
-            println("))");
+            println(" (get_global $STACKTOP)");
 
             WASMSSAWriter theChild = withDeeperIndent();
             theChild.writeValue(theVariable.getValue());
@@ -497,12 +497,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeNullValue((NullValue) aValue);
             return;
         }
-        if (aValue instanceof StackStartValue) {
-            writeStackStartValue((StackStartValue) aValue);
-            return;
-        }
         if (aValue instanceof StackTopValue) {
             writeStackTopValue((StackTopValue) aValue);
+            return;
+        }
+        if (aValue instanceof MemorySizeValue) {
+            writrMemorySizeValue((MemorySizeValue) aValue);
             return;
         }
         if (aValue instanceof ShortValue) {
@@ -708,12 +708,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeStackStartValue(StackStartValue aValue) {
-        print("(get_global $STACK)");
-    }
-
     private void writeStackTopValue(StackTopValue aValue) {
         print("(get_global $STACKTOP)");
+    }
+
+    private void writrMemorySizeValue(MemorySizeValue aValue) {
+        print("(i32.mul (current_memory) (i32.const 65536))");
     }
 
     private void writeNullValue(NullValue aValue) {
@@ -1065,9 +1065,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeValue(aVariable.getValue());
         } else {
             if (isStackVariable(aVariable)) {
-                print("(i32.load (i32.sub (get_global $STACKTOP) (i32.const ");
+                print("(i32.load offset=");
                 print(stackOffsetFor(aVariable));
-                print(")))");
+                print(" (get_global $STACKTOP)");
+                print(")");
             } else {
                 print("(get_local ");
                 print("$");
@@ -1081,7 +1082,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         int theStackSize = stackSize();
         if (theStackSize > 0) {
-            print("(set_global $STACKTOP (i32.add (get_global $STACKTOP) (i32.const ");
+            println("(local $OLD_SP i32)");
+            println("(set_local $OLD_SP (get_global $STACKTOP))");
+            print("(set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
             print(theStackSize);
             println(")))");
         }
@@ -1092,9 +1095,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         int theStackSize = stackSize();
         if (theStackSize > 0) {
-            print("(set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
-            print(theStackSize);
-            println(")))");
+            println("(set_global $STACKTOP (get_local $OLD_SP))");
         }
     }
 }

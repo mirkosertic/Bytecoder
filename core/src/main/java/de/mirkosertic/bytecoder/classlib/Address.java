@@ -38,11 +38,11 @@ public class Address {
         MemoryManager.data[aAddress.start + aIndex] = aValue;
     }
 
-    public static int getStackStart() {
+    public static int getStackTop() {
         return 0;
     }
 
-    public static int getStackTop() {
+    public static int getMemorySize() {
         return 0;
     }
 }
