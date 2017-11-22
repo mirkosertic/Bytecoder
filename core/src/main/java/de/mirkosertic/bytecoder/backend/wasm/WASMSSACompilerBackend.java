@@ -95,6 +95,8 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         theWriter.println("(module");
 
+        theWriter.println("  (func $float_remainder (import \"math\" \"float_rem\") (param $p1 f32) (param $p2 f32) (result f32))\n");
+
         // Print imported functions first
         aLinkerContext.forEachClass(aEntry -> {
 
@@ -106,6 +108,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
             if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
+
 
             aEntry.getValue().forEachMethod(t -> {
 
@@ -134,7 +137,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
                     if (!t.getAccessFlags().isStatic()) {
                         theWriter.print("(param $thisRef");
                         theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
+                        theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
                         theWriter.print(") ");
                     }
 
@@ -143,13 +146,13 @@ public class WASMSSACompilerBackend implements CompileBackend {
                         theWriter.print("(param $p");
                         theWriter.print((i + 1));
                         theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(theParamType));
+                        theWriter.print(WASMWriterUtils.toType(Type.toType(theParamType)));
                         theWriter.print(") ");
                     }
 
                     if (!theSignature.getReturnType().isVoid()) {
                         theWriter.print("(result "); // result
-                        theWriter.print(WASMWriterUtils.toType(theSignature.getReturnType()));
+                        theWriter.print(WASMWriterUtils.toType(Type.toType(theSignature.getReturnType())));
                         theWriter.print(")");
                     }
                     theWriter.println(")");
@@ -236,19 +239,19 @@ public class WASMSSACompilerBackend implements CompileBackend {
                     theWriter.print(" (func ");
 
                     theWriter.print("(param ");
-                    theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
+                    theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
                     theWriter.print(") ");
 
                     for (int i=0;i<theSignature.getArguments().length;i++) {
                         BytecodeTypeRef theParamType = theSignature.getArguments()[i];
                         theWriter.print("(param ");
-                        theWriter.print(WASMWriterUtils.toType(theParamType));
+                        theWriter.print(WASMWriterUtils.toType(Type.toType(theParamType)));
                         theWriter.print(") ");
                     }
 
                     if (!theSignature.getReturnType().isVoid()) {
                         theWriter.print("(result "); // result
-                        theWriter.print(WASMWriterUtils.toType(theSignature.getReturnType()));
+                        theWriter.print(WASMWriterUtils.toType(Type.toType(theSignature.getReturnType())));
                         theWriter.print(")");
                     }
                     theWriter.println("))");
@@ -348,7 +351,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
                 if (!t.getAccessFlags().isStatic()) {
                     theWriter.print("(param $thisRef");
                     theWriter.print(" ");
-                    theWriter.print(WASMWriterUtils.toType((BytecodeObjectTypeRef) null));
+                    theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
                     theWriter.print(") ");
                 }
 
@@ -357,13 +360,13 @@ public class WASMSSACompilerBackend implements CompileBackend {
                     theWriter.print("(param $p");
                     theWriter.print((i + 1));
                     theWriter.print(" ");
-                    theWriter.print(WASMWriterUtils.toType(theParamType));
+                    theWriter.print(WASMWriterUtils.toType(Type.toType(theParamType)));
                     theWriter.print(") ");
                 }
 
                 if (!theSignature.getReturnType().isVoid()) {
                     theWriter.print("(result "); // result
-                    theWriter.print(WASMWriterUtils.toType(theSignature.getReturnType()));
+                    theWriter.print(WASMWriterUtils.toType(Type.toType(theSignature.getReturnType())));
                     theWriter.print(")");
                 }
                 theWriter.println();
@@ -521,7 +524,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.println("   )");
         theWriter.println();
 
-        theWriter.println("   (func $compareValueINT32 (param $p1 i32) (param $p2 i32) (result i32)");
+        theWriter.println("   (func $compareValueI32 (param $p1 i32) (param $p2 i32) (result i32)");
         theWriter.println("     (block $b1");
         theWriter.println("         (br_if $b1");
         theWriter.println("             (i32.ne (get_local $p1) (get_local $p1))");
@@ -531,6 +534,23 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.println("     (block $b2");
         theWriter.println("         (br_if $b2");
         theWriter.println("             (i32.ge_s (get_local $p1) (get_local $p2))");
+        theWriter.println("         )");
+        theWriter.println("         (return (i32.const 1))");
+        theWriter.println("     )");
+        theWriter.println("     (return (i32.const -1))");
+        theWriter.println("   )");
+        theWriter.println();
+
+        theWriter.println("   (func $compareValueF32 (param $p1 f32) (param $p2 f32) (result i32)");
+        theWriter.println("     (block $b1");
+        theWriter.println("         (br_if $b1");
+        theWriter.println("             (f32.ne (get_local $p1) (get_local $p1))");
+        theWriter.println("         )");
+        theWriter.println("         (return (i32.const 0))");
+        theWriter.println("     )");
+        theWriter.println("     (block $b2");
+        theWriter.println("         (br_if $b2");
+        theWriter.println("             (f32.ge (get_local $p1) (get_local $p2))");
         theWriter.println("         )");
         theWriter.println("         (return (i32.const 1))");
         theWriter.println("     )");

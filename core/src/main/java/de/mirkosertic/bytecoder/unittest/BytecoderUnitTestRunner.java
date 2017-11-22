@@ -281,6 +281,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                         math: {");
             theWriter.println("                             foor: function(aValue) {return Math.floor(aValue);},");
             theWriter.println("                             ceil: function(aValue) {return Math.ceil(aValue);},");
+            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         }");
             theWriter.println("                    });");
             theWriter.println("                    theInstantiatePromise.then(");

@@ -91,6 +91,7 @@ import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.Type;
 import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.UnknownValue;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -409,7 +410,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(TypeConversionValue aValue) {
-        BytecodePrimitiveTypeRef theTargetType = aValue.getTargetType();
+        Type theTargetType = aValue.getTargetType();
         Variable theValue = aValue.getVariable();
         switch (theTargetType) {
             case FLOAT:
