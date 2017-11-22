@@ -95,10 +95,6 @@ public class WASMWriterUtils {
         return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
     }
 
-    public static String toType(BytecodeTypeRef aType) {
-        return "i32";
-    }
-
     public static String toType(Type aType) {
         switch (aType) {
             case DOUBLE:

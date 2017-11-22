@@ -152,6 +152,13 @@ public class BytecodeLinkedClass {
         return superClass;
     }
 
+    public LinkedField memberFieldByName(String aName) {
+        return memberFields.get(aName);
+    }
+    public LinkedField staticFieldByName(String aName) {
+        return staticFields.get(aName);
+    }
+
     public void linkClassInitializer(BytecodeMethod aMethod) {
         classInitializer = aMethod;
         linkStaticMethod(aMethod.getName().stringValue(), aMethod.getSignature());

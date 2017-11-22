@@ -1057,22 +1057,22 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
                 BytecodeInstructionL2Generic theINS = (BytecodeInstructionL2Generic) theInstruction;
                 Variable theValue = aHelper.pop();
-                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, theINS.getTargetType()));
+                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, Type.toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionI2Generic) {
                 BytecodeInstructionI2Generic theINS = (BytecodeInstructionI2Generic) theInstruction;
                 Variable theValue = aHelper.pop();
-                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, theINS.getTargetType()));
+                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, Type.toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionF2Generic) {
                 BytecodeInstructionF2Generic theINS = (BytecodeInstructionF2Generic) theInstruction;
                 Variable theValue = aHelper.pop();
-                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, theINS.getTargetType()));
+                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, Type.toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionD2Generic) {
                 BytecodeInstructionD2Generic theINS = (BytecodeInstructionD2Generic) theInstruction;
                 Variable theValue = aHelper.pop();
-                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, theINS.getTargetType()));
+                Variable theNewVariable = aTargetBlock.newVariable(toType(theINS.getTargetType()), new TypeConversionValue(theValue, Type.toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
                 BytecodeInstructionINVOKESPECIAL theINS = (BytecodeInstructionINVOKESPECIAL) theInstruction;

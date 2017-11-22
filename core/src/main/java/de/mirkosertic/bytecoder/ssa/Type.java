@@ -15,7 +15,45 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+
 public enum Type {
     UNKNOWN,  FLOAT, SHORT, LONG, CHAR, BOOLEAN, BYTE, INT, DOUBLE, REFERENCE, VOID, CALLSITE,
-    MEMORYLOCATION
+    MEMORYLOCATION;
+
+    public static Type toType(BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isVoid()) {
+            return VOID;
+        }
+        if (aTypeRef.isArray()) {
+            return REFERENCE;
+        }
+        if (aTypeRef.isPrimitive()) {
+            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
+            switch (thePrimitive) {
+                case INT:
+                    return INT;
+                case LONG:
+                    return LONG;
+                case FLOAT:
+                    return FLOAT;
+                case DOUBLE:
+                    return DOUBLE;
+                case BYTE:
+                    return BYTE;
+                case VOID:
+                    return VOID;
+                case CHAR:
+                    return CHAR;
+                case SHORT:
+                    return SHORT;
+                case BOOLEAN:
+                    return BOOLEAN;
+                default:
+                    throw new IllegalStateException("Not supported : " + aTypeRef);
+            }
+        }
+        return REFERENCE;
+    }
 }

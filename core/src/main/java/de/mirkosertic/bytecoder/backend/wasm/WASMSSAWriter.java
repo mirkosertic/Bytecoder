@@ -187,6 +187,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 theChild2.println(")");
 
                 theChild2.writeNode(theJumpTarget, false);
+
+                theChild.println("(br $controlflowloop)");
                 theChild.println(")");
             }
 
@@ -312,7 +314,18 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 theLinkedClass);
 
         String theClassName = WASMWriterUtils.toClassName(aExpression.getField().getClassIndex().getClassConstant());
-        print("(i32.store offset=");
+        switch (aExpression.getVariable().getType()) {
+            case DOUBLE:
+            case FLOAT: {
+                print("(f32.store offset=");
+                break;
+            }
+            default: {
+                print("(i32.store offset=");
+                break;
+            }
+
+        }
         print(theMemoryOffset);
         println();
 
@@ -342,10 +355,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
         int theMemoryOffset = WASMWriterUtils.computeFieldOffsetOf(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                 theLinkedClass);
 
-        switch (aExpression.getTarget().getType()) {
+        BytecodeLinkedClass.LinkedField theField = theLinkedClass.memberFieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        switch (Type.toType(theField.getField().getTypeRef())) {
             case DOUBLE:
             case FLOAT:
                 print("(f32.store offset=");
+                break;
             default:
                 print("(i32.store offset=");
                 break;
@@ -413,7 +429,16 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
 
         if (isStackVariable(theVariable)) {
-            print("(i32.store offset=");
+            switch (theVariable.getType()) {
+                case DOUBLE:
+                case FLOAT: {
+                    print("(f32.store offset=");
+                }
+                default: {
+                    print("(i32.store offset=");
+                    break;
+                }
+            }
             print(stackOffsetFor(theVariable));
             println(" (get_global $STACKTOP)");
 
@@ -615,7 +640,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeCompareValue(CompareValue aValue) {
-        print("(call $compareValueINT32 ");
+        if (aValue.getValue1().getType() == Type.DOUBLE && aValue.getValue2().getType() == Type.DOUBLE) {
+            print("(call $compareValueF32 ");
+        } else if (aValue.getValue1().getType() == Type.FLOAT && aValue.getValue2().getType() == Type.FLOAT) {
+            print("(call $compareValueF32 ");
+        } else {
+            print("(call $compareValueI32 ");
+        }
         printVariableNameOrValue(aValue.getValue1());
         print(" ");
         printVariableNameOrValue(aValue.getValue2());
@@ -681,6 +712,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
         theChild2.print(theMethodIdentifier.getIdentifier());
 
+        theChild2.println(")");
         theChild.println(")");
 
         theChild.printVariableNameOrValue(aValue.getTarget());
@@ -689,8 +721,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             theChild.print(" ");
             theChild.printVariableNameOrValue(theVariable);
         }
-
-        theChild.println(")");
+        theChild.println();
 
         println(")");
 
@@ -721,7 +752,70 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeTypeConversion(TypeConversionValue aValue) {
-        printVariableNameOrValue(aValue.getVariable());
+        Type theTargetType = aValue.getTargetType();
+        if (theTargetType.equals(aValue.getVariable().getType())) {
+            // No conversion needed!
+            printVariableNameOrValue(aValue.getVariable());
+            return;
+        }
+        switch (aValue.getVariable().getType()) {
+            case DOUBLE:
+            case FLOAT: {
+                // Convert floating point to something else
+                switch (aValue.getTargetType()) {
+                    case DOUBLE:
+                    case FLOAT: {
+                        // No conversion needed
+                        printVariableNameOrValue(aValue.getVariable());
+                        return;
+                    }
+                    case INT:
+                    case SHORT:
+                    case BYTE:
+                    case LONG:
+                    case CHAR: {
+                        // Convert f32 to i32
+                        print("(i32.trunc_s/f32 ");
+                        printVariableNameOrValue(aValue.getVariable());
+                        print(")");
+                        return;
+                    }
+                    default:
+                        throw new IllegalStateException("target type " + aValue.getTargetType() + " not supported!");
+                }
+            }
+            case INT:
+            case LONG:
+            case BYTE:
+            case SHORT:
+            case CHAR: {
+                // Convert integer type to something else
+                // Convert floating point to something else
+                switch (aValue.getTargetType()) {
+                case DOUBLE:
+                case FLOAT: {
+                    // Convert i32 to f32
+                    print("(f32.convert_s/i32 ");
+                    printVariableNameOrValue(aValue.getVariable());
+                    print(")");
+                    return;
+                }
+                case INT:
+                case SHORT:
+                case BYTE:
+                case LONG:
+                case CHAR: {
+                    // No conversion needed
+                    printVariableNameOrValue(aValue.getVariable());
+                    return;
+                }
+                default:
+                    throw new IllegalStateException("target type " + aValue.getTargetType() + " not supported!");
+                }
+            }
+            default:
+                throw new IllegalStateException("Conversion of " + aValue.getVariable().getType() + " not supported!");
+        }
     }
 
     private void writeComputedMemoryLocationValue(ComputedMemoryLocationWriteValue aValue) {
@@ -783,8 +877,22 @@ public class WASMSSAWriter extends IndentSSAWriter {
         int theMemoryOffset = WASMWriterUtils.computeStaticFieldOffsetOf(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                 theLinkedClass);
 
+        BytecodeLinkedClass.LinkedField theField = theLinkedClass.staticFieldByName(
+                aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
+        );
+
         String theClassName = WASMWriterUtils.toClassName(aValue.getField().getClassIndex().getClassConstant());
-        print("(i32.load offset=");
+        switch (Type.toType(theField.getField().getTypeRef())) {
+            case DOUBLE:
+            case FLOAT: {
+                print("(f32.load offset=");
+                break;
+            }
+            default: {
+                print("(i32.load offset=");
+                break;
+            }
+        }
         print(theMemoryOffset);
         println();
 
@@ -823,7 +931,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         int theMemoryOffset = WASMWriterUtils.computeFieldOffsetOf(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                 theLinkedClass);
 
-        switch (aValue.getTarget().getType()) {
+        BytecodeLinkedClass.LinkedField theField = theLinkedClass.memberFieldByName(
+                aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
+        );
+
+        switch (Type.toType(theField.getField().getTypeRef())) {
             case DOUBLE:
             case FLOAT:
                 print("(f32.load offset=");
@@ -999,15 +1111,27 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case REMAINDER: {
-                println("(i32.rem_s ");
+                if (aValue.getValue1().getType() == Type.INT) {
+                    println("(i32.rem_s ");
+
+                    WASMSSAWriter theChild = withDeeperIndent();
+                    theChild.printVariableNameOrValue(aValue.getValue1());
+                    theChild.println();
+                    theChild.printVariableNameOrValue(aValue.getValue2());
+                    theChild.println();
+
+                    println(")");
+                    break;
+                }
+                print("(call $float_remainder ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValueAsFloat(aValue.getValue1());
+                theChild.printVariableNameOrValue(aValue.getValue1());
                 theChild.println();
-                theChild.printVariableNameOrValueAsFloat(aValue.getValue2());
+                theChild.printVariableNameOrValue(aValue.getValue2());
                 theChild.println();
 
-                println(")");
+                print(")");
                 break;
             }
             case SUB: {

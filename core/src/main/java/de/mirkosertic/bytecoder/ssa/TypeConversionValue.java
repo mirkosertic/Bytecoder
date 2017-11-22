@@ -15,14 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-
 public class TypeConversionValue extends Value {
 
     private final Variable variable;
-    private final BytecodePrimitiveTypeRef targetType;
+    private final Type targetType;
 
-    public TypeConversionValue(Variable aVariable, BytecodePrimitiveTypeRef aTargetType) {
+    public TypeConversionValue(Variable aVariable, Type aTargetType) {
         variable = aVariable;
         targetType = aTargetType;
     }
@@ -31,7 +29,7 @@ public class TypeConversionValue extends Value {
         return variable;
     }
 
-    public BytecodePrimitiveTypeRef getTargetType() {
+    public Type getTargetType() {
         return targetType;
     }
 }
