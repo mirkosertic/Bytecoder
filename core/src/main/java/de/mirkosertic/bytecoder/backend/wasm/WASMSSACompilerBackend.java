@@ -28,8 +28,6 @@ import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
-import de.mirkosertic.bytecoder.backend.js.JSFunction;
-import de.mirkosertic.bytecoder.backend.js.JSModule;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -100,15 +98,12 @@ public class WASMSSACompilerBackend implements CompileBackend {
         // Print imported functions first
         aLinkerContext.forEachClass(aEntry -> {
 
-            System.out.println(aEntry.getKey().name());
-
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
             if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
-
 
             aEntry.getValue().forEachMethod(t -> {
 
@@ -318,8 +313,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
         // Now everything else
         aLinkerContext.forEachClass(aEntry -> {
 
-            System.out.println(aEntry.getKey().name());
-
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
@@ -328,8 +321,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
             }
 
             aEntry.getValue().forEachMethod(t -> {
-
-                System.out.println("   " + t.getName().stringValue());
 
                 // Do not generate code for abstract methods
                 if (t.getAccessFlags().isAbstract()) {
@@ -585,6 +576,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
             theWriter.print(theResolver.resolveVTableMethodByType(theStringClass.getClassName()));
             theWriter.print(")");
 
+
             theWriter.print(")");
             theWriter.println(")");
 
@@ -668,8 +660,6 @@ public class WASMSSACompilerBackend implements CompileBackend {
 
         // Write exports
         aLinkerContext.forEachClass(aEntry -> {
-
-            System.out.println(aEntry.getKey().name());
 
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;

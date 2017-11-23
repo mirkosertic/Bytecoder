@@ -16,11 +16,29 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class SimpleStringTest {
+
+    public static class A {
+
+        public int getInt() {
+            return 42;
+        }
+    }
+
+    public int getInt(A a) {
+        return a.getInt();
+    }
+
+    @Test
+    public void testGetInt() {
+        A a = new A();
+        Assert.assertEquals(42, getInt(a), 0);
+    }
 
     @Test
     public void testString() {
