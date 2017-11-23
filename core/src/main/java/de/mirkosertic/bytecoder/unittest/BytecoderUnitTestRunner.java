@@ -267,6 +267,17 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("        <script src=\"libwabt.js\">");
             theWriter.println("        </script>");
             theWriter.println("        <script>");
+            theWriter.println("            var runningInstance;");
+            theWriter.println();
+            theWriter.println("            function bytecoder_logDebug(value) {");
+            theWriter.println("                 console.log(value);");
+            theWriter.println("            }");
+            theWriter.println();
+            theWriter.println("            function bytecoder_logByteArrayAsString(value) {");
+            theWriter.println("                 console.log('Something to tell you!');");
+            theWriter.println("            }");
+            theWriter.println();
+
             theWriter.println("            function compile() {");
             theWriter.println("                console.log('Test started');");
             theWriter.println("                try {");
@@ -278,21 +289,30 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    var binaryBuffer = binaryOutput.buffer;");
 
             theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
+            theWriter.println("                         system: {");
+            theWriter.println("                             currentTimeMillis: function() {return Date.now();},");
+            theWriter.println("                             nanoTime: function() {return Date.now() * 1000000;},");
+            theWriter.println("                             logDebug: bytecoder_logDebug,");
+            theWriter.println("                             logByteArrayAsString: bytecoder_logByteArrayAsString,");
+            theWriter.println("                         },");
             theWriter.println("                         math: {");
-            theWriter.println("                             foor: function(aValue) {return Math.floor(aValue);},");
-            theWriter.println("                             ceil: function(aValue) {return Math.ceil(aValue);},");
+            theWriter.println("                             floor: Math.floor,");
+            theWriter.println("                             ceil: Math.ceil,");
+            theWriter.println("                             sin: Math.sin,");
+            theWriter.println("                             cos: Math.cos,");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         }");
+
             theWriter.println("                    });");
             theWriter.println("                    theInstantiatePromise.then(");
             theWriter.println("                         function (resolved) {");
             theWriter.println("                             var wasmModule = resolved.module;");
-            theWriter.println("                             var wasmInstance = resolved.instance;");
-            theWriter.println("                             wasmInstance.exports.initMemory(1024 * 1024);");
+            theWriter.println("                             runningInstance = resolved.instance;");
+            theWriter.println("                             runningInstance.exports.initMemory(1024 * 1024);");
             theWriter.println("                             console.log(\"Memory initialized\")");
-            theWriter.println("                             wasmInstance.exports.bootstrap();");
+            theWriter.println("                             runningInstance.exports.bootstrap();");
             theWriter.println("                             console.log(\"Bootstrapped\")");
-            theWriter.println("                             wasmInstance.exports.main();");
+            theWriter.println("                             runningInstance.exports.main();");
             theWriter.println("                             console.log(\"Test finished OK\")");
             theWriter.println("                         },");
             theWriter.println("                         function (rejected) {");

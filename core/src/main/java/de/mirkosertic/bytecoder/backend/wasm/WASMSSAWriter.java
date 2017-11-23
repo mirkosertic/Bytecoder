@@ -41,6 +41,7 @@ import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
@@ -63,6 +64,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
 import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
 import de.mirkosertic.bytecoder.ssa.NegatedValue;
@@ -80,7 +82,6 @@ import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StackTopValue;
-import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.Type;
@@ -590,7 +591,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeMethodTypeValue((MethodTypeValue) aValue);
             return;
         }
+        if (aValue instanceof CurrentExceptionValue) {
+            writeCurrentException((CurrentExceptionValue) aValue);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private void writeCurrentException(CurrentExceptionValue aValue) {
+        print("(i32.const 0)");
     }
 
     private void writeMethodTypeValue(MethodTypeValue aValue) {
@@ -699,29 +708,35 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(WASMWriterUtils.toMethodSignature(aValue.getSignature()));
         println();
 
+        printVariableNameOrValue(aValue.getTarget());
+
+        for (Variable theVariable : aValue.getArguments()) {
+            printVariableNameOrValue(theVariable);
+            print(" ");
+        }
+
+        println();
+
+
         WASMSSAWriter theChild = withDeeperIndent();
         theChild.println("(call_indirect $RESOLVEMETHOD");
 
         WASMSSAWriter theChild2 = theChild.withDeeperIndent();
-        theChild2.print("(i32.load offset=4 ");
-        theChild2.printVariableNameOrValue(aValue.getTarget());
-        theChild2.println(")");   // This is id of the virtual table method
 
+        // This is the method number
         theChild2.print("(i32.const ");
 
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
         theChild2.print(theMethodIdentifier.getIdentifier());
 
         theChild2.println(")");
+
+        // And this is the pointer into the function table
+        theChild2.print("(i32.load offset=4 ");
+        theChild2.printVariableNameOrValue(aValue.getTarget());
+        theChild2.println(")");   // This is id of the virtual table method
+
         theChild.println(")");
-
-        theChild.printVariableNameOrValue(aValue.getTarget());
-
-        for (Variable theVariable : aValue.getArguments()) {
-            theChild.print(" ");
-            theChild.printVariableNameOrValue(theVariable);
-        }
-        theChild.println();
 
         println(")");
 
