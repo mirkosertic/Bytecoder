@@ -1221,6 +1221,18 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println(")");
                 break;
             }
+            case BINARYUNSIGNEDSHIFTRIGHT: {
+                println("(" + theType1 + ".shr_u ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
             default:
                 throw new IllegalStateException("Operator not supported : " + aValue.getOperator());
         }
