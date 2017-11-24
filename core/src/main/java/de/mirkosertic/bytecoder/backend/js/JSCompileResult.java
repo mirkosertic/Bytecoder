@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend;
+package de.mirkosertic.bytecoder.backend.js;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.backend.CompileResult;
 
-public interface CompileBackend<T extends CompileResult> {
+public class JSCompileResult implements CompileResult<String> {
 
-    T generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue);
+    private final String data;
 
-    String generatedFileName();
+    public JSCompileResult(String aData) {
+        data = aData;
+    }
+
+    @Override
+    public String getData() {
+        return data;
+    }
 }

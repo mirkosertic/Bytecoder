@@ -1161,6 +1161,66 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println(")");
                 break;
             }
+            case BINARYXOR: {
+                println("(" + theType1 + ".xor ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
+            case BINARYOR: {
+                println("(" + theType1 + ".or ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
+            case BINARYAND: {
+                println("(" + theType1 + ".and ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
+            case BINARYSHIFTLEFT: {
+                println("(" + theType1 + ".shl ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
+            case BINARYSHIFTRIGHT: {
+                println("(" + theType1 + ".shr_s ");
+
+                WASMSSAWriter theChild = withDeeperIndent();
+                theChild.printVariableNameOrValue(aValue.getValue1());
+                theChild.println();
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
+
+                println(")");
+                break;
+            }
             default:
                 throw new IllegalStateException("Operator not supported : " + aValue.getOperator());
         }

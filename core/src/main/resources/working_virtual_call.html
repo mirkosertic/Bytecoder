@@ -1,0 +1,99 @@
+<html>
+    <body>
+        <h1>Module code</h1>
+        <pre id="modulecode">
+(module
+   (type $RESOLVEMETHOD (func (param i32) (result i32)))
+
+   (memory 256 256)
+   (table 128 anyfunc)
+   (elem (i32.const 2) $resolve)
+   (elem (i32.const 5) $compute)
+
+   (func $compute (param $p1 i32) (result i32)
+        (return (get_local $p1))
+   )
+
+   (func $resolve (param i32) (result i32)
+        (return (i32.const 5))
+   )
+
+   (func $lala (param $thisRef i32) (result i32)
+        (return
+            (call_indirect $RESOLVEMETHOD
+                (get_local $thisRef)
+                (call_indirect $RESOLVEMETHOD
+                    (i32.const 30)
+                    (i32.const 2)
+                )
+            )
+        )
+    )
+
+   (global $STACKTOP (mut i32) (i32.const 0))
+
+   (export "lala" (func $lala))
+ )
+
+        </pre>
+        <h1>Compilation result</h1>
+        <pre id="compileresult">
+        </pre>
+        <script src="libwabt.js">
+        </script>
+        <script>
+            var runningInstance;
+
+            function bytecoder_logDebug(value) {
+                 console.log(value);
+            }
+
+            function bytecoder_logByteArrayAsString(value) {
+                 console.log('Something to tell you!');
+            }
+
+            function compile() {
+                console.log('Test started');
+                try {
+                    var module = wabt.parseWat('test.wast', document.getElementById("modulecode").innerText);
+                    module.resolveNames();
+                    module.validate();
+                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});
+                    document.getElementById("compileresult").innerText = binaryOutput.log;
+                    var binaryBuffer = binaryOutput.buffer;
+                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {
+                         system: {
+                             currentTimeMillis: function() {return Date.now();},
+                             nanoTime: function() {return Date.now() * 1000000;},
+                             logDebug: bytecoder_logDebug,
+                             logByteArrayAsString: bytecoder_logByteArrayAsString,
+                         },
+                         math: {
+                             floor: Math.floor,
+                             ceil: Math.ceil,
+                             sin: Math.sin,
+                             cos: Math.cos,
+                             float_rem: function(a, b) {return a % b;},
+                         }
+                    });
+                    theInstantiatePromise.then(
+                         function (resolved) {
+                             var wasmModule = resolved.module;
+                             runningInstance = resolved.instance;
+                             console.log("Result : " + runningInstance.exports.lala(300));
+                             console.log("Test finished OK")
+                         },
+                         function (rejected) {
+                             console.log("Error instantiating webassembly");
+                             console.log(rejected);
+                         }
+                    );
+                } catch (e) {
+                    document.getElementById("compileresult").innerText = e.toString();
+                    console.log(e.toString());
+                }
+            }
+            compile();
+        </script>
+    </body>
+</html>

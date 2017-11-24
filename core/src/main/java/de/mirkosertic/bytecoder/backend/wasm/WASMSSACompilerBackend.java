@@ -51,7 +51,7 @@ import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Type;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
-public class WASMSSACompilerBackend implements CompileBackend {
+public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
 
     private static class CallSite {
         private final Program program;
@@ -64,7 +64,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
     }
 
     @Override
-    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
+    public WASMCompileResult generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         // Link required mamory management code
         BytecodeLinkedClass theManagerClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
@@ -686,7 +686,7 @@ public class WASMSSACompilerBackend implements CompileBackend {
         theWriter.println(")");
         theWriter.flush();;
 
-        return theStringWriter.toString();
+        return new WASMCompileResult(aLinkerContext, theGeneratedFunctions, theStringWriter.toString());
     }
 
     @Override

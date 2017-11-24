@@ -24,7 +24,6 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -42,6 +41,7 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.SourceFile;
 
+import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -49,6 +49,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 /**
  * Plugin to run Bytecoder using Maven.
@@ -110,9 +111,9 @@ public class BytecoderMavenMojo extends AbstractMojo {
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-            String theCode = theCompileTarget.compileToJS(new Slf4JLogger(), theTargetClass, "main", theSignature);
+            CompileResult theCode = theCompileTarget.compileToJS(new Slf4JLogger(), theTargetClass, "main", theSignature);
             try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
-                theWriter.println(theCode);
+                theWriter.println(theCode.getData());
             }
 
             if (optimizeWithGoogleClosure) {
@@ -124,7 +125,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 CompilationLevel.valueOf(closureOptimizationLevel).setOptionsForCompilationLevel(theOptions);
 
                 List<SourceFile> theSourceFiles = CommandLineRunner.getBuiltinExterns(CompilerOptions.Environment.BROWSER);
-                theSourceFiles.add(SourceFile.fromCode("bytecoder.js", theCode));
+                theSourceFiles.add(SourceFile.fromCode("bytecoder.js", (String) theCode.getData()));
                 theCompiler.compile(new ArrayList<>(), theSourceFiles, theOptions);
                 String theClosureCode = theCompiler.toSource();
 
@@ -178,5 +179,4 @@ public class BytecoderMavenMojo extends AbstractMojo {
             throw new MojoExecutionException("Cannot create classloader", e);
         }
     }
-
 }
