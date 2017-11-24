@@ -51,7 +51,7 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
-public class JSSSACompilerBackend implements CompileBackend {
+public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
     protected final BytecodeMethodSignature registerExceptionOutcomeSignature;
     protected final BytecodeMethodSignature getLastExceptionOutcomeSignature;
@@ -99,7 +99,7 @@ public class JSSSACompilerBackend implements CompileBackend {
     }
 
     @Override
-    public String generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
+    public JSCompileResult generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -409,7 +409,7 @@ public class JSSSACompilerBackend implements CompileBackend {
 
         theWriter.flush();
 
-        return theStrWriter.toString();
+        return new JSCompileResult(theStrWriter.toString());
     }
 
     private void writeExceptionHandlerCode(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aExceptionRethrower,

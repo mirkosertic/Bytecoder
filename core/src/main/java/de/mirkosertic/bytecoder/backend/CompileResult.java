@@ -15,13 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.Logger;
+public interface CompileResult<T> {
 
-public interface CompileBackend<T extends CompileResult> {
-
-    T generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue);
-
-    String generatedFileName();
+    T getData();
 }
+

@@ -48,6 +48,7 @@ import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 
 import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -168,7 +169,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             StringWriter theStrWriter = new StringWriter();
             PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-            theCodeWriter.println(theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature));
+            theCodeWriter.println(theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature).getData());
 
             String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
@@ -237,7 +238,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            String theCode = theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
             String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
 
@@ -259,7 +260,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("    <body>");
             theWriter.println("        <h1>Module code</h1>");
             theWriter.println("        <pre id=\"modulecode\">");
-            theWriter.println(theCode);
+            theWriter.println(theResult.getData());
             theWriter.println("        </pre>");
             theWriter.println("        <h1>Compilation result</h1>");
             theWriter.println("        <pre id=\"compileresult\">");
@@ -311,8 +312,18 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             runningInstance.exports.initMemory(1024 * 1024);");
             theWriter.println("                             console.log(\"Memory initialized\")");
             theWriter.println("                             runningInstance.exports.bootstrap();");
+            theWriter.println("                             console.log(\"Creating test instance\")");
+
+            theWriter.print("                             var theTest = runningInstance.exports.newObject(");
+            theWriter.print(theResult.getSizeOf(theTypeRef));
+            theWriter.print(",");
+            theWriter.print(theResult.getTypeIDFor(theTypeRef));
+            theWriter.print(",");
+            theWriter.print(theResult.getVTableIndexOf(theTypeRef));
+            theWriter.println(");");
+
             theWriter.println("                             console.log(\"Bootstrapped\")");
-            theWriter.println("                             runningInstance.exports.main();");
+            theWriter.println("                             runningInstance.exports.main(theTest);");
             theWriter.println("                             console.log(\"Test finished OK\")");
             theWriter.println("                         },");
             theWriter.println("                         function (rejected) {");

@@ -66,7 +66,7 @@ public class CompileTarget {
         return backend.generatedFileName();
     }
 
-    public String compileToJS(Logger aLogger, Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
+    public CompileResult compileToJS(Logger aLogger, Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aLogger);
 
         BytecodeLinkedClass theClassLinkedCass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
