@@ -441,7 +441,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 }
             }
             print(stackOffsetFor(theVariable));
-            println(" (get_global $STACKTOP)");
+            println(" (get_local $SP)");
 
             WASMSSAWriter theChild = withDeeperIndent();
             theChild.writeValue(theVariable.getValue());
@@ -1278,7 +1278,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             if (isStackVariable(aVariable)) {
                 print("(i32.load offset=");
                 print(stackOffsetFor(aVariable));
-                print(" (get_global $STACKTOP)");
+                print(" (get_local $SP)");
                 print(")");
             } else {
                 print("(get_local ");
@@ -1293,11 +1293,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         int theStackSize = stackSize();
         if (theStackSize > 0) {
+            println("(local $SP i32)");
             println("(local $OLD_SP i32)");
             println("(set_local $OLD_SP (get_global $STACKTOP))");
             print("(set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
             print(theStackSize);
             println(")))");
+            println("(set_local $SP (get_global $STACKTOP))");
         }
 
     }
