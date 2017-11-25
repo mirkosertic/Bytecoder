@@ -56,6 +56,6 @@ public class AbstractClassLinkTest {
         Computer theComputer = theInstance.get(1);
         Assert.assertNotNull(theComputer);
         Assert.assertEquals(1, theComputer.compute(), 0);
-        //Assert.assertEquals(2, theInstance.get(2).compute(), 0);
+        Assert.assertEquals(2, theInstance.get(2).compute(), 0);
     }
 }
