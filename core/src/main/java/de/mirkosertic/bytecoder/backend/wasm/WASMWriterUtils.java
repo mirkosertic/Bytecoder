@@ -137,7 +137,7 @@ public class WASMWriterUtils {
     }
 
     public static int computeFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        int theOffset = CLASS_HEADER_SIZE;
+        int theOffset = OBJECT_HEADER_SIZE;
         List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
         aClass.forEachMemberField(theFields::add);
         for (int i=0;i<theFields.size();i++) {

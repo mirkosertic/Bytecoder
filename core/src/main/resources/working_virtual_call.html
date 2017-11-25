@@ -4,13 +4,14 @@
         <pre id="modulecode">
 (module
    (type $RESOLVEMETHOD (func (param i32) (result i32)))
+   (type $TP (func (param i32) (param f32) (result i32)))
 
    (memory 256 256)
    (table 128 anyfunc)
    (elem (i32.const 2) $resolve)
    (elem (i32.const 5) $compute)
 
-   (func $compute (param $p1 i32) (result i32)
+   (func $compute (param $p1 i32) (param $p2 f32) (result i32)
         (return (get_local $p1))
    )
 
@@ -20,8 +21,9 @@
 
    (func $lala (param $thisRef i32) (result i32)
         (return
-            (call_indirect $RESOLVEMETHOD
+            (call_indirect $TP
                 (get_local $thisRef)
+                (f32.const 18)
                 (call_indirect $RESOLVEMETHOD
                     (i32.const 30)
                     (i32.const 2)

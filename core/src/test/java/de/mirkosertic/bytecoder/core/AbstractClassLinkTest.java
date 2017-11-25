@@ -53,7 +53,9 @@ public class AbstractClassLinkTest {
     @Test
     public void testLinkAndAbstractInvocation() {
         Instance theInstance = new Instance();
-        Assert.assertEquals(1, theInstance.get(1).compute(), 0);
-        Assert.assertEquals(2, theInstance.get(2).compute(), 0);
+        Computer theComputer = theInstance.get(1);
+        Assert.assertNotNull(theComputer);
+        Assert.assertEquals(1, theComputer.compute(), 0);
+        //Assert.assertEquals(2, theInstance.get(2).compute(), 0);
     }
 }
