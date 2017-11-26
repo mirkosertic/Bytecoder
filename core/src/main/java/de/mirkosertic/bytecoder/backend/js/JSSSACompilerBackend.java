@@ -269,6 +269,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
                     BytecodeLinkedClass.LinkedMethod theLinkTarget = aVirtualMethod.getValue();
                     if (!aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isAbstract()) {
+
                         theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
                         if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
                             theWriter.println(
@@ -333,7 +334,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     if (theArguments.length() > 0) {
                         theArguments.append(",");
                     }
-                    theArguments.append("p" + i);
+                    theArguments.append("p").append(i);
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {

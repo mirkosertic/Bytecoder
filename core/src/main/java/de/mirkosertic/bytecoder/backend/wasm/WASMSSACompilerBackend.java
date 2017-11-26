@@ -192,11 +192,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             public String resolveCallsiteBootstrapFor(BytecodeClass aOwningClass, String aCallsiteId, Program aProgram,
                     GraphNode aBootstrapMethod) {
                 String theID = "callsite_" + aCallsiteId.replace("/","_");
-                CallSite theCallsite = theCallsites.get(theID);
-                if (theCallsite == null) {
-                    theCallsite = new CallSite(aProgram, aBootstrapMethod);
-                    theCallsites.put(theID, theCallsite);
-                }
+                CallSite theCallsite = theCallsites.computeIfAbsent(theID, k -> new CallSite(aProgram, aBootstrapMethod));
                 return theID;
             }
         };
@@ -401,6 +397,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theLinkedClass.forEachVirtualMethod(t -> {
 
                 if (!t.getValue().getTargetMethod().getAccessFlags().isAbstract()) {
+
+                    if (t.getValue().getTargetMethod() == BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
+                        // This method cannot be called as it is handled by TypeOfValue
+                        return;
+                    }
+
                     theWriter.println("         (block $b");
                     theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
                     theWriter.print(t.getKey().getIdentifier());
@@ -647,7 +649,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 theWriter.print("   (global $");
                 theWriter.print(theClassName);
                 theWriter.println("__staticdata (mut i32) (i32.const 0))");
-            };
+            }
 
             theWriter.print("   (global $");
             theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
@@ -684,7 +686,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
 
         theWriter.println(")");
-        theWriter.flush();;
+        theWriter.flush();
 
         return new WASMCompileResult(aLinkerContext, theGeneratedFunctions, theStringWriter.toString());
     }
