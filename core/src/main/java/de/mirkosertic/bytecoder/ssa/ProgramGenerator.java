@@ -1096,18 +1096,29 @@ public class ProgramGenerator {
                     theRoot.setValue(theArguments.get(0).getValue());
                 } else {
                     String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-
-                    DirectInvokeMethodValue theValue = new DirectInvokeMethodValue(theType, theMethodName, theSignature, theTarget, theArguments);
-                    if (theSignature.getReturnType().isVoid()) {
-                        aTargetBlock.addExpression(new DirectInvokeMethodExpression(theValue));
-                    } else {
-                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                    if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE.metchesExactlyTo(theSignature)) {
+                        Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), new TypeOfValue(theTarget));
                         aHelper.push(theNewVariable);
+                    } else {
+                        DirectInvokeMethodValue theValue = new DirectInvokeMethodValue(theType, theMethodName, theSignature, theTarget, theArguments);
+                        if (theSignature.getReturnType().isVoid()) {
+                            aTargetBlock.addExpression(new DirectInvokeMethodExpression(theValue));
+                        } else {
+                            Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                            aHelper.push(theNewVariable);
+                        }
                     }
                 }
             } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                 BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
                 BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                if (theSignature.metchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE) && "getClass".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
+                    Value theValue = new TypeOfValue(aHelper.pop());
+                    Variable theNewVariable = aTargetBlock.newVariable(toType(theSignature.getReturnType()), theValue);
+                    aHelper.push(theNewVariable);
+                    return;
+                }
 
                 List<Variable> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
