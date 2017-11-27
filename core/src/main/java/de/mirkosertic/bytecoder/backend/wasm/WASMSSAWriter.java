@@ -847,6 +847,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         WASMSSAWriter theChild2 = theChild.withDeeperIndent();
 
+        theChild2.printVariableNameOrValue(aValue.getTarget());
+
         // This is the method number
         theChild2.print("(i32.const ");
 
@@ -1051,7 +1053,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newObject",
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theType);
         print("(call $");
@@ -1062,6 +1064,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theLinkedClass.getUniqueId());
         print(") (i32.const ");
         print(idResolver.resolveVTableMethodByType(theType));
+        print(") (i32.const 0");
         print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
     }
 

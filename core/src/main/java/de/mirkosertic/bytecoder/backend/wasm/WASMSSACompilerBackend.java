@@ -76,7 +76,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theManagerClass.linkStaticMethod("malloc", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         String theMallocName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -157,7 +157,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
         theWriter.println();
 
-        theWriter.println("   (type $RESOLVEMETHOD (func (param i32) (result i32)))");
+        theWriter.println("   (type $RESOLVEMETHOD (func (param i32) (param i32) (result i32)))");
         theWriter.println("   (type $INSTANCEOF (func (param i32) (param i32) (result i32)))");
 
         List<String> theGeneratedFunctions = new ArrayList<>();
@@ -394,7 +394,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print("   (func ");
             theWriter.print("$");
             theWriter.print(theClassName);
-            theWriter.println("__resolvevtableindex (param $p1 i32) (result i32)");
+            theWriter.println("__resolvevtableindex (param $thisRef i32) (param $p1 i32) (result i32)");
 
             theLinkedClass.forEachVirtualMethod(t -> {
 
@@ -611,6 +611,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         (get_local $thisRef)");
         theWriter.println("         (get_local $type)");
         theWriter.println("         (call_indirect $RESOLVEMETHOD");
+        theWriter.println("             (get_local $thisRef)");
         theWriter.print("             (i32.const ");
         theWriter.print(WASMSSAWriter.GENERATED_INSTANCEOF_METHOD_ID);
         theWriter.println(")");
@@ -633,7 +634,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             
             theWriter.print("      (set_global $stringPool");
             theWriter.print(i);
-            theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINT");
+            theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINTINT");
 
             theWriter.print(" (i32.const ");
             theWriter.print(WASMWriterUtils.computeObjectSizeFor(theStringClass));
@@ -645,7 +646,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             theWriter.print(" (i32.const ");
             theWriter.print(theResolver.resolveVTableMethodByType(theStringClass.getClassName()));
-            theWriter.print(")");
+            theWriter.print(") (i32.const 0)");
             theWriter.println("))");
 
             theWriter.print("      (call $TString_VOIDinitINT ");
