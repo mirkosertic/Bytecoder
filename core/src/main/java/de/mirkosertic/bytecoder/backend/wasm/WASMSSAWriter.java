@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.wasm;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
@@ -30,9 +31,72 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
+import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.CommentExpression;
+import de.mirkosertic.bytecoder.ssa.CompareValue;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloorValue;
+import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GetStaticValue;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
+import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
+import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
+import de.mirkosertic.bytecoder.ssa.NegatedValue;
+import de.mirkosertic.bytecoder.ssa.NewArrayValue;
+import de.mirkosertic.bytecoder.ssa.NewObjectValue;
+import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIFunction;
+import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
+import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.StackTopValue;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.Type;
+import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
+import de.mirkosertic.bytecoder.ssa.TypeOfValue;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
 
 public class WASMSSAWriter extends IndentSSAWriter {
+
+    public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
 
     public interface IDResolver {
 
@@ -214,7 +278,75 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeInvokeVirtualExpression((InvokeVirtualMethodExpression) aExpression);
             return;
         }
+        if (aExpression instanceof TableSwitchExpression) {
+            writeSwitchExpression((TableSwitchExpression) aExpression);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aExpression);
+    }
+
+    private void writeSwitchExpression(TableSwitchExpression aExpression) {
+        println("(block $tableswitch");
+
+        Variable theVariable = aExpression.getVariable();
+        WASMSSAWriter theChild1 = withDeeperIndent();
+
+        theChild1.println("(block $label$0");
+
+        WASMSSAWriter theChild2 = theChild1.withDeeperIndent();
+        theChild2.println("(block $label$1");
+
+        WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
+        theChild3.print("(br_if $label$1 (i32.lt_s ");
+        theChild3.printVariableNameOrValue(theVariable);
+        theChild3.print(" (i32.const ");
+        theChild3.print(aExpression.getLowValue());
+        theChild3.println(")))");
+
+        theChild3.print("(br_if $label$0 (i32.le_s ");
+        theChild3.printVariableNameOrValue(theVariable);
+        theChild3.print(" (i32.const ");
+        theChild3.print(aExpression.getHighValue());
+        theChild3.println(")))");
+
+        theChild3.writeExpressionList(aExpression.getDefaultExpressions());
+        theChild3.println();
+
+        theChild3.println("(br $tableswitch)");
+
+        theChild2.println(")");
+
+        theChild1.println(")");
+
+        WASMSSAWriter theChild4 = withDeeperIndent();
+        // For each statement
+        for (Map.Entry<Long, ExpressionList> theEntry : aExpression.getOffsets().entrySet()) {
+            theChild4.print ("(block $switch_");
+            theChild4.print(theEntry.getKey());
+            theChild4.println();
+
+            WASMSSAWriter theChild5 = theChild4.withDeeperIndent();
+            theChild5.print("(br_if $switch_");
+            theChild5.print(theEntry.getKey());
+            theChild5.print(" (i32.ne (i32.const ");
+            theChild5.print(theEntry.getKey());
+            theChild5.print(") (i32.sub ");
+
+            theChild5.printVariableNameOrValue(theVariable);
+            theChild5.print(" (i32.const ");
+            theChild5.print(aExpression.getLowValue());
+            theChild5.print("))))");
+            theChild5.println();
+
+            theChild5.writeExpressionList(theEntry.getValue());
+            theChild5.println();
+
+            theChild4.println(")");
+        }
+
+        theChild1.println("(unreachable)");
+
+        println(")");
     }
 
     private void writeInvokeVirtualExpression(InvokeVirtualMethodExpression aExpression) {
@@ -223,7 +355,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeArrayStoreExpression(ArrayStoreExpression aExpression) {
-        println("(i32.store offset=4 ");
+        switch (aExpression.getArrayType()) {
+            case DOUBLE:
+            case FLOAT: {
+                println("(f32.store offset=4 ");
+                break;
+            }
+            default: {
+                println("(i32.store offset=4 ");
+                break;
+            }
+        }
 
         WASMSSAWriter theChild = withDeeperIndent();
 
@@ -594,7 +736,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeInstanceOfValue(InstanceOfValue aValue) {
-        print("(i32.const 0)");
+
+        BytecodeLinkedClass theClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
+
+        print("(call $INSTANCEOF_CHECK ");
+        printVariableNameOrValue(aValue.getVariable());
+        print(" (i32.const ");
+        print(theClass.getUniqueId());
+        println("))");
     }
 
     private void writeNegateValue(NegatedValue aValue) {
@@ -629,8 +778,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeArrayEntryValue(ArrayEntryValue aValue) {
-        print("(i32.load offset=4 ");
-        printVariableNameOrValue(aValue.getArray());
+        switch (aValue.getArrayType()) {
+            case DOUBLE:
+            case FLOAT: {
+                print("(f32.load offset=4 ");
+                break;
+            }
+            default: {
+                print("(i32.load offset=4 ");
+                break;
+            }
+        }
 
         print("(i32.add ");
         printVariableNameOrValue(aValue.getArray());

@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.unittest;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -288,7 +289,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
             theWriter.println("                    var binaryBuffer = binaryOutput.buffer;");
-
+            theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
+            theWriter.println();
             theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
             theWriter.println("                         system: {");
             theWriter.println("                             currentTimeMillis: function() {return Date.now();},");
@@ -343,6 +345,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theWriter.flush();
             theWriter.close();
+
+            try  (PrintWriter theWATWriter = new PrintWriter(new FileWriter(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".wat")))) {
+                theWATWriter.println(theResult.getData());
+            }
 
             // Invoke test in browser
             SINGLETONDRIVER.get(theGeneratedFile.toURI().toURL().toString());
