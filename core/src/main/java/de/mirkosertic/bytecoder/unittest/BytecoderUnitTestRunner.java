@@ -322,7 +322,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.print(theResult.getTypeIDFor(theTypeRef));
             theWriter.print(",");
             theWriter.print(theResult.getVTableIndexOf(theTypeRef));
-            theWriter.println(");");
+            theWriter.println(", 0);");
 
             theWriter.println("                             console.log(\"Bootstrapped\")");
             theWriter.println("                             runningInstance.exports.main(theTest);");
