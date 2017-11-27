@@ -680,26 +680,27 @@ public class ProgramGenerator {
                 BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                 Variable theIndex = aHelper.pop();
                 Variable theTarget = aHelper.pop();
-                Variable theVariable = aTargetBlock.newVariable(Type.REFERENCE, new ArrayEntryValue(theTarget, theIndex));
+                Variable theVariable = aTargetBlock.newVariable(Type.REFERENCE, new ArrayEntryValue(Type.REFERENCE, theTarget, theIndex));
                 aHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericArrayLOAD) {
                 BytecodeInstructionGenericArrayLOAD theINS = (BytecodeInstructionGenericArrayLOAD) theInstruction;
                 Variable theIndex = aHelper.pop();
                 Variable theTarget = aHelper.pop();
-                Variable theVariable = aTargetBlock.newVariable(toType(theINS.getType()), new ArrayEntryValue(theTarget, theIndex));
+
+                Variable theVariable = aTargetBlock.newVariable(toType(theINS.getType()), new ArrayEntryValue(Type.toType(theINS.getType()), theTarget, theIndex));
                 aHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericArraySTORE) {
                 BytecodeInstructionGenericArraySTORE theINS = (BytecodeInstructionGenericArraySTORE) theInstruction;
                 Variable theValue = aHelper.pop();
                 Variable theIndex = aHelper.pop();
                 Variable theTarget = aHelper.pop();
-                aTargetBlock.addExpression(new ArrayStoreExpression(theTarget, theIndex, theValue));
+                aTargetBlock.addExpression(new ArrayStoreExpression(Type.toType(theINS.getType()), theTarget, theIndex, theValue));
             } else if (theInstruction instanceof BytecodeInstructionObjectArraySTORE) {
                 BytecodeInstructionObjectArraySTORE theINS = (BytecodeInstructionObjectArraySTORE) theInstruction;
                 Variable theValue = aHelper.pop();
                 Variable theIndex = aHelper.pop();
                 Variable theTarget = aHelper.pop();
-                aTargetBlock.addExpression(new ArrayStoreExpression(theTarget, theIndex, theValue));
+                aTargetBlock.addExpression(new ArrayStoreExpression(Type.REFERENCE, theTarget, theIndex, theValue));
             } else if (theInstruction instanceof BytecodeInstructionACONSTNULL) {
                 BytecodeInstructionACONSTNULL theINS = (BytecodeInstructionACONSTNULL) theInstruction;
                 Variable theVariable = aTargetBlock.newVariable(Type.REFERENCE, new NullValue());
@@ -1377,7 +1378,7 @@ public class ProgramGenerator {
                             Variable theVariable = theArguments.get(i);
                             Variable theIndex = theInitNode.newVariable(Type.INT, new IntegerValue(i - theSignatureLength + 1));
                             theArguments.remove(theVariable);
-                            theInitNode.addExpression(new ArrayStoreExpression(theNewVarargsArray, theIndex, theVariable));
+                            theInitNode.addExpression(new ArrayStoreExpression(Type.REFERENCE, theNewVarargsArray, theIndex, theVariable));
                         }
                         theArguments.add(theNewVarargsArray);
                     }
@@ -1408,7 +1409,7 @@ public class ProgramGenerator {
 
                     for (int i=0;i<theInitSignature.getArguments().length;i++) {
                         Variable theIndex = aTargetBlock.newVariable(Type.INT, new IntegerValue(i));
-                        aTargetBlock.addExpression(new ArrayStoreExpression(theArray, theIndex, aHelper.pop()));
+                        aTargetBlock.addExpression(new ArrayStoreExpression(Type.REFERENCE, theArray, theIndex, aHelper.pop()));
                     }
 
                     theInvokeArguments.add(theArray);

@@ -87,9 +87,14 @@ public class ArrayTest {
     @Test
     public void testEntries() {
         Entry theEntry = new Entry();
+        Assert.assertNull(entries[0]);
         theEntry.test = 10;
         entries[4] = theEntry;
         Assert.assertEquals(10, entries[4].test, 0);
-        Assert.assertNull(entries[0]);
+
+        Object[] theEmpty = new Object[100];
+
+        Object theEntry0 = theEmpty[12];
+        Assert.assertNull(theEntry0);
     }
 }

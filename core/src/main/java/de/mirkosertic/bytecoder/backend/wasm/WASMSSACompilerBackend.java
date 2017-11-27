@@ -93,7 +93,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
         theWriter.println("(module");
 
-        theWriter.println("  (func $float_remainder (import \"math\" \"float_rem\") (param $p1 f32) (param $p2 f32) (result f32))\n");
+        theWriter.println("   (func $float_remainder (import \"math\" \"float_rem\") (param $p1 f32) (param $p2 f32) (result f32))\n");
 
         // Print imported functions first
         aLinkerContext.forEachClass(aEntry -> {
@@ -158,6 +158,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println();
 
         theWriter.println("   (type $RESOLVEMETHOD (func (param i32) (result i32)))");
+        theWriter.println("   (type $INSTANCEOF (func (param i32) (param i32) (result i32)))");
 
         List<String> theGeneratedFunctions = new ArrayList<>();
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
@@ -212,6 +213,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             theGeneratedFunctions.add(theClassName + "__classinitcheck");
             theGeneratedFunctions.add(theClassName + "__resolvevtableindex");
+            theGeneratedFunctions.add(theClassName + "__instanceof");
 
             aEntry.getValue().forEachMethod(t -> {
 
@@ -426,9 +428,55 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             });
 
+            theWriter.println("         (block $b");
+            theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
+            theWriter.print(WASMSSAWriter.GENERATED_INSTANCEOF_METHOD_ID);
+            theWriter.println(")))");
+
+            String theFullMethodName = theClassName + "__instanceof";
+
+            int theIndex = theGeneratedFunctions.indexOf(theFullMethodName);
+            if (theIndex < 0) {
+                throw new IllegalStateException("Unknown index : " + theFullMethodName);
+            }
+
+            theWriter.print("             (return (i32.const ");
+            theWriter.print(theIndex);
+            theWriter.println("))");
+            theWriter.println("         )");
+
+
             theWriter.println("         (unreachable)");
             theWriter.println("   )");
             theWriter.println();
+
+            // Instanceof method
+            theWriter.print("   (func ");
+            theWriter.print("$");
+            theWriter.print(theClassName);
+            theWriter.println("__instanceof (param $thisRef i32) (param $p1 i32) (result i32)");
+
+            for (BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
+
+                theWriter.print("         (block $block");
+                theWriter.print(theType.getUniqueId());
+                theWriter.println();
+
+                theWriter.print("             (br_if $block");
+                theWriter.print(theType.getUniqueId());
+                theWriter.print(" (i32.ne (get_local $p1) (i32.const ");
+                theWriter.print(theType.getUniqueId());
+                theWriter.println(")))");
+
+                theWriter.println("             (return (i32.const 1))");
+
+                theWriter.println("         )");
+            }
+
+            theWriter.println("         (return (i32.const 0))");
+            theWriter.println("   )");
+            theWriter.println();
+
 
             theWriter.print("   (func ");
             theWriter.print("$");
@@ -551,6 +599,27 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
+        theWriter.println("   (func $INSTANCEOF_CHECK (param $thisRef i32) (param $type i32) (result i32)");
+        theWriter.println("     (block $nullcheck");
+        theWriter.println("         (br_if $nullcheck");
+        theWriter.println("             (i32.ne (get_local $thisRef) (i32.const 0))");
+        theWriter.println("         )");
+        theWriter.println("         (return (i32.const 0))");
+        theWriter.println("     )");
+
+        theWriter.println("     (call_indirect $INSTANCEOF");
+        theWriter.println("         (get_local $thisRef)");
+        theWriter.println("         (get_local $type)");
+        theWriter.println("         (call_indirect $RESOLVEMETHOD");
+        theWriter.print("             (i32.const ");
+        theWriter.print(WASMSSAWriter.GENERATED_INSTANCEOF_METHOD_ID);
+        theWriter.println(")");
+        theWriter.println("             (i32.load offset=4 (get_local $thisRef))");
+        theWriter.println("         )");
+        theWriter.println("      )");
+        theWriter.println("   )");
+        theWriter.println();
+
         theWriter.println("   (func $bootstrap");
 
         theWriter.println("      (set_global $STACKTOP (i32.sub (i32.mul (current_memory) (i32.const 65536)) (i32.const 1)))");
@@ -577,10 +646,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(" (i32.const ");
             theWriter.print(theResolver.resolveVTableMethodByType(theStringClass.getClassName()));
             theWriter.print(")");
-
-
-            theWriter.print(")");
-            theWriter.println(")");
+            theWriter.println("))");
 
             theWriter.print("      (call $TString_VOIDinitINT ");
             theWriter.print("(get_global $stringPool");

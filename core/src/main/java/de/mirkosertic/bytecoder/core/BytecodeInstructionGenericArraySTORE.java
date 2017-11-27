@@ -23,4 +23,8 @@ public class BytecodeInstructionGenericArraySTORE extends BytecodeInstruction {
         super(aOpcodeIndex);
         type = aType;
     }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
+    }
 }
