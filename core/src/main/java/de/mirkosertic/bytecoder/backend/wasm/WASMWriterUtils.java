@@ -34,7 +34,7 @@ import de.mirkosertic.bytecoder.ssa.Type;
 public class WASMWriterUtils {
 
     public static final int CLASS_HEADER_SIZE = 4;
-    public static final int OBJECT_HEADER_SIZE = 12;
+    public static final int OBJECT_HEADER_SIZE = 8;
     public static final int OBJECT_FIELDSIZE = 4;
 
     public static String typeRefToString(BytecodeTypeRef aTypeRef) {

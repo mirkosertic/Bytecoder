@@ -144,11 +144,10 @@ public class MemoryManager {
     }
 
     @Export("newObject")
-    public static Address newObject(int aSize, int aType, int aVTableIndex, int aImplementingMethod) {
+    public static Address newObject(int aSize, int aType, int aVTableIndex) {
         Address theAddress = malloc(aSize);
         Address.setIntValue(theAddress, 0, aType);
         Address.setIntValue(theAddress, 4, aVTableIndex);
-        Address.setIntValue(theAddress, 8, aImplementingMethod);
         return theAddress;
     }
 

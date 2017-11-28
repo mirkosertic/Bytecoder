@@ -1310,7 +1310,6 @@ public class ProgramGenerator {
                     // TMethodHandles.Lookup aCaller,
                     theArguments.add(theInitNode
                             .newVariable(Type.REFERENCE, new MethodHandlesGeneratedLookupValue(theClassWithBootstrapMethod)));
-                    // String aName this can be ignored hence we pass in null here,
                     theArguments.add(theInitNode.newVariable(Type.REFERENCE, new StringValue(theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())));
                     // TMethodType aInvokedType,
                     theArguments.add(theInitNode.newVariable(Type.REFERENCE, new MethodTypeValue(

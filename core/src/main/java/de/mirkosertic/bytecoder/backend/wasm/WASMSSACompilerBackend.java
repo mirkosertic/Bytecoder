@@ -76,7 +76,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theManagerClass.linkStaticMethod("malloc", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         String theMallocName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -161,12 +161,15 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   (type $INSTANCEOF (func (param i32) (param i32) (result i32)))");
 
         List<String> theGeneratedFunctions = new ArrayList<>();
+        theGeneratedFunctions.add("LAMBDA__resolvevtableindex");
+
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
         List<String> theStringCache = new ArrayList<>();
         Set<String> theGeneratedTypes = new HashSet<>();
         Map<String, CallSite> theCallsites = new HashMap<>();
 
         WASMSSAWriter.IDResolver theResolver = new WASMSSAWriter.IDResolver() {
+
             @Override
             public int resolveVTableMethodByType(BytecodeObjectTypeRef aObjectType) {
                 String theClassName = WASMWriterUtils.toClassName(aObjectType);
@@ -195,6 +198,26 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 String theID = "callsite_" + aCallsiteId.replace("/","_");
                 CallSite theCallsite = theCallsites.computeIfAbsent(theID, k -> new CallSite(aProgram, aBootstrapMethod));
                 return theID;
+            }
+
+            @Override
+            public int resolveMethodIDByName(String aMethodName) {
+                int theIndex = theGeneratedFunctions.indexOf(aMethodName);
+                if (theIndex < 0) {
+                    throw new IllegalStateException("Cannot resolve method " + aMethodName);
+                }
+                return theIndex;
+            }
+
+            @Override
+            public int resolveTypeIDForSignature(BytecodeMethodSignature aSignature) {
+                List<String> theTypes = new ArrayList<>(theGeneratedTypes);
+                String theMethodSignature = WASMWriterUtils.toMethodSignature(aSignature);
+                int theIndex = theTypes.indexOf(theMethodSignature);
+                if (theIndex < 0) {
+                    throw new IllegalStateException("Cannot resolve type for signature " + theMethodSignature);
+                }
+                return theIndex;
             }
         };
 
@@ -250,6 +273,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.println("))");
                 }
 
+                if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                    //return;
+                }
+
                 String theMethodName = WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature);
                 theGeneratedFunctions.add(theMethodName);
             });
@@ -274,39 +301,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             theWriter.println();
         }
-
-        theWriter.println("   (func $virtualTableByClassID (param $p1 i32) (result i32) ");
-
-        aLinkerContext.forEachClass(t -> {
-
-            if (t.getValue().getAccessFlags().isInterface()) {
-                return;
-            }
-            if (t.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                return;
-            }
-
-            theWriter.println("         ;; " + t.getKey().name());
-            theWriter.println("         (block $b");
-            theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
-            theWriter.print(t.getValue().getUniqueId());
-            theWriter.println(")))");
-
-            String theFullMethodName = WASMWriterUtils.toClassName(t.getKey()) + "__resolvevtableindex";
-            int theIndex = theGeneratedFunctions.indexOf(theFullMethodName);
-            if (theIndex < 0) {
-                throw new IllegalStateException("Unknown index : " + theFullMethodName);
-            }
-
-            theWriter.print("             (return (i32.const ");
-            theWriter.print(theIndex);
-            theWriter.println("))");
-            theWriter.println("         )");
-
-        });
-
-        theWriter.println("         (unreachable)");
-        theWriter.println("   )");
 
         // Now everything else
         aLinkerContext.forEachClass(aEntry -> {
@@ -565,6 +559,28 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
+        theWriter.println("   (func $LAMBDA__resolvevtableindex (param $thisRef i32) (param $methodId i32) (result i32)");
+        theWriter.println("         (return (i32.load offset=8 (get_local $thisRef)))");
+        theWriter.println("   )");
+        theWriter.println();
+
+        int theLambdaVTableResolveIndex = theGeneratedFunctions.indexOf("LAMBDA__resolvevtableindex");
+        if (theLambdaVTableResolveIndex < 0) {
+            throw new IllegalStateException("Cannot resolve LAMBDA__resolvevtableindex");
+        }
+
+        theWriter.println("   (func $newLambda (param $type i32) (param $implMethodNumber i32) (result i32)");
+        theWriter.println("         (local $newRef i32)");
+        theWriter.println("         (set_local $newRef");
+        theWriter.print("            (call $MemoryManager_AddressnewObjectINTINTINT (i32.const 12) (get_local $type) (i32.const ");
+        theWriter.print(theLambdaVTableResolveIndex);
+        theWriter.println("))");
+        theWriter.println("         )");
+        theWriter.println("         (i32.store offset=8 (get_local $newRef) (get_local $implMethodNumber))");
+        theWriter.println("         (return (get_local $newRef))");
+        theWriter.println("   )");
+        theWriter.println();
+
         theWriter.println("   (func $compareValueI32 (param $p1 i32) (param $p2 i32) (result i32)");
         theWriter.println("     (block $b1");
         theWriter.println("         (br_if $b1");
@@ -606,7 +622,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         )");
         theWriter.println("         (return (i32.const 0))");
         theWriter.println("     )");
-
         theWriter.println("     (call_indirect $INSTANCEOF");
         theWriter.println("         (get_local $thisRef)");
         theWriter.println("         (get_local $type)");
@@ -634,7 +649,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             
             theWriter.print("      (set_global $stringPool");
             theWriter.print(i);
-            theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINTINT");
+            theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINT");
 
             theWriter.print(" (i32.const ");
             theWriter.print(WASMWriterUtils.computeObjectSizeFor(theStringClass));
@@ -646,7 +661,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             theWriter.print(" (i32.const ");
             theWriter.print(theResolver.resolveVTableMethodByType(theStringClass.getClassName()));
-            theWriter.print(") (i32.const 0)");
+            theWriter.print(")");
             theWriter.println("))");
 
             theWriter.print("      (call $TString_VOIDinitINT ");
@@ -721,6 +736,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print("   (global $");
             theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
             theWriter.println("__initialized (mut i32) (i32.const 0))");
+
+            theWriter.print("   (global $");
+            theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
+            theWriter.print("__runtimeType (mut i32) (i32.const ");
+            theWriter.print(aEntry.getValue().getUniqueId());
+            theWriter.println("))");
         });
 
         theWriter.println();

@@ -68,6 +68,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
+import de.mirkosertic.bytecoder.ssa.MethodRefValue;
 import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
 import de.mirkosertic.bytecoder.ssa.NegatedValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayValue;
@@ -81,6 +82,7 @@ import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.StackTopValue;
@@ -105,6 +107,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
         String resolveStringPoolFunctionName(String aValue);
 
         String resolveCallsiteBootstrapFor(BytecodeClass aOwningClass, String aCallsiteId, Program aProgram, GraphNode aBootstrapMethod);
+
+        int resolveMethodIDByName(String aMethodName);
+
+        int resolveTypeIDForSignature(BytecodeMethodSignature signature);
     }
 
     private final List<Variable> stackVariables;
@@ -687,23 +693,51 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeTypeOfValue((TypeOfValue) aValue);
             return;
         }
+        if (aValue instanceof RuntimeGeneratedTypeValue) {
+            writeRuntimeGeneratedTypeValue((RuntimeGeneratedTypeValue) aValue);
+            return;
+        }
+        if (aValue instanceof MethodRefValue) {
+            writeMethodRefValue((MethodRefValue) aValue);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private void writeMethodRefValue(MethodRefValue aValue) {
+        print("(i32.const ");
+        
+        String theMethodName = WASMWriterUtils.toMethodName(
+                BytecodeObjectTypeRef.fromUtf8Constant(aValue.getMethodRef().getClassIndex().getClassConstant().getConstant()),
+                aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+        
+        print(idResolver.resolveMethodIDByName(theMethodName));
+        
+        print(")");
+    }
+
+    private void writeRuntimeGeneratedTypeValue(RuntimeGeneratedTypeValue aValue) {
+        println("(call $newLambda ");
+        WASMSSAWriter theChild = withDeeperIndent();
+        theChild.printVariableNameOrValue(aValue.getType());;
+        theChild.println();
+        theChild.printVariableNameOrValue(aValue.getMethodRef());
+        theChild.println();
+        println(")");
     }
 
     private void writeTypeOfValue(TypeOfValue aValue) {
         print("(i32.load ");
-
         printVariableNameOrValue(aValue.getTarget());
-
         print(")");
     }
 
     private void writeClassReferenceValue(ClassReferenceValue aValue) {
-        print("(i32.const ");
-
+        print("(get_global $");
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aValue.getType());
-        print(theLinkedClass.getUniqueId());
-        print(")");
+        print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+        print("__runtimeType)");
     }
 
     private void writeCurrentException(CurrentExceptionValue aValue) {
@@ -711,6 +745,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeMethodTypeValue(MethodTypeValue aValue) {
+//        print("(i32.const ");
+//        print(idResolver.resolveTypeIDForSignature(aValue.getSignature()));
+//        print(")");
+        println();
+        println(";; " + WASMWriterUtils.toMethodSignature(aValue.getSignature()));
         print("(i32.const 0)");
     }
 
@@ -1053,18 +1092,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newObject",
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theType);
         print("(call $");
         print(theMallocName);
         print(" (i32.const ");
         print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
-        print(") (i32.const ");
-        print(theLinkedClass.getUniqueId());
-        print(") (i32.const ");
+        print(") (get_global $");
+        print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+        print("__runtimeType) (i32.const ");
         print(idResolver.resolveVTableMethodByType(theType));
-        print(") (i32.const 0");
         print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
     }
 
