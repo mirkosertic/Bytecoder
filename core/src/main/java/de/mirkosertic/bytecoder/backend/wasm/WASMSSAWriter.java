@@ -423,7 +423,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMSSAWriter theChild = withDeeperIndent();
         theChild.print("(get_global $");
         theChild.print(theClassName);
-        theChild.println("__staticdata)");
+        theChild.println("__runtimeClass)");
 
         theChild.printVariableNameOrValue(aExpression.getVariable());
 
@@ -737,7 +737,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print("(get_global $");
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aValue.getType());
         print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
-        print("__runtimeType)");
+        print("__runtimeClass)");
     }
 
     private void writeCurrentException(CurrentExceptionValue aValue) {
@@ -1079,7 +1079,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMSSAWriter theChild = withDeeperIndent();
         theChild.print("(get_global $");
         theChild.print(theClassName);
-        theChild.println("__staticdata)");
+        theChild.println("__runtimeClass)");
 
         println(")");
     }
@@ -1101,7 +1101,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
         print(") (get_global $");
         print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
-        print("__runtimeType) (i32.const ");
+        print("__runtimeClass) (i32.const ");
         print(idResolver.resolveVTableMethodByType(theType));
         print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
     }
