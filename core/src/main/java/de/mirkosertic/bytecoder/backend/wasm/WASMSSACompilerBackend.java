@@ -162,6 +162,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
         List<String> theGeneratedFunctions = new ArrayList<>();
         theGeneratedFunctions.add("LAMBDA__resolvevtableindex");
+        theGeneratedFunctions.add("RUNTIMECLASS__resolvevtableindex");
 
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
         List<String> theStringCache = new ArrayList<>();
@@ -478,20 +479,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.println("__classinitcheck");
 
             theWriter.println("      (block $check");
-            theWriter.print("         (br_if $check (i32.eq (get_global $");
+            theWriter.print("         (br_if $check (i32.eq (i32.load offset=8 (get_global $");
             theWriter.print(theClassName);
-            theWriter.println("__initialized) (i32.const 1)))");
-
-            if (theLinkedClass.hasStaticFields()) {
-
-                theWriter.print("         (set_global $");
-                theWriter.print(theClassName);
-                theWriter.print("__staticdata (call $");
-                theWriter.print(theMallocName);
-                theWriter.print(" (i32.const ");
-                theWriter.print(WASMWriterUtils.computeClassSizeFor(theLinkedClass));
-                theWriter.println(")))");
-            }
+            theWriter.println("__runtimeClass)) (i32.const 1)))");
 
             if (theLinkedClass.hasClassInitializer()) {
                 theWriter.print("         (call $");
@@ -499,9 +489,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 theWriter.println("_VOIDclinit)");
             }
 
-            theWriter.print("         (set_global $");
+            theWriter.print("         (i32.store offset=8 (get_global $");
             theWriter.print(theClassName);
-            theWriter.println("__initialized (i32.const 1))");
+            theWriter.println("__runtimeClass) (i32.const 1))");
             theWriter.println("      )");
             theWriter.println("   )");
             theWriter.println();
@@ -555,6 +545,17 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("            )");
         theWriter.println("         )");
         theWriter.println("         (i32.store (get_local $newRef) (get_local $size))");
+        theWriter.println("         (return (get_local $newRef))");
+        theWriter.println("   )");
+        theWriter.println();
+
+        theWriter.println("   (func $newRuntimeClass (param $type i32) (param $staticSize i32) (result i32)");
+        theWriter.println("         (local $newRef i32)");
+        theWriter.println("         (set_local $newRef");
+        theWriter.print("              (call $MemoryManager_AddressnewObjectINTINTINT (get_local $staticSize) (i32.const -1) (i32.const ");
+        theWriter.print(theGeneratedFunctions.indexOf("RUNTIMECLASS__resolvevtableindex"));
+        theWriter.println("))");
+        theWriter.println("         )");
         theWriter.println("         (return (get_local $newRef))");
         theWriter.println("   )");
         theWriter.println();
@@ -636,9 +637,40 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
+        theWriter.println("   (func $RUNTIMECLASS__resolvevtableindex (param $thisRef i32) (param $p1 i32) (result i32)");
+        theWriter.println("     ;; TODO Implement class logic here");
+        theWriter.println("     (unreachable)");
+        theWriter.println("   )");
+        theWriter.println();
+
         theWriter.println("   (func $bootstrap");
 
         theWriter.println("      (set_global $STACKTOP (i32.sub (i32.mul (current_memory) (i32.const 65536)) (i32.const 1)))");
+
+        // Globals for static class data
+        aLinkerContext.forEachClass(aEntry -> {
+
+            if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+                return;
+            }
+            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+
+            theWriter.print("      (set_global $");
+            theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
+            theWriter.print("__runtimeClass (call $newRuntimeClass");
+
+            theWriter.print(" (i32.const ");
+            theWriter.print(aEntry.getValue().getUniqueId());
+            theWriter.print(")");
+
+            theWriter.print(" (i32.const ");
+            theWriter.print(WASMWriterUtils.computeClassSizeFor(aEntry.getValue()));
+            theWriter.print(")");
+
+            theWriter.println("))");
+        });
 
         for (int i=0;i<theStringCache.size();i++) {
 
@@ -725,23 +757,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 return;
             }
 
-            if (aEntry.getValue().hasStaticFields()) {
-                String theClassName = WASMWriterUtils.toClassName(aEntry.getKey());
-
-                theWriter.print("   (global $");
-                theWriter.print(theClassName);
-                theWriter.println("__staticdata (mut i32) (i32.const 0))");
-            }
-
             theWriter.print("   (global $");
             theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
-            theWriter.println("__initialized (mut i32) (i32.const 0))");
-
-            theWriter.print("   (global $");
-            theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
-            theWriter.print("__runtimeType (mut i32) (i32.const ");
-            theWriter.print(aEntry.getValue().getUniqueId());
-            theWriter.println("))");
+            theWriter.println("__runtimeClass (mut i32) (i32.const 0))");
         });
 
         theWriter.println();
