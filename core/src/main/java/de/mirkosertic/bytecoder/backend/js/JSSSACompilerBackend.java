@@ -183,8 +183,46 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             }
         });
         theWriter.println("     }");
-        theWriter.println("}");
+        theWriter.println("};");
         theWriter.println();
+        theWriter.println("var RUNTIME_CLASS = {");
+        theWriter.println("     resolveVirtualMethod: function(aIdentifier) {");
+        theWriter.println("         switch(aIdentifier) {");
+
+        theClassLinkedCass.forEachVirtualMethod(
+                aClassMethod -> {
+                    theWriter.println("             case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                    if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println(
+                                "                   return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
+                    } else if (Objects
+                            .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("                   throw 'Not implemented';");
+                    } else if (Objects
+                            .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("                   throw 'Not implemented';");
+                    } else if (Objects
+                            .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("                   throw 'Not implemented';");
+                    } else if (Objects.equals("desiredAssertionStatus",
+                            aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("                   return function(callsite) {return false};");
+                    } else if (Objects
+                            .equals("getEnumConstants",
+                                    aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("                   return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
+                    } else {
+                        theWriter.println("                   throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                    }
+                });
+
+        theWriter.println("             default:");
+        theWriter.println("                 throw {type: 'unknown virtual name'}");
+        theWriter.println("         }");
+        theWriter.println("     }");
+        theWriter.println("};");
+        theWriter.println();
+
         aLinkerContext.forEachClass(theEntry -> {
 
             if (theEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
@@ -225,42 +263,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.println("    runtimeClass : {");
                 theWriter.println("        jsType: function() {return " + theJSClassName + ";},");
-                theWriter.println("        clazz: {");
-                theWriter.println("            resolveVirtualMethod: function(aIdentifier) {");
-                theWriter.println("                switch(aIdentifier) {");
-
-                theClassLinkedCass.forEachVirtualMethod(
-                        aClassMethod -> {
-                            theWriter.println("                    case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
-                            if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                theWriter.println(
-                                        "                        return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
-                            } else if (Objects
-                                    .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                    theWriter.println("                        throw 'Not implemented';");
-                            } else if (Objects
-                                    .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                theWriter.println("                        throw 'Not implemented';");
-                            } else if (Objects
-                                    .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                theWriter.println("                        throw 'Not implemented';");
-                            } else if (Objects.equals("desiredAssertionStatus",
-                                    aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                theWriter.println("                        return function(callsite) {return false};");
-                            } else if (Objects
-                                    .equals("getEnumConstants",
-                                            aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                                theWriter.println("                        return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
-                            } else {
-                                theWriter.println("                        throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
-                            }
-                        });
-
-                theWriter.println("                    default:");
-                theWriter.println("                        throw {type: 'unknown virtual name'}");
-                theWriter.println("                }");
-                theWriter.println("            }");
-                theWriter.println("        }");
+                theWriter.println("        clazz: RUNTIME_CLASS");
                 theWriter.println("    },");
                 theWriter.println();
 
