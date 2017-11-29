@@ -40,13 +40,14 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
@@ -60,7 +61,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
 
-    private static WebDriver SINGLETONDRIVER;
+    private static ChromeDriverService DRIVERSERVICE;
 
     private final List<FrameworkMethod> testMethods;
     private final TestClass testClass;
@@ -124,7 +125,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     }
 
     private static void initializeSeleniumDriver(File aWorkingDirectory) throws IOException {
-        if (SINGLETONDRIVER == null) {
+        if (DRIVERSERVICE == null) {
 
             Properties theProperties = new Properties(System.getProperties());
             File theConfigFile = new File(aWorkingDirectory, "testrunner.properties");
@@ -143,20 +144,32 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theDriverService = theDriverService.withVerbose(false);
             theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
 
-            ChromeOptions theOptions = new ChromeOptions();
-            theOptions.addArguments("headless");
-            LoggingPreferences theLoggingPreferences = new LoggingPreferences();
-            theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
-            theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
-            SINGLETONDRIVER = new ChromeDriver(theDriverService.build(), theOptions);
+            DRIVERSERVICE = theDriverService.build();
+            DRIVERSERVICE.start();
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> SINGLETONDRIVER.quit()));
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> DRIVERSERVICE.stop()));
         }
+    }
+
+    private WebDriver newDriverForTest() {
+        ChromeOptions theOptions = new ChromeOptions();
+        theOptions.addArguments("headless");
+
+        LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+        theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+        theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+
+        DesiredCapabilities theCapabilities = DesiredCapabilities.chrome();
+        theCapabilities.setCapability(ChromeOptions.CAPABILITY, theOptions);
+
+        return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theCapabilities);
     }
 
     private void testJSBackendFrameworkMethod(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
         Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend ");
         aRunNotifier.fireTestStarted(theDescription);
+
+        WebDriver theDriver = null;
 
         try {
             CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.js);
@@ -207,9 +220,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.flush();
             theWriter.close();
 
-            SINGLETONDRIVER.get(theGeneratedFile.toURI().toURL().toString());
+            theDriver = newDriverForTest();
+            theDriver.get(theGeneratedFile.toURI().toURL().toString());
 
-            List<LogEntry> theAll = SINGLETONDRIVER.manage().logs().get(LogType.BROWSER).getAll();
+            List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
             if (theAll.size() < 1) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
             }
@@ -225,6 +239,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } finally {
+            if (theDriver != null) {
+                theDriver.close();
+            }
             aRunNotifier.fireTestFinished(theDescription);
         }
     }
@@ -232,6 +249,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     private void testWASMBackendFrameworkMethod(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
         Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " WASM Backend ");
         aRunNotifier.fireTestStarted(theDescription);
+
+        WebDriver theDriver = null;
 
         try {
             CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.wasm);
@@ -351,9 +370,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             }
 
             // Invoke test in browser
-            SINGLETONDRIVER.get(theGeneratedFile.toURI().toURL().toString());
+            theDriver = newDriverForTest();
+            theDriver.get(theGeneratedFile.toURI().toURL().toString());
 
-            List<LogEntry> theAll = SINGLETONDRIVER.manage().logs().get(LogType.BROWSER).getAll();
+
+            List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
             if (theAll.size() < 1) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
             }
@@ -369,6 +390,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } finally {
+            if (theDriver != null) {
+                theDriver.close();
+            }
             aRunNotifier.fireTestFinished(theDescription);
         }
     }
