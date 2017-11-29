@@ -289,13 +289,31 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("        </script>");
             theWriter.println("        <script>");
             theWriter.println("            var runningInstance;");
+            theWriter.println("            var runningInstanceMemory;");
             theWriter.println();
-            theWriter.println("            function bytecoder_logDebug(value) {");
-            theWriter.println("                 console.log(value);");
+
+            theWriter.println("            function bytecoder_IntInMemory(value) {");
+            theWriter.println("             return runningInstanceMemory[value]");
+            theWriter.println("                 + (runningInstanceMemory[value + 1] * 256)");
+            theWriter.println("                 + (runningInstanceMemory[value + 2] * 256 * 256)");
+            theWriter.println("                 + (runningInstanceMemory[value + 3] * 256 * 256 * 256);");
             theWriter.println("            }");
             theWriter.println();
+
             theWriter.println("            function bytecoder_logByteArrayAsString(value) {");
-            theWriter.println("                 console.log('Something to tell you!');");
+            theWriter.println("                 var theType = bytecoder_IntInMemory(value);");
+            theWriter.println("                 var theVTable = bytecoder_IntInMemory(value + 4);");
+            theWriter.println("                 console.log(\"Something to tell you from \" + value + \" with type \" + theType + \" VTable \" + theVTable);");
+            theWriter.println("                 var theData = '';");
+            theWriter.println("                 for (var i=0;i<20;i++) {");
+            theWriter.println("                     theData+= runningInstanceMemory[value + i] + ' ';");
+            theWriter.println("                 }");
+            theWriter.println("                 console.log(\"Object data: \" + theData);");
+            theWriter.println("            }");
+            theWriter.println();
+
+            theWriter.println("            function bytecoder_logDebug(value) {");
+            theWriter.println("                 console.log(value);");
             theWriter.println("            }");
             theWriter.println();
 
@@ -330,6 +348,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                         function (resolved) {");
             theWriter.println("                             var wasmModule = resolved.module;");
             theWriter.println("                             runningInstance = resolved.instance;");
+            theWriter.println("                             runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);");
             theWriter.println("                             runningInstance.exports.initMemory(1024 * 1024);");
             theWriter.println("                             console.log(\"Memory initialized\")");
             theWriter.println("                             runningInstance.exports.bootstrap();");
@@ -355,6 +374,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                } catch (e) {");
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
             theWriter.println("                    console.log(e.toString());");
+            theWriter.println("                    console.log(e.stack);");
             theWriter.println("                }");
             theWriter.println("            }");
             theWriter.println("            compile();");
