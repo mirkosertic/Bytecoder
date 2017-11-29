@@ -34,8 +34,27 @@ public class EnumTest {
     @Test
     public void testGetEnum() {
         Value theEnum = getEnum();
+        System.out.println(theEnum.name());
         Assert.assertNotNull(theEnum);
         Assert.assertEquals(1, theEnum.ordinal(), 0);
+    }
+
+    @Test
+    public void testValueOfLight() {
+        Value theEnum = Value.valueOf("THREE");
+    }
+
+    @Test
+    public void testValuesRuntimeClass() {
+        Value[] theValues= Value.class.getEnumConstants();
+        Assert.assertEquals(3, theValues.length, 0);
+    }
+
+    @Test
+    public void testValuesRuntimeClassIndirect() {
+        Class theClass = Value.ONE.getClass();
+        Object[] theValues= theClass.getEnumConstants();
+        Assert.assertEquals(3, theValues.length, 0);
     }
 
     @Test

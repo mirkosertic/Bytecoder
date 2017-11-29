@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
@@ -31,6 +32,7 @@ import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -163,6 +165,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         List<String> theGeneratedFunctions = new ArrayList<>();
         theGeneratedFunctions.add("LAMBDA__resolvevtableindex");
         theGeneratedFunctions.add("RUNTIMECLASS__resolvevtableindex");
+        theGeneratedFunctions.add("TClass_A1TObjectgetEnumConstants");
+        theGeneratedFunctions.add("TClass_desiredAssertionStatus");
 
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
         List<String> theStringCache = new ArrayList<>();
@@ -235,9 +239,11 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             String theClassName = WASMWriterUtils.toClassName(aEntry.getKey());
 
-            theGeneratedFunctions.add(theClassName + "__classinitcheck");
-            theGeneratedFunctions.add(theClassName + "__resolvevtableindex");
-            theGeneratedFunctions.add(theClassName + "__instanceof");
+            if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) == null) {
+                theGeneratedFunctions.add(theClassName + "__classinitcheck");
+                theGeneratedFunctions.add(theClassName + "__resolvevtableindex");
+                theGeneratedFunctions.add(theClassName + "__instanceof");
+            }
 
             aEntry.getValue().forEachMethod(t -> {
 
@@ -275,7 +281,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
 
                 if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
-                    //return;
+                    return;
                 }
 
                 String theMethodName = WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature);
@@ -283,7 +289,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             });
         });
 
-        theWriter.println("   (memory 256 256)");
+        theWriter.println("   (memory (export \"memory\") 256 256)");
 
         // Write virtual method table
         if (!theGeneratedFunctions.isEmpty()) {
@@ -310,6 +316,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 return;
             }
             if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+            if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                 return;
             }
 
@@ -549,13 +558,14 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
-        theWriter.println("   (func $newRuntimeClass (param $type i32) (param $staticSize i32) (result i32)");
+        theWriter.println("   (func $newRuntimeClass (param $type i32) (param $staticSize i32) (param $enumValuesOffset i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
         theWriter.print("              (call $MemoryManager_AddressnewObjectINTINTINT (get_local $staticSize) (i32.const -1) (i32.const ");
         theWriter.print(theGeneratedFunctions.indexOf("RUNTIMECLASS__resolvevtableindex"));
         theWriter.println("))");
         theWriter.println("         )");
+        theWriter.println("         (i32.store offset=12 (get_local $newRef) (i32.add (get_local $newRef) (get_local $enumValuesOffset)))");
         theWriter.println("         (return (get_local $newRef))");
         theWriter.println("   )");
         theWriter.println();
@@ -637,8 +647,48 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
-        theWriter.println("   (func $RUNTIMECLASS__resolvevtableindex (param $thisRef i32) (param $p1 i32) (result i32)");
-        theWriter.println("     ;; TODO Implement class logic here");
+        theWriter.println("   (func $TClass_A1TObjectgetEnumConstants (param $thisRef i32) (result i32)");
+        theWriter.println("     (return (i32.load offset=12 (get_local $thisRef)))");
+        theWriter.println("   )");
+        theWriter.println();
+
+        theWriter.println("   (func $TClass_desiredAssertionStatus (param $thisRef i32) (result i32)");
+        theWriter.println("     (return (i32.const 0))");
+        theWriter.println("   )");
+        theWriter.println();
+
+        theWriter.println("   (func $RUNTIMECLASS__resolvevtableindex (param $thisRef i32) (param $methodId i32) (result i32)");
+
+        BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
+        theClassLinkedCass.forEachVirtualMethod(
+                aClassMethod -> {
+                    theWriter.println("     (block $m" + aClassMethod.getKey().getIdentifier());
+                    theWriter.println("         (br_if $m" + aClassMethod.getKey().getIdentifier() + " (i32.ne (get_local $methodId) (i32.const " + aClassMethod.getKey().getIdentifier() + ")))");
+                    if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("         (unreachable)");
+                    } else if (Objects
+                            .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("         (unreachable)");
+                    } else if (Objects
+                            .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("         (unreachable)");
+                    } else if (Objects
+                            .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("         (unreachable)");
+                    } else if (Objects.equals("desiredAssertionStatus",
+                            aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("         (return (i32.const " + theGeneratedFunctions.indexOf("TClass_desiredAssertionStatus") + "))");
+                    } else if (Objects
+                            .equals("getEnumConstants",
+                                    aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                        theWriter.println("         (return (i32.const " + theGeneratedFunctions.indexOf("TClass_A1TObjectgetEnumConstants") + "))");
+                    } else {
+                        theWriter.println("         (unreachable)");
+                    }
+                    theWriter.println("     )");
+                });
+
+
         theWriter.println("     (unreachable)");
         theWriter.println("   )");
         theWriter.println();
@@ -656,6 +706,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
+            if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                return;
+            }
 
             theWriter.print("      (set_global $");
             theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
@@ -668,6 +721,14 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(" (i32.const ");
             theWriter.print(WASMWriterUtils.computeClassSizeFor(aEntry.getValue()));
             theWriter.print(")");
+
+            if (aEntry.getValue().staticFieldByName("$VALUES") != null) {
+                theWriter.print(" (i32.const ");
+                theWriter.print(WASMWriterUtils.computeClassSizeFor(aEntry.getValue()));
+                theWriter.println(")");
+            } else {
+                theWriter.print(" (i32.const -1)");
+            }
 
             theWriter.println("))");
         });
@@ -723,12 +784,17 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         }
 
 
-        aLinkerContext.forEachClass(theEntry -> {
-            if (!theEntry.getValue().getAccessFlags().isInterface()) {
+        aLinkerContext.forEachClass(aEntry -> {
 
-                if (!theEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                return;
+            }
+
+            if (!aEntry.getValue().getAccessFlags().isInterface()) {
+
+                if (!aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     theWriter.print("      (call $");
-                    theWriter.print(JSWriterUtils.toClassName(theEntry.getKey()));
+                    theWriter.print(JSWriterUtils.toClassName(aEntry.getKey()));
                     theWriter.println("__classinitcheck)");
                 }
             }
@@ -754,6 +820,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 return;
             }
             if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                return;
+            }
+            if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                 return;
             }
 

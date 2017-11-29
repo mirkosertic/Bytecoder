@@ -872,13 +872,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println();
 
         printVariableNameOrValue(aValue.getTarget());
+        println();
 
         for (Variable theVariable : aValue.getArguments()) {
             printVariableNameOrValue(theVariable);
-            print(" ");
+            println();
         }
-
-        println();
 
 
         WASMSSAWriter theChild = withDeeperIndent();
@@ -887,6 +886,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMSSAWriter theChild2 = theChild.withDeeperIndent();
 
         theChild2.printVariableNameOrValue(aValue.getTarget());
+        theChild2.println();
 
         // This is the method number
         theChild2.print("(i32.const ");
@@ -1234,11 +1234,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 }
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(aValue.getValue2());
-                theChild.println();
                 theChild.printVariableNameOrValue(aValue.getValue1());
                 theChild.println();
-
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
                 println(")");
                 break;
             }
@@ -1246,11 +1245,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".gt_s ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(aValue.getValue2());
-                theChild.println();
                 theChild.printVariableNameOrValue(aValue.getValue1());
                 theChild.println();
-
+                theChild.printVariableNameOrValue(aValue.getValue2());
+                theChild.println();
                 println(")");
                 break;
             }
