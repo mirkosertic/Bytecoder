@@ -26,12 +26,17 @@ public class StaticAccessTest {
     public static class StaticClassWithStuffInside {
 
         public static int member;
+        public static String member2;
     }
 
     @Test
     public void testStaticGetAndSet() {
+        String theText ="JUHU";
         StaticClassWithStuffInside.member = 12;
+        StaticClassWithStuffInside.member2 = theText;
         int theResult = StaticClassWithStuffInside.member;
+        String theResdult2 = StaticClassWithStuffInside.member2;
+        Assert.assertSame(theText, theResdult2);
         Assert.assertEquals(12, theResult, 0);
     }
 }
