@@ -300,15 +300,16 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("            }");
             theWriter.println();
 
-            theWriter.println("            function bytecoder_logByteArrayAsString(value) {");
-            theWriter.println("                 var theType = bytecoder_IntInMemory(value);");
-            theWriter.println("                 var theVTable = bytecoder_IntInMemory(value + 4);");
-            theWriter.println("                 console.log(\"Something to tell you from \" + value + \" with type \" + theType + \" VTable \" + theVTable);");
+            theWriter.println("            function bytecoder_logByteArrayAsString(acaller, value) {");
+            theWriter.println("                 var theLength = bytecoder_IntInMemory(value);");
             theWriter.println("                 var theData = '';");
-            theWriter.println("                 for (var i=0;i<20;i++) {");
-            theWriter.println("                     theData+= runningInstanceMemory[value + i] + ' ';");
+            theWriter.println("                 value = value + 4;");
+            theWriter.println("                 for (var i=0;i<theLength;i++) {");
+            theWriter.println("                     var theCharCode = bytecoder_IntInMemory(value);");
+            theWriter.println("                     value = value + 4;");
+            theWriter.println("                     theData+= String.fromCharCode(theCharCode);");
             theWriter.println("                 }");
-            theWriter.println("                 console.log(\"Object data: \" + theData);");
+            theWriter.println("                 console.log(theData);");
             theWriter.println("            }");
             theWriter.println();
 
