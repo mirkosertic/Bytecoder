@@ -350,9 +350,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
             theChild4.println(")");
         }
 
-        theChild1.println("(unreachable)");
-
         println(")");
+        println("(unreachable)");
     }
 
     private void writeInvokeVirtualExpression(InvokeVirtualMethodExpression aExpression) {
