@@ -97,4 +97,21 @@ public class ArrayTest {
         Object theEntry0 = theEmpty[12];
         Assert.assertNull(theEntry0);
     }
+
+    @Test
+    public void testCObjectArray() {
+        String theA = "AB";
+        String theC = "ABC";
+        String[] theStrings = new String[3];
+        theStrings[0] = theA;
+        theStrings[2] = theC;
+        Assert.assertNotNull(theStrings[0]);
+        Assert.assertNull(theStrings[1]);
+        Assert.assertNotNull(theStrings[2]);
+
+        Assert.assertSame(theA, theStrings[0]);
+        Assert.assertSame(theC, theStrings[2]);
+        Assert.assertEquals(2, theStrings[0].length(), 0);
+        Assert.assertEquals(3, theStrings[2].length(), 0);
+    }
 }

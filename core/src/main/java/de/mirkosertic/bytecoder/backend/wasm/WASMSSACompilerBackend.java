@@ -724,7 +724,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             if (aEntry.getValue().staticFieldByName("$VALUES") != null) {
                 theWriter.print(" (i32.const ");
-                theWriter.print(WASMWriterUtils.computeClassSizeFor(aEntry.getValue()));
+                theWriter.print(WASMWriterUtils.computeStaticFieldOffsetOf("$VALUES", aEntry.getValue()));
                 theWriter.println(")");
             } else {
                 theWriter.print(" (i32.const -1)");
