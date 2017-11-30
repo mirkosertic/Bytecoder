@@ -88,6 +88,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("(module");
 
         theWriter.println("   (func $float_remainder (import \"math\" \"float_rem\") (param $p1 f32) (param $p2 f32) (result f32))\n");
+        theWriter.println("   (func $trace (import \"profiler\" \"trace\") (param $SP i32))\n");
 
         // Print imported functions first
         aLinkerContext.forEachClass(aEntry -> {
@@ -470,9 +471,11 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.println("__runtimeClass) (i32.const 1))");
 
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
-                //theWriter.print("         (call $");
-                //theWriter.print(WASMWriterUtils.toClassName(theRef));
-                //theWriter.println("__classinitcheck)");
+                if (!theRef.equals(aEntry.getKey())) {
+                    theWriter.print("         ;; (call $");
+                    theWriter.print(WASMWriterUtils.toClassName(theRef));
+                    theWriter.println("__classinitcheck)");
+                }
             }
 
 
