@@ -77,12 +77,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-
-        String theMallocName = WASMWriterUtils.toMethodName(
-                BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
-                "malloc",
-                new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theManagerClass.linkStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theManagerClass.linkStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theStringClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TString.class));
         theStringClass.linkConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
@@ -520,18 +518,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.println("   )");
             theWriter.println();
         }
-
-        theWriter.println("   (func $newArray (param $size i32) (result i32)");
-        theWriter.println("         (local $newRef i32)");
-        theWriter.println("         (set_local $newRef");
-        theWriter.println("            (call $MemoryManager_AddressmallocINT ");
-        theWriter.println("                (i32.const 0) (i32.add (i32.const 4) (i32.mul (get_local $size) (i32.const 4)))");
-        theWriter.println("            )");
-        theWriter.println("         )");
-        theWriter.println("         (i32.store (get_local $newRef) (get_local $size))");
-        theWriter.println("         (return (get_local $newRef))");
-        theWriter.println("   )");
-        theWriter.println();
 
         theWriter.println("   (func $newRuntimeClass (param $type i32) (param $staticSize i32) (param $enumValuesOffset i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
