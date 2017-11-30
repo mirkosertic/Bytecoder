@@ -472,7 +472,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
                 if (!theRef.equals(aEntry.getKey())) {
-                    theWriter.print("         ;; (call $");
+                    theWriter.print("         (call $");
                     theWriter.print(WASMWriterUtils.toClassName(theRef));
                     theWriter.println("__classinitcheck)");
                 }
