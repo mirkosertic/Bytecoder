@@ -110,7 +110,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         int resolveMethodIDByName(String aMethodName);
 
-        int resolveTypeIDForSignature(BytecodeMethodSignature signature);
+        void registerGlobalType(BytecodeMethodSignature aSignature, boolean aStatic);
     }
 
     private final List<Variable> stackVariables;
@@ -748,7 +748,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 //        print(idResolver.resolveTypeIDForSignature(aValue.getSignature()));
 //        print(")");
         println();
-        println(";; " + WASMWriterUtils.toMethodSignature(aValue.getSignature()));
+        println(";; " + WASMWriterUtils.toMethodSignature(aValue.getSignature(), false));
         print("(i32.const 0)");
     }
 
@@ -866,8 +866,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeInvokeVirtualValue(InvokeVirtualMethodValue aValue) {
+
+        idResolver.registerGlobalType(aValue.getSignature(), false);
+
         print("(call_indirect $t_");
-        print(WASMWriterUtils.toMethodSignature(aValue.getSignature()));
+        print(WASMWriterUtils.toMethodSignature(aValue.getSignature(), false));
         println();
 
         printVariableNameOrValue(aValue.getTarget());
@@ -880,7 +883,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
 
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.println("(call_indirect $RESOLVEMETHOD");
+        theChild.println("(call_indirect $t_RESOLVEMETHOD");
 
         WASMSSAWriter theChild2 = theChild.withDeeperIndent();
 
@@ -1096,6 +1099,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theType);
         print("(call $");
         print(theMallocName);
+        print(" (i32.const 0) "); // UNUSED argument
         print(" (i32.const ");
         print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
         print(") (get_global $");
@@ -1150,6 +1154,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeInvokeStaticValue(InvokeStaticMethodValue aValue) {
         print("(call $");
         print(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+
+        print(" (i32.const 0)"); // UNUSED Argument
 
         for (Variable theVariable : aValue.getArguments()) {
             print(" ");

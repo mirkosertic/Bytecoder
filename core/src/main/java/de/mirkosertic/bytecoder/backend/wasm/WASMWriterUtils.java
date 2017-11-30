@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -50,8 +51,11 @@ public class WASMWriterUtils {
         return toClassName(theObjectRef);
     }
 
-    public static String toMethodSignature(BytecodeMethodSignature aSignature) {
+    public static String toMethodSignature(BytecodeMethodSignature aSignature, boolean aIsStatic) {
         String theName = typeRefToString(aSignature.getReturnType()) + "_";
+        if (!aIsStatic) {
+            theName += "THISREF";
+        }
 
         for (BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
             theName += typeRefToString(theTypeRef);
@@ -148,5 +152,30 @@ public class WASMWriterUtils {
             theOffset += OBJECT_FIELDSIZE;
         }
         throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
+    }
+
+    public static String toWASMMethodSignature(BytecodeMethodSignature aSignatutre, boolean aIsStatic) {
+        String theTypeDefinition = "(func";
+
+        if (!aIsStatic) {
+            theTypeDefinition+= " (param ";
+            theTypeDefinition+= WASMWriterUtils.toType(Type.REFERENCE);
+            theTypeDefinition+=")";
+        }
+
+        for (int i=0;i<aSignatutre.getArguments().length;i++) {
+            BytecodeTypeRef theParamType = aSignatutre.getArguments()[i];
+            theTypeDefinition+= " (param ";
+            theTypeDefinition+=WASMWriterUtils.toType(Type.toType(theParamType));
+            theTypeDefinition+= ")";
+        }
+
+        if (!aSignatutre.getReturnType().isVoid()) {
+            theTypeDefinition+= " (result "; // result
+            theTypeDefinition+=WASMWriterUtils.toType(Type.toType(aSignatutre.getReturnType()));
+            theTypeDefinition+=")";
+        }
+        theTypeDefinition+= ")";
+        return theTypeDefinition;
     }
 }

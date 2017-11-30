@@ -343,19 +343,18 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             cos: Math.cos,");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         }");
-
             theWriter.println("                    });");
             theWriter.println("                    theInstantiatePromise.then(");
             theWriter.println("                         function (resolved) {");
             theWriter.println("                             var wasmModule = resolved.module;");
             theWriter.println("                             runningInstance = resolved.instance;");
             theWriter.println("                             runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);");
-            theWriter.println("                             runningInstance.exports.initMemory(1024 * 1024);");
+            theWriter.println("                             runningInstance.exports.initMemory(0, 1024 * 1024);");
             theWriter.println("                             console.log(\"Memory initialized\")");
             theWriter.println("                             runningInstance.exports.bootstrap();");
             theWriter.println("                             console.log(\"Creating test instance\")");
 
-            theWriter.print("                             var theTest = runningInstance.exports.newObject(");
+            theWriter.print("                             var theTest = runningInstance.exports.newObject(0,");
             theWriter.print(theResult.getSizeOf(theTypeRef));
             theWriter.print(",");
             theWriter.print(theResult.getTypeIDFor(theTypeRef));
