@@ -19,11 +19,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
@@ -157,10 +155,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             });
         });
 
-        theWriter.println();
 
-        theWriter.println("   (type $RESOLVEMETHOD (func (param i32) (param i32) (result i32)))");
-        theWriter.println("   (type $INSTANCEOF (func (param i32) (param i32) (result i32)))");
+        final Map<String, String> theGlobalTypes = new HashMap<>();
+        theGlobalTypes.put("RESOLVEMETHOD", "(func (param i32) (param i32) (result i32))");
+        theGlobalTypes.put("INSTANCEOF", "(func (param i32) (param i32) (result i32))");
+
+        theWriter.println();
 
         List<String> theGeneratedFunctions = new ArrayList<>();
         theGeneratedFunctions.add("LAMBDA__resolvevtableindex");
@@ -170,7 +170,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
         List<String> theStringCache = new ArrayList<>();
-        Set<String> theGeneratedTypes = new HashSet<>();
         Map<String, CallSite> theCallsites = new HashMap<>();
 
         WASMSSAWriter.IDResolver theResolver = new WASMSSAWriter.IDResolver() {
@@ -215,14 +214,13 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             }
 
             @Override
-            public int resolveTypeIDForSignature(BytecodeMethodSignature aSignature) {
-                List<String> theTypes = new ArrayList<>(theGeneratedTypes);
-                String theMethodSignature = WASMWriterUtils.toMethodSignature(aSignature);
-                int theIndex = theTypes.indexOf(theMethodSignature);
-                if (theIndex < 0) {
-                    throw new IllegalStateException("Cannot resolve type for signature " + theMethodSignature);
+            public void registerGlobalType(BytecodeMethodSignature aSignature, boolean aStatic) {
+                String theMethodSignature = WASMWriterUtils.toMethodSignature(aSignature, aStatic);
+                if (!theGlobalTypes.containsKey(theMethodSignature)) {
+                    String theTypeDefinition = WASMWriterUtils.toWASMMethodSignature(aSignature, aStatic);
+
+                    theGlobalTypes.put(theMethodSignature, theTypeDefinition);
                 }
-                return theIndex;
             }
         };
 
@@ -253,32 +251,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
 
                 BytecodeMethodSignature theSignature = t.getSignature();
-
-                String theMethodSignature = WASMWriterUtils.toMethodSignature(theSignature);
-                if (theGeneratedTypes.add(theMethodSignature)) {
-                    theWriter.print("   (type $t_");
-                    theWriter.print(theMethodSignature);
-
-                    theWriter.print(" (func ");
-
-                    theWriter.print("(param ");
-                    theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
-                    theWriter.print(") ");
-
-                    for (int i=0;i<theSignature.getArguments().length;i++) {
-                        BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                        theWriter.print("(param ");
-                        theWriter.print(WASMWriterUtils.toType(Type.toType(theParamType)));
-                        theWriter.print(") ");
-                    }
-
-                    if (!theSignature.getReturnType().isVoid()) {
-                        theWriter.print("(result "); // result
-                        theWriter.print(WASMWriterUtils.toType(Type.toType(theSignature.getReturnType())));
-                        theWriter.print(")");
-                    }
-                    theWriter.println("))");
-                }
+                theResolver.registerGlobalType(theSignature, t.getAccessFlags().isStatic());
 
                 if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                     return;
@@ -343,10 +316,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 if (!t.getAccessFlags().isStatic()) {
                     theWriter.print("(param $thisRef");
-                    theWriter.print(" ");
-                    theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
-                    theWriter.print(") ");
+                } else {
+                    theWriter.print("(param $UNUSED");
                 }
+                theWriter.print(" ");
+                theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
+                theWriter.print(") ");
 
                 for (int i=0;i<theSignature.getArguments().length;i++) {
                     BytecodeTypeRef theParamType = theSignature.getArguments()[i];
@@ -495,7 +470,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (theLinkedClass.hasClassInitializer()) {
                 theWriter.print("         (call $");
                 theWriter.print(theClassName);
-                theWriter.println("_VOIDclinit)");
+                theWriter.println("_VOIDclinit (i32.const 0))");
             }
 
             theWriter.print("         (i32.store offset=8 (get_global $");
@@ -550,7 +525,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
         theWriter.println("            (call $MemoryManager_AddressmallocINT ");
-        theWriter.println("                (i32.add (i32.const 4) (i32.mul (get_local $size) (i32.const 4)))");
+        theWriter.println("                (i32.const 0) (i32.add (i32.const 4) (i32.mul (get_local $size) (i32.const 4)))");
         theWriter.println("            )");
         theWriter.println("         )");
         theWriter.println("         (i32.store (get_local $newRef) (get_local $size))");
@@ -561,7 +536,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   (func $newRuntimeClass (param $type i32) (param $staticSize i32) (param $enumValuesOffset i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
-        theWriter.print("              (call $MemoryManager_AddressnewObjectINTINTINT (get_local $staticSize) (i32.const -1) (i32.const ");
+        theWriter.print("              (call $MemoryManager_AddressnewObjectINTINTINT (i32.const 0) (get_local $staticSize) (i32.const -1) (i32.const ");
         theWriter.print(theGeneratedFunctions.indexOf("RUNTIMECLASS__resolvevtableindex"));
         theWriter.println("))");
         theWriter.println("         )");
@@ -583,7 +558,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   (func $newLambda (param $type i32) (param $implMethodNumber i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
-        theWriter.print("            (call $MemoryManager_AddressnewObjectINTINTINT (i32.const 12) (get_local $type) (i32.const ");
+        theWriter.print("            (call $MemoryManager_AddressnewObjectINTINTINT (i32.const 0) (i32.const 12) (get_local $type) (i32.const ");
         theWriter.print(theLambdaVTableResolveIndex);
         theWriter.println("))");
         theWriter.println("         )");
@@ -633,10 +608,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         )");
         theWriter.println("         (return (i32.const 0))");
         theWriter.println("     )");
-        theWriter.println("     (call_indirect $INSTANCEOF");
+        theWriter.println("     (call_indirect $t_INSTANCEOF");
         theWriter.println("         (get_local $thisRef)");
         theWriter.println("         (get_local $type)");
-        theWriter.println("         (call_indirect $RESOLVEMETHOD");
+        theWriter.println("         (call_indirect $t_RESOLVEMETHOD");
         theWriter.println("             (get_local $thisRef)");
         theWriter.print("             (i32.const ");
         theWriter.print(WASMSSAWriter.GENERATED_INSTANCEOF_METHOD_ID);
@@ -743,6 +718,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print("      (set_global $stringPool");
             theWriter.print(i);
             theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINT");
+
+            theWriter.print(" (i32.const 0)"); // Unused argument
 
             theWriter.print(" (i32.const ");
             theWriter.print(WASMWriterUtils.computeObjectSizeFor(theStringClass));
@@ -859,12 +836,21 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.print(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), aEntryPointMethodName, aEntryPointSignatue));
         theWriter.println("))");
 
+        theWriter.println();
+        for (Map.Entry<String, String> theEntry : theGlobalTypes.entrySet()) {
+            theWriter.print("   (type $t_");
+            theWriter.print(theEntry.getKey());
+            theWriter.print(" ");
+            theWriter.print(theEntry.getValue());
+            theWriter.println(")");
+        }
 
         theWriter.println(")");
         theWriter.flush();
 
         return new WASMCompileResult(aLinkerContext, theGeneratedFunctions, theStringWriter.toString());
     }
+
 
     @Override
     public String generatedFileName() {
