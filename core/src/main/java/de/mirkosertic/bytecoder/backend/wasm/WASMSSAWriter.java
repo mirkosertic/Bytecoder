@@ -31,70 +31,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
-import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefValue;
-import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
-import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StackTopValue;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.Type;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.TypeOfValue;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
+import de.mirkosertic.bytecoder.ssa.*;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -700,7 +637,46 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeMethodRefValue((MethodRefValue) aValue);
             return;
         }
+        if (aValue instanceof NewMultiArrayValue) {
+            writeNewMultiArrayValue((NewMultiArrayValue) aValue);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private void writeNewMultiArrayValue(NewMultiArrayValue aValue) {
+
+        BytecodeTypeRef theType = aValue.getType();
+        String theMethodName;
+        switch (aValue.getDimensions().size()) {
+            case 1:
+                theMethodName = WASMWriterUtils.toMethodName(
+                        BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                        "newArray",
+                        new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+                break;
+            case 2:
+                theMethodName = WASMWriterUtils.toMethodName(
+                        BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                        "newArray",
+                        new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                break;
+            default:
+                throw new IllegalStateException("Unsupported number of dimensions : " + aValue.getDimensions().size());
+        }
+
+        print("(call $");
+        print(theMethodName);
+        print(" (i32.const 0) "); // UNUSED argument
+
+        for (Variable theDimension : aValue.getDimensions()) {
+            print(" ");
+            printVariableNameOrValue(theDimension);
+        }
+
+        println(") ;; new array of type " + theType);
     }
 
     private void writeMethodRefValue(MethodRefValue aValue) {
@@ -845,10 +821,21 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeNewArrayValue(NewArrayValue aValue) {
-        println("(call $newArray ");
+
+        BytecodeTypeRef theType = aValue.getType();
+
+        String theMethodName = WASMWriterUtils.toMethodName(
+                BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                "newArray",
+                new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+
+        print("(call $");
+        print(theMethodName);
+        print(" (i32.const 0) "); // UNUSED argument
+
         withDeeperIndent().printVariableNameOrValue(aValue.getLength());
-        println();
-        println(")");
+        println(") ;; new array of type " + theType);
     }
 
     private void writeArrayLengthValue(ArrayLengthValue aValue) {
@@ -1090,7 +1077,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 
-        String theMallocName = WASMWriterUtils.toMethodName(
+        String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newObject",
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
@@ -1098,7 +1085,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theType);
         print("(call $");
-        print(theMallocName);
+        print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
         print(" (i32.const ");
         print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
