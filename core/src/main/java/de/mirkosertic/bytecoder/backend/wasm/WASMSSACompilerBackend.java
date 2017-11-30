@@ -17,11 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
@@ -293,6 +289,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 return;
             }
 
+            Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
+
             aEntry.getValue().forEachMethod(t -> {
 
                 // Do not generate code for abstract methods
@@ -339,6 +337,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
+
+                theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
                 WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
@@ -465,15 +465,23 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(theClassName);
             theWriter.println("__runtimeClass)) (i32.const 1)))");
 
+            theWriter.print("         (i32.store offset=8 (get_global $");
+            theWriter.print(theClassName);
+            theWriter.println("__runtimeClass) (i32.const 1))");
+
+            for (BytecodeObjectTypeRef theRef : theStaticReferences) {
+                //theWriter.print("         (call $");
+                //theWriter.print(WASMWriterUtils.toClassName(theRef));
+                //theWriter.println("__classinitcheck)");
+            }
+
+
             if (theLinkedClass.hasClassInitializer()) {
                 theWriter.print("         (call $");
                 theWriter.print(theClassName);
                 theWriter.println("_VOIDclinit (i32.const 0))");
             }
 
-            theWriter.print("         (i32.store offset=8 (get_global $");
-            theWriter.print(theClassName);
-            theWriter.println("__runtimeClass) (i32.const 1))");
             theWriter.println("      )");
             theWriter.println("   )");
             theWriter.println();
