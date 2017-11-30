@@ -1455,8 +1455,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
             print(theStackSize);
             println(")))");
             println("(set_local $SP (get_global $STACKTOP))");
+            // println("(call $trace (get_local $SP))");
         }
-
     }
 
     private void printStackExit() {

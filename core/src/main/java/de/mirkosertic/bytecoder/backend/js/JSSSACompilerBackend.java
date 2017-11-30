@@ -395,9 +395,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
             theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
-                theWriter.print("            ");
-                theWriter.print(JSWriterUtils.toClassName(theRef));
-                theWriter.println(".classInitCheck();");
+                if (!theRef.equals(theEntry.getKey())) {
+                    theWriter.print("            ");
+                    theWriter.print(JSWriterUtils.toClassName(theRef));
+                    theWriter.println(".classInitCheck();");
+                }
             }
             if (theEntry.getValue().hasClassInitializer()) {
                 theWriter.println("            " + theJSClassName + ".VOIDclinit();");
