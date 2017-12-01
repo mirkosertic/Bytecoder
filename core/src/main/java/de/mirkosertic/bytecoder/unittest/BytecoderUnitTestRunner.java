@@ -352,6 +352,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                                 //console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
             theWriter.println("                             },");
             theWriter.println("                             logMemoryLayoutBlock(aStart, aUsed, aNext) {");
+            theWriter.println("                                 if (aUsed == 1) return;");
             theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
             theWriter.println("                                 console.log('      Block size is ' + bytecoder_IntInMemory(aStart));");
             theWriter.println("                                 console.log('      Object type ' + bytecoder_IntInMemory(aStart + 12));");
@@ -371,6 +372,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             runningInstance.exports.bootstrap();");
             theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + runningInstance.exports.usedMem());");
             theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + runningInstance.exports.freeMem());");
+            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
             theWriter.println("                             console.log(\"Creating test instance\")");
 
             theWriter.print("                             var theTest = runningInstance.exports.newObject(0,");
@@ -380,14 +382,18 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.print(",");
             theWriter.print(theResult.getVTableIndexOf(theTypeRef));
             theWriter.println(", 0);");
-
+            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
             theWriter.println("                             console.log(\"Bootstrapped\")");
             theWriter.println("                             try {");
+            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 console.log(\"Starting main method\")");
             theWriter.println("                                 runningInstance.exports.main(theTest);");
+            theWriter.println("                                 console.log(\"Main finished\")");
             theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
             theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
             theWriter.println("                                 console.log(\"Test finished OK\")");
             theWriter.println("                             } catch (e) {");
+            theWriter.println("                                 console.log(\"Test threw error\")");
             theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
             theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
             theWriter.println("                                 throw e;");

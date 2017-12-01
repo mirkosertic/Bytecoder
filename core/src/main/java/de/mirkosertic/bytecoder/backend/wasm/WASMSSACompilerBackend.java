@@ -792,6 +792,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         }
 
         theWriter.println("   (global $STACKTOP (mut i32) (i32.const 0))");
+        theWriter.println("   (global $STACKNEST (mut i32) (i32.const 0))");
 
         // Globals for static class data
         aLinkerContext.forEachClass(aEntry -> {

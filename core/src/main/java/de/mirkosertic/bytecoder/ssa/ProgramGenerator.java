@@ -1219,6 +1219,10 @@ public class ProgramGenerator {
 
                         break;
                     }
+                    case "unreachable": {
+                        aTargetBlock.addExpression(new UnreachableExpression());
+                        break;
+                    }
                     default:
                         throw new IllegalStateException("Not implemented : " + theMethodName);
                     }
