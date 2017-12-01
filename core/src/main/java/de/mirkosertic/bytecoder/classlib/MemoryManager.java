@@ -78,8 +78,15 @@ public class MemoryManager {
 
     @Export("logMemoryLayout")
     public static void logMemoryLayout() {
+        int theCounter = 0;
         Address theCurrent = new Address(4);
         while(Address.getStart(theCurrent) != 0) {
+
+            theCounter++;
+            if (theCounter > 10000) {
+                return;
+            }
+
             int theStart = Address.getStart(theCurrent);
             int theUsedFlag = Address.getIntValue(theCurrent, 8);
             int theNext = Address.getIntValue(theCurrent, 4);
@@ -99,11 +106,18 @@ public class MemoryManager {
 
     private static Address mallocInternal(int aSize) {
 
+        int count = 0;
+
         // Overhead for header
         aSize+=12;
 
         Address theCurrent = new Address(4);
         while(Address.getStart(theCurrent) != 0) {
+
+            count++;
+            if (count>5_000) {
+                Address.unreachable();
+            }
 
             int theUsed = Address.getIntValue(theCurrent, 8);
             int theCurrentSize = Address.getIntValue(theCurrent, 0);
@@ -158,9 +172,11 @@ public class MemoryManager {
 
     @Export("newObject")
     public static Address newObject(int aSize, int aType, int aVTableIndex) {
+
         Address theAddress = malloc(aSize);
         Address.setIntValue(theAddress, 0, aType);
         Address.setIntValue(theAddress, 4, aVTableIndex);
+
         return theAddress;
     }
 

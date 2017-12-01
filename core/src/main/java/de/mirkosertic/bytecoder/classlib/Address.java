@@ -45,4 +45,6 @@ public class Address {
     public static int getMemorySize() {
         return 0;
     }
+
+    public static void unreachable() {};
 }

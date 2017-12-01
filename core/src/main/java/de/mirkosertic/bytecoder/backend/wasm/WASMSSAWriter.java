@@ -229,7 +229,16 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeLookupSwitchExpression((LookupSwitchExpression) aExpression);
             return;
         }
+        if (aExpression instanceof UnreachableExpression) {
+            writeUnreachable((UnreachableExpression) aExpression);
+            return;
+        }
+
         throw new IllegalStateException("Not supported : " + aExpression);
+    }
+
+    private void writeUnreachable(UnreachableExpression aExpression) {
+        println("(unreachable)");
     }
 
     private void writeLookupSwitchExpression(LookupSwitchExpression aExpression) {
@@ -469,9 +478,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theChild.println();
 
         WASMSSAWriter theChild3 = theChild.withDeeperIndent();
-        theChild3.print("(i32.ne ");
+        theChild3.print("(i32.eq ");
         theChild3.printVariableNameOrValue(aExpression.getBooleanExpression());
-        theChild3.print(" (i32.const 1)");
+        theChild3.print(" (i32.const 0)");
         theChild3.println(")");
 
         theChild.println(")");
@@ -1515,12 +1524,16 @@ public class WASMSSAWriter extends IndentSSAWriter {
         if (theStackSize > 0) {
             println("(local $SP i32)");
             println("(local $OLD_SP i32)");
+            println("(local $OLD_STACKNEST i32)");
             println("(set_local $OLD_SP (get_global $STACKTOP))");
+            println("(set_local $OLD_STACKNEST (get_global $STACKNEST))");
+            print("(set_global $STACKNEST (i32.add (get_global $STACKNEST) (i32.const 1)))");
             print("(set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
             print(theStackSize);
             println(")))");
             println("(set_local $SP (get_global $STACKTOP))");
             println("(call $trace (get_local $SP) (i32.const " + aMethodId + "))");
+            println("(block $check (br_if $check (i32.lt_s (get_global $STACKNEST) (i32.const 100))) (unreachable))");
         }
     }
 
@@ -1529,6 +1542,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         int theStackSize = stackSize();
         if (theStackSize > 0) {
             println("(set_global $STACKTOP (get_local $OLD_SP))");
+            println("(set_global $STACKNEST (get_local $OLD_STACKNEST))");
         }
     }
 }
