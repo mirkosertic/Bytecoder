@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.complex;
 
 import org.jbox2d.callbacks.ContactImpulse;
 import org.jbox2d.callbacks.ContactListener;
+import org.jbox2d.collision.AABB;
 import org.jbox2d.collision.Manifold;
 import org.jbox2d.collision.ManifoldPoint;
 import org.jbox2d.collision.broadphase.DynamicTree;
@@ -197,10 +198,15 @@ public class JBox2DTest {
 
     @Test
     public void testCircleContactStack() {
+        System.out.println("A");
         DefaultWorldPool thePool = new DefaultWorldPool(10, 10);
+        System.out.println("B");
         IDynamicStack<Contact> theCircleStack = thePool.getCircleContactStack();
+        System.out.println("C");
         Contact theContact = theCircleStack.pop();
+        System.out.println("D");
         Assert.assertTrue(theContact instanceof CircleContact);
+        System.out.println("E");
     }
 
     @Test
@@ -245,7 +251,8 @@ public class JBox2DTest {
     }
 
     @Test
-    public void testDynamicTreeConstructor() {
+    public void testDynamicTree() {
         DynamicTree theTree = new DynamicTree();
+        theTree.createProxy(new AABB(), "TEST");
     }
 }
