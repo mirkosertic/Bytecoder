@@ -264,6 +264,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             File theWorkingDirectory = new File(".");
 
+            initializeSeleniumDriver(theWorkingDirectory);
+
             File theMavenTargetDir = new File(theWorkingDirectory, "target");
             File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
             theGeneratedFilesDir.mkdirs();
@@ -313,7 +315,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("            }");
             theWriter.println();
 
-            theWriter.println("            function bytecoder_logDebug(value) {");
+            theWriter.println("            function bytecoder_logDebug(caller,value) {");
             theWriter.println("                 console.log(value);");
             theWriter.println("            }");
             theWriter.println();
@@ -344,7 +346,16 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         },");
             theWriter.println("                         profiler: {");
-            theWriter.println("                             trace: function(sp) {console.trace();},");
+            theWriter.println("                             trace: function(sp, methodId) {");
+            theWriter.println("                                 //console.log(\"Entering method id \" + methodId);");
+            theWriter.println("                                 //console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
+            theWriter.println("                                 //console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
+            theWriter.println("                             },");
+            theWriter.println("                             logMemoryLayoutBlock(aStart, aUsed, aNext) {");
+            theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
+            theWriter.println("                                 console.log('      Block size is ' + bytecoder_IntInMemory(aStart));");
+            theWriter.println("                                 console.log('      Object type ' + bytecoder_IntInMemory(aStart + 12));");
+            theWriter.println("                             }");
             theWriter.println("                         }");
             theWriter.println("                    });");
             theWriter.println("                    theInstantiatePromise.then(");
@@ -352,9 +363,14 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             var wasmModule = resolved.module;");
             theWriter.println("                             runningInstance = resolved.instance;");
             theWriter.println("                             runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);");
-            theWriter.println("                             runningInstance.exports.initMemory(0, 20 * 1024 * 1024);");
+            theWriter.println("                             runningInstance.exports.initMemory(0);");
             theWriter.println("                             console.log(\"Memory initialized\")");
+            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                             console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
+            theWriter.println("                             console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
             theWriter.println("                             runningInstance.exports.bootstrap();");
+            theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + runningInstance.exports.usedMem());");
+            theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + runningInstance.exports.freeMem());");
             theWriter.println("                             console.log(\"Creating test instance\")");
 
             theWriter.print("                             var theTest = runningInstance.exports.newObject(0,");
@@ -366,8 +382,16 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println(", 0);");
 
             theWriter.println("                             console.log(\"Bootstrapped\")");
-            theWriter.println("                             runningInstance.exports.main(theTest);");
-            theWriter.println("                             console.log(\"Test finished OK\")");
+            theWriter.println("                             try {");
+            theWriter.println("                                 runningInstance.exports.main(theTest);");
+            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                                 console.log(\"Test finished OK\")");
+            theWriter.println("                             } catch (e) {");
+            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                                 throw e;");
+            theWriter.println("                             }");
             theWriter.println("                         },");
             theWriter.println("                         function (rejected) {");
             theWriter.println("                             console.log(\"Error instantiating webassembly\");");
@@ -378,8 +402,38 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
             theWriter.println("                    console.log(e.toString());");
             theWriter.println("                    console.log(e.stack);");
+            theWriter.println("                    if (runningInstance) {");
+            theWriter.println("                         runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                         wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                    }");
             theWriter.println("                }");
             theWriter.println("            }");
+            theWriter.println();
+
+            theWriter.println("            function wasmHexDump(memory) {");
+            theWriter.println("                var theStart = 0;");
+            theWriter.println("                console.log('HEX DUMP');");
+            theWriter.println("                console.log('=================================================================================');");
+            theWriter.println("                for (var i=0;i<200;i++) {");
+            theWriter.println("                    var theLine = '' + theStart;");
+            theWriter.println("                    while(theLine.length < 15) {");
+            theWriter.println("                        theLine+= ' ';");
+            theWriter.println("                    }");
+            theWriter.println("                    theLine+= ' : ';");
+            theWriter.println("                    for (var j=0;j<32;j++) {");
+            theWriter.println("                        var theByte = memory[theStart++];");
+            theWriter.println("                        var theData = '' + theByte;");
+            theWriter.println("                        while(theData.length < 3) {");
+            theWriter.println("                            theData = ' ' + theData;");
+            theWriter.println("                        }");
+            theWriter.println("                        theLine += theData;");
+            theWriter.println("                        theLine += ' ';");
+            theWriter.println("                    }");
+            theWriter.println("                    console.log(theLine);");
+            theWriter.println("                }");
+            theWriter.println("                console.log('DONE');");
+            theWriter.println("            }");
+            theWriter.println();
             theWriter.println("            compile();");
             theWriter.println("        </script>");
             theWriter.println("    </body>");

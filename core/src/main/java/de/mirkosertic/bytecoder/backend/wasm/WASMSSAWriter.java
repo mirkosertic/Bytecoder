@@ -92,15 +92,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
         return new WASMSSAWriter(program, indent + "    ", writer, linkerContext, idResolver);
     }
 
-    public void writeStartNode(ControlFlowGraph.Node aNode) {
-        writeNode(aNode, true);
+    public void writeStartNode(ControlFlowGraph.Node aNode, int aMethodId) {
+        writeNode(aNode, true, aMethodId);
     }
 
-    private void writeNode(ControlFlowGraph.Node aNode, boolean aStart) {
+    private void writeNode(ControlFlowGraph.Node aNode, boolean aStart, int aMethodId) {
         if (aNode instanceof ControlFlowGraph.SimpleNode) {
 
             if (aStart) {
-                printStackEnter();
+                printStackEnter(aMethodId);
             }
 
             writeExpressionList(((ControlFlowGraph.SimpleNode) aNode).getNode().getExpressions());
@@ -112,7 +112,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             println("(local $currentLabel i32)");
 
             if (aStart) {
-                printStackEnter();
+                printStackEnter(aMethodId);
             }
 
             println("(set_local $currentLabel (i32.const 0))");
@@ -136,7 +136,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
                 theChild2.println(")");
 
-                theChild2.writeNode(theJumpTarget, false);
+                theChild2.writeNode(theJumpTarget, false, aMethodId);
 
                 theChild.println("(br $controlflowloop)");
                 theChild.println(")");
@@ -222,13 +222,55 @@ public class WASMSSAWriter extends IndentSSAWriter {
             return;
         }
         if (aExpression instanceof TableSwitchExpression) {
-            writeSwitchExpression((TableSwitchExpression) aExpression);
+            writeTableSwitchExpression((TableSwitchExpression) aExpression);
+            return;
+        }
+        if (aExpression instanceof LookupSwitchExpression) {
+            writeLookupSwitchExpression((LookupSwitchExpression) aExpression);
             return;
         }
         throw new IllegalStateException("Not supported : " + aExpression);
     }
 
-    private void writeSwitchExpression(TableSwitchExpression aExpression) {
+    private void writeLookupSwitchExpression(LookupSwitchExpression aExpression) {
+        println("(block $outer");
+
+        Variable theVariable = aExpression.getVariable();
+
+        WASMSSAWriter theChild2 = withDeeperIndent();
+
+        // For each statement
+        for (Map.Entry<Long, ExpressionList> theEntry : aExpression.getPairs().entrySet()) {
+            theChild2.print ("(block $switch_");
+            theChild2.print(theEntry.getKey());
+            theChild2.println();
+
+            WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
+            theChild3.print("(br_if $switch_");
+            theChild3.print(theEntry.getKey());
+            theChild3.print(" (i32.ne (i32.const ");
+            theChild3.print(theEntry.getKey());
+            theChild3.print(") ");
+
+            theChild3.printVariableNameOrValue(theVariable);
+            theChild3.print("))");
+            theChild3.println();
+
+            theChild3.writeExpressionList(theEntry.getValue());
+            theChild3.println();
+
+            theChild3.writeExpressionList(theEntry.getValue());
+
+            theChild3.println("(br $outer)");
+
+            theChild2.println(")");
+        }
+
+        writeExpressionList(aExpression.getDefaultExpressions());
+        println(")");
+    }
+
+    private void writeTableSwitchExpression(TableSwitchExpression aExpression) {
         println("(block $tableswitch");
 
         Variable theVariable = aExpression.getVariable();
@@ -460,6 +502,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 case DOUBLE:
                 case FLOAT: {
                     print("(f32.store offset=");
+                    break;
                 }
                 default: {
                     print("(i32.store offset=");
@@ -897,9 +940,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeFloatValue(FloatValue aValue) {
-        print("(f32.const ");
-        print(aValue.getFloatValue());
-        print(")");
+        if (aValue.getFloatValue() == Float.POSITIVE_INFINITY) {
+            print("(f32.const 99999999999999999999999999999.99)");
+        } else if (aValue.getFloatValue() == Float.NEGATIVE_INFINITY) {
+            print("(f32.const -99999999999999999999999999999.99)");
+        } else {
+            print("(f32.const ");
+            print(aValue.getFloatValue());
+            print(")");
+        }
     }
 
     private void writeShortValue(ShortValue aValue) {
@@ -1208,7 +1257,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case LESSTHANOREQUALS: {
-                println("(" + theType1 + ".le_s ");
+                if ("i32".equals(theType1)) {
+                    println("(" + theType1 + ".le_s ");
+                } else {
+                    println("(" + theType1 + ".le ");
+                }
 
                 WASMSSAWriter theChild = withDeeperIndent();
                 theChild.printVariableNameOrValue(aValue.getValue1());
@@ -1234,7 +1287,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case GREATERTHAN: {
-                println("(" + theType1 + ".gt_s ");
+                if ("i32".equals(theType1)) {
+                    println("(" + theType1 + ".gt_s ");
+                } else {
+                    println("(" + theType1 + ".gt ");
+                }
 
                 WASMSSAWriter theChild = withDeeperIndent();
                 theChild.printVariableNameOrValue(aValue.getValue1());
@@ -1431,7 +1488,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeValue(aVariable.getValue());
         } else {
             if (isStackVariable(aVariable)) {
-                print("(i32.load offset=");
+                switch (aVariable.getType()) {
+                    case DOUBLE:
+                    case FLOAT:
+                        print("(f32.load offset=");
+                        break;
+                    default:
+                        print("(i32.load offset=");
+                        break;
+                }
                 print(stackOffsetFor(aVariable));
                 print(" (get_local $SP)");
                 print(")");
@@ -1444,7 +1509,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
     }
 
-    public void printStackEnter() {
+    public void printStackEnter(int aMethodId) {
 
         int theStackSize = stackSize();
         if (theStackSize > 0) {
@@ -1455,7 +1520,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             print(theStackSize);
             println(")))");
             println("(set_local $SP (get_global $STACKTOP))");
-            // println("(call $trace (get_local $SP))");
+            println("(call $trace (get_local $SP) (i32.const " + aMethodId + "))");
         }
     }
 

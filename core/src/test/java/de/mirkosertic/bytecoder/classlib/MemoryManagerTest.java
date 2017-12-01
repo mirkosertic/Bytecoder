@@ -89,4 +89,177 @@ public class MemoryManagerTest {
         Assert.assertEquals(10000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
     }
+
+    @Test
+    public void testAllocateFlow() {
+        MemoryManager.initWithSize(80000);
+
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        Assert.assertEquals(79636, MemoryManager.freeMem(), 0);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(36);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        Assert.assertEquals(78888, MemoryManager.freeMem(), 0);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(48);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(36);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(44);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(68);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        Assert.assertEquals(76740, MemoryManager.freeMem(), 0);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(36);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(52);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(40);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(44);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(36);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(16);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(32);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(20);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(16);
+        MemoryManager.malloc(100);
+        Assert.assertEquals(74504, MemoryManager.freeMem(), 0);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(56);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(56);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(28);
+        MemoryManager.malloc(56);
+        MemoryManager.malloc(24);
+        MemoryManager.malloc(10);
+        MemoryManager.malloc(20);
+        Assert.assertEquals(73982, MemoryManager.freeMem(), 0);
+
+
+        MemoryManager.malloc(10);
+        Assert.assertEquals(73960, MemoryManager.freeMem(), 0);
+
+        MemoryManager.malloc(64);
+    }
+
+    @Test
+    public void testMallocLarge() {
+        MemoryManager.initWithSize(80000);
+
+        MemoryManager.malloc(14484);
+        Assert.assertEquals(65504, MemoryManager.freeMem(), 0);
+
+        MemoryManager.malloc(80);
+        Assert.assertEquals(65412, MemoryManager.freeMem(), 0);
+
+    }
 }

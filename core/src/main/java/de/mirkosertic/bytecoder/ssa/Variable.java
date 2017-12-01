@@ -43,6 +43,10 @@ public class Variable {
         return new Variable(type, name, aNewValue);
     }
 
+    public Variable withNewValue(Type aType, Value aNewValue) {
+        return new Variable(aType, name, aNewValue);
+    }
+
     public void setValue(Value aNewValue) {
         value = aNewValue;
     }

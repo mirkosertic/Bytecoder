@@ -469,7 +469,7 @@ public class ProgramGenerator {
                             if (!theVariable.getName().equals(theFinalVariable.getName())) {
 
                                 InitVariableExpression theExpression = new InitVariableExpression(
-                                        theVariable.withNewValue(new VariableReferenceValue(theFinalVariable)));
+                                        theVariable.withNewValue(theFinalVariable.getType(), new VariableReferenceValue(theFinalVariable)));
                                 theBlock.getExpressions().add(new CommentExpression("Resolving " + theImport.getKey()));
                                 theBlock.getExpressions().add(theExpression);
                             }
@@ -533,7 +533,7 @@ public class ProgramGenerator {
                 } else {
                     if (!theVariable.getName().equals(theFinalVariable.getName())) {
                         InitVariableExpression theInitExpression = new InitVariableExpression(
-                                theVariable.withNewValue(new VariableReferenceValue(theFinalVariable)));
+                                theVariable.withNewValue(theFinalVariable.getType(), new VariableReferenceValue(theFinalVariable)));
                         aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
                     }
                 }

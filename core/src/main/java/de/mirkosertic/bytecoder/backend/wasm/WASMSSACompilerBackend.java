@@ -17,7 +17,13 @@ package de.mirkosertic.bytecoder.backend.wasm;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
@@ -88,7 +94,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("(module");
 
         theWriter.println("   (func $float_remainder (import \"math\" \"float_rem\") (param $p1 f32) (param $p2 f32) (result f32))\n");
-        theWriter.println("   (func $trace (import \"profiler\" \"trace\") (param $SP i32))\n");
+        theWriter.println("   (func $trace (import \"profiler\" \"trace\") (param $SP i32) (param $METHODID i32))\n");
 
         // Print imported functions first
         aLinkerContext.forEachClass(aEntry -> {
@@ -257,7 +263,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             });
         });
 
-        theWriter.println("   (memory (export \"memory\") 256 256)");
+        theWriter.println("   (memory (export \"memory\") 1024 1024)");
 
         // Write virtual method table
         if (!theGeneratedFunctions.isEmpty()) {
@@ -360,7 +366,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
 
                 ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
-                theSSAWriter.writeStartNode(theNode);
+                theSSAWriter.writeStartNode(theNode, theGeneratedFunctions.indexOf(WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature)));
 
                 theWriter.println("   )");
                 theWriter.println();
@@ -523,7 +529,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
             }
 
-            theSSAWriter.printStackEnter();
+            theSSAWriter.printStackEnter(theGeneratedFunctions.indexOf(theEntry.getKey()));
             theSSAWriter.writeExpressionList(theEntry.getValue().bootstrapMethod.getExpressions());
 
             theWriter.println("   )");

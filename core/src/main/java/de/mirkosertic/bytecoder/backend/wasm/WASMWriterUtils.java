@@ -24,7 +24,6 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -119,7 +118,7 @@ public class WASMWriterUtils {
     }
 
     public static int computeClassSizeFor(BytecodeLinkedClass aClass) {
-        AtomicInteger theSize = new AtomicInteger(CLASS_HEADER_SIZE); // 32 Bits Header
+        AtomicInteger theSize = new AtomicInteger(CLASS_HEADER_SIZE);
         aClass.forEachStaticField( t -> {
             theSize.addAndGet(OBJECT_FIELDSIZE); // Every member is a pointer to another object or a primitive of 32 bits
         });

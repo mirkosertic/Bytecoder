@@ -25,10 +25,10 @@ public class TSystem {
 
     public static final TPrintStream out = new TPrintStream(new TOutputStream() {
 
-        private TStringBuilder currentLine = new TStringBuilder();
-
         @Import(module = "system", name = "logByteArrayAsString")
         public native void writeByteArrayToConsole(byte[] aBytes);
+
+        private TStringBuilder currentLine = new TStringBuilder();
 
         @Override
         public void write(int aValue) throws IOException {
