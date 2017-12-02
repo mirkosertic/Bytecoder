@@ -533,6 +533,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
             println();
 
             WASMSSAWriter theChild = withDeeperIndent();
+            theChild.println(";; Source variable is of type " + theVariable.getValue());
+            if (theVariable.getValue() instanceof VariableReferenceValue) {
+                VariableReferenceValue theRef = (VariableReferenceValue) theVariable.getValue();
+                theChild.println(";; References " + theRef.getVariable().getName()  + " of type " + theRef.getVariable().getType() + " with value " + theRef.getVariable().getValue());
+                if (theRef.getVariable().getValue() instanceof InvokeVirtualMethodValue) {
+                    InvokeVirtualMethodValue theV = (InvokeVirtualMethodValue) theRef.getVariable().getValue();
+                    theChild.println(";; Invoking target " + theV.getTarget().getName() + " with name " + theV.getMethodName() + " and signature " + theV.getSignature());
+                }
+            }
             theChild.writeValue(theVariable.getValue());
 
             println();

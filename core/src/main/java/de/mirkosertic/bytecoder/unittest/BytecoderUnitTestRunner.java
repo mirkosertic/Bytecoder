@@ -343,6 +343,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             ceil: Math.ceil,");
             theWriter.println("                             sin: Math.sin,");
             theWriter.println("                             cos: Math.cos,");
+            theWriter.println("                             round: Math.round,");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         },");
             theWriter.println("                         profiler: {");
@@ -483,8 +484,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
-        testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-        testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-        testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        if (getDescription().getAnnotation(WASMOnly.class) != null) {
+            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        } else {
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        }
     }
 }

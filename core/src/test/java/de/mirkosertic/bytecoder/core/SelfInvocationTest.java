@@ -17,10 +17,12 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.unittest.WASMOnly;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
+@WASMOnly
 public class SelfInvocationTest {
 
     public static abstract class Stack {
