@@ -15,21 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.Type;
+
+import java.util.*;
 
 public class WASMWriterUtils {
 
@@ -109,48 +99,56 @@ public class WASMWriterUtils {
         }
     }
 
+    private static List<String> memberFieldNamesOf(BytecodeLinkedClass aClass) {
+        Set<String> theFields = new HashSet<>();
+        BytecodeLinkedClass theCurrent = aClass;
+        while(theCurrent != null) {
+            theCurrent.forEachMemberField(t -> theFields.add(t.getKey()));
+            theCurrent = theCurrent.getSuperClass();
+        }
+        List<String> theSortedFields = new ArrayList<>(theFields);
+        Collections.sort(theSortedFields);
+        return theSortedFields;
+    }
+
+    private static List<String> classFieldNamesOf(BytecodeLinkedClass aClass) {
+        Set<String> theFields = new HashSet<>();
+        BytecodeLinkedClass theCurrent = aClass;
+        while(theCurrent != null) {
+            theCurrent.forEachStaticField(t -> theFields.add(t.getKey()));
+            theCurrent = theCurrent.getSuperClass();
+        }
+        List<String> theSortedFields = new ArrayList<>(theFields);
+        Collections.sort(theSortedFields);
+        return theSortedFields;
+    }
+
     public static int computeObjectSizeFor(BytecodeLinkedClass aClass) {
-        AtomicInteger theSize = new AtomicInteger(OBJECT_HEADER_SIZE); // 32 Bits Header for the type + 32 Bits Header for VTableOffset
-        aClass.forEachMemberField( t -> {
-            theSize.addAndGet(OBJECT_FIELDSIZE); // Every member is a pointer to another object or a primitive of 32 bits
-        });
-        return theSize.intValue();
+        List<String> theFieldNames = memberFieldNamesOf(aClass);
+        return OBJECT_HEADER_SIZE * theFieldNames.size() * OBJECT_FIELDSIZE;
     }
 
     public static int computeClassSizeFor(BytecodeLinkedClass aClass) {
-        AtomicInteger theSize = new AtomicInteger(CLASS_HEADER_SIZE);
-        aClass.forEachStaticField( t -> {
-            theSize.addAndGet(OBJECT_FIELDSIZE); // Every member is a pointer to another object or a primitive of 32 bits
-        });
-        return theSize.intValue();
+        List<String> theFieldNames = classFieldNamesOf(aClass);
+        return CLASS_HEADER_SIZE * theFieldNames.size() * OBJECT_FIELDSIZE;
     }
 
     public static int computeStaticFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        int theOffset = CLASS_HEADER_SIZE;
-        List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
-        aClass.forEachStaticField(theFields::add);
-        for (int i=0;i<theFields.size();i++) {
-            Map.Entry<String, BytecodeLinkedClass.LinkedField> theField = theFields.get(i);
-            if (theField.getKey().equals(aFieldName)) {
-                return theOffset;
-            }
-            theOffset += OBJECT_FIELDSIZE;
+        List<String> theFieldNames = classFieldNamesOf(aClass);
+        int p = theFieldNames.indexOf(aFieldName);
+        if (p<0) {
+            throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
         }
-        throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
+        return CLASS_HEADER_SIZE + p * OBJECT_FIELDSIZE;
     }
 
     public static int computeFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        int theOffset = OBJECT_HEADER_SIZE;
-        List<Map.Entry<String, BytecodeLinkedClass.LinkedField>> theFields = new ArrayList<>();
-        aClass.forEachMemberField(theFields::add);
-        for (int i=0;i<theFields.size();i++) {
-            Map.Entry<String, BytecodeLinkedClass.LinkedField> theField = theFields.get(i);
-            if (theField.getKey().equals(aFieldName)) {
-                return theOffset;
-            }
-            theOffset += OBJECT_FIELDSIZE;
+        List<String> theFieldNames = memberFieldNamesOf(aClass);
+        int p = theFieldNames.indexOf(aFieldName);
+        if (p<0) {
+            throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
         }
-        throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
+        return OBJECT_HEADER_SIZE + p * OBJECT_FIELDSIZE;
     }
 
     public static String toWASMMethodSignature(BytecodeMethodSignature aSignatutre, boolean aIsStatic) {
