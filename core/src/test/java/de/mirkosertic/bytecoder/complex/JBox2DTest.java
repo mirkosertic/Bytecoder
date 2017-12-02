@@ -17,9 +17,7 @@ package de.mirkosertic.bytecoder.complex;
 
 import org.jbox2d.callbacks.ContactImpulse;
 import org.jbox2d.callbacks.ContactListener;
-import org.jbox2d.collision.AABB;
-import org.jbox2d.collision.Manifold;
-import org.jbox2d.collision.ManifoldPoint;
+import org.jbox2d.collision.*;
 import org.jbox2d.collision.broadphase.DynamicTree;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
@@ -35,6 +33,7 @@ import org.jbox2d.dynamics.contacts.Contact;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
 import org.jbox2d.pooling.IDynamicStack;
 import org.jbox2d.pooling.normal.DefaultWorldPool;
+import org.jbox2d.pooling.normal.OrderedStack;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -235,7 +234,26 @@ public class JBox2DTest {
 
     @Test
     public void testLinkDefaultWorld() {
-        DefaultWorldPool thePool = new DefaultWorldPool(10, 10);
+        Class theLalal = DefaultWorldPool.class;
+        //DefaultWorldPool thePool = new DefaultWorldPool(1, 1);
+
+        OrderedStack theStack = new OrderedStack<Vec2>(1, 1) {
+            @Override
+            protected Vec2 newInstance() {
+                //return new Vec2();
+                return null;
+            }
+        };
+    }
+
+    @Test
+    public void testDistance() {
+        Distance theDistance = new Distance();
+    }
+
+    @Test
+    public void testCollision() {
+        Collision theCollision = new Collision(null);
     }
 
     @Test
