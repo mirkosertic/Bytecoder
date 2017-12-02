@@ -15,12 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -60,7 +55,10 @@ public class Program {
     }
 
     public List<Variable> getVariables() {
-        return new ArrayList<>(variables.values());
+        List<Variable> theVariables = new ArrayList<>();
+        theVariables.addAll(variables.values());
+        Collections.sort(theVariables, Comparator.comparing(Variable::getName));
+        return theVariables;
     }
 
     public Variable createVariable(Type aType, Value aValue) {

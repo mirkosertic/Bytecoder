@@ -125,12 +125,12 @@ public class WASMWriterUtils {
 
     public static int computeObjectSizeFor(BytecodeLinkedClass aClass) {
         List<String> theFieldNames = memberFieldNamesOf(aClass);
-        return OBJECT_HEADER_SIZE * theFieldNames.size() * OBJECT_FIELDSIZE;
+        return OBJECT_HEADER_SIZE + theFieldNames.size() * OBJECT_FIELDSIZE;
     }
 
     public static int computeClassSizeFor(BytecodeLinkedClass aClass) {
         List<String> theFieldNames = classFieldNamesOf(aClass);
-        return CLASS_HEADER_SIZE * theFieldNames.size() * OBJECT_FIELDSIZE;
+        return CLASS_HEADER_SIZE + theFieldNames.size() * OBJECT_FIELDSIZE;
     }
 
     public static int computeStaticFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {

@@ -31,6 +31,7 @@ import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.CircleContact;
 import org.jbox2d.dynamics.contacts.Contact;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
+import org.jbox2d.dynamics.joints.WeldJoint;
 import org.jbox2d.pooling.IDynamicStack;
 import org.jbox2d.pooling.normal.DefaultWorldPool;
 import org.jbox2d.pooling.normal.OrderedStack;
@@ -233,17 +234,14 @@ public class JBox2DTest {
     }
 
     @Test
-    public void testLinkDefaultWorld() {
-        Class theLalal = DefaultWorldPool.class;
-        //DefaultWorldPool thePool = new DefaultWorldPool(1, 1);
+    public void weldJointTest() {
+        WeldJoint theJoint = null;
+        theJoint.initVelocityConstraints(null);
+    }
 
-        OrderedStack theStack = new OrderedStack<Vec2>(1, 1) {
-            @Override
-            protected Vec2 newInstance() {
-                //return new Vec2();
-                return null;
-            }
-        };
+    @Test
+    public void testLinkDefaultWorld() {
+        DefaultWorldPool thePool = new DefaultWorldPool(1, 1);
     }
 
     @Test
