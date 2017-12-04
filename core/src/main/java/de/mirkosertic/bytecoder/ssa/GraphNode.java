@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class GraphNode {
 
@@ -79,11 +79,11 @@ public class GraphNode {
         return startAddress;
     }
 
-    public Variable newVariable(Type aType, Value aValue)  {
+    public Variable newVariable(TypeRef aType, Value aValue)  {
         return newVariable(aType, aValue, false);
     }
 
-    public Variable newVariable(Type aType, Value aValue, boolean aIsImport)  {
+    public Variable newVariable(TypeRef aType, Value aValue, boolean aIsImport)  {
         Variable theNewVariable = program.createVariable(aType, aValue);
         if (!aIsImport) {
             expressions.add(new InitVariableExpression(theNewVariable));
@@ -91,7 +91,7 @@ public class GraphNode {
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(Type aType, Value aValue, VariableDescription aDescription) {
+    public Variable newImportedVariable(TypeRef aType, Value aValue, VariableDescription aDescription) {
         Variable theVariable = newVariable(aType, aValue, true);
         imported.put(aDescription, theVariable);
         return theVariable;

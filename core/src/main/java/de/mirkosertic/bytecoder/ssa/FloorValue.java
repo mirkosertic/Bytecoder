@@ -18,14 +18,14 @@ package de.mirkosertic.bytecoder.ssa;
 public class FloorValue extends Value {
 
     private final Value value;
-    private final Type type;
+    private final TypeRef type;
 
-    public FloorValue(Value aValue, Type aTargetType) {
+    public FloorValue(Value aValue, TypeRef aTargetType) {
         value = aValue;
         type = aTargetType;
     }
 
-    public Type getType() {
+    public TypeRef getType() {
         return type;
     }
 

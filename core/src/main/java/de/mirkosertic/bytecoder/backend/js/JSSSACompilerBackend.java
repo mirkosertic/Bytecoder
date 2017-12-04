@@ -380,7 +380,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theVariablesWriter.print(theVariable.getName());
                         theVariablesWriter.print(" = null;");
                         theVariablesWriter.print(" // type is ");
-                        theVariablesWriter.println(theVariable.getType().name());
+                        theVariablesWriter.println(theVariable.getType().resolve().name());
                     }
                 }
 

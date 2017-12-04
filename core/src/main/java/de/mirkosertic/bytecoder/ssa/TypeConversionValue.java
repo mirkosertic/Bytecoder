@@ -18,9 +18,9 @@ package de.mirkosertic.bytecoder.ssa;
 public class TypeConversionValue extends Value {
 
     private final Variable variable;
-    private final Type targetType;
+    private final TypeRef targetType;
 
-    public TypeConversionValue(Variable aVariable, Type aTargetType) {
+    public TypeConversionValue(Variable aVariable, TypeRef aTargetType) {
         variable = aVariable;
         targetType = aTargetType;
     }
@@ -29,7 +29,7 @@ public class TypeConversionValue extends Value {
         return variable;
     }
 
-    public Type getTargetType() {
+    public TypeRef getTargetType() {
         return targetType;
     }
 }

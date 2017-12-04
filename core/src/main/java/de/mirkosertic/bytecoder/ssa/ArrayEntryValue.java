@@ -17,17 +17,17 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ArrayEntryValue extends Value {
 
-    private final Type arrayType;
+    private final TypeRef arrayType;
     private final Variable array;
     private final Variable index;
 
-    public ArrayEntryValue(Type aArrayType, Variable aArray, Variable aIndex) {
+    public ArrayEntryValue(TypeRef aArrayType, Variable aArray, Variable aIndex) {
         arrayType = aArrayType;
         array = aArray;
         index = aIndex;
     }
 
-    public Type getArrayType() {
+    public TypeRef getArrayType() {
         return arrayType;
     }
 

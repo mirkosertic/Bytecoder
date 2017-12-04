@@ -78,15 +78,8 @@ public class MemoryManager {
 
     @Export("logMemoryLayout")
     public static void logMemoryLayout() {
-        int theCounter = 0;
         Address theCurrent = new Address(4);
         while(Address.getStart(theCurrent) != 0) {
-
-            theCounter++;
-            if (theCounter > 10000) {
-                return;
-            }
-
             int theStart = Address.getStart(theCurrent);
             int theUsedFlag = Address.getIntValue(theCurrent, 8);
             int theNext = Address.getIntValue(theCurrent, 4);

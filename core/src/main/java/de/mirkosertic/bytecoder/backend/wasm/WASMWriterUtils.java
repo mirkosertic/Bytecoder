@@ -15,11 +15,22 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import java.util.*;
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
 
 public class WASMWriterUtils {
 
@@ -88,8 +99,8 @@ public class WASMWriterUtils {
         return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
     }
 
-    public static String toType(Type aType) {
-        switch (aType) {
+    public static String toType(TypeRef aType) {
+        switch (aType.resolve()) {
             case DOUBLE:
                 return "f32";
             case FLOAT:
@@ -156,20 +167,20 @@ public class WASMWriterUtils {
 
         if (!aIsStatic) {
             theTypeDefinition+= " (param ";
-            theTypeDefinition+= WASMWriterUtils.toType(Type.REFERENCE);
+            theTypeDefinition+= WASMWriterUtils.toType(TypeRef.Native.REFERENCE);
             theTypeDefinition+=")";
         }
 
         for (int i=0;i<aSignatutre.getArguments().length;i++) {
             BytecodeTypeRef theParamType = aSignatutre.getArguments()[i];
             theTypeDefinition+= " (param ";
-            theTypeDefinition+=WASMWriterUtils.toType(Type.toType(theParamType));
+            theTypeDefinition+=WASMWriterUtils.toType(TypeRef.toType(theParamType));
             theTypeDefinition+= ")";
         }
 
         if (!aSignatutre.getReturnType().isVoid()) {
             theTypeDefinition+= " (result "; // result
-            theTypeDefinition+=WASMWriterUtils.toType(Type.toType(aSignatutre.getReturnType()));
+            theTypeDefinition+=WASMWriterUtils.toType(TypeRef.toType(aSignatutre.getReturnType()));
             theTypeDefinition+=")";
         }
         theTypeDefinition+= ")";

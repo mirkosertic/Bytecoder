@@ -1,6 +1,6 @@
 # Bytecoder
 
-Rich Domain Model for Java Bytecode and Framework to interpret and transpile it to other languages.
+Rich Domain Model for Java Bytecode and Framework to interpret and transpile it to other languages such as JavaScript or WebAssembly.
 
 ## High Level Goals
 
@@ -19,16 +19,17 @@ one implementation available.
 
 ## Compiling strategies
 
-The JVM Bytecode is parsed and transformed into an intermediate representation which has the single static assignment property.
-This intermediate representation is passed thru optimizer stages and sent to a backend implementation for target code generation.
+The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
+optimizer stages and sent to a backend implementation for target code generation.
 
 The *JavaScript* backend transforms the intermediate representation into JavaScript.
 
-The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled into WebAssembly binary code using the WABT toolchain.
+The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled 
+into WebAssembly binary code using the WABT toolchain.
 
 ## Memory management
 
-*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0. So the WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
+*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
 
 The JavaScript backend relies on JavaScript garbage collection provided by the browser.
 
@@ -53,12 +54,14 @@ public class SimpleMathTest {
 }
 ```
 
-Is compiled to JavaScript and executed using a Selenium Chrome driver. This testrunner will also support comparison of original Java code and its crosscompiled
+Is compiled to JavaScript and executed using a Selenium Chrome driver. This testrunner also supports comparison of original Java code and its crosscompiled
 counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
 ## Maven Plugin
 
-There is Maven plugin available. It currently supports only the JavaScript backend. Basically it can be used as follows:
+There is Bytecoder Maven Plugin available.
+
+## Compiling to JavaScript
 
 
 ```
@@ -86,4 +89,35 @@ There is Maven plugin available. It currently supports only the JavaScript backe
 
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
 The plugin will invoke the JavaScript compiler which will do all the heavy lifting. The generated
-JavaScript will be placed in the Maven `target/bytecoder` directory.
+JavaScript will be placed in the Maven `target/bytecoderjs` directory.
+
+## Compiling to WebAssembly
+
+```
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder-mavenplugin</artifactId>
+                <version>${project.version}</version>
+                <configuration>
+                    <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
+                    <backend>wasm</backend>                    
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+```
+
+You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
+The plugin will invoke the WebAssembly compiler which will do all the heavy lifting. The generated
+WebAssembly text file will be placed in the Maven `target/bytecoderwat` directory. You have to manually invoke the WABT Tools to 
+generate the WebAssembly binary representation from the text format. Optionally you may like to use the Binaryen tools
+to further optimize the generated WebAssembly.
