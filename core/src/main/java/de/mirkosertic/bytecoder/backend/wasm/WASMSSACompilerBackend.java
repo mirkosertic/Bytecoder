@@ -50,7 +50,7 @@ import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
-import de.mirkosertic.bytecoder.ssa.Type;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
@@ -133,7 +133,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     if (!t.getAccessFlags().isStatic()) {
                         theWriter.print("(param $thisRef");
                         theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
+                        theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
                         theWriter.print(") ");
                     }
 
@@ -142,13 +142,13 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                         theWriter.print("(param $p");
                         theWriter.print((i + 1));
                         theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(Type.toType(theParamType)));
+                        theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theParamType)));
                         theWriter.print(") ");
                     }
 
                     if (!theSignature.getReturnType().isVoid()) {
                         theWriter.print("(result "); // result
-                        theWriter.print(WASMWriterUtils.toType(Type.toType(theSignature.getReturnType())));
+                        theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
                         theWriter.print(")");
                     }
                     theWriter.println(")");
@@ -323,7 +323,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.print("(param $UNUSED");
                 }
                 theWriter.print(" ");
-                theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
+                theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
                 theWriter.print(") ");
 
                 for (int i=0;i<theSignature.getArguments().length;i++) {
@@ -331,13 +331,13 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.print("(param $p");
                     theWriter.print((i + 1));
                     theWriter.print(" ");
-                    theWriter.print(WASMWriterUtils.toType(Type.toType(theParamType)));
+                    theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theParamType)));
                     theWriter.print(") ");
                 }
 
                 if (!theSignature.getReturnType().isVoid()) {
                     theWriter.print("(result "); // result
-                    theWriter.print(WASMWriterUtils.toType(Type.toType(theSignature.getReturnType())));
+                    theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
                     theWriter.print(")");
                 }
                 theWriter.println();
@@ -361,7 +361,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                         theSSAWriter.print(" ");
                         theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
                         theSSAWriter.print(") ;; ");
-                        theSSAWriter.println(theVariable.getType().name());
+                        theSSAWriter.println(theVariable.getType().resolve().name());
                     }
                 }
 
@@ -505,7 +505,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(" ");
 
             theWriter.print("(result "); // result
-            theWriter.print(WASMWriterUtils.toType(Type.REFERENCE));
+            theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
             theWriter.print(")");
             theWriter.println();
 
@@ -525,7 +525,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theSSAWriter.print(" ");
                     theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
                     theSSAWriter.print(") ;; ");
-                    theSSAWriter.println(theVariable.getType().name());
+                    theSSAWriter.println(theVariable.getType().resolve().name());
                 }
             }
 
@@ -671,6 +671,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
+        List<String> theGlobalVariables = new ArrayList<>();
+
         theWriter.println("   (func $bootstrap");
 
         theWriter.println("      (set_global $STACKTOP (i32.sub (i32.mul (current_memory) (i32.const 65536)) (i32.const 1)))");
@@ -687,6 +689,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                 return;
             }
+
+            theGlobalVariables.add(WASMWriterUtils.toClassName(aEntry.getKey()) + "__runtimeClass");
 
             theWriter.print("      (set_global $");
             theWriter.print(WASMWriterUtils.toClassName(aEntry.getKey()));
@@ -714,6 +718,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         for (int i=0;i<theStringCache.size();i++) {
 
             String theData = theStringCache.get(i);
+
+            theGlobalVariables.add("stringPool" + i);
 
             theWriter.print("      ;; init of ");
             theWriter.println(theData);
@@ -780,6 +786,17 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             }
         });
 
+        // After the Bootstrap, we need to all the static stuff on the stack, so it is not garbage collected
+        theWriter.print("      (set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
+        theWriter.print(theGlobalVariables.size() * 4);
+        theWriter.println(")))");
+        for (int i=0;i<theGlobalVariables.size();i++) {
+            theWriter.print("      (i32.store offset=");
+            theWriter.print(i * 4);
+            theWriter.print(" (get_global $STACKTOP) (get_global $");
+            theWriter.print(theGlobalVariables.get(i));
+            theWriter.println("))");
+        }
 
         theWriter.println("   )");
         theWriter.println();

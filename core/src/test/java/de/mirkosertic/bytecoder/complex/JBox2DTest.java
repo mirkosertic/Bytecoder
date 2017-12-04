@@ -17,24 +17,35 @@ package de.mirkosertic.bytecoder.complex;
 
 import org.jbox2d.callbacks.ContactImpulse;
 import org.jbox2d.callbacks.ContactListener;
-import org.jbox2d.collision.*;
+import org.jbox2d.collision.AABB;
+import org.jbox2d.collision.Collision;
+import org.jbox2d.collision.Distance;
+import org.jbox2d.collision.Manifold;
+import org.jbox2d.collision.ManifoldPoint;
 import org.jbox2d.collision.broadphase.DynamicTree;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.ShapeType;
+import org.jbox2d.common.MathUtils;
+import org.jbox2d.common.Rot;
+import org.jbox2d.common.Settings;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
+import org.jbox2d.dynamics.SolverData;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.CircleContact;
 import org.jbox2d.dynamics.contacts.Contact;
+import org.jbox2d.dynamics.joints.Joint;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
 import org.jbox2d.dynamics.joints.WeldJoint;
+import org.jbox2d.dynamics.joints.WheelJoint;
+import org.jbox2d.dynamics.joints.WheelJointDef;
 import org.jbox2d.pooling.IDynamicStack;
+import org.jbox2d.pooling.IWorldPool;
 import org.jbox2d.pooling.normal.DefaultWorldPool;
-import org.jbox2d.pooling.normal.OrderedStack;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -236,6 +247,12 @@ public class JBox2DTest {
     @Test
     public void weldJointTest() {
         WeldJoint theJoint = null;
+        theJoint.initVelocityConstraints(null);
+    }
+
+    @Test
+    public void wheelJointTest() {
+        WheelJoint theJoint = null;
         theJoint.initVelocityConstraints(null);
     }
 
