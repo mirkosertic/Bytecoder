@@ -26,4 +26,9 @@ public class IntegerValue extends PrimitiveValue {
     public int getIntValue() {
         return intValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.INT;
+    }
 }

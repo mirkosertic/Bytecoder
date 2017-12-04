@@ -26,4 +26,9 @@ public class ByteValue extends PrimitiveValue {
     public byte getByteValue() {
         return byteValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.BYTE;
+    }
 }

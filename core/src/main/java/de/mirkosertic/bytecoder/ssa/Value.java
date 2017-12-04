@@ -15,6 +15,27 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class Value {
 
+    private final Set<Value> providesValueFor;
+    private final List<Value> consumesValueFrom;
+
+    public Value() {
+        providesValueFor = new HashSet<>();
+        consumesValueFrom = new ArrayList<>();
+    }
+
+    public void consume(Value aValue) {
+        aValue.providesValueFor.add(this);
+        consumesValueFrom.add(aValue);
+    }
+
+    public Type resolveType() {
+        return Type.UNKNOWN;
+    }
 }

@@ -26,4 +26,9 @@ public class StringValue extends Value {
     public String getStringValue() {
         return stringValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.REFERENCE;
+    }
 }

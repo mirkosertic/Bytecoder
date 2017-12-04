@@ -26,4 +26,9 @@ public class FloatValue extends PrimitiveValue {
     public float getFloatValue() {
         return floatValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.FLOAT;
+    }
 }

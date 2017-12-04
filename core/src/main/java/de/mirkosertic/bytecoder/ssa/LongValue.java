@@ -26,4 +26,9 @@ public class LongValue extends PrimitiveValue {
     public long getLongValue() {
         return longValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.LONG;
+    }
 }

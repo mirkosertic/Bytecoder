@@ -28,4 +28,9 @@ public class ClassReferenceValue extends PrimitiveValue {
     public BytecodeObjectTypeRef getType() {
         return type;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.REFERENCE;
+    }
 }
