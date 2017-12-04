@@ -26,4 +26,9 @@ public class DoubleValue extends PrimitiveValue {
     public double getDoubleValue() {
         return doubleValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.DOUBLE;
+    }
 }

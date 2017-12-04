@@ -16,4 +16,9 @@
 package de.mirkosertic.bytecoder.ssa;
 
 public class NullValue extends PrimitiveValue {
+
+    @Override
+    public Type resolveType() {
+        return Type.REFERENCE;
+    }
 }

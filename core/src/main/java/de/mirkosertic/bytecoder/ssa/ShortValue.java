@@ -26,4 +26,9 @@ public class ShortValue extends PrimitiveValue {
     public short getShortValue() {
         return shortValue;
     }
+
+    @Override
+    public Type resolveType() {
+        return Type.SHORT;
+    }
 }
