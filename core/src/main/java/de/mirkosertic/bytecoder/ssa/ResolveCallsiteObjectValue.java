@@ -47,4 +47,9 @@ public class ResolveCallsiteObjectValue extends Value {
     public GraphNode getBootstrapMethod() {
         return bootstrapMethod;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

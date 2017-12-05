@@ -564,7 +564,7 @@ public class ProgramGenerator {
         Value theValue = aVariable.getValue();
         if (theValue instanceof VariableReferenceValue) {
             VariableReferenceValue theRef = (VariableReferenceValue) theValue;
-            return rootFor(theRef.getVariable());
+            return rootFor(theRef.resolveFirstArgument());
         }
         return aVariable;
     }

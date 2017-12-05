@@ -17,13 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class VariableReferenceValue extends Value {
 
-    private final Variable variable;
-
     public VariableReferenceValue(Variable aVariable) {
-        variable = aVariable;
+        consume(ConsumptionType.ARGUMENT, aVariable);
     }
 
-    public Variable getVariable() {
-        return variable;
+    @Override
+    public TypeRef resolveType() {
+        return resolveFirstArgument().resolveType();
     }
 }

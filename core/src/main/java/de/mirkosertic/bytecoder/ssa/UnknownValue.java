@@ -16,4 +16,9 @@
 package de.mirkosertic.bytecoder.ssa;
 
 public class UnknownValue extends Value {
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.UNKNOWN;
+    }
 }

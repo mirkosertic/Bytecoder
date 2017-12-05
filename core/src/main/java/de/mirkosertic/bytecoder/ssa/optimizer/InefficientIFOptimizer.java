@@ -49,9 +49,11 @@ public class InefficientIFOptimizer implements Optimizer {
                 Variable theBoolean = theIf.getBooleanExpression();
                 if (theBoolean.getValue() instanceof BinaryValue) {
                     BinaryValue theBinary = (BinaryValue) theBoolean.getValue();
-                    if (theBinary.getValue1().getValue() instanceof CompareValue && theBinary.getValue2().getValue() instanceof PrimitiveValue) {
-                        CompareValue theCompare = (CompareValue) theBinary.getValue1().getValue();
-                        PrimitiveValue thePrimitive = (PrimitiveValue) theBinary.getValue2().getValue();
+                    Variable theBValue1 = theBinary.resolveFirstArgument();
+                    Variable theBValue2 = theBinary.resolveSecondArgument();
+                    if (theBValue1.getValue() instanceof CompareValue && theBValue2.getValue() instanceof PrimitiveValue) {
+                        CompareValue theCompare = (CompareValue) theBValue1.getValue();
+                        PrimitiveValue thePrimitive = (PrimitiveValue) theBValue2.getValue();
 
                         boolean isZero = false;
                         if (thePrimitive instanceof IntegerValue) {
@@ -65,13 +67,15 @@ public class InefficientIFOptimizer implements Optimizer {
                         }
 
                         if (isZero) {
+                            Variable theValue1 = theCompare.resolveFirstArgument();
+                            Variable theValue2 = theCompare.resolveSecondArgument();
                             switch (theBinary.getOperator()) {
                                 case GREATEROREQUALS: {
                                     // Means value1 == value2 || value2 > value2
                                     // hence value1>=value2;
                                     theBoolean.setValue(
-                                            new BinaryValue(theCompare.getValue1(), BinaryValue.Operator.GREATEROREQUALS,
-                                                    theCompare.getValue2()));
+                                            new BinaryValue(theValue1, BinaryValue.Operator.GREATEROREQUALS,
+                                                    theValue2));
 
                                     for (Expression theE : aExpressions.toList()) {
                                         if (theE instanceof InitVariableExpression) {
@@ -87,8 +91,8 @@ public class InefficientIFOptimizer implements Optimizer {
                                     // Means value1 == value2 || value1 < value2
                                     // hence value1<=value2
                                     theBoolean.setValue(
-                                            new BinaryValue(theCompare.getValue1(), BinaryValue.Operator.LESSTHANOREQUALS,
-                                                    theCompare.getValue2()));
+                                            new BinaryValue(theValue1, BinaryValue.Operator.LESSTHANOREQUALS,
+                                                    theValue2));
 
                                     for (Expression theE : aExpressions.toList()) {
                                         if (theE instanceof InitVariableExpression) {

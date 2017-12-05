@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.backend.wasm.WASMSSAWriter;
+import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
+
 public class BinaryValue extends Value {
 
     public enum Operator {
@@ -40,25 +43,20 @@ public class BinaryValue extends Value {
         BINARYSHIFTRIGHT,
     }
 
-    private final Variable value1;
     private final Operator operator;
-    private final Variable value2;
 
     public BinaryValue(Variable aValue1, Operator aOperator, Variable aValue2) {
-        value1 = aValue1;
         operator = aOperator;
-        value2 = aValue2;
-    }
-
-    public Variable getValue1() {
-        return value1;
+        consume(ConsumptionType.ARGUMENT, aValue1);
+        consume(ConsumptionType.ARGUMENT, aValue2);
     }
 
     public Operator getOperator() {
         return operator;
     }
 
-    public Variable getValue2() {
-        return value2;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.UNKNOWN;
     }
 }

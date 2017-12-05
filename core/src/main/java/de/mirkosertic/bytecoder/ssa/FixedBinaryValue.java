@@ -23,19 +23,19 @@ public class FixedBinaryValue extends Value {
         ISZERO,
     }
 
-    private final Variable value1;
     private final Operator operator;
 
     public FixedBinaryValue(Variable aValue1, Operator aOperator) {
-        value1 = aValue1;
         operator = aOperator;
-    }
-
-    public Variable getValue1() {
-        return value1;
+        consume(ConsumptionType.ARGUMENT, aValue1);
     }
 
     public Operator getOperator() {
         return operator;
+    }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.BOOLEAN;
     }
 }

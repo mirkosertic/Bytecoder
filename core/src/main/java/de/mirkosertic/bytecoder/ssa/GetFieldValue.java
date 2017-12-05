@@ -20,18 +20,18 @@ import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 public class GetFieldValue extends Value {
 
     private final BytecodeFieldRefConstant field;
-    private final Variable target;
 
     public GetFieldValue(BytecodeFieldRefConstant aField, Variable aTarget) {
         field = aField;
-        target = aTarget;
+        consume(ConsumptionType.ARGUMENT, aTarget);
     }
 
     public BytecodeFieldRefConstant getField() {
         return field;
     }
 
-    public Variable getTarget() {
-        return target;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.UNKNOWN;
     }
 }

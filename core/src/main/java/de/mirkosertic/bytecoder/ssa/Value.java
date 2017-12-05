@@ -77,9 +77,7 @@ public abstract class Value {
         consumesValueFrom.add(new Consumption(aType, aValue));
     }
 
-    public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
-    }
+    public abstract TypeRef resolveType();
 
     public void unbind() {
         for (Value theValue : providesValueFor) {

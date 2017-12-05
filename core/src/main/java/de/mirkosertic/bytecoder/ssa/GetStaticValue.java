@@ -28,4 +28,9 @@ public class GetStaticValue extends Value {
     public BytecodeFieldRefConstant getField() {
         return field;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.UNKNOWN;
+    }
 }

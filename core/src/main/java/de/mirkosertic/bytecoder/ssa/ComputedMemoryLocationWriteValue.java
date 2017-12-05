@@ -17,19 +17,13 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ComputedMemoryLocationWriteValue extends Value {
 
-    private final Variable origin;
-    private final Variable offset;
-
     public ComputedMemoryLocationWriteValue(Variable aOrigin, Variable aOffset) {
-        origin = aOrigin;
-        offset = aOffset;
+        consume(ConsumptionType.ARGUMENT, aOrigin);
+        consume(ConsumptionType.ARGUMENT, aOffset);
     }
 
-    public Variable getOrigin() {
-        return origin;
-    }
-
-    public Variable getOffset() {
-        return offset;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.UNKNOWN;
     }
 }

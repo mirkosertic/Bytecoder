@@ -35,4 +35,9 @@ public class RuntimeGeneratedTypeValue extends Value {
     public void setMethodRef(Variable methodRef) {
         this.methodRef = methodRef;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

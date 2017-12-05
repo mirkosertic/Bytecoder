@@ -17,13 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class NegatedValue extends Value {
 
-    private final Variable variable;
-
     public NegatedValue(Variable aVariable) {
-        variable = aVariable;
+        consume(ConsumptionType.ARGUMENT, aVariable);
     }
 
-    public Variable getVariable() {
-        return variable;
+    @Override
+    public TypeRef resolveType() {
+        return resolveFirstArgument().resolveType();
     }
 }
