@@ -359,9 +359,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                         theSSAWriter.print("(local $");
                         theSSAWriter.print(theVariable.getName());
                         theSSAWriter.print(" ");
-                        theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
+                        theSSAWriter.print(WASMWriterUtils.toType(theVariable.resolveType()));
                         theSSAWriter.print(") ;; ");
-                        theSSAWriter.println(theVariable.getType().resolve().name());
+                        theSSAWriter.println(theVariable.resolveType().resolve().name());
                     }
                 }
 
@@ -523,9 +523,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theSSAWriter.print("(local $");
                     theSSAWriter.print(theVariable.getName());
                     theSSAWriter.print(" ");
-                    theSSAWriter.print(WASMWriterUtils.toType(theVariable.getType()));
+                    theSSAWriter.print(WASMWriterUtils.toType(theVariable.resolveType()));
                     theSSAWriter.print(") ;; ");
-                    theSSAWriter.println(theVariable.getType().resolve().name());
+                    theSSAWriter.println(theVariable.resolveType().resolve().name());
                 }
             }
 

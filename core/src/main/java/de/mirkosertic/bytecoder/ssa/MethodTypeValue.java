@@ -28,4 +28,9 @@ public class MethodTypeValue extends Value {
     public BytecodeMethodSignature getSignature() {
         return signature;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

@@ -28,7 +28,7 @@ public class IntegerValue extends PrimitiveValue {
     }
 
     @Override
-    public Type resolveType() {
-        return Type.INT;
+    public TypeRef resolveType() {
+        return TypeRef.Native.INT;
     }
 }

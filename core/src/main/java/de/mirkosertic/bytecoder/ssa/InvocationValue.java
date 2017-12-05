@@ -15,20 +15,22 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class DoubleValue extends PrimitiveValue {
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
-    private final double doubleValue;
+public class InvocationValue extends Value {
 
-    public DoubleValue(double aDoubleValue) {
-        doubleValue = aDoubleValue;
+    private final BytecodeMethodSignature signature;
+
+    public InvocationValue(BytecodeMethodSignature aSignature) {
+        signature = aSignature;
     }
 
-    public double getDoubleValue() {
-        return doubleValue;
+    public BytecodeMethodSignature getSignature() {
+        return signature;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.DOUBLE;
+        return TypeRef.toType(signature.getReturnType());
     }
 }

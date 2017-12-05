@@ -28,7 +28,7 @@ public class LongValue extends PrimitiveValue {
     }
 
     @Override
-    public Type resolveType() {
-        return Type.LONG;
+    public TypeRef resolveType() {
+        return TypeRef.Native.LONG;
     }
 }

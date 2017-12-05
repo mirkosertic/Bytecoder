@@ -28,7 +28,7 @@ public class ShortValue extends PrimitiveValue {
     }
 
     @Override
-    public Type resolveType() {
-        return Type.SHORT;
+    public TypeRef resolveType() {
+        return TypeRef.Native.SHORT;
     }
 }

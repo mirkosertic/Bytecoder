@@ -20,29 +20,18 @@ import java.util.List;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-public class DirectInvokeMethodValue extends Value {
+public class DirectInvokeMethodValue extends InvocationValue {
 
     private final BytecodeObjectTypeRef clazz;
     private final String methodName;
-    private final BytecodeMethodSignature methodSignature;
-    private final Variable target;
-    private final List<Variable> arguments;
 
     public DirectInvokeMethodValue(BytecodeObjectTypeRef aClazz, String aMethodName,
             BytecodeMethodSignature aMethodSignature, Variable aTarget, List<Variable> aArguments) {
+        super(aMethodSignature);
         clazz = aClazz;
         methodName = aMethodName;
-        methodSignature = aMethodSignature;
-        target = aTarget;
-        arguments = aArguments;
-    }
-
-    public Variable getTarget() {
-        return target;
-    }
-
-    public List<Variable> getArguments() {
-        return arguments;
+        consume(ConsumptionType.INVOCATIONTARGET, aTarget);
+        consume(ConsumptionType.ARGUMENT, aArguments);
     }
 
     public BytecodeObjectTypeRef getClazz() {
@@ -51,9 +40,5 @@ public class DirectInvokeMethodValue extends Value {
 
     public String getMethodName() {
         return methodName;
-    }
-
-    public BytecodeMethodSignature getMethodSignature() {
-        return methodSignature;
     }
 }

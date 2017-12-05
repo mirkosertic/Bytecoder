@@ -28,7 +28,7 @@ public class StringValue extends Value {
     }
 
     @Override
-    public Type resolveType() {
-        return Type.REFERENCE;
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
     }
 }

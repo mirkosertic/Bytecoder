@@ -24,4 +24,9 @@ public class MethodHandlesGeneratedLookupValue extends Value {
     public MethodHandlesGeneratedLookupValue(BytecodeObjectTypeRef aOwningClass) {
         owningClass = aOwningClass;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

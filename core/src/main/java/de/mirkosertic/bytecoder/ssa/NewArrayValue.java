@@ -20,18 +20,18 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 public class NewArrayValue extends Value {
 
     private final BytecodeTypeRef type;
-    private final Variable length;
 
     public NewArrayValue(BytecodeTypeRef aType, Variable aLength) {
         type = aType;
-        length = aLength;
+        consume(ConsumptionType.ARGUMENT, aLength);
     }
 
     public BytecodeTypeRef getType() {
         return type;
     }
 
-    public Variable getLength() {
-        return length;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
     }
 }
