@@ -15,25 +15,25 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+
+import java.util.List;
 
 public class NewMultiArrayValue extends Value {
 
     private final BytecodeTypeRef type;
-    private final List<Variable> dimensions;
 
     public NewMultiArrayValue(BytecodeTypeRef aType, List<Variable> aDimensions) {
         type = aType;
-        dimensions = aDimensions;
+        consume(ConsumptionType.ARGUMENT, aDimensions);
     }
 
     public BytecodeTypeRef getType() {
         return type;
     }
 
-    public List<Variable> getDimensions() {
-        return dimensions;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
     }
 }

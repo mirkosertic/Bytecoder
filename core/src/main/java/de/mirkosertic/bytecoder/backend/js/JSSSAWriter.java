@@ -253,17 +253,17 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     public void print(ComputedMemoryLocationWriteValue aValue) {
         print("bytecoderGlobalMemory[");
-        printVariableNameOrValue(aValue.getOrigin());
+        printVariableNameOrValue(aValue.resolveFirstArgument());
         print(" + ");
-        printVariableNameOrValue(aValue.getOffset());
+        printVariableNameOrValue(aValue.resolveSecondArgument());
         print("]");
     }
 
     public void print(ComputedMemoryLocationReadValue aValue) {
         print("bytecoderGlobalMemory[");
-        printVariableNameOrValue(aValue.getOrigin());
+        printVariableNameOrValue(aValue.resolveFirstArgument());
         print(" + ");
-        printVariableNameOrValue(aValue.getOffset());
+        printVariableNameOrValue(aValue.resolveSecondArgument());
         print("]");
     }
 
@@ -304,7 +304,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
         print("bytecoder.newMultiArray(");
         print("[");
-        List<Variable> theDimensions = aValue.getDimensions();
+        List<Variable> theDimensions = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
         for (int i=0;i<theDimensions.size();i++) {
             if (i>0) {
                 print(",");
@@ -346,15 +346,15 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(NegatedValue aValue) {
-        Variable theVariable = aValue.getVariable();
+        Variable theVariable = aValue.resolveFirstArgument();
         print("(-");
         printVariableNameOrValue(theVariable);
         print(")");
     }
 
     public void print(CompareValue aValue) {
-        Variable theVariable1 = aValue.getValue1();
-        Variable theVariable2 = aValue.getValue2();
+        Variable theVariable1 = aValue.resolveFirstArgument();
+        Variable theVariable2 = aValue.resolveSecondArgument();
         print("(");
         printVariableNameOrValue(theVariable1);
         print(" > ");
@@ -435,14 +435,14 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(GetFieldValue aValue) {
-        Variable theTarget = aValue.getTarget();
+        Variable theTarget = aValue.resolveFirstArgument();
         BytecodeFieldRefConstant theField = aValue.getField();
         printVariableNameOrValue(theTarget);
         printInstanceFieldReference(theField);
     }
 
     public void print(BinaryValue aValue) {
-        Variable theValue1 = aValue.getValue1();
+        Variable theValue1 = aValue.resolveFirstArgument();
         printVariableNameOrValue(theValue1);
         switch (aValue.getOperator()) {
             case ADD:
@@ -499,12 +499,12 @@ public class JSSSAWriter extends IndentSSAWriter {
             default:
                 throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
         }
-        Variable theValue2 = aValue.getValue2();
+        Variable theValue2 = aValue.resolveSecondArgument();
         printVariableNameOrValue(theValue2);
     }
 
     public void print(FixedBinaryValue aValue) {
-        Variable theValue1 = aValue.getValue1();
+        Variable theValue1 = aValue.resolveFirstArgument();
         printVariableNameOrValue(theValue1);
         switch (aValue.getOperator()) {
             case ISNONNULL:
@@ -526,7 +526,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(VariableReferenceValue aValue) {
-        Variable theVariable = aValue.getVariable();
+        Variable theVariable = aValue.resolveFirstArgument();
         printVariableNameOrValue(theVariable);
     }
 
@@ -636,7 +636,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     private Value resolveRealValue(Value aValue) {
         if (aValue instanceof VariableReferenceValue) {
             VariableReferenceValue theRef = (VariableReferenceValue) aValue;
-            return resolveRealValue(theRef.getVariable());
+            return resolveRealValue(theRef.resolveFirstArgument());
         }
         return aValue;
     }

@@ -17,19 +17,22 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class CompareValue extends Value {
 
-    private final Variable value1;
-    private final Variable value2;
-
     public CompareValue(Variable aValue1, Variable aValue2) {
-        value1 = aValue1;
-        value2 = aValue2;
+        consume(ConsumptionType.ARGUMENT, aValue1);
+        consume(ConsumptionType.ARGUMENT, aValue2);
     }
 
-    public Variable getValue1() {
-        return value1;
-    }
+    @Override
+    public TypeRef resolveType() {
+        Value theValue1 = resolveFirstArgument();
+        Value theValue2 = resolveSecondArgument();
 
-    public Variable getValue2() {
-        return value2;
+        if (theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE && theValue2.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            return TypeRef.Native.DOUBLE;
+        }
+        if (theValue1.resolveType().resolve() == TypeRef.Native.FLOAT && theValue2.resolveType().resolve() == TypeRef.Native.FLOAT) {
+            return TypeRef.Native.FLOAT;
+        }
+        return TypeRef.Native.INT;
     }
 }

@@ -28,4 +28,9 @@ public class NewObjectValue extends Value {
     public BytecodeClassinfoConstant getType() {
         return type;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }
