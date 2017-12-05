@@ -89,7 +89,7 @@ There is Bytecoder Maven Plugin available.
 
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
 The plugin will invoke the JavaScript compiler which will do all the heavy lifting. The generated
-JavaScript will be placed in the Maven `target/bytecoderjs` directory.
+JavaScript will be placed in the Maven `target/bytecoder` directory.
 
 ## Compiling to WebAssembly
 
@@ -118,6 +118,6 @@ JavaScript will be placed in the Maven `target/bytecoderjs` directory.
 
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
 The plugin will invoke the WebAssembly compiler which will do all the heavy lifting. The generated
-WebAssembly text file will be placed in the Maven `target/bytecoderwat` directory. You have to manually invoke the WABT Tools to 
+WebAssembly text file will be placed in the Maven `target/bytecoder` directory. You have to manually invoke the WABT Tools to 
 generate the WebAssembly binary representation from the text format. Optionally you may like to use the Binaryen tools
 to further optimize the generated WebAssembly.

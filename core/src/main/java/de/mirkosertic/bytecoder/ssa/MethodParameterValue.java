@@ -31,7 +31,8 @@ public class MethodParameterValue extends Value {
         return parameterIndex;
     }
 
-    public BytecodeTypeRef getTypeRef() {
-        return typeRef;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.toType(typeRef);
     }
 }

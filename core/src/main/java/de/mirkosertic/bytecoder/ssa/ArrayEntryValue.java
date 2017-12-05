@@ -18,24 +18,15 @@ package de.mirkosertic.bytecoder.ssa;
 public class ArrayEntryValue extends Value {
 
     private final TypeRef arrayType;
-    private final Variable array;
-    private final Variable index;
 
     public ArrayEntryValue(TypeRef aArrayType, Variable aArray, Variable aIndex) {
         arrayType = aArrayType;
-        array = aArray;
-        index = aIndex;
+        consume(ConsumptionType.ARGUMENT, aArray);
+        consume(ConsumptionType.ARGUMENT, aIndex);
     }
 
-    public TypeRef getArrayType() {
+    @Override
+    public TypeRef resolveType() {
         return arrayType;
-    }
-
-    public Variable getArray() {
-        return array;
-    }
-
-    public Variable getIndex() {
-        return index;
     }
 }

@@ -165,13 +165,13 @@ public class ProgramGenerator {
         public ParsingHelper cloneToNewWithPHIFunctions(GraphNode aBlock, Program aProgram) {
             ParsingHelper theNew = new ParsingHelper(aBlock);
             for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
-                Variable theVar = aProgram.createVariable(theEntry.getValue().getType(), new PHIFunction());
+                Variable theVar = aProgram.createVariable(theEntry.getValue().resolveType(), new PHIFunction());
                 aBlock.addToImportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
                 aBlock.addToExportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
                 theNew.localVariables.put(theEntry.getKey(), theVar);
             }
             for (int i=stack.size() - 1 ; i>= 0; i--) {
-                Variable theVar = aProgram.createVariable(stack.get(stack.size() - 1 - i).getType(), new PHIFunction());
+                Variable theVar = aProgram.createVariable(stack.get(stack.size() - 1 - i).resolveType(), new PHIFunction());
                 aBlock.addToImportedList(theVar, new StackVariableDescription(i));
                 theNew.stack.push(theVar);
             }
@@ -437,12 +437,12 @@ public class ProgramGenerator {
                             if (!theVariable.getName().equals(theFinalVariable.getName())) {
 
                                 InitVariableExpression theExpression = new InitVariableExpression(
-                                        theVariable.withNewValue(theFinalVariable.getType(), new VariableReferenceValue(theFinalVariable)));
+                                        theVariable.withNewValue(theFinalVariable.resolveType(), new VariableReferenceValue(theFinalVariable)));
                                 theBlock.getExpressions().add(new CommentExpression("Resolving " + theImport.getKey()));
                                 theBlock.getExpressions().add(theExpression);
                             } else {
                                 // Propagate the type
-                                theVariable.setType(theFinalVariable.getType());
+                                theVariable.setType(theFinalVariable.resolveType());
                             }
                         }
                     }
@@ -501,11 +501,11 @@ public class ProgramGenerator {
                 } else {
                     if (!theVariable.getName().equals(theFinalVariable.getName())) {
                         InitVariableExpression theInitExpression = new InitVariableExpression(
-                                theVariable.withNewValue(theFinalVariable.getType(), new VariableReferenceValue(theFinalVariable)));
+                                theVariable.withNewValue(theFinalVariable.resolveType(), new VariableReferenceValue(theFinalVariable)));
                         aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
                     } else {
                         // Propapage the type
-                        theVariable.setType(theFinalVariable.getType());
+                        theVariable.setType(theFinalVariable.resolveType());
                     }
                 }
             }
@@ -594,7 +594,7 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionPOP2) {
                 BytecodeInstructionPOP2 theINS = (BytecodeInstructionPOP2) theInstruction;
                 Variable theVariable = aHelper.pop();
-                switch (theVariable.getType().resolve()) {
+                switch (theVariable.resolveType().resolve()) {
                     case LONG:
                         break;
                     case DOUBLE:
@@ -609,7 +609,7 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionDUP2X1) {
                 BytecodeInstructionDUP2X1 theINS = (BytecodeInstructionDUP2X1) theInstruction;
                 Variable theValue1 = aHelper.pop();
-                if (theValue1.getType().resolve() == TypeRef.Native.LONG || theValue1.getType().resolve() == TypeRef.Native.DOUBLE) {
+                if (theValue1.resolveType().resolve() == TypeRef.Native.LONG || theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE) {
                     Variable theValue2 = aHelper.pop();
 
                     aHelper.push(theValue1);
@@ -748,7 +748,7 @@ public class ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionGenericNEG) {
                 BytecodeInstructionGenericNEG theINS = (BytecodeInstructionGenericNEG) theInstruction;
                 Variable theVariable = aHelper.pop();
-                Variable theNegatedValue = aTargetBlock.newVariable(theVariable.getType(), new NegatedValue(theVariable));
+                Variable theNegatedValue = aTargetBlock.newVariable(theVariable.resolveType(), new NegatedValue(theVariable));
                 aHelper.push(theNegatedValue);
             } else if (theInstruction instanceof BytecodeInstructionARRAYLENGTH) {
                 BytecodeInstructionARRAYLENGTH theINS = (BytecodeInstructionARRAYLENGTH) theInstruction;

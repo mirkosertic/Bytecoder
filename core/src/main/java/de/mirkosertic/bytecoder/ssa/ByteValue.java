@@ -28,7 +28,7 @@ public class ByteValue extends PrimitiveValue {
     }
 
     @Override
-    public Type resolveType() {
-        return Type.BYTE;
+    public TypeRef resolveType() {
+        return TypeRef.Native.BYTE;
     }
 }

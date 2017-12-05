@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Variable {
+public class Variable extends Value {
 
     private TypeRef type;
     private final String name;
@@ -27,7 +27,8 @@ public class Variable {
         value = aValue;
     }
 
-    public TypeRef getType() {
+    @Override
+    public TypeRef resolveType() {
         return type;
     }
 

@@ -17,19 +17,15 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class FloorValue extends Value {
 
-    private final Value value;
     private final TypeRef type;
 
     public FloorValue(Value aValue, TypeRef aTargetType) {
-        value = aValue;
         type = aTargetType;
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
-    public TypeRef getType() {
+    @Override
+    public TypeRef resolveType() {
         return type;
-    }
-
-    public Value getValue() {
-        return value;
     }
 }

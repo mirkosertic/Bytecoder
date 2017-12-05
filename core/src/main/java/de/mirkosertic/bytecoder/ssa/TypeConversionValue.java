@@ -17,19 +17,15 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class TypeConversionValue extends Value {
 
-    private final Variable variable;
     private final TypeRef targetType;
 
     public TypeConversionValue(Variable aVariable, TypeRef aTargetType) {
-        variable = aVariable;
+        consume(ConsumptionType.ARGUMENT, aVariable);
         targetType = aTargetType;
     }
 
-    public Variable getVariable() {
-        return variable;
-    }
-
-    public TypeRef getTargetType() {
+    @Override
+    public TypeRef resolveType() {
         return targetType;
     }
 }

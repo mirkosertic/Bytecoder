@@ -61,11 +61,16 @@ public class InvokeVirtualOptimizer implements Optimizer {
                     BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
                     if (!theLinked.emulatedByRuntime()) {
                         BytecodeObjectTypeRef theClazz = theLinked.getClassName();
-                        DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName, theSignature,
-                                theValue.getTarget(), theValue.getArguments());
-                        DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theNewValue);
 
+                        Variable theTarget = (Variable) theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
+                        List<Variable> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+
+                        DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName, theSignature,
+                                theTarget, theVariables);
+                        DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theNewValue);
                         aExpressions.replace(theExpression, theNewExpression);
+
+                        theValue.unbind();
                     }
                 }
             }
@@ -81,6 +86,9 @@ public class InvokeVirtualOptimizer implements Optimizer {
                     String theMethodName = theInvokeVirtualValue.getMethodName();
                     BytecodeMethodSignature theSignature = theInvokeVirtualValue.getSignature();
 
+                    Variable theTarget = (Variable) theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
+                    List<Variable> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+
                     BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
                     List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
                     if (theLinkedClasses.size() == 1) {
@@ -89,8 +97,10 @@ public class InvokeVirtualOptimizer implements Optimizer {
                         if (!theLinked.emulatedByRuntime()) {
                             BytecodeObjectTypeRef theClazz = theLinked.getClassName();
                             DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName,
-                                    theSignature, theInvokeVirtualValue.getTarget(), theInvokeVirtualValue.getArguments());
+                                    theSignature, theTarget, theVariables);
                             theVariable.setValue(theNewValue);
+
+                            theValue.unbind();
                         }
                     }
                 }

@@ -28,7 +28,7 @@ public class FloatValue extends PrimitiveValue {
     }
 
     @Override
-    public Type resolveType() {
-        return Type.FLOAT;
+    public TypeRef resolveType() {
+        return TypeRef.Native.FLOAT;
     }
 }

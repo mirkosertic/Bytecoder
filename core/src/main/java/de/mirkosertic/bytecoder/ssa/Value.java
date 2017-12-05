@@ -20,22 +20,80 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Value {
+public abstract class Value {
+
+    public static enum ConsumptionType {
+        ARGUMENT, INVOCATIONTARGET
+    }
+
+    public static class Consumption {
+        private final ConsumptionType type;
+        private final Value value;
+
+        public Consumption(ConsumptionType aType, Value aValue) {
+            type = aType;
+            value = aValue;
+        }
+    }
 
     private final Set<Value> providesValueFor;
-    private final List<Value> consumesValueFrom;
+    private final List<Consumption> consumesValueFrom;
 
     public Value() {
         providesValueFor = new HashSet<>();
         consumesValueFrom = new ArrayList<>();
     }
 
-    public void consume(Value aValue) {
-        aValue.providesValueFor.add(this);
-        consumesValueFrom.add(aValue);
+    public <T extends Value> List<T> consumedValues(ConsumptionType aType) {
+        List<T> theResult = new ArrayList<>();
+        for (Consumption theConsumption : consumesValueFrom) {
+            if (theConsumption.type == aType) {
+                theResult.add((T) theConsumption.value);
+            }
+        }
+        return theResult;
     }
 
-    public Type resolveType() {
-        return Type.UNKNOWN;
+    public void consume(ConsumptionType aType, List<? extends Value> aValues) {
+        for (Value theValue : aValues) {
+            consume(aType, theValue);
+        }
+    }
+
+    public <T extends Value> T resolveFirstArgument() {
+        return (T) consumedValues(ConsumptionType.ARGUMENT).get(0);
+    }
+
+    public <T extends Value> T resolveSecondArgument() {
+        return (T) consumedValues(ConsumptionType.ARGUMENT).get(1);
+    }
+
+    public <T extends Value> T resolveThirdArgument() {
+        return (T) consumedValues(ConsumptionType.ARGUMENT).get(2);
+    }
+
+    public void consume(ConsumptionType aType, Value aValue) {
+        aValue.providesValueFor.add(this);
+        consumesValueFrom.add(new Consumption(aType, aValue));
+    }
+
+    public TypeRef resolveType() {
+        return TypeRef.Native.UNKNOWN;
+    }
+
+    public void unbind() {
+        for (Value theValue : providesValueFor) {
+            theValue.removeConsumptionFor(theValue);
+        }
+    }
+
+    private void removeConsumptionFor(Value aValue) {
+        List<Consumption> theValuesToRemove = new ArrayList<>();
+        for (Consumption theValue : consumesValueFrom) {
+            if (theValue.value == aValue) {
+                theValuesToRemove.add(theValue);
+            }
+        }
+        consumesValueFrom.removeAll(theValuesToRemove);
     }
 }

@@ -19,19 +19,19 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
 public class InstanceOfValue extends Value {
 
-    private final Variable variable;
     private final BytecodeClassinfoConstant type;
 
     public InstanceOfValue(Variable aVariable, BytecodeClassinfoConstant aType) {
-        variable = aVariable;
         type = aType;
-    }
-
-    public Variable getVariable() {
-        return variable;
+        consume(ConsumptionType.ARGUMENT, aVariable);
     }
 
     public BytecodeClassinfoConstant getType() {
         return type;
+    }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.BOOLEAN;
     }
 }

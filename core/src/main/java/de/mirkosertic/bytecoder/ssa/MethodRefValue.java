@@ -28,4 +28,9 @@ public class MethodRefValue extends Value {
     public BytecodeMethodRefConstant getMethodRef() {
         return methodRef;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

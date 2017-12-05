@@ -17,13 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class TypeOfValue extends Value {
 
-   private final Variable target;
-
-   public TypeOfValue(Variable aTarget) {
-       target = aTarget;
+    public TypeOfValue(Variable aTarget) {
+       consume(ConsumptionType.ARGUMENT, aTarget);
    }
 
-   public Variable getTarget() {
-       return target;
-   }
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

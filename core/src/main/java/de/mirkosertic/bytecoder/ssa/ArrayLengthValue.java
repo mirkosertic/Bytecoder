@@ -17,13 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ArrayLengthValue extends Value {
 
-    private final Variable array;
-
     public ArrayLengthValue(Variable aArray) {
-        array = aArray;
+        consume(ConsumptionType.ARGUMENT, aArray);
     }
 
-    public Variable getArray() {
-        return array;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.INT;
     }
 }
