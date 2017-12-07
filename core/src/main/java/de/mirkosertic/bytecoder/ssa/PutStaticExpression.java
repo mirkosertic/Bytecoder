@@ -20,18 +20,18 @@ import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 public class PutStaticExpression extends Expression {
 
     private final BytecodeFieldRefConstant field;
-    private final Variable variable;
+    private final Value value;
 
-    public PutStaticExpression(BytecodeFieldRefConstant aField, Variable aVariable) {
+    public PutStaticExpression(BytecodeFieldRefConstant aField, Value aValue) {
         field = aField;
-        variable = aVariable;
+        value = aValue;
     }
 
     public BytecodeFieldRefConstant getField() {
         return field;
     }
 
-    public Variable getVariable() {
-        return variable;
+    public Value getValue() {
+        return value;
     }
 }

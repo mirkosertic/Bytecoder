@@ -45,8 +45,10 @@ public class InefficientIFOptimizer implements Optimizer {
 
             if (theExpression instanceof IFExpression) {
                 IFExpression theIf = (IFExpression) theExpression;
-
-                Variable theBoolean = theIf.getBooleanExpression();
+                if (!(theIf.getBooleanValue() instanceof Variable)) {
+                    continue;
+                }
+                Variable theBoolean = (Variable) theIf.getBooleanValue();
                 if (theBoolean.getValue() instanceof BinaryValue) {
                     BinaryValue theBinary = (BinaryValue) theBoolean.getValue();
                     Variable theBValue1 = theBinary.resolveFirstArgument();

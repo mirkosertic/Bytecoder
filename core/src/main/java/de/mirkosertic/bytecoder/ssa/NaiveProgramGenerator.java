@@ -137,7 +137,12 @@ import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
 public class NaiveProgramGenerator implements ProgramGenerator {
 
-    public static final ProgramGeneratorFactory FACTORY = NaiveProgramGenerator::new;
+    public final static ProgramGeneratorFactory FACTORY = new ProgramGeneratorFactory() {
+        @Override
+        public ProgramGenerator createFor(BytecodeLinkerContext aLinkerContext) {
+            return new NaiveProgramGenerator(aLinkerContext);
+        }
+    };
 
     private static class ParsingHelper {
 
@@ -240,7 +245,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         linkerContext = aLinkerContext;
     }
 
-
+    @Override
     public Program generateFrom(BytecodeClass aOwningClass, BytecodeMethod aMethod) {
 
         BytecodeCodeAttributeInfo theCode = aMethod.getCode(aOwningClass);
@@ -248,17 +253,131 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         Program theProgram = new Program();
 
-        Map<BytecodeBasicBlock, GraphNode> theCreatedBlocks = toControlFlowGraph(theProgram, theBytecode);
-        List<BytecodeBasicBlock> theBlocks = new ArrayList<>(theCreatedBlocks.keySet());
-
+        List<BytecodeBasicBlock> theBlocks = new ArrayList<>();
         Function<BytecodeOpcodeAddress, BytecodeBasicBlock> theBasicBlockByAddress = aValue -> {
-            for (BytecodeBasicBlock theBlock : theCreatedBlocks.keySet()) {
+            for (BytecodeBasicBlock theBlock : theBlocks) {
                 if (aValue.equals(theBlock.getStartAddress())) {
                     return theBlock;
                 }
             }
             throw new IllegalStateException("No Block for " + aValue);
         };
+
+        Set<BytecodeOpcodeAddress> theJumpTarget = theBytecode.getJumpTargets();
+        BytecodeBasicBlock currentBlock = null;
+        for (BytecodeInstruction theInstruction : theBytecode.getInstructions()) {
+            if (theJumpTarget.contains(theInstruction.getOpcodeAddress())) {
+                // Jump target, start a new basic block
+                currentBlock = null;
+            }
+            if (theBytecode.isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
+                // start of try block, hence new basic block
+                currentBlock = null;
+            }
+            if (currentBlock == null) {
+                BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
+                for (BytecodeExceptionTableEntry theHandler : theBytecode.getExceptionHandlers()) {
+                    if (theHandler.getHandlerPc().equals(theInstruction.getOpcodeAddress())) {
+                        if (theHandler.isFinally()) {
+                            theType = BytecodeBasicBlock.Type.FINALLY;
+                        } else {
+                            theType = BytecodeBasicBlock.Type.EXCEPTION_HANDLER;
+                        }
+                    }
+                }
+                BytecodeBasicBlock theCurrentTemp = currentBlock;
+                currentBlock = new BytecodeBasicBlock(theType);
+                if (theCurrentTemp != null && !theCurrentTemp.endsWithReturn() && !theCurrentTemp.endsWithThrow() && theCurrentTemp.endsWithGoto() && !theCurrentTemp.endsWithConditionalJump()) {
+                    theCurrentTemp.addSuccessor(currentBlock);
+                }
+                theBlocks.add(currentBlock);
+            }
+            currentBlock.addInstruction(theInstruction);
+            if (theInstruction.isJumpSource()) {
+                // conditional or unconditional jump, start new basic block
+                currentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionRET) {
+                // returning, start new basic block
+                currentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionRETURN) {
+                // returning, start new basic block
+                currentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
+                // returning, start new basic block
+                currentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
+                // returning, start new basic block
+                currentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionATHROW) {
+                // thowing an exception, start new basic block
+                currentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
+                // invocation, start new basic block
+                // currentBlock = null;
+            }
+        }
+
+        // Now, we have to build the successors of each block
+        for (int i=0;i<theBlocks.size();i++) {
+            BytecodeBasicBlock theBlock = theBlocks.get(i);
+            if (!theBlock.endsWithReturn() && !theBlock.endsWithThrow()) {
+                if (theBlock.endsWithJump()) {
+                    for (BytecodeInstruction theInstruction : theBlock.getInstructions()) {
+                        if (theInstruction.isJumpSource()) {
+                            for (BytecodeOpcodeAddress theBlockJumpTarget : theInstruction.getPotentialJumpTargets()) {
+                                theBlock.addSuccessor(theBasicBlockByAddress.apply(theBlockJumpTarget));
+                            }
+                        }
+                    }
+                    if (theBlock.endsWithConditionalJump()) {
+                        if (i<theBlocks.size()-1) {
+                            theBlock.addSuccessor(theBlocks.get(i + 1));
+                        } else {
+                            throw new IllegalStateException("Block at end with no jump target!");
+                        }
+                    }
+                } else {
+                    if (i<theBlocks.size()-1) {
+                        theBlock.addSuccessor(theBlocks.get(i + 1));
+                    } else {
+                        throw new IllegalStateException("Block at end with no jump target!");
+                    }
+                }
+            }
+        }
+
+        // Ok, now we transform it to GraphNodes with yet empty content
+        Map<BytecodeBasicBlock, GraphNode> theCreatedBlocks = new HashMap<>();
+
+        ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
+        for (BytecodeBasicBlock theBlock : theBlocks) {
+            GraphNode theSingleAssignmentBlock;
+            switch (theBlock.getType()) {
+            case NORMAL:
+                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), GraphNode.BlockType.NORMAL);
+                break;
+            case EXCEPTION_HANDLER:
+                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), GraphNode.BlockType.EXCEPTION_HANDLER);
+                break;
+            case FINALLY:
+                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), GraphNode.BlockType.FINALLY);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported block type : " + theBlock.getType());
+            }
+            theCreatedBlocks.put(theBlock, theSingleAssignmentBlock);
+        }
+
+        // Initialize Block dependency graph
+        for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
+            for (BytecodeBasicBlock theSuccessor : theEntry.getKey().getSuccessors()) {
+                GraphNode theSuccessorBlock = theCreatedBlocks.get(theSuccessor);
+                if (theSuccessorBlock == null) {
+                    throw new IllegalStateException("Cannot find successor block");
+                }
+                theEntry.getValue().addSuccessor(theSuccessorBlock);
+            }
+        }
 
         // Now we can add the SSA instructions to the graph nodes
         Set<GraphNode> theVisited = new HashSet<>();
@@ -484,12 +603,12 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionPOP2 theINS = (BytecodeInstructionPOP2) theInstruction;
                 Variable theVariable = aHelper.pop();
                 switch (theVariable.resolveType().resolve()) {
-                    case LONG:
-                        break;
-                    case DOUBLE:
-                        break;
-                    default:
-                        aHelper.pop();
+                case LONG:
+                    break;
+                case DOUBLE:
+                    break;
+                default:
+                    aHelper.pop();
                 }
             } else if (theInstruction instanceof BytecodeInstructionDUP) {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
@@ -691,15 +810,15 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theNewVariable;
                 Value theDivValue = new BinaryValue(theValue1, BinaryValue.Operator.DIV, theValue2);
                 switch (theINS.getType()) {
-                    case FLOAT:
-                        theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), theDivValue);
-                        break;
-                    case DOUBLE:
-                        theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), theDivValue);
-                        break;
-                    default:
-                        theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new FloorValue(theDivValue, TypeRef.toType(theINS.getType())));
-                        break;
+                case FLOAT:
+                    theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), theDivValue);
+                    break;
+                case DOUBLE:
+                    theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), theDivValue);
+                    break;
+                default:
+                    theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new FloorValue(theDivValue, TypeRef.toType(theINS.getType())));
+                    break;
                 }
 
                 aHelper.push(theNewVariable);
@@ -777,26 +896,26 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theValue1 = aHelper.pop();
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
-                    case lt:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.LESSTHAN, theValue2);
-                        break;
-                    case eq:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.EQUALS, theValue2);
-                        break;
-                    case gt:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.GREATERTHAN, theValue2);
-                        break;
-                    case ge:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.GREATEROREQUALS, theValue2);
-                        break;
-                    case le:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.LESSTHANOREQUALS, theValue2);
-                        break;
-                    case ne:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.NOTEQUALS, theValue2);
-                        break;
-                    default:
-                        throw new IllegalStateException("Not supported operation : " + theINS.getType());
+                case lt:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.LESSTHAN, theValue2);
+                    break;
+                case eq:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.EQUALS, theValue2);
+                    break;
+                case gt:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.GREATERTHAN, theValue2);
+                    break;
+                case ge:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.GREATEROREQUALS, theValue2);
+                    break;
+                case le:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.LESSTHANOREQUALS, theValue2);
+                    break;
+                case ne:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.NOTEQUALS, theValue2);
+                    break;
+                default:
+                    throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
@@ -811,14 +930,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theValue1 = aHelper.pop();
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
-                    case eq:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.EQUALS, theValue2);
-                        break;
-                    case ne:
-                        theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.NOTEQUALS, theValue2);
-                        break;
-                    default:
-                        throw new IllegalStateException("Not supported operation : " + theINS.getType());
+                case eq:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.EQUALS, theValue2);
+                    break;
+                case ne:
+                    theBinaryValue = new BinaryValue(theValue1, BinaryValue.Operator.NOTEQUALS, theValue2);
+                    break;
+                default:
+                    throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
@@ -833,26 +952,26 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theZero = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(0));
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
-                    case lt:
-                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHAN, theZero);
-                        break;
-                    case eq:
-                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.EQUALS, theZero);
-                        break;
-                    case gt:
-                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATERTHAN, theZero);
-                        break;
-                    case ge:
-                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATEROREQUALS, theZero);
-                        break;
-                    case le:
-                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHANOREQUALS, theZero);
-                        break;
-                    case ne:
-                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.NOTEQUALS, theZero);
-                        break;
-                    default:
-                        throw new IllegalStateException("Not supported operation : " + theINS.getType());
+                case lt:
+                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHAN, theZero);
+                    break;
+                case eq:
+                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.EQUALS, theZero);
+                    break;
+                case gt:
+                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATERTHAN, theZero);
+                    break;
+                case ge:
+                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATEROREQUALS, theZero);
+                    break;
+                case le:
+                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHANOREQUALS, theZero);
+                    break;
+                case ne:
+                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.NOTEQUALS, theZero);
+                    break;
+                default:
+                    throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
@@ -863,11 +982,11 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
                 BytecodeInstructionObjectRETURN theINS = (BytecodeInstructionObjectRETURN) theInstruction;
                 Variable theVariable = aHelper.pop();
-                aTargetBlock.addExpression(new ReturnVariableExpression(theVariable));
+                aTargetBlock.addExpression(new ReturnValueExpression(theVariable));
             } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                 BytecodeInstructionGenericRETURN theINS = (BytecodeInstructionGenericRETURN) theInstruction;
                 Variable theVariable = aHelper.pop();
-                aTargetBlock.addExpression(new ReturnVariableExpression(theVariable));
+                aTargetBlock.addExpression(new ReturnValueExpression(theVariable));
             } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                 BytecodeInstructionATHROW theINS = (BytecodeInstructionATHROW) theInstruction;
                 Variable theVariable = aHelper.pop();
@@ -1262,7 +1381,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
                             theArguments);
                     Variable theNewVariable = theInitNode.newVariable(TypeRef.Native.CALLSITE, theInvokeStaticValue);
-                    theInitNode.addExpression(new ReturnVariableExpression(theNewVariable));
+                    theInitNode.addExpression(new ReturnValueExpression(theNewVariable));
 
                     // First step, we construct a callsitre
                     ResolveCallsiteObjectValue theValue = new ResolveCallsiteObjectValue(aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);

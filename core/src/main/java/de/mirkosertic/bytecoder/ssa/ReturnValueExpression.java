@@ -15,15 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ReturnVariableExpression extends Expression {
+public class ReturnValueExpression extends Expression {
 
-    private final Variable variable;
+    private final Value value;
 
-    public ReturnVariableExpression(Variable aVariable) {
-        variable = aVariable;
+    public ReturnValueExpression(Value aValue) {
+        value = aValue;
     }
 
-    public Variable getVariable() {
-        return variable;
+    public Value getValue() {
+        return value;
     }
 }

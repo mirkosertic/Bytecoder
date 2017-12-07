@@ -144,7 +144,7 @@ public class GraphNode {
     public boolean endWithNeverReturningExpression() {
         Expression theLastExpression = expressions.lastExpression();
         return theLastExpression instanceof ReturnExpression ||
-                theLastExpression instanceof ReturnVariableExpression ||
+                theLastExpression instanceof ReturnValueExpression ||
                 theLastExpression instanceof TableSwitchExpression ||
                 theLastExpression instanceof LookupSwitchExpression ||
                 theLastExpression instanceof ThrowExpression ||

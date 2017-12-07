@@ -21,19 +21,19 @@ import java.util.Set;
 
 public class LookupSwitchExpression extends Expression implements ExpressionListContainer {
 
-    private final Variable variable;
+    private final Value value;
     private final ExpressionList defaultExpressions;
     private final Map<Long, ExpressionList> pairs;
 
-    public LookupSwitchExpression(Variable aVariable, ExpressionList aDefaultExpressions,
+    public LookupSwitchExpression(Value aValue, ExpressionList aDefaultExpressions,
             Map<Long, ExpressionList> aPairs) {
-        variable = aVariable;
+        value = aValue;
         defaultExpressions = aDefaultExpressions;
         pairs = aPairs;
     }
 
-    public Variable getVariable() {
-        return variable;
+    public Value getValue() {
+        return value;
     }
 
     public ExpressionList getDefaultExpressions() {
