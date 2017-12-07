@@ -2,6 +2,8 @@
 
 Rich Domain Model for Java Bytecode and Framework to interpret and transpile it to other languages such as JavaScript or WebAssembly.
 
+Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosertic/Bytecoder.svg?branch=master)](https://travis-ci.org/mirkosertic/Bytecoder)
+
 ## High Level Goals
 
 * Ability to cross-compile JVM Bytecode to JavaScript and other languages
