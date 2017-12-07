@@ -56,6 +56,23 @@
             </plugin>
 
             <plugin>
+                <groupId>de.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder-mavenplugin</artifactId>
+                <version>${project.version}</version>
+                <configuration>
+                    <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
+                    <backend>wasm</backend>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>

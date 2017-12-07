@@ -49,6 +49,7 @@ import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -63,6 +64,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             program = aProgram;
             bootstrapMethod = aBootstrapMethod;
         }
+    }
+
+    private final ProgramGeneratorFactory programGeneratorFactory;
+
+    public WASMSSACompilerBackend(ProgramGeneratorFactory aProgramGeneratorFactory) {
+        programGeneratorFactory = aProgramGeneratorFactory;
     }
 
     @Override
@@ -342,7 +349,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
                 theWriter.println();
 
-                ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
+                ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
