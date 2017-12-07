@@ -21,23 +21,23 @@ import java.util.Set;
 
 public class TableSwitchExpression extends Expression implements ExpressionListContainer {
 
-    private final Variable variable;
+    private final Value value;
     private final long lowValue;
     private final long highValue;
     private final ExpressionList defaultExpressions;
     private final Map<Long, ExpressionList> offsets;
 
-    public TableSwitchExpression(Variable aVariable, long aLowValue, long aHighValue,
+    public TableSwitchExpression(Value aValue, long aLowValue, long aHighValue,
             ExpressionList aDefaultPath, Map<Long, ExpressionList> aPathPerOffset) {
-        variable = aVariable;
+        value = aValue;
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
         offsets = aPathPerOffset;
     }
 
-    public Variable getVariable() {
-        return variable;
+    public Value getValue() {
+        return value;
     }
 
     public long getLowValue() {

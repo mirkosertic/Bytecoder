@@ -19,11 +19,11 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
 public class CheckCastExpression extends Expression {
 
-    private final Variable variable;
+    private final Value value;
     private final BytecodeClassinfoConstant type;
 
-    public CheckCastExpression(Variable aVariable, BytecodeClassinfoConstant aType) {
-        variable = aVariable;
+    public CheckCastExpression(Value aValue, BytecodeClassinfoConstant aType) {
+        value = aValue;
         type = aType;
     }
 }

@@ -17,19 +17,19 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class SetMemoryLocationExpression extends Expression {
 
-    private final Variable address;
-    private final Variable value;
+    private final Value address;
+    private final Value value;
 
-    public SetMemoryLocationExpression(Variable aAddress, Variable aValue) {
+    public SetMemoryLocationExpression(Value aAddress, Value aValue) {
         address = aAddress;
         value = aValue;
     }
 
-    public Variable getAddress() {
+    public Value getAddress() {
         return address;
     }
 
-    public Variable getValue() {
+    public Value getValue() {
         return value;
     }
 }

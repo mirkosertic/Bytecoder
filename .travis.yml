@@ -1,0 +1,21 @@
+sudo: false
+
+language: java
+
+jdk:
+  - oraclejdk9
+  - oraclejdk8
+
+env:
+
+python:
+  - 2.7
+
+before_install:
+  - pip install --user codecov
+
+script:
+  - mvn clean install -DskipTests=true
+
+after_success:
+  - codecov

@@ -81,7 +81,7 @@ import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnVariableExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
@@ -111,7 +111,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(Value aValue) {
-        if (aValue instanceof GetStaticValue) {
+        if (aValue instanceof Variable) {
+            printVariableNameOrValue((Variable) aValue);
+        } else if (aValue instanceof GetStaticValue) {
             print((GetStaticValue) aValue);
         } else if (aValue instanceof NullValue) {
             print((NullValue) aValue);
@@ -403,9 +405,9 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(".data.length");
     }
 
-    public void printArrayIndexReference(Variable aVariable) {
+    public void printArrayIndexReference(Value aValue) {
         print(".data[");
-        printVariableNameOrValue(aVariable);
+        print(aValue);
         print("]");
     }
 
@@ -683,22 +685,19 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof PutStaticExpression) {
                 PutStaticExpression theE = (PutStaticExpression) theExpression;
                 BytecodeFieldRefConstant theField = theE.getField();
-                Variable theVariable = theE.getVariable();
                 printStaticFieldReference(theField);
                 print(" = ");
-                printVariableNameOrValue(theVariable);
+                print(theE.getValue());
                 println(";");
-            } else if (theExpression instanceof ReturnVariableExpression) {
-                ReturnVariableExpression theE = (ReturnVariableExpression) theExpression;
-                Variable theVariable = theE.getVariable();
+            } else if (theExpression instanceof ReturnValueExpression) {
+                ReturnValueExpression theE = (ReturnValueExpression) theExpression;
                 print("return ");
-                printVariableNameOrValue(theVariable);
+                print(theE.getValue());
                 println(";");
             } else if (theExpression instanceof ThrowExpression) {
                 ThrowExpression theE = (ThrowExpression) theExpression;
-                Variable theVariable = theE.getVariable();
                 print("throw ");
-                printVariableNameOrValue(theVariable);
+                print(theE.getValue());
                 println(";");
             } else if (theExpression instanceof InvokeVirtualMethodExpression) {
                 InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
@@ -714,19 +713,18 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(";");
             } else if (theExpression instanceof PutFieldExpression) {
                 PutFieldExpression theE = (PutFieldExpression) theExpression;
-                Variable theTarget = theE.getTarget();
+                Value theTarget = theE.getTarget();
                 BytecodeFieldRefConstant theField = theE.getField();
-                Variable thevalue = theE.getValue();
-                printVariableNameOrValue(theTarget);
+                Value thevalue = theE.getValue();
+                print(theTarget);
                 printInstanceFieldReference(theField);
                 print(" = ");
-                printVariableNameOrValue(thevalue);
+                print(thevalue);
                 println(";");
             } else if (theExpression instanceof IFExpression) {
                 IFExpression theE = (IFExpression) theExpression;
-                Variable theBooleanExpression = theE.getBooleanExpression();
                 print("if (");
-                printVariableNameOrValue(theBooleanExpression);
+                print(theE.getBooleanValue());
                 println(") {");
 
                 withDeeperIndent().writeExpressions(theE.getExpressions());
@@ -747,27 +745,27 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
-                Variable theArray = theE.getArray();
-                Variable theIndex = theE.getIndex();
-                Variable theValue = theE.getValue();
-                printVariableNameOrValue(theArray);
+                Value theArray = theE.getArray();
+                Value theIndex = theE.getIndex();
+                Value theValue = theE.getValue();
+                print(theArray);
                 printArrayIndexReference(theIndex);
                 print(" = ");
-                printVariableNameOrValue(theValue);
+                print(theValue);
                 println(";");
             } else if (theExpression instanceof CheckCastExpression) {
                 CheckCastExpression theE = (CheckCastExpression) theExpression;
                 // Completely ignored
             } else if (theExpression instanceof TableSwitchExpression) {
                 TableSwitchExpression theE = (TableSwitchExpression) theExpression;
-                Variable theVariable = theE.getVariable();
+                Value theValue = theE.getValue();
 
                 print("if (");
-                printVariableNameOrValue(theVariable);
+                print(theValue);
                 print(" < ");
                 print(theE.getLowValue());
                 print(" || ");
-                printVariableNameOrValue(theVariable);
+                print(theValue);
                 print(" > ");
                 print(theE.getHighValue());
                 println(") {");
@@ -777,7 +775,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
                 println("}");
                 print("switch(");
-                printVariableNameOrValue(theVariable);
+                print(theValue);
                 print(" - ");
                 print(theE.getLowValue());
                 println(") {");
@@ -795,7 +793,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof LookupSwitchExpression) {
                 LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
                 print("switch(");
-                printVariableNameOrValue(theE.getVariable());
+                print(theE.getValue());
                 println(") {");
 
                 for (Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
@@ -813,10 +811,14 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof SetMemoryLocationExpression) {
                 SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
-                print(theE.getAddress().getValue());
+                if (theE.getAddress() instanceof Variable) {
+                    print(((Variable) theE.getAddress()).getValue());
+                } else {
+                    print(theE.getAddress());
+                }
                 print(" = ");
 
-                printVariableNameOrValue(theE.getValue());
+                print(theE.getValue());
                 println(";");
             } else if (theExpression instanceof InlinedNodeExpression) {
                 InlinedNodeExpression theInlined = (InlinedNodeExpression) theExpression;
