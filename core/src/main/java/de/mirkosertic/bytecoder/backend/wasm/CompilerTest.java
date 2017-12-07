@@ -35,7 +35,7 @@ public class CompilerTest {
         ClassLoader theLoader = CompilerTest.class.getClassLoader();
         Class theTargetClass = theLoader.loadClass(HelloWorld.class.getName());
 
-        CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.wasm);
+        CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.jsgraph);
 
         BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });

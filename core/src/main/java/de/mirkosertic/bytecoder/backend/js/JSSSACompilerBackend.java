@@ -48,17 +48,20 @@ import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
-    protected final BytecodeMethodSignature registerExceptionOutcomeSignature;
-    protected final BytecodeMethodSignature getLastExceptionOutcomeSignature;
-    protected final JSModules modules;
+    private final BytecodeMethodSignature registerExceptionOutcomeSignature;
+    private final BytecodeMethodSignature getLastExceptionOutcomeSignature;
+    private final JSModules modules;
+    private final ProgramGeneratorFactory programGeneratorFactory;
 
-    public JSSSACompilerBackend() {
+    public JSSSACompilerBackend(ProgramGeneratorFactory aProgramGeneratorFactory) {
 
+        programGeneratorFactory = aProgramGeneratorFactory;
         registerExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
         getLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
         modules = new JSModules();
@@ -364,7 +367,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 aLogger.info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
-                ProgramGenerator theGenerator = new ProgramGenerator(aLinkerContext);
+                ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
