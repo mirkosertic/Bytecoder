@@ -63,7 +63,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
                         BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
                         Variable theTarget = (Variable) theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-                        List<Variable> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+                        List<Value> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
                         DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName, theSignature,
                                 theTarget, theVariables);
@@ -86,8 +86,8 @@ public class InvokeVirtualOptimizer implements Optimizer {
                     String theMethodName = theInvokeVirtualValue.getMethodName();
                     BytecodeMethodSignature theSignature = theInvokeVirtualValue.getSignature();
 
-                    Variable theTarget = (Variable) theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-                    List<Variable> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+                    Value theTarget = theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
+                    List<Value> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
                     BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
                     List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);

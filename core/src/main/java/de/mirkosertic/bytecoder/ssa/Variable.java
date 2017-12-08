@@ -55,4 +55,9 @@ public class Variable extends Value {
     public void setType(TypeRef aType) {
         type = aType;
     }
+
+    @Override
+    public String toString() {
+        return name + " -> " + value + " of type " + resolveType();
+    }
 }

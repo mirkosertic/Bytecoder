@@ -31,6 +31,6 @@ public class GetStaticValue extends Value {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
+        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
     }
 }

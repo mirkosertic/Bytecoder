@@ -17,22 +17,22 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class RuntimeGeneratedTypeValue extends Value {
 
-    private Variable type;
-    private Variable methodRef;
+    private Value type;
+    private Value methodRef;
 
-    public Variable getType() {
+    public Value getType() {
         return type;
     }
 
-    public void setType(Variable type) {
+    public void setType(Value type) {
         this.type = type;
     }
 
-    public Variable getMethodRef() {
+    public Value getMethodRef() {
         return methodRef;
     }
 
-    public void setMethodRef(Variable methodRef) {
+    public void setMethodRef(Value methodRef) {
         this.methodRef = methodRef;
     }
 

@@ -36,8 +36,8 @@ public class GraphNode {
     private final Program program;
     private final Set<GraphNode> successors;
     private BlockType type;
-    private final Map<VariableDescription, Variable> imported;
-    private final Map<VariableDescription, Variable> exported;
+    private final Map<VariableDescription, Value> imported;
+    private final Map<VariableDescription, Value> exported;
 
     public GraphNode(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -97,12 +97,12 @@ public class GraphNode {
         return theVariable;
     }
 
-    public void addToExportedList(Variable aVariable, VariableDescription aDescription) {
-        exported.put(aDescription, aVariable);
+    public void addToExportedList(Value aValue, VariableDescription aDescription) {
+        exported.put(aDescription, aValue);
     }
 
-    public void addToImportedList(Variable aVariable, VariableDescription aDescription) {
-        imported.put(aDescription, aVariable);
+    public void addToImportedList(Value aValue, VariableDescription aDescription) {
+        imported.put(aDescription, aValue);
     }
 
     public void addExpression(Expression aExpression) {
@@ -115,7 +115,7 @@ public class GraphNode {
 
     public BlockState toFinalState() {
         BlockState theState = new BlockState();
-        for (Map.Entry<VariableDescription, Variable> theEntry : exported.entrySet()) {
+        for (Map.Entry<VariableDescription, Value> theEntry : exported.entrySet()) {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;
@@ -123,7 +123,7 @@ public class GraphNode {
 
     public BlockState toStartState() {
         BlockState theState = new BlockState();
-        for (Map.Entry<VariableDescription, Variable> theEntry : imported.entrySet()) {
+        for (Map.Entry<VariableDescription, Value> theEntry : imported.entrySet()) {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;

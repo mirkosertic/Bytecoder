@@ -26,7 +26,7 @@ public class InvokeStaticMethodValue extends InvocationValue {
     private final String methodName;
 
     public InvokeStaticMethodValue(BytecodeObjectTypeRef aClassName, String aMethodName,
-            BytecodeMethodSignature aSignature, List<Variable> aArguments) {
+            BytecodeMethodSignature aSignature, List<Value> aArguments) {
         super(aSignature);
         className = aClassName;
         methodName = aMethodName;

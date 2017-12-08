@@ -42,32 +42,28 @@
                 <artifactId>bytecoder-mavenplugin</artifactId>
                 <version>${project.version}</version>
                 <configuration>
-                    <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                    <backend>js</backend>
-                    <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
                 </configuration>
                 <executions>
                     <execution>
+                        <id>javascript</id>
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
+                            <backend>js</backend>
+                            <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
+                        </configuration>
                     </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>de.mirkosertic.bytecoder</groupId>
-                <artifactId>bytecoder-mavenplugin</artifactId>
-                <version>${project.version}</version>
-                <configuration>
-                    <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                    <backend>wasm</backend>
-                </configuration>
-                <executions>
                     <execution>
+                        <id>wasm</id>
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
+                            <backend>wasm</backend>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

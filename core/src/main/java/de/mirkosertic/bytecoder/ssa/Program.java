@@ -46,7 +46,11 @@ public class Program {
         Set<Variable> theVariables = new HashSet<>();
         for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
             BlockState theStartState = theNode.toStartState();
-            theVariables.addAll(theStartState.getPorts().values());
+            for (Value theValue : theStartState.getPorts().values()) {
+                if (theValue instanceof Variable) {
+                    theVariables.add((Variable) theValue);
+                }
+            }
         }
         return theVariables;
     }

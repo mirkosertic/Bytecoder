@@ -20,21 +20,21 @@ import java.util.Map;
 
 public class BlockState {
 
-    private final Map<VariableDescription, Variable> ports;
+    private final Map<VariableDescription, Value> ports;
 
     public BlockState() {
         ports = new HashMap<>();
     }
 
-    public Map<VariableDescription, Variable> getPorts() {
+    public Map<VariableDescription, Value> getPorts() {
         return ports;
     }
 
-    public void assignToPort(VariableDescription aDescription, Variable aVariable) {
-        ports.put(aDescription, aVariable);
+    public void assignToPort(VariableDescription aDescription, Value aValue) {
+        ports.put(aDescription, aValue);
     }
 
-    public Variable findBySlot(VariableDescription aDescription) {
+    public Value findBySlot(VariableDescription aDescription) {
         return ports.get(aDescription);
     }
 }

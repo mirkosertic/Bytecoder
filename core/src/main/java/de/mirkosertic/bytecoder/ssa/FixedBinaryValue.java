@@ -25,9 +25,9 @@ public class FixedBinaryValue extends Value {
 
     private final Operator operator;
 
-    public FixedBinaryValue(Variable aValue1, Operator aOperator) {
+    public FixedBinaryValue(Value aValue, Operator aOperator) {
         operator = aOperator;
-        consume(ConsumptionType.ARGUMENT, aValue1);
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public Operator getOperator() {

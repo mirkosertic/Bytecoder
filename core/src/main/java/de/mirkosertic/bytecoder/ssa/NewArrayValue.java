@@ -21,7 +21,7 @@ public class NewArrayValue extends Value {
 
     private final BytecodeTypeRef type;
 
-    public NewArrayValue(BytecodeTypeRef aType, Variable aLength) {
+    public NewArrayValue(BytecodeTypeRef aType, Value aLength) {
         type = aType;
         consume(ConsumptionType.ARGUMENT, aLength);
     }

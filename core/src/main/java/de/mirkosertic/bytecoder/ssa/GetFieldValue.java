@@ -21,7 +21,7 @@ public class GetFieldValue extends Value {
 
     private final BytecodeFieldRefConstant field;
 
-    public GetFieldValue(BytecodeFieldRefConstant aField, Variable aTarget) {
+    public GetFieldValue(BytecodeFieldRefConstant aField, Value aTarget) {
         field = aField;
         consume(ConsumptionType.ARGUMENT, aTarget);
     }
@@ -32,6 +32,6 @@ public class GetFieldValue extends Value {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
+        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
     }
 }

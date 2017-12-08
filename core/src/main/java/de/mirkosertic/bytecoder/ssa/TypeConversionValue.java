@@ -19,8 +19,8 @@ public class TypeConversionValue extends Value {
 
     private final TypeRef targetType;
 
-    public TypeConversionValue(Variable aVariable, TypeRef aTargetType) {
-        consume(ConsumptionType.ARGUMENT, aVariable);
+    public TypeConversionValue(Value aValue, TypeRef aTargetType) {
+        consume(ConsumptionType.ARGUMENT, aValue);
         targetType = aTargetType;
     }
 
