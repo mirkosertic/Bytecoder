@@ -26,10 +26,7 @@ import org.jbox2d.collision.broadphase.DynamicTree;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.ShapeType;
-import org.jbox2d.common.MathUtils;
-import org.jbox2d.common.Rot;
-import org.jbox2d.common.Settings;
-import org.jbox2d.common.Vec2;
+import org.jbox2d.common.*;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
@@ -207,6 +204,109 @@ public class JBox2DTest {
         }
     }
 
+    static class TestSolver {
+
+        private IWorldPool pool;
+        private float m_frequencyHz;
+        private float m_dampingRatio;
+        private float m_bias;
+
+        // Solver shared
+        private Vec2 m_localAnchorA;
+        private Vec2 m_localAnchorB;
+        private float m_referenceAngle;
+        private float m_gamma;
+        private Vec3 m_impulse;
+
+
+        // Solver temp
+        private int m_indexA;
+        private int m_indexB;
+        private Vec2 m_rA;
+        private Vec2 m_rB;
+        private Vec2 m_localCenterA;
+        private Vec2 m_localCenterB;
+        private float m_invMassA;
+        private float m_invMassB;
+        private float m_invIA;
+        private float m_invIB;
+        private Mat33 m_mass;
+
+        public void solveVelocityConstraints(final SolverData data) {
+            Vec2 vA = data.velocities[m_indexA].v;
+            float wA = data.velocities[m_indexA].w;
+            Vec2 vB = data.velocities[m_indexB].v;
+            float wB = data.velocities[m_indexB].w;
+
+            float mA = m_invMassA, mB = m_invMassB;
+            float iA = m_invIA, iB = m_invIB;
+
+            final Vec2 Cdot1 = pool.popVec2();
+            final Vec2 P = pool.popVec2();
+            final Vec2 temp = pool.popVec2();
+            if (m_frequencyHz > 0.0f) {
+                float Cdot2 = wB - wA;
+
+                float impulse2 = -m_mass.ez.z * (Cdot2 + m_bias + m_gamma * m_impulse.z);
+                m_impulse.z += impulse2;
+
+                wA -= iA * impulse2;
+                wB += iB * impulse2;
+
+                Vec2.crossToOutUnsafe(wB, m_rB, Cdot1);
+                Vec2.crossToOutUnsafe(wA, m_rA, temp);
+                Cdot1.addLocal(vB).subLocal(vA).subLocal(temp);
+
+                final Vec2 impulse1 = P;
+                Mat33.mul22ToOutUnsafe(m_mass, Cdot1, impulse1);
+                impulse1.negateLocal();
+
+                m_impulse.x += impulse1.x;
+                m_impulse.y += impulse1.y;
+
+                vA.x -= mA * P.x;
+                vA.y -= mA * P.y;
+                wA -= iA * Vec2.cross(m_rA, P);
+
+                vB.x += mB * P.x;
+                vB.y += mB * P.y;
+                wB += iB * Vec2.cross(m_rB, P);
+            } else {
+                Vec2.crossToOutUnsafe(wA, m_rA, temp);
+                Vec2.crossToOutUnsafe(wB, m_rB, Cdot1);
+                Cdot1.addLocal(vB).subLocal(vA).subLocal(temp);
+                float Cdot2 = wB - wA;
+
+                final Vec3 Cdot = pool.popVec3();
+                Cdot.set(Cdot1.x, Cdot1.y, Cdot2);
+
+                final Vec3 impulse = pool.popVec3();
+                Mat33.mulToOutUnsafe(m_mass, Cdot, impulse);
+                impulse.negateLocal();
+                m_impulse.addLocal(impulse);
+
+                P.set(impulse.x, impulse.y);
+
+                vA.x -= mA * P.x;
+                vA.y -= mA * P.y;
+                wA -= iA * (Vec2.cross(m_rA, P) + impulse.z);
+
+                vB.x += mB * P.x;
+                vB.y += mB * P.y;
+                wB += iB * (Vec2.cross(m_rB, P) + impulse.z);
+
+                pool.pushVec3(2);
+            }
+
+            //    data.velocities[m_indexA].v.set(vA);
+            data.velocities[m_indexA].w = wA;
+            //    data.velocities[m_indexB].v.set(vB);
+            data.velocities[m_indexB].w = wB;
+
+            pool.pushVec2(3);
+        }
+    }
+
     @Test
     public void testCircleContactStack() {
         System.out.println("A");
@@ -245,15 +345,21 @@ public class JBox2DTest {
     }
 
     @Test
+    public void testSolver() {
+        TestSolver theSolver = null;
+        theSolver.solveVelocityConstraints(null);
+    }
+
+    @Test
     public void weldJointTest() {
         WeldJoint theJoint = null;
-        theJoint.initVelocityConstraints(null);
+        theJoint.solveVelocityConstraints(null);
     }
 
     @Test
     public void wheelJointTest() {
         WheelJoint theJoint = null;
-        theJoint.initVelocityConstraints(null);
+        theJoint.solveVelocityConstraints(null);
     }
 
     @Test

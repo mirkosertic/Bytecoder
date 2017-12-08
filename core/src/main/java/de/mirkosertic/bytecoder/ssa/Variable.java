@@ -44,16 +44,8 @@ public class Variable extends Value {
         return new Variable(type, name, aNewValue);
     }
 
-    public Variable withNewValue(TypeRef aType, Value aNewValue) {
-        return new Variable(aType, name, aNewValue);
-    }
-
     public void setValue(Value aNewValue) {
         value = aNewValue;
-    }
-
-    public void setType(TypeRef aType) {
-        type = aType;
     }
 
     @Override

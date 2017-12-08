@@ -62,7 +62,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
                     if (!theLinked.emulatedByRuntime()) {
                         BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                        Variable theTarget = (Variable) theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
+                        Value theTarget = theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
                         List<Value> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
                         DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName, theSignature,

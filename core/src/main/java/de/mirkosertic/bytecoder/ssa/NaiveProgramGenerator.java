@@ -448,7 +448,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         } else {
 
                             InitVariableExpression theExpression = new InitVariableExpression(
-                                    theVariable.withNewValue(theFinalValue.resolveType(), new ValueReferenceValue(theFinalValue)));
+                                    theVariable.withNewValue(new ValueReferenceValue(theFinalValue)));
                             theBlock.getExpressions().add(new CommentExpression("Resolving " + theImport.getKey()));
                             theBlock.getExpressions().add(theExpression);
                         }
@@ -511,7 +511,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
                 } else {
                     InitVariableExpression theInitExpression = new InitVariableExpression(
-                            theVariable.withNewValue(theFinalValue.resolveType(), new ValueReferenceValue(theFinalValue)));
+                            theVariable.withNewValue(new ValueReferenceValue(theFinalValue)));
                     aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
                 }
             }
@@ -580,6 +580,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         BytecodeBasicBlock theBytecodeBlock = aBlocksByAddress.apply(aTargetBlock.getStartAddress());
 
         for (BytecodeInstruction theInstruction : theBytecodeBlock.getInstructions()) {
+
+            aTargetBlock.addExpression(new CommentExpression(" OP " + theInstruction.getOpcodeAddress().getAddress()));
 
             if (theInstruction instanceof BytecodeInstructionNOP) {
                 BytecodeInstructionNOP theINS = (BytecodeInstructionNOP) theInstruction;

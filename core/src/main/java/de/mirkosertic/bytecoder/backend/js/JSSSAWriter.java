@@ -112,7 +112,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     public void print(Value aValue) {
         if (aValue instanceof Variable) {
-            print(((Variable) aValue).getName());
+            printVariableNameOrValue((Variable) aValue);
         } else if (aValue instanceof GetStaticValue) {
             print((GetStaticValue) aValue);
         } else if (aValue instanceof NullValue) {
