@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class CompareValue extends Value {
 
-    public CompareValue(Variable aValue1, Variable aValue2) {
+    public CompareValue(Value aValue1, Value aValue2) {
         consume(ConsumptionType.ARGUMENT, aValue1);
         consume(ConsumptionType.ARGUMENT, aValue2);
     }

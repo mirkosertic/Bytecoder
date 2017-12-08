@@ -22,8 +22,10 @@ import org.junit.runner.RunWith;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.unittest.WASMOnly;
 
 @RunWith(BytecoderUnitTestRunner.class)
+@WASMOnly
 public class DirectMemoryAccessTest {
 
     @Test

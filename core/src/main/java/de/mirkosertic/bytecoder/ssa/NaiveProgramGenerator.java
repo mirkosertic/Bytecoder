@@ -147,8 +147,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
     private static class ParsingHelper {
 
         private final GraphNode block;
-        private final Stack<Variable> stack;
-        private final Map<Integer, Variable> localVariables;
+        private final Stack<Value> stack;
+        private final Map<Integer, Value> localVariables;
 
         public ParsingHelper(GraphNode aBlock) {
             stack = new Stack();
@@ -158,7 +158,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         public ParsingHelper cloneToNewFor(GraphNode aBlock) {
             ParsingHelper theNew = new ParsingHelper(aBlock);
-            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
+            for (Map.Entry<Integer, Value> theEntry : localVariables.entrySet()) {
                 theNew.localVariables.put(theEntry.getKey(), theEntry.getValue());
                 aBlock.addToImportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
                 aBlock.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
@@ -171,7 +171,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         public ParsingHelper cloneToNewWithPHIFunctions(GraphNode aBlock, Program aProgram) {
             ParsingHelper theNew = new ParsingHelper(aBlock);
-            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
+            for (Map.Entry<Integer, Value> theEntry : localVariables.entrySet()) {
                 Variable theVar = aProgram.createVariable(theEntry.getValue().resolveType(), new PHIFunction());
                 aBlock.addToImportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
                 aBlock.addToExportedList(theVar, new LocalVariableDescription(theEntry.getKey()));
@@ -185,38 +185,38 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             return theNew;
         }
 
-        public Variable pop() {
+        public Value pop() {
             return stack.pop();
         }
 
-        public Variable peek() {
+        public Value peek() {
             return stack.peek();
         }
 
-        public void push(Variable aValue) {
+        public void push(Value aValue) {
             if (aValue == null) {
                 throw new IllegalStateException("Trying to push null in " + this);
             }
             stack.push(aValue);
         }
 
-        public Variable getLocalVariable(int aIndex) {
-            Variable theVariable = localVariables.get(aIndex);
-            if (theVariable == null) {
+        public Value getLocalVariable(int aIndex) {
+            Value theValue = localVariables.get(aIndex);
+            if (theValue == null) {
                 VariableDescription theDesc = new LocalVariableDescription(aIndex);
-                theVariable = block.newImportedVariable(TypeRef.Native.UNKNOWN, new UnknownValue(),
+                theValue = block.newImportedVariable(TypeRef.Native.UNKNOWN, new UnknownValue(),
                         theDesc);
-                localVariables.put(aIndex, theVariable);
-                block.addToExportedList(theVariable, theDesc);
-                return theVariable;
+                localVariables.put(aIndex, theValue);
+                block.addToExportedList(theValue, theDesc);
+                return theValue;
             }
-            if (theVariable == null) {
+            if (theValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " is null in " + this);
             }
-            return theVariable;
+            return theValue;
         }
 
-        public void setLocalVariable(int aIndex, Variable aValue) {
+        public void setLocalVariable(int aIndex, Value aValue) {
             if (aValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
             }
@@ -225,7 +225,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         public void finalizeExportState() {
-            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
+            for (Map.Entry<Integer, Value> theEntry : localVariables.entrySet()) {
                 block.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
             }
             for (int i=stack.size() - 1 ; i>= 0; i--) {
@@ -432,26 +432,25 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
                 theBlock.getExpressions().add(new CommentExpression("Code to jump to " + theDirectSuccessor.getStartAddress().getAddress()));
 
-                for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
-                    Variable theVariable = theImport.getValue();
+                for (Map.Entry<VariableDescription, Value> theImport : theImportingState.getPorts().entrySet()) {
+                    Value theValue = theImport.getValue();
+                    if (!(theValue instanceof Variable)) {
+                        continue;
+                    }
+                    Variable theVariable = (Variable) theValue;
                     if (theVariable.getValue() instanceof PHIFunction) {
                         // We found one, we need to resolve a variable from the final state that satisfied the required constraints
-                        Variable theFinalVariable = theFinalState.findBySlot(theImport.getKey());
-                        if (theFinalVariable == null) {
+                        Value theFinalValue = theFinalState.findBySlot(theImport.getKey());
+                        if (theFinalValue == null) {
                             // Variable is not present, hence we assume it is null
                             InitVariableExpression theExpression = new InitVariableExpression(theVariable.withNewValue(new NullValue()));
                             theBlock.getExpressions().add(theExpression);
                         } else {
-                            if (!theVariable.getName().equals(theFinalVariable.getName())) {
 
-                                InitVariableExpression theExpression = new InitVariableExpression(
-                                        theVariable.withNewValue(theFinalVariable.resolveType(), new VariableReferenceValue(theFinalVariable)));
-                                theBlock.getExpressions().add(new CommentExpression("Resolving " + theImport.getKey()));
-                                theBlock.getExpressions().add(theExpression);
-                            } else {
-                                // Propagate the type
-                                theVariable.setType(theFinalVariable.resolveType());
-                            }
+                            InitVariableExpression theExpression = new InitVariableExpression(
+                                    theVariable.withNewValue(theFinalValue.resolveType(), new ValueReferenceValue(theFinalValue)));
+                            theBlock.getExpressions().add(new CommentExpression("Resolving " + theImport.getKey()));
+                            theBlock.getExpressions().add(theExpression);
                         }
                     }
                 }
@@ -497,24 +496,23 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         BlockState theFinalState = aSource.toFinalState();
 
-        for (Map.Entry<VariableDescription, Variable> theImport : theImportingState.getPorts().entrySet()) {
-            Variable theVariable = theImport.getValue();
+        for (Map.Entry<VariableDescription, Value> theImport : theImportingState.getPorts().entrySet()) {
+            Value theValue = theImport.getValue();
+            if (!(theValue instanceof Variable)) {
+                continue;
+            }
+            Variable theVariable = (Variable) theValue;;
             if (theVariable.getValue() instanceof PHIFunction) {
                 // We found one, we need to resolve a variable from the final state that satisfied the required constraints
-                Variable theFinalVariable = theFinalState.findBySlot(theImport.getKey());
-                if (theFinalVariable == null) {
+                Value theFinalValue = theFinalState.findBySlot(theImport.getKey());
+                if (theFinalValue == null) {
                     // Variable is not present, hence we assume it is null
                     InitVariableExpression theInitExpression = new InitVariableExpression(theVariable.withNewValue(new NullValue()));
                     aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
                 } else {
-                    if (!theVariable.getName().equals(theFinalVariable.getName())) {
-                        InitVariableExpression theInitExpression = new InitVariableExpression(
-                                theVariable.withNewValue(theFinalVariable.resolveType(), new VariableReferenceValue(theFinalVariable)));
-                        aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
-                    } else {
-                        // Propapage the type
-                        theVariable.setType(theFinalVariable.resolveType());
-                    }
+                    InitVariableExpression theInitExpression = new InitVariableExpression(
+                            theVariable.withNewValue(theFinalValue.resolveType(), new ValueReferenceValue(theFinalValue)));
+                    aExpressionList.addBefore(theInitExpression, aExpressionToInsertBefore);
                 }
             }
         }
@@ -570,8 +568,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
     protected Variable rootFor(Variable aVariable) {
         Value theValue = aVariable.getValue();
-        if (theValue instanceof VariableReferenceValue) {
-            VariableReferenceValue theRef = (VariableReferenceValue) theValue;
+        if (theValue instanceof ValueReferenceValue) {
+            ValueReferenceValue theRef = (ValueReferenceValue) theValue;
             return rootFor(theRef.resolveFirstArgument());
         }
         return aVariable;
@@ -594,38 +592,38 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 // Completely ignored
             } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
                 BytecodeInstructionCHECKCAST theINS = (BytecodeInstructionCHECKCAST) theInstruction;
-                Variable theVariable = aHelper.peek();
-                aTargetBlock.addExpression(new CheckCastExpression(theVariable, theINS.getTypeCheck()));
+                Value theValue = aHelper.peek();
+                aTargetBlock.addExpression(new CheckCastExpression(theValue, theINS.getTypeCheck()));
             } else if (theInstruction instanceof BytecodeInstructionPOP) {
                 BytecodeInstructionPOP theINS = (BytecodeInstructionPOP) theInstruction;
                 aHelper.pop();
             } else if (theInstruction instanceof BytecodeInstructionPOP2) {
                 BytecodeInstructionPOP2 theINS = (BytecodeInstructionPOP2) theInstruction;
-                Variable theVariable = aHelper.pop();
-                switch (theVariable.resolveType().resolve()) {
-                case LONG:
-                    break;
-                case DOUBLE:
-                    break;
-                default:
-                    aHelper.pop();
+                Value theValue = aHelper.pop();
+                switch (theValue.resolveType().resolve()) {
+                    case LONG:
+                        break;
+                    case DOUBLE:
+                        break;
+                    default:
+                        aHelper.pop();
                 }
             } else if (theInstruction instanceof BytecodeInstructionDUP) {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
-                Variable theVariable = aHelper.peek();
-                aHelper.push(theVariable);
+                Value theValue = aHelper.peek();
+                aHelper.push(theValue);
             } else if (theInstruction instanceof BytecodeInstructionDUP2X1) {
                 BytecodeInstructionDUP2X1 theINS = (BytecodeInstructionDUP2X1) theInstruction;
-                Variable theValue1 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 if (theValue1.resolveType().resolve() == TypeRef.Native.LONG || theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE) {
-                    Variable theValue2 = aHelper.pop();
+                    Value theValue2 = aHelper.pop();
 
                     aHelper.push(theValue1);
                     aHelper.push(theValue2);
                     aHelper.push(theValue2);
                 } else {
-                    Variable theValue2 = aHelper.pop();
-                    Variable theValue3 = aHelper.pop();
+                    Value theValue2 = aHelper.pop();
+                    Value theValue3 = aHelper.pop();
 
                     aHelper.push(theValue2);
                     aHelper.push(theValue1);
@@ -635,8 +633,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 }
             } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                 BytecodeInstructionDUPX1 theINS = (BytecodeInstructionDUPX1) theInstruction;
-                Variable theValue1 = aHelper.pop();
-                Variable theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
 
                 aHelper.push(theValue1);
                 aHelper.push(theValue2);
@@ -649,163 +647,150 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                 BytecodeInstructionASTORE theINS = (BytecodeInstructionASTORE) theInstruction;
-                Variable theVariable = aHelper.pop();
-                aHelper.setLocalVariable(theINS.getVariableIndex(), theVariable);
+                Value theValue = aHelper.pop();
+                aHelper.setLocalVariable(theINS.getVariableIndex(), theValue);
             } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
                 BytecodeInstructionGenericSTORE theINS = (BytecodeInstructionGenericSTORE) theInstruction;
-                Variable theVariable = aHelper.pop();
-                aHelper.setLocalVariable(theINS.getVariableIndex(), theVariable);
+                Value theValue = aHelper.pop();
+                aHelper.setLocalVariable(theINS.getVariableIndex(), theValue);
             } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
                 BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
-                Variable theIndex = aHelper.pop();
-                Variable theTarget = aHelper.pop();
+                Value theIndex = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 Variable theVariable = aTargetBlock.newVariable(
                         TypeRef.Native.REFERENCE, new ArrayEntryValue(TypeRef.Native.REFERENCE, theTarget, theIndex));
                 aHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericArrayLOAD) {
                 BytecodeInstructionGenericArrayLOAD theINS = (BytecodeInstructionGenericArrayLOAD) theInstruction;
-                Variable theIndex = aHelper.pop();
-                Variable theTarget = aHelper.pop();
+                Value theIndex = aHelper.pop();
+                Value theTarget = aHelper.pop();
 
                 Variable theVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new ArrayEntryValue(TypeRef.toType(theINS.getType()), theTarget, theIndex));
                 aHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericArraySTORE) {
                 BytecodeInstructionGenericArraySTORE theINS = (BytecodeInstructionGenericArraySTORE) theInstruction;
-                Variable theValue = aHelper.pop();
-                Variable theIndex = aHelper.pop();
-                Variable theTarget = aHelper.pop();
+                Value theValue = aHelper.pop();
+                Value theIndex = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 aTargetBlock.addExpression(new ArrayStoreExpression(TypeRef.toType(theINS.getType()), theTarget, theIndex, theValue));
             } else if (theInstruction instanceof BytecodeInstructionObjectArraySTORE) {
                 BytecodeInstructionObjectArraySTORE theINS = (BytecodeInstructionObjectArraySTORE) theInstruction;
-                Variable theValue = aHelper.pop();
-                Variable theIndex = aHelper.pop();
-                Variable theTarget = aHelper.pop();
+                Value theValue = aHelper.pop();
+                Value theIndex = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 aTargetBlock.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theTarget, theIndex, theValue));
             } else if (theInstruction instanceof BytecodeInstructionACONSTNULL) {
                 BytecodeInstructionACONSTNULL theINS = (BytecodeInstructionACONSTNULL) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new NullValue());
-                aHelper.push(theVariable);
+                aHelper.push(new NullValue());
             } else if (theInstruction instanceof BytecodeInstructionPUTFIELD) {
                 BytecodeInstructionPUTFIELD theINS = (BytecodeInstructionPUTFIELD) theInstruction;
-                Variable theValue = aHelper.pop();
-                Variable theTarget = aHelper.pop();
+                Value theValue = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 aTargetBlock.addExpression(new PutFieldExpression(theINS.getFieldRefConstant(), theTarget, theValue));
             } else if (theInstruction instanceof BytecodeInstructionGETFIELD) {
                 BytecodeInstructionGETFIELD theINS = (BytecodeInstructionGETFIELD) theInstruction;
-                Variable theTarget = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 Variable theVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType()), new GetFieldValue(theINS.getFieldRefConstant(), theTarget));
                 aHelper.push(theVariable);
             } else if (theInstruction instanceof BytecodeInstructionPUTSTATIC) {
                 BytecodeInstructionPUTSTATIC theINS = (BytecodeInstructionPUTSTATIC) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 aTargetBlock.addExpression(new PutStaticExpression(theINS.getConstant(), theValue));
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                 BytecodeInstructionGenericLDC theINS = (BytecodeInstructionGenericLDC) theInstruction;
                 BytecodeConstant theConstant = theINS.constant();
                 if (theConstant instanceof BytecodeDoubleConstant) {
                     BytecodeDoubleConstant theC = (BytecodeDoubleConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.DOUBLE, new DoubleValue(theC.getDoubleValue()));
-                    aHelper.push(theVariable);
+                    aHelper.push(new DoubleValue(theC.getDoubleValue()));
                 } else if (theConstant instanceof BytecodeLongConstant) {
                     BytecodeLongConstant theC = (BytecodeLongConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.LONG, new LongValue(theC.getLongValue()));
-                    aHelper.push(theVariable);
+                    aHelper.push(new LongValue(theC.getLongValue()));
                 } else if (theConstant instanceof BytecodeFloatConstant) {
                     BytecodeFloatConstant theC = (BytecodeFloatConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.FLOAT, new FloatValue(theC.getFloatValue()));
-                    aHelper.push(theVariable);
+                    aHelper.push(new FloatValue(theC.getFloatValue()));
                 } else if (theConstant instanceof BytecodeIntegerConstant) {
                     BytecodeIntegerConstant theC = (BytecodeIntegerConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(theC.getIntegerValue()));
-                    aHelper.push(theVariable);
+                    aHelper.push(new IntegerValue(theC.getIntegerValue()));
                 } else if (theConstant instanceof BytecodeStringConstant) {
                     BytecodeStringConstant theC = (BytecodeStringConstant) theConstant;
                     Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new StringValue(theC.getValue().stringValue()));
                     aHelper.push(theVariable);
                 } else if (theConstant instanceof BytecodeClassinfoConstant) {
                     BytecodeClassinfoConstant theC = (BytecodeClassinfoConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new ClassReferenceValue(BytecodeObjectTypeRef.fromUtf8Constant(theC.getConstant())));
-                    aHelper.push(theVariable);
+                    aHelper.push(new ClassReferenceValue(BytecodeObjectTypeRef.fromUtf8Constant(theC.getConstant())));
                 } else {
                     throw new IllegalArgumentException("Unsupported constant type : " + theConstant);
                 }
             } else if (theInstruction instanceof BytecodeInstructionBIPUSH) {
                 BytecodeInstructionBIPUSH theINS = (BytecodeInstructionBIPUSH) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.BYTE, new ByteValue(theINS.getByteValue()));
-                aHelper.push(theVariable);
+                aHelper.push(new IntegerValue(theINS.getByteValue()));
             } else if (theInstruction instanceof BytecodeInstructionSIPUSH) {
                 BytecodeInstructionSIPUSH theINS = (BytecodeInstructionSIPUSH) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.SHORT, new ShortValue(theINS.getShortValue()));
-                aHelper.push(theVariable);
+                aHelper.push(new IntegerValue(theINS.getShortValue()));
             } else if (theInstruction instanceof BytecodeInstructionICONST) {
                 BytecodeInstructionICONST theINS = (BytecodeInstructionICONST) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(theINS.getIntConst()));
-                aHelper.push(theVariable);
+                aHelper.push(new IntegerValue(theINS.getIntConst()));
             } else if (theInstruction instanceof BytecodeInstructionFCONST) {
                 BytecodeInstructionFCONST theINS = (BytecodeInstructionFCONST) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.FLOAT, new FloatValue(theINS.getFloatValue()));
-                aHelper.push(theVariable);
+                aHelper.push(new FloatValue(theINS.getFloatValue()));
             } else if (theInstruction instanceof BytecodeInstructionDCONST) {
                 BytecodeInstructionDCONST theINS = (BytecodeInstructionDCONST) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.DOUBLE, new DoubleValue(theINS.getDoubleConst()));
-                aHelper.push(theVariable);
+                aHelper.push(new DoubleValue(theINS.getDoubleConst()));
             } else if (theInstruction instanceof BytecodeInstructionLCONST) {
                 BytecodeInstructionLCONST theINS = (BytecodeInstructionLCONST) theInstruction;
-                Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.LONG, new LongValue(theINS.getLongConst()));
-                aHelper.push(theVariable);
+                aHelper.push(new LongValue(theINS.getLongConst()));
             } else if (theInstruction instanceof BytecodeInstructionGenericNEG) {
                 BytecodeInstructionGenericNEG theINS = (BytecodeInstructionGenericNEG) theInstruction;
-                Variable theVariable = aHelper.pop();
-                Variable theNegatedValue = aTargetBlock.newVariable(theVariable.resolveType(), new NegatedValue(theVariable));
+                Value theValue = aHelper.pop();
+                Variable theNegatedValue = aTargetBlock.newVariable(theValue.resolveType(), new NegatedValue(theValue));
                 aHelper.push(theNegatedValue);
             } else if (theInstruction instanceof BytecodeInstructionARRAYLENGTH) {
                 BytecodeInstructionARRAYLENGTH theINS = (BytecodeInstructionARRAYLENGTH) theInstruction;
-                Variable theVariable = aHelper.pop();
-                Variable theNegatedValue = aTargetBlock.newVariable(TypeRef.Native.INT, new ArrayLengthValue(theVariable));
+                Value theValue = aHelper.pop();
+                Variable theNegatedValue = aTargetBlock.newVariable(TypeRef.Native.INT, new ArrayLengthValue(theValue));
                 aHelper.push(theNegatedValue);
             } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                 BytecodeInstructionGenericLOAD theINS = (BytecodeInstructionGenericLOAD) theInstruction;
-                Variable theVariable = aHelper.getLocalVariable(theINS.getVariableIndex());
-                aHelper.push(theVariable);
+                Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex());
+                aHelper.push(theValue);
             } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                 BytecodeInstructionALOAD theINS = (BytecodeInstructionALOAD) theInstruction;
-                Variable theVariable = aHelper.getLocalVariable(theINS.getVariableIndex());
-                aHelper.push(theVariable);
+                Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex());
+                aHelper.push(theValue);
             } else if (theInstruction instanceof BytecodeInstructionGenericCMP) {
                 BytecodeInstructionGenericCMP theINS = (BytecodeInstructionGenericCMP) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new CompareValue(theValue1, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionLCMP) {
                 BytecodeInstructionLCMP theINS = (BytecodeInstructionLCMP) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new CompareValue(theValue1, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 BytecodeInstructionIINC theINS = (BytecodeInstructionIINC) theInstruction;
-                Variable theVariable = aHelper.getLocalVariable(theINS.getIndex());
-                Variable theAmount = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(theINS.getConstant()));
-                Variable theNewVariable = aTargetBlock.newVariable(
-                        TypeRef.Native.INT, new BinaryValue(theVariable, BinaryValue.Operator.ADD, theAmount));
+                Value theValueToIncrement = aHelper.getLocalVariable(theINS.getIndex());
+                Value theNewVariable = aTargetBlock.newVariable(
+                        TypeRef.Native.INT, new BinaryValue(theValueToIncrement, BinaryValue.Operator.ADD, new IntegerValue(theINS.getConstant())));
                 aHelper.setLocalVariable(theINS.getIndex(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                 BytecodeInstructionGenericREM theINS = (BytecodeInstructionGenericREM) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.REMAINDER, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericADD) {
                 BytecodeInstructionGenericADD theINS = (BytecodeInstructionGenericADD) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.ADD, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                 BytecodeInstructionGenericDIV theINS = (BytecodeInstructionGenericDIV) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
 
                 Variable theNewVariable;
                 Value theDivValue = new BinaryValue(theValue1, BinaryValue.Operator.DIV, theValue2);
@@ -824,55 +809,55 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
                 BytecodeInstructionGenericMUL theINS = (BytecodeInstructionGenericMUL) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.MUL, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericSUB) {
                 BytecodeInstructionGenericSUB theINS = (BytecodeInstructionGenericSUB) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.SUB, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericXOR) {
                 BytecodeInstructionGenericXOR theINS = (BytecodeInstructionGenericXOR) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.BINARYXOR, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericOR) {
                 BytecodeInstructionGenericOR theINS = (BytecodeInstructionGenericOR) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.BINARYOR, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericAND) {
                 BytecodeInstructionGenericAND theINS = (BytecodeInstructionGenericAND) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.BINARYAND, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericSHL) {
                 BytecodeInstructionGenericSHL theINS = (BytecodeInstructionGenericSHL) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.BINARYSHIFTLEFT, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericSHR) {
                 BytecodeInstructionGenericSHR theINS = (BytecodeInstructionGenericSHR) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.BINARYSHIFTRIGHT, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericUSHR) {
                 BytecodeInstructionGenericUSHR theINS = (BytecodeInstructionGenericUSHR) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getType()), new BinaryValue(theValue1, BinaryValue.Operator.BINARYUNSIGNEDSHIFTRIGHT, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionIFNULL) {
                 BytecodeInstructionIFNULL theINS = (BytecodeInstructionIFNULL) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNULL);
                 Variable theResult = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
@@ -882,7 +867,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
                 BytecodeInstructionIFNONNULL theINS = (BytecodeInstructionIFNONNULL) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 FixedBinaryValue theBinaryValue = new FixedBinaryValue(theValue, FixedBinaryValue.Operator.ISNONNULL);
                 Variable theResult = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
@@ -892,8 +877,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theINS = (BytecodeInstructionIFICMP) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
                 case lt:
@@ -926,8 +911,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theINS = (BytecodeInstructionIFACMP) theInstruction;
-                Variable theValue2 = aHelper.pop();
-                Variable theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+                Value theValue1 = aHelper.pop();
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
                 case eq:
@@ -948,30 +933,29 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theINS = (BytecodeInstructionIFCOND) theInstruction;
-                Variable theValue = aHelper.pop();
-                Variable theZero = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(0));
+                Value theValue = aHelper.pop();
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
-                case lt:
-                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHAN, theZero);
-                    break;
-                case eq:
-                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.EQUALS, theZero);
-                    break;
-                case gt:
-                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATERTHAN, theZero);
-                    break;
-                case ge:
-                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATEROREQUALS, theZero);
-                    break;
-                case le:
-                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHANOREQUALS, theZero);
-                    break;
-                case ne:
-                    theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.NOTEQUALS, theZero);
-                    break;
-                default:
-                    throw new IllegalStateException("Not supported operation : " + theINS.getType());
+                    case lt:
+                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHAN, new IntegerValue(0));
+                        break;
+                    case eq:
+                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.EQUALS, new IntegerValue(0));
+                        break;
+                    case gt:
+                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATERTHAN, new IntegerValue(0));
+                        break;
+                    case ge:
+                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.GREATEROREQUALS, new IntegerValue(0));
+                        break;
+                    case le:
+                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.LESSTHANOREQUALS, new IntegerValue(0));
+                        break;
+                    case ne:
+                        theBinaryValue = new BinaryValue(theValue, BinaryValue.Operator.NOTEQUALS, new IntegerValue(0));
+                        break;
+                    default:
+                        throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
@@ -981,16 +965,16 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
                 BytecodeInstructionObjectRETURN theINS = (BytecodeInstructionObjectRETURN) theInstruction;
-                Variable theVariable = aHelper.pop();
-                aTargetBlock.addExpression(new ReturnValueExpression(theVariable));
+                Value theValue = aHelper.pop();
+                aTargetBlock.addExpression(new ReturnValueExpression(theValue));
             } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
                 BytecodeInstructionGenericRETURN theINS = (BytecodeInstructionGenericRETURN) theInstruction;
-                Variable theVariable = aHelper.pop();
-                aTargetBlock.addExpression(new ReturnValueExpression(theVariable));
+                Value theValue = aHelper.pop();
+                aTargetBlock.addExpression(new ReturnValueExpression(theValue));
             } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                 BytecodeInstructionATHROW theINS = (BytecodeInstructionATHROW) theInstruction;
-                Variable theVariable = aHelper.pop();
-                aTargetBlock.addExpression(new ThrowExpression(theVariable));
+                Value theValue = aHelper.pop();
+                aTargetBlock.addExpression(new ThrowExpression(theValue));
             } else if (theInstruction instanceof BytecodeInstructionRETURN) {
                 BytecodeInstructionRETURN theINS = (BytecodeInstructionRETURN) theInstruction;
                 aTargetBlock.addExpression(new ReturnExpression());
@@ -1015,13 +999,13 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 }
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
-                Variable theLength = aHelper.pop();
+                Value theLength = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(
                         TypeRef.Native.REFERENCE, new NewArrayValue(theINS.getPrimitiveType(), theLength));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionNEWMULTIARRAY) {
                 BytecodeInstructionNEWMULTIARRAY theINS = (BytecodeInstructionNEWMULTIARRAY) theInstruction;
-                List<Variable> theDimensions = new ArrayList<>();
+                List<Value> theDimensions = new ArrayList<>();
                 for (int i=0;i<theINS.getDimensions();i++) {
                     theDimensions.add(aHelper.pop());
                 }
@@ -1032,7 +1016,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                 BytecodeInstructionANEWARRAY theINS = (BytecodeInstructionANEWARRAY) theInstruction;
-                Variable theLength = aHelper.pop();
+                Value theLength = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(
                         TypeRef.Native.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromUtf8Constant(theINS.getTypeConstant().getConstant()), theLength));
                 aHelper.push(theNewVariable);
@@ -1041,25 +1025,25 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), aTargetBlock));
             } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
                 BytecodeInstructionL2Generic theINS = (BytecodeInstructionL2Generic) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getTargetType()), new TypeConversionValue(theValue, TypeRef
                         .toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionI2Generic) {
                 BytecodeInstructionI2Generic theINS = (BytecodeInstructionI2Generic) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getTargetType()), new TypeConversionValue(theValue, TypeRef
                         .toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionF2Generic) {
                 BytecodeInstructionF2Generic theINS = (BytecodeInstructionF2Generic) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getTargetType()), new TypeConversionValue(theValue, TypeRef
                         .toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionD2Generic) {
                 BytecodeInstructionD2Generic theINS = (BytecodeInstructionD2Generic) theInstruction;
-                Variable theValue = aHelper.pop();
+                Value theValue = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getTargetType()), new TypeConversionValue(theValue, TypeRef
                         .toType(theINS.getTargetType())));
                 aHelper.push(theNewVariable);
@@ -1067,14 +1051,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionINVOKESPECIAL theINS = (BytecodeInstructionINVOKESPECIAL) theInstruction;
                 BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
-                List<Variable> theArguments = new ArrayList<>();
+                List<Value> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
                 for (BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
                 }
                 Collections.reverse(theArguments);
 
-                Variable theTarget = aHelper.pop();
+                Variable theTarget = (Variable) aHelper.pop();
                 BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
                 if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(TRuntimeGeneratedType.class))) {
                     RuntimeGeneratedTypeValue theValue = (RuntimeGeneratedTypeValue) theTarget.getValue();
@@ -1082,7 +1066,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     theValue.setMethodRef(theArguments.get(1));
                 } else if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     Variable theRoot = rootFor(theTarget);
-                    theRoot.setValue(theArguments.get(0).getValue());
+                    theRoot.setValue(theArguments.get(0));
                 } else {
                     String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
                     if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE.metchesExactlyTo(theSignature)) {
@@ -1109,14 +1093,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     return;
                 }
 
-                List<Variable> theArguments = new ArrayList<>();
+                List<Value> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
                 for (BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
                 }
                 Collections.reverse(theArguments);
 
-                Variable theTarget = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 InvokeVirtualMethodValue theValue = new InvokeVirtualMethodValue(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
                 if (theSignature.getReturnType().isVoid()) {
                     aTargetBlock.addExpression(new InvokeVirtualMethodExpression(theValue));
@@ -1128,14 +1112,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionINVOKEINTERFACE theINS = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
                 BytecodeMethodSignature theSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
-                List<Variable> theArguments = new ArrayList<>();
+                List<Value> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
                 for (BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
                 }
                 Collections.reverse(theArguments);
 
-                Variable theTarget = aHelper.pop();
+                Value theTarget = aHelper.pop();
                 InvokeVirtualMethodValue theValue = new InvokeVirtualMethodValue(theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
                 if (theSignature.getReturnType().isVoid()) {
                     aTargetBlock.addExpression(new InvokeVirtualMethodExpression(theValue));
@@ -1148,7 +1132,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionINVOKESTATIC theINS = (BytecodeInstructionINVOKESTATIC) theInstruction;
                 BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
-                List<Variable> theArguments = new ArrayList<>();
+                List<Value> theArguments = new ArrayList<>();
                 BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
                 for (BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
@@ -1165,9 +1149,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     switch (theMethodName) {
                     case "setIntValue": {
 
-                        Variable theTarget = theArguments.get(0);
-                        Variable theOffset = theArguments.get(1);
-                        Variable theNewValue = theArguments.get(2);
+                        Value theTarget = theArguments.get(0);
+                        Value theOffset = theArguments.get(1);
+                        Value theNewValue = theArguments.get(2);
 
                         ComputedMemoryLocationWriteValue theLocation = new ComputedMemoryLocationWriteValue(theTarget, theOffset);
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, theLocation);
@@ -1176,8 +1160,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     }
                     case "getStart": {
 
-                        Variable theTarget = theArguments.get(0);
-                        Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new VariableReferenceValue(theTarget));
+                        Value theTarget = theArguments.get(0);
+                        Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new ValueReferenceValue(theTarget));
 
                         aHelper.push(theNewVariable);
                         break;
@@ -1198,8 +1182,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     }
                     case "getIntValue": {
 
-                        Variable theTarget = theArguments.get(0);
-                        Variable theOffset = theArguments.get(1);
+                        Value theTarget = theArguments.get(0);
+                        Value theOffset = theArguments.get(1);
 
                         ComputedMemoryLocationReadValue theLocation = new ComputedMemoryLocationReadValue(theTarget, theOffset);
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, theLocation);
@@ -1235,14 +1219,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
                 BytecodeInstructionINSTANCEOF theINS = (BytecodeInstructionINSTANCEOF) theInstruction;
 
-                Variable theVariable = aHelper.pop();
-                InstanceOfValue theValue = new InstanceOfValue(theVariable, theINS.getTypeRef());
+                Value theValueToCheck = aHelper.pop();
+                InstanceOfValue theValue = new InstanceOfValue(theValueToCheck, theINS.getTypeRef());
 
                 Variable theCheckResult = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theValue);
                 aHelper.push(theCheckResult);
             } else if (theInstruction instanceof BytecodeInstructionTABLESWITCH) {
                 BytecodeInstructionTABLESWITCH theINS = (BytecodeInstructionTABLESWITCH) theInstruction;
-                Variable theVariable = aHelper.pop();
+                Value theValue = aHelper.pop();
 
                 ExpressionList theDefault = new ExpressionList();
                 theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget(), aTargetBlock));
@@ -1255,11 +1239,11 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     theOffsets.put((long) i, theJump);
                 }
 
-                aTargetBlock.addExpression(new TableSwitchExpression(theVariable, theINS.getLowValue(), theINS.getHighValue(),
+                aTargetBlock.addExpression(new TableSwitchExpression(theValue, theINS.getLowValue(), theINS.getHighValue(),
                         theDefault, theOffsets));
             } else if (theInstruction instanceof BytecodeInstructionLOOKUPSWITCH) {
                 BytecodeInstructionLOOKUPSWITCH theINS = (BytecodeInstructionLOOKUPSWITCH) theInstruction;
-                Variable theVariable = aHelper.pop();
+                Value theValue = aHelper.pop();
 
                 ExpressionList theDefault = new ExpressionList();
                 theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget(), aTargetBlock));
@@ -1271,7 +1255,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     thePairs.put(thePair.getMatch(), thePairExpressions);
                 }
 
-                aTargetBlock.addExpression(new LookupSwitchExpression(theVariable, theDefault, thePairs));
+                aTargetBlock.addExpression(new LookupSwitchExpression(theValue, theDefault, thePairs));
             } else if (theInstruction instanceof BytecodeInstructionINVOKEDYNAMIC) {
                 BytecodeInstructionINVOKEDYNAMIC theINS = (BytecodeInstructionINVOKEDYNAMIC) theInstruction;
 
@@ -1297,7 +1281,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     BytecodeMethodSignature theSignature = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType()
                             .getDescriptorIndex().methodSignature();
 
-                    List<Variable> theArguments = new ArrayList<>();
+                    List<Value> theArguments = new ArrayList<>();
                     // Add the three default constants
                     // TMethodHandles.Lookup aCaller,
                     theArguments.add(theInitNode
@@ -1363,14 +1347,12 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         int theArgumentsLength = theArguments.size();
 
                         int theVarArgsLength = theArgumentsLength - theSignatureLength + 1;
-                        Variable theLength = theInitNode.newVariable(TypeRef.Native.INT, new IntegerValue(theVarArgsLength));
                         Variable theNewVarargsArray = theInitNode.newVariable(TypeRef.Native.REFERENCE, new NewArrayValue(
-                                BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), theLength));
+                                BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), new IntegerValue(theVarArgsLength)));
                         for (int i = theSignatureLength - 1; i < theArgumentsLength; i++) {
-                            Variable theVariable = theArguments.get(i);
-                            Variable theIndex = theInitNode.newVariable(TypeRef.Native.INT, new IntegerValue(i - theSignatureLength + 1));
+                            Value theVariable = theArguments.get(i);
                             theArguments.remove(theVariable);
-                            theInitNode.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theNewVarargsArray, theIndex, theVariable));
+                            theInitNode.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theNewVarargsArray, new IntegerValue(i - theSignatureLength + 1), theVariable));
                         }
                         theArguments.add(theNewVarargsArray);
                     }
@@ -1394,11 +1376,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             theCallsiteVariable, new ArrayList<>());
                     Variable theMethodHandleVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theGetTargetValue);
 
-                    List<Variable> theInvokeArguments = new ArrayList<>();
+                    List<Value> theInvokeArguments = new ArrayList<>();
 
-                    Variable theLength = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(theInitSignature.getArguments().length));
                     Variable theArray = aTargetBlock.newVariable(
-                            TypeRef.Native.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), theLength));
+                            TypeRef.Native.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), new IntegerValue(theInitSignature.getArguments().length)));
 
                     for (int i=0;i<theInitSignature.getArguments().length;i++) {
                         Variable theIndex = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(i));

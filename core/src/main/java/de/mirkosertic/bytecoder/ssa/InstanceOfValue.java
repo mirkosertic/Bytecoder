@@ -21,7 +21,7 @@ public class InstanceOfValue extends Value {
 
     private final BytecodeClassinfoConstant type;
 
-    public InstanceOfValue(Variable aVariable, BytecodeClassinfoConstant aType) {
+    public InstanceOfValue(Value aVariable, BytecodeClassinfoConstant aType) {
         type = aType;
         consume(ConsumptionType.ARGUMENT, aVariable);
     }

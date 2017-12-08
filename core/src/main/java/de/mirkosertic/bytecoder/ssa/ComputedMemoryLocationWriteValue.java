@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ComputedMemoryLocationWriteValue extends Value {
 
-    public ComputedMemoryLocationWriteValue(Variable aOrigin, Variable aOffset) {
+    public ComputedMemoryLocationWriteValue(Value aOrigin, Value aOffset) {
         consume(ConsumptionType.ARGUMENT, aOrigin);
         consume(ConsumptionType.ARGUMENT, aOffset);
     }

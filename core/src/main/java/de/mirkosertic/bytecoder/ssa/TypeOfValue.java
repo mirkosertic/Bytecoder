@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class TypeOfValue extends Value {
 
-    public TypeOfValue(Variable aTarget) {
+    public TypeOfValue(Value aTarget) {
        consume(ConsumptionType.ARGUMENT, aTarget);
    }
 

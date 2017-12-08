@@ -73,7 +73,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     /**
      * Backend to be used.
      */
-    @Parameter(required = true, defaultValue = "jsssacompiler")
+    @Parameter(required = true, defaultValue = "js")
     protected String backend;
 
     /**

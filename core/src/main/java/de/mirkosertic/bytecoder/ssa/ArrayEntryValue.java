@@ -19,7 +19,7 @@ public class ArrayEntryValue extends Value {
 
     private final TypeRef arrayType;
 
-    public ArrayEntryValue(TypeRef aArrayType, Variable aArray, Variable aIndex) {
+    public ArrayEntryValue(TypeRef aArrayType, Value aArray, Value aIndex) {
         arrayType = aArrayType;
         consume(ConsumptionType.ARGUMENT, aArray);
         consume(ConsumptionType.ARGUMENT, aIndex);

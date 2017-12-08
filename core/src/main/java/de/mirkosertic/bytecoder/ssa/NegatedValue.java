@@ -17,8 +17,8 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class NegatedValue extends Value {
 
-    public NegatedValue(Variable aVariable) {
-        consume(ConsumptionType.ARGUMENT, aVariable);
+    public NegatedValue(Value aValue) {
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     @Override

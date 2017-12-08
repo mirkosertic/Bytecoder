@@ -28,7 +28,6 @@ public class AllOptimizer implements Optimizer {
     public AllOptimizer() {
         optimizer = new ArrayList<>();
         optimizer.add(new InvokeVirtualOptimizer());
-        optimizer.add(new InefficientIFOptimizer());
     }
 
     @Override

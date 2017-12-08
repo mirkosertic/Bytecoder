@@ -26,7 +26,7 @@ public class DirectInvokeMethodValue extends InvocationValue {
     private final String methodName;
 
     public DirectInvokeMethodValue(BytecodeObjectTypeRef aClazz, String aMethodName,
-            BytecodeMethodSignature aMethodSignature, Variable aTarget, List<Variable> aArguments) {
+            BytecodeMethodSignature aMethodSignature, Value aTarget, List<Value> aArguments) {
         super(aMethodSignature);
         clazz = aClazz;
         methodName = aMethodName;

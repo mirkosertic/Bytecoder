@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class VariableReferenceValue extends Value {
+public class ValueReferenceValue extends Value {
 
-    public VariableReferenceValue(Variable aVariable) {
-        consume(ConsumptionType.ARGUMENT, aVariable);
+    public ValueReferenceValue(Value aValue) {
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     @Override

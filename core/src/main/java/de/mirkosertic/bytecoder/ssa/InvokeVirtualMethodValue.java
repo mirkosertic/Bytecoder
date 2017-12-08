@@ -24,14 +24,14 @@ public class InvokeVirtualMethodValue extends InvocationValue {
 
     private final String methodName;
 
-    public InvokeVirtualMethodValue(BytecodeNameAndTypeConstant aMethod, Variable aTarget,
-                                    List<Variable> aArguments) {
+    public InvokeVirtualMethodValue(BytecodeNameAndTypeConstant aMethod, Value aTarget,
+                                    List<Value> aArguments) {
         this(aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
                 aTarget, aArguments);
     }
 
-    public InvokeVirtualMethodValue(String aMethodName, BytecodeMethodSignature aSignature, Variable aTarget,
-            List<Variable> aArguments) {
+    public InvokeVirtualMethodValue(String aMethodName, BytecodeMethodSignature aSignature, Value aTarget,
+            List<Value> aArguments) {
         super(aSignature);
         methodName = aMethodName;
         consume(ConsumptionType.INVOCATIONTARGET, aTarget);

@@ -15,10 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class StaticAccessTest {
@@ -38,5 +39,10 @@ public class StaticAccessTest {
         String theResdult2 = StaticClassWithStuffInside.member2;
         Assert.assertSame(theText, theResdult2);
         Assert.assertEquals(12, theResult, 0);
+    }
+
+    @Test
+    public void testGet() {
+        int theValue = StaticClassWithStuffInside.member;
     }
 }

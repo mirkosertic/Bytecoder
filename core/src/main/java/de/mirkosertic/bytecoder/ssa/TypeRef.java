@@ -25,7 +25,7 @@ public interface TypeRef {
     Native resolve();
 
     enum Native implements TypeRef {
-        UNKNOWN,FLOAT,SHORT,LONG,CHAR,BOOLEAN,BYTE,INT,DOUBLE,REFERENCE,VOID,CALLSITE,MEMORYLOCATION;
+        UNKNOWN,BYTE,SHORT,CHAR,BOOLEAN,INT,LONG,FLOAT,DOUBLE,REFERENCE,VOID,CALLSITE,MEMORYLOCATION;
         @Override
         public Native resolve() {
             return this;

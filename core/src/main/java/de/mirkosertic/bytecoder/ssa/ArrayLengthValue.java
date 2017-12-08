@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ArrayLengthValue extends Value {
 
-    public ArrayLengthValue(Variable aArray) {
+    public ArrayLengthValue(Value aArray) {
         consume(ConsumptionType.ARGUMENT, aArray);
     }
 

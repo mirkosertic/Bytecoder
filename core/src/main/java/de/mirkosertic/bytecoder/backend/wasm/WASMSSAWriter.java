@@ -97,7 +97,7 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableReferenceValue;
+import de.mirkosertic.bytecoder.ssa.ValueReferenceValue;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -562,6 +562,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeInitVariableExpression(InitVariableExpression aExpression) {
         Variable theVariable = aExpression.getVariable();
+
         if (theVariable.getValue() instanceof PrimitiveValue) {
             // Primitives are always inlined!
             return;
@@ -622,8 +623,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeIntegerValue((IntegerValue) aValue);
             return;
         }
-        if (aValue instanceof VariableReferenceValue) {
-            writeVariableReferenceValue((VariableReferenceValue) aValue);
+        if (aValue instanceof ValueReferenceValue) {
+            writeVariableReferenceValue((ValueReferenceValue) aValue);
             return;
         }
         if (aValue instanceof DirectInvokeMethodValue) {
@@ -767,7 +768,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeNewMultiArrayValue(NewMultiArrayValue aValue) {
 
-        List<Variable> theDimensions = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theDimensions = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
         BytecodeTypeRef theType = aValue.getType();
         String theMethodName;
@@ -794,9 +795,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
 
-        for (Variable theDimension : theDimensions) {
+        for (Value theDimension : theDimensions) {
             print(" ");
-            printVariableNameOrValue(theDimension);
+            writeValue(theDimension);
         }
 
         println(") ;; new array of type " + theType);
@@ -818,16 +819,16 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeRuntimeGeneratedTypeValue(RuntimeGeneratedTypeValue aValue) {
         println("(call $newLambda ");
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.printVariableNameOrValue(aValue.getType());;
+        theChild.writeValue(aValue.getType());;
         theChild.println();
-        theChild.printVariableNameOrValue(aValue.getMethodRef());
+        theChild.writeValue(aValue.getMethodRef());
         theChild.println();
         println(")");
     }
 
     private void writeTypeOfValue(TypeOfValue aValue) {
         print("(i32.load ");
-        printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
+        writeValue(aValue.resolveFirstArgument());
         print(")");
     }
 
@@ -877,7 +878,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         BytecodeLinkedClass theClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
 
         print("(call $INSTANCEOF_CHECK ");
-        printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
+        writeValue(aValue.resolveFirstArgument());
         print(" (i32.const ");
         print(theClass.getUniqueId());
         println("))");
@@ -902,8 +903,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeCompareValue(CompareValue aValue) {
-        Variable theValue1 = aValue.resolveFirstArgument();
-        Variable theValue2 = aValue.resolveSecondArgument();
+        Value theValue1 = aValue.resolveFirstArgument();
+        Value theValue2 = aValue.resolveSecondArgument();
 
         switch (aValue.resolveType().resolve()) {
             case DOUBLE:
@@ -914,9 +915,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 print("(call $compareValueI32 ");
                 break;
         }
-        printVariableNameOrValue(theValue1);
+        writeValue(theValue1);
         print(" ");
-        printVariableNameOrValue(theValue2);
+        writeValue(theValue2);
         print(")");
     }
 
@@ -934,9 +935,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
 
         print("(i32.add ");
-        printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
+        writeValue(aValue.resolveFirstArgument());
         print(" (i32.mul ");
-        printVariableNameOrValue((Variable) aValue.resolveSecondArgument());
+        writeValue(aValue.resolveSecondArgument());
         print(" (i32.const 4)");
         println("))");
 
@@ -963,14 +964,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
 
-        withDeeperIndent().printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println(") ;; new array of type " + theType);
     }
 
     private void writeArrayLengthValue(ArrayLengthValue aValue) {
         // First int is always length of array
         println("(i32.load ");
-        withDeeperIndent().printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println();
         println(")");
     }
@@ -989,14 +990,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(WASMWriterUtils.toMethodSignature(aValue.getSignature(), false));
         println();
 
-        Variable theTarget = (Variable) aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-        List<Variable> theVariables = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
+        List<Value> theVariables = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
-        printVariableNameOrValue(theTarget);
+        writeValue(theTarget);
         println();
 
-        for (Variable theVariable : theVariables) {
-            printVariableNameOrValue(theVariable);
+        for (Value theValue : theVariables) {
+            writeValue(theValue);
             println();
         }
 
@@ -1006,7 +1007,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         WASMSSAWriter theChild2 = theChild.withDeeperIndent();
 
-        theChild2.printVariableNameOrValue(theTarget);
+        theChild2.writeValue(theTarget);
         theChild2.println();
 
         // This is the method number
@@ -1019,7 +1020,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         // And this is the pointer into the function table
         theChild2.print("(i32.load offset=4 ");
-        theChild2.printVariableNameOrValue(theTarget);
+        theChild2.writeValue(theTarget);
         theChild2.println(")");   // This is id of the virtual table method
 
         theChild.println(")");
@@ -1060,10 +1061,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeTypeConversion(TypeConversionValue aValue) {
         TypeRef theTargetType = aValue.resolveType();
-        Variable theSource = (Variable) aValue.resolveFirstArgument();
+        Value theSource = aValue.resolveFirstArgument();
         if (theTargetType.resolve().equals(theSource.resolveType().resolve())) {
             // No conversion needed!
-            printVariableNameOrValue(theSource);
+            writeValue(theSource);
             return;
         }
         switch (theSource.resolveType().resolve()) {
@@ -1074,7 +1075,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                     case DOUBLE:
                     case FLOAT: {
                         // No conversion needed
-                        printVariableNameOrValue(theSource);
+                        writeValue(theSource);
                         return;
                     }
                     case INT:
@@ -1084,7 +1085,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                     case CHAR: {
                         // Convert f32 to i32
                         print("(i32.trunc_s/f32 ");
-                        printVariableNameOrValue(theSource);
+                        writeValue(theSource);
                         print(")");
                         return;
                     }
@@ -1104,7 +1105,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 case FLOAT: {
                     // Convert i32 to f32
                     print("(f32.convert_s/i32 ");
-                    printVariableNameOrValue(theSource);
+                    writeValue(theSource);
                     print(")");
                     return;
                 }
@@ -1114,7 +1115,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 case LONG:
                 case CHAR: {
                     // No conversion needed
-                    printVariableNameOrValue(theSource);
+                    writeValue(theSource);
                     return;
                 }
                 default:
@@ -1129,9 +1130,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeComputedMemoryLocationValue(ComputedMemoryLocationWriteValue aValue) {
         println("(i32.add ");
 
-        withDeeperIndent().printVariableNameOrValue(aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println();
-        withDeeperIndent().printVariableNameOrValue(aValue.resolveSecondArgument());
+        withDeeperIndent().writeValue(aValue.resolveSecondArgument());
         println();
 
         println(")");
@@ -1140,9 +1141,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeComputedMemoryLocationValue(ComputedMemoryLocationReadValue aValue) {
         println("(i32.load (i32.add ");
 
-        withDeeperIndent().printVariableNameOrValue(aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println();
-        withDeeperIndent().printVariableNameOrValue(aValue.resolveSecondArgument());
+        withDeeperIndent().writeValue(aValue.resolveSecondArgument());
         println();
 
         println("))");
@@ -1265,7 +1266,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeDirectMethodInvokeValue(DirectInvokeMethodValue aValue) {
 
         Variable theTarget = (Variable) aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-        List<Variable> theVariables = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theValues = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
         print("(call $");
         print(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
@@ -1273,9 +1274,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(" ");
         printVariableNameOrValue(theTarget);
 
-        for (Variable theVariable : theVariables) {
+        for (Value theValue : theValues) {
             print(" ");
-            printVariableNameOrValue(theVariable);
+            writeValue(theValue);
         }
 
         print(")");
@@ -1287,17 +1288,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         print(" (i32.const 0)"); // UNUSED Argument
 
-        List<Variable> theVariables = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
-        for (Variable theVariable : theVariables) {
+        List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        for (Value theValue : theArguments) {
             print(" ");
-            printVariableNameOrValue(theVariable);
+            writeValue(theValue);
         }
 
         print(")");
     }
 
-    private void writeVariableReferenceValue(VariableReferenceValue aValue) {
-        printVariableNameOrValue(aValue.resolveFirstArgument());
+    private void writeVariableReferenceValue(ValueReferenceValue aValue) {
+        writeValue(aValue.resolveFirstArgument());
     }
 
     private void writeByteValue(ByteValue aValue) {
@@ -1313,8 +1314,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeBinaryValue(BinaryValue aValue) {
-        Variable theValue1 = aValue.resolveFirstArgument();
-        Variable theValue2 = aValue.resolveSecondArgument();
+        Value theValue1 = aValue.resolveFirstArgument();
+        Value theValue2 = aValue.resolveSecondArgument();
         String theType1 = WASMWriterUtils.toType(theValue1.resolveType());
         String theType2 = WASMWriterUtils.toType(theValue2.resolveType());
         switch (aValue.getOperator()) {
@@ -1322,9 +1323,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".ne ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1334,9 +1335,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".eq ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1346,9 +1347,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".lt_s ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
                 println(")");
                 break;
@@ -1361,9 +1362,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 }
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
                 println(")");
                 break;
@@ -1376,9 +1377,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 }
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
                 println(")");
                 break;
@@ -1391,9 +1392,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 }
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
                 println(")");
                 break;
@@ -1402,9 +1403,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".add ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1414,9 +1415,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".mul");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1439,9 +1440,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                     println("(i32.rem_s ");
 
                     WASMSSAWriter theChild = withDeeperIndent();
-                    theChild.printVariableNameOrValue(theValue1);
+                    theChild.writeValue(theValue1);
                     theChild.println();
-                    theChild.printVariableNameOrValue(theValue2);
+                    theChild.writeValue(theValue2);
                     theChild.println();
 
                     println(")");
@@ -1450,9 +1451,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 print("(call $float_remainder ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 print(")");
@@ -1462,9 +1463,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".sub ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1474,9 +1475,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".xor ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1486,9 +1487,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".or ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1498,9 +1499,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".and ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1510,9 +1511,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".shl ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1522,9 +1523,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".shr_s ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1534,9 +1535,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 println("(" + theType1 + ".shr_u ");
 
                 WASMSSAWriter theChild = withDeeperIndent();
-                theChild.printVariableNameOrValue(theValue1);
+                theChild.writeValue(theValue1);
                 theChild.println();
-                theChild.printVariableNameOrValue(theValue2);
+                theChild.writeValue(theValue2);
                 theChild.println();
 
                 println(")");
@@ -1561,18 +1562,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
         printStackExit();
         print("(return ");
         writeValue(aExpression.getValue());
+        writeValue(aExpression.getValue());
         println(")");
     }
 
-    private void printVariableNameOrValueAsFloat(Variable aVariable) {
-        switch (aVariable.resolveType().resolve()) {
+    private void printVariableNameOrValueAsFloat(Value aValue) {
+        switch (aValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT:
-                printVariableNameOrValue(aVariable);
+                writeValue(aValue);
                 break;
             default:
                 print("(f32.convert_s/i32 ");
-                printVariableNameOrValue(aVariable);
+                writeValue(aValue);
                 print(")");
                 break;
         }
