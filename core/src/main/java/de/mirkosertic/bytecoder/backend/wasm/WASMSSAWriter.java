@@ -579,6 +579,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
                     print("(f32.store offset=");
                     break;
                 }
+                case UNKNOWN:
+                    throw new IllegalStateException();
                 default: {
                     print("(i32.store offset=");
                     break;
@@ -594,6 +596,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             println(")");
 
         } else {
+            println(";; setting local variable with type " + theVariable.resolveType().resolve() + " with value of type " + theVariable.getValue().resolveType().resolve());
             print("(set_local $");
             print(theVariable.getName());
             println();
@@ -1265,14 +1268,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeDirectMethodInvokeValue(DirectInvokeMethodValue aValue) {
 
-        Variable theTarget = (Variable) aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
+        Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
         List<Value> theValues = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
         print("(call $");
         print(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
 
         print(" ");
-        printVariableNameOrValue(theTarget);
+        writeValue(theTarget);
 
         for (Value theValue : theValues) {
             print(" ");
@@ -1590,6 +1593,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
                     case FLOAT:
                         print("(f32.load offset=");
                         break;
+                    case UNKNOWN:
+                        throw new IllegalStateException();
                     default:
                         print("(i32.load offset=");
                         break;
