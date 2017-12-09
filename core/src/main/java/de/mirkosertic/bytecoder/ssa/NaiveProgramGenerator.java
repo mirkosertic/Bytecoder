@@ -438,7 +438,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         // finally blocks
         for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
             GraphNode theNewBlock = theEntry.getValue();
-            if (theVisited.add(theNewBlock)) {
+            if (theNewBlock.getType() != GraphNode.BlockType.NORMAL) {
                 initializeBlock(aOwningClass, aMethod, theNewBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
             }
         }
