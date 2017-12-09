@@ -193,7 +193,7 @@ public class GraphProgramGenerator implements ProgramGenerator {
             theInitialState.setVariableInSlot(theIndex++, new ProxyValue(new SelfReferenceParameterValue()));
         }
         for (int i=0;i<aMethod.getSignature().getArguments().length;i++) {
-            theInitialState.setVariableInSlot(theIndex++, new ProxyValue(new MethodParameterValue(i, aMethod.getSignature().getArguments()[i])));
+            theInitialState.setVariableInSlot(theIndex++, new ProxyValue(new MethodParameterValue(i, TypeRef.toType(aMethod.getSignature().getArguments()[i]))));
         }
 
         Program theProgram = new Program();

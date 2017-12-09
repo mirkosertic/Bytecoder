@@ -25,7 +25,7 @@ public interface TypeRef {
     Native resolve();
 
     enum Native implements TypeRef {
-        UNKNOWN,BYTE,SHORT,CHAR,BOOLEAN,INT,LONG,FLOAT,DOUBLE,REFERENCE,VOID,CALLSITE,MEMORYLOCATION;
+        UNKNOWN,BYTE,SHORT,CHAR,BOOLEAN,INT,LONG,FLOAT,DOUBLE,REFERENCE,VOID;
         @Override
         public Native resolve() {
             return this;
@@ -65,7 +65,7 @@ public interface TypeRef {
             }
         }
         if (BytecodeObjectTypeRef.fromRuntimeClass(Address.class).equals(aTypeRef)) {
-            return TypeRef.Native.MEMORYLOCATION;
+            return TypeRef.Native.INT;
         }
         return Native.REFERENCE;
     }

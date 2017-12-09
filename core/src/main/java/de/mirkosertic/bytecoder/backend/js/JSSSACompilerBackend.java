@@ -376,9 +376,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 JSSSAWriter theVariablesWriter = new JSSSAWriter(theSSAProgram,"        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.globalVariables()) {
-                    if (!(theVariable.getValue() instanceof PrimitiveValue) &&
-                        !(theVariable.getValue() instanceof MethodParameterValue) &&
-                        !(theVariable.getValue() instanceof SelfReferenceParameterValue)) {
+                    if (!theVariable.isSynthetic()) {
                         theVariablesWriter.print("var ");
                         theVariablesWriter.print(theVariable.getName());
                         theVariablesWriter.print(" = null;");

@@ -98,7 +98,6 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
-import de.mirkosertic.bytecoder.ssa.ValueReferenceValue;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -112,7 +111,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     public void print(Value aValue) {
         if (aValue instanceof Variable) {
-            printVariableNameOrValue((Variable) aValue);
+            printVariableName((Variable) aValue);
         } else if (aValue instanceof GetStaticValue) {
             print((GetStaticValue) aValue);
         } else if (aValue instanceof NullValue) {
@@ -123,8 +122,6 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((InvokeStaticMethodValue) aValue);
         } else if (aValue instanceof NewObjectValue) {
             print((NewObjectValue) aValue);
-        } else if (aValue instanceof ValueReferenceValue) {
-            print((ValueReferenceValue) aValue);
         } else if (aValue instanceof ByteValue) {
             print((ByteValue) aValue);
         } else if (aValue instanceof BinaryValue) {
@@ -201,7 +198,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(TypeOfValue aValue) {
-        printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
+        printVariableName((Variable) aValue.resolveFirstArgument());
         print(".runtimeClass");
     }
 
@@ -527,11 +524,6 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aValue.getByteValue());
     }
 
-    public void print(ValueReferenceValue aValue) {
-        Value theValue = aValue.resolveFirstArgument();
-        print(theValue);
-    }
-
     public void print(NewObjectValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
         print(".emptyInstance()");
@@ -612,12 +604,8 @@ public class JSSSAWriter extends IndentSSAWriter {
         printStaticFieldReference(aValue.getField());
     }
 
-    public void printVariableNameOrValue(Variable aVariable) {
-        if (aVariable.getValue() instanceof PrimitiveValue) {
-            print(aVariable.getValue());
-        } else {
-            print(aVariable.getName());
-        }
+    public void printVariableName(Variable aVariable) {
+        print(aVariable.getName());
     }
 
     public void printStaticFieldReference(BytecodeFieldRefConstant aField) {
@@ -635,18 +623,6 @@ public class JSSSAWriter extends IndentSSAWriter {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
-    private Value resolveRealValue(Value aValue) {
-        if (aValue instanceof ValueReferenceValue) {
-            ValueReferenceValue theRef = (ValueReferenceValue) aValue;
-            return resolveRealValue(theRef.resolveFirstArgument());
-        }
-        return aValue;
-    }
-
-    private Value resolveRealValue(Variable aVariable) {
-        return resolveRealValue(aVariable.getValue());
-    }
-
     public void writeExpressions(ExpressionList aExpressions) {
         for (Expression theExpression : aExpressions.toList()) {
             if (theExpression instanceof ReturnExpression) {
@@ -660,28 +636,20 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();
-                if (theVariable.getValue() instanceof PHIFunction) {
-                    print("// ");
-                    printVariableNameOrValue(theVariable);
-                    println(" is PHI function and initialized from predecessor block in flow graph");
-                } else {
-                    if (theVariable.getValue() instanceof ComputedMemoryLocationWriteValue) {
-                        continue;
-                    }
-                    if (theVariable.getValue() instanceof PrimitiveValue) {
-                        continue;
-                    }
+                Value theValue = theE.getValue();
 
-                    if (!program.isGlobalVariable(theVariable)) {
-                        print("var ");
-                    }
-
-                    print(theVariable.getName());
-                    print(" = ");
-                    print(theVariable.getValue());
-                    print("; // type is ");
-                    println(theVariable.resolveType().resolve().name() + " value type is " + theVariable.getValue().resolveType());
+                if (theValue instanceof ComputedMemoryLocationWriteValue) {
+                    continue;
                 }
+                if (!program.isGlobalVariable(theVariable)) {
+                    print("var ");
+                }
+
+                print(theVariable.getName());
+                print(" = ");
+                print(theValue);
+                print("; // type is ");
+                println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());
             } else if (theExpression instanceof PutStaticExpression) {
                 PutStaticExpression theE = (PutStaticExpression) theExpression;
                 BytecodeFieldRefConstant theField = theE.getField();
@@ -814,11 +782,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof SetMemoryLocationExpression) {
                 SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
-                if (theE.getAddress() instanceof Variable) {
-                    print(((Variable) theE.getAddress()).getValue());
-                } else {
-                    print(theE.getAddress());
-                }
+                print(theE.getAddress());
 
                 print(" = ");
 
