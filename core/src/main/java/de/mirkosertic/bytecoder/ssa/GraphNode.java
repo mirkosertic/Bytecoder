@@ -79,14 +79,20 @@ public class GraphNode {
         return startAddress;
     }
 
+    public Variable newVariable(TypeRef aType) {
+        Variable theNewVariable = program.createVariable(aType);
+        return theNewVariable;
+    }
+
     public Variable newVariable(TypeRef aType, Value aValue)  {
         return newVariable(aType, aValue, false);
     }
 
     public Variable newVariable(TypeRef aType, Value aValue, boolean aIsImport)  {
-        Variable theNewVariable = program.createVariable(aType, aValue);
+        Variable theNewVariable = newVariable(aType);
+        theNewVariable.initializeWith(aValue);
         if (!aIsImport) {
-            expressions.add(new InitVariableExpression(theNewVariable));
+            expressions.add(new InitVariableExpression(theNewVariable, aValue));
         }
         return theNewVariable;
     }

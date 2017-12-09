@@ -15,16 +15,49 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.List;
+
 public class Variable extends Value {
 
-    private TypeRef type;
-    private final String name;
-    private Value value;
+    public static Variable createThisRef() {
+        Variable theVariable = new Variable(TypeRef.Native.REFERENCE, "thisRef", true);
+        theVariable.initializeWith(new SelfReferenceParameterValue());
+        return theVariable;
+    }
 
-    public Variable(TypeRef aType, String aName, Value aValue) {
+    public static Variable createMethodParameter(int aIndex, TypeRef aTypeRef) {
+        Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true);
+        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
+        return theVariable;
+    }
+
+    private final TypeRef type;
+    private final String name;
+    private final boolean synthetic;
+
+    private Variable(TypeRef aType, String aName, boolean aSsynthetic) {
         type = aType;
         name = aName;
-        value = aValue;
+        synthetic = aSsynthetic;
+    }
+
+    public Variable(TypeRef aType, String aName) {
+        this(aType, aName, false);
+    }
+
+    public void initializeWith(Value aValue) {
+        if (!(type.resolve() == aValue.resolveType().resolve())) {
+            throw new IllegalArgumentException("Cannot initialize " + name + " of type " + type.resolve() + " with " + aValue + " of type " + aValue.resolveType().resolve());
+        }
+        consume(ConsumptionType.INITIALIZATION, aValue);
+    }
+
+    public Value singleInitValue() {
+        List<Value> theInits = consumedValues(ConsumptionType.INITIALIZATION);
+        if (theInits.size() != 1) {
+            throw new IllegalStateException();
+        }
+        return theInits.get(0);
     }
 
     @Override
@@ -36,20 +69,12 @@ public class Variable extends Value {
         return name;
     }
 
-    public Value getValue() {
-        return value;
-    }
-
-    public Variable withNewValue(Value aNewValue) {
-        return new Variable(type, name, aNewValue);
-    }
-
-    public void setValue(Value aNewValue) {
-        value = aNewValue;
-    }
-
     @Override
     public String toString() {
-        return name + " -> " + value + " of type " + resolveType();
+        return name + " of type " + resolveType();
+    }
+
+    public boolean isSynthetic() {
+        return synthetic;
     }
 }

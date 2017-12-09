@@ -18,9 +18,15 @@ package de.mirkosertic.bytecoder.ssa;
 public class InitVariableExpression extends Expression {
 
     private final Variable variable;
+    private final Value value;
 
-    public InitVariableExpression(Variable aVariable) {
+    public InitVariableExpression(Variable aVariable, Value aValue) {
         variable = aVariable;
+        value = aValue;
+    }
+
+    public Value getValue() {
+        return value;
     }
 
     public Variable getVariable() {

@@ -97,7 +97,6 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.ValueReferenceValue;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -562,13 +561,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeInitVariableExpression(InitVariableExpression aExpression) {
         Variable theVariable = aExpression.getVariable();
+        Value theNewValue = aExpression.getValue();
 
-        if (theVariable.getValue() instanceof PrimitiveValue) {
+        if (theNewValue instanceof PrimitiveValue) {
             // Primitives are always inlined!
             return;
         }
 
-        if (theVariable.getValue() instanceof PHIFunction) {
+        if (theNewValue instanceof PHIFunction) {
             return;
         }
 
@@ -590,19 +590,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
             println(" (get_local $SP)");
 
             WASMSSAWriter theChild = withDeeperIndent();
-            theChild.writeValue(theVariable.getValue());
+            theChild.writeValue(theNewValue);
 
             println();
             println(")");
 
         } else {
-            println(";; setting local variable with type " + theVariable.resolveType().resolve() + " with value of type " + theVariable.getValue().resolveType().resolve());
+            println(";; setting local variable with type " + theVariable.resolveType().resolve() + " with value of type " + theNewValue.resolveType().resolve());
             print("(set_local $");
             print(theVariable.getName());
             println();
 
             WASMSSAWriter theChild = withDeeperIndent();
-            theChild.writeValue(theVariable.getValue());
+            theChild.writeValue(theNewValue);
 
             println();
             println(")");
@@ -611,7 +611,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeValue(Value aValue) {
         if (aValue instanceof Variable) {
-            printVariableNameOrValue((Variable) aValue);
+            printVariableName((Variable) aValue);
             return;
         }
         if (aValue instanceof BinaryValue) {
@@ -624,10 +624,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
         if (aValue instanceof IntegerValue) {
             writeIntegerValue((IntegerValue) aValue);
-            return;
-        }
-        if (aValue instanceof ValueReferenceValue) {
-            writeVariableReferenceValue((ValueReferenceValue) aValue);
             return;
         }
         if (aValue instanceof DirectInvokeMethodValue) {
@@ -893,13 +889,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
             case DOUBLE:
             case FLOAT: {
                     print("(f32.neg ");
-                    printVariableNameOrValue(theVariable);
+                    printVariableName(theVariable);
                     print(")");
                 }
                 break;
             default:
                 print("(i32.mul (i32.const -1) ");
-                printVariableNameOrValue(theVariable);
+                printVariableName(theVariable);
                 print(")");
                 break;
         }
@@ -1156,19 +1152,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
         switch (aValue.getOperator()) {
             case ISNULL: {
                 print("(i32.eq ");
-                printVariableNameOrValue(aValue.resolveFirstArgument());
+                printVariableName(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
             case ISNONNULL: {
                 print("(i32.ne ");
-                printVariableNameOrValue(aValue.resolveFirstArgument());
+                printVariableName(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
             case ISZERO: {
                 print("(i32.eq ");
-                printVariableNameOrValue(aValue.resolveFirstArgument());
+                printVariableName(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
@@ -1261,7 +1257,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println();
 
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.printVariableNameOrValue(aValue.resolveFirstArgument());
+        theChild.printVariableName(aValue.resolveFirstArgument());
 
         println(")");
     }
@@ -1298,10 +1294,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
 
         print(")");
-    }
-
-    private void writeVariableReferenceValue(ValueReferenceValue aValue) {
-        writeValue(aValue.resolveFirstArgument());
     }
 
     private void writeByteValue(ByteValue aValue) {
@@ -1583,31 +1575,27 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void printVariableNameOrValue(Variable aVariable) {
-        if (aVariable.getValue() instanceof PrimitiveValue) {
-            writeValue(aVariable.getValue());
-        } else {
-            if (isStackVariable(aVariable)) {
-                switch (aVariable.resolveType().resolve()) {
-                    case DOUBLE:
-                    case FLOAT:
-                        print("(f32.load offset=");
-                        break;
-                    case UNKNOWN:
-                        throw new IllegalStateException();
-                    default:
-                        print("(i32.load offset=");
-                        break;
-                }
-                print(stackOffsetFor(aVariable));
-                print(" (get_local $SP)");
-                print(")");
-            } else {
-                print("(get_local ");
-                print("$");
-                print(aVariable.getName());
-                print(")");
+    private void printVariableName(Variable aVariable) {
+        if (isStackVariable(aVariable)) {
+            switch (aVariable.resolveType().resolve()) {
+                case DOUBLE:
+                case FLOAT:
+                    print("(f32.load offset=");
+                    break;
+                case UNKNOWN:
+                    throw new IllegalStateException();
+                default:
+                    print("(i32.load offset=");
+                    break;
             }
+            print(stackOffsetFor(aVariable));
+            print(" (get_local $SP)");
+            print(")");
+        } else {
+            print("(get_local ");
+            print("$");
+            print(aVariable.getName());
+            print(")");
         }
     }
 

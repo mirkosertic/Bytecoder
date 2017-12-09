@@ -358,10 +358,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
 
-                    if (!(theVariable.getValue() instanceof PrimitiveValue) &&
-                            !(theVariable.getValue() instanceof MethodParameterValue) &&
-                            !(theVariable.getValue() instanceof SelfReferenceParameterValue) &&
-                            !theSSAWriter.isStackVariable(theVariable)) {
+                    if (!(theVariable.isSynthetic()) &&
+                        !theSSAWriter.isStackVariable(theVariable)) {
 
                         theSSAWriter.print("(local $");
                         theSSAWriter.print(theVariable.getName());
@@ -522,10 +520,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             for (Variable theVariable : theSSAProgram.getVariables()) {
 
-                if (!(theVariable.getValue() instanceof PrimitiveValue) &&
-                        !(theVariable.getValue() instanceof MethodParameterValue) &&
-                        !(theVariable.getValue() instanceof SelfReferenceParameterValue) &&
-                        !theSSAWriter.isStackVariable(theVariable)) {
+                if (!(theVariable.isSynthetic()) &&
+                    !(theSSAWriter.isStackVariable(theVariable))) {
 
                     theSSAWriter.print("(local $");
                     theSSAWriter.print(theVariable.getName());
