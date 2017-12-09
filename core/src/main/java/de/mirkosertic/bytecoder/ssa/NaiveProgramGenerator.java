@@ -245,6 +245,52 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         linkerContext = aLinkerContext;
     }
 
+    public static class ParsingHelperCache {
+
+        private final BytecodeMethod method;
+        private final GraphNode startNode;
+        private final Map<GraphNode, ParsingHelper> finalStatesForNodes;
+
+        public ParsingHelperCache(BytecodeMethod aMethod, GraphNode aStartNode) {
+            startNode = aStartNode;
+            method = aMethod;
+            finalStatesForNodes = new HashMap<>();
+        }
+
+        public void registerFinalStateForNode(GraphNode aNode, ParsingHelper aState) {
+            finalStatesForNodes.put(aNode, aState);
+        }
+
+        public ParsingHelper resolveFinalStateForNode(GraphNode aGraphNode) {
+            if (aGraphNode == null) {
+                // No node, so we create the initial state of the whole program
+                ParsingHelper theHelper = new ParsingHelper(startNode);
+
+                // At this point, local variables are initialized based on the method signature
+                // The stack is empty
+                int theCurrentIndex = 0;
+                if (!method.getAccessFlags().isStatic()) {
+                    Variable theRef = Variable.createThisRef();
+                    theHelper.setLocalVariable(theCurrentIndex++, theRef);
+                }
+                BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
+                for (int i=0;i<theTypes.length;i++) {
+                    BytecodeTypeRef theRef = theTypes[i];
+
+                    Variable theArgument = Variable.createMethodParameter((i+1), TypeRef.toType(theTypes[i]));
+                    theHelper.setLocalVariable(theCurrentIndex++, theArgument);
+
+                    if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
+                        theCurrentIndex++;
+                    }
+                }
+                return theHelper;
+            }
+            return finalStatesForNodes.get(aGraphNode);
+        };
+
+    }
+
     @Override
     public Program generateFrom(BytecodeClass aOwningClass, BytecodeMethod aMethod) {
 
@@ -383,41 +429,17 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         Set<GraphNode> theVisited = new HashSet<>();
         GraphNode theStart = theProgram.getControlFlowGraph().nodeStartingAt(new BytecodeOpcodeAddress(0));
 
-        ParsingHelper theHelper = new ParsingHelper(theStart);
-
-        // At this point, local variables are initialized based on the method signature
-        // The stack is empty
-        int theCurrentIndex = 0;
-        if (!aMethod.getAccessFlags().isStatic()) {
-            Variable theRef = Variable.createThisRef();
-            theHelper.setLocalVariable(theCurrentIndex++, theRef);
-        }
-        BytecodeTypeRef[] theTypes = aMethod.getSignature().getArguments();
-        for (int i=0;i<theTypes.length;i++) {
-            BytecodeTypeRef theRef = theTypes[i];
-
-            Variable theArgument = Variable.createMethodParameter((i+1), TypeRef.toType(theTypes[i]));
-            theHelper.setLocalVariable(theCurrentIndex++, theArgument);
-
-            if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
-                theCurrentIndex++;
-            }
-        }
+        ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(aMethod, theStart);
 
         // This will traverse the CFG from top to bottom
-        initializeBlock(aOwningClass, aMethod, theProgram, theStart, theVisited, theHelper, theBasicBlockByAddress);
+        initializeBlock(aOwningClass, aMethod, theStart, theVisited, theParsingHelperCache, theBasicBlockByAddress);
 
         // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
         // finally blocks
         for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
             GraphNode theNewBlock = theEntry.getValue();
             if (theVisited.add(theNewBlock)) {
-                ParsingHelper theNewHelper = new ParsingHelper(theNewBlock);
-                if (theNewBlock.getType() != GraphNode.BlockType.NORMAL) {
-                    theHelper.push(theNewBlock.newVariable(TypeRef.Native.REFERENCE, new CurrentExceptionValue()));
-                }
-                // TODO: Check what exception handler might reference from here!!!
-                initializeBlock(aOwningClass, aMethod, theProgram, theNewBlock, theVisited, theNewHelper, theBasicBlockByAddress);
+                initializeBlock(aOwningClass, aMethod, theNewBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
             }
         }
 
@@ -549,24 +571,44 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
     }
 
-    private void initializeBlock(BytecodeClass aOwningClass, BytecodeMethod aMethod, Program aProgram, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelper aHelper, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
+    private void initializeBlock(BytecodeClass aOwningClass, BytecodeMethod aMethod, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelperCache aCache, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
         if (aAlreadyVisited.add(aCurrentBlock)) {
 
-            initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aBlocksByAddress, aHelper);
+            // Resolve predecessor nodes. without them we would not have an initial state for the current node
+            Set<GraphNode> thePredecessors = aCurrentBlock.getPredecessors();
+            for (GraphNode thePredecessor : thePredecessors) {
+                initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aBlocksByAddress);
+            }
+
+            ParsingHelper theParsingState;
+            if (aCurrentBlock.getType() != GraphNode.BlockType.NORMAL) {
+                // Exception handler or finally code
+                // We only have the thrown exception on the stack!
+                theParsingState = new ParsingHelper(aCurrentBlock);
+                theParsingState.push(aCurrentBlock.newVariable(TypeRef.Native.REFERENCE, new CurrentExceptionValue()));
+            } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
+                // Programm is at start address, so we need the initial state
+                theParsingState = aCache.resolveFinalStateForNode(null);
+            } else if (aCurrentBlock.getPredecessors().size() == 1) {
+                // Only one predecessor
+                theParsingState = aCache.resolveFinalStateForNode(thePredecessors.iterator().next()).cloneToNewFor(aCurrentBlock);
+            } else {
+                // we have more than one predecessor
+                // we need to create PHI functions for all the disjunct states in local variables and the stack
+
+                // TODO Implement complex logic!
+                theParsingState = null;
+            }
+
+            initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aBlocksByAddress, theParsingState);
+
+            // register the final state after program flow
+            aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
 
             for (GraphNode theSuccessor : aCurrentBlock.getSuccessors()) {
                 if (!aAlreadyVisited.contains(theSuccessor)) {
-                    ParsingHelper theNewHelper;
-                    if (theSuccessor.getPredecessors().size() == 1) {
-                        // Everything is ok
-                        theNewHelper = aHelper.cloneToNewFor(theSuccessor);
-                    } else {
-                        // We have a join point, so we have to introduce PHI function for everything that was imported
-                        // This is the naive implementation that can be vastly improved
-                        theNewHelper = aHelper.cloneToNewWithPHIFunctions(theSuccessor, aProgram);
-                    }
 
-                    initializeBlock(aOwningClass, aMethod, aProgram, theSuccessor, aAlreadyVisited, theNewHelper, aBlocksByAddress);
+                    initializeBlock(aOwningClass, aMethod, theSuccessor, aAlreadyVisited, aCache, aBlocksByAddress);
                 }
             }
         }
