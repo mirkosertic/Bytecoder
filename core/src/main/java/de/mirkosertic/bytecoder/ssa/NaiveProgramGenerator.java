@@ -210,9 +210,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 block.addToExportedList(theValue, theDesc);
                 return theValue;
             }
-            if (theValue == null) {
-                throw new IllegalStateException("local variable " + aIndex + " is null in " + this);
-            }
             return theValue;
         }
 
@@ -222,6 +219,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             }
             localVariables.put(aIndex, aValue);
             block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
+        }
+
+        public void setStackValue(int aStackPos, Value aValue) {
+            stack.set(aStackPos, aValue);
         }
 
         public void finalizeExportState() {
@@ -288,6 +289,72 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             }
             return finalStatesForNodes.get(aGraphNode);
         };
+
+        public ParsingHelper resolveInitialPHIStateForNode(Program aProgram, GraphNode aBlock) {
+            // We need to collect the final states of all predecessor nodes
+            // And we need also a list of all
+            final Map<GraphNode, BlockState> theNode2State = new HashMap<>();
+            final Set<VariableDescription> theAllKnownVariables = new HashSet<>();
+            for (GraphNode thePredecessor : aBlock.getPredecessors()) {
+                BlockState theState = thePredecessor.toFinalState();
+                theNode2State.put(thePredecessor, theState);
+                theAllKnownVariables.addAll(theState.getPorts().keySet());
+            }
+            Function<VariableDescription, Set<Value>> findAllValuesFor = aDescription -> {
+                Set<Value> theResult = new HashSet<>();
+                for (BlockState theState : theNode2State.values()) {
+                    Value theValue = theState.findBySlot(aDescription);
+                    if (theValue != null) {
+                        theResult.add(theValue);
+                    }
+                }
+                return theResult;
+            };
+
+            Function<Set<Value>, Set<TypeRef>> theTypeCollector = aValues -> {
+                Set<TypeRef> theResult = new HashSet<>();
+                for (Value theValue : aValues) {
+                    theResult.add(theValue.resolveType());
+                }
+                return theResult;
+            };
+
+            ParsingHelper theNewHelper = new ParsingHelper(aBlock);
+            for (VariableDescription theDescription : theAllKnownVariables) {
+                Set<Value> theValuesMatching = findAllValuesFor.apply(theDescription);
+                if (theValuesMatching.isEmpty()) {
+                    throw new IllegalStateException();
+                }
+                Value theInputVslue;
+                if (theValuesMatching.size() == 1) {
+                    theInputVslue = theValuesMatching.iterator().next();
+                    // we can import it directly, as it is always the same
+                } else {
+                    // We need a PHI variable for this place
+                    Set<TypeRef> theTypes = theTypeCollector.apply(theValuesMatching);
+                    if (theTypes.size() != 1) {
+                        throw new IllegalStateException("More than one type detected : " + theTypes);
+                    }
+                    Variable thePHI = aProgram.createVariable(theTypes.iterator().next());
+                    for (Value theValue : theValuesMatching) {
+                        thePHI.initializeWith(theValue);
+                    }
+                    theInputVslue = thePHI;
+                }
+
+                if (theDescription instanceof LocalVariableDescription) {
+                    // Value goes to the variables register
+                    LocalVariableDescription theVarDesc = (LocalVariableDescription) theDescription;
+                    theNewHelper.setLocalVariable(theVarDesc.getIndex(), theInputVslue);
+                } else {
+                    // Value goes to the Stack
+                    StackVariableDescription theVarDesc = (StackVariableDescription) theDescription;
+                    theNewHelper.setStackValue(theVarDesc.getPos(), theInputVslue);
+                }
+
+            }
+            return theNewHelper;
+        }
 
     }
 
@@ -432,14 +499,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(aMethod, theStart);
 
         // This will traverse the CFG from top to bottom
-        initializeBlock(aOwningClass, aMethod, theStart, theVisited, theParsingHelperCache, theBasicBlockByAddress);
+        initializeBlock(theProgram, aOwningClass, aMethod, theStart, theVisited, theParsingHelperCache, theBasicBlockByAddress);
 
         // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
         // finally blocks
         for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
             GraphNode theNewBlock = theEntry.getValue();
             if (theNewBlock.getType() != GraphNode.BlockType.NORMAL) {
-                initializeBlock(aOwningClass, aMethod, theNewBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
+                initializeBlock(theProgram, aOwningClass, aMethod, theNewBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
             }
         }
 
@@ -571,13 +638,13 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
     }
 
-    private void initializeBlock(BytecodeClass aOwningClass, BytecodeMethod aMethod, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelperCache aCache, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
+    private void initializeBlock(Program aProgram, BytecodeClass aOwningClass, BytecodeMethod aMethod, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelperCache aCache, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
         if (aAlreadyVisited.add(aCurrentBlock)) {
 
             // Resolve predecessor nodes. without them we would not have an initial state for the current node
             Set<GraphNode> thePredecessors = aCurrentBlock.getPredecessors();
             for (GraphNode thePredecessor : thePredecessors) {
-                initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aBlocksByAddress);
+                initializeBlock(aProgram, aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aBlocksByAddress);
             }
 
             ParsingHelper theParsingState;
@@ -595,9 +662,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else {
                 // we have more than one predecessor
                 // we need to create PHI functions for all the disjunct states in local variables and the stack
-
-                // TODO Implement complex logic!
-                theParsingState = null;
+                theParsingState = aCache.resolveInitialPHIStateForNode(aProgram, aCurrentBlock);
             }
 
             initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aBlocksByAddress, theParsingState);
@@ -608,7 +673,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             for (GraphNode theSuccessor : aCurrentBlock.getSuccessors()) {
                 if (!aAlreadyVisited.contains(theSuccessor)) {
 
-                    initializeBlock(aOwningClass, aMethod, theSuccessor, aAlreadyVisited, aCache, aBlocksByAddress);
+                    initializeBlock(aProgram, aOwningClass, aMethod, theSuccessor, aAlreadyVisited, aCache, aBlocksByAddress);
                 }
             }
         }

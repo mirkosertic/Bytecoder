@@ -23,6 +23,10 @@ public class StackVariableDescription implements VariableDescription {
         pos = aPos;
     }
 
+    public int getPos() {
+        return pos;
+    }
+
     @Override
     public String toString() {
         return "Stack position " + pos;
