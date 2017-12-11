@@ -44,13 +44,8 @@ public class HelloWorld {
     }
 
     public static void main(String[] args) {
-        int x = compute(10, 20);
-        int z = 1;
-        if (x == 30) {
-            Test theTest1 = new Test1();
-            Test theTest2 = new Test2();
-            z = theTest1.getValue() + theTest2.getValue();
+        for (int i=0;i<100;i++) {
+            int z = 100;
         }
-
     }
 }

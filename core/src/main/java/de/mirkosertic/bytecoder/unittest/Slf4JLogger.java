@@ -15,8 +15,9 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.core.Logger;
 import org.slf4j.LoggerFactory;
+
+import de.mirkosertic.bytecoder.core.Logger;
 
 public class Slf4JLogger implements Logger {
 
@@ -30,6 +31,7 @@ public class Slf4JLogger implements Logger {
 
     @Override
     public void info(String aMessage, Object... aArguments) {
+        System.out.println(aMessage);
         logger.info(aMessage, aArguments);
     }
 
