@@ -97,8 +97,8 @@ public class GraphNode {
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(TypeRef aType, Value aValue, VariableDescription aDescription) {
-        Variable theVariable = newVariable(aType, aValue, true);
+    public Variable newImportedVariable(TypeRef aType, VariableDescription aDescription) {
+        Variable theVariable = newVariable(aType);
         imported.put(aDescription, theVariable);
         return theVariable;
     }
@@ -133,18 +133,6 @@ public class GraphNode {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;
-    }
-
-    public void removeVariable(Variable aVariable) {
-        for (Expression theExpression : expressions.toList()) {
-            if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theInit = (InitVariableExpression) theExpression;
-                if (theInit.getVariable() == aVariable) {
-                    expressions.remove(theExpression);
-                }
-            }
-        }
-        program.removeVariable(aVariable);
     }
 
     public boolean endWithNeverReturningExpression() {
@@ -187,5 +175,36 @@ public class GraphNode {
             }
         }
         return false;
+    }
+
+    public Set<GraphNode> getAllSuccessors() {
+        Set<GraphNode> theAllSuccessors = new HashSet<>();
+        internalAddSuccessors(new HashSet<>(), theAllSuccessors);
+        return theAllSuccessors;
+    }
+
+    private void internalAddSuccessors(Set<GraphNode> aVisited, Set<GraphNode> aTarget) {
+        if (aVisited.add(this)) {
+            aTarget.addAll(successors);
+            for (GraphNode theSuccessor : successors) {
+                theSuccessor.internalAddSuccessors(aVisited, aTarget);
+            }
+        }
+    }
+
+    public Set<GraphNode> getAllPredecessors() {
+        Set<GraphNode> theAllPredecessors = new HashSet<>();
+        internalAddPredecessors(new HashSet<>(), theAllPredecessors);
+        return theAllPredecessors;
+    }
+
+    private void internalAddPredecessors(Set<GraphNode> aVisited, Set<GraphNode> aTarget) {
+        if (aVisited.add(this)) {
+            Set<GraphNode> thePredecessors = getPredecessors();
+            aTarget.addAll(thePredecessors);
+            for (GraphNode thePredecessor : thePredecessors) {
+                thePredecessor.internalAddPredecessors(aVisited, aTarget);
+            }
+        }
     }
 }
