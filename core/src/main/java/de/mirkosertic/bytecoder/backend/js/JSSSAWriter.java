@@ -842,9 +842,9 @@ public class JSSSAWriter extends IndentSSAWriter {
                 theJSWriter.printlnComment(
                         "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
             }
-            for (GraphNode theSuccessor : theGraphNode.getSuccessors()) {
+            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theGraphNode.getSuccessors().entrySet()) {
                 theJSWriter
-                        .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
+                        .printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress());
             }
 
             theJSWriter.printGraphNode(theGraphNode);

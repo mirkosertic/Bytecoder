@@ -169,8 +169,8 @@ public class GraphProgramGenerator implements ProgramGenerator {
         State theFinalState = processBlockForNode(theImportedState, theBasicBlock, aNode);
         aParsingContext.saveFinalState(aNode, theFinalState);
 
-        for (GraphNode theSuccessor : aNode.getSuccessors()) {
-            resolve(theSuccessor, aParsingContext);
+        for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
+            resolve(theSuccessor.getValue(), aParsingContext);
         }
     }
 

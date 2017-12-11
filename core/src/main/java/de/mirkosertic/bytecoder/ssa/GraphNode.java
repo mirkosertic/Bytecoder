@@ -31,10 +31,27 @@ public class GraphNode {
         FINALLY
     }
 
+    public enum EdgeType {
+        NORMAL, BACK
+    }
+
+    public static class Edge {
+
+        private EdgeType type;
+
+        public Edge(EdgeType aType) {
+            type = aType;
+        }
+
+        public void changeTo(EdgeType aType) {
+            type = aType;
+        }
+    }
+
     private final BytecodeOpcodeAddress startAddress;
     private final ExpressionList expressions;
     private final Program program;
-    private final Set<GraphNode> successors;
+    private final Map<Edge, GraphNode> successors;
     private BlockType type;
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
@@ -44,7 +61,7 @@ public class GraphNode {
         startAddress = aStartAddress;
         program = aProgram;
         expressions = new ExpressionList();
-        successors = new HashSet<>();
+        successors = new HashMap<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
     }
@@ -60,18 +77,20 @@ public class GraphNode {
     public Set<GraphNode> getPredecessors() {
         Set<GraphNode> theResult = new HashSet<>();
         for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
-            if (theBlock.getSuccessors().contains(this)) {
+            if (theBlock.getSuccessors().values().contains(this)) {
                 theResult.add(theBlock);
             }
         }
         return theResult;
     }
 
-    public void addSuccessor(GraphNode aBlock) {
-        successors.add(aBlock);
+    public void addSuccessor(EdgeType aType, GraphNode aBlock) {
+        if (!successors.values().contains(aBlock)) {
+            successors.put(new Edge(aType), aBlock);
+        }
     }
 
-    public Set<GraphNode> getSuccessors() {
+    public Map<Edge, GraphNode> getSuccessors() {
         return successors;
     }
 
@@ -185,8 +204,8 @@ public class GraphNode {
 
     private void internalAddSuccessors(Set<GraphNode> aVisited, Set<GraphNode> aTarget) {
         if (aVisited.add(this)) {
-            aTarget.addAll(successors);
-            for (GraphNode theSuccessor : successors) {
+            aTarget.addAll(successors.values());
+            for (GraphNode theSuccessor : successors.values()) {
                 theSuccessor.internalAddSuccessors(aVisited, aTarget);
             }
         }

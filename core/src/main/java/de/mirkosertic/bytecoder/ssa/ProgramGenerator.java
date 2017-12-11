@@ -164,7 +164,7 @@ public interface ProgramGenerator {
                 if (theSuccessorBlock == null) {
                     throw new IllegalStateException("Cannot find successor block");
                 }
-                theEntry.getValue().addSuccessor(theSuccessorBlock);
+                theEntry.getValue().addSuccessor(GraphNode.EdgeType.NORMAL, theSuccessorBlock);
             }
         }
         return theCreatedBlocks;

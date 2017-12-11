@@ -467,7 +467,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 if (theSuccessorBlock == null) {
                     throw new IllegalStateException("Cannot find successor block");
                 }
-                theEntry.getValue().addSuccessor(theSuccessorBlock);
+                theEntry.getValue().addSuccessor(GraphNode.EdgeType.NORMAL, theSuccessorBlock);
             }
         }
 
@@ -525,8 +525,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             // Check for back edges and relink variables
             if (theBlock.getSuccessors().size() == 1) {
                 Set<GraphNode> thePredecessors = theBlock.getAllPredecessors();
-                for (GraphNode theSuccessor : theBlock.getSuccessors()) {
-                    if (thePredecessors.contains(theSuccessor)) {
+                for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theBlock.getSuccessors().entrySet()) {
+                    if (thePredecessors.contains(theSuccessor.getValue())) {
                         // This is a back endge
                         System.out.println("lala");
                         // TODO: Relink variables
@@ -625,8 +625,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             // register the final state after program flow
             aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
 
-            for (GraphNode theSuccessor : aCurrentBlock.getSuccessors()) {
-                initializeBlock(aProgram, aOwningClass, aMethod, theSuccessor, aAlreadyVisited, aCache, aBlocksByAddress);
+            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aCurrentBlock.getSuccessors().entrySet()) {
+                initializeBlock(aProgram, aOwningClass, aMethod, theSuccessor.getValue(), aAlreadyVisited, aCache, aBlocksByAddress);
             }
         }
     }
