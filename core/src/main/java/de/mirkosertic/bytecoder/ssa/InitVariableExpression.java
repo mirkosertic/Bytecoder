@@ -21,6 +21,9 @@ public class InitVariableExpression extends Expression {
     private final Value value;
 
     public InitVariableExpression(Variable aVariable, Value aValue) {
+        if (aValue == null) {
+            throw new IllegalStateException("Null not allowed");
+        }
         variable = aVariable;
         value = aValue;
     }
