@@ -46,6 +46,7 @@ public class StringTest {
     public void testConcatenation() {
         String theTest = getString();
         String theTest2 = theTest + "456";
+        int theLength = theTest2.length();
         Assert.assertEquals(6, theTest2.length(), 0);
     }
 

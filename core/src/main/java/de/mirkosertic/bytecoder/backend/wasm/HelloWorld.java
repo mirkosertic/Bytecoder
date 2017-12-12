@@ -44,8 +44,13 @@ public class HelloWorld {
     }
 
     public static void main(String[] args) {
-        for (int i=0;i<100;i++) {
-            int z = 100;
+        int x = 10;
+        int y = 20;
+        if (y >10) {
+            x = 99;
+        } else {
+            x = 88;
         }
+        x = x + 1;
     }
 }

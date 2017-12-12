@@ -46,6 +46,10 @@ public class GraphNode {
         public void changeTo(EdgeType aType) {
             type = aType;
         }
+
+        public EdgeType getType() {
+            return type;
+        }
     }
 
     private final BytecodeOpcodeAddress startAddress;
@@ -79,6 +83,20 @@ public class GraphNode {
         for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
             if (theBlock.getSuccessors().values().contains(this)) {
                 theResult.add(theBlock);
+            }
+        }
+        return theResult;
+    }
+
+    public Set<GraphNode> getPredecessorsIgnoringBackEdges() {
+        Set<GraphNode> theResult = new HashSet<>();
+        for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
+            for (Map.Entry<Edge, GraphNode> theEntry : theBlock.successors.entrySet()) {
+                if (theEntry.getKey().getType() != EdgeType.BACK) {
+                    if (theEntry.getValue() == this) {
+                        theResult.add(theBlock);
+                    }
+                }
             }
         }
         return theResult;
@@ -194,36 +212,5 @@ public class GraphNode {
             }
         }
         return false;
-    }
-
-    public Set<GraphNode> getAllSuccessors() {
-        Set<GraphNode> theAllSuccessors = new HashSet<>();
-        internalAddSuccessors(new HashSet<>(), theAllSuccessors);
-        return theAllSuccessors;
-    }
-
-    private void internalAddSuccessors(Set<GraphNode> aVisited, Set<GraphNode> aTarget) {
-        if (aVisited.add(this)) {
-            aTarget.addAll(successors.values());
-            for (GraphNode theSuccessor : successors.values()) {
-                theSuccessor.internalAddSuccessors(aVisited, aTarget);
-            }
-        }
-    }
-
-    public Set<GraphNode> getAllPredecessors() {
-        Set<GraphNode> theAllPredecessors = new HashSet<>();
-        internalAddPredecessors(new HashSet<>(), theAllPredecessors);
-        return theAllPredecessors;
-    }
-
-    private void internalAddPredecessors(Set<GraphNode> aVisited, Set<GraphNode> aTarget) {
-        if (aVisited.add(this)) {
-            Set<GraphNode> thePredecessors = getPredecessors();
-            aTarget.addAll(thePredecessors);
-            for (GraphNode thePredecessor : thePredecessors) {
-                thePredecessor.internalAddPredecessors(aVisited, aTarget);
-            }
-        }
     }
 }

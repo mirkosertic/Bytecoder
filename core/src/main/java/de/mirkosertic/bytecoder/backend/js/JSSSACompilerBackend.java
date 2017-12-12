@@ -44,12 +44,10 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
@@ -367,6 +365,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 aLogger.info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
+                System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
+
+
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
 
@@ -381,7 +382,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theVariablesWriter.print(theVariable.getName());
                         theVariablesWriter.print(" = null;");
                         theVariablesWriter.print(" // type is ");
-                        theVariablesWriter.println(theVariable.resolveType().resolve().name());
+                        theVariablesWriter.print(theVariable.resolveType().resolve().name());
+                        theVariablesWriter.print(" # of inits = " + theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION).size());
+                        theVariablesWriter.println();
                     }
                 }
 
