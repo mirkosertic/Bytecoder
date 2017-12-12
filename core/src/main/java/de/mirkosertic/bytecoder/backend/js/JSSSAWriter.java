@@ -74,8 +74,6 @@ import de.mirkosertic.bytecoder.ssa.NewArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -198,8 +196,8 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(TypeOfValue aValue) {
-        printVariableName((Variable) aValue.resolveFirstArgument());
-        print(".runtimeClass");
+        printVariableName(aValue.resolveFirstArgument());
+        print(".clazz.runtimeClass");
     }
 
     public void print(StackTopValue aValue) {
@@ -792,12 +790,25 @@ public class JSSSAWriter extends IndentSSAWriter {
                 InlinedNodeExpression theInlined = (InlinedNodeExpression) theExpression;
                 GraphNode theInlinedNode = theInlined.getNode();
                 printlnComment("Inlined node " + theInlinedNode.getStartAddress().getAddress());
+
+                printNodeDebug(theInlinedNode);
+
                 writeExpressions(theInlinedNode.getExpressions());
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }
+        }
+    }
+
+    public void printNodeDebug(GraphNode aNode) {
+        for (GraphNode thePrececessor : aNode.getPredecessors()) {
+            printlnComment(
+                    "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
+        }
+        for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
+            printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge tyoe " + theSuccessor.getKey().getType());
         }
     }
 
@@ -838,23 +849,10 @@ public class JSSSAWriter extends IndentSSAWriter {
                         .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
             }
 
-            for (GraphNode thePrececessor : theGraphNode.getPredecessors()) {
-                theJSWriter.printlnComment(
-                        "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
-            }
-            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theGraphNode.getSuccessors().entrySet()) {
-                theJSWriter
-                        .printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress());
-            }
+            theJSWriter.printNodeDebug(theGraphNode);
+
 
             theJSWriter.printGraphNode(theGraphNode);
-
-    /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
-                            theJSWriter.print("// ");
-                            theJSWriter.printVariableNameOrValue(theExported.getAddress());
-                            theJSWriter.print(" is exported as ");
-                            theJSWriter.println(theExported.getKey().toString());
-                        }*/
 
             println("    }");
         }

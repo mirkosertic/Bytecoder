@@ -31,7 +31,6 @@ public class Slf4JLogger implements Logger {
 
     @Override
     public void info(String aMessage, Object... aArguments) {
-        System.out.println(aMessage);
         logger.info(aMessage, aArguments);
     }
 

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -137,12 +138,7 @@ import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
 public class NaiveProgramGenerator implements ProgramGenerator {
 
-    public final static ProgramGeneratorFactory FACTORY = new ProgramGeneratorFactory() {
-        @Override
-        public ProgramGenerator createFor(BytecodeLinkerContext aLinkerContext) {
-            return new NaiveProgramGenerator(aLinkerContext);
-        }
-    };
+    public final static ProgramGeneratorFactory FACTORY = aLinkerContext -> new NaiveProgramGenerator(aLinkerContext);
 
     private static class ParsingHelper {
 
@@ -337,6 +333,26 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
     }
 
+    private void markBackEdges(GraphNode aNode) {
+        markBackEdges(new HashMap<>(), aNode, 0);
+    }
+
+    private void markBackEdges(Map<GraphNode, Integer> aVisited, GraphNode aNode, int aLevel) {
+        if (!aVisited.containsKey(aNode)) {
+            aVisited.put(aNode, aLevel);
+            for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
+                if (aVisited.containsKey(theEdge.getValue())) {
+                    int theLevel = aVisited.get(theEdge.getValue());
+                    if (theLevel < aLevel) {
+                        theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
+                    }
+                } else {
+                    markBackEdges(aVisited, theEdge.getValue(), aLevel + 1);
+                }
+            }
+        }
+    }
+
     @Override
     public Program generateFrom(BytecodeClass aOwningClass, BytecodeMethod aMethod) {
 
@@ -475,6 +491,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         Set<GraphNode> theVisited = new HashSet<>();
         GraphNode theStart = theProgram.getControlFlowGraph().nodeStartingAt(new BytecodeOpcodeAddress(0));
 
+        // First of all, we need to mark the back-edges of the graph
+        markBackEdges(theStart);
+
+        // Now we can continue to create the program flow
         ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(aMethod, theStart);
 
         // This will traverse the CFG from top to bottom
@@ -489,34 +509,38 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             }
         }
 
-        // Ok, at this stagge we have all blocks, variables and PHIs known
+        // Ok, at this stage we have all blocks, variables and PHIs known
         // we search for blocks whose imports consume values from multiple places (PHIs)
         for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
             GraphNode theBlock = theEntry.getValue();
 
             // First of all we check for PHI functions which should be resoved
-            BlockState theState = theBlock.toStartState();
-            for (Map.Entry<VariableDescription, Value> theValues : theState.getPorts().entrySet()) {
+            BlockState theImportingState = theBlock.toStartState();
+            for (Map.Entry<VariableDescription, Value> theValues : theImportingState.getPorts().entrySet()) {
                 Value theValue = theValues.getValue();
                 List<Value> theInitConsumptions = theValue.consumedValues(Value.ConsumptionType.INITIALIZATION);
                 if (theInitConsumptions.size() > 1) {
                     // This is a PHI Value
 
-                    // For every successor we need to "rewire" the initialization so that it initializes the receicing blocks value
+                    // For every successor we need to "rewire" the initialization so that it initializes the referencing blocks value
                     for (GraphNode thePredecessor : theBlock.getPredecessors()) {
-                        ExpressionList theExpressions = thePredecessor.getExpressions();
-                        for (Expression theExpression : theExpressions.toList()) {
-                            if (theExpression instanceof InitVariableExpression) {
-                                InitVariableExpression theInitExpression = (InitVariableExpression) theExpression;
-                                for (Value theInitValue : theInitConsumptions) {
-                                    if (theInitExpression.getVariable() == theInitValue) {
-                                        InitVariableExpression theNewInit = new InitVariableExpression((Variable) theValue, theInitExpression.getValue());
-                                        theExpressions.replace(theInitExpression, theNewInit);
 
-                                        theProgram.removeVariable(theInitExpression.getVariable());
-                                    }
-                                }
+                        BlockState theExportingState = thePredecessor.toFinalState();
+                        Value theExportedValue = theExportingState.findBySlot(theValues.getKey());
+
+                        if (theValue != theExportedValue) {
+                            // In the Exporting-Block, we need to set the exported value to the receicing variables
+                            InitVariableExpression theInit = new InitVariableExpression((Variable) theValue, theExportedValue);
+
+                            Expression theLastExpression = thePredecessor.getExpressions().lastExpression();
+                            if (theLastExpression instanceof GotoExpression) {
+                                // Add before
+                                thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
+                            } else {
+                                // Add at end
+                                thePredecessor.getExpressions().add(theInit);
                             }
+                            thePredecessor.getExpressions().addBefore(new CommentExpression("Resolve PHI " + theValues.getKey()), theInit);
                         }
                     }
                 }
@@ -524,24 +548,43 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
             // Check for back edges and relink variables
             if (theBlock.getSuccessors().size() == 1) {
-                Set<GraphNode> thePredecessors = theBlock.getAllPredecessors();
+                BlockState theExportingState = theBlock.toFinalState();
                 for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theBlock.getSuccessors().entrySet()) {
-                    if (thePredecessors.contains(theSuccessor.getValue())) {
-                        // This is a back endge
-                        System.out.println("lala");
-                        // TODO: Relink variables
+                    if (theSuccessor.getKey().getType() == GraphNode.EdgeType.BACK) {
+                        // We found a back edge
+                        GraphNode theImporting = theSuccessor.getValue();
+
+                        BlockState theTargetImporting = theImporting.toStartState();
+                        for (Map.Entry<VariableDescription, Value> theExpEntry : theExportingState.getPorts().entrySet()) {
+                            Value theInputValue = theTargetImporting.findBySlot(theExpEntry.getKey());
+                            if (theInputValue != null) {
+                                // In this case we have to remap the initialization of the exporting
+                                // variable to the input variable of the importing block
+                                ExpressionList theExpressions = theBlock.getExpressions();
+
+                                Expression theLastExpression = theExpressions.lastExpression();
+
+                                if (theInputValue != theExpEntry.getValue()) {
+                                    InitVariableExpression theInit = new InitVariableExpression((Variable) theInputValue,
+                                            theExpEntry.getValue());
+
+                                    if (theLastExpression instanceof GotoExpression) {
+                                        // Add before
+                                        theExpressions.addBefore(theInit, theLastExpression);
+                                    } else {
+                                        // Add at end
+                                        theExpressions.add(theInit);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-
-        // Perform node inlining
-        for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
-            performNodeInlining(theProgram.getControlFlowGraph(), theNode, theNode.getExpressions());
-        }
-
         // Check if there are infinite looping blocks
+        // Additionally, we have to add gotos
         for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
             ExpressionList theCurrentList = theNode.getExpressions();
             Expression theLast = theCurrentList.lastExpression();
@@ -557,6 +600,28 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     theNode.markAsInfiniteLoop();
                 }
             }
+            if (!theNode.endWithNeverReturningExpression()) {
+                Map<GraphNode.Edge, GraphNode> theSuccessors = theNode.getSuccessors();
+                for (Expression theExpression : theCurrentList.toList()) {
+                    if (theExpression instanceof IFExpression) {
+                        IFExpression theIF = (IFExpression) theExpression;
+                        BytecodeOpcodeAddress theGoto = theIF.getGotoAddress();
+                        theSuccessors = theSuccessors.entrySet().stream().filter(t -> !t.getValue().getStartAddress().equals(theGoto)).collect(
+                                Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    }
+                }
+                if (theSuccessors.size() == 1) {
+                    // Insert a goto
+                    theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
+                } else {
+                    throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size());
+                }
+            }
+        }
+
+        // Perform node inlining
+        for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+            performNodeInlining(theProgram.getControlFlowGraph(), theNode, theNode.getExpressions());
         }
 
         AllOptimizer theOptimizer = new AllOptimizer();
@@ -591,13 +656,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         if (aAlreadyVisited.add(aCurrentBlock)) {
 
             // Resolve predecessor nodes. without them we would not have an initial state for the current node
-            Set<GraphNode> thePredecessors = aCurrentBlock.getPredecessors();
-            Set<GraphNode> theAllSuccessors = aCurrentBlock.getAllSuccessors();
+            // We have to ignore back edges!!
+            Set<GraphNode> thePredecessors = aCurrentBlock.getPredecessorsIgnoringBackEdges();
             for (GraphNode thePredecessor : thePredecessors) {
-                // Ignore Back edges
-                if (!theAllSuccessors.contains(thePredecessor)) {
-                    initializeBlock(aProgram, aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aBlocksByAddress);
-                }
+                initializeBlock(aProgram, aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aBlocksByAddress);
             }
 
             ParsingHelper theParsingState;
@@ -609,7 +671,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
                 theParsingState = aCache.resolveFinalStateForNode(null);
-            } else if (aCurrentBlock.getPredecessors().size() == 1) {
+            } else if (thePredecessors.size() == 1) {
                 // Only one predecessor
                 GraphNode thePredecessor = thePredecessors.iterator().next();
                 ParsingHelper theResolved = aCache.resolveFinalStateForNode(thePredecessor);
@@ -922,7 +984,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theResult, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
                 BytecodeInstructionIFNONNULL theINS = (BytecodeInstructionIFNONNULL) theInstruction;
                 Value theValue = aHelper.pop();
@@ -932,7 +994,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theResult, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
                 BytecodeInstructionIFICMP theINS = (BytecodeInstructionIFICMP) theInstruction;
                 Value theValue2 = aHelper.pop();
@@ -965,7 +1027,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theNewVariable, theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFACMP) {
                 BytecodeInstructionIFACMP theINS = (BytecodeInstructionIFACMP) theInstruction;
@@ -987,7 +1049,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theNewVariable, theExpressions));
 
             } else if (theInstruction instanceof BytecodeInstructionIFCOND) {
                 BytecodeInstructionIFCOND theINS = (BytecodeInstructionIFCOND) theInstruction;
@@ -1020,7 +1082,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 ExpressionList theExpressions = new ExpressionList();
                 theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
 
-                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theNewVariable, theExpressions));
+                aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theNewVariable, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
                 BytecodeInstructionObjectRETURN theINS = (BytecodeInstructionObjectRETURN) theInstruction;
                 Value theValue = aHelper.pop();
@@ -1147,7 +1209,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     Value theValue = new TypeOfValue(aHelper.pop());
                     Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
                     aHelper.push(theNewVariable);
-                    return;
+                    continue;
                 }
 
                 List<Value> theArguments = new ArrayList<>();
