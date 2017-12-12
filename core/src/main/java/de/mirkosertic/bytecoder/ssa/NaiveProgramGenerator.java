@@ -152,6 +152,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             localVariables = new HashMap<>();
         }
 
+        public int numberOfLocalVariables() {
+            return localVariables.size();
+        }
+
         public ParsingHelper cloneToNewFor(GraphNode aBlock) {
             ParsingHelper theNew = new ParsingHelper(aBlock);
             for (Map.Entry<Integer, Value> theEntry : localVariables.entrySet()) {
@@ -201,7 +205,16 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         public void setStackValue(int aStackPos, Value aValue) {
-            stack.set(aStackPos, aValue);
+            List<Value> theValues = new ArrayList<>();
+            for (int i=0;i<stack.size();i++) {
+                theValues.add(stack.get(i));
+            }
+            while (theValues.size() <= aStackPos) {
+                theValues.add(null);
+            }
+            theValues.set(aStackPos, aValue);
+            stack.clear();
+            stack.addAll(theValues);
         }
 
         public void finalizeExportState() {
@@ -536,6 +549,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             if (theLastExpression instanceof GotoExpression) {
                                 // Add before
                                 thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
+                            } else if (theLastExpression instanceof TableSwitchExpression) {
+                                // Add before
+                                thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
                             } else {
                                 // Add at end
                                 thePredecessor.getExpressions().add(theInit);
@@ -569,6 +585,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                                             theExpEntry.getValue());
 
                                     if (theLastExpression instanceof GotoExpression) {
+                                        // Add before
+                                        theExpressions.addBefore(theInit, theLastExpression);
+                                    } else if (theLastExpression instanceof TableSwitchExpression) {
                                         // Add before
                                         theExpressions.addBefore(theInit, theLastExpression);
                                     } else {
@@ -666,7 +685,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             if (aCurrentBlock.getType() != GraphNode.BlockType.NORMAL) {
                 // Exception handler or finally code
                 // We only have the thrown exception on the stack!
-                theParsingState = new ParsingHelper(aCurrentBlock);
+                // Everything else is at the same state as on control flow enter
+                // In case of synchronized blocks there is an additional reference with the semaphore to release
+                theParsingState = aCache.resolveFinalStateForNode(null);
+                theParsingState.setLocalVariable(theParsingState.numberOfLocalVariables(), Variable.createThisRef());
                 theParsingState.push(aCurrentBlock.newVariable(TypeRef.Native.REFERENCE, new CurrentExceptionValue()));
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
