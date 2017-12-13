@@ -24,15 +24,6 @@ public class CompareValue extends Value {
 
     @Override
     public TypeRef resolveType() {
-        Value theValue1 = resolveFirstArgument();
-        Value theValue2 = resolveSecondArgument();
-
-        if (theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE && theValue2.resolveType().resolve() == TypeRef.Native.DOUBLE) {
-            return TypeRef.Native.DOUBLE;
-        }
-        if (theValue1.resolveType().resolve() == TypeRef.Native.FLOAT && theValue2.resolveType().resolve() == TypeRef.Native.FLOAT) {
-            return TypeRef.Native.FLOAT;
-        }
         return TypeRef.Native.INT;
     }
 }

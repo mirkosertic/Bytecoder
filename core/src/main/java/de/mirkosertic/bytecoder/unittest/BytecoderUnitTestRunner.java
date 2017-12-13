@@ -66,7 +66,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     private final List<FrameworkMethod> testMethods;
     private final TestClass testClass;
 
-    public BytecoderUnitTestRunner(java.lang.Class aClass) throws InitializationError {
+    public BytecoderUnitTestRunner(Class aClass) throws InitializationError {
         super(aClass);
         testClass = new TestClass(aClass);
         testMethods = new ArrayList<>();
@@ -94,8 +94,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     public Description getDescription() {
-        Description spec = Description.createSuiteDescription(this.testClass.getName(),
-                this.testClass.getJavaClass().getAnnotations());
+        Description spec = Description.createSuiteDescription(testClass.getName(),
+                testClass.getJavaClass().getAnnotations());
         return spec;
     }
 
@@ -136,7 +136,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             }
 
             String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
-            if (theChromeDriverBinary == null || theChromeDriverBinary.length() == 0) {
+            if (theChromeDriverBinary == null || theChromeDriverBinary.isEmpty()) {
                 throw new RuntimeException("No chromedriver binary found!");
             }
 
@@ -303,9 +303,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println();
 
             theWriter.println("            function bytecoder_logByteArrayAsString(acaller, value) {");
-            theWriter.println("                 var theLength = bytecoder_IntInMemory(value);");
+            theWriter.println("                 var theLength = bytecoder_IntInMemory(value + 16);");
             theWriter.println("                 var theData = '';");
-            theWriter.println("                 value = value + 4;");
+            theWriter.println("                 value = value + 20;");
             theWriter.println("                 for (var i=0;i<theLength;i++) {");
             theWriter.println("                     var theCharCode = bytecoder_IntInMemory(value);");
             theWriter.println("                     value = value + 4;");
@@ -352,7 +352,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                                 //console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
             theWriter.println("                                 //console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
             theWriter.println("                             },");
-            theWriter.println("                             logMemoryLayoutBlock(aStart, aUsed, aNext) {");
+            theWriter.println("                             logMemoryLayoutBlock(aCaller, aStart, aUsed, aNext) {");
             theWriter.println("                                 if (aUsed == 1) return;");
             theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
             theWriter.println("                                 console.log('      Block size is ' + bytecoder_IntInMemory(aStart));");
@@ -485,10 +485,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {
         if (getDescription().getAnnotation(WASMOnly.class) != null) {
-//            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-//            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }

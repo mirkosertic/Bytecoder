@@ -15,10 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class EnumTest {
@@ -66,5 +67,11 @@ public class EnumTest {
         Value theValue = Value.TWO;
         Assert.assertNotSame(Value.THREE, theValue);
         Assert.assertSame(Value.TWO, theValue);
+    }
+
+    @Test
+    public void testValues() {
+        Value[] theValues = Value.values();
+        Assert.assertEquals(3, theValues.length, 0);
     }
 }

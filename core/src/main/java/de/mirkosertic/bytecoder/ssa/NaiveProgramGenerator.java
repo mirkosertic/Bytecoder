@@ -138,7 +138,7 @@ import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
 public class NaiveProgramGenerator implements ProgramGenerator {
 
-    public final static ProgramGeneratorFactory FACTORY = aLinkerContext -> new NaiveProgramGenerator(aLinkerContext);
+    public final static ProgramGeneratorFactory FACTORY = NaiveProgramGenerator::new;
 
     private static class ParsingHelper {
 
@@ -206,9 +206,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         public void setStackValue(int aStackPos, Value aValue) {
             List<Value> theValues = new ArrayList<>();
-            for (int i=0;i<stack.size();i++) {
-                theValues.add(stack.get(i));
-            }
+            theValues.addAll(stack);
             while (theValues.size() <= aStackPos) {
                 theValues.add(null);
             }
@@ -266,7 +264,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 for (int i=0;i<theTypes.length;i++) {
                     BytecodeTypeRef theRef = theTypes[i];
 
-                    Variable theArgument = Variable.createMethodParameter((i+1), TypeRef.toType(theTypes[i]));
+                    Variable theArgument = Variable.createMethodParameter(i+1, TypeRef.toType(theTypes[i]));
                     theHelper.setLocalVariable(theCurrentIndex++, theArgument);
 
                     if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
@@ -276,7 +274,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 return theHelper;
             }
             return finalStatesForNodes.get(aGraphNode);
-        };
+        }
 
         public ParsingHelper resolveInitialPHIStateForNode(Program aProgram, GraphNode aBlock) {
             // We need to collect the final states of all predecessor nodes
@@ -903,7 +901,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionGenericCMP theINS = (BytecodeInstructionGenericCMP) theInstruction;
                 Value theValue2 = aHelper.pop();
                 Value theValue1 = aHelper.pop();
-                Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theINS.getPrimitiveTypeRef()), new CompareValue(theValue1, theValue2));
+                Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT, new CompareValue(theValue1, theValue2));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionLCMP) {
                 BytecodeInstructionLCMP theINS = (BytecodeInstructionLCMP) theInstruction;
@@ -1208,6 +1206,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     theValue.setMethodRef(theArguments.get(1));
                 } else if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     theTarget.initializeWith(theArguments.get(0));
+                    aTargetBlock.addExpression(new InitVariableExpression(theTarget, theArguments.get(0)));
                 } else {
                     String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
                     if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE.metchesExactlyTo(theSignature)) {
