@@ -15,8 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
@@ -106,11 +109,28 @@ public class ControlFlowGraph {
         dominatedNodes.remove(aNode);
     }
 
-    public void removeNode(GraphNode aNode) {
-        for (GraphNode thePrecess : aNode.getPredecessors()) {
-            thePrecess.getSuccessors().remove(aNode);
+    public String toDOT() {
+        StringWriter theStr = new StringWriter();
+        try (PrintWriter thePW = new PrintWriter(theStr)) {
+            thePW.println("digraph graphnam {");
+
+            for (GraphNode theNode : knownNodes) {
+                thePW.print("   N" + theNode.getStartAddress().getAddress());
+                thePW.println(";");
+
+                for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theNode.getSuccessors().entrySet()) {
+                    thePW.print("   N" + theNode.getStartAddress().getAddress());
+                    thePW.print(" -> ");
+                    thePW.print("   N" + theSuccessor.getValue().getStartAddress().getAddress());
+                    if (theSuccessor.getKey().getType() == GraphNode.EdgeType.BACK) {
+                        thePW.print(" [ label = \"back-edge\"]");
+                    }
+                    thePW.println(";");
+                }
+            }
+
+            thePW.println("}");
         }
-        dominatedNodes.remove(aNode);
-        knownNodes.remove(aNode);
+        return theStr.toString();
     }
 }

@@ -249,11 +249,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(ComputedMemoryLocationWriteValue aValue) {
-        print("bytecoderGlobalMemory[");
         print((Value) aValue.resolveFirstArgument());
         print(" + ");
         print((Value) aValue.resolveSecondArgument());
-        print("]");
     }
 
     public void print(ComputedMemoryLocationReadValue aValue) {
@@ -780,9 +778,13 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof SetMemoryLocationExpression) {
                 SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
-                print(theE.getAddress());
+                print("bytecoderGlobalMemory[");
 
-                print(" = ");
+                ComputedMemoryLocationWriteValue theValue = (ComputedMemoryLocationWriteValue) theE.getAddress().consumedValues(Value.ConsumptionType.INITIALIZATION).get(0);
+
+                print(theValue);
+
+                print("] = ");
 
                 print(theE.getValue());
                 println(";");
@@ -808,7 +810,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                     "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
         }
         for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
-            printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge tyoe " + theSuccessor.getKey().getType());
+            printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
         }
     }
 

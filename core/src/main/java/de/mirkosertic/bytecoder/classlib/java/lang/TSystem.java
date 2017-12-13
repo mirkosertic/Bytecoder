@@ -51,6 +51,12 @@ public class TSystem {
     @Import(module = "system", name = "currentTimeMillis")
     public static native long currentTimeMillis();
 
+    @Import(module = "system", name = "logDebug")
+    public static native void logDebug(long aValue);
+
+    @Import(module = "system", name = "logDebug")
+    public static native void logDebug(Object aValue);
+
     public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {
         Object[] theSource = (Object[]) aSource;
         Object[] theTarget = (Object[]) aTarget;

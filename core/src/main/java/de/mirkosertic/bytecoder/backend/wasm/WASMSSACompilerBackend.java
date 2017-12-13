@@ -45,12 +45,9 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -87,9 +84,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theStringClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TString.class));
         theStringClass.linkConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
@@ -137,12 +134,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.print(theImportAnnotation.getElementValueByName("name").stringValue());
                     theWriter.print("\") ");
 
-                    if (!t.getAccessFlags().isStatic()) {
-                        theWriter.print("(param $thisRef");
-                        theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                        theWriter.print(") ");
-                    }
+                    theWriter.print("(param $thisRef");
+                    theWriter.print(" ");
+                    theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                    theWriter.print(") ");
 
                     for (int i = 0; i < theSignature.getArguments().length; i++) {
                         BytecodeTypeRef theParamType = theSignature.getArguments()[i];
