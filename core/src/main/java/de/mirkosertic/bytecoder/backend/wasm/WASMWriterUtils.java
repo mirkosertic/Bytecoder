@@ -165,11 +165,9 @@ public class WASMWriterUtils {
     public static String toWASMMethodSignature(BytecodeMethodSignature aSignatutre, boolean aIsStatic) {
         String theTypeDefinition = "(func";
 
-        if (!aIsStatic) {
-            theTypeDefinition+= " (param ";
-            theTypeDefinition+= WASMWriterUtils.toType(TypeRef.Native.REFERENCE);
-            theTypeDefinition+=")";
-        }
+        theTypeDefinition+= " (param ";
+        theTypeDefinition+= WASMWriterUtils.toType(TypeRef.Native.REFERENCE);
+        theTypeDefinition+=")";
 
         for (int i=0;i<aSignatutre.getArguments().length;i++) {
             BytecodeTypeRef theParamType = aSignatutre.getArguments()[i];
