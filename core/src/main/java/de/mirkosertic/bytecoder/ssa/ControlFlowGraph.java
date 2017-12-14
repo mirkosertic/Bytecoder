@@ -201,7 +201,7 @@ public class ControlFlowGraph {
         theResult.append(" Node at " + aNode.getStartAddress().getAddress());
         theResult.append("</td></tr>");
 
-        // Inputs
+        // Outputs
         theResult.append("<tr>");
         for (VariableDescription theDesc : theFinalList) {
             Value theValue = theFinalState.findBySlot(theDesc);
@@ -209,6 +209,20 @@ public class ControlFlowGraph {
                 theResult.append("<td>X</td>");
             } else {
                 theResult.append("<td bgcolor=\"lightgray\"></td>");
+            }
+        }
+        theResult.append("</tr>");
+
+        // Types
+        theResult.append("<tr>");
+        for (VariableDescription theDesc : theFinalList) {
+            Value theValue = theFinalState.findBySlot(theDesc);
+            if (theValue != null) {
+                theResult.append("<td>");
+                theResult.append(theValue.resolveType().resolve());
+                theResult.append("</td>");
+            } else {
+                theResult.append("<td></td>");
             }
         }
         theResult.append("</tr>");

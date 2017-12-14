@@ -344,7 +344,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     StackVariableDescription theVarDesc = (StackVariableDescription) theDescription;
                     theNewHelper.setStackValue(theVarDesc.getPos(), theInputVslue);
                 }
-
+                aBlock.addToImportedList(theInputVslue, theDescription);
+                aBlock.addToExportedList(theInputVslue, theDescription);
             }
             return theNewHelper;
         }
