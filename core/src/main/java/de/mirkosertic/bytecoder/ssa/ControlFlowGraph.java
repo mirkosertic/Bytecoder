@@ -18,8 +18,11 @@ package de.mirkosertic.bytecoder.ssa;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
@@ -62,6 +65,42 @@ public class ControlFlowGraph {
         knownNodes = new ArrayList<>();
     }
 
+    public Set<GraphNode> finalNodes() {
+        Set<GraphNode> theNodes = new HashSet<>();
+        for (GraphNode theNode : knownNodes) {
+            Set<GraphNode> theSuccessors = new HashSet<>();
+            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theNode.getSuccessors().entrySet()) {
+                if (theSuccessor.getKey().getType() == GraphNode.EdgeType.NORMAL) {
+                    theSuccessors.add(theSuccessor.getValue());
+                }
+            }
+            if (theSuccessors.isEmpty()) {
+                theNodes.add(theNode);
+            }
+        }
+        return theNodes;
+    }
+
+    public void markBackEdges() {
+        markBackEdges(new HashMap<>(), startNode(), 0);
+    }
+
+    private void markBackEdges(Map<GraphNode, Integer> aVisited, GraphNode aNode, int aLevel) {
+        if (!aVisited.containsKey(aNode)) {
+            aVisited.put(aNode, aLevel);
+            for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
+                if (aVisited.containsKey(theEdge.getValue())) {
+                    int theLevel = aVisited.get(theEdge.getValue());
+                    if (theLevel < aLevel) {
+                        theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
+                    }
+                } else {
+                    markBackEdges(aVisited, theEdge.getValue(), aLevel + 1);
+                }
+            }
+        }
+    }
+
     public GraphNode createAt(BytecodeOpcodeAddress aAddress, GraphNode.BlockType aType) {
         GraphNode theNewBlock = new GraphNode(aType, program, aAddress);
         addDominatedNode(theNewBlock);
@@ -71,6 +110,10 @@ public class ControlFlowGraph {
     public void addDominatedNode(GraphNode aGraphNode) {
         dominatedNodes.add(aGraphNode);
         knownNodes.add(aGraphNode);
+    }
+
+    public GraphNode startNode() {
+        return nodeStartingAt(new BytecodeOpcodeAddress(0));
     }
 
     public GraphNode nodeStartingAt(BytecodeOpcodeAddress aAddress) {
@@ -109,14 +152,82 @@ public class ControlFlowGraph {
         dominatedNodes.remove(aNode);
     }
 
+    private String toHTMLLabel(GraphNode aNode) {
+        StringBuilder theResult = new StringBuilder("<");
+
+        BlockState theStartState = aNode.toStartState();
+        BlockState theFinalState = aNode.toFinalState();
+        Set<VariableDescription> theUsedDescs = new HashSet<>();
+        theUsedDescs.addAll(theStartState.getPorts().keySet());
+        theUsedDescs.addAll(theFinalState.getPorts().keySet());
+        List<VariableDescription> theFinalList = new ArrayList<>(theUsedDescs);
+
+        theResult.append("<table>");
+
+        // Header
+        theResult.append("<tr>");
+        for (VariableDescription theDesc : theFinalList) {
+            if (theDesc instanceof LocalVariableDescription) {
+                LocalVariableDescription theV = (LocalVariableDescription) theDesc;
+                theResult.append("<td> V ");
+                theResult.append(theV.getIndex());
+                theResult.append("</td>");
+            } else {
+                StackVariableDescription theV = (StackVariableDescription) theDesc;
+                theResult.append("<td> S ");
+                theResult.append(theV.getPos());
+                theResult.append("</td>");
+            }
+        }
+        theResult.append("</tr>");
+
+        // Inputs
+        theResult.append("<tr>");
+        for (VariableDescription theDesc : theFinalList) {
+            Value theValue = theStartState.findBySlot(theDesc);
+            if (theValue != null) {
+                theResult.append("<td>X</td>");
+            } else {
+                theResult.append("<td bgcolor=\"lightgray\"></td>");
+            }
+        }
+        theResult.append("</tr>");
+
+        // Label
+        theResult.append("<tr>");
+        theResult.append("<td colspan=\"");
+        theResult.append(theFinalList.size());
+        theResult.append("\">");
+        theResult.append(" Node at " + aNode.getStartAddress().getAddress());
+        theResult.append("</td></tr>");
+
+        // Inputs
+        theResult.append("<tr>");
+        for (VariableDescription theDesc : theFinalList) {
+            Value theValue = theFinalState.findBySlot(theDesc);
+            if (theValue != null) {
+                theResult.append("<td>X</td>");
+            } else {
+                theResult.append("<td bgcolor=\"lightgray\"></td>");
+            }
+        }
+        theResult.append("</tr>");
+
+        theResult.append("</table>");
+        theResult.append(">");
+        return theResult.toString();
+    }
+
     public String toDOT() {
         StringWriter theStr = new StringWriter();
         try (PrintWriter thePW = new PrintWriter(theStr)) {
-            thePW.println("digraph graphnam {");
+            thePW.println("digraph CFG {");
 
             for (GraphNode theNode : knownNodes) {
                 thePW.print("   N" + theNode.getStartAddress().getAddress());
-                thePW.println(";");
+                thePW.print(" [shape=none, margin=0, label=");
+                thePW.print(toHTMLLabel(theNode));
+                thePW.println("];");
 
                 for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theNode.getSuccessors().entrySet()) {
                     thePW.print("   N" + theNode.getStartAddress().getAddress());

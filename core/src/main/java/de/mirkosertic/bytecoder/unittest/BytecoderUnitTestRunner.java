@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -236,6 +237,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
             }
 
+        } catch (ControlFlowProcessingException e) {
+            System.out.println(e.getGraph().toDOT());
+            aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } finally {
@@ -471,6 +475,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
             }
 
+        } catch (ControlFlowProcessingException e) {
+            System.out.println(e.getGraph().toDOT());
+            aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } catch (Exception e) {
             aRunNotifier.fireTestFailure(new Failure(theDescription, e));
         } finally {

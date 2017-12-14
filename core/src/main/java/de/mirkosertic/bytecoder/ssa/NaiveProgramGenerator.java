@@ -145,19 +145,26 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         private final GraphNode block;
         private final Stack<Value> stack;
         private final Map<Integer, Value> localVariables;
+        private final ParsingHelper importSource;
 
-        public ParsingHelper(GraphNode aBlock) {
+        private ParsingHelper(GraphNode aBlock, ParsingHelper aImportSource) {
             stack = new Stack();
             block = aBlock;
             localVariables = new HashMap<>();
+            importSource = aImportSource;
         }
+
+        public ParsingHelper(GraphNode aBlock) {
+            this(aBlock, null);
+        }
+
 
         public int numberOfLocalVariables() {
             return localVariables.size();
         }
 
         public ParsingHelper cloneToNewFor(GraphNode aBlock) {
-            ParsingHelper theNew = new ParsingHelper(aBlock);
+            ParsingHelper theNew = new ParsingHelper(aBlock, this);
             for (Map.Entry<Integer, Value> theEntry : localVariables.entrySet()) {
                 theNew.localVariables.put(theEntry.getKey(), theEntry.getValue());
                 aBlock.addToImportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
@@ -344,26 +351,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
     }
 
-    private void markBackEdges(GraphNode aNode) {
-        markBackEdges(new HashMap<>(), aNode, 0);
-    }
-
-    private void markBackEdges(Map<GraphNode, Integer> aVisited, GraphNode aNode, int aLevel) {
-        if (!aVisited.containsKey(aNode)) {
-            aVisited.put(aNode, aLevel);
-            for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
-                if (aVisited.containsKey(theEdge.getValue())) {
-                    int theLevel = aVisited.get(theEdge.getValue());
-                    if (theLevel < aLevel) {
-                        theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
-                    }
-                } else {
-                    markBackEdges(aVisited, theEdge.getValue(), aLevel + 1);
-                }
-            }
-        }
-    }
-
     @Override
     public Program generateFrom(BytecodeClass aOwningClass, BytecodeMethod aMethod) {
 
@@ -500,97 +487,105 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         // Now we can add the SSA instructions to the graph nodes
         Set<GraphNode> theVisited = new HashSet<>();
-        GraphNode theStart = theProgram.getControlFlowGraph().nodeStartingAt(new BytecodeOpcodeAddress(0));
+        GraphNode theStart = theProgram.getControlFlowGraph().startNode();
 
         // First of all, we need to mark the back-edges of the graph
-        markBackEdges(theStart);
+        theProgram.getControlFlowGraph().markBackEdges();
 
-        // Now we can continue to create the program flow
-        ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(aMethod, theStart);
+        try {
+            // Now we can continue to create the program flow
+            ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(aMethod, theStart);
 
-        // This will traverse the CFG from top to bottom
-        initializeBlock(theProgram, aOwningClass, aMethod, theStart, theVisited, theParsingHelperCache, theBasicBlockByAddress);
-
-        // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
-        // finally blocks
-        for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
-            GraphNode theBlock = theEntry.getValue();
-            if (theBlock.getType() != GraphNode.BlockType.NORMAL) {
-                initializeBlock(theProgram, aOwningClass, aMethod, theBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
+            // This will traverse the CFG from bottom to top
+            for (GraphNode theNode : theProgram.getControlFlowGraph().finalNodes()) {
+                initializeBlock(theProgram, aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
+                        theBasicBlockByAddress);
             }
-        }
 
-        // Ok, at this stage we have all blocks, variables and PHIs known
-        // we search for blocks whose imports consume values from multiple places (PHIs)
-        for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
-            GraphNode theBlock = theEntry.getValue();
-
-            // First of all we check for PHI functions which should be resoved
-            BlockState theImportingState = theBlock.toStartState();
-            for (Map.Entry<VariableDescription, Value> theValues : theImportingState.getPorts().entrySet()) {
-                Value theValue = theValues.getValue();
-                List<Value> theInitConsumptions = theValue.consumedValues(Value.ConsumptionType.INITIALIZATION);
-                if (theInitConsumptions.size() > 1) {
-                    // This is a PHI Value
-
-                    // For every successor we need to "rewire" the initialization so that it initializes the referencing blocks value
-                    for (GraphNode thePredecessor : theBlock.getPredecessors()) {
-
-                        BlockState theExportingState = thePredecessor.toFinalState();
-                        Value theExportedValue = theExportingState.findBySlot(theValues.getKey());
-
-                        if (theValue != theExportedValue) {
-                            // In the Exporting-Block, we need to set the exported value to the receicing variables
-                            InitVariableExpression theInit = new InitVariableExpression((Variable) theValue, theExportedValue);
-
-                            Expression theLastExpression = thePredecessor.getExpressions().lastExpression();
-                            if (theLastExpression instanceof GotoExpression) {
-                                // Add before
-                                thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
-                            } else if (theLastExpression instanceof TableSwitchExpression) {
-                                // Add before
-                                thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
-                            } else {
-                                // Add at end
-                                thePredecessor.getExpressions().add(theInit);
-                            }
-                            thePredecessor.getExpressions().addBefore(new CommentExpression("Resolve PHI " + theValues.getKey()), theInit);
-                        }
-                    }
+            // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
+            // finally blocks
+            for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
+                GraphNode theBlock = theEntry.getValue();
+                if (theBlock.getType() != GraphNode.BlockType.NORMAL) {
+                    initializeBlock(theProgram, aOwningClass, aMethod, theBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
                 }
             }
 
-            // Check for back edges and relink variables
-            if (theBlock.getSuccessors().size() == 1) {
-                BlockState theExportingState = theBlock.toFinalState();
-                for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theBlock.getSuccessors().entrySet()) {
-                    if (theSuccessor.getKey().getType() == GraphNode.EdgeType.BACK) {
-                        // We found a back edge
-                        GraphNode theImporting = theSuccessor.getValue();
+            // Ok, at this stage we have all blocks, variables and PHIs known
+            // we search for blocks whose imports consume values from multiple places (PHIs)
+            for (Map.Entry<BytecodeBasicBlock, GraphNode> theEntry : theCreatedBlocks.entrySet()) {
+                GraphNode theBlock = theEntry.getValue();
 
-                        BlockState theTargetImporting = theImporting.toStartState();
-                        for (Map.Entry<VariableDescription, Value> theExpEntry : theExportingState.getPorts().entrySet()) {
-                            Value theInputValue = theTargetImporting.findBySlot(theExpEntry.getKey());
-                            if (theInputValue != null) {
-                                // In this case we have to remap the initialization of the exporting
-                                // variable to the input variable of the importing block
-                                ExpressionList theExpressions = theBlock.getExpressions();
+                // First of all we check for PHI functions which should be resoved
+                BlockState theImportingState = theBlock.toStartState();
+                for (Map.Entry<VariableDescription, Value> theValues : theImportingState.getPorts().entrySet()) {
+                    Value theValue = theValues.getValue();
+                    List<Value> theInitConsumptions = theValue.consumedValues(Value.ConsumptionType.INITIALIZATION);
+                    if (theInitConsumptions.size() > 1) {
+                        // This is a PHI Value
 
-                                Expression theLastExpression = theExpressions.lastExpression();
+                        // For every successor we need to "rewire" the initialization so that it initializes the referencing blocks value
+                        for (GraphNode thePredecessor : theBlock.getPredecessors()) {
 
-                                if (theInputValue != theExpEntry.getValue()) {
-                                    InitVariableExpression theInit = new InitVariableExpression((Variable) theInputValue,
-                                            theExpEntry.getValue());
+                            BlockState theExportingState = thePredecessor.toFinalState();
+                            Value theExportedValue = theExportingState.findBySlot(theValues.getKey());
+                            if (theExportedValue == null) {
+                                throw new IllegalStateException("No source value of type " + theValue.resolveType().resolve() + " for " + theValues.getKey() + " in "  + thePredecessor.getStartAddress().getAddress() + " jumps to " + theBlock.getStartAddress().getAddress());
+                            }
 
-                                    if (theLastExpression instanceof GotoExpression) {
-                                        // Add before
-                                        theExpressions.addBefore(theInit, theLastExpression);
-                                    } else if (theLastExpression instanceof TableSwitchExpression) {
-                                        // Add before
-                                        theExpressions.addBefore(theInit, theLastExpression);
-                                    } else {
-                                        // Add at end
-                                        theExpressions.add(theInit);
+                            if (theValue != theExportedValue) {
+                                // In the Exporting-Block, we need to set the exported value to the receicing variables
+                                InitVariableExpression theInit = new InitVariableExpression((Variable) theValue, theExportedValue);
+
+                                Expression theLastExpression = thePredecessor.getExpressions().lastExpression();
+                                if (theLastExpression instanceof GotoExpression) {
+                                    // Add before
+                                    thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
+                                } else if (theLastExpression instanceof TableSwitchExpression) {
+                                    // Add before
+                                    thePredecessor.getExpressions().addBefore(theInit, theLastExpression);
+                                } else {
+                                    // Add at end
+                                    thePredecessor.getExpressions().add(theInit);
+                                }
+                                thePredecessor.getExpressions().addBefore(new CommentExpression("Resolve PHI " + theValues.getKey()), theInit);
+                            }
+                        }
+                    }
+                }
+
+                // Check for back edges and relink variables
+                if (theBlock.getSuccessors().size() == 1) {
+                    BlockState theExportingState = theBlock.toFinalState();
+                    for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theBlock.getSuccessors().entrySet()) {
+                        if (theSuccessor.getKey().getType() == GraphNode.EdgeType.BACK) {
+                            // We found a back edge
+                            GraphNode theImporting = theSuccessor.getValue();
+
+                            BlockState theTargetImporting = theImporting.toStartState();
+                            for (Map.Entry<VariableDescription, Value> theExpEntry : theExportingState.getPorts().entrySet()) {
+                                Value theInputValue = theTargetImporting.findBySlot(theExpEntry.getKey());
+                                if (theInputValue != null) {
+                                    // In this case we have to remap the initialization of the exporting
+                                    // variable to the input variable of the importing block
+                                    ExpressionList theExpressions = theBlock.getExpressions();
+
+                                    Expression theLastExpression = theExpressions.lastExpression();
+
+                                    if (theInputValue != theExpEntry.getValue()) {
+                                        InitVariableExpression theInit = new InitVariableExpression((Variable) theInputValue,
+                                                theExpEntry.getValue());
+
+                                        if (theLastExpression instanceof GotoExpression) {
+                                            // Add before
+                                            theExpressions.addBefore(theInit, theLastExpression);
+                                        } else if (theLastExpression instanceof TableSwitchExpression) {
+                                            // Add before
+                                            theExpressions.addBefore(theInit, theLastExpression);
+                                        } else {
+                                            // Add at end
+                                            theExpressions.add(theInit);
+                                        }
                                     }
                                 }
                             }
@@ -598,6 +593,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     }
                 }
             }
+        } catch (Exception e) {
+            throw new ControlFlowProcessingException("Error processing CFG", e, theProgram.getControlFlowGraph());
         }
 
         // Check if there are infinite looping blocks
@@ -695,6 +692,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 // Only one predecessor
                 GraphNode thePredecessor = thePredecessors.iterator().next();
                 ParsingHelper theResolved = aCache.resolveFinalStateForNode(thePredecessor);
+                if (theResolved == null) {
+                    throw new IllegalStateException("No fully resolved predecessor found!");
+                }
                 theParsingState = theResolved.cloneToNewFor(aCurrentBlock);
             } else {
                 // we have more than one predecessor
@@ -706,10 +706,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
             // register the final state after program flow
             aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
-
-            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aCurrentBlock.getSuccessors().entrySet()) {
-                initializeBlock(aProgram, aOwningClass, aMethod, theSuccessor.getValue(), aAlreadyVisited, aCache, aBlocksByAddress);
-            }
         }
     }
 

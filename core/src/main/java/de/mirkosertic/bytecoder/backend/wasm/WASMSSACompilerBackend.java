@@ -624,7 +624,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println();
 
         theWriter.println("   (func $TClass_A1TObjectgetEnumConstants (param $thisRef i32) (result i32)");
-        theWriter.println("     (return (i32.load offset=12 (get_local $thisRef)))");
+        theWriter.println("     (return (i32.load (i32.load offset=12 (get_local $thisRef))))");
         theWriter.println("   )");
         theWriter.println();
 
