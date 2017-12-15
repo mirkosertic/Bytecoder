@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -23,8 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ControlFlowGraph {
 
@@ -91,7 +91,7 @@ public class ControlFlowGraph {
             for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
                 if (aVisited.containsKey(theEdge.getValue())) {
                     int theLevel = aVisited.get(theEdge.getValue());
-                    if (theLevel < aLevel) {
+                    if (theLevel < aLevel || aNode == theEdge.getValue()) {
                         theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
                     }
                 } else {
@@ -165,33 +165,41 @@ public class ControlFlowGraph {
         theResult.append("<table>");
 
         // Header
-        theResult.append("<tr>");
-        for (VariableDescription theDesc : theFinalList) {
-            if (theDesc instanceof LocalVariableDescription) {
-                LocalVariableDescription theV = (LocalVariableDescription) theDesc;
-                theResult.append("<td> V ");
-                theResult.append(theV.getIndex());
-                theResult.append("</td>");
-            } else {
-                StackVariableDescription theV = (StackVariableDescription) theDesc;
-                theResult.append("<td> S ");
-                theResult.append(theV.getPos());
-                theResult.append("</td>");
+        if (!theFinalList.isEmpty()) {
+            theResult.append("<tr>");
+            for (VariableDescription theDesc : theFinalList) {
+                if (theDesc instanceof LocalVariableDescription) {
+                    LocalVariableDescription theV = (LocalVariableDescription) theDesc;
+                    theResult.append("<td> V ");
+                    theResult.append(theV.getIndex());
+                    theResult.append("</td>");
+                } else {
+                    StackVariableDescription theV = (StackVariableDescription) theDesc;
+                    theResult.append("<td> S ");
+                    theResult.append(theV.getPos());
+                    theResult.append("</td>");
+                }
             }
+            theResult.append("</tr>");
         }
-        theResult.append("</tr>");
 
         // Inputs
-        theResult.append("<tr>");
-        for (VariableDescription theDesc : theFinalList) {
-            Value theValue = theStartState.findBySlot(theDesc);
-            if (theValue != null) {
-                theResult.append("<td>X</td>");
-            } else {
-                theResult.append("<td bgcolor=\"lightgray\"></td>");
+        if (!theFinalList.isEmpty()) {
+            theResult.append("<tr>");
+            for (VariableDescription theDesc : theFinalList) {
+                Value theValue = theStartState.findBySlot(theDesc);
+                if (theValue != null) {
+                    if (theValue.consumedValues(Value.ConsumptionType.PHIPROPAGATE).size() > 1) {
+                        theResult.append("<td bgcolor=\"orange\">X</td>");
+                    } else {
+                        theResult.append("<td>X</td>");
+                    }
+                } else {
+                    theResult.append("<td bgcolor=\"lightgray\"></td>");
+                }
             }
+            theResult.append("</tr>");
         }
-        theResult.append("</tr>");
 
         // Label
         theResult.append("<tr>");
@@ -202,30 +210,34 @@ public class ControlFlowGraph {
         theResult.append("</td></tr>");
 
         // Outputs
-        theResult.append("<tr>");
-        for (VariableDescription theDesc : theFinalList) {
-            Value theValue = theFinalState.findBySlot(theDesc);
-            if (theValue != null) {
-                theResult.append("<td>X</td>");
-            } else {
-                theResult.append("<td bgcolor=\"lightgray\"></td>");
+        if (!theFinalList.isEmpty()) {
+            theResult.append("<tr>");
+            for (VariableDescription theDesc : theFinalList) {
+                Value theValue = theFinalState.findBySlot(theDesc);
+                if (theValue != null) {
+                    theResult.append("<td>X</td>");
+                } else {
+                    theResult.append("<td bgcolor=\"lightgray\"></td>");
+                }
             }
+            theResult.append("</tr>");
         }
-        theResult.append("</tr>");
 
         // Types
-        theResult.append("<tr>");
-        for (VariableDescription theDesc : theFinalList) {
-            Value theValue = theFinalState.findBySlot(theDesc);
-            if (theValue != null) {
-                theResult.append("<td>");
-                theResult.append(theValue.resolveType().resolve());
-                theResult.append("</td>");
-            } else {
-                theResult.append("<td></td>");
+        if (!theFinalList.isEmpty()) {
+            theResult.append("<tr>");
+            for (VariableDescription theDesc : theFinalList) {
+                Value theValue = theFinalState.findBySlot(theDesc);
+                if (theValue != null) {
+                    theResult.append("<td>");
+                    theResult.append(theValue.resolveType().resolve());
+                    theResult.append("</td>");
+                } else {
+                    theResult.append("<td></td>");
+                }
             }
+            theResult.append("</tr>");
         }
-        theResult.append("</tr>");
 
         theResult.append("</table>");
         theResult.append(">");
