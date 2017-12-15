@@ -15,10 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -31,7 +27,6 @@ import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
@@ -96,6 +91,10 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
+
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -700,15 +699,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
-                BlockState theFinalState = theE.getSourceBlock().toFinalState();
-
-/*                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
-                    print(" // ");
-                    printVariableNameOrValue(theEntry.getAddress());
-                    print(" exported as ");
-                    println(theEntry.getKey().toString());
-                }*/
-
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;

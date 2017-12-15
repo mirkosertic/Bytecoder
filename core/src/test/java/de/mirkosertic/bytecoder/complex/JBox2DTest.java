@@ -411,14 +411,6 @@ public class JBox2DTest {
     }
 
     @Test
-    public void testFindMethod() {
-        Vec2 theA = null;
-        Vec2 theB = null;
-        float theInitial = 0f;
-        theInitial = 10f * Vec2.cross(theA, theB);
-    }
-
-    @Test
     public void testCircleContactStack() {
         System.out.println("A");
         DefaultWorldPool thePool = new DefaultWorldPool(10, 10);
@@ -453,24 +445,6 @@ public class JBox2DTest {
         long theTotalDuration = System.currentTimeMillis() - theStart;
         System.out.println("Ran");
         System.out.println(theTotalDuration);
-    }
-
-    @Test
-    public void testSolver() {
-        TestSolver theSolver = null;
-        theSolver.solveVelocityConstraints(null);
-    }
-
-    @Test
-    public void weldJointTest() {
-        WeldJoint theJoint = null;
-        theJoint.solveVelocityConstraints(null);
-    }
-
-    @Test
-    public void wheelJointTest() {
-        WheelJoint theJoint = null;
-        theJoint.solveVelocityConstraints(null);
     }
 
     @Test
