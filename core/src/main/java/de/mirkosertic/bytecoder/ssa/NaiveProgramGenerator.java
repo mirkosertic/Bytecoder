@@ -209,7 +209,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 return getLocalVariable(theDesc.getIndex());
             }
             StackVariableDescription theStack = (StackVariableDescription) aDescription;
-            return stack.get(theStack.getPos());
+            return stack.get(stack.size() - theStack.getPos() - 1);
         }
 
         public void setLocalVariable(int aIndex, Value aValue) {
