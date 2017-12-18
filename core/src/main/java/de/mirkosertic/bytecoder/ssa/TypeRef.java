@@ -25,11 +25,135 @@ public interface TypeRef {
     Native resolve();
 
     enum Native implements TypeRef {
-        UNKNOWN,BYTE,SHORT,CHAR,BOOLEAN,INT,LONG,FLOAT,DOUBLE,REFERENCE,VOID;
+        UNKNOWN {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                throw new IllegalStateException();
+            }
+        }
+        ,BYTE {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case BYTE:
+                        return BYTE;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        }
+        ,SHORT {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case SHORT:
+                        return SHORT;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },CHAR {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case CHAR:
+                        return CHAR;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },BOOLEAN {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case INT:
+                        return INT;
+                    case BOOLEAN:
+                        return BOOLEAN;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },INT {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case INT:
+                        return INT;
+                    case BOOLEAN:
+                        return INT;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },LONG {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case LONG:
+                        return LONG;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },FLOAT {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case FLOAT:
+                        return FLOAT;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },DOUBLE {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case DOUBLE:
+                        return DOUBLE;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },REFERENCE {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case REFERENCE:
+                        return REFERENCE;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        },VOID {
+            @Override
+            public Native eventuallyPromoteTo(Native aOtherType) {
+                switch (aOtherType) {
+                    case VOID:
+                        return VOID;
+                    default:
+                        throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
+
+                }
+            }
+        };
+
         @Override
         public Native resolve() {
             return this;
         }
+
+        public abstract Native eventuallyPromoteTo(Native aOtherType);
     }
 
     public static TypeRef toType(BytecodeTypeRef aTypeRef) {

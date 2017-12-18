@@ -343,11 +343,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             logByteArrayAsString: bytecoder_logByteArrayAsString,");
             theWriter.println("                         },");
             theWriter.println("                         math: {");
-            theWriter.println("                             floor: Math.floor,");
-            theWriter.println("                             ceil: Math.ceil,");
-            theWriter.println("                             sin: Math.sin,");
-            theWriter.println("                             cos: Math.cos,");
-            theWriter.println("                             round: Math.round,");
+            theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         },");
             theWriter.println("                         profiler: {");
