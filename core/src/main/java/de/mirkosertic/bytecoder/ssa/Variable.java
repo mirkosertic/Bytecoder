@@ -46,9 +46,8 @@ public class Variable extends Value {
     }
 
     public void initializeWith(Value aValue) {
-        if (!(type.resolve() == aValue.resolveType().resolve())) {
-            throw new IllegalArgumentException("Cannot initialize " + name + " of type " + type.resolve() + " with " + aValue + " of type " + aValue.resolveType().resolve());
-        }
+        // Test there is a videst type available
+        type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         consume(ConsumptionType.INITIALIZATION, aValue);
     }
 

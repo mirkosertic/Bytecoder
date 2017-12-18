@@ -15,26 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInstructionGOTO extends BytecodeInstruction {
+import org.junit.Assert;
+import org.junit.Test;
 
-    private final int jumpOffset;
+import java.util.Stack;
 
-    public BytecodeInstructionGOTO(BytecodeOpcodeAddress aOpcodeIndex, int aJumpOffset) {
-        super(aOpcodeIndex);
-        jumpOffset = aJumpOffset;
-    }
+public class StackTest {
 
-    public BytecodeOpcodeAddress getJumpAddress() {
-        return getOpcodeAddress().add(jumpOffset);
-    }
-
-    @Override
-    public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
-        return new BytecodeOpcodeAddress[] { getJumpAddress()};
-    }
-
-    @Override
-    public boolean isJumpSource() {
-        return true;
+    @Test
+    public void testPos() {
+        Stack<String> theStack = new Stack<>();
+        theStack.push("A");
+        theStack.push("B");
+        Assert.assertEquals(2, theStack.size(), 0);
+        Assert.assertEquals("A", theStack.get(0));
+        Assert.assertEquals("B", theStack.get(1));
     }
 }

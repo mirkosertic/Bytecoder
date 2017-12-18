@@ -334,6 +334,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 if (!theMethod.getAccessFlags().isStatic()) {
                     theArguments.append("thisRef");
                 }
+
                 for (int i=1;i<=theMethodArguments.length;i++) {
                     if (theArguments.length() > 0) {
                         theArguments.append(",");

@@ -117,6 +117,7 @@ public class JBox2DTest {
 
             int parts = 30;
             for (int i = 0; i < parts; ++i) {
+                System.out.println("New reel part");
                 PolygonShape shape = new PolygonShape();
                 double angle1 = i / (double) parts * 2 * Math.PI;
                 double x1 = 2.7 * Math.cos(angle1);
@@ -479,4 +480,5 @@ public class JBox2DTest {
         DynamicTree theTree = new DynamicTree();
         theTree.createProxy(new AABB(), "TEST");
     }
+
 }

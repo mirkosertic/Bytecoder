@@ -124,8 +124,10 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
+import jdk.jfr.ValueDescriptor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -166,13 +168,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         public Value pop() {
             if (stack.isEmpty()) {
-                StackVariableDescription theDesc = new StackVariableDescription(importedStackPos++);
-                Value theImported = valueProvider.resolveValueFor(theDesc);
-                if (theImported == null) {
-                    throw new IllegalStateException("Value must not be null from provider for " + theDesc);
-                }
-                block.addToImportedList(theImported, theDesc);
-                return theImported;
+                throw new IllegalStateException("Stack is empty!!!");
             }
             return stack.pop();
         }
@@ -251,7 +247,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
     private final BytecodeLinkerContext linkerContext;
 
-    public NaiveProgramGenerator(BytecodeLinkerContext aLinkerContext) {
+    private NaiveProgramGenerator(BytecodeLinkerContext aLinkerContext) {
         linkerContext = aLinkerContext;
     }
 
@@ -307,39 +303,96 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             return finalStatesForNodes.get(aGraphNode);
         }
 
+        private TypeRef widestTypeOf(Collection<Value> aValue) {
+            if (aValue.size() == 1) {
+                return aValue.iterator().next().resolveType();
+            }
+            TypeRef.Native theCurrent = null;
+            for (Value theValue : aValue) {
+                TypeRef.Native theValueType = theValue.resolveType().resolve();
+                if (theCurrent == null) {
+                    theCurrent = theValueType;
+                } else {
+                    theCurrent = theCurrent.eventuallyPromoteTo(theValueType);
+                }
+            }
+            return theCurrent;
+        }
+
         public ParsingHelper resolveInitialPHIStateForNode(Program aProgram, GraphNode aBlock) {
             ParsingHelper.ValueProvider theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
-            return new ParsingHelper(aBlock, theProvider);
+
+            // We collect the stacks from all predecessor nodes
+            Map<StackVariableDescription, Set<Value>> theStackToImport = new HashMap<>();
+            int theRequestedStack = -1;
+            for (GraphNode thePredecessor : aBlock.getPredecessorsIgnoringBackEdges()) {
+                ParsingHelper theHelper = finalStatesForNodes.get(thePredecessor);
+                if (theHelper.stack.size() > 0) {
+                    if (theRequestedStack == -1) {
+                        theRequestedStack = theHelper.stack.size();
+                    } else {
+                        if (theRequestedStack != theHelper.stack.size()) {
+                            throw new IllegalStateException("Wrong number of exported stack in " + thePredecessor.getStartAddress().getAddress() + " expected " + theRequestedStack + " got " + theHelper.stack.size());
+                        }
+                    }
+                    for (int i=0;i<theHelper.stack.size();i++) {
+                        StackVariableDescription theStackPos = new StackVariableDescription(theHelper.stack.size() - i - 1);
+                        Value theStackValue = theHelper.stack.get(i);
+
+                        Set<Value> theKnownValues = theStackToImport.computeIfAbsent(theStackPos, k -> new HashSet<>());
+                        theKnownValues.add(theStackValue);
+                    }
+                }
+            }
+
+            ParsingHelper theHelper = new ParsingHelper(aBlock, theProvider);
+
+            // Now we import the stack and check if we need to insert phi values
+            for (Map.Entry<StackVariableDescription, Set<Value>> theEntry : theStackToImport.entrySet()) {
+                Set<Value> theValues = theEntry.getValue();
+                if (theValues.size() == 1) {
+                    // Only one value, we do not need to insert a phi value
+                    Value theSingleValue = theValues.iterator().next();
+                    theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, theSingleValue);
+                    aBlock.addToImportedList(theSingleValue, theEntry.getKey());
+                } else {
+                    // We have a PHI value here
+                    TypeRef theType = widestTypeOf(theValues);
+                    Variable thePHI = aBlock.newImportedVariable(theType, theEntry.getKey());
+                    for (Value theValue : theValues) {
+                        thePHI.initializeWith(theValue);
+                        thePHI.consume(Value.ConsumptionType.PHIPROPAGATE, theValue);
+                    }
+                    theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, thePHI);
+                }
+            }
+
+            return theHelper;
         }
 
         private Value newPHIFor(Set<GraphNode> aNodes, VariableDescription aDescription, GraphNode aImportingBlock) {
-            Function<Set<Value>, Set<TypeRef>> theTypeCollector = aValues -> {
-                Set<TypeRef> theResult = new HashSet<>();
-                for (Value theValue : aValues) {
-                    theResult.add(theValue.resolveType());
-                }
-                return theResult;
-            };
-
             Set<Value> theValues = new HashSet<>();
             for (GraphNode thePredecessor : aNodes) {
                 ParsingHelper theHelper = finalStatesForNodes.get(thePredecessor);
                 if (theHelper == null) {
                     throw new IllegalStateException("No helper for " + thePredecessor.getStartAddress().getAddress());
                 }
-                theValues.add(theHelper.requestValue(aDescription));
+                try {
+                    theValues.add(theHelper.requestValue(aDescription));
+                } catch (RuntimeException e) {
+                    throw e;
+                }
             }
             if (theValues.isEmpty()) {
                 throw new IllegalStateException("No values for " + aDescription + " in block " + aImportingBlock.getStartAddress().getAddress());
             }
             if (theValues.size() == 1) {
-                return theValues.iterator().next();
+                Value theValue = theValues.iterator().next();
+                aImportingBlock.addToImportedList(theValue, aDescription);
+                return theValue;
             }
-            Set<TypeRef> theTypes = theTypeCollector.apply(theValues);
-            if (theTypes.size() != 1) {
-                throw new IllegalStateException("More than one type detected : " + theTypes);
-            }
-            Variable thePHI = aImportingBlock.newImportedVariable(theTypes.iterator().next(), aDescription);
+            TypeRef theType = widestTypeOf(theValues);
+            Variable thePHI = aImportingBlock.newImportedVariable(theType, aDescription);
             for (Value theValue : theValues) {
                 thePHI.initializeWith(theValue);
                 thePHI.consume(Value.ConsumptionType.PHIPROPAGATE, theValue);
@@ -348,10 +401,15 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         public ParsingHelper resolveInitialStateFromPredecessorFor(GraphNode aNode, ParsingHelper aPredecessor) {
+            // The node will import the full stack from its predecessor
             ParsingHelper.ValueProvider theProvider = aPredecessor::requestValue;
             ParsingHelper theNew = new ParsingHelper(aNode, theProvider);
-            for (int i=0;i<aPredecessor.stack.size();i++) {
-                theNew.stack.push(aPredecessor.stack.get(i));
+            Stack<Value> theStackToImport = aPredecessor.stack;
+            for (int i=0;i<theStackToImport.size();i++) {
+                StackVariableDescription theStackDesc = new StackVariableDescription(theStackToImport.size() - i - 1);
+                Value theImportedValue = theStackToImport.get(i);
+                theNew.stack.push(theImportedValue);
+                aNode.addToImportedList(theImportedValue, theStackDesc);
             }
             return theNew;
         }
@@ -372,7 +430,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     return theBlock;
                 }
             }
-            throw new IllegalStateException("No Block for " + aValue);
+            throw new IllegalStateException("No Block for " + aValue.getAddress());
         };
 
         Set<BytecodeOpcodeAddress> theJumpTarget = theBytecode.getJumpTargets();
@@ -540,9 +598,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             }
 
                             if (theValue != theExportedValue) {
-                                if (theValue.resolveType().resolve() != theExportedValue.resolveType().resolve()) {
-                                    throw new IllegalStateException("Cannot convert " + theExportedValue.resolveType().resolve() + " to " + theValue.resolveType().resolve() + " in "  + thePredecessor.getStartAddress().getAddress() + " jumps to " + theBlock.getStartAddress().getAddress() + " and "+ theValues.getKey());
-                                }
+                                // Test if there is a widest type availavle
+                                theValue.resolveType().resolve().eventuallyPromoteTo(theExportedValue.resolveType().resolve());
                                 // In the Exporting-Block, we need to set the exported value to the receicing variables
                                 InitVariableExpression theInit = new InitVariableExpression((Variable) theValue, theExportedValue);
 
@@ -572,8 +629,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             GraphNode theImporting = theSuccessor.getValue();
 
                             BlockState theTargetImporting = theImporting.toStartState();
-                            for (Map.Entry<VariableDescription, Value> theExpEntry : theExportingState.getPorts().entrySet()) {
-                                Value theInputValue = theTargetImporting.findBySlot(theExpEntry.getKey());
+                            for (Map.Entry<VariableDescription, Value> theImpEntry : theTargetImporting.getPorts().entrySet()) {
+                                ParsingHelper theExportingHelper = theParsingHelperCache.resolveFinalStateForNode(theBlock);
+                                Value theInputValue = theExportingHelper.requestValue(theImpEntry.getKey());
+
                                 if (theInputValue != null) {
                                     // In this case we have to remap the initialization of the exporting
                                     // variable to the input variable of the importing block
@@ -581,9 +640,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
                                     Expression theLastExpression = theExpressions.lastExpression();
 
-                                    if (theInputValue != theExpEntry.getValue()) {
-                                        InitVariableExpression theInit = new InitVariableExpression((Variable) theInputValue,
-                                                theExpEntry.getValue());
+                                    if (theInputValue != theImpEntry.getValue()) {
+                                        InitVariableExpression theInit = new InitVariableExpression((Variable) theImpEntry.getValue(),
+                                                theInputValue);
 
                                         if (theLastExpression instanceof GotoExpression) {
                                             // Add before
@@ -596,7 +655,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                                             theExpressions.add(theInit);
                                         }
                                     }
+                                } else {
+                                    throw new IllegalStateException("Cannot remap " + theImpEntry.getKey() + " to jump from " + theBlock.getStartAddress().getAddress() + " to " + theSuccessor.getValue().getStartAddress().getAddress());
                                 }
+
                             }
                         }
                     }
@@ -637,7 +699,15 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     // Insert a goto
                     theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
                 } else {
-                    throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size());
+                    theSuccessors = theNode.getSuccessors();
+                    if (theSuccessors.size() == 1) {
+                        // We will use this one
+                        // Sometimes, there is a conditional jump to the only following successor of the block. This
+                        // will be eliminated by the previous logic
+                        theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
+                    } else {
+                        throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
+                    }
                 }
             }
         }
@@ -676,6 +746,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
     }
 
     private void initializeBlock(Program aProgram, BytecodeClass aOwningClass, BytecodeMethod aMethod, GraphNode aCurrentBlock, Set<GraphNode> aAlreadyVisited, ParsingHelperCache aCache, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
+
         if (aAlreadyVisited.add(aCurrentBlock)) {
 
             // Resolve predecessor nodes. without them we would not have an initial state for the current node
@@ -719,6 +790,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
     }
 
     private void initializeBlockWith(BytecodeClass aOwningClass, BytecodeMethod aMethod, GraphNode aTargetBlock, Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress,  ParsingHelper aHelper) {
+
         // Finally we can start to parse the program
         BytecodeBasicBlock theBytecodeBlock = aBlocksByAddress.apply(aTargetBlock.getStartAddress());
 

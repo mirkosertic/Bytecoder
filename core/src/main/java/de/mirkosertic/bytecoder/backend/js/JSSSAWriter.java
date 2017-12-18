@@ -822,7 +822,10 @@ public class JSSSAWriter extends IndentSSAWriter {
         println(
                 "var currentLabel = " + theNodes.get(0).getNode().getStartAddress().getAddress()
                         + ";");
-        println("controlflowloop: while(true) {switch(currentLabel) {");
+        println(
+                "var insCounter = 0;");
+
+        println("controlflowloop: while(true) {insCounter++; if (insCounter > 100000) {throw 'Possible endless loop detected'}; switch(currentLabel) {");
 
         for (ControlFlowGraph.SimpleNode theBlock : theNodes) {
 
