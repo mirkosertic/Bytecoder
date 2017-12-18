@@ -15,8 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,6 +61,7 @@ public class GraphNode {
     private BlockType type;
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
+    private final List<GraphNodePath> reachableBy;
 
     public GraphNode(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -68,6 +71,11 @@ public class GraphNode {
         successors = new HashMap<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
+        reachableBy = new ArrayList<>();
+    }
+
+    public void addReachablePath(GraphNodePath aPath) {
+        reachableBy.add(aPath);
     }
 
     public void markAsInfiniteLoop() {

@@ -20,7 +20,6 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,21 +81,24 @@ public class ControlFlowGraph {
     }
 
     public void markBackEdges() {
-        markBackEdges(new HashMap<>(), startNode(), 0);
+        markBackEdges(new GraphNodePath(), startNode());
     }
 
-    private void markBackEdges(Map<GraphNode, Integer> aVisited, GraphNode aNode, int aLevel) {
-        if (!aVisited.containsKey(aNode)) {
-            aVisited.put(aNode, aLevel);
-            for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
-                if (aVisited.containsKey(theEdge.getValue())) {
-                    int theLevel = aVisited.get(theEdge.getValue());
-                    if (theLevel < aLevel || aNode == theEdge.getValue()) {
-                        theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
-                    }
-                } else {
-                    markBackEdges(aVisited, theEdge.getValue(), aLevel + 1);
-                }
+    private void markBackEdges(GraphNodePath aPath, GraphNode aNode) {
+        aNode.addReachablePath(aPath);
+        for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
+            GraphNodePath theChildPath = aPath.clone();
+            theChildPath.addToPath(aNode);
+            if (aPath.contains(theEdge.getValue())) {
+                // This is a back edge
+                theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
+                theEdge.getValue().addReachablePath(theChildPath);
+                // We have already visited the back edge, so we do not to continue here
+                // As this would lead to an endless loop
+            } else {
+                // Normal edge
+                // Continue with graph traversal
+                markBackEdges(theChildPath, theEdge.getValue());
             }
         }
     }
