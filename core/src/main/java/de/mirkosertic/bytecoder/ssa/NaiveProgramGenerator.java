@@ -622,7 +622,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
                 // Check for back edges and relink variables
                 if (theBlock.getSuccessors().size() == 1) {
-                    BlockState theExportingState = theBlock.toFinalState();
                     for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theBlock.getSuccessors().entrySet()) {
                         if (theSuccessor.getKey().getType() == GraphNode.EdgeType.BACK) {
                             // We found a back edge
@@ -658,7 +657,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                                 } else {
                                     throw new IllegalStateException("Cannot remap " + theImpEntry.getKey() + " to jump from " + theBlock.getStartAddress().getAddress() + " to " + theSuccessor.getValue().getStartAddress().getAddress());
                                 }
-
                             }
                         }
                     }
@@ -696,7 +694,16 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     }
                 }
                 if (theSuccessors.size() == 1) {
+                    theNode.getExpressions().add(new CommentExpression("Resolving pass thru direct"));
                     // Insert a goto
+                    GraphNode theTargetNode = theSuccessors.values().iterator().next();
+                    BlockState theFinalState = theNode.toFinalState();
+                    BlockState theTsrgetState = theTargetNode.toStartState();
+                    for (Map.Entry<VariableDescription, Value> theEntry : theTsrgetState.getPorts().entrySet()) {
+                        Value theValueToPropagate = theFinalState.findBySlot(theEntry.getKey());
+                        Variable theReceiving = (Variable) theTsrgetState.findBySlot(theEntry.getKey());
+                        theNode.getExpressions().add(new InitVariableExpression(theReceiving, theValueToPropagate));
+                    }
                     theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
                 } else {
                     theSuccessors = theNode.getSuccessors();
@@ -704,6 +711,17 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         // We will use this one
                         // Sometimes, there is a conditional jump to the only following successor of the block. This
                         // will be eliminated by the previous logic
+                        theNode.getExpressions().add(new CommentExpression("Resolving pass thru direct safety net"));
+
+                        GraphNode theTargetNode = theSuccessors.values().iterator().next();
+                        BlockState theFinalState = theNode.toFinalState();
+                        BlockState theTsrgetState = theTargetNode.toStartState();
+                        for (Map.Entry<VariableDescription, Value> theEntry : theTsrgetState.getPorts().entrySet()) {
+                            Value theValueToPropagate = theFinalState.findBySlot(theEntry.getKey());
+                            Variable theReceiving = (Variable) theTsrgetState.findBySlot(theEntry.getKey());
+                            theNode.getExpressions().add(new InitVariableExpression(theReceiving, theValueToPropagate));
+                        }
+
                         theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
                     } else {
                         throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
