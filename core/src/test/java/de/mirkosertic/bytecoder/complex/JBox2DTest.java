@@ -416,9 +416,6 @@ public class JBox2DTest {
 
         private final Vec2 pool1 = new Vec2();
         private final Vec2 pool2 = new Vec2();
-        private final Vec2 pool3 = new Vec2();
-        private final Vec2 pool4 = new Vec2();
-        private Transform poolt1 = new Transform();
         public int m_count;
         /**
          * Local position of the shape centroid in parent body frame.
@@ -453,43 +450,34 @@ public class JBox2DTest {
 
         public final void set(final Vec2[] verts, final int num, final Vec2Array vecPool,
                               final IntArray intPool) {
-            assert (3 <= num && num <= Settings.maxPolygonVertices);
-            if (num < 3) {
-                setAsBox(1.0f, 1.0f);
-                return;
-            }
 
-            int n = MathUtils.min(num, Settings.maxPolygonVertices);
+            int n = num;
+
+            System.out.println("A1");
 
             // Copy the vertices into a local buffer
-            Vec2[] ps = (vecPool != null) ? vecPool.get(n) : new Vec2[n];
-            for (int i = 0; i < n; ++i) {
-                ps[i] = verts[i];
-            }
+            Vec2[] ps = verts;
 
-            // Create the convex hull using the Gift wrapping algorithm
-            // http://en.wikipedia.org/wiki/Gift_wrapping_algorithm
+            System.out.println("A2");
 
-            // Find the right most point on the hull
-            int i0 = 0;
-            float x0 = ps[0].x;
-            for (int i = 1; i < num; ++i) {
-                float x = ps[i].x;
-                if (x > x0 || (x == x0 && ps[i].y < ps[i0].y)) {
-                    i0 = i;
-                    x0 = x;
-                }
-            }
+            int i0 = 1;
+            float x0 = 1.0f;
 
-            int[] hull =
-                    (intPool != null)
-                            ? intPool.get(Settings.maxPolygonVertices)
-                            : new int[Settings.maxPolygonVertices];
+            System.out.println("A3");
+
+
+            int[] hull = new int[Settings.maxPolygonVertices];
+
             int m = 0;
             int ih = i0;
 
             while (true) {
+
+                System.out.println("A31");
+
                 hull[m] = ih;
+
+                System.out.println("A32");
 
                 int ie = 0;
                 for (int j = 1; j < n; ++j) {
@@ -498,52 +486,45 @@ public class JBox2DTest {
                         continue;
                     }
 
+                    System.out.println("A33");
+
+                    System.out.println(m);
+                    System.out.println(ps[ie] != null ? "true" : "false");
+
                     Vec2 r = pool1.set(ps[ie]).subLocal(ps[hull[m]]);
+
+                    System.out.println("A34");
+
                     Vec2 v = pool2.set(ps[j]).subLocal(ps[hull[m]]);
+
+                    System.out.println("A36");
+
                     float c = Vec2.cross(r, v);
                     if (c < 0.0f) {
                         ie = j;
                     }
 
+                    System.out.println(ps[ie] != null ? "true" : "false");
+
                     // Collinearity check
                     if (c == 0.0f && v.lengthSquared() > r.lengthSquared()) {
                         ie = j;
                     }
+
+                    System.out.println(ps[ie] != null ? "true" : "false");
+
                 }
 
                 ++m;
                 ih = ie;
 
+                System.out.println("Global counter");
+                System.out.println(ie);
+
                 if (ie == i0) {
                     break;
                 }
             }
-
-            this.m_count = m;
-
-            // Copy vertices.
-            for (int i = 0; i < m_count; ++i) {
-                if (m_vertices[i] == null) {
-                    m_vertices[i] = new Vec2();
-                }
-                m_vertices[i].set(ps[hull[i]]);
-            }
-
-            final Vec2 edge = pool1;
-
-            // Compute normals. Ensure the edges have non-zero length.
-            for (int i = 0; i < m_count; ++i) {
-                final int i1 = i;
-                final int i2 = i + 1 < m_count ? i + 1 : 0;
-                edge.set(m_vertices[i2]).subLocal(m_vertices[i1]);
-
-                assert (edge.lengthSquared() > Settings.EPSILON * Settings.EPSILON);
-                Vec2.crossToOutUnsafe(edge, 1f, m_normals[i]);
-                m_normals[i].normalize();
-            }
-
-            // Compute the polygon centroid.
-            computeCentroidToOut(m_vertices, m_count, m_centroid);
         }
 
         private void computeCentroidToOut(Vec2[] m_vertices, int m_count, Vec2 m_centroid) {

@@ -49,4 +49,42 @@ public class LoopingTest {
         }
         int z = theSum * 2;
     }
+
+    @Test
+    public void testConplexFlow() {
+        int theIndex = 0;
+        while (true) {
+
+            System.out.println(theIndex);
+
+            theIndex++;
+            if (theIndex > 10) {
+                break;
+            }
+        }
+        System.out.println(theIndex);
+    }
+
+    public void testComplexer() {
+        int num = 4;
+        int ie = 0;
+        int ih = 0;
+        while(true) {
+            for (int j=0;j<num;j++) {
+                if (ie == ih) {
+                    ie = j;
+                    continue;
+                }
+
+                ie = j;
+            }
+            System.out.println(ie);
+            System.out.println(ih);
+            ie = ih;
+            if (ie == 10) {
+                break;
+            }
+        }
+        System.out.println("Finished");
+    }
 }

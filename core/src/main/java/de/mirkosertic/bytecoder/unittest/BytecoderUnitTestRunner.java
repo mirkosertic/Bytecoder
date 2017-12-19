@@ -494,9 +494,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         if (getDescription().getAnnotation(WASMOnly.class) != null) {
             testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
+            testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             //testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }
 }
