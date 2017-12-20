@@ -373,6 +373,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
                 theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
+                theWriter.println("        /**");
+                theWriter.println("        " + theSSAProgram.getControlFlowGraph().toDOT());
+                theWriter.println("        */");
 
                 JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram,"        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.globalVariables()) {
