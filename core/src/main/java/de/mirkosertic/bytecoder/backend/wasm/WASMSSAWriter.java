@@ -887,18 +887,18 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeNegateValue(NegatedValue aValue) {
-        Variable theVariable = aValue.resolveFirstArgument();
-        switch (theVariable.resolveType().resolve()) {
+        Value theValue = aValue.resolveFirstArgument();
+        switch (theValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
                     print("(f32.neg ");
-                    printVariableName(theVariable);
+                    writeValue(theValue);
                     print(")");
                 }
                 break;
             default:
                 print("(i32.mul (i32.const -1) ");
-                printVariableName(theVariable);
+                writeValue(theValue);
                 print(")");
                 break;
         }
