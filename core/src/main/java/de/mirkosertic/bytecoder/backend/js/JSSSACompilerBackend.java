@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -100,7 +101,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     }
 
     @Override
-    public JSCompileResult generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
+    public JSCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -364,10 +365,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                 // theWriter.println("console.log('" + JSWriterUtils.toClassName(theEntry.getValue().getClassName()) + "." + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + "');");
 
-                aLogger.info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
-
-                System.out.println("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
-
+                aOptions.getLogger().info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
@@ -376,7 +374,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
 
-                JSSSAWriter theVariablesWriter = new JSSSAWriter(theSSAProgram,"        ", theWriter, aLinkerContext);
+                JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram,"        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.globalVariables()) {
                     if (!theVariable.isSynthetic()) {
                         theVariablesWriter.print("var ");
