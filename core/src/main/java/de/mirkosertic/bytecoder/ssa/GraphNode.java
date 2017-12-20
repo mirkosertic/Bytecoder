@@ -15,8 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,22 +33,49 @@ public class GraphNode {
         FINALLY
     }
 
+    public enum EdgeType {
+        NORMAL, BACK
+    }
+
+    public static class Edge {
+
+        private EdgeType type;
+
+        public Edge(EdgeType aType) {
+            type = aType;
+        }
+
+        public void changeTo(EdgeType aType) {
+            type = aType;
+        }
+
+        public EdgeType getType() {
+            return type;
+        }
+    }
+
     private final BytecodeOpcodeAddress startAddress;
     private final ExpressionList expressions;
     private final Program program;
-    private final Set<GraphNode> successors;
+    private final Map<Edge, GraphNode> successors;
     private BlockType type;
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
+    private final List<GraphNodePath> reachableBy;
 
     public GraphNode(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
         startAddress = aStartAddress;
         program = aProgram;
         expressions = new ExpressionList();
-        successors = new HashSet<>();
+        successors = new HashMap<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
+        reachableBy = new ArrayList<>();
+    }
+
+    public void addReachablePath(GraphNodePath aPath) {
+        reachableBy.add(aPath);
     }
 
     public void markAsInfiniteLoop() {
@@ -60,18 +89,34 @@ public class GraphNode {
     public Set<GraphNode> getPredecessors() {
         Set<GraphNode> theResult = new HashSet<>();
         for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
-            if (theBlock.getSuccessors().contains(this)) {
+            if (theBlock.getSuccessors().values().contains(this)) {
                 theResult.add(theBlock);
             }
         }
         return theResult;
     }
 
-    public void addSuccessor(GraphNode aBlock) {
-        successors.add(aBlock);
+    public Set<GraphNode> getPredecessorsIgnoringBackEdges() {
+        Set<GraphNode> theResult = new HashSet<>();
+        for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
+            for (Map.Entry<Edge, GraphNode> theEntry : theBlock.successors.entrySet()) {
+                if (theEntry.getKey().getType() != EdgeType.BACK) {
+                    if (theEntry.getValue() == this) {
+                        theResult.add(theBlock);
+                    }
+                }
+            }
+        }
+        return theResult;
     }
 
-    public Set<GraphNode> getSuccessors() {
+    public void addSuccessor(EdgeType aType, GraphNode aBlock) {
+        if (!successors.values().contains(aBlock)) {
+            successors.put(new Edge(aType), aBlock);
+        }
+    }
+
+    public Map<Edge, GraphNode> getSuccessors() {
         return successors;
     }
 
@@ -79,20 +124,26 @@ public class GraphNode {
         return startAddress;
     }
 
+    public Variable newVariable(TypeRef aType) {
+        Variable theNewVariable = program.createVariable(aType);
+        return theNewVariable;
+    }
+
     public Variable newVariable(TypeRef aType, Value aValue)  {
         return newVariable(aType, aValue, false);
     }
 
     public Variable newVariable(TypeRef aType, Value aValue, boolean aIsImport)  {
-        Variable theNewVariable = program.createVariable(aType, aValue);
+        Variable theNewVariable = newVariable(aType);
+        theNewVariable.initializeWith(aValue);
         if (!aIsImport) {
-            expressions.add(new InitVariableExpression(theNewVariable));
+            expressions.add(new InitVariableExpression(theNewVariable, aValue));
         }
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(TypeRef aType, Value aValue, VariableDescription aDescription) {
-        Variable theVariable = newVariable(aType, aValue, true);
+    public Variable newImportedVariable(TypeRef aType, VariableDescription aDescription) {
+        Variable theVariable = newVariable(aType);
         imported.put(aDescription, theVariable);
         return theVariable;
     }
@@ -127,18 +178,6 @@ public class GraphNode {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;
-    }
-
-    public void removeVariable(Variable aVariable) {
-        for (Expression theExpression : expressions.toList()) {
-            if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theInit = (InitVariableExpression) theExpression;
-                if (theInit.getVariable() == aVariable) {
-                    expressions.remove(theExpression);
-                }
-            }
-        }
-        program.removeVariable(aVariable);
     }
 
     public boolean endWithNeverReturningExpression() {

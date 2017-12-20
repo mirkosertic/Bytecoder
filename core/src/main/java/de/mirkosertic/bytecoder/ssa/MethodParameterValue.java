@@ -15,16 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-
 public class MethodParameterValue extends Value {
 
     private final int parameterIndex;
-    private final BytecodeTypeRef typeRef;
+    private final TypeRef typeRef;
 
-    public MethodParameterValue(int aParameterIndex, BytecodeTypeRef aType) {
+    public MethodParameterValue(int aParameterIndex, TypeRef aTypeRef) {
         parameterIndex = aParameterIndex;
-        typeRef = aType;
+        typeRef = aTypeRef;
     }
 
     public int getParameterIndex() {
@@ -33,6 +31,6 @@ public class MethodParameterValue extends Value {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.toType(typeRef);
+        return typeRef;
     }
 }

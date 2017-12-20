@@ -15,25 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionInvoke;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRET;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 public interface ProgramGenerator {
@@ -164,7 +148,7 @@ public interface ProgramGenerator {
                 if (theSuccessorBlock == null) {
                     throw new IllegalStateException("Cannot find successor block");
                 }
-                theEntry.getValue().addSuccessor(theSuccessorBlock);
+                theEntry.getValue().addSuccessor(GraphNode.EdgeType.NORMAL, theSuccessorBlock);
             }
         }
         return theCreatedBlocks;

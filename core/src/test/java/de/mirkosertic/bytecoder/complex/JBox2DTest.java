@@ -25,6 +25,7 @@ import org.jbox2d.collision.ManifoldPoint;
 import org.jbox2d.collision.broadphase.DynamicTree;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
+import org.jbox2d.collision.shapes.Shape;
 import org.jbox2d.collision.shapes.ShapeType;
 import org.jbox2d.common.*;
 import org.jbox2d.dynamics.Body;
@@ -35,13 +36,13 @@ import org.jbox2d.dynamics.SolverData;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.CircleContact;
 import org.jbox2d.dynamics.contacts.Contact;
-import org.jbox2d.dynamics.joints.Joint;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
 import org.jbox2d.dynamics.joints.WeldJoint;
 import org.jbox2d.dynamics.joints.WheelJoint;
-import org.jbox2d.dynamics.joints.WheelJointDef;
 import org.jbox2d.pooling.IDynamicStack;
 import org.jbox2d.pooling.IWorldPool;
+import org.jbox2d.pooling.arrays.IntArray;
+import org.jbox2d.pooling.arrays.Vec2Array;
 import org.jbox2d.pooling.normal.DefaultWorldPool;
 import org.junit.Assert;
 import org.junit.Test;
@@ -117,6 +118,7 @@ public class JBox2DTest {
 
             int parts = 30;
             for (int i = 0; i < parts; ++i) {
+                System.out.println("New reel part");
                 PolygonShape shape = new PolygonShape();
                 double angle1 = i / (double) parts * 2 * Math.PI;
                 double x1 = 2.7 * Math.cos(angle1);
@@ -268,6 +270,109 @@ public class JBox2DTest {
                 vA.y -= mA * P.y;
                 wA -= iA * Vec2.cross(m_rA, P);
 
+                //vB.x += mB * P.x;
+                //vB.y += mB * P.y;
+                // wB += iB * Vec2.cross(m_rB, P);
+            } else {
+                Vec2.crossToOutUnsafe(wA, m_rA, temp);
+                Vec2.crossToOutUnsafe(wB, m_rB, Cdot1);
+                Cdot1.addLocal(vB).subLocal(vA).subLocal(temp);
+                float Cdot2 = wB - wA;
+
+                final Vec3 Cdot = pool.popVec3();
+                Cdot.set(Cdot1.x, Cdot1.y, Cdot2);
+
+                final Vec3 impulse = pool.popVec3();
+                Mat33.mulToOutUnsafe(m_mass, Cdot, impulse);
+                impulse.negateLocal();
+                m_impulse.addLocal(impulse);
+
+                P.set(impulse.x, impulse.y);
+
+                vA.x -= mA * P.x;
+                vA.y -= mA * P.y;
+                // wA -= iA * (Vec2.cross(m_rA, P) + impulse.z);
+
+                vB.x += mB * P.x;
+                vB.y += mB * P.y;
+                //wB += iB * (Vec2.cross(m_rB, P) + impulse.z);
+
+                //pool.pushVec3(2);
+            }
+
+            data.velocities[m_indexA].v.set(vA);
+            data.velocities[m_indexA].w = wA;
+            data.velocities[m_indexB].v.set(vB);
+            data.velocities[m_indexB].w = wB;
+
+            pool.pushVec2(3);
+        }
+    }
+
+    static class TestSolver2 {
+
+        private IWorldPool pool;
+        private float m_frequencyHz;
+        private float m_dampingRatio;
+        private float m_bias;
+
+        // Solver shared
+        private Vec2 m_localAnchorA;
+        private Vec2 m_localAnchorB;
+        private float m_referenceAngle;
+        private float m_gamma;
+        private Vec3 m_impulse;
+
+
+        // Solver temp
+        private int m_indexA;
+        private int m_indexB;
+        private Vec2 m_rA;
+        private Vec2 m_rB;
+        private Vec2 m_localCenterA;
+        private Vec2 m_localCenterB;
+        private float m_invMassA;
+        private float m_invMassB;
+        private float m_invIA;
+        private float m_invIB;
+        private Mat33 m_mass;
+
+        public void solveVelocityConstraints(final SolverData data) {
+            Vec2 vA = data.velocities[m_indexA].v;
+            float wA = data.velocities[m_indexA].w;
+            Vec2 vB = data.velocities[m_indexB].v;
+            float wB = data.velocities[m_indexB].w;
+
+            float mA = m_invMassA, mB = m_invMassB;
+            float iA = m_invIA, iB = m_invIB;
+
+            final Vec2 Cdot1 = pool.popVec2();
+            final Vec2 P = pool.popVec2();
+            final Vec2 temp = pool.popVec2();
+            if (m_frequencyHz > 0.0f) {
+                float Cdot2 = wB - wA;
+
+                float impulse2 = -m_mass.ez.z * (Cdot2 + m_bias + m_gamma * m_impulse.z);
+                m_impulse.z += impulse2;
+
+                wA -= iA * impulse2;
+                wB += iB * impulse2;
+
+                Vec2.crossToOutUnsafe(wB, m_rB, Cdot1);
+                Vec2.crossToOutUnsafe(wA, m_rA, temp);
+                Cdot1.addLocal(vB).subLocal(vA).subLocal(temp);
+
+                final Vec2 impulse1 = P;
+                Mat33.mul22ToOutUnsafe(m_mass, Cdot1, impulse1);
+                impulse1.negateLocal();
+
+                m_impulse.x += impulse1.x;
+                m_impulse.y += impulse1.y;
+
+                vA.x -= mA * P.x;
+                vA.y -= mA * P.y;
+                wA -= iA * Vec2.cross(m_rA, P);
+
                 vB.x += mB * P.x;
                 vB.y += mB * P.y;
                 wB += iB * Vec2.cross(m_rB, P);
@@ -305,6 +410,108 @@ public class JBox2DTest {
 
             pool.pushVec2(3);
         }
+    }
+
+    public class TestShape {
+
+        private final Vec2 pool1 = new Vec2();
+        private final Vec2 pool2 = new Vec2();
+        public int m_count;
+        /**
+         * Local position of the shape centroid in parent body frame.
+         */
+        public final Vec2 m_centroid = new Vec2();
+
+        /**
+         * The vertices of the shape. Note: use getVertexCount(), not m_vertices.length, to get number of
+         * active vertices.
+         */
+        public final Vec2 m_vertices[];
+
+        /**
+         * The normals of the shape. Note: use getVertexCount(), not m_normals.length, to get number of
+         * active normals.
+         */
+        public final Vec2 m_normals[];
+
+        public TestShape() {
+
+            m_count = 0;
+            m_vertices = new Vec2[Settings.maxPolygonVertices];
+            for (int i = 0; i < m_vertices.length; i++) {
+                m_vertices[i] = new Vec2();
+            }
+            m_normals = new Vec2[Settings.maxPolygonVertices];
+            for (int i = 0; i < m_normals.length; i++) {
+                m_normals[i] = new Vec2();
+            }
+            m_centroid.setZero();
+        }
+
+        public final void complexlogic(final Vec2[] verts, final int num, final Vec2Array vecPool,
+                              final IntArray intPool) {
+
+            int i0 = 1;
+            int[] hull = new int[Settings.maxPolygonVertices];
+
+            int m = 0;
+            int ih = i0;
+
+            int counter = 0;
+            while (true) {
+
+                counter++;
+                if (counter>5) {
+                    break;
+                }
+
+                hull[m] = ih;
+
+                int ie = 0;
+                for (int j = 1; j < num; ++j) {
+
+                    if (ie == ih) {
+                        ie = j;
+                        continue;
+                    }
+
+                    Vec2 r = pool1.set(verts[ie]).subLocal(verts[hull[m]]);
+                    Vec2 v = pool2.set(verts[j]).subLocal(verts[hull[m]]);
+
+                    float c = Vec2.cross(r, v);
+                    if (c < 0.0f) {
+                        ie = j;
+                    }
+
+                    if (c == 0.0f && v.lengthSquared() > r.lengthSquared()) {
+                        ie = j;
+                    }
+                }
+
+                ++m;
+                ih = ie;
+
+                System.out.println("End of loop");
+                System.out.println(ie);
+                System.out.println(i0);
+                if (ie == i0) {
+                    break;
+                }
+            }
+            System.out.println("Finished");
+        }
+
+        private void computeCentroidToOut(Vec2[] m_vertices, int m_count, Vec2 m_centroid) {
+        }
+
+        private void setAsBox(float v, float v1) {
+        }
+    }
+
+    @Test
+    public void testShape() {
+        TestShape theShape = new TestShape();
+        theShape.complexlogic(new Vec2[] {new Vec2(-1, -1), new Vec2(1, -1), new Vec2(1, 1), new Vec2(-1, 1)}, 4, null, null);
     }
 
     @Test
@@ -345,24 +552,6 @@ public class JBox2DTest {
     }
 
     @Test
-    public void testSolver() {
-        TestSolver theSolver = null;
-        theSolver.solveVelocityConstraints(null);
-    }
-
-    @Test
-    public void weldJointTest() {
-        WeldJoint theJoint = null;
-        theJoint.solveVelocityConstraints(null);
-    }
-
-    @Test
-    public void wheelJointTest() {
-        WheelJoint theJoint = null;
-        theJoint.solveVelocityConstraints(null);
-    }
-
-    @Test
     public void testLinkDefaultWorld() {
         DefaultWorldPool thePool = new DefaultWorldPool(1, 1);
     }
@@ -394,4 +583,5 @@ public class JBox2DTest {
         DynamicTree theTree = new DynamicTree();
         theTree.createProxy(new AABB(), "TEST");
     }
+
 }

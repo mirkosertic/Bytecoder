@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import javax.script.ScriptException;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
@@ -35,12 +36,12 @@ public class CompilerTest {
         ClassLoader theLoader = CompilerTest.class.getClassLoader();
         Class theTargetClass = theLoader.loadClass(HelloWorld.class.getName());
 
-        CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.jsgraph);
+        CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.js);
 
         BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-        CompileResult theCode = theCompileTarget.compileToJS(new Slf4JLogger(), theTargetClass, "main", theSignature);
+        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true), theTargetClass, "main", theSignature);
 
         System.out.println(theCode.getData());
     }

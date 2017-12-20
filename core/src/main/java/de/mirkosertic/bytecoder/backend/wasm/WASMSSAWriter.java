@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -77,7 +79,6 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -97,7 +98,6 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.ValueReferenceValue;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -119,8 +119,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private final List<Variable> stackVariables;
     private final IDResolver idResolver;
 
-    public WASMSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver) {
-        super(aProgram, aIndent, aWriter, aLinkerContext);
+    public WASMSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver) {
+        super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         stackVariables = new ArrayList<>();
         idResolver = aIDResolver;
         for (Variable theVariable : aProgram.getVariables()) {
@@ -155,7 +155,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     public WASMSSAWriter withDeeperIndent() {
-        return new WASMSSAWriter(program, indent + "    ", writer, linkerContext, idResolver);
+        return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver);
     }
 
     public void writeStartNode(ControlFlowGraph.Node aNode, int aMethodId) {
@@ -417,11 +417,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         switch (aExpression.getArrayType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                println("(f32.store offset=4 ");
+                println("(f32.store offset=20 ");
                 break;
             }
             default: {
-                println("(i32.store offset=4 ");
+                println("(i32.store offset=20 ");
                 break;
             }
         }
@@ -562,13 +562,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeInitVariableExpression(InitVariableExpression aExpression) {
         Variable theVariable = aExpression.getVariable();
+        Value theNewValue = aExpression.getValue();
 
-        if (theVariable.getValue() instanceof PrimitiveValue) {
-            // Primitives are always inlined!
-            return;
-        }
-
-        if (theVariable.getValue() instanceof PHIFunction) {
+        if (theNewValue instanceof PHIFunction) {
             return;
         }
 
@@ -590,19 +586,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
             println(" (get_local $SP)");
 
             WASMSSAWriter theChild = withDeeperIndent();
-            theChild.writeValue(theVariable.getValue());
+            theChild.writeValue(theNewValue);
 
             println();
             println(")");
 
         } else {
-            println(";; setting local variable with type " + theVariable.resolveType().resolve() + " with value of type " + theVariable.getValue().resolveType().resolve());
+            println(";; setting local variable with type " + theVariable.resolveType().resolve() + " with value of type " + theNewValue.resolveType().resolve());
             print("(set_local $");
             print(theVariable.getName());
             println();
 
             WASMSSAWriter theChild = withDeeperIndent();
-            theChild.writeValue(theVariable.getValue());
+            theChild.writeValue(theNewValue);
 
             println();
             println(")");
@@ -611,7 +607,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeValue(Value aValue) {
         if (aValue instanceof Variable) {
-            printVariableNameOrValue((Variable) aValue);
+            printVariableName((Variable) aValue);
             return;
         }
         if (aValue instanceof BinaryValue) {
@@ -624,10 +620,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
         if (aValue instanceof IntegerValue) {
             writeIntegerValue((IntegerValue) aValue);
-            return;
-        }
-        if (aValue instanceof ValueReferenceValue) {
-            writeVariableReferenceValue((ValueReferenceValue) aValue);
             return;
         }
         if (aValue instanceof DirectInvokeMethodValue) {
@@ -781,14 +773,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
                         BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                         "newArray",
                         new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 break;
             case 2:
                 theMethodName = WASMWriterUtils.toMethodName(
                         BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                         "newArray",
                         new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 break;
             default:
                 throw new IllegalStateException("Unsupported number of dimensions : " + theDimensions.size());
@@ -802,6 +794,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
             print(" ");
             writeValue(theDimension);
         }
+
+        // We also need the runtime class
+        print(" (get_global $TArray__runtimeClass)");
+        // Plus the vtable index
+        print(" (i32.const ");
+        print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class)));
+        print(")");
 
         println(") ;; new array of type " + theType);
     }
@@ -822,7 +821,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeRuntimeGeneratedTypeValue(RuntimeGeneratedTypeValue aValue) {
         println("(call $newLambda ");
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.writeValue(aValue.getType());;
+        theChild.writeValue(aValue.getType());
         theChild.println();
         theChild.writeValue(aValue.getMethodRef());
         theChild.println();
@@ -893,13 +892,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
             case DOUBLE:
             case FLOAT: {
                     print("(f32.neg ");
-                    printVariableNameOrValue(theVariable);
+                    printVariableName(theVariable);
                     print(")");
                 }
                 break;
             default:
                 print("(i32.mul (i32.const -1) ");
-                printVariableNameOrValue(theVariable);
+                printVariableName(theVariable);
                 print(")");
                 break;
         }
@@ -909,7 +908,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
         Value theValue1 = aValue.resolveFirstArgument();
         Value theValue2 = aValue.resolveSecondArgument();
 
-        switch (aValue.resolveType().resolve()) {
+        TypeRef.Native theValue1Type = theValue1.resolveType().resolve();
+        TypeRef.Native theValue2Type = theValue2.resolveType().resolve();
+        if (theValue1Type != theValue2Type) {
+            throw new IllegalStateException("Does not support mixed types : " + theValue1Type + " -> " + theValue2Type);
+        }
+
+        switch (theValue1Type) {
             case DOUBLE:
             case FLOAT:
                 print("(call $compareValueF32 ");
@@ -928,11 +933,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         switch (aValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                print("(f32.load offset=4 ");
+                print("(f32.load offset=20 ");
                 break;
             }
             default: {
-                print("(i32.load offset=4 ");
+                print("(i32.load offset=20 ");
                 break;
             }
         }
@@ -961,19 +966,26 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newArray",
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         print("(call $");
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
 
         withDeeperIndent().writeValue(aValue.resolveFirstArgument());
+
+        // We also need the runtime class
+        print(" (get_global $TArray__runtimeClass)");
+        // Plus the vtable index
+        print(" (i32.const ");
+        print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class)));
+        print(")");
+
         println(") ;; new array of type " + theType);
     }
 
     private void writeArrayLengthValue(ArrayLengthValue aValue) {
-        // First int is always length of array
-        println("(i32.load ");
+        println("(i32.load offset=16 ");
         withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println();
         println(")");
@@ -1156,19 +1168,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
         switch (aValue.getOperator()) {
             case ISNULL: {
                 print("(i32.eq ");
-                printVariableNameOrValue(aValue.resolveFirstArgument());
+                printVariableName(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
             case ISNONNULL: {
                 print("(i32.ne ");
-                printVariableNameOrValue(aValue.resolveFirstArgument());
+                printVariableName(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
             case ISZERO: {
                 print("(i32.eq ");
-                printVariableNameOrValue(aValue.resolveFirstArgument());
+                printVariableName(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
@@ -1261,7 +1273,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println();
 
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.printVariableNameOrValue(aValue.resolveFirstArgument());
+        theChild.printVariableName(aValue.resolveFirstArgument());
 
         println(")");
     }
@@ -1298,10 +1310,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
 
         print(")");
-    }
-
-    private void writeVariableReferenceValue(ValueReferenceValue aValue) {
-        writeValue(aValue.resolveFirstArgument());
     }
 
     private void writeByteValue(ByteValue aValue) {
@@ -1552,8 +1560,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeCommentExpression(CommentExpression aExpression) {
-        print(";; ");
-        println(aExpression.getValue());
+        if (options.isDebugOutput()) {
+            print(";; ");
+            println(aExpression.getValue());
+        }
     }
 
     private void writeReturnExpression(ReturnExpression aExpression) {
@@ -1583,31 +1593,27 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void printVariableNameOrValue(Variable aVariable) {
-        if (aVariable.getValue() instanceof PrimitiveValue) {
-            writeValue(aVariable.getValue());
-        } else {
-            if (isStackVariable(aVariable)) {
-                switch (aVariable.resolveType().resolve()) {
-                    case DOUBLE:
-                    case FLOAT:
-                        print("(f32.load offset=");
-                        break;
-                    case UNKNOWN:
-                        throw new IllegalStateException();
-                    default:
-                        print("(i32.load offset=");
-                        break;
-                }
-                print(stackOffsetFor(aVariable));
-                print(" (get_local $SP)");
-                print(")");
-            } else {
-                print("(get_local ");
-                print("$");
-                print(aVariable.getName());
-                print(")");
+    private void printVariableName(Variable aVariable) {
+        if (isStackVariable(aVariable)) {
+            switch (aVariable.resolveType().resolve()) {
+                case DOUBLE:
+                case FLOAT:
+                    print("(f32.load offset=");
+                    break;
+                case UNKNOWN:
+                    throw new IllegalStateException();
+                default:
+                    print("(i32.load offset=");
+                    break;
             }
+            print(stackOffsetFor(aVariable));
+            print(" (get_local $SP)");
+            print(")");
+        } else {
+            print("(get_local ");
+            print("$");
+            print(aVariable.getName());
+            print(")");
         }
     }
 

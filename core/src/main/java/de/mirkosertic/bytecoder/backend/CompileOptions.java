@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.backend;
 
-public class CompareValue extends Value {
+import de.mirkosertic.bytecoder.core.Logger;
 
-    public CompareValue(Value aValue1, Value aValue2) {
-        consume(ConsumptionType.ARGUMENT, aValue1);
-        consume(ConsumptionType.ARGUMENT, aValue2);
+public class CompileOptions {
+
+    private final Logger logger;
+    private final boolean debugOutput;
+
+    public CompileOptions(Logger aLogger, boolean aDebugOutput) {
+        logger = aLogger;
+        debugOutput = aDebugOutput;
     }
 
-    @Override
-    public TypeRef resolveType() {
-        return TypeRef.Native.INT;
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public boolean isDebugOutput() {
+        return debugOutput;
     }
 }

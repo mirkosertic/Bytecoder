@@ -44,13 +44,13 @@ public class HelloWorld {
     }
 
     public static void main(String[] args) {
-        int x = compute(10, 20);
-        int z = 1;
-        if (x == 30) {
-            Test theTest1 = new Test1();
-            Test theTest2 = new Test2();
-            z = theTest1.getValue() + theTest2.getValue();
+        int x = 10;
+        int y = 20;
+        if (y >10) {
+            x = 99;
+        } else {
+            x = 88;
         }
-
+        x = x + 1;
     }
 }

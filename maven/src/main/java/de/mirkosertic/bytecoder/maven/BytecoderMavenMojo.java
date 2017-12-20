@@ -24,6 +24,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -89,6 +90,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected boolean optimizeWithGoogleClosure;
 
     /**
+     * Shall debug output be generated?
+     */
+    @Parameter(required = false, defaultValue = "false")
+    protected boolean debugOutput;
+
+    /**
      * The closure optimization level.
      */
     @Parameter(required = false, defaultValue = "SIMPLE_OPTIMIZATIONS")
@@ -111,22 +118,23 @@ public class BytecoderMavenMojo extends AbstractMojo {
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-            CompileResult theCode = theCompileTarget.compileToJS(new Slf4JLogger(), theTargetClass, "main", theSignature);
+            CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput);
+            CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
             try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
                 theWriter.println(theCode.getData());
             }
 
             if (optimizeWithGoogleClosure) {
                 Compiler theCompiler = new Compiler();
-                CompilerOptions theOptions = new CompilerOptions();
-                theOptions.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
-                theOptions.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
+                CompilerOptions theClosureOptions = new CompilerOptions();
+                theClosureOptions.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
+                theClosureOptions.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
 
-                CompilationLevel.valueOf(closureOptimizationLevel).setOptionsForCompilationLevel(theOptions);
+                CompilationLevel.valueOf(closureOptimizationLevel).setOptionsForCompilationLevel(theClosureOptions);
 
                 List<SourceFile> theSourceFiles = CommandLineRunner.getBuiltinExterns(CompilerOptions.Environment.BROWSER);
                 theSourceFiles.add(SourceFile.fromCode("bytecoder.js", (String) theCode.getData()));
-                theCompiler.compile(new ArrayList<>(), theSourceFiles, theOptions);
+                theCompiler.compile(new ArrayList<>(), theSourceFiles, theClosureOptions);
                 String theClosureCode = theCompiler.toSource();
 
                 File theBytecoderClosureFileName = new File(theBytecoderDirectory, "bytecoder-closure.js");

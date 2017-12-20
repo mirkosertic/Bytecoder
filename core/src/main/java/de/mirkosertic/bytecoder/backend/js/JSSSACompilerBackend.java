@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -44,12 +45,10 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
@@ -102,7 +101,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     }
 
     @Override
-    public JSCompileResult generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
+    public JSCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
@@ -336,6 +335,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 if (!theMethod.getAccessFlags().isStatic()) {
                     theArguments.append("thisRef");
                 }
+
                 for (int i=1;i<=theMethodArguments.length;i++) {
                     if (theArguments.length() > 0) {
                         theArguments.append(",");
@@ -365,7 +365,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
                 // theWriter.println("console.log('" + JSWriterUtils.toClassName(theEntry.getValue().getClassName()) + "." + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + "');");
 
-                aLogger.info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
+                aOptions.getLogger().info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
@@ -373,17 +373,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
                 theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
+                theWriter.println("        /**");
+                theWriter.println("        " + theSSAProgram.getControlFlowGraph().toDOT());
+                theWriter.println("        */");
 
-                JSSSAWriter theVariablesWriter = new JSSSAWriter(theSSAProgram,"        ", theWriter, aLinkerContext);
+                JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram,"        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.globalVariables()) {
-                    if (!(theVariable.getValue() instanceof PrimitiveValue) &&
-                        !(theVariable.getValue() instanceof MethodParameterValue) &&
-                        !(theVariable.getValue() instanceof SelfReferenceParameterValue)) {
+                    if (!theVariable.isSynthetic()) {
                         theVariablesWriter.print("var ");
                         theVariablesWriter.print(theVariable.getName());
                         theVariablesWriter.print(" = null;");
                         theVariablesWriter.print(" // type is ");
-                        theVariablesWriter.println(theVariable.resolveType().resolve().name());
+                        theVariablesWriter.print(theVariable.resolveType().resolve().name());
+                        theVariablesWriter.print(" # of inits = " + theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION).size());
+                        theVariablesWriter.println();
                     }
                 }
 

@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+
 public class BytecodeInstructionGenericCMP extends BytecodeInstruction {
 
     public enum Type {
@@ -32,5 +34,9 @@ public class BytecodeInstructionGenericCMP extends BytecodeInstruction {
 
     public Type getType() {
         return type;
+    }
+
+    public BytecodePrimitiveTypeRef getPrimitiveTypeRef() {
+        return primitiveTypeRef;
     }
 }

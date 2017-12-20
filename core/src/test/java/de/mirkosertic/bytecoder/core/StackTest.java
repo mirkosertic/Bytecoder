@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.core;
 
-public class ValueReferenceValue extends Value {
+import org.junit.Assert;
+import org.junit.Test;
 
-    public ValueReferenceValue(Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
-    }
+import java.util.Stack;
 
-    @Override
-    public TypeRef resolveType() {
-        return resolveFirstArgument().resolveType();
+public class StackTest {
+
+    @Test
+    public void testPos() {
+        Stack<String> theStack = new Stack<>();
+        theStack.push("A");
+        theStack.push("B");
+        Assert.assertEquals(2, theStack.size(), 0);
+        Assert.assertEquals("A", theStack.get(0));
+        Assert.assertEquals("B", theStack.get(1));
     }
 }

@@ -15,15 +15,16 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class CompareValue extends Value {
+public class ControlFlowProcessingException extends RuntimeException {
 
-    public CompareValue(Value aValue1, Value aValue2) {
-        consume(ConsumptionType.ARGUMENT, aValue1);
-        consume(ConsumptionType.ARGUMENT, aValue2);
+    private final ControlFlowGraph graph;
+
+    public ControlFlowProcessingException(String aMessage, Exception aCause, ControlFlowGraph aFlowGraph) {
+        super(aMessage, aCause);
+        graph = aFlowGraph;
     }
 
-    @Override
-    public TypeRef resolveType() {
-        return TypeRef.Native.INT;
+    public ControlFlowGraph getGraph() {
+        return graph;
     }
 }
