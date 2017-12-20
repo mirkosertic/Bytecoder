@@ -448,83 +448,57 @@ public class JBox2DTest {
             m_centroid.setZero();
         }
 
-        public final void set(final Vec2[] verts, final int num, final Vec2Array vecPool,
+        public final void complexlogic(final Vec2[] verts, final int num, final Vec2Array vecPool,
                               final IntArray intPool) {
 
-            int n = num;
-
-            System.out.println("A1");
-
-            // Copy the vertices into a local buffer
-            Vec2[] ps = verts;
-
-            System.out.println("A2");
-
             int i0 = 1;
-            float x0 = 1.0f;
-
-            System.out.println("A3");
-
-
             int[] hull = new int[Settings.maxPolygonVertices];
 
             int m = 0;
             int ih = i0;
 
+            int counter = 0;
             while (true) {
 
-                System.out.println("A31");
+                counter++;
+                if (counter>5) {
+                    break;
+                }
 
                 hull[m] = ih;
 
-                System.out.println("A32");
-
                 int ie = 0;
-                for (int j = 1; j < n; ++j) {
+                for (int j = 1; j < num; ++j) {
+
                     if (ie == ih) {
                         ie = j;
                         continue;
                     }
 
-                    System.out.println("A33");
-
-                    System.out.println(m);
-                    System.out.println(ps[ie] != null ? "true" : "false");
-
-                    Vec2 r = pool1.set(ps[ie]).subLocal(ps[hull[m]]);
-
-                    System.out.println("A34");
-
-                    Vec2 v = pool2.set(ps[j]).subLocal(ps[hull[m]]);
-
-                    System.out.println("A36");
+                    Vec2 r = pool1.set(verts[ie]).subLocal(verts[hull[m]]);
+                    Vec2 v = pool2.set(verts[j]).subLocal(verts[hull[m]]);
 
                     float c = Vec2.cross(r, v);
                     if (c < 0.0f) {
                         ie = j;
                     }
 
-                    System.out.println(ps[ie] != null ? "true" : "false");
-
-                    // Collinearity check
                     if (c == 0.0f && v.lengthSquared() > r.lengthSquared()) {
                         ie = j;
                     }
-
-                    System.out.println(ps[ie] != null ? "true" : "false");
-
                 }
 
                 ++m;
                 ih = ie;
 
-                System.out.println("Global counter");
+                System.out.println("End of loop");
                 System.out.println(ie);
-
+                System.out.println(i0);
                 if (ie == i0) {
                     break;
                 }
             }
+            System.out.println("Finished");
         }
 
         private void computeCentroidToOut(Vec2[] m_vertices, int m_count, Vec2 m_centroid) {
@@ -537,7 +511,7 @@ public class JBox2DTest {
     @Test
     public void testShape() {
         TestShape theShape = new TestShape();
-        theShape.set(new Vec2[] {new Vec2(-1, -1), new Vec2(1, -1), new Vec2(1, 1), new Vec2(-1, 1)}, 4, null, null);
+        theShape.complexlogic(new Vec2[] {new Vec2(-1, -1), new Vec2(1, -1), new Vec2(1, 1), new Vec2(-1, 1)}, 4, null, null);
     }
 
     @Test
