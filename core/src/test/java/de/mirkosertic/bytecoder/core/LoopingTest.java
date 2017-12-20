@@ -65,23 +65,16 @@ public class LoopingTest {
         System.out.println(theIndex);
     }
 
+    @Test
     public void testComplexer() {
-        int num = 4;
-        int ie = 0;
-        int ih = 0;
+        int a = 0;
+        int b = 10;
+        System.out.println("Starting");
         while(true) {
-            for (int j=0;j<num;j++) {
-                if (ie == ih) {
-                    ie = j;
-                    continue;
-                }
-
-                ie = j;
-            }
-            System.out.println(ie);
-            System.out.println(ih);
-            ie = ih;
-            if (ie == 10) {
+            System.out.println(a);
+            System.out.println(b);
+            a++;
+            if (a==b) {
                 break;
             }
         }

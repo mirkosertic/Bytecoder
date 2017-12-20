@@ -510,6 +510,25 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 }
             }
 
+            // Check that all PHI-propagations for back-edges are set
+            for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+                ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
+                for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : theNode.getSuccessors().entrySet()) {
+                    if (theEdge.getKey().getType() == GraphNode.EdgeType.BACK) {
+                        GraphNode theReceiving = theEdge.getValue();
+                        BlockState theReceivingState = theReceiving.toStartState();
+                        for (Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {
+                            Value theExportingValue = theHelper.requestValue(theEntry.getKey());
+                            if (theExportingValue == null) {
+                                throw new IllegalStateException("No value for " + theEntry.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theReceiving.getStartAddress().getAddress());
+                            }
+                            Variable theReceivingTarget = (Variable) theEntry.getValue();
+                            theReceivingTarget.consume(Value.ConsumptionType.PHIPROPAGATE, theExportingValue);
+                        }
+                    }
+                }
+            }
+
             // Makre sure that all jump conditions are met
             for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 forEachExpressionOf(theNode, aPoint -> {
