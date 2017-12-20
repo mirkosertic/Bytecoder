@@ -237,18 +237,20 @@ public class MemoryManager {
         }
     }
 
-    public static Address newArray(int aSize1) {
-        int theMemory = 4 + 4 * aSize1;
-        Address theResult = malloc(theMemory);
-        Address.setIntValue(theResult, 0, aSize1);
-        return theResult;
+    public static Address newArray(int aSize, int aType, int aVTableIndex) {
+
+        // Arrays are normal objects. Their data are a length field plus n * data
+        Address theObject = newObject(16 + 4 + 4 * aSize, aType, aVTableIndex);
+
+        Address.setIntValue(theObject, 16, aSize);
+        return theObject;
     }
 
-    public static Address newArray(int aSize1, int aSize2) {
-        Address theResult = newArray(aSize1);
+    public static Address newArray(int aSize1, int aSize2, int aType, int aVTableIndex) {
+        Address theResult = newArray(aSize1, aType, aVTableIndex);
         for (int i=0;i<aSize1;i++) {
-            int theOffset = 4 + 4 * i;
-            Address theSubArray = newArray(aSize2);
+            int theOffset = 16 + 4 + 4 * i;
+            Address theSubArray = newArray(aSize2, aType, aVTableIndex);
             Address.setIntValue(theResult, theOffset, Address.getStart(theSubArray));
         }
         return theResult;

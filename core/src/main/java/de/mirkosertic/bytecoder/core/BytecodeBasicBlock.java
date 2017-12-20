@@ -60,10 +60,6 @@ public class BytecodeBasicBlock {
         return instructions;
     }
 
-    public BytecodeInstruction getLastInstruction() {
-        return instructions.get(instructions.size() - 1);
-    }
-
     public boolean endsWithJump() {
         return instructions.get(instructions.size() - 1).isJumpSource();
     }

@@ -15,40 +15,34 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class StackVariableDescription implements VariableDescription {
+import java.util.ArrayList;
+import java.util.List;
 
-    private final int pos;
+public class GraphNodePath {
 
-    public StackVariableDescription(int aPos) {
-        pos = aPos;
+    private final List<GraphNode> nodes;
+
+    protected GraphNodePath(List<GraphNode> aNodes) {
+        nodes = aNodes;
     }
 
-    public int getPos() {
-        return pos;
+    public GraphNodePath() {
+        this(new ArrayList<>());
     }
 
-    @Override
-    public String toString() {
-        return "Stack position " + pos;
+    public GraphNodePath clone() {
+        return new GraphNodePath(new ArrayList<>(nodes));
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean addToPath(GraphNode aNode) {
+        if (!nodes.contains(aNode)) {
+            nodes.add(aNode);
             return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        StackVariableDescription that = (StackVariableDescription) o;
-
-        if (pos != that.pos)
-            return false;
-
-        return true;
+        }
+        return false;
     }
 
-    @Override
-    public int hashCode() {
-        return pos;
+    public boolean contains(GraphNode aNode) {
+        return nodes.contains(aNode);
     }
 }

@@ -78,7 +78,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
             if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
                 Variable theVariable = theInit.getVariable();
-                Value theValue = theVariable.getValue();
+                Value theValue = theInit.getValue();
                 if (theValue instanceof InvokeVirtualMethodValue) {
 
                     InvokeVirtualMethodValue theInvokeVirtualValue = (InvokeVirtualMethodValue) theValue;
@@ -98,7 +98,9 @@ public class InvokeVirtualOptimizer implements Optimizer {
                             BytecodeObjectTypeRef theClazz = theLinked.getClassName();
                             DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName,
                                     theSignature, theTarget, theVariables);
-                            theVariable.setValue(theNewValue);
+
+                            theInvokeVirtualValue.unbind();
+                            theVariable.initializeWith(theNewValue);
 
                             theValue.unbind();
                         }

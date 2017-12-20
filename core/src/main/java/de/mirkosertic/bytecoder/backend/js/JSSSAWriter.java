@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -31,7 +28,6 @@ import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
@@ -74,8 +70,6 @@ import de.mirkosertic.bytecoder.ssa.NewArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
 import de.mirkosertic.bytecoder.ssa.NewObjectValue;
 import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -98,21 +92,24 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
-import de.mirkosertic.bytecoder.ssa.ValueReferenceValue;
+
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
-    public JSSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
-        super(aProgram, aIndent, aWriter, aLinkerContext);
+    public JSSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+        super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(program, indent + "    ", writer, linkerContext);
+        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext);
     }
 
     public void print(Value aValue) {
         if (aValue instanceof Variable) {
-            printVariableNameOrValue((Variable) aValue);
+            printVariableName((Variable) aValue);
         } else if (aValue instanceof GetStaticValue) {
             print((GetStaticValue) aValue);
         } else if (aValue instanceof NullValue) {
@@ -123,8 +120,6 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((InvokeStaticMethodValue) aValue);
         } else if (aValue instanceof NewObjectValue) {
             print((NewObjectValue) aValue);
-        } else if (aValue instanceof ValueReferenceValue) {
-            print((ValueReferenceValue) aValue);
         } else if (aValue instanceof ByteValue) {
             print((ByteValue) aValue);
         } else if (aValue instanceof BinaryValue) {
@@ -201,8 +196,8 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(TypeOfValue aValue) {
-        printVariableNameOrValue((Variable) aValue.resolveFirstArgument());
-        print(".runtimeClass");
+        printVariableName(aValue.resolveFirstArgument());
+        print(".clazz.runtimeClass");
     }
 
     public void print(StackTopValue aValue) {
@@ -254,11 +249,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void print(ComputedMemoryLocationWriteValue aValue) {
-        print("bytecoderGlobalMemory[");
         print((Value) aValue.resolveFirstArgument());
         print(" + ");
         print((Value) aValue.resolveSecondArgument());
-        print("]");
     }
 
     public void print(ComputedMemoryLocationReadValue aValue) {
@@ -527,11 +520,6 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aValue.getByteValue());
     }
 
-    public void print(ValueReferenceValue aValue) {
-        Value theValue = aValue.resolveFirstArgument();
-        print(theValue);
-    }
-
     public void print(NewObjectValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
         print(".emptyInstance()");
@@ -612,12 +600,8 @@ public class JSSSAWriter extends IndentSSAWriter {
         printStaticFieldReference(aValue.getField());
     }
 
-    public void printVariableNameOrValue(Variable aVariable) {
-        if (aVariable.getValue() instanceof PrimitiveValue) {
-            print(aVariable.getValue());
-        } else {
-            print(aVariable.getName());
-        }
+    public void printVariableName(Variable aVariable) {
+        print(aVariable.getName());
     }
 
     public void printStaticFieldReference(BytecodeFieldRefConstant aField) {
@@ -635,18 +619,6 @@ public class JSSSAWriter extends IndentSSAWriter {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
-    private Value resolveRealValue(Value aValue) {
-        if (aValue instanceof ValueReferenceValue) {
-            ValueReferenceValue theRef = (ValueReferenceValue) aValue;
-            return resolveRealValue(theRef.resolveFirstArgument());
-        }
-        return aValue;
-    }
-
-    private Value resolveRealValue(Variable aVariable) {
-        return resolveRealValue(aVariable.getValue());
-    }
-
     public void writeExpressions(ExpressionList aExpressions) {
         for (Expression theExpression : aExpressions.toList()) {
             if (theExpression instanceof ReturnExpression) {
@@ -654,34 +626,28 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print("return");
                 println(";");
             } else if (theExpression instanceof CommentExpression) {
-                CommentExpression theE = (CommentExpression) theExpression;
-                print("// ");
-                println(theE.getValue());
+                if (options.isDebugOutput()) {
+                    CommentExpression theE = (CommentExpression) theExpression;
+                    print("// ");
+                    println(theE.getValue());
+                }
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();
-                if (theVariable.getValue() instanceof PHIFunction) {
-                    print("// ");
-                    printVariableNameOrValue(theVariable);
-                    println(" is PHI function and initialized from predecessor block in flow graph");
-                } else {
-                    if (theVariable.getValue() instanceof ComputedMemoryLocationWriteValue) {
-                        continue;
-                    }
-                    if (theVariable.getValue() instanceof PrimitiveValue) {
-                        continue;
-                    }
+                Value theValue = theE.getValue();
 
-                    if (!program.isGlobalVariable(theVariable)) {
-                        print("var ");
-                    }
-
-                    print(theVariable.getName());
-                    print(" = ");
-                    print(theVariable.getValue());
-                    print("; // type is ");
-                    println(theVariable.resolveType().resolve().name() + " value type is " + theVariable.getValue().resolveType());
+                if (theValue instanceof ComputedMemoryLocationWriteValue) {
+                    continue;
                 }
+                if (!program.isGlobalVariable(theVariable)) {
+                    print("var ");
+                }
+
+                print(theVariable.getName());
+                print(" = ");
+                print(theValue);
+                print("; // type is ");
+                println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());
             } else if (theExpression instanceof PutStaticExpression) {
                 PutStaticExpression theE = (PutStaticExpression) theExpression;
                 BytecodeFieldRefConstant theField = theE.getField();
@@ -736,15 +702,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
             } else if (theExpression instanceof GotoExpression) {
                 GotoExpression theE = (GotoExpression) theExpression;
-                BlockState theFinalState = theE.getSourceBlock().toFinalState();
-
-/*                for (Map.Entry<VariableDescription, Variable> theEntry : theFinalState.getPorts().entrySet()) {
-                    print(" // ");
-                    printVariableNameOrValue(theEntry.getAddress());
-                    print(" exported as ");
-                    println(theEntry.getKey().toString());
-                }*/
-
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
@@ -814,13 +771,13 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof SetMemoryLocationExpression) {
                 SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
-                if (theE.getAddress() instanceof Variable) {
-                    print(((Variable) theE.getAddress()).getValue());
-                } else {
-                    print(theE.getAddress());
-                }
+                print("bytecoderGlobalMemory[");
 
-                print(" = ");
+                ComputedMemoryLocationWriteValue theValue = (ComputedMemoryLocationWriteValue) theE.getAddress().consumedValues(Value.ConsumptionType.INITIALIZATION).get(0);
+
+                print(theValue);
+
+                print("] = ");
 
                 print(theE.getValue());
                 println(";");
@@ -828,11 +785,26 @@ public class JSSSAWriter extends IndentSSAWriter {
                 InlinedNodeExpression theInlined = (InlinedNodeExpression) theExpression;
                 GraphNode theInlinedNode = theInlined.getNode();
                 printlnComment("Inlined node " + theInlinedNode.getStartAddress().getAddress());
+
+                printNodeDebug(theInlinedNode);
+
                 writeExpressions(theInlinedNode.getExpressions());
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
+            }
+        }
+    }
+
+    public void printNodeDebug(GraphNode aNode) {
+        if (options.isDebugOutput()) {
+            for (GraphNode thePrececessor : aNode.getPredecessors()) {
+                printlnComment(
+                        "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
+            }
+            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
+                printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
             }
         }
     }
@@ -855,6 +827,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         println(
                 "var currentLabel = " + theNodes.get(0).getNode().getStartAddress().getAddress()
                         + ";");
+
         println("controlflowloop: while(true) {switch(currentLabel) {");
 
         for (ControlFlowGraph.SimpleNode theBlock : theNodes) {
@@ -865,32 +838,20 @@ public class JSSSAWriter extends IndentSSAWriter {
 
             JSSSAWriter theJSWriter = withDeeperIndent().withDeeperIndent();
 
-            for (Map.Entry<VariableDescription, Value> theImported : theGraphNode.toStartState().getPorts()
-                    .entrySet()) {
-                theJSWriter.print("// ");
-                theJSWriter.print(theImported.getValue());
-                theJSWriter.print(" is imported as ");
-                theJSWriter
-                        .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
+            if (options.isDebugOutput()) {
+                for (Map.Entry<VariableDescription, Value> theImported : theGraphNode.toStartState().getPorts()
+                        .entrySet()) {
+                    theJSWriter.print("// ");
+                    theJSWriter.print(theImported.getValue());
+                    theJSWriter.print(" is imported as ");
+                    theJSWriter
+                            .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
+                }
             }
 
-            for (GraphNode thePrececessor : theGraphNode.getPredecessors()) {
-                theJSWriter.printlnComment(
-                        "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
-            }
-            for (GraphNode theSuccessor : theGraphNode.getSuccessors()) {
-                theJSWriter
-                        .printlnComment("Successor of this block is " + theSuccessor.getStartAddress().getAddress());
-            }
+            theJSWriter.printNodeDebug(theGraphNode);
 
             theJSWriter.printGraphNode(theGraphNode);
-
-    /*                    for (Map.Entry<VariableDescription, Variable> theExported : theBlock.toFinalState().getPorts().entrySet()) {
-                            theJSWriter.print("// ");
-                            theJSWriter.printVariableNameOrValue(theExported.getAddress());
-                            theJSWriter.print(" is exported as ");
-                            theJSWriter.println(theExported.getKey().toString());
-                        }*/
 
             println("    }");
         }

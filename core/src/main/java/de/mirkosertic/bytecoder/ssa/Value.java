@@ -23,7 +23,7 @@ import java.util.Set;
 public abstract class Value {
 
     public static enum ConsumptionType {
-        ARGUMENT, INVOCATIONTARGET
+        ARGUMENT, INVOCATIONTARGET, INITIALIZATION, PHIPROPAGATE
     }
 
     public static class Consumption {

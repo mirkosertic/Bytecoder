@@ -27,13 +27,15 @@ public class IndentSSAWriter {
     protected final String indent;
     protected final PrintWriter writer;
     private boolean newLine;
+    protected final CompileOptions options;
 
-    public IndentSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+    public IndentSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         writer = aWriter;
         indent = aIndent;
         program = aProgram;
         linkerContext = aLinkerContext;
         newLine = true;
+        options = aOptions;
     }
 
     private void checkNewLine(){

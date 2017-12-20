@@ -43,8 +43,41 @@ public class LoopingTest {
     @Test
     public void testSimpleSum() {
         int theSum = 0;
-        for (int i=0;i<10;i++) {
+        int theCount = 20;
+        for (int i=0;i<theCount;i++) {
             theSum+=i;
         }
+        int z = theSum * 2;
+    }
+
+    @Test
+    public void testConplexFlow() {
+        int theIndex = 0;
+        while (true) {
+
+            System.out.println(theIndex);
+
+            theIndex++;
+            if (theIndex > 10) {
+                break;
+            }
+        }
+        System.out.println(theIndex);
+    }
+
+    @Test
+    public void testComplexer() {
+        int a = 0;
+        int b = 10;
+        System.out.println("Starting");
+        while(true) {
+            System.out.println(a);
+            System.out.println(b);
+            a++;
+            if (a==b) {
+                break;
+            }
+        }
+        System.out.println("Finished");
     }
 }

@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -45,12 +46,9 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.PrimitiveValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -73,7 +71,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
     }
 
     @Override
-    public WASMCompileResult generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
+    public WASMCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         // Link required mamory management code
         BytecodeLinkedClass theManagerClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
@@ -87,9 +85,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theManagerClass.linkStaticMethod("newObject", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theManagerClass.linkStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theStringClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TString.class));
         theStringClass.linkConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
@@ -137,12 +135,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.print(theImportAnnotation.getElementValueByName("name").stringValue());
                     theWriter.print("\") ");
 
-                    if (!t.getAccessFlags().isStatic()) {
-                        theWriter.print("(param $thisRef");
-                        theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                        theWriter.print(") ");
-                    }
+                    theWriter.print("(param $thisRef");
+                    theWriter.print(" ");
+                    theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                    theWriter.print(") ");
 
                     for (int i = 0; i < theSignature.getArguments().length; i++) {
                         BytecodeTypeRef theParamType = theSignature.getArguments()[i];
@@ -270,7 +266,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             });
         });
 
-        theWriter.println("   (memory (export \"memory\") 1024 1024)");
+        theWriter.println("   (memory (export \"memory\") 8192 8192)");
 
         // Write virtual method table
         if (!theGeneratedFunctions.isEmpty()) {
@@ -354,14 +350,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
-                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+                WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
 
-                    if (!(theVariable.getValue() instanceof PrimitiveValue) &&
-                            !(theVariable.getValue() instanceof MethodParameterValue) &&
-                            !(theVariable.getValue() instanceof SelfReferenceParameterValue) &&
-                            !theSSAWriter.isStackVariable(theVariable)) {
+                    if (!(theVariable.isSynthetic()) &&
+                        !theSSAWriter.isStackVariable(theVariable)) {
 
                         theSSAWriter.print("(local $");
                         theSSAWriter.print(theVariable.getName());
@@ -518,14 +512,12 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             Program theSSAProgram = theEntry.getValue().program;
 
-            WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+            WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
             for (Variable theVariable : theSSAProgram.getVariables()) {
 
-                if (!(theVariable.getValue() instanceof PrimitiveValue) &&
-                        !(theVariable.getValue() instanceof MethodParameterValue) &&
-                        !(theVariable.getValue() instanceof SelfReferenceParameterValue) &&
-                        !theSSAWriter.isStackVariable(theVariable)) {
+                if (!(theVariable.isSynthetic()) &&
+                    !(theSSAWriter.isStackVariable(theVariable))) {
 
                     theSSAWriter.print("(local $");
                     theSSAWriter.print(theVariable.getName());
@@ -633,7 +625,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println();
 
         theWriter.println("   (func $TClass_A1TObjectgetEnumConstants (param $thisRef i32) (result i32)");
-        theWriter.println("     (return (i32.load offset=12 (get_local $thisRef)))");
+        theWriter.println("     (return (i32.load (i32.load offset=12 (get_local $thisRef))))");
         theWriter.println("   )");
         theWriter.println();
 

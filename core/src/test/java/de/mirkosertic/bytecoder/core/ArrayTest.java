@@ -114,4 +114,12 @@ public class ArrayTest {
         Assert.assertEquals(2, theStrings[0].length(), 0);
         Assert.assertEquals(3, theStrings[2].length(), 0);
     }
+
+    @Test
+    public void testTypeAndLength() {
+        Object[] theOArray = new Object[12];
+        Assert.assertEquals(12, theOArray.length, 0);
+        Object[] theOther = theOArray.clone();
+        Assert.assertEquals(12, theOther.length, 0);
+    }
 }

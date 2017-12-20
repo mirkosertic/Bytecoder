@@ -15,8 +15,9 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.core.Logger;
 import org.slf4j.LoggerFactory;
+
+import de.mirkosertic.bytecoder.core.Logger;
 
 public class Slf4JLogger implements Logger {
 

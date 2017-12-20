@@ -31,7 +31,10 @@ into WebAssembly binary code using the WABT toolchain.
 
 ## Memory management
 
-*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
+*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.
+
+The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
+Details about WebAssembly are documented [here](WASM.md) 
 
 The JavaScript backend relies on JavaScript garbage collection provided by the browser.
 

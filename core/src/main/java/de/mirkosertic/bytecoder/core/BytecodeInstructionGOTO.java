@@ -17,15 +17,15 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionGOTO extends BytecodeInstruction {
 
-    private final int jumpAddress;
+    private final int jumpOffset;
 
-    public BytecodeInstructionGOTO(BytecodeOpcodeAddress aOpcodeIndex, int aJumpAddress) {
+    public BytecodeInstructionGOTO(BytecodeOpcodeAddress aOpcodeIndex, int aJumpOffset) {
         super(aOpcodeIndex);
-        jumpAddress = aJumpAddress;
+        jumpOffset = aJumpOffset;
     }
 
     public BytecodeOpcodeAddress getJumpAddress() {
-        return getOpcodeAddress().add(jumpAddress);
+        return getOpcodeAddress().add(jumpOffset);
     }
 
     @Override

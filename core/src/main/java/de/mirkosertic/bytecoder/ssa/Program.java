@@ -71,9 +71,9 @@ public class Program {
         return theVariables;
     }
 
-    public Variable createVariable(TypeRef aType, Value aValue) {
+    public Variable createVariable(TypeRef aType) {
         int theIndex = varCounter++;
-        Variable theNewVariable = new Variable(aType, "var" + theIndex, aValue);
+        Variable theNewVariable = new Variable(aType, "var" + theIndex);
         variables.put(theIndex, theNewVariable);
         return theNewVariable;
     }
@@ -91,31 +91,32 @@ public class Program {
         }
 
         for (Variable theVariable : variables.values()) {
-            Value theValue = theVariable.getValue();
-            if (theValue instanceof GetStaticValue) {
-                GetStaticValue theStaticValue = (GetStaticValue) theValue;
-                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
-            }
-            if (theValue instanceof ClassReferenceValue) {
-                ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;
-                theResult.add(theClassRef.getType());
-            }
-            if (theValue instanceof NewArrayValue) {
-                NewArrayValue theNewArray = (NewArrayValue) theValue;
-                if (theNewArray.getType() instanceof BytecodeObjectTypeRef) {
-                    theResult.add((BytecodeObjectTypeRef) theNewArray.getType());
+            for (Value theValue : theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION)) {
+                if (theValue instanceof GetStaticValue) {
+                    GetStaticValue theStaticValue = (GetStaticValue) theValue;
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
                 }
-            }
-            if (theValue instanceof NewMultiArrayValue) {
-                NewMultiArrayValue theNewArray = (NewMultiArrayValue) theValue;
-                BytecodeTypeRef theTypeRef = theNewArray.getType();
-                if (theTypeRef instanceof BytecodeObjectTypeRef) {
-                    theResult.add((BytecodeObjectTypeRef) theTypeRef);
+                if (theValue instanceof ClassReferenceValue) {
+                    ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;
+                    theResult.add(theClassRef.getType());
                 }
-            }
-            if (theValue instanceof NewObjectValue) {
-                NewObjectValue theNewObjectValue = (NewObjectValue) theValue;
-                theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
+                if (theValue instanceof NewArrayValue) {
+                    NewArrayValue theNewArray = (NewArrayValue) theValue;
+                    if (theNewArray.getType() instanceof BytecodeObjectTypeRef) {
+                        theResult.add((BytecodeObjectTypeRef) theNewArray.getType());
+                    }
+                }
+                if (theValue instanceof NewMultiArrayValue) {
+                    NewMultiArrayValue theNewArray = (NewMultiArrayValue) theValue;
+                    BytecodeTypeRef theTypeRef = theNewArray.getType();
+                    if (theTypeRef instanceof BytecodeObjectTypeRef) {
+                        theResult.add((BytecodeObjectTypeRef) theTypeRef);
+                    }
+                }
+                if (theValue instanceof NewObjectValue) {
+                    NewObjectValue theNewObjectValue = (NewObjectValue) theValue;
+                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
+                }
             }
         }
         return theResult;
