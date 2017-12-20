@@ -41,7 +41,12 @@ public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
         return programm;
     }
 
-    public BytecodeAttributeInfo[] getAttributes() {
-        return attributes;
+    public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
+        for (BytecodeAttributeInfo theInfo : attributes) {
+            if (theInfo.getClass().equals(aAttributeClass)) {
+                return (T) theInfo;
+            }
+        }
+        return null;
     }
 }

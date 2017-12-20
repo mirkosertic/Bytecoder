@@ -53,7 +53,7 @@ public class BytecodeMethod {
         return attributeByType(BytecodeCodeAttributeInfo.class);
     }
 
-    private <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
+    public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
         for (BytecodeAttributeInfo theInfo : attributes) {
             if (theInfo.getClass().equals(aAttributeClass)) {
                 return (T) theInfo;

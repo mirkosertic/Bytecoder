@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.annotations.IsObject;
+
 import java.io.DataInput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import de.mirkosertic.bytecoder.annotations.IsObject;
 
 // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7
 public class Bytecode5xClassParser implements BytecodeClassParser {
@@ -308,6 +308,24 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return new BytecodeBootstrapMethodsAttributeInfo(theMethods.toArray(new BytecodeBootstrapMethod[theMethods.size()]));
     }
 
+    private BytecodeLocalVariableTableAttributeInfo parseLocalVariableTableAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+        int theNumTableEntries = aDis.readUnsignedShort();
+        List<BytecodeLocalVariableTableEntry> theEntries = new ArrayList<>();
+        for (int i=0;i<theNumTableEntries;i++) {
+            int theStartPC = aDis.readUnsignedShort();
+            int theLength = aDis.readUnsignedShort();
+            int theNameIndex = aDis.readUnsignedShort();
+            int theDescriptorIndex = aDis.readUnsignedShort();
+            int theIndex = aDis.readUnsignedShort();
+
+            BytecodeTypeRef theTypeRef = signatureParser.toFieldType(((BytecodeUtf8Constant) aConstantPool.constantByIndex(theDescriptorIndex - 1)));
+
+            theEntries.add(new BytecodeLocalVariableTableEntry(theStartPC, theLength, theNameIndex, theTypeRef, theIndex));
+        }
+
+        return new BytecodeLocalVariableTableAttributeInfo(aConstantPool, theEntries.toArray(new BytecodeLocalVariableTableEntry[theEntries.size()]));
+    }
+
     private BytecodeAnnotationAttributeInfo parseAnnotationAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theAnnotationCount = aDis.readUnsignedShort();
         List<BytecodeAnnotation> theAnnotations = new ArrayList<>();
@@ -387,6 +405,9 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                     break;
                 case "BootstrapMethods":
                     theAttributes.add(parseBootstrapAttribute(aDis, aConstantPool));
+                    break;
+                case "LocalVariableTable":
+                    theAttributes.add(parseLocalVariableTableAttribute(aDis, aConstantPool));
                     break;
                 default:
                     byte[] theAttributeData = new byte[theAttributeLength];
