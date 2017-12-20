@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -98,12 +99,12 @@ import java.util.Map;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
-    public JSSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
-        super(aProgram, aIndent, aWriter, aLinkerContext);
+    public JSSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+        super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(program, indent + "    ", writer, linkerContext);
+        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext);
     }
 
     public void print(Value aValue) {
@@ -625,9 +626,11 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print("return");
                 println(";");
             } else if (theExpression instanceof CommentExpression) {
-                CommentExpression theE = (CommentExpression) theExpression;
-                print("// ");
-                println(theE.getValue());
+                if (options.isDebugOutput()) {
+                    CommentExpression theE = (CommentExpression) theExpression;
+                    print("// ");
+                    println(theE.getValue());
+                }
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();
@@ -795,12 +798,14 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void printNodeDebug(GraphNode aNode) {
-        for (GraphNode thePrececessor : aNode.getPredecessors()) {
-            printlnComment(
-                    "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
-        }
-        for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
-            printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
+        if (options.isDebugOutput()) {
+            for (GraphNode thePrececessor : aNode.getPredecessors()) {
+                printlnComment(
+                        "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
+            }
+            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
+                printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
+            }
         }
     }
 
@@ -822,10 +827,8 @@ public class JSSSAWriter extends IndentSSAWriter {
         println(
                 "var currentLabel = " + theNodes.get(0).getNode().getStartAddress().getAddress()
                         + ";");
-        println(
-                "var insCounter = 0;");
 
-        println("controlflowloop: while(true) {insCounter++; if (insCounter > 100000) {throw 'Possible endless loop detected'}; switch(currentLabel) {");
+        println("controlflowloop: while(true) {switch(currentLabel) {");
 
         for (ControlFlowGraph.SimpleNode theBlock : theNodes) {
 
@@ -835,17 +838,18 @@ public class JSSSAWriter extends IndentSSAWriter {
 
             JSSSAWriter theJSWriter = withDeeperIndent().withDeeperIndent();
 
-            for (Map.Entry<VariableDescription, Value> theImported : theGraphNode.toStartState().getPorts()
-                    .entrySet()) {
-                theJSWriter.print("// ");
-                theJSWriter.print(theImported.getValue());
-                theJSWriter.print(" is imported as ");
-                theJSWriter
-                        .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
+            if (options.isDebugOutput()) {
+                for (Map.Entry<VariableDescription, Value> theImported : theGraphNode.toStartState().getPorts()
+                        .entrySet()) {
+                    theJSWriter.print("// ");
+                    theJSWriter.print(theImported.getValue());
+                    theJSWriter.print(" is imported as ");
+                    theJSWriter
+                            .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
+                }
             }
 
             theJSWriter.printNodeDebug(theGraphNode);
-
 
             theJSWriter.printGraphNode(theGraphNode);
 

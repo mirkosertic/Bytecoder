@@ -15,13 +15,23 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.Logger;
 
-public interface CompileBackend<T extends CompileResult> {
+public class CompileOptions {
 
-    T generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue);
+    private final Logger logger;
+    private final boolean debugOutput;
 
-    String generatedFileName();
+    public CompileOptions(Logger aLogger, boolean aDebugOutput) {
+        logger = aLogger;
+        debugOutput = aDebugOutput;
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public boolean isDebugOutput() {
+        return debugOutput;
+    }
 }

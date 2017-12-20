@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -118,8 +119,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private final List<Variable> stackVariables;
     private final IDResolver idResolver;
 
-    public WASMSSAWriter(Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver) {
-        super(aProgram, aIndent, aWriter, aLinkerContext);
+    public WASMSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver) {
+        super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         stackVariables = new ArrayList<>();
         idResolver = aIDResolver;
         for (Variable theVariable : aProgram.getVariables()) {
@@ -154,7 +155,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     public WASMSSAWriter withDeeperIndent() {
-        return new WASMSSAWriter(program, indent + "    ", writer, linkerContext, idResolver);
+        return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver);
     }
 
     public void writeStartNode(ControlFlowGraph.Node aNode, int aMethodId) {
@@ -1559,8 +1560,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeCommentExpression(CommentExpression aExpression) {
-        print(";; ");
-        println(aExpression.getValue());
+        if (options.isDebugOutput()) {
+            print(";; ");
+            println(aExpression.getValue());
+        }
     }
 
     private void writeReturnExpression(ReturnExpression aExpression) {

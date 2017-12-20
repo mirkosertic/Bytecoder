@@ -760,7 +760,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
                 BytecodeInstructionGenericSTORE theINS = (BytecodeInstructionGenericSTORE) theInstruction;
                 Value theValue = aHelper.pop();
-                aHelper.setLocalVariable(theINS.getVariableIndex(), theValue);
+                Variable theOtherVariable = aTargetBlock.newVariable(theValue.resolveType().resolve(), theValue);
+                aHelper.setLocalVariable(theINS.getVariableIndex(), theOtherVariable);
             } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
                 BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                 Value theIndex = aHelper.pop();

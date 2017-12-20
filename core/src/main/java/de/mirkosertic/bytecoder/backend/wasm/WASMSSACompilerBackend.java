@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -70,7 +71,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
     }
 
     @Override
-    public WASMCompileResult generateCodeFor(Logger aLogger, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
+    public WASMCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         // Link required mamory management code
         BytecodeLinkedClass theManagerClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
@@ -265,7 +266,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             });
         });
 
-        theWriter.println("   (memory (export \"memory\") 1024 1024)");
+        theWriter.println("   (memory (export \"memory\") 8192 8192)");
 
         // Write virtual method table
         if (!theGeneratedFunctions.isEmpty()) {
@@ -349,7 +350,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
-                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+                WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
 
@@ -511,7 +512,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             Program theSSAProgram = theEntry.getValue().program;
 
-            WASMSSAWriter theSSAWriter = new WASMSSAWriter(theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+            WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
 
             for (Variable theVariable : theSSAProgram.getVariables()) {
 

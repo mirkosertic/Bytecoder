@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
@@ -184,7 +185,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             StringWriter theStrWriter = new StringWriter();
             PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-            theCodeWriter.println(theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature).getData());
+            CompileOptions theOptions = new CompileOptions(LOGGER, true);
+            theCodeWriter.println(theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature).getData());
 
             String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
@@ -262,7 +264,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(LOGGER, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            CompileOptions theOptions = new CompileOptions(LOGGER, true);
+            WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
             String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";
 
@@ -349,6 +352,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
             theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
+            theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("                         },");
             theWriter.println("                         profiler: {");
             theWriter.println("                             trace: function(sp, methodId) {");
@@ -496,7 +500,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } else {
             testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            //testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }
 }
