@@ -51,7 +51,6 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -781,9 +780,8 @@ public class JSSSAWriter extends IndentSSAWriter {
 
                 print(theE.getValue());
                 println(";");
-            } else if (theExpression instanceof InlinedNodeExpression) {
-                InlinedNodeExpression theInlined = (InlinedNodeExpression) theExpression;
-                GraphNode theInlinedNode = theInlined.getNode();
+            } else if (theExpression instanceof GraphNode) {
+                GraphNode theInlinedNode = (GraphNode) theExpression;
                 printlnComment("Inlined node " + theInlinedNode.getStartAddress().getAddress());
 
                 printNodeDebug(theInlinedNode);

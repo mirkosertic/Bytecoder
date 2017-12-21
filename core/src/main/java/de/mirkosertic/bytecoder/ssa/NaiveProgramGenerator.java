@@ -580,9 +580,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 ExpressionList theCurrentList = theNode.getExpressions();
                 Expression theLast = theCurrentList.lastExpression();
-                while (theLast instanceof InlinedNodeExpression) {
-                    InlinedNodeExpression theInlined = (InlinedNodeExpression) theLast;
-                    theCurrentList = theInlined.getNode().getExpressions();
+                while (theLast instanceof GraphNode) {
+                    GraphNode theInlined = (GraphNode) theLast;
+                    theCurrentList = theInlined.getExpressions();
                     theLast = theCurrentList.lastExpression();
                 }
                 if (theLast instanceof GotoExpression) {
@@ -738,8 +738,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
                 if (theTargetNode.isStrictlyDominatedBy(aNode)) {
                     // Node can be inlined
-                    InlinedNodeExpression theInlined = new InlinedNodeExpression(theTargetNode);
-                    aList.replace(theGOTO, theInlined);
+                    aList.replace(theGOTO, theTargetNode);
                     aGraph.removeDominatedNode(theTargetNode);
                 }
             }

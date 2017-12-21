@@ -60,7 +60,6 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InlinedNodeExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -251,8 +250,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeGotoExpression((GotoExpression) aExpression);
             return;
         }
-        if (aExpression instanceof InlinedNodeExpression) {
-            writeInlineExpression((InlinedNodeExpression) aExpression);
+        if (aExpression instanceof GraphNode) {
+            writeInline((GraphNode) aExpression);
             return;
         }
         if (aExpression instanceof ReturnValueExpression) {
@@ -520,8 +519,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(")");
     }
 
-    private void writeInlineExpression(InlinedNodeExpression aExpression) {
-        writeExpressionList(aExpression.getNode().getExpressions());
+    private void writeInline(GraphNode aNode) {
+        writeExpressionList(aNode.getExpressions());
     }
 
     private void writeGotoExpression(GotoExpression aExpression) {
