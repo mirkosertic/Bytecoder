@@ -24,7 +24,7 @@ import java.util.Set;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class GraphNode {
+public class GraphNode extends Expression {
 
     public enum BlockType {
         NORMAL,
@@ -212,9 +212,9 @@ public class GraphNode {
                     }
                 }
             }
-            if (theExpression instanceof InlinedNodeExpression) {
-                InlinedNodeExpression theInline = (InlinedNodeExpression) theExpression;
-                if (theInline.getNode().containsGoto()) {
+            if (theExpression instanceof GraphNode) {
+                GraphNode theInline = (GraphNode) theExpression;
+                if (theInline.containsGoto()) {
                     return true;
                 }
             }
