@@ -1575,7 +1575,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         printStackExit();
         print("(return ");
         writeValue(aExpression.getValue());
-        writeValue(aExpression.getValue());
         println(")");
     }
 
