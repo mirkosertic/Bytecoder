@@ -15,42 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.annotations.Export;
-
 public class HelloWorld {
 
-    public interface Test {
-
-        int getValue();
-    }
-
-    public static class Test1 implements Test {
-        @Override
-        public int getValue() {
-            return 10;
-        }
-    }
-
-    public static class Test2 implements Test {
-        @Override
-        public int getValue() {
-            return 20;
-        }
-    }
-
-    @Export("compute")
-    public static int compute(int a, int b) {
+    public int compute(int a, int b) {
         return a + b;
     }
 
     public static void main(String[] args) {
-        int x = 10;
-        int y = 20;
-        if (y >10) {
-            x = 99;
-        } else {
-            x = 88;
-        }
-        x = x + 1;
+        HelloWorld hello = new HelloWorld();
+        hello.compute(10, 20);
     }
 }
