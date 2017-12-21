@@ -103,6 +103,9 @@ public class InvokeVirtualOptimizer implements Optimizer {
                             theVariable.initializeWith(theNewValue);
 
                             theValue.unbind();
+
+                            InitVariableExpression theNewInit = new InitVariableExpression(theVariable, theNewValue);
+                            aExpressions.replace(theInit, theNewInit);
                         }
                     }
                 }
