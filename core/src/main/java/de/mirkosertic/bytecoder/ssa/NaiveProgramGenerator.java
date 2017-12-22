@@ -152,14 +152,12 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         private final Stack<Value> stack;
         private final Map<Integer, Value> localVariables;
         private final ValueProvider valueProvider;
-        private int importedStackPos;
 
         private ParsingHelper(GraphNode aBlock, ValueProvider aValueProvider) {
             stack = new Stack();
             block = aBlock;
             localVariables = new HashMap<>();
             valueProvider = aValueProvider;
-            importedStackPos = 0;
         }
 
         public int numberOfLocalVariables() {
@@ -377,11 +375,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 if (theHelper == null) {
                     throw new IllegalStateException("No helper for " + thePredecessor.getStartAddress().getAddress());
                 }
-                try {
-                    theValues.add(theHelper.requestValue(aDescription));
-                } catch (RuntimeException e) {
-                    throw e;
-                }
+                theValues.add(theHelper.requestValue(aDescription));
             }
             if (theValues.isEmpty()) {
                 throw new IllegalStateException("No values for " + aDescription + " in block " + aImportingBlock.getStartAddress().getAddress());
@@ -686,11 +680,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             throw new ControlFlowProcessingException("Error processing CFG for " + aOwningClass.getThisInfo().getConstant().stringValue() + "." + aMethod.getName().stringValue(), e, theProgram.getControlFlowGraph());
         }
 
-        // Perform node inlining
-        for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
-            performNodeInlining(theProgram.getControlFlowGraph(), theNode, theNode.getExpressions());
-        }
 
+        // The final
         AllOptimizer theOptimizer = new AllOptimizer();
         theOptimizer.optimize(theProgram.getControlFlowGraph(), linkerContext);
 
@@ -721,27 +712,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             }
 
             aConsumer.accept(new TraversalPoint(aList, theExpression));
-        }
-    }
-
-    private void performNodeInlining(ControlFlowGraph aGraph, GraphNode aNode, ExpressionList aList) {
-        for (Expression theExpression : aList.toList()) {
-            if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    performNodeInlining(aGraph, aNode, theList);
-                }
-            }
-            if (theExpression instanceof GotoExpression) {
-                GotoExpression theGOTO = (GotoExpression) theExpression;
-                GraphNode theTargetNode = aGraph.nodeStartingAt(theGOTO.getJumpTarget());
-
-                if (theTargetNode.isStrictlyDominatedBy(aNode)) {
-                    // Node can be inlined
-                    aList.replace(theGOTO, theTargetNode);
-                    aGraph.removeDominatedNode(theTargetNode);
-                }
-            }
         }
     }
 

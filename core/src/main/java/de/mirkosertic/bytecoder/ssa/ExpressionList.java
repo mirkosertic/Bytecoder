@@ -71,4 +71,8 @@ public class ExpressionList {
     public void remove(Expression aExpression) {
         expressions.remove(aExpression);
     }
+
+    public void addAll(ExpressionList aExpressionList) {
+        expressions.addAll(aExpressionList.expressions);
+    }
 }

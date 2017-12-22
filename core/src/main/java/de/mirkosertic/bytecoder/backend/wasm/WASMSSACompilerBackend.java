@@ -43,7 +43,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -99,7 +98,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("(module");
 
         theWriter.println("   (func $float_remainder (import \"math\" \"float_rem\") (param $p1 f32) (param $p2 f32) (result f32))\n");
-        theWriter.println("   (func $trace (import \"profiler\" \"trace\") (param $SP i32) (param $METHODID i32))\n");
 
         // Print imported functions first
         aLinkerContext.forEachClass(aEntry -> {
@@ -808,7 +806,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         }
 
         theWriter.println("   (global $STACKTOP (mut i32) (i32.const 0))");
-        theWriter.println("   (global $STACKNEST (mut i32) (i32.const 0))");
 
         // Globals for static class data
         aLinkerContext.forEachClass(aEntry -> {

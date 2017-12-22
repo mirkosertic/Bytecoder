@@ -24,73 +24,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
-import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefValue;
-import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
-import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StackTopValue;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.TypeOfValue;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.UnknownValue;
-import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableDescription;
+import de.mirkosertic.bytecoder.ssa.*;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -789,6 +723,24 @@ public class JSSSAWriter extends IndentSSAWriter {
                 writeExpressions(theInlinedNode.getExpressions());
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
+            } else if (theExpression instanceof ExtendedIFExpression) {
+                ExtendedIFExpression theIF = (ExtendedIFExpression) theExpression;
+                print("if (");
+                print(theIF.getBooleanValue());
+                println(") {");
+
+                JSSSAWriter theDeeper1 = withDeeperIndent();
+                theDeeper1.writeExpressions(theIF.getTrueBranch());
+                theDeeper1.println();
+
+                println("} else {");
+
+                JSSSAWriter theDeeper2 = withDeeperIndent();
+                theDeeper2.writeExpressions(theIF.getFalseBranch());
+                theDeeper2.println();
+
+                println("}");
+
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }

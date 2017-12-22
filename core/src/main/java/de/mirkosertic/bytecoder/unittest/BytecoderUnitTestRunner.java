@@ -355,11 +355,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("                         },");
             theWriter.println("                         profiler: {");
-            theWriter.println("                             trace: function(sp, methodId) {");
-            theWriter.println("                                 //console.log(\"Entering method id \" + methodId);");
-            theWriter.println("                                 //console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
-            theWriter.println("                                 //console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
-            theWriter.println("                             },");
             theWriter.println("                             logMemoryLayoutBlock(aCaller, aStart, aUsed, aNext) {");
             theWriter.println("                                 if (aUsed == 1) return;");
             theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
