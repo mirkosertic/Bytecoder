@@ -33,70 +33,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
-import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefValue;
-import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
-import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.StackTopValue;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.TypeOfValue;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.*;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -169,6 +106,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             }
 
             writeExpressionList(((ControlFlowGraph.SimpleNode) aNode).getNode().getExpressions());
+            println("(unreachable)");
             return;
         }
         if (aNode instanceof ControlFlowGraph.SequenceOfSimpleNodes) {
@@ -244,6 +182,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
         if (aExpression instanceof IFExpression) {
             writeIFExpression((IFExpression) aExpression);
+            return;
+        }
+        if (aExpression instanceof ExtendedIFExpression) {
+            writeExtendedIFExpression((ExtendedIFExpression) aExpression);
             return;
         }
         if (aExpression instanceof GotoExpression) {
@@ -550,6 +492,41 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theChild.println(")");
 
         theChild.writeExpressionList(aExpression.getExpressions());
+
+        println(")");
+    }
+
+    private void writeExtendedIFExpression(ExtendedIFExpression aExpression) {
+
+        print("(block $");
+        print(aExpression.getAddress().getAddress());
+        println("_outer");
+
+        WASMSSAWriter theChild1 = withDeeperIndent();
+
+        theChild1.print("(block $");
+        theChild1.print(aExpression.getAddress().getAddress());
+        theChild1.println("_inner");
+
+        WASMSSAWriter theChild2 = theChild1.withDeeperIndent();
+
+        theChild2.print("(br_if $");
+        theChild2.print(aExpression.getAddress().getAddress());
+        theChild2.println("_inner");
+
+        WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
+        theChild3.print("(i32.eq ");
+        theChild3.writeValue(aExpression.getBooleanValue());
+        theChild3.print(" (i32.const 0)");
+        theChild3.println(")");
+
+        theChild2.println(")");
+
+        theChild2.writeExpressionList(aExpression.getTrueBranch());
+
+        theChild1.println(")");
+
+        theChild1.writeExpressionList(aExpression.getFalseBranch());
 
         println(")");
     }
@@ -1621,16 +1598,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         if (theStackSize > 0) {
             println("(local $SP i32)");
             println("(local $OLD_SP i32)");
-            println("(local $OLD_STACKNEST i32)");
             println("(set_local $OLD_SP (get_global $STACKTOP))");
-            println("(set_local $OLD_STACKNEST (get_global $STACKNEST))");
-            print("(set_global $STACKNEST (i32.add (get_global $STACKNEST) (i32.const 1)))");
             print("(set_global $STACKTOP (i32.sub (get_global $STACKTOP) (i32.const ");
             print(theStackSize);
             println(")))");
             println("(set_local $SP (get_global $STACKTOP))");
-            println("(call $trace (get_local $SP) (i32.const " + aMethodId + "))");
-            println("(block $check (br_if $check (i32.lt_s (get_global $STACKNEST) (i32.const 100))) (unreachable))");
         }
     }
 
@@ -1639,7 +1611,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         int theStackSize = stackSize();
         if (theStackSize > 0) {
             println("(set_global $STACKTOP (get_local $OLD_SP))");
-            println("(set_global $STACKNEST (get_local $OLD_STACKNEST))");
         }
     }
 }

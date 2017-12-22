@@ -108,7 +108,7 @@ public class MemoryManager {
         while(Address.getStart(theCurrent) != 0) {
 
             count++;
-            if (count>5_000) {
+            if (count>20_000) {
                 Address.unreachable();
             }
 
