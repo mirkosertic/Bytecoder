@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.*;
 
 import java.util.List;
+import java.util.Map;
 
 public class HighLevelIFOptimizer implements Optimizer {
 
@@ -50,6 +51,39 @@ public class HighLevelIFOptimizer implements Optimizer {
                                     theExpressions.remove(theR);
                                 }
                                 theExpressions.replace(theIf, theExtended);
+
+                                // Maybe we can go a step further
+                                // If both true and false branch have the same successor
+                                // and it is not the if node, we can replace some gotos here
+                                Map<GraphNode.Edge, GraphNode> theTrueSucc = theTrueNode.getSuccessors();
+                                Map<GraphNode.Edge, GraphNode> theFalseSucc = theFalseNode.getSuccessors();
+                                if (theTrueSucc.size() == 1 && theFalseSucc.size() == 1) {
+                                    Map.Entry<GraphNode.Edge, GraphNode> theTrue = theTrueSucc.entrySet().iterator().next();
+                                    Map.Entry<GraphNode.Edge, GraphNode> theFalse = theFalseSucc.entrySet().iterator().next();
+                                    if (theTrue.getKey().getType() == GraphNode.EdgeType.NORMAL &&
+                                            theFalse.getKey().getType() == GraphNode.EdgeType.NORMAL &&
+                                            theTrue.getValue() == theFalse.getValue() && theTrue.getValue() != theNode) {
+                                        GraphNode theNodeJoiningNode = theTrue.getValue();
+                                        for (Expression theSingle : theTrueNode.getExpressions().toList()) {
+                                            if (theSingle instanceof GotoExpression) {
+                                                GotoExpression theSingleGoto = (GotoExpression) theSingle;
+                                                if (((GotoExpression) theSingle).getJumpTarget().equals(theNodeJoiningNode.getStartAddress())) {
+                                                    theTrueNode.getExpressions().remove(theSingleGoto);
+                                                }
+                                            }
+                                        }
+                                        for (Expression theSingle : theFalseNode.getExpressions().toList()) {
+                                            if (theSingle instanceof GotoExpression) {
+                                                GotoExpression theSingleGoto = (GotoExpression) theSingle;
+                                                if (((GotoExpression) theSingle).getJumpTarget().equals(theNodeJoiningNode.getStartAddress())) {
+                                                    theFalseNode.getExpressions().remove(theSingleGoto);
+                                                }
+                                            }
+                                        }
+                                        GotoExpression theGotoSucc = new GotoExpression(theNodeJoiningNode.getStartAddress(), theNode);
+                                        theExpressions.addAfter(theGotoSucc, theExtended);
+                                    }
+                                }
                             }
                         }
                     }
