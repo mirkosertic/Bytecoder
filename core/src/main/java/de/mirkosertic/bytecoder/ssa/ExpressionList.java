@@ -62,6 +62,10 @@ public class ExpressionList {
         expressions.add(expressions.indexOf(aTarget), aNewExpression);
     }
 
+    public void addAfter(Expression aNewExpression, Expression aTarget) {
+        expressions.add(expressions.indexOf(aTarget) + 1, aNewExpression);
+    }
+
     public void replace(Expression aExpressionToReplace, Expression aNewExpression) {
         int p = expressions.indexOf(aExpressionToReplace);
         expressions.remove(p);
