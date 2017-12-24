@@ -29,13 +29,13 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 public class Program {
 
     private final ControlFlowGraph controlFlowGraph;
-    private final Map<Integer, Variable> variables;
-    private int varCounter;
+    private final List<Variable> variables;
+    private final Map<String, Variable> globals;
 
     public Program() {
         controlFlowGraph = new ControlFlowGraph(this);
-        variables = new HashMap<>();
-        varCounter = 0;
+        variables = new ArrayList<>();
+        globals = new HashMap<>();
     }
 
     public ControlFlowGraph getControlFlowGraph() {
@@ -66,15 +66,15 @@ public class Program {
 
     public List<Variable> getVariables() {
         List<Variable> theVariables = new ArrayList<>();
-        theVariables.addAll(variables.values());
+        theVariables.addAll(variables);
         theVariables.sort(Comparator.comparing(Variable::getName));
         return theVariables;
     }
 
     public Variable createVariable(TypeRef aType) {
-        int theIndex = varCounter++;
+        int theIndex = variables.size();
         Variable theNewVariable = new Variable(aType, "var" + theIndex);
-        variables.put(theIndex, theNewVariable);
+        variables.add(theNewVariable);
         return theNewVariable;
     }
 
@@ -90,7 +90,7 @@ public class Program {
             }
         }
 
-        for (Variable theVariable : variables.values()) {
+        for (Variable theVariable : variables) {
             for (Value theValue : theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION)) {
                 if (theValue instanceof GetStaticValue) {
                     GetStaticValue theStaticValue = (GetStaticValue) theValue;
@@ -122,12 +122,20 @@ public class Program {
         return theResult;
     }
 
-    public void removeVariable(Variable aVariable) {
-        for (Map.Entry<Integer, Variable> theEntry : variables.entrySet()) {
-            if (theEntry.getValue() == aVariable) {
-                variables.remove(theEntry.getKey());
-                return;
-            }
+    public Variable getOrCreateTrulyGlobal(String aName, TypeRef aType) {
+        Variable theVariablle = globals.get(aName);
+        if (theVariablle == null) {
+            Variable theVariable = new Variable(aType, aName);
+            globals.put(aName, theVariable);
         }
+        return theVariablle;
+    }
+
+    public boolean isTrulyGlobal(Variable aVariable) {
+        return globals.containsValue(aVariable);
+    }
+
+    public void promoteToTrulyGlobal(Variable aVariable) {
+        globals.put(aVariable.getName(), aVariable);
     }
 }

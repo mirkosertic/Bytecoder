@@ -20,109 +20,7 @@ import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
-import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethodsAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X1;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArrayLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArraySTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericUSHR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEDYNAMIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionInvoke;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionMONITORENTER;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionMONITOREXIT;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP2;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRET;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodHandleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeMethodTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
 import java.util.ArrayList;
@@ -150,14 +48,18 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         private final GraphNode block;
         private final Stack<Value> stack;
-        private final Map<Integer, Value> localVariables;
+        private final Map<Integer, Variable> localVariables;
         private final ValueProvider valueProvider;
+        private final Program program;
+        private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
-        private ParsingHelper(GraphNode aBlock, ValueProvider aValueProvider) {
+        private ParsingHelper(Program aProgram, BytecodeLocalVariableTableAttributeInfo aDebugInfo, GraphNode aBlock, ValueProvider aValueProvider) {
             stack = new Stack();
             block = aBlock;
             localVariables = new HashMap<>();
             valueProvider = aValueProvider;
+            program = aProgram;
+            localVariableTableAttributeInfo = aDebugInfo;
         }
 
         public int numberOfLocalVariables() {
@@ -183,10 +85,10 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         public Value getLocalVariable(int aIndex) {
-            Value theValue = localVariables.get(aIndex);
+            Variable theValue = localVariables.get(aIndex);
             if (theValue == null) {
                 VariableDescription theDesc = new LocalVariableDescription(aIndex);
-                theValue = valueProvider.resolveValueFor(theDesc);
+                theValue = (Variable) valueProvider.resolveValueFor(theDesc);
                 if (theValue == null) {
                     throw new IllegalStateException("Value must not be null from provider for " + theDesc);
                 }
@@ -209,15 +111,15 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             throw new IllegalStateException("Invalid stack index : " + theStack.getPos() + " with total size of " + stack.size());
         }
 
-        public void setLocalVariable(int aIndex, Value aValue) {
+        public void setLocalVariable(BytecodeOpcodeAddress aInstruction, int aIndex, Value aValue) {
             if (aValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
             }
             if (!(aValue instanceof Variable)) {
                 // Promote value to variable
-                aValue =  block.newVariable(aValue.resolveType(), aValue);
+                aValue = block.newVariable(aValue.resolveType(), aValue);
             }
-            localVariables.put(aIndex, aValue);
+            localVariables.put(aIndex, (Variable) aValue);
             block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
         }
 
@@ -233,7 +135,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         public void finalizeExportState() {
-            for (Map.Entry<Integer, Value> theEntry : localVariables.entrySet()) {
+            for (Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
                 block.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
             }
             for (int i=stack.size() - 1 ; i>= 0; i--) {
@@ -254,11 +156,15 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         private final BytecodeMethod method;
         private final GraphNode startNode;
         private final Map<GraphNode, ParsingHelper> finalStatesForNodes;
+        private final Program program;
+        private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
-        public ParsingHelperCache(BytecodeMethod aMethod, GraphNode aStartNode) {
+        public ParsingHelperCache(Program aProgram, BytecodeMethod aMethod, GraphNode aStartNode, BytecodeLocalVariableTableAttributeInfo aLocalVariablesInfo) {
             startNode = aStartNode;
             method = aMethod;
+            localVariableTableAttributeInfo = aLocalVariablesInfo;
             finalStatesForNodes = new HashMap<>();
+            program = aProgram;
         }
 
         public void registerFinalStateForNode(GraphNode aNode, ParsingHelper aState) {
@@ -280,8 +186,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
                 for (int i=0;i<theTypes.length;i++) {
                     BytecodeTypeRef theRef = theTypes[i];
-
-                    theValues.put(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i+1, TypeRef.toType(theTypes[i])));
+                    theValues.put(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, TypeRef.toType(theTypes[i])));
                     theCurrentIndex++;
                     if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
                         theCurrentIndex++;
@@ -296,7 +201,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     return theValue;
                 };
 
-                return new ParsingHelper(startNode, theProvider);
+                return new ParsingHelper(program, localVariableTableAttributeInfo, startNode, theProvider);
             }
             return finalStatesForNodes.get(aGraphNode);
         }
@@ -343,7 +248,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 }
             }
 
-            ParsingHelper theHelper = new ParsingHelper(aBlock, theProvider);
+            ParsingHelper theHelper = new ParsingHelper(program, localVariableTableAttributeInfo, aBlock, theProvider);
 
             // Now we import the stack and check if we need to insert phi values
             for (Map.Entry<StackVariableDescription, Set<Value>> theEntry : theStackToImport.entrySet()) {
@@ -397,7 +302,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         public ParsingHelper resolveInitialStateFromPredecessorFor(GraphNode aNode, ParsingHelper aPredecessor) {
             // The node will import the full stack from its predecessor
             ParsingHelper.ValueProvider theProvider = aPredecessor::requestValue;
-            ParsingHelper theNew = new ParsingHelper(aNode, theProvider);
+            ParsingHelper theNew = new ParsingHelper(program, localVariableTableAttributeInfo, aNode, theProvider);
             Stack<Value> theStackToImport = aPredecessor.stack;
             for (int i=0;i<theStackToImport.size();i++) {
                 StackVariableDescription theStackDesc = new StackVariableDescription(theStackToImport.size() - i - 1);
@@ -552,7 +457,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         try {
             // Now we can continue to create the program flow
-            ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(aMethod, theStart);
+            ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theCode.attributeByType(BytecodeLocalVariableTableAttributeInfo.class));
 
             // This will traverse the CFG from bottom to top
             for (GraphNode theNode : theProgram.getControlFlowGraph().finalNodes()) {
@@ -733,7 +638,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 // Everything else is at the same state as on control flow enter
                 // In case of synchronized blocks there is an additional reference with the semaphore to release
                 theParsingState = aCache.resolveFinalStateForNode(null);
-                theParsingState.setLocalVariable(theParsingState.numberOfLocalVariables(), Variable.createThisRef());
+                theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
                 theParsingState.push(aCurrentBlock.newVariable(TypeRef.Native.REFERENCE, new CurrentExceptionValue()));
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
@@ -835,12 +740,12 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                 BytecodeInstructionASTORE theINS = (BytecodeInstructionASTORE) theInstruction;
                 Value theValue = aHelper.pop();
-                aHelper.setLocalVariable(theINS.getVariableIndex(), theValue);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getVariableIndex(), theValue);
             } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
                 BytecodeInstructionGenericSTORE theINS = (BytecodeInstructionGenericSTORE) theInstruction;
                 Value theValue = aHelper.pop();
                 Variable theOtherVariable = aTargetBlock.newVariable(theValue.resolveType().resolve(), theValue);
-                aHelper.setLocalVariable(theINS.getVariableIndex(), theOtherVariable);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getVariableIndex(), theOtherVariable);
             } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
                 BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                 Value theIndex = aHelper.pop();
@@ -962,7 +867,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Value theValueToIncrement = aHelper.getLocalVariable(theINS.getIndex());
                 Value theNewVariable = aTargetBlock.newVariable(
                         TypeRef.Native.INT, new BinaryValue(TypeRef.Native.INT, theValueToIncrement, BinaryValue.Operator.ADD, new IntegerValue(theINS.getConstant())));
-                aHelper.setLocalVariable(theINS.getIndex(), theNewVariable);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getIndex(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                 BytecodeInstructionGenericREM theINS = (BytecodeInstructionGenericREM) theInstruction;
                 Value theValue2 = aHelper.pop();
