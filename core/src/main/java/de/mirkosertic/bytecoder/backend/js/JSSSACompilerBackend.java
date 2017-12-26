@@ -68,6 +68,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theMathModule.registerFunction("toDegrees", new JSFunction("return Math.toDegrees(p1);"));
         theMathModule.registerFunction("min", new JSFunction("return Math.min(p1, p2);"));
 
+        // Jusr for performance tests
+        theMathModule.registerFunction("add", new JSFunction("return p1 + p2;"));
+
         JSModule theSystemModule = new JSModule();
         theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
         theSystemModule.registerFunction("nanoTime", new JSFunction("return Date.now() * 1000000;"));

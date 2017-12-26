@@ -20,15 +20,9 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 public class GotoExpression extends Expression {
 
     private final BytecodeOpcodeAddress jumpTarget;
-    private final GraphNode sourceBlock;
 
-    public GotoExpression(BytecodeOpcodeAddress aJumpTarget, GraphNode aSourceBlock) {
+    public GotoExpression(BytecodeOpcodeAddress aJumpTarget) {
         jumpTarget = aJumpTarget;
-        sourceBlock = aSourceBlock;
-    }
-
-    public GraphNode getSourceBlock() {
-        return sourceBlock;
     }
 
     public BytecodeOpcodeAddress getJumpTarget() {

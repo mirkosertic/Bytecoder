@@ -115,17 +115,19 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             if (aValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
             }
-            // Try to find global variables
             if (localVariableTableAttributeInfo != null) {
                 BytecodeLocalVariableTableEntry theEntry = localVariableTableAttributeInfo.matchingEntryFor(aInstruction, aIndex);
                 if (theEntry != null) {
-                    String theVariableName = localVariableTableAttributeInfo.resolveVariableName(theEntry);
+                    /*String theVariableName = localVariableTableAttributeInfo.resolveVariableName(theEntry);
                     Variable theGlobal = program.getOrCreateTrulyGlobal(theVariableName, aValue.resolveType());
+                    theGlobal.initializeWith(aValue);
                     block.addExpression(new InitVariableExpression(theGlobal, aValue));
                     localVariables.put(aIndex, theGlobal);
                     block.addToExportedList(theGlobal, new LocalVariableDescription(aIndex));
+                    return;*/
                 }
             }
+            // Try to find global variables
             if (!(aValue instanceof Variable)) {
                 // Promote value to variable
                 aValue = block.newVariable(aValue.resolveType(), aValue);
@@ -514,7 +516,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     }
                     if (theSuccessors.size() == 1) {
                         theNode.getExpressions().add(new CommentExpression("Resolving pass thru direct"));
-                        theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
+                        theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()));
                     } else {
                         theSuccessors = theNode.getSuccessors();
                         if (theSuccessors.size() == 1) {
@@ -522,7 +524,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             // Sometimes, there is a conditional jump to the only following successor of the block. This
                             // will be eliminated by the previous logic
                             theNode.getExpressions().add(new CommentExpression("Resolving pass thru direct safety net"));
-                            theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress(), theNode));
+                            theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()));
                         } else {
                             throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
                         }
@@ -966,7 +968,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theResult = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget()));
 
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFNONNULL) {
@@ -976,7 +978,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theResult = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget()));
 
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theResult, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionIFICMP) {
@@ -1009,7 +1011,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget()));
 
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theNewVariable, theExpressions));
 
@@ -1031,7 +1033,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget()));
 
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theNewVariable, theExpressions));
 
@@ -1064,7 +1066,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.BOOLEAN, theBinaryValue);
 
                 ExpressionList theExpressions = new ExpressionList();
-                theExpressions.add(new GotoExpression(theINS.getJumpTarget(), aTargetBlock));
+                theExpressions.add(new GotoExpression(theINS.getJumpTarget()));
 
                 aTargetBlock.addExpression(new IFExpression(theINS.getOpcodeAddress(), theINS.getJumpTarget(), theNewVariable, theExpressions));
             } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
@@ -1126,7 +1128,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theINS = (BytecodeInstructionGOTO) theInstruction;
-                aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress(), aTargetBlock));
+                aTargetBlock.addExpression(new GotoExpression(theINS.getJumpAddress()));
             } else if (theInstruction instanceof BytecodeInstructionL2Generic) {
                 BytecodeInstructionL2Generic theINS = (BytecodeInstructionL2Generic) theInstruction;
                 Value theValue = aHelper.pop();
@@ -1333,13 +1335,13 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Value theValue = aHelper.pop();
 
                 ExpressionList theDefault = new ExpressionList();
-                theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget(), aTargetBlock));
+                theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget()));
 
                 Map<Long, ExpressionList> theOffsets = new HashMap<>();
                 long[] theJumpTargets = theINS.getOffsets();
                 for (int i=0;i<theJumpTargets.length;i++) {
                     ExpressionList theJump = new ExpressionList();
-                    theJump.add(new GotoExpression(theINS.getOpcodeAddress().add((int) theJumpTargets[i]), aTargetBlock));
+                    theJump.add(new GotoExpression(theINS.getOpcodeAddress().add((int) theJumpTargets[i])));
                     theOffsets.put((long) i, theJump);
                 }
 
@@ -1350,12 +1352,12 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Value theValue = aHelper.pop();
 
                 ExpressionList theDefault = new ExpressionList();
-                theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget(), aTargetBlock));
+                theDefault.add(new GotoExpression(theINS.getDefaultJumpTarget()));
 
                 Map<Long, ExpressionList> thePairs = new HashMap<>();
                 for (BytecodeInstructionLOOKUPSWITCH.Pair thePair : theINS.getPairs()) {
                     ExpressionList thePairExpressions = new ExpressionList();
-                    thePairExpressions.add(new GotoExpression(theINS.getOpcodeAddress().add((int) thePair.getOffset()), aTargetBlock));
+                    thePairExpressions.add(new GotoExpression(theINS.getOpcodeAddress().add((int) thePair.getOffset())));
                     thePairs.put(thePair.getMatch(), thePairExpressions);
                 }
 

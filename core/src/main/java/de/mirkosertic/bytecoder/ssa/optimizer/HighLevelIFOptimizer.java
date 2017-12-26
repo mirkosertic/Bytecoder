@@ -80,7 +80,7 @@ public class HighLevelIFOptimizer implements Optimizer {
                                                 }
                                             }
                                         }
-                                        GotoExpression theGotoSucc = new GotoExpression(theNodeJoiningNode.getStartAddress(), theNode);
+                                        GotoExpression theGotoSucc = new GotoExpression(theNodeJoiningNode.getStartAddress());
                                         theExpressions.addAfter(theGotoSucc, theExtended);
                                     }
                                 }
