@@ -37,6 +37,6 @@ public class BytecodeLocalVariableTableAttributeInfo implements BytecodeAttribut
     }
 
     public String resolveVariableName(BytecodeLocalVariableTableEntry aEntry) {
-        return ((BytecodeUtf8Constant) constantPool.constantByIndex(aEntry.getNameIndex() - 1)).stringValue();
+        return ((BytecodeUtf8Constant) constantPool.constantByIndex(aEntry.getNameIndex() - 1)).stringValue() + "_" + aEntry.getStartPC();
     }
 }

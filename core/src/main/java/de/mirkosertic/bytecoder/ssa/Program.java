@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.gson.internal.LinkedTreeMap;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
@@ -30,12 +31,23 @@ public class Program {
 
     private final ControlFlowGraph controlFlowGraph;
     private final List<Variable> variables;
-    private final Map<String, Variable> globals;
+    private final Set<Variable> globals;
+    private final Map<LocalVariableDescription, Variable> arguments;
 
     public Program() {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
-        globals = new HashMap<>();
+        globals = new HashSet<>();
+        arguments = new LinkedTreeMap<>();
+    }
+
+    public void addArgument(LocalVariableDescription aVariableDescription, Variable aVariable) {
+        arguments.put(aVariableDescription, aVariable);
+        globals.add(aVariable);
+    }
+
+    public Map<LocalVariableDescription, Variable> getArguments() {
+        return arguments;
     }
 
     public ControlFlowGraph getControlFlowGraph() {
@@ -122,20 +134,31 @@ public class Program {
         return theResult;
     }
 
-    public Variable getOrCreateTrulyGlobal(String aName, TypeRef aType) {
-        Variable theVariablle = globals.get(aName);
-        if (theVariablle == null) {
-            Variable theVariable = new Variable(aType, aName);
-            globals.put(aName, theVariable);
+    public Variable getVariableByName(String aName) {
+        for (Variable theVariable : variables) {
+            if (aName.equals(theVariable.getName())) {
+                return theVariable;
+            }
         }
-        return theVariablle;
+        return null;
+    }
+
+    public Variable getOrCreateTrulyGlobal(String aName, TypeRef aType) {
+        Variable theVariable = getVariableByName(aName);
+        if (theVariable == null) {
+            theVariable = new Variable(aType, aName);
+            variables.add(theVariable);
+            globals.add(theVariable);
+        }
+        return theVariable;
     }
 
     public boolean isTrulyGlobal(Variable aVariable) {
-        return globals.containsValue(aVariable);
+        return globals.contains(aVariable);
     }
 
-    public void promoteToTrulyGlobal(Variable aVariable) {
-        globals.put(aVariable.getName(), aVariable);
+    public void promoteToTrulyGlobal(Variable aVariable, String aGlobalName) {
+        aVariable.changeNameTo(aGlobalName);
+        globals.add(aVariable);
     }
 }
