@@ -115,6 +115,17 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             if (aValue == null) {
                 throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
             }
+            // Try to find global variables
+            if (localVariableTableAttributeInfo != null) {
+                BytecodeLocalVariableTableEntry theEntry = localVariableTableAttributeInfo.matchingEntryFor(aInstruction, aIndex);
+                if (theEntry != null) {
+                    String theVariableName = localVariableTableAttributeInfo.resolveVariableName(theEntry);
+                    Variable theGlobal = program.getOrCreateTrulyGlobal(theVariableName, aValue.resolveType());
+                    block.addExpression(new InitVariableExpression(theGlobal, aValue));
+                    localVariables.put(aIndex, theGlobal);
+                    block.addToExportedList(theGlobal, new LocalVariableDescription(aIndex));
+                }
+            }
             if (!(aValue instanceof Variable)) {
                 // Promote value to variable
                 aValue = block.newVariable(aValue.resolveType(), aValue);
