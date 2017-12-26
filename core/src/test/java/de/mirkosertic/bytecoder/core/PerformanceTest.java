@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,18 +28,39 @@ public class PerformanceTest {
         return a + b;
     }
 
+    @Import(module = "math", name = "add")
+    public static int addImported(int a, int b) {
+        return a + b;
+    }
+
     @Test
     public void testPerformance() {
-        // JVM 6ms
-        // JS 10ms
-        // WASM 8ms
+        // JVM 2ms
+        // JS 39ms
+        // WASM 49ms
 
         long theStart = System.currentTimeMillis();
-        for (int i=0;i<1_000_000;i++) {
+        for (int i=0;i<10_000_000;i++) {
             int theSum = add(i, i);
         }
         long theDuration = System.currentTimeMillis() - theStart;
         System.out.println(theDuration);
 
     }
+
+    @Test
+    public void testPerformanceImported() {
+        // JVM 7ms
+        // JS 39ms
+        // WASM 81ms
+
+        long theStart = System.currentTimeMillis();
+        for (int i=0;i<10_000_000;i++) {
+            int theSum = addImported(i, i);
+        }
+        long theDuration = System.currentTimeMillis() - theStart;
+        System.out.println(theDuration);
+
+    }
+
 }
