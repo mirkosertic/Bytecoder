@@ -99,18 +99,11 @@ public class MemoryManager {
 
     private static Address mallocInternal(int aSize) {
 
-        int count = 0;
-
         // Overhead for header
         aSize+=12;
 
         Address theCurrent = new Address(4);
         while(Address.getStart(theCurrent) != 0) {
-
-            count++;
-            if (count>20_000) {
-                Address.unreachable();
-            }
 
             int theUsed = Address.getIntValue(theCurrent, 8);
             int theCurrentSize = Address.getIntValue(theCurrent, 0);
