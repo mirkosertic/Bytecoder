@@ -1,0 +1,31 @@
+<html>
+    <body>
+        <script>
+
+            var stack = [];
+            var objectCounter = 0;
+
+            function stackEnter() {
+                stack.push({
+
+                   created: [],
+
+                   allocObject: function() {
+                        var theObject = {};
+                        created.push(theObject);
+                        return theObject;
+                   }
+                });
+            }
+
+            function stackLeave() {
+                stack.pop();
+            }
+
+            function stackNewObject() {
+                return stack.peek().allocObject();
+            }
+
+        </script>
+    </body>
+</html>
