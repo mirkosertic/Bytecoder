@@ -65,9 +65,9 @@ public class PerformanceTest {
 
     @Test
     public void testObjectAllocation() {
-        // JVM 3
-        // JS 3
-        // WASM 13140
+        // JVM 1
+        // JS 4
+        // WASM 2
         long theStart = System.currentTimeMillis();
         for (int i=0;i<50_000;i++) {
             Object x = new Object();

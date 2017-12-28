@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -145,24 +143,53 @@ public class WASMWriterUtils {
     }
 
     public static int computeStaticFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        List<String> theFieldNames = classFieldNamesOf(aClass);
-        int p = theFieldNames.indexOf(aFieldName);
-        if (p<0) {
-            throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
+        final AtomicInteger theCounter = new AtomicInteger(-1);
+        aClass.forEachStaticField(new Consumer<>() {
+
+            boolean found = false;
+
+            @Override
+            public void accept(Map.Entry<String, BytecodeLinkedClass.LinkedField> aEntry) {
+                if (!found) {
+                    theCounter.incrementAndGet();
+                    if (aFieldName.equals(aEntry.getKey())) {
+                        found = true;
+                    }
+                }
+            }
+        });
+        int p = theCounter.intValue();
+        if (p < 0) {
+            throw new IllegalStateException("Unknown static field " + aFieldName + " in " + aClass.getClassName().name());
         }
+
         return CLASS_HEADER_SIZE + p * OBJECT_FIELDSIZE;
     }
 
     public static int computeFieldOffsetOf(String aFieldName, BytecodeLinkedClass aClass) {
-        List<String> theFieldNames = memberFieldNamesOf(aClass);
-        int p = theFieldNames.indexOf(aFieldName);
-        if (p<0) {
+        final AtomicInteger theCounter = new AtomicInteger(-1);
+        aClass.forEachMemberField(new Consumer<>() {
+
+            boolean found = false;
+
+            @Override
+            public void accept(Map.Entry<String, BytecodeLinkedClass.LinkedField> aEntry) {
+                if (!found) {
+                    theCounter.incrementAndGet();
+                    if (aFieldName.equals(aEntry.getKey())) {
+                        found = true;
+                    }
+                }
+            }
+        });
+        int p = theCounter.intValue();
+        if (p < 0) {
             throw new IllegalStateException("Unknown field " + aFieldName + " in " + aClass.getClassName().name());
         }
         return OBJECT_HEADER_SIZE + p * OBJECT_FIELDSIZE;
     }
 
-    public static String toWASMMethodSignature(BytecodeMethodSignature aSignatutre, boolean aIsStatic) {
+    public static String toWASMMethodSignature(BytecodeMethodSignature aSignatutre) {
         String theTypeDefinition = "(func";
 
         theTypeDefinition+= " (param ";
