@@ -606,9 +606,15 @@ public class JBox2DTest {
         axisShape.setRadius(0.02f);
         axisShape.m_p.set(0, 0);
 
-        FixtureDef axisFixture = new FixtureDef();
-        axisFixture.shape = axisShape;
-        axis.createFixture(axisFixture);
+        //FixtureDef axisFixture = new FixtureDef();
+        //axisFixture.shape = axisShape;
+        //axis.createFixture(axisFixture);
 
+    }
+
+    @Test
+    public void testNewWorld2() {
+        World world = new World(new Vec2(0, -9.8f));
+        Assert.assertFalse(world.isLocked());
     }
 }
