@@ -18,6 +18,12 @@ package de.mirkosertic.bytecoder.classlib;
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
 
+/**
+ * A simple Memory Manager.
+ *
+ * It basically holds zwo linked lists. One for the free memory blocks,
+ * and one for the reserved blocks.
+ */
 public class MemoryManager {
 
     public static Object[] data;
@@ -40,21 +46,31 @@ public class MemoryManager {
     public static native void logMemoryLayoutBlock(int aStart, int aUsed, int aNext);
 
     private static void initInternal(int aSize) {
-        Address theFree = new Address(4);
+        // This is the list of free blocks
+        Address theFreeStart = new Address(4); // At the beginning, we have one giant free block
+        Address.setIntValue(theFreeStart, 0, 28);
+
+        // Free memory block
+        Address theFree = new Address(28);
         Address.setIntValue(theFree, 0, aSize);
         Address.setIntValue(theFree, 4, 0);
-        Address.setIntValue(theFree, 8, 0);
+
+        // This is the List of reserved blocks
+        Address theReserved = new Address(8);
+        Address.setIntValue(theReserved, 0, 0);
     }
 
     @Export("freeMem")
     public static long freeMem() {
         long theResult = 0;
-        Address theCurrent = new Address(4);
-        while(Address.getStart(theCurrent) != 0) {
-            int theUsedFlag = Address.getIntValue(theCurrent, 8);
-            if (theUsedFlag == 0) {
-                theResult += Address.getIntValue(theCurrent, 0);
-            }
+
+        Address theFreeStart = new Address(4);
+        int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
+
+        Address theCurrent = new Address(theFreeStartPtr);
+        while (Address.getStart(theCurrent) != 0) {
+            int theSize = Address.getIntValue(theCurrent, 0);
+            theResult += theSize;
             int theNext = Address.getIntValue(theCurrent, 4);
             theCurrent = new Address(theNext);
         }
@@ -64,12 +80,14 @@ public class MemoryManager {
     @Export("usedMem")
     public static long usedMem() {
         long theResult = 0;
-        Address theCurrent = new Address(4);
-        while(Address.getStart(theCurrent) != 0) {
-            int theUsedFlag = Address.getIntValue(theCurrent, 8);
-            if (theUsedFlag == 1) {
-                theResult += Address.getIntValue(theCurrent, 0);
-            }
+
+        Address theUsedStart = new Address(8);
+        int theUsedStartPtr = Address.getIntValue(theUsedStart, 0);
+
+        Address theCurrent = new Address(theUsedStartPtr);
+        while (Address.getStart(theCurrent) != 0) {
+            int theSize = Address.getIntValue(theCurrent, 0);
+            theResult += theSize;
             int theNext = Address.getIntValue(theCurrent, 4);
             theCurrent = new Address(theNext);
         }
@@ -78,61 +96,142 @@ public class MemoryManager {
 
     @Export("logMemoryLayout")
     public static void logMemoryLayout() {
-        Address theCurrent = new Address(4);
-        while(Address.getStart(theCurrent) != 0) {
+
+        Address theFreeStart = new Address(4);
+        int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
+
+        Address theCurrent = new Address(theFreeStartPtr);
+        while (Address.getStart(theCurrent) != 0) {
+            int theNext = Address.getIntValue(theCurrent, 4);
             int theStart = Address.getStart(theCurrent);
-            int theUsedFlag = Address.getIntValue(theCurrent, 8);
+
+            logMemoryLayoutBlock(theStart, 0, theNext);
+
+            theCurrent = new Address(theNext);
+        }
+
+        Address theUsedStart = new Address(8);
+        int theUsedStartPtr = Address.getIntValue(theUsedStart, 0);
+
+        theCurrent = new Address(theUsedStartPtr);
+        while (Address.getStart(theCurrent) != 0) {
+            int theStart = Address.getStart(theCurrent);
             int theNext = Address.getIntValue(theCurrent, 4);
 
-            logMemoryLayoutBlock(theStart, theUsedFlag, theNext);
+            logMemoryLayoutBlock(theStart, 1, theNext);
 
+            theCurrent = new Address(theNext);
+        }
+   }
+
+    private static void internalFree(Address aPointer) {
+
+        int theStart = Address.getStart(aPointer);
+
+        // Remove the block from the list of allocated blocks
+        Address theAllocatedStart = new Address(8);
+        int theAllocatedStartPtr = Address.getIntValue(theAllocatedStart, 0);
+
+        Address theCurrent = new Address(theAllocatedStartPtr);
+        int thePrevious = 0;
+        while(Address.getStart(theCurrent) != 0) {
+
+            int theCurrentStart = Address.getStart(theCurrent);
+            int theNext = Address.getIntValue(theCurrent, 4);
+
+            if (theCurrentStart == theStart) {
+                // This is the block
+                // Remove it from the list of allocated blocks
+                if (thePrevious == 0) {
+                    Address.setIntValue(theAllocatedStart, 0, theNext);
+                } else {
+                    Address thePrevPtr = new Address(thePrevious);
+                    Address.setIntValue(thePrevPtr, 4, theNext);
+                }
+
+                // Ok, now we prepend it to the list of free blocks
+                Address theFreeStart = new Address(4);
+                int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
+
+                Address.setIntValue(theCurrent, 4, theFreeStartPtr);
+                Address.setIntValue(theFreeStart, 0, theCurrentStart);
+                return;
+            }
+
+            thePrevious = theCurrentStart;
             theCurrent = new Address(theNext);
         }
     }
 
     @Export("free")
     public static void free(Address aPointer) {
-        int theHeaderStart = Address.getStart(aPointer) - 12;
-        Address theHeader = new Address(theHeaderStart);
-        Address.setIntValue(theHeader, 8, 0);
+
+        int theStart = Address.getStart(aPointer);
+        theStart-=8;
+
+        internalFree(new Address(theStart));
     }
 
-    private static Address mallocInternal(int aSize) {
+    @Export("malloc")
+    public static Address malloc(int aSize) {
 
         // Overhead for header
-        aSize+=12;
+        aSize+=8;
 
-        Address theCurrent = new Address(4);
+        Address theFreeStart = new Address(4);
+        int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
+
+        // We search the free list for a suitable sized block
+        int thePrevious = 0;
+        Address theCurrent = new Address(theFreeStartPtr);
         while(Address.getStart(theCurrent) != 0) {
+            int theSize = Address.getIntValue(theCurrent, 0);
+            int theNext = Address.getIntValue(theCurrent, 4);
+            if (theSize >= aSize) {
+                int theRemaining = theSize - aSize;
 
-            int theUsed = Address.getIntValue(theCurrent, 8);
-            int theCurrentSize = Address.getIntValue(theCurrent, 0);
-            if (theCurrentSize >= aSize && theUsed == 0) {
 
-                // Mark block as used
-                Address.setIntValue(theCurrent, 0, aSize);
-                Address.setIntValue(theCurrent, 8, 1);
+                if (theRemaining > 8) {
+                    Address.setIntValue(theCurrent, 0, aSize);
 
-                if (theCurrentSize > aSize) {
+                    // Block can be safely split
+                    int theNewFreeStart = Address.getStart(theCurrent) + aSize;
+                    int theNewFreeSize = theSize - aSize;
+                    Address theNewFree = new Address(theNewFreeStart);
+                    Address.setIntValue(theNewFree, 0, theNewFreeSize);
+                    Address.setIntValue(theNewFree, 4, theNext);
 
-                    int theCurrentNext = Address.getIntValue(theCurrent, 4);
+                    if (thePrevious == 0) {
+                        Address.setIntValue(theFreeStart, 0, theNewFreeStart);
+                    } else {
+                        Address thePrev = new Address(thePrevious);
+                        Address.setIntValue(thePrev, 4, theNewFreeStart);
+                    }
+                } else {
+                    // Remaining size would be too small, be have to completely occupy it
+                    Address.setIntValue(theCurrent, 0, theSize);
 
-                    // Mark remaining as free
-                    int theNewPosition = Address.getStart(theCurrent);
-                    theNewPosition+= aSize;
-                    int theNewSize = theCurrentSize - aSize;
-
-                    Address theNewFreeAdr = new Address(theNewPosition);
-                    Address.setIntValue(theNewFreeAdr, 0, theNewSize);
-                    Address.setIntValue(theNewFreeAdr, 8, 0);
-                    Address.setIntValue(theNewFreeAdr, 4, theCurrentNext);
-
-                    Address.setIntValue(theCurrent, 4, theNewPosition);
+                    if (thePrevious == 0) {
+                        Address.setIntValue(theFreeStart, 0, theNext);
+                    } else {
+                        Address thePrev = new Address(thePrevious);
+                        Address.setIntValue(thePrev, 4, theNext);
+                    }
                 }
 
-                int theDataStart = Address.getStart(theCurrent) + 12;
-                Address theNewData = new Address(theDataStart);
+                // Add the current block to the allocated block ist by prepending it to the list
+                Address theReservedListStart = new Address(8);
+
+                int theReservedListPtr = Address.getIntValue(theReservedListStart, 0);
+                int theCurrentStart = Address.getStart(theCurrent);
+
+                Address.setIntValue(theCurrent, 4, theReservedListPtr);
+                Address.setIntValue(theReservedListStart, 0, theCurrentStart);
+
                 // Wipeout data
+                int theDataStart = theCurrentStart + 8;
+                Address theNewData = new Address(theDataStart);
+
                 for (int i=0;i<aSize-16;i+=4) {
                     Address.setIntValue(theNewData, i, 0);
                 }
@@ -140,20 +239,11 @@ public class MemoryManager {
                 return theNewData;
             }
 
-            int theNext = Address.getIntValue(theCurrent, 4);
+            thePrevious = Address.getStart(theCurrent);
             theCurrent = new Address(theNext);
         }
-
+        Address.unreachable();
         return new Address(0);
-    }
-
-    @Export("malloc")
-    public static Address malloc(int aSize) {
-        Address theAddress = mallocInternal(aSize);
-        if (Address.getStart(theAddress) == 0) {
-            throw new RuntimeException();
-        }
-        return theAddress;
     }
 
     @Export("newObject")
@@ -166,40 +256,42 @@ public class MemoryManager {
         return theAddress;
     }
 
-    public static boolean isUsed(Address aOwningBlock) {
+    private static boolean isUsed(Address aOwningBlock) {
 
         int theOwningStart = Address.getStart(aOwningBlock);
-        int theOwningData = theOwningStart + 12;
+        int theOwningData = theOwningStart + 8;
 
         // First of all we check the stack
         int theStackStart = Address.getStackTop();
-        Address theStack = new Address(theStackStart);
         int theStackTop = Address.getMemorySize();
         while(theStackStart < theStackTop) {
-            int theReference = Address.getIntValue(theStack, theStackStart);
+            Address theCurrent = new Address(theStackStart);
+            int theReference = Address.getIntValue(theCurrent, 0);
             if (theReference == theOwningData) {
                 return true;
             }
+            theStackStart += 4;
         }
 
-        Address theCurrent = new Address(4);
+        // Nothing on the stack, we check the allocated memory blovks
+        Address theAllocatedStart= new Address(8);
+        int theAllocatedStartPtr = Address.getIntValue(theAllocatedStart, 0);
+
+        Address theCurrent = new Address(theAllocatedStartPtr);
         while(Address.getStart(theCurrent) != 0) {
+
             int theCurrentStart = Address.getStart(theCurrent);
             if (theOwningStart != theCurrentStart) {
-                int theUsed = Address.getIntValue(theCurrent, 8);
-                if (theUsed == 1) {
-                    // Block is used, check content
-                    int theStart = 12;
-                    int theSize = Address.getIntValue(theCurrent, 0);
-                    int thePosition = 0;
-                    while(thePosition < theSize) {
-                        int theReference = Address.getIntValue(theCurrent, theStart);
-                        if (theReference == theOwningData) {
-                            return true;
-                        }
-                        theStart += 4;
-                        thePosition += 4;
+                int theStart = 8;
+                int theSize = Address.getIntValue(theCurrent, 0);
+                int thePosition = 0;
+                while(thePosition < theSize) {
+                    int theReference = Address.getIntValue(theCurrent, theStart);
+                    if (theReference == theOwningData) {
+                        return true;
                     }
+                    theStart += 4;
+                    thePosition += 4;
                 }
             }
 
@@ -212,20 +304,18 @@ public class MemoryManager {
 
     @Export("GC")
     public static void GC() {
-        Address theCurrent = new Address(4);
-        while(Address.getStart(theCurrent) != 0) {
-            int theUsed = Address.getIntValue(theCurrent, 8);
-            if (theUsed == 1) {
-                // Block is used, check for reference
-                if (!isUsed(theCurrent)) {
-                    // Block is no longer used
-                    Address.setIntValue(theCurrent, 8, 0);
+        Address theUsedStart = new Address(8);
 
-                    //TODO: Check if it can be merged with the following block
-                }
-            }
+        int theUsedStartPtr = Address.getIntValue(theUsedStart, 0);
+        Address theCurrent = new Address(theUsedStartPtr);
+        while(Address.getStart(theCurrent) != 0) {
 
             int theNext = Address.getIntValue(theCurrent, 4);
+
+            if (!isUsed(theCurrent)) {
+                internalFree(theCurrent);
+            }
+
             theCurrent = new Address(theNext);
         }
     }

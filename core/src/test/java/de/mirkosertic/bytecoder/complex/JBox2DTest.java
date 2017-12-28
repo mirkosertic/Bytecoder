@@ -536,7 +536,8 @@ public class JBox2DTest {
         long lastCalculated = 500;
         int timeToCalculate = (int) (currentTime - lastCalculated);
         long relativeTime = currentTime - startTime;
-        while (timeToCalculate > 10) {
+        int counter = 0;
+        while (timeToCalculate > 10 && counter < 10) {
             System.out.println("Calculating");
             System.out.println((long) timeToCalculate);
             int period = (int) ((relativeTime + 5000) / 10000);
@@ -545,6 +546,7 @@ public class JBox2DTest {
             lastCalculated += 10;
             timeToCalculate -= 10;
             System.out.println("done");
+            counter++;
         }
         long theTotalDuration = System.currentTimeMillis() - theStart;
         System.out.println("Ran");
@@ -584,4 +586,29 @@ public class JBox2DTest {
         theTree.createProxy(new AABB(), "TEST");
     }
 
+    @Test
+    public void testCircleShape() {
+        CircleShape axisShape = new CircleShape();
+        axisShape.setRadius(0.02f);
+        axisShape.m_p.set(0, 0);
+    }
+
+    @Test
+    public void testNewWorld() {
+        World world = new World(new Vec2(0, -9.8f));
+
+        BodyDef axisDef = new BodyDef();
+        axisDef.type = BodyType.STATIC;
+        axisDef.position = new Vec2(3, 3);
+        Body axis = world.createBody(axisDef);
+
+        CircleShape axisShape = new CircleShape();
+        axisShape.setRadius(0.02f);
+        axisShape.m_p.set(0, 0);
+
+        FixtureDef axisFixture = new FixtureDef();
+        axisFixture.shape = axisShape;
+        axis.createFixture(axisFixture);
+
+    }
 }

@@ -219,7 +219,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             public void registerGlobalType(BytecodeMethodSignature aSignature, boolean aStatic) {
                 String theMethodSignature = WASMWriterUtils.toMethodSignature(aSignature, aStatic);
                 if (!theGlobalTypes.containsKey(theMethodSignature)) {
-                    String theTypeDefinition = WASMWriterUtils.toWASMMethodSignature(aSignature, aStatic);
+                    String theTypeDefinition = WASMWriterUtils.toWASMMethodSignature(aSignature);
 
                     theGlobalTypes.put(theMethodSignature, theTypeDefinition);
                 }
@@ -264,7 +264,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             });
         });
 
-        theWriter.println("   (memory (export \"memory\") 8192 8192)");
+        theWriter.println("   (memory (export \"memory\") 512 512)");
 
         // Write virtual method table
         if (!theGeneratedFunctions.isEmpty()) {

@@ -46,5 +46,7 @@ public class Address {
         return 0;
     }
 
-    public static void unreachable() {};
+    public static void unreachable() {
+        throw new RuntimeException();
+    };
 }
