@@ -144,7 +144,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
             if (theCode instanceof WASMCompileResult) {
                 WASMCompileResult theWASMCompileResult = (WASMCompileResult) theCode;
-                wat2wasm(theWASMCompileResult);
+                byte[] theWASM = wat2wasm(theWASMCompileResult);
+                File theBytecoderWASMFileName = new File(theBytecoderDirectory, "bytecoder.wasm");
+                try (FileOutputStream theFos = new FileOutputStream(theBytecoderWASMFileName)) {
+                    theFos.write(theWASM);
+                }
+
             }
 
         } catch (Exception e) {
