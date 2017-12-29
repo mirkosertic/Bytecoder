@@ -15,16 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
@@ -35,21 +25,12 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.ssa.*;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.*;
 
 public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -284,6 +265,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.println();
         }
 
+        // Initialize memory layout for classes and instances
+        WASMMemoryLayouter theMemoryLayout = new WASMMemoryLayouter(aLinkerContext);
+
         // Now everything else
         aLinkerContext.forEachClass(aEntry -> {
 
@@ -348,7 +332,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
-                WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+                WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver, theMemoryLayout);
 
                 for (Variable theVariable : theSSAProgram.getVariables()) {
 
@@ -510,7 +494,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             Program theSSAProgram = theEntry.getValue().program;
 
-            WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver);
+            WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver, theMemoryLayout);
 
             for (Variable theVariable : theSSAProgram.getVariables()) {
 
@@ -697,13 +681,15 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(aEntry.getValue().getUniqueId());
             theWriter.print(")");
 
+            WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(aEntry.getKey());
+
             theWriter.print(" (i32.const ");
-            theWriter.print(WASMWriterUtils.computeClassSizeFor(aEntry.getValue()));
+            theWriter.print(theLayout.classSize());
             theWriter.print(")");
 
             if (aEntry.getValue().staticFieldByName("$VALUES") != null) {
                 theWriter.print(" (i32.const ");
-                theWriter.print(WASMWriterUtils.computeStaticFieldOffsetOf("$VALUES", aEntry.getValue()));
+                theWriter.print(theLayout.offsetForClassMember("$VALUES"));
                 theWriter.println(")");
             } else {
                 theWriter.print(" (i32.const -1)");
@@ -712,6 +698,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.println("))");
         });
 
+        WASMMemoryLayouter.MemoryLayout theStringMemoryLayout = theMemoryLayout.layoutFor(theStringClass.getClassName());
         for (int i=0;i<theStringCache.size();i++) {
 
             String theData = theStringCache.get(i);
@@ -728,7 +715,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(" (i32.const 0)"); // Unused argument
 
             theWriter.print(" (i32.const ");
-            theWriter.print(WASMWriterUtils.computeObjectSizeFor(theStringClass));
+            theWriter.print(theStringMemoryLayout.instanceSize());
             theWriter.print(")");
 
             theWriter.print(" (i32.const ");
@@ -865,7 +852,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println(")");
         theWriter.flush();
 
-        return new WASMCompileResult(aLinkerContext, theGeneratedFunctions, theStringWriter.toString());
+        return new WASMCompileResult(aLinkerContext, theGeneratedFunctions, theStringWriter.toString(), theMemoryLayout);
     }
 
 

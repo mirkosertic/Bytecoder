@@ -15,25 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.*;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -54,11 +47,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private final List<Variable> stackVariables;
     private final IDResolver idResolver;
+    private final WASMMemoryLayouter memoryLayouter;
 
-    public WASMSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver) {
+    public WASMSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver,
+                         WASMMemoryLayouter aMemoryLayouter) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         stackVariables = new ArrayList<>();
         idResolver = aIDResolver;
+        memoryLayouter = aMemoryLayouter;
         for (Variable theVariable : aProgram.getVariables()) {
             if (theVariable.resolveType().resolve() == TypeRef.Native.REFERENCE) {
                 stackVariables.add(theVariable);
@@ -91,7 +87,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     public WASMSSAWriter withDeeperIndent() {
-        return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver);
+        return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver, memoryLayouter);
     }
 
     public void writeStartNode(ControlFlowGraph.Node aNode, int aMethodId) {
@@ -394,9 +390,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writePutStaticExpression(PutStaticExpression aExpression) {
 
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
-        int theMemoryOffset = WASMWriterUtils.computeStaticFieldOffsetOf(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                theLinkedClass);
+        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        int theMemoryOffset = theLayout.offsetForClassMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         String theClassName = WASMWriterUtils.toClassName(aExpression.getField().getClassIndex().getClassConstant());
         switch (aExpression.getValue().resolveType().resolve()) {
@@ -436,10 +431,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writePutFieldExpression(PutFieldExpression aExpression) {
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
-        int theMemoryOffset = WASMWriterUtils.computeFieldOffsetOf(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                theLinkedClass);
 
+        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        int theMemoryOffset = theLayout.offsetForInstanceMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
         BytecodeLinkedClass.LinkedField theField = theLinkedClass.memberFieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         switch (TypeRef.toType(theField.getField().getTypeRef()).resolve()) {
@@ -1174,8 +1170,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeGetStaticValue(GetStaticValue aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
-        int theMemoryOffset = WASMWriterUtils.computeStaticFieldOffsetOf(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                theLinkedClass);
+
+        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        int theMemoryOffset = theLayout.offsetForClassMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         BytecodeLinkedClass.LinkedField theField = theLinkedClass.staticFieldByName(
                 aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
@@ -1208,6 +1205,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 
+        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theType);
+
         String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newObject",
@@ -1219,7 +1218,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
         print(" (i32.const ");
-        print(WASMWriterUtils.computeObjectSizeFor(theLinkedClass));
+        print(theLayout.instanceSize());
         print(") (get_global $");
         print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
         print("__runtimeClass) (i32.const ");
@@ -1229,8 +1228,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeGetFieldValue(GetFieldValue aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
-        int theMemoryOffset = WASMWriterUtils.computeFieldOffsetOf(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                theLinkedClass);
+
+        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        int theMemoryOffset = theLayout.offsetForInstanceMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         BytecodeLinkedClass.LinkedField theField = theLinkedClass.memberFieldByName(
                 aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()

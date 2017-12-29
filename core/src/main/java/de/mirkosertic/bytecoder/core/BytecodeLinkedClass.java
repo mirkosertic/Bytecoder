@@ -15,16 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
+
+import java.util.*;
+import java.util.function.Consumer;
 
 public class BytecodeLinkedClass {
 
@@ -181,21 +177,24 @@ public class BytecodeLinkedClass {
         if (!memberFields.containsKey(theFieldName)) {
 
             BytecodeObjectTypeRef theClassName = className;
-            BytecodeClass theClass = bytecodeClass;
+            BytecodeLinkedClass theClass = this;
 
             while(theClass != null) {
 
-                BytecodeField theField = theClass.fieldByName(aName.stringValue());
+                BytecodeField theField = theClass.bytecodeClass.fieldByName(aName.stringValue());
                 if (theField != null) {
                     memberFields.put(theFieldName, new LinkedField(theClassName, theField));
                     linkerContext.linkTypeRef(theField.getTypeRef());
+                    if (theClass != this) {
+                        theClass.linkField(aName);
+                    }
                     return;
                 }
 
-                if (theClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                    theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getSuperClass().getConstant());
+                if (theClass.bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
+                    theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.bytecodeClass.getSuperClass().getConstant());
 
-                    theClass = linkerContext.linkClass(theClassName).bytecodeClass;
+                    theClass = linkerContext.linkClass(theClassName);
                 } else {
                     theClass = null;
                 }

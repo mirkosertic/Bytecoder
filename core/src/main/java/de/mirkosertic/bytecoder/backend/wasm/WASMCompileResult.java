@@ -15,23 +15,24 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.util.List;
-
 import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
+import java.util.List;
+
 public class WASMCompileResult implements CompileResult<String> {
 
+    private final WASMMemoryLayouter memoryLayouter;
     private final BytecodeLinkerContext linkerContext;
     private final List<String> generatedFunctions;
     private final String data;
 
-    public WASMCompileResult(BytecodeLinkerContext aLinkerContext, List<String> aGeneratedFunctions, String aData) {
+    public WASMCompileResult(BytecodeLinkerContext aLinkerContext, List<String> aGeneratedFunctions, String aData, WASMMemoryLayouter aMemoryLayout) {
         linkerContext = aLinkerContext;
         generatedFunctions = aGeneratedFunctions;
         data = aData;
+        memoryLayouter = aMemoryLayout;
     }
 
     public int getTypeIDFor(BytecodeObjectTypeRef aObjecType) {
@@ -39,8 +40,8 @@ public class WASMCompileResult implements CompileResult<String> {
     }
 
     public int getSizeOf(BytecodeObjectTypeRef aObjectType) {
-        BytecodeLinkedClass theClass = linkerContext.linkClass(aObjectType);
-        return WASMWriterUtils.computeObjectSizeFor(theClass);
+        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(aObjectType);
+        return theLayout.instanceSize();
     }
 
     public int getVTableIndexOf(BytecodeObjectTypeRef aObjectType) {
