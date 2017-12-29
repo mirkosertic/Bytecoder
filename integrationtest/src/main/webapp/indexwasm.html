@@ -13,12 +13,36 @@
 
             var theCanvas = document.getElementById("benchmark-canvas");
             var theCanvasContext = theCanvas.getContext("2d");
+            var runningInstanceMemory = null;
+
+            function bytecoder_IntInMemory(value) {
+                return runningInstanceMemory[value]
+                    + (runningInstanceMemory[value + 1] * 256)
+                    + (runningInstanceMemory[value + 2] * 256 * 256)
+                    + (runningInstanceMemory[value + 3] * 256 * 256 * 256);
+            }
+
+            function bytecoder_logByteArrayAsString(acaller, value) {
+                var theLength = bytecoder_IntInMemory(value + 16);
+                var theData = '';
+                value = value + 20;
+                for (var i=0;i<theLength;i++) {
+                    var theCharCode = bytecoder_IntInMemory(value);
+                    value = value + 4;
+                    theData+= String.fromCharCode(theCharCode);
+                }
+                console.log(theData);
+            }
+
+            function bytecoder_logDebug(caller,value) {
+                console.log(value);
+            }
 
             // Our module for dynamic linking
             var importObject = {
                 system: {
-                    currentTimeMillis: function() {return Date.now();},
-                    nanoTime: function() {return Date.now() * 1000000;},
+                    currentTimeMillis: function(aCaller) {return Date.now();},
+                    nanoTime: function(aCaller) {return Date.now() * 1000000;},
                     logDebug: bytecoder_logDebug,
                     logByteArrayAsString: bytecoder_logByteArrayAsString,
                 },
@@ -31,6 +55,11 @@
                     float_rem: function(a, b) {return a % b;},
                     sqrt: function(thisref, p1) {return Math.sqrt(p1);},
                     add: function(thisref, p1, p2) {return p1 + p2;},
+                },
+                debug: {
+                    logRuntime : function(acaller, a) {
+                        console.log("Runtime was " + a + " ms");
+                    }
                 },
                 profiler: {
                     logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {
@@ -112,7 +141,7 @@
             var instantiated = function(result) {
                 var wasmModule = result.module;
                 runningInstance = result.instance;
-                var runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);
+                runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);
                 runningInstance.exports.initMemory(0);
                 console.log("Memory initialized");
                 runningInstance.exports.bootstrap(0);
@@ -129,7 +158,6 @@
             var stepFunction = function(timestamp) {
                 stats.begin();
                 runningInstance.exports.proceedSimulation(0);
-                runningInstance.exports.GC(0);
                 stats.end();
 
                 window.requestAnimationFrame(stepFunction);
