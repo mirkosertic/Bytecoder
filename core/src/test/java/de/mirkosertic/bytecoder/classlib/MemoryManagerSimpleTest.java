@@ -65,6 +65,50 @@ public class MemoryManagerSimpleTest {
         Assert.assertEquals(36, Address.getStart(theMalloc) , 0);
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
+    }
 
+    @Test
+    public void testMallocGC() {
+        MemoryManager.initWithSize(1000);
+        Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
+
+        Address theMalloc1 = MemoryManager.malloc(100);
+        Address theMalloc2 = MemoryManager.malloc(200);
+
+        Assert.assertEquals(684, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(316, MemoryManager.usedMem(), 0);
+
+        MemoryManager.GC();
+
+        Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
+    }
+
+    @Test
+    public void testMallocGCPartial() {
+        MemoryManager.initWithSize(1000);
+        Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
+
+        Address theMalloc1 = MemoryManager.malloc(100);
+        Address theMalloc2 = MemoryManager.malloc(200);
+        Address.setIntValue(theMalloc1, 0, Address.getStart(theMalloc2));
+
+        // Malloc1 references malloc2, but it is not references
+        // Malloc2 will be GCed first, then Malloc2
+
+        Assert.assertEquals(684, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(316, MemoryManager.usedMem(), 0);
+
+        MemoryManager.GC();
+
+        Assert.assertEquals(792, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(208, MemoryManager.usedMem(), 0);
+
+        MemoryManager.GC();
+
+        Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
     }
 }
