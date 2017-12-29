@@ -15,42 +15,40 @@
  */
 package de.mirkosertic.bytecoder.maven;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.PrintWriter;
+import com.google.common.io.Files;
+import com.google.javascript.jscomp.*;
+import com.google.javascript.jscomp.Compiler;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.apache.commons.io.IOUtils;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.project.MavenProject;
+import org.openqa.selenium.chrome.ChromeDriverService;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.logging.LogEntry;
+import org.openqa.selenium.logging.LogType;
+import org.openqa.selenium.logging.LoggingPreferences;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
+
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-
-import com.google.javascript.jscomp.CommandLineRunner;
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.SourceFile;
-
-import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import java.util.Properties;
+import java.util.logging.Level;
 
 /**
  * Plugin to run Bytecoder using Maven.
@@ -144,9 +142,112 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 }
             }
 
+            if (theCode instanceof WASMCompileResult) {
+                WASMCompileResult theWASMCompileResult = (WASMCompileResult) theCode;
+                wat2wasm(theWASMCompileResult);
+            }
+
         } catch (Exception e) {
             throw new MojoExecutionException("Error running bytecoder", e);
         }
+    }
+
+    private byte[] wat2wasm(WASMCompileResult aResult) throws IOException {
+        File theWorkingDirectory = new File(".");
+
+        Properties theProperties = new Properties(System.getProperties());
+        File theConfigFile = new File(theWorkingDirectory, "testrunner.properties");
+        if (theConfigFile.exists()) {
+            try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
+                theProperties.load(theStream);
+            }
+        }
+
+        String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
+        if (theChromeDriverBinary == null || theChromeDriverBinary.isEmpty()) {
+            throw new RuntimeException("No chromedriver binary found!");
+        }
+
+        ChromeDriverService.Builder theDriverServiceBuilder = new ChromeDriverService.Builder();
+        theDriverServiceBuilder = theDriverServiceBuilder.withVerbose(false);
+        theDriverServiceBuilder = theDriverServiceBuilder.usingDriverExecutable(new File(theChromeDriverBinary));
+
+        ChromeDriverService theDriverService = theDriverServiceBuilder.build();
+        theDriverService.start();;
+
+        File theTempDirectory = Files.createTempDir();
+        File theGeneratedFile = new File(theTempDirectory, "compile.html");
+
+        // Copy WABT Tools
+        File theWABTFile = new File(theTempDirectory, "libwabt.js");
+        try (FileOutputStream theOS = new FileOutputStream(theWABTFile)) {
+            IOUtils.copy(getClass().getResourceAsStream("/libwabt.js"), theOS);
+        }
+
+        PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+        theWriter.println("<html>");
+        theWriter.println("    <body>");
+        theWriter.println("        <h1>Module code</h1>");
+        theWriter.println("        <pre id=\"modulecode\">");
+        theWriter.println(aResult.getData());
+        theWriter.println("        </pre>");
+        theWriter.println("        <h1>Compilation result</h1>");
+        theWriter.println("        <pre id=\"compileresult\">");
+        theWriter.println("        </pre>");
+        theWriter.println("        <script src=\"libwabt.js\">");
+        theWriter.println("        </script>");
+        theWriter.println("        <script>");
+        theWriter.println("            function compile() {");
+        theWriter.println("                console.log('Compilation started');");
+        theWriter.println("                try {");
+        theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
+        theWriter.println("                    module.resolveNames();");
+        theWriter.println("                    module.validate();");
+        theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
+        theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
+        theWriter.println("                    return binaryOutput.buffer;");
+        theWriter.println("                } catch (e) {");
+        theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
+        theWriter.println("                    console.log(e.toString());");
+        theWriter.println("                    console.log(e.stack);");
+        theWriter.println("                }");
+        theWriter.println("            }");
+        theWriter.println("        </script>");
+        theWriter.println("    </body>");
+        theWriter.println("</html>");
+
+        theWriter.flush();
+        theWriter.close();
+
+        ChromeOptions theOptions = new ChromeOptions();
+        theOptions.addArguments("headless");
+
+        LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+        theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+        theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+
+        DesiredCapabilities theCapabilities = DesiredCapabilities.chrome();
+        theCapabilities.setCapability(ChromeOptions.CAPABILITY, theOptions);
+
+        RemoteWebDriver theDriver = new RemoteWebDriver(theDriverService.getUrl(), theCapabilities);
+
+        theDriver.get(theGeneratedFile.toURI().toURL().toString());
+
+        ArrayList<Long> theResult = (ArrayList<Long>) theDriver.executeScript("return compile();");
+        byte[] theBinaryDara = new byte[theResult.size()];
+        for (int i=0;i<theResult.size();i++) {
+            long theLongValue = theResult.get(i);
+            theBinaryDara[i] = (byte) theLongValue;
+        }
+        List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+        for (LogEntry theEntry : theAll) {
+            System.out.println(theEntry.getMessage());
+        }
+
+        theDriver.close();
+        theDriverService.stop();;
+
+        return theBinaryDara;
     }
 
     protected boolean isSupportedScope(String scope) {

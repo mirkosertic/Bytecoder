@@ -282,15 +282,13 @@ public class MemoryManager {
 
             int theCurrentStart = Address.getStart(theCurrent);
             if (theOwningStart != theCurrentStart) {
-                int theStart = 8;
-                int theSize = Address.getIntValue(theCurrent, 0);
-                int thePosition = 0;
+                int theSize = Address.getIntValue(theCurrent, 0) - 8;
+                int thePosition = 8;
                 while(thePosition < theSize) {
-                    int theReference = Address.getIntValue(theCurrent, theStart);
+                    int theReference = Address.getIntValue(theCurrent, thePosition);
                     if (theReference == theOwningData) {
                         return true;
                     }
-                    theStart += 4;
                     thePosition += 4;
                 }
             }

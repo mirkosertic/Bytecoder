@@ -1,0 +1,103 @@
+<html>
+    <head>
+        <title>Bytecoder JBox2D Performance Test</title>
+    </head>
+    <body>
+        <canvas id="benchmark-canvas" width="600" height="600"></canvas>
+        <script type="text/javascript" src="stats.min.js"></script>
+        <script type="text/javascript" src="bytecoder-closure.js"></script>
+        <script type="text/javascript">
+
+            var stats = new Stats();
+            stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+            document.body.appendChild(stats.dom);
+
+            var theCanvas = document.getElementById("benchmark-canvas");
+            var theCanvasContext = theCanvas.getContext("2d");
+
+            // Our module for dynamic linking
+            var canvas = {
+
+                canvasClear : function() {
+                    theCanvasContext.fillStyle = "white";
+                    theCanvasContext.strokeStyke = "grey";
+                    theCanvasContext.fillRect(0, 0, 600, 600);
+                },
+
+                contextSave : function() {
+                    theCanvasContext.save();
+                },
+
+                contextRestore : function() {
+                    theCanvasContext.restore();
+                },
+
+                contextTranslate : function(aX, aY) {
+                    theCanvasContext.translate(aX, aY);
+                },
+
+                contextScale : function(aX, aY) {
+                    theCanvasContext.scale(aX, aY);
+                },
+
+                contextLineWidth : function(aWidth) {
+                    theCanvasContext.lineWidth = aWidth;
+                },
+
+                contextRotate : function(aAngleInRadians) {
+                    theCanvasContext.rotate(aAngleInRadians);
+                },
+
+                contextBeginPath : function() {
+                    theCanvasContext.beginPath();
+                },
+
+                contextClosePath : function() {
+                    theCanvasContext.closePath();
+                },
+
+                contextMoveTo: function(aX, aY) {
+                    theCanvasContext.moveTo(aX, aY);
+                },
+
+                contextLineTo : function(aX, aY) {
+                    theCanvasContext.lineTo(aX, aY);
+                },
+
+                contextArc : function(x, y, radius, startAngle, endAngle, anticlockwise) {
+                    if (anticlockwise == 0) {
+                        theCanvasContext.arc(x, y, radius, startAngle, endAngle, false);
+                    } else {
+                        theCanvasContext.arc(x, y, radius, startAngle, endAngle, true);
+                    }
+                },
+
+                contextStroke : function() {
+                    theCanvasContext.stroke();
+                }
+            };
+
+            var debug = {
+                logRuntime : function(a) {
+                    console.log("Runtime was " + a + " ms");
+                }
+            };
+
+            console.log("Init");
+            bytecoder.bootstrap();
+
+            JBox2DSimulation.VOIDmainA1TString();
+            console.log("Ready");
+
+            var stepFunction = function(timestamp) {
+                stats.begin();
+                JBox2DSimulation.VOIDproceedSimulation();
+                stats.end();
+
+                window.requestAnimationFrame(stepFunction);
+            };
+
+        </script>
+        <button onclick="stepFunction()" value="Click me">Click Me</button>
+    </body>
+</html>

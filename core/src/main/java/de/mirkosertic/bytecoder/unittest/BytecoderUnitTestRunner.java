@@ -15,21 +15,14 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.logging.Level;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
+import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
@@ -51,13 +44,13 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
-import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import java.io.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -356,7 +349,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
             theWriter.println("                         },");
             theWriter.println("                         profiler: {");
-            theWriter.println("                             logMemoryLayoutBlock(aCaller, aStart, aUsed, aNext) {");
+            theWriter.println("                             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");
             theWriter.println("                                 if (aUsed == 1) return;");
             theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
             theWriter.println("                                 console.log('      Block size is ' + bytecoder_IntInMemory(aStart));");
@@ -374,7 +367,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
             theWriter.println("                             console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
             theWriter.println("                             console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
-            theWriter.println("                             runningInstance.exports.bootstrap();");
+            theWriter.println("                             runningInstance.exports.bootstrap(0);");
             theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + runningInstance.exports.usedMem());");
             theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + runningInstance.exports.freeMem());");
             theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
