@@ -72,12 +72,10 @@ public class JBox2DTest {
             world.setContactListener(new ContactListener() {
                 @Override
                 public void beginContact(Contact contact) {
-                    System.out.println("Begin contact");
                 }
 
                 @Override
                 public void endContact(Contact contact) {
-                    System.out.println("end contact");
                 }
 
                 @Override
