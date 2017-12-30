@@ -149,7 +149,9 @@ public class JBox2DSimulation {
             long relativeTime = currentTime - startTime;
             System.out.println("Start of calculation");
             System.out.println(currentTime);
+            System.out.println(timeToCalculate);
             while (timeToCalculate > 10) {
+                System.out.println("One step");
                 System.out.println((long) timeToCalculate);
                 int period = (int) ((relativeTime + 5000) / 10000);
                 reel.applyTorque(period % 2 == 0 ? 8f : -8f);
