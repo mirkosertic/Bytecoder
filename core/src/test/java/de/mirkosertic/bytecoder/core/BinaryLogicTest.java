@@ -142,4 +142,12 @@ public class BinaryLogicTest {
         theValue>>=2;
         Assert.assertEquals(4, theValue, 0);
     }
+
+    @Test
+    public void testAndFlags() {
+        int theValue = 3;
+        Assert.assertEquals(1, theValue & 1, 0);
+        Assert.assertEquals(2, theValue & 2, 0);
+        Assert.assertEquals(0, theValue & 4, 0);
+    }
 }
