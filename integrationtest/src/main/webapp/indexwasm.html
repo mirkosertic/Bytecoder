@@ -41,8 +41,8 @@
             // Our module for dynamic linking
             var importObject = {
                 system: {
-                    currentTimeMillis: function(aCaller) {return Date.now();},
-                    nanoTime: function(aCaller) {return Date.now() * 1000000;},
+                    currentTimeMillis: function(aCaller) {return (Date.now() - 1514628979781);},
+                    nanoTime: function(aCaller) {return (Date.now() - 1514628979781) * 1000000;},
                     logDebug: bytecoder_logDebug,
                     logByteArrayAsString: bytecoder_logByteArrayAsString,
                 },
