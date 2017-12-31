@@ -187,6 +187,9 @@ public class BytecoderMavenMojo extends AbstractMojo {
         }
 
         String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
+        if (theChromeDriverBinary == null) {
+            theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
+        }
         if (theChromeDriverBinary == null || theChromeDriverBinary.isEmpty()) {
             throw new RuntimeException("No chromedriver binary found!");
         }

@@ -23,6 +23,7 @@ before_install:
 script:
   - whereis google-chrome-stable
   - whereis chromedriver
+  - export CHROMEDRIVER_BINARY=~/chromedriver
   - mvn clean install -DskipTests=true -Dchromedriver.binary=~/chromedriver
 
 after_success:
