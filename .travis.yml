@@ -1,7 +1,9 @@
 sudo: false
 
 addons:
-  chrome: stable
+  apt:
+    packages:
+      - google-chrome-stable
 
 language: java
 
@@ -16,7 +18,7 @@ python:
 
 before_install:
   - pip install --user codecov
-  - wget -N http://chromedriver.storage.googleapis.com/2.30/chromedriver_linux64.zip -P ~/
+  - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
   - rm ~/chromedriver_linux64.zip
   - sudo chmod +x ~/chromedriver
