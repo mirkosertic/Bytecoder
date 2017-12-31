@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
+import de.mirkosertic.bytecoder.annotations.Export;
+import de.mirkosertic.bytecoder.annotations.Import;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.Shape;
@@ -27,9 +29,6 @@ import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
-
-import de.mirkosertic.bytecoder.annotations.Export;
-import de.mirkosertic.bytecoder.annotations.Import;
 
 public class JBox2DSimulation {
 
@@ -109,8 +108,8 @@ public class JBox2DSimulation {
             shape.m_radius = ballRadius;
             fixtureDef.shape = shape;
 
-            for (int i = 0; i < 4; ++i) {
-                for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 6; ++i) {
+                for (int j = 0; j < 6; ++j) {
                     float x = (j + 0.5f) * (ballRadius * 2 + 0.01f);
                     float y = (i + 0.5f) * (ballRadius * 2 + 0.01f);
                     ballDef.position.x = 3 + x;
@@ -161,10 +160,6 @@ public class JBox2DSimulation {
             }
             lastCalculated = System.currentTimeMillis();
             System.out.println("End");
-        }
-
-        public int timeUntilNextStep() {
-            return (int) Math.max(0, lastCalculated + 10 - System.currentTimeMillis());
         }
 
         public World getWorld() {
