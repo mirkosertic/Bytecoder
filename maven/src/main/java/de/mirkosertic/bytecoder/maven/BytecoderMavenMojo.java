@@ -16,32 +16,21 @@
 package de.mirkosertic.bytecoder.maven;
 
 import com.google.common.io.Files;
-import com.google.javascript.jscomp.CommandLineRunner;
-import com.google.javascript.jscomp.CompilationLevel;
+import com.google.javascript.jscomp.*;
 import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.SourceFile;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.plugins.annotations.*;
 import org.apache.maven.project.MavenProject;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -52,18 +41,12 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Level;
 
 /**
@@ -176,22 +159,9 @@ public class BytecoderMavenMojo extends AbstractMojo {
     }
 
     private int[] wat2wasm(WASMCompileResult aResult) throws IOException {
-        File theWorkingDirectory = new File(".");
-
-        Properties theProperties = new Properties(System.getProperties());
-        File theConfigFile = new File(theWorkingDirectory, "testrunner.properties");
-        if (theConfigFile.exists()) {
-            try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
-                theProperties.load(theStream);
-            }
-        }
-
-        String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
-        if (theChromeDriverBinary == null) {
-            theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
-        }
+        String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
         if (theChromeDriverBinary == null || theChromeDriverBinary.isEmpty()) {
-            throw new RuntimeException("No chromedriver binary found!");
+            throw new RuntimeException("No chromedriver binary found! Please set CHROMEDRIVER_BINARY environment variable!");
         }
 
         ChromeDriverService.Builder theDriverServiceBuilder = new ChromeDriverService.Builder();

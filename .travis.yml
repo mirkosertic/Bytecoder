@@ -9,6 +9,7 @@ jdk:
   - oraclejdk9
 
 env:
+  - CHROMEDRIVER_BINARY=~/chromedriver
 
 python:
   - 2.7
@@ -23,8 +24,7 @@ before_install:
 script:
   - whereis google-chrome-stable
   - whereis chromedriver
-  - export CHROMEDRIVER_BINARY=~/chromedriver
-  - mvn clean install -DskipTests=true -Dchromedriver.binary=~/chromedriver
+  - mvn clean install -DskipTests=true
 
 after_success:
   - codecov

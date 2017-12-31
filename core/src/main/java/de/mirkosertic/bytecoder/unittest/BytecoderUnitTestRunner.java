@@ -49,7 +49,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Level;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
@@ -119,20 +118,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-    private static void initializeSeleniumDriver(File aWorkingDirectory) throws IOException {
+    private static void initializeSeleniumDriver() throws IOException {
         if (DRIVERSERVICE == null) {
 
-            Properties theProperties = new Properties(System.getProperties());
-            File theConfigFile = new File(aWorkingDirectory, "testrunner.properties");
-            if (theConfigFile.exists()) {
-                try (FileInputStream theStream = new FileInputStream(theConfigFile)) {
-                    theProperties.load(theStream);
-                }
-            }
-
-            String theChromeDriverBinary = theProperties.getProperty("chromedriver.binary");
+            String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
             if (theChromeDriverBinary == null || theChromeDriverBinary.isEmpty()) {
-                throw new RuntimeException("No chromedriver binary found!");
+                throw new RuntimeException("No chromedriver binary found! Please set CHROMEDRIVER_BINARY environment variable!");
             }
 
             ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
@@ -204,7 +195,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             File theWorkingDirectory = new File(".");
 
-            initializeSeleniumDriver(theWorkingDirectory);
+            initializeSeleniumDriver();
 
             File theMavenTargetDir = new File(theWorkingDirectory, "target");
             File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
@@ -265,7 +256,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             File theWorkingDirectory = new File(".");
 
-            initializeSeleniumDriver(theWorkingDirectory);
+            initializeSeleniumDriver();
 
             File theMavenTargetDir = new File(theWorkingDirectory, "target");
             File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
