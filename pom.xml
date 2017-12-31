@@ -8,6 +8,7 @@
     <packaging>pom</packaging>
     <name>Bytecoder Parent POM</name>
     <description>Parent POM for Bytecoder</description>
+    <url>https://github.com/mirkosertic/Bytecoder</url>
 
     <licenses>
         <license>
