@@ -150,4 +150,11 @@ public class BinaryLogicTest {
         Assert.assertEquals(2, theValue & 2, 0);
         Assert.assertEquals(0, theValue & 4, 0);
     }
+
+    @Test
+    public void testFloatCompare() {
+        float theValue = 0.01f;
+        boolean thePositive = theValue > 0.0f;
+        Assert.assertTrue(thePositive);
+    }
 }

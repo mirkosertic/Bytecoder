@@ -25,12 +25,31 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -554,7 +573,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   (func $compareValueI32 (param $p1 i32) (param $p2 i32) (result i32)");
         theWriter.println("     (block $b1");
         theWriter.println("         (br_if $b1");
-        theWriter.println("             (i32.ne (get_local $p1) (get_local $p1))");
+        theWriter.println("             (i32.ne (get_local $p1) (get_local $p2))");
         theWriter.println("         )");
         theWriter.println("         (return (i32.const 0))");
         theWriter.println("     )");
@@ -562,16 +581,16 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         (br_if $b2");
         theWriter.println("             (i32.ge_s (get_local $p1) (get_local $p2))");
         theWriter.println("         )");
-        theWriter.println("         (return (i32.const 1))");
+        theWriter.println("         (return (i32.const -1))");
         theWriter.println("     )");
-        theWriter.println("     (return (i32.const -1))");
+        theWriter.println("     (return (i32.const 1))");
         theWriter.println("   )");
         theWriter.println();
 
         theWriter.println("   (func $compareValueF32 (param $p1 f32) (param $p2 f32) (result i32)");
         theWriter.println("     (block $b1");
         theWriter.println("         (br_if $b1");
-        theWriter.println("             (f32.ne (get_local $p1) (get_local $p1))");
+        theWriter.println("             (f32.ne (get_local $p1) (get_local $p2))");
         theWriter.println("         )");
         theWriter.println("         (return (i32.const 0))");
         theWriter.println("     )");
@@ -579,9 +598,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         (br_if $b2");
         theWriter.println("             (f32.ge (get_local $p1) (get_local $p2))");
         theWriter.println("         )");
-        theWriter.println("         (return (i32.const 1))");
+        theWriter.println("         (return (i32.const -1))");
         theWriter.println("     )");
-        theWriter.println("     (return (i32.const -1))");
+        theWriter.println("     (return (i32.const 1))");
         theWriter.println("   )");
         theWriter.println();
 

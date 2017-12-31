@@ -38,6 +38,8 @@
                 console.log(value);
             }
 
+            var lastRuntime = 0;
+
             // Our module for dynamic linking
             var importObject = {
                 system: {
@@ -58,7 +60,9 @@
                 },
                 debug: {
                     logRuntime : function(acaller, a) {
+                        lastRuntime = Math.round((lastRuntime + a) / 2);
                         console.log("Runtime was " + a + " ms");
+                        document.getElementById("runtime").innerText = '' + lastRuntime + " ms";
                     }
                 },
                 profiler: {
@@ -165,5 +169,6 @@
 
         </script>
         <button onclick="stepFunction()" value="Click me">Click Me</button>
+        Avg Runtime per Frame : <span id="runtime"></span>
     </body>
 </html>

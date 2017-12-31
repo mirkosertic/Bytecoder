@@ -77,9 +77,13 @@
                 }
             };
 
+            var lastRuntime = 0;
+
             var debug = {
                 logRuntime : function(a) {
+                    lastRuntime = Math.round((lastRuntime + a) / 2);
                     console.log("Runtime was " + a + " ms");
+                    document.getElementById("runtime").innerText = '' + lastRuntime + " ms";
                 }
             };
 
@@ -99,5 +103,6 @@
 
         </script>
         <button onclick="stepFunction()" value="Click me">Click Me</button>
+        Avg Runtime per Frame : <span id="runtime"></span>
     </body>
 </html>

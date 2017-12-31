@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.complex;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.jbox2d.callbacks.ContactImpulse;
 import org.jbox2d.callbacks.ContactListener;
 import org.jbox2d.collision.AABB;
@@ -25,9 +26,11 @@ import org.jbox2d.collision.ManifoldPoint;
 import org.jbox2d.collision.broadphase.DynamicTree;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
-import org.jbox2d.collision.shapes.Shape;
 import org.jbox2d.collision.shapes.ShapeType;
-import org.jbox2d.common.*;
+import org.jbox2d.common.Mat33;
+import org.jbox2d.common.Settings;
+import org.jbox2d.common.Vec2;
+import org.jbox2d.common.Vec3;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
@@ -37,8 +40,6 @@ import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.CircleContact;
 import org.jbox2d.dynamics.contacts.Contact;
 import org.jbox2d.dynamics.joints.RevoluteJointDef;
-import org.jbox2d.dynamics.joints.WeldJoint;
-import org.jbox2d.dynamics.joints.WheelJoint;
 import org.jbox2d.pooling.IDynamicStack;
 import org.jbox2d.pooling.IWorldPool;
 import org.jbox2d.pooling.arrays.IntArray;
@@ -47,8 +48,6 @@ import org.jbox2d.pooling.normal.DefaultWorldPool;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class JBox2DTest {
@@ -523,6 +522,45 @@ public class JBox2DTest {
         System.out.println("D");
         Assert.assertTrue(theContact instanceof CircleContact);
         System.out.println("E");
+    }
+
+    @Test
+    public void testSimpleBall() {
+        World world = new World(new Vec2(0, -9.8f));
+
+        float ballRadius = 0.15f;
+
+        BodyDef ballDef = new BodyDef();
+        ballDef.type = BodyType.DYNAMIC;
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.friction = 0.3f;
+        fixtureDef.restitution = 0.3f;
+        fixtureDef.density = 0.2f;
+        CircleShape shape = new CircleShape();
+        shape.m_radius = ballRadius;
+        fixtureDef.shape = shape;
+
+        int i=0;
+        int j=0;
+
+        float x = (j + 0.5f) * (ballRadius * 2 + 0.01f);
+        float y = (i + 0.5f) * (ballRadius * 2 + 0.01f);
+        ballDef.position.x = 3 + x;
+        ballDef.position.y = 3 + y;
+        Body theBall = world.createBody(ballDef);
+        theBall.createFixture(fixtureDef);
+
+        for (int k=0;k<100;k++) {
+            world.step(0.01f, 20, 40);
+        }
+
+        Vec2 thePosition = theBall.getPosition();
+        int theX = (int)(thePosition.x * 1000);
+        int theY = (int) (thePosition.y * 1000);
+
+        System.out.println("Finally ended at ");
+        System.out.println(theX);
+        System.out.println(theY);
     }
 
     @Test
