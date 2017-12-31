@@ -23,6 +23,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <chromedriver.binary>/home/travis/chromedriver</chromedriver.binary>
     </properties>
 
     <dependencyManagement>
