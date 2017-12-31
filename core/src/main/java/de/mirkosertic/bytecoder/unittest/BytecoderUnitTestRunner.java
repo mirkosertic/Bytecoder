@@ -149,6 +149,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     private WebDriver newDriverForTest() {
         ChromeOptions theOptions = new ChromeOptions();
         theOptions.addArguments("headless");
+        theOptions.addArguments("disable-gpu");
 
         LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
