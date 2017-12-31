@@ -123,6 +123,9 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
 
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
 The plugin will invoke the WebAssembly compiler which will do all the heavy lifting. The generated
-WebAssembly text file will be placed in the Maven `target/bytecoder` directory. You have to manually invoke the WABT Tools to 
-generate the WebAssembly binary representation from the text format. Optionally you may like to use the Binaryen tools
-to further optimize the generated WebAssembly.
+WebAssembly text file and compiled binaries will be placed in the Maven `target/bytecoder` directory. 
+
+Bytecoder relies for WebAssemvly compilation on the WABT toolchain. Compilation is done by invoking the JS version of 
+the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
+environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
+of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
