@@ -6,13 +6,38 @@
 
     <groupId>de.mirkosertic.bytecoder</groupId>
     <artifactId>bytecoder-parent</artifactId>
-    <version>0.0.0-SNAPSHOT</version>
+    <version>2017-12-31-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Bytecoder Parent POM</name>
+    <description>Parent POM for Bytecoder</description>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <organization>
+        <name>Systemprogrammierung Mirko Sertic</name>
+        <url>http://www.mirkosertic.de</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <name>Mirko Sertic</name>
+            <email>mirko@mirkosertic.de</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+    </developers>
 
     <scm>
         <url>https://github.com/mirkosertic/Bytecoder</url>
         <connection>scm:git:https://github.com/mirkosertic/Bytecoder.git</connection>
+        <developerConnection>scm:git:https://github.com/mirkosertic/Bytecoder.git</developerConnection>
+        <tag>HEAD</tag>
     </scm>
 
     <modules>
@@ -56,6 +81,32 @@
                     <target>9</target>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.3</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>maven-releases</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
@@ -76,24 +127,6 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>buildnumber-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <doCheck>false</doCheck>
-                    <doUpdate>false</doUpdate>
-                    <shortRevisionLength>7</shortRevisionLength>
-                    <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <executions>
@@ -111,20 +144,70 @@
         </plugins>
     </build>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>maven-releases</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+        </repository>
+    </distributionManagement>
+
     <profiles>
         <profile>
-            <id>automaticversion</id>
+            <id>signed</id>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>fr.brouillard.oss</groupId>
-                        <artifactId>jgitver-maven-plugin</artifactId>
-                        <version>0.1.1</version>
-                        <extensions>true</extensions>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>githubrelease</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>de.jutzig</groupId>
+                        <artifactId>github-release-plugin</artifactId>
+                        <version>1.1.1</version>
                         <configuration>
-                            <mavenLike>true</mavenLike>
-                            <nonQualifierBranches>master</nonQualifierBranches>
+                            <description />
+                            <releaseName>${project.version}</releaseName>
+                            <tag>${project.version}</tag>
+                            <repositoryId>mirkosertic/Bytecoder</repositoryId>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${project.build.directory}</directory>
+                                    <includes>
+                                        <include>${artifactId}-${project.version}.jar</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <id>deploygithub</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>release</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
