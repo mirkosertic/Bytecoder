@@ -244,6 +244,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
         ChromeOptions theOptions = new ChromeOptions();
         theOptions.addArguments("headless");
+        theOptions.addArguments("disable-gpu");
 
         LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
