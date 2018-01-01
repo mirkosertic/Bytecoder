@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AllOptimizer implements Optimizer {
 
@@ -27,7 +27,7 @@ public class AllOptimizer implements Optimizer {
 
     public AllOptimizer() {
         optimizer = new ArrayList<>();
-        //optimizer.add(new HighLevelIFOptimizer());
+        optimizer.add(new HighLevelIFOptimizer());
         optimizer.add(new InvokeVirtualOptimizer());
         optimizer.add(new InlineGotoOptimizer());
     }
