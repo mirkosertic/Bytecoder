@@ -15,12 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -32,11 +26,13 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.*;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -319,18 +315,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     return;
                 }
 
-                BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
-                BytecodeTypeRef[] theMethodArguments = theCurrentMethodSignature.getArguments();
-                StringBuilder theArguments = new StringBuilder();
-                if (!theMethod.getAccessFlags().isStatic()) {
-                    theArguments.append("thisRef");
-                }
+                ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
+                Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
 
-                for (int i=1;i<=theMethodArguments.length;i++) {
+                BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
+                StringBuilder theArguments = new StringBuilder();
+                for (Program.Argument theArgument : theSSAProgram.getArguments()) {
                     if (theArguments.length() > 0) {
                         theArguments.append(",");
                     }
-                    theArguments.append("p").append(i);
+                    theArguments.append(theArgument.getVariable().getName());
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {
@@ -355,9 +349,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
 
                 aOptions.getLogger().info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
-
-                ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
-                Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
