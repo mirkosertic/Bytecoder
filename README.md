@@ -59,8 +59,7 @@ public class SimpleMathTest {
 }
 ```
 
-Is compiled to JavaScript and executed using a Selenium Chrome driver. This testrunner also supports comparison of original Java code and its crosscompiled
-counterpart. This mechanism is the core tool to test the compiler and the Classlib.
+Is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This testrunner also supports comparison of original Java code and its crosscompiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
 ## Maven Plugin
 
