@@ -64,6 +64,10 @@ public class ControlFlowGraph {
         knownNodes = new ArrayList<>();
     }
 
+    public Program getProgram() {
+        return program;
+    }
+
     public Set<GraphNode> finalNodes() {
         Set<GraphNode> theNodes = new HashSet<>();
         for (GraphNode theNode : knownNodes) {
