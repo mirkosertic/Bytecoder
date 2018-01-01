@@ -27,6 +27,7 @@ public class AllOptimizer implements Optimizer {
 
     public AllOptimizer() {
         optimizer = new ArrayList<>();
+        optimizer.add(new InefficientIFOptimizer());
         optimizer.add(new HighLevelIFOptimizer());
         optimizer.add(new InvokeVirtualOptimizer());
         optimizer.add(new InlineGotoOptimizer());
