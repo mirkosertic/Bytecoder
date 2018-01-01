@@ -23,15 +23,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
 import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -193,13 +185,16 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 // The stack is empty
                 int theCurrentIndex = 0;
                 if (!method.getAccessFlags().isStatic()) {
-                    theValues.put(new LocalVariableDescription(theCurrentIndex), Variable.createThisRef());
+                    LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
+                    theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
                     theCurrentIndex++;
                 }
+
                 BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
                 for (int i=0;i<theTypes.length;i++) {
                     BytecodeTypeRef theRef = theTypes[i];
-                    theValues.put(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, TypeRef.toType(theTypes[i])));
+                    LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
+                    theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
                     theCurrentIndex++;
                     if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
                         theCurrentIndex++;
@@ -331,9 +326,39 @@ public class NaiveProgramGenerator implements ProgramGenerator {
     public Program generateFrom(BytecodeClass aOwningClass, BytecodeMethod aMethod) {
 
         BytecodeCodeAttributeInfo theCode = aMethod.getCode(aOwningClass);
-        BytecodeProgram theBytecode = theCode.getProgramm();
 
         Program theProgram = new Program();
+
+        // Initialize programm arguments
+        BytecodeLocalVariableTableAttributeInfo theDebugInfos = null;
+        if (theCode != null) {
+            theDebugInfos = theCode.attributeByType(BytecodeLocalVariableTableAttributeInfo.class);
+        }
+        int theCurrentIndex = 0;
+        if (!aMethod.getAccessFlags().isStatic()) {
+            theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createThisRef());
+            theCurrentIndex++;
+        }
+        BytecodeTypeRef[] theTypes = aMethod.getSignature().getArguments();
+        for (int i=0;i<theTypes.length;i++) {
+            BytecodeTypeRef theRef = theTypes[i];
+            if (theDebugInfos != null) {
+                BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(new BytecodeOpcodeAddress(0), theCurrentIndex);
+                if (theEntry != null) {
+                    String theVariableName = theDebugInfos.resolveVariableName(theEntry);
+                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, theVariableName, TypeRef.toType(theTypes[i])));
+                } else {
+                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, TypeRef.toType(theTypes[i])));
+                }
+            } else {
+                theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, TypeRef.toType(theTypes[i])));
+            }
+
+            theCurrentIndex++;
+            if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
+                theCurrentIndex++;
+            }
+        }
 
         List<BytecodeBasicBlock> theBlocks = new ArrayList<>();
         Function<BytecodeOpcodeAddress, BytecodeBasicBlock> theBasicBlockByAddress = aValue -> {
@@ -345,6 +370,11 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             throw new IllegalStateException("No Block for " + aValue.getAddress());
         };
 
+        if (aMethod.getAccessFlags().isAbstract() || aMethod.getAccessFlags().isNative()) {
+            return theProgram;
+        }
+
+        BytecodeProgram theBytecode = theCode.getProgramm();
         Set<BytecodeOpcodeAddress> theJumpTarget = theBytecode.getJumpTargets();
         BytecodeBasicBlock currentBlock = null;
         for (BytecodeInstruction theInstruction : theBytecode.getInstructions()) {
@@ -470,7 +500,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
         try {
             // Now we can continue to create the program flow
-            ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theCode.attributeByType(BytecodeLocalVariableTableAttributeInfo.class));
+            ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theDebugInfos);
 
             // This will traverse the CFG from bottom to top
             for (GraphNode theNode : theProgram.getControlFlowGraph().finalNodes()) {

@@ -15,39 +15,56 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.gson.internal.LinkedTreeMap;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
+import java.util.*;
+
 public class Program {
+
+    public static class Argument {
+
+        private final LocalVariableDescription variableDescription;
+        private final Variable variable;
+
+        public Argument(LocalVariableDescription aVariableDescription, Variable aVariable) {
+            variableDescription = aVariableDescription;
+            variable = aVariable;
+        }
+
+        public Variable getVariable() {
+            return variable;
+        }
+    }
 
     private final ControlFlowGraph controlFlowGraph;
     private final List<Variable> variables;
     private final Set<Variable> globals;
-    private final Map<LocalVariableDescription, Variable> arguments;
+    private final List<Argument> arguments;
 
     public Program() {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
         globals = new HashSet<>();
-        arguments = new LinkedTreeMap<>();
+        arguments = new ArrayList<>();
     }
 
     public void addArgument(LocalVariableDescription aVariableDescription, Variable aVariable) {
-        arguments.put(aVariableDescription, aVariable);
+        arguments.add(new Argument(aVariableDescription, aVariable));
         globals.add(aVariable);
     }
 
-    public Map<LocalVariableDescription, Variable> getArguments() {
+    public List<Argument> getArguments() {
         return arguments;
+    }
+
+    public Argument matchingArgumentOf(LocalVariableDescription aVariableDescription) {
+        for (Argument theArgument : arguments) {
+            if (theArgument.variableDescription.equals(aVariableDescription)) {
+                return theArgument;
+            }
+        }
+        throw new IllegalStateException("No argument matching " + aVariableDescription);
     }
 
     public ControlFlowGraph getControlFlowGraph() {

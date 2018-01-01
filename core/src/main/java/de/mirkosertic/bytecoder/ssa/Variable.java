@@ -31,6 +31,12 @@ public class Variable extends Value {
         return theVariable;
     }
 
+    public static Variable createMethodParameter(int aIndex, String aName, TypeRef aTypeRef) {
+        Variable theVariable = new Variable(aTypeRef, aName, true);
+        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
+        return theVariable;
+    }
+
     private final TypeRef type;
     private String name;
     private final boolean synthetic;

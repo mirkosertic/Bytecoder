@@ -25,31 +25,12 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.ssa.*;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -309,33 +290,36 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     return;
                 }
 
-                BytecodeMethodSignature theSignature = t.getSignature();
-
                 if (t.getAccessFlags().isNative()) {
                     // Already written
                     return;
                 }
+
+                BytecodeMethodSignature theSignature = t.getSignature();
+
+                ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
+                Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
                 theWriter.print("   (func ");
                 theWriter.print("$");
                 theWriter.print(WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature));
                 theWriter.print(" ");
 
-                if (!t.getAccessFlags().isStatic()) {
-                    theWriter.print("(param $thisRef");
-                } else {
+                if (t.getAccessFlags().isStatic()) {
                     theWriter.print("(param $UNUSED");
-                }
-                theWriter.print(" ");
-                theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                theWriter.print(") ");
-
-                for (int i=0;i<theSignature.getArguments().length;i++) {
-                    BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                    theWriter.print("(param $p");
-                    theWriter.print((i + 1));
                     theWriter.print(" ");
-                    theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theParamType)));
+                    theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                    theWriter.print(") ");
+                }
+
+                for (Program.Argument theArgument : theSSAProgram.getArguments()) {
+
+                    Variable theVariable = theArgument.getVariable();
+
+                    theWriter.print("(param $");
+                    theWriter.print(theVariable.getName());
+                    theWriter.print(" ");
+                    theWriter.print(WASMWriterUtils.toType(theVariable.resolveType()));
                     theWriter.print(") ");
                 }
 
@@ -345,9 +329,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.print(")");
                 }
                 theWriter.println();
-
-                ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
-                Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
