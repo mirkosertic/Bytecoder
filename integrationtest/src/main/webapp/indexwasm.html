@@ -7,6 +7,23 @@
         <script type="text/javascript" src="stats.min.js"></script>
         <script type="text/javascript">
 
+            function sortNumber(a,b) {
+                return a - b;
+            }
+
+            function quantile(array, percentile) {
+                array.sort(sortNumber);
+                index = percentile/100. * (array.length-1);
+                if (Math.floor(index) == index) {
+                    result = array[index];
+                } else {
+                    i = Math.floor(index)
+                    fraction = index - i;
+                    result = array[i] + (array[i+1] - array[i]) * fraction;
+                }
+                return result;
+            }
+
             var stats = new Stats();
             stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
             document.body.appendChild(stats.dom);
@@ -39,6 +56,7 @@
             }
 
             var lastRuntime = 0;
+            var lastRuntimeTimeSeries = [];
 
             // Our module for dynamic linking
             var importObject = {
@@ -60,9 +78,18 @@
                 },
                 debug: {
                     logRuntime : function(acaller, a) {
-                        lastRuntime = Math.round((lastRuntime + a) / 2);
-                        console.log("Runtime was " + a + " ms");
-                        document.getElementById("runtime").innerText = '' + lastRuntime + " ms";
+                        lastRuntimeTimeSeries.push(a);
+                        if (lastRuntimeTimeSeries.length > 500) {
+                            lastRuntimeTimeSeries.shift();
+                        }
+                        lastRuntime = (lastRuntime + a) / 2;
+                        document.getElementById("stats_avg").innerText = '' + lastRuntime.toFixed(2) + " ms";
+
+                        [50, 75, 95, 98, 99].forEach(function (element, index, array) {
+                            var q = quantile(lastRuntimeTimeSeries, element).toFixed(2) + " ms";
+                            document.getElementById("stats_" + element).innerText = q;
+
+                        });
                     }
                 },
                 profiler: {
@@ -169,6 +196,23 @@
 
         </script>
         <button onclick="stepFunction()" value="Click me">Click Me</button>
-        Avg Runtime per Frame : <span id="runtime"></span>
+        <table border="1">
+            <tr>
+                <td>Avg ms / Frame</td>
+                <td>50%</td>
+                <td>75%</td>
+                <td>95%</td>
+                <td>98%</td>
+                <td>99%</td>
+            </tr>
+            <tr>
+                <td id="stats_avg"></td>
+                <td id="stats_50"></td>
+                <td id="stats_75"></td>
+                <td id="stats_95"></td>
+                <td id="stats_98"></td>
+                <td id="stats_99"></td>
+            </tr>
+        </table>
     </body>
 </html>
