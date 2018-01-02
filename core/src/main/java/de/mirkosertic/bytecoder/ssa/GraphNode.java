@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class GraphNode extends Expression {
 
@@ -222,4 +222,26 @@ public class GraphNode extends Expression {
         }
         return false;
     }
+
+    public void deleteVariable(Variable aVariable) {
+        deleteVariable(aVariable, expressions);
+    }
+
+    private void deleteVariable(Variable aVariable, ExpressionList aList) {
+        for (Expression theExpression : aList.toList()) {
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                    deleteVariable(aVariable, theList);
+                }
+            }
+            if (theExpression instanceof InitVariableExpression) {
+                InitVariableExpression theInit = (InitVariableExpression) theExpression;
+                if (theInit.getVariable() == aVariable) {
+                    aList.remove(theExpression);
+                }
+            }
+        }
+    }
+
 }
