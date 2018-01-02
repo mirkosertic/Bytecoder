@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class IFExpression extends Expression implements ExpressionListContainer {
 
@@ -32,6 +32,10 @@ public class IFExpression extends Expression implements ExpressionListContainer 
         booleanValue = aBooleanValue;
         expressions = aExpressions;
         gotoAddress = aGotoAddress;
+    }
+
+    public IFExpression withNewBooleanValue(Value aBooleanValue) {
+        return new IFExpression(address, gotoAddress, aBooleanValue, expressions);
     }
 
     public BytecodeOpcodeAddress getAddress() {

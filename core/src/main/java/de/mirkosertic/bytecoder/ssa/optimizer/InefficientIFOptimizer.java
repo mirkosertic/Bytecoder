@@ -54,10 +54,33 @@ public class InefficientIFOptimizer implements Optimizer {
                             Value theFirstValue = theInits.get(0);
                             if (theFirstValue instanceof CompareValue) {
                                 CompareValue theCompare = (CompareValue) theFirstValue;
+                                Value theCompareA = theCompare.resolveFirstArgument();
+                                Value theCompareB = theCompare.resolveSecondArgument();
                                 IntegerValue theInteger = (IntegerValue) theSecond;
                                 // We have a candidate
+
+                                // Compare follows this logic:
+                                // a == b -> 0
+                                // a >= b -> 1
+                                // a < b -> -1
                                 if (theInteger.getIntValue() == 0) {
                                     switch (theBinary.getOperator()) {
+                                        case EQUALS:
+                                        case GREATEROREQUALS:
+                                        case LESSTHAN:
+                                        case LESSTHANOREQUALS:
+                                        case GREATERTHAN: {
+                                            // Unbind all
+                                            theCompare.unbind();
+                                            theBinary.unbind();
+                                            // The new boolean expression and the new if
+                                            BinaryValue theNewBooleanValue = new BinaryValue(theBinary.resolveType(), theCompareA, theBinary.getOperator(), theCompareB);
+                                            IFExpression theNewIf = theIF.withNewBooleanValue(theNewBooleanValue);
+                                            aList.replace(theIF, theNewIf);
+                                            // Finally, get rid of the removed variable
+                                            aGraph.getProgram().deleteVariable((Variable) theFirst);
+                                            break;
+                                        }
                                         default:
                                             break;
                                     }

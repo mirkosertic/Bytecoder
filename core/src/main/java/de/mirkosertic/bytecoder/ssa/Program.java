@@ -18,7 +18,11 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class Program {
 
@@ -149,6 +153,14 @@ public class Program {
             }
         }
         return theResult;
+    }
+
+    public void deleteVariable(Variable aVariable) {
+        variables.remove(aVariable);
+        globals.remove(aVariable);
+        for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
+            theNode.deleteVariable(aVariable);
+        }
     }
 
     public Variable getVariableByName(String aName) {
