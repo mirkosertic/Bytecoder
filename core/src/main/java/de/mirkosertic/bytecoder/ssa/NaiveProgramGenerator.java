@@ -241,8 +241,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         public void setStackValue(int aStackPos, Value aValue) {
-            List<Value> theValues = new ArrayList<>();
-            theValues.addAll(stack);
+            List<Value> theValues = new ArrayList<>(stack);
             while (theValues.size() <= aStackPos) {
                 theValues.add(null);
             }
@@ -303,8 +302,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 }
 
                 BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
-                for (int i=0;i<theTypes.length;i++) {
-                    BytecodeTypeRef theRef = theTypes[i];
+                for (BytecodeTypeRef theRef : theTypes) {
                     LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
                     theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
                     theCurrentIndex++;
@@ -455,7 +453,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         for (int i=0;i<theTypes.length;i++) {
             BytecodeTypeRef theRef = theTypes[i];
             if (theDebugInfos != null) {
-                BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(new BytecodeOpcodeAddress(0), theCurrentIndex);
+                BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(BytecodeOpcodeAddress.START_AT_ZERO, theCurrentIndex);
                 if (theEntry != null) {
                     String theVariableName = theDebugInfos.resolveVariableName(theEntry);
                     theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, theVariableName, TypeRef.toType(theTypes[i])));
@@ -599,7 +597,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 if (theSuccessorBlock == null) {
                     throw new IllegalStateException("Cannot find successor block");
                 }
-                theEntry.getValue().addSuccessor(GraphNode.EdgeType.NORMAL, theSuccessorBlock);
+                theEntry.getValue().addSuccessor(theSuccessorBlock);
             }
         }
 
@@ -608,7 +606,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         GraphNode theStart = theProgram.getControlFlowGraph().startNode();
 
         // First of all, we need to mark the back-edges of the graph
-        theProgram.getControlFlowGraph().markBackEdges();
+        theProgram.getControlFlowGraph().calculateReachabilityAndMarkBackEdges();
 
         try {
             // Now we can continue to create the program flow
@@ -1512,7 +1510,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
 
                 Program theProgram = new Program();
-                GraphNode theInitNode = new GraphNode(GraphNode.BlockType.NORMAL, theProgram, new BytecodeOpcodeAddress(0));
+                GraphNode theInitNode = new GraphNode(GraphNode.BlockType.NORMAL, theProgram, BytecodeOpcodeAddress.START_AT_ZERO);
 
                 switch (theMethodRef.getReferenceKind()) {
                 case REF_invokeStatic: {
