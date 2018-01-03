@@ -643,7 +643,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     GotoExpression theGoto = (GotoExpression) theLast;
                     if (theGoto.getJumpTarget().equals(theNode.getStartAddress())) {
                         theCurrentList.remove(theGoto);
-                        theNode.markAsInfiniteLoop();
                     }
                 }
                 if (!theNode.endWithNeverReturningExpression()) {

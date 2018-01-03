@@ -42,6 +42,14 @@ public class GraphNodePath {
         return false;
     }
 
+    public boolean isEmpty() {
+        return nodes.isEmpty();
+    }
+
+    public GraphNode lastElement() {
+        return nodes.get(nodes.size() - 1);
+    }
+
     public List<GraphNode> nodes() {
         return nodes;
     }
