@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,26 +18,10 @@ package de.mirkosertic.bytecoder.ssa.optimizer;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class AllOptimizer implements Optimizer {
-
-    private final List<Optimizer> optimizer;
-
-    public AllOptimizer() {
-        optimizer = new ArrayList<>();
-        optimizer.add(new InefficientIFOptimizer());
-        optimizer.add(new LoopRecovering());
-        optimizer.add(new HighLevelIFOptimizer());
-        optimizer.add(new InvokeVirtualOptimizer());
-        optimizer.add(new InlineGotoOptimizer());
-    }
+public class LoopRecovering implements Optimizer {
 
     @Override
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        for (Optimizer theOptimizer : optimizer) {
-            theOptimizer.optimize(aGraph, aLinkerContext);
-        }
+
     }
 }

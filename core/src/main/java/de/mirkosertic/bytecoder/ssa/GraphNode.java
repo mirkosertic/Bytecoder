@@ -28,7 +28,6 @@ public class GraphNode extends Expression {
 
     public enum BlockType {
         NORMAL,
-        INFINITELOOP,
         EXCEPTION_HANDLER,
         FINALLY
     }
@@ -82,32 +81,38 @@ public class GraphNode extends Expression {
         return reachableBy;
     }
 
-    public void markAsInfiniteLoop() {
-        type = BlockType.INFINITELOOP;
-    }
-
     public BlockType getType() {
         return type;
     }
 
     public Set<GraphNode> getPredecessors() {
         Set<GraphNode> theResult = new HashSet<>();
-        for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
-            if (theBlock.getSuccessors().values().contains(this)) {
-                theResult.add(theBlock);
+        for (GraphNodePath thePath : reachableBy) {
+            if (!thePath.isEmpty()) {
+                theResult.add(thePath.lastElement());
             }
         }
         return theResult;
     }
 
+    public boolean hasBackEdgeTo(GraphNode aNode) {
+        for (Map.Entry<Edge, GraphNode> theEntry : successors.entrySet()) {
+            if (theEntry.getKey().getType() == EdgeType.BACK) {
+                if (theEntry.getValue() == aNode) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public Set<GraphNode> getPredecessorsIgnoringBackEdges() {
         Set<GraphNode> theResult = new HashSet<>();
-        for (GraphNode theBlock: program.getControlFlowGraph().getKnownNodes()) {
-            for (Map.Entry<Edge, GraphNode> theEntry : theBlock.successors.entrySet()) {
-                if (theEntry.getKey().getType() != EdgeType.BACK) {
-                    if (theEntry.getValue() == this) {
-                        theResult.add(theBlock);
-                    }
+        for (GraphNodePath thePath : reachableBy) {
+            if (!thePath.isEmpty()) {
+                GraphNode theLastElement = thePath.lastElement();
+                if (!theLastElement.hasBackEdgeTo(this)) {
+                    theResult.add(theLastElement);
                 }
             }
         }

@@ -817,6 +817,18 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     public void printNodeDebug(GraphNode aNode) {
         if (options.isDebugOutput()) {
+
+            for (GraphNodePath thePath : aNode.reachableBy()) {
+                print("// Reachable by path [");
+
+                for (GraphNode theNode : thePath.nodes()) {
+                    print(theNode.getStartAddress().getAddress());
+                    print(" ");
+                }
+
+                println("]");
+            }
+
             for (GraphNode thePrececessor : aNode.getPredecessors()) {
                 printlnComment(
                         "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
@@ -865,17 +877,6 @@ public class JSSSAWriter extends IndentSSAWriter {
                     theJSWriter
                             .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
                 }
-
-                for (GraphNodePath thePath : theGraphNode.reachableBy()) {
-                    theJSWriter.print("// Reachable by path [");
-
-                    for (GraphNode theNode : thePath.nodes()) {
-                        theJSWriter.print(theNode.getStartAddress().getAddress());
-                        theJSWriter.print(" ");
-                    }
-
-                    theJSWriter.println("]");
-                }
             }
 
             theJSWriter.printNodeDebug(theGraphNode);
@@ -894,14 +895,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void printGraphNode(GraphNode aNode) {
         switch (aNode.getType()) {
-            case INFINITELOOP: {
-                println("while (true) {");
-
-                withDeeperIndent().writeExpressions(aNode.getExpressions());
-
-                println("}");
-                break;
-            }
             default: {
                 writeExpressions(aNode.getExpressions());
                 break;
