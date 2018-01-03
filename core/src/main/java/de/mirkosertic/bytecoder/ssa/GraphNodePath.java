@@ -42,6 +42,10 @@ public class GraphNodePath {
         return false;
     }
 
+    public List<GraphNode> nodes() {
+        return nodes;
+    }
+
     public boolean contains(GraphNode aNode) {
         return nodes.contains(aNode);
     }

@@ -25,12 +25,31 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -365,7 +384,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             theLinkedClass.forEachVirtualMethod(t -> {
 
-                if (!t.getValue().getTargetMethod().getAccessFlags().isAbstract()) {
+                if (!t.getValue().getTargetMethod().getAccessFlags().isAbstract() &&
+                        !t.getValue().getTargetMethod().getAccessFlags().isStatic()) {
 
                     if (t.getValue().getTargetMethod() == BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
                         // This method cannot be called as it is handled by TypeOfValue
