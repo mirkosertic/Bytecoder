@@ -84,11 +84,11 @@ public class ControlFlowGraph {
         return theNodes;
     }
 
-    public void markBackEdges() {
-        markBackEdges(new GraphNodePath(), startNode());
+    public void calculateReachabilityAndMarkBackEdges() {
+        calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
     }
 
-    private void markBackEdges(GraphNodePath aPath, GraphNode aNode) {
+    private void calculateReachabilityAndMarkBackEdges(GraphNodePath aPath, GraphNode aNode) {
         aNode.addReachablePath(aPath);
         for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
             GraphNodePath theChildPath = aPath.clone();
@@ -102,7 +102,7 @@ public class ControlFlowGraph {
             } else {
                 // Normal edge
                 // Continue with graph traversal
-                markBackEdges(theChildPath, theEdge.getValue());
+                calculateReachabilityAndMarkBackEdges(theChildPath, theEdge.getValue());
             }
         }
     }
@@ -119,7 +119,7 @@ public class ControlFlowGraph {
     }
 
     public GraphNode startNode() {
-        return nodeStartingAt(new BytecodeOpcodeAddress(0));
+        return nodeStartingAt(BytecodeOpcodeAddress.START_AT_ZERO);
     }
 
     public GraphNode nodeStartingAt(BytecodeOpcodeAddress aAddress) {
@@ -212,7 +212,7 @@ public class ControlFlowGraph {
         theResult.append("<td colspan=\"");
         theResult.append(theFinalList.size());
         theResult.append("\">");
-        theResult.append(" Node at " + aNode.getStartAddress().getAddress());
+        theResult.append(" Node at ").append(aNode.getStartAddress().getAddress());
         theResult.append("</td></tr>");
 
         // Outputs

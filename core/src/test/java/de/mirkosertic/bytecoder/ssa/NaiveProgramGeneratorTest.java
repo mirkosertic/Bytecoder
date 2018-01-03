@@ -27,7 +27,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -36,9 +35,11 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class NaiveProgramGeneratorTest {
 
@@ -62,7 +63,7 @@ public class NaiveProgramGeneratorTest {
     @Test
     public void testWithReturn() {
         BytecodeProgram theBytecodeProgram = new BytecodeProgram();
-        theBytecodeProgram.addInstruction(new BytecodeInstructionRETURN(new BytecodeOpcodeAddress(0)));
+        theBytecodeProgram.addInstruction(new BytecodeInstructionRETURN(BytecodeOpcodeAddress.START_AT_ZERO));
 
         Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         assertEquals(0, theProgram.getVariables().size());
@@ -75,7 +76,7 @@ public class NaiveProgramGeneratorTest {
     @Test
     public void testPHIStack() {
         BytecodeProgram theBytecodeProgram = new BytecodeProgram();
-        theBytecodeProgram.addInstruction(new BytecodeInstructionICONST(new BytecodeOpcodeAddress(0), 11));
+        theBytecodeProgram.addInstruction(new BytecodeInstructionICONST(BytecodeOpcodeAddress.START_AT_ZERO, 11));
         theBytecodeProgram.addInstruction(new BytecodeInstructionICONST(new BytecodeOpcodeAddress(1), 22));
         theBytecodeProgram.addInstruction(new BytecodeInstructionACONSTNULL(new BytecodeOpcodeAddress(2)));
         theBytecodeProgram.addInstruction(new BytecodeInstructionIFNULL(new BytecodeOpcodeAddress(4), 10));

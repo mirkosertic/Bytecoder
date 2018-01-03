@@ -119,9 +119,9 @@ public class GraphNode extends Expression {
         return theResult;
     }
 
-    public void addSuccessor(EdgeType aType, GraphNode aBlock) {
+    public void addSuccessor(GraphNode aBlock) {
         if (!successors.values().contains(aBlock)) {
-            successors.put(new Edge(aType), aBlock);
+            successors.put(new Edge(EdgeType.NORMAL), aBlock);
         }
     }
 
@@ -134,8 +134,7 @@ public class GraphNode extends Expression {
     }
 
     public Variable newVariable(TypeRef aType) {
-        Variable theNewVariable = program.createVariable(aType);
-        return theNewVariable;
+        return program.createVariable(aType);
     }
 
     public Variable newVariable(TypeRef aType, Value aValue)  {
@@ -253,4 +252,17 @@ public class GraphNode extends Expression {
         }
     }
 
+    public boolean isOnlyReachableThru(GraphNode aOtherNode) {
+        // Start nodes are not reachable by anything
+        if (reachableBy.isEmpty()) {
+            return false;
+        }
+        // All paths to this node must go thru aOtherNode
+        for (GraphNodePath thePath : reachableBy) {
+            if (!thePath.contains(aOtherNode)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

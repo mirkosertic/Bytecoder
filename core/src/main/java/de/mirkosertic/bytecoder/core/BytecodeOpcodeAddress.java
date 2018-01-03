@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeOpcodeAddress {
 
+    public static final BytecodeOpcodeAddress START_AT_ZERO = new BytecodeOpcodeAddress(0);
+
     private final int address;
 
     public BytecodeOpcodeAddress(int aAddress) {
