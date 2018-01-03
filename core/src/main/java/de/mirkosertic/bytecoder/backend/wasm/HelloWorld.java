@@ -17,12 +17,16 @@ package de.mirkosertic.bytecoder.backend.wasm;
 
 public class HelloWorld {
 
-    public int compute(int a, int b) {
-        return a + b;
-    }
-
     public static void main(String[] args) {
-        HelloWorld hello = new HelloWorld();
-        hello.compute(10, 20);
+        int a = 10;
+        for (int j = 0; j < 20;j++) {
+            a = a + 1;
+        }
+
+        for (int k = 0; k < 30;k++) {
+            a = a + 2;
+        }
+
+        int k = 20;
     }
 }

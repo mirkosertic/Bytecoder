@@ -78,6 +78,10 @@ public class GraphNode extends Expression {
         reachableBy.add(aPath);
     }
 
+    public List<GraphNodePath> reachableBy() {
+        return reachableBy;
+    }
+
     public void markAsInfiniteLoop() {
         type = BlockType.INFINITELOOP;
     }

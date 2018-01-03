@@ -25,8 +25,24 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
-import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeInstruction;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -179,28 +195,30 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theClassLinkedCass.forEachVirtualMethod(
                 aClassMethod -> {
-                    theWriter.println("             case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
-                    if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                        theWriter.println(
-                                "                   return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
-                    } else if (Objects
-                            .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                        theWriter.println("                   throw 'Not implemented';");
-                    } else if (Objects
-                            .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                        theWriter.println("                   throw 'Not implemented';");
-                    } else if (Objects
-                            .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                        theWriter.println("                   throw 'Not implemented';");
-                    } else if (Objects.equals("desiredAssertionStatus",
-                            aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                        theWriter.println("                   return function(callsite) {return false};");
-                    } else if (Objects
-                            .equals("getEnumConstants",
-                                    aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                        theWriter.println("                   return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
-                    } else {
-                        theWriter.println("                   throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                    if (!aClassMethod.getValue().getTargetMethod().getAccessFlags().isStatic()) {
+                        theWriter.println("             case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                        if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            theWriter.println(
+                                    "                   return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
+                        } else if (Objects
+                                .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            theWriter.println("                   throw 'Not implemented';");
+                        } else if (Objects
+                                .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            theWriter.println("                   throw 'Not implemented';");
+                        } else if (Objects
+                                .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            theWriter.println("                   throw 'Not implemented';");
+                        } else if (Objects.equals("desiredAssertionStatus",
+                                aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            theWriter.println("                   return function(callsite) {return false};");
+                        } else if (Objects
+                                .equals("getEnumConstants",
+                                        aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
+                            theWriter.println("                   return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
+                        } else {
+                            theWriter.println("                   throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
+                        }
                     }
                 });
 
@@ -259,7 +277,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("        switch(aIdentifier) {");
                 theEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
                     BytecodeLinkedClass.LinkedMethod theLinkTarget = aVirtualMethod.getValue();
-                    if (!aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isAbstract()) {
+                    if (!aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isAbstract() &&
+                            !aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isStatic()) {
 
                         theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
                         if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
@@ -352,10 +371,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
-                theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
-                theWriter.println("        /**");
-                theWriter.println("        " + theSSAProgram.getControlFlowGraph().toDOT());
-                theWriter.println("        */");
+                if (aOptions.isDebugOutput()) {
+                    theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
+                    theWriter.println("        /**");
+                    theWriter.println("        " + theSSAProgram.getControlFlowGraph().toDOT());
+                    theWriter.println("        */");
+                }
 
                 JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram,"        ", theWriter, aLinkerContext);
                 for (Variable theVariable : theSSAProgram.globalVariables()) {
