@@ -284,6 +284,7 @@ public class ControlFlowGraph {
 
     public Set<GraphNode> dominatedNodesOf(GraphNode aNode) {
         Set<GraphNode> theResult = new HashSet<>();
+        theResult.add(aNode);
         for (GraphNode theNode : knownNodes) {
             if (theNode.isOnlyReachableThru(aNode)) {
                 theResult.add(theNode);

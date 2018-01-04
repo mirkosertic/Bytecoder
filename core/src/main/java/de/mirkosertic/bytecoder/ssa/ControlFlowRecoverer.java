@@ -17,48 +17,18 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class ControlFlowRecoverer {
 
-    interface Node {
-    }
-
-    public static class SimpleNode implements Node {
-
-        private final GraphNode basicBlock;
-        private final Node next;
-
-        private SimpleNode(GraphNode aBasicBlock, Node aNext) {
-            basicBlock = aBasicBlock;
-            next = aNext;
-        }
-
-        public GraphNode getBasicBlock() {
-            return basicBlock;
-        }
-
-        public Node getNext() {
-            return next;
-        }
-    }
-
-    public static class LoopNode implements Node {
-
-        private final Node loopBody;
-
-        public LoopNode(Node aLoopBody) {
-            loopBody = aLoopBody;
-        }
-    }
-
-    public Node recoverFrom(ControlFlowGraph aGraph) {
+    public void recoverFrom(ControlFlowGraph aGraph) {
         GraphNode theStartNode = aGraph.startNode();
-        return recoverFrom(aGraph, theStartNode);
+        recoverFrom(aGraph, theStartNode);
     }
 
-    private Node recoverFrom(ControlFlowGraph aGraph, GraphNode aNode) {
+    private void recoverFrom(ControlFlowGraph aGraph, GraphNode aNode) {
         Set<GraphNode> theDominatedNodes = aGraph.dominatedNodesOf(aNode);
 
         // Check if this is a loop
@@ -67,14 +37,28 @@ public class ControlFlowRecoverer {
                 if (theEntry.getKey().getType() == GraphNode.EdgeType.BACK && theEntry.getValue() == aNode) {
                     // Back edge found!, this is clearly a loop
 
+                    // We have set set of dominated nodes
+                    // How we have to check whese all notes can branch to
+                    Set<GraphNode> theBranchTargets = new HashSet<>();
+                    for (GraphNode theDominated : theDominatedNodes) {
+                        theBranchTargets.addAll(theDominated.getSuccessors().values());
+                    }
+
+                    // If the set of dominated notes contains all the branch targets
+                    // We cannot jump out of the loop and continue otherwise
+                    if (theDominatedNodes.containsAll(theBranchTargets)) {
+                        throw new IllegalStateException("Possible loop!");
+                    } else  {
+                        throw new IllegalStateException("Illegal state");
+                    }
                     // TODO: implement loop generation here!
                 }
             }
         }
 
         // If there are no dominated nodes, there are also no successors, this is clearly a simple node
-        if (theDominatedNodes.isEmpty()) {
-            return new SimpleNode(aNode, null);
+        if (theDominatedNodes.size() == 1 && theDominatedNodes.contains(aNode)) {
+            return;
         }
 
         Map<GraphNode.Edge, GraphNode> theSuccessors = aNode.getSuccessors();
@@ -84,14 +68,14 @@ public class ControlFlowRecoverer {
             if (theEntry.getKey().getType() == GraphNode.EdgeType.NORMAL) {
                 // There is only one forward edge, so we can wrap this in a simple node
                 GraphNode theSuccessor = theEntry.getValue();
-                Node theNext = recoverFrom(aGraph, theSuccessor);
+                recoverFrom(aGraph, theSuccessor);
 
                 replaceGotoWith(aNode.getExpressions(), theSuccessor.getStartAddress(),
                         new InlinedNodeExpression(theSuccessor));
 
                 aGraph.removeDominatedNode(theSuccessor);
 
-                return new SimpleNode(aNode, theNext);
+                return;
             }
             // One successor, and it is a back-edge. This case should not happen, so we throw an exception
             throw new IllegalStateException("Don't know how to handle " + aNode.getStartAddress().getAddress());

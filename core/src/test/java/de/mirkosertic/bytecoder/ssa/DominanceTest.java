@@ -22,7 +22,6 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -54,25 +53,19 @@ public class DominanceTest {
         assertFalse(theNode2.isOnlyReachableThru(theNode3));
 
         Set<GraphNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
-        assertEquals(2, theDom1.size(), 0);
+        assertEquals(3, theDom1.size(), 0);
         assertTrue(theDom1.contains(theNode2));
         assertTrue(theDom1.contains(theNode3));
+        assertTrue(theDom1.contains(theNode1));
 
         Set<GraphNode> theDom2 = theGraph.dominatedNodesOf(theNode2);
-        assertEquals(1, theDom2.size(), 0);
+        assertEquals(2, theDom2.size(), 0);
         assertTrue(theDom2.contains(theNode3));
+        assertTrue(theDom2.contains(theNode2));
         assertFalse(theDom2.contains(theNode1));
 
         ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-
-        ControlFlowRecoverer.SimpleNode theFlow1 = (ControlFlowRecoverer.SimpleNode) theRecoverer.recoverFrom(theGraph);
-        ControlFlowRecoverer.SimpleNode theFlow2 = (ControlFlowRecoverer.SimpleNode) theFlow1.getNext();
-        ControlFlowRecoverer.SimpleNode theFlow3 = (ControlFlowRecoverer.SimpleNode) theFlow2.getNext();
-
-        assertSame(theFlow1.getBasicBlock(), theNode1);
-        assertSame(theFlow2.getBasicBlock(), theNode2);
-        assertSame(theFlow3.getBasicBlock(), theNode3);
-        assertNull(theFlow3.getNext());
+        theRecoverer.recoverFrom(theGraph);
 
         assertEquals(1, theNode1.getExpressions().size(), 0);
         InlinedNodeExpression theInline1 = (InlinedNodeExpression) theNode1.getExpressions().toList().get(0);
@@ -107,8 +100,8 @@ public class DominanceTest {
         theGraph.calculateReachabilityAndMarkBackEdges();
 
         ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-        ControlFlowRecoverer.Node theResult = theRecoverer.recoverFrom(theGraph);
-        System.out.println(theResult);
+        theRecoverer.recoverFrom(theGraph);
+        System.out.println(theGraph);
     }
 
     @Test
@@ -152,7 +145,6 @@ public class DominanceTest {
         assertTrue(theDom1.contains(theNode4));
 
         ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-
-//        ControlFlowRecoverer.SimpleNode theFlow1 = (ControlFlowRecoverer.SimpleNode) theRecoverer.recoverFrom(theGraph);
+        theRecoverer.recoverFrom(theGraph);
     }
 }
