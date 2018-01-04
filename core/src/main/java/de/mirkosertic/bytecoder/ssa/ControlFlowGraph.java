@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -156,6 +157,10 @@ public class ControlFlowGraph {
 
     public void removeDominatedNode(GraphNode aNode) {
         dominatedNodes.remove(aNode);
+    }
+
+    public void removeDominatedNodes(Collection<GraphNode> aNodea) {
+        dominatedNodes.removeAll(aNodea);
     }
 
     private String toHTMLLabel(GraphNode aNode) {

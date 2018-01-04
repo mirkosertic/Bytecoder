@@ -15,12 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.Map;
 import java.util.Set;
 
 public class ControlFlowRecoverer {
 
-    public interface Node {
+    interface Node {
     }
 
     public static class SimpleNode implements Node {
@@ -28,21 +30,50 @@ public class ControlFlowRecoverer {
         private final GraphNode basicBlock;
         private final Node next;
 
-        public SimpleNode(GraphNode aBasicBlock, Node aNext) {
+        private SimpleNode(GraphNode aBasicBlock, Node aNext) {
             basicBlock = aBasicBlock;
             next = aNext;
+        }
+
+        public GraphNode getBasicBlock() {
+            return basicBlock;
+        }
+
+        public Node getNext() {
+            return next;
+        }
+    }
+
+    public static class LoopNode implements Node {
+
+        private final Node loopBody;
+
+        public LoopNode(Node aLoopBody) {
+            loopBody = aLoopBody;
         }
     }
 
     public Node recoverFrom(ControlFlowGraph aGraph) {
         GraphNode theStartNode = aGraph.startNode();
-        Set<GraphNode> theDominated = aGraph.dominatedNodesOf(theStartNode);
-        return recoverFrom(aGraph, theStartNode, theDominated);
+        return recoverFrom(aGraph, theStartNode);
     }
 
-    private Node recoverFrom(ControlFlowGraph aGraph, GraphNode aNode, Set<GraphNode> aDominatedNodes) {
-        // If there are no dominated nodes, where are also no successors, this is clearly a simple node
-        if (aDominatedNodes.isEmpty()) {
+    private Node recoverFrom(ControlFlowGraph aGraph, GraphNode aNode) {
+        Set<GraphNode> theDominatedNodes = aGraph.dominatedNodesOf(aNode);
+
+        // Check if this is a loop
+        for (GraphNode theNode : theDominatedNodes) {
+            for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {
+                if (theEntry.getKey().getType() == GraphNode.EdgeType.BACK && theEntry.getValue() == aNode) {
+                    // Back edge found!, this is clearly a loop
+
+                    // TODO: implement loop generation here!
+                }
+            }
+        }
+
+        // If there are no dominated nodes, there are also no successors, this is clearly a simple node
+        if (theDominatedNodes.isEmpty()) {
             return new SimpleNode(aNode, null);
         }
 
@@ -53,10 +84,29 @@ public class ControlFlowRecoverer {
             if (theEntry.getKey().getType() == GraphNode.EdgeType.NORMAL) {
                 // There is only one forward edge, so we can wrap this in a simple node
                 GraphNode theSuccessor = theEntry.getValue();
-                Set<GraphNode> theDominated = aGraph.dominatedNodesOf(theSuccessor);
-                return new SimpleNode(aNode, recoverFrom(aGraph, theSuccessor, theDominated));
+                Node theNext = recoverFrom(aGraph, theSuccessor);
+
+                replaceGotoWith(aNode.getExpressions(), theSuccessor.getStartAddress(),
+                        new InlinedNodeExpression(theSuccessor));
+
+                aGraph.removeDominatedNode(theSuccessor);
+
+                return new SimpleNode(aNode, theNext);
+            }
+            // One successor, and it is a back-edge. This case should not happen, so we throw an exception
+            throw new IllegalStateException("Don't know how to handle " + aNode.getStartAddress().getAddress());
+        }
+        throw new IllegalStateException("Don't know how to handle " + aNode.getStartAddress().getAddress());
+    }
+
+    private void replaceGotoWith(ExpressionList aList, BytecodeOpcodeAddress aAddress, Expression aExpression) {
+        for (Expression theExpression : aList.toList()) {
+            if (theExpression instanceof GotoExpression) {
+                GotoExpression theGoto = (GotoExpression) theExpression;
+                if (theGoto.getJumpTarget().equals(aAddress)) {
+                    aList.replace(theGoto, aExpression);
+                }
             }
         }
-        throw new IllegalStateException("Don't know how to handle" + aNode.getStartAddress());
     }
 }

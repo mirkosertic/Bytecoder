@@ -22,6 +22,8 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class DominanceTest {
@@ -62,8 +64,51 @@ public class DominanceTest {
         assertFalse(theDom2.contains(theNode1));
 
         ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-        ControlFlowRecoverer.Node theOrigin = theRecoverer.recoverFrom(theGraph);
-        System.out.println(theOrigin);
+
+        ControlFlowRecoverer.SimpleNode theFlow1 = (ControlFlowRecoverer.SimpleNode) theRecoverer.recoverFrom(theGraph);
+        ControlFlowRecoverer.SimpleNode theFlow2 = (ControlFlowRecoverer.SimpleNode) theFlow1.getNext();
+        ControlFlowRecoverer.SimpleNode theFlow3 = (ControlFlowRecoverer.SimpleNode) theFlow2.getNext();
+
+        assertSame(theFlow1.getBasicBlock(), theNode1);
+        assertSame(theFlow2.getBasicBlock(), theNode2);
+        assertSame(theFlow3.getBasicBlock(), theNode3);
+        assertNull(theFlow3.getNext());
+
+        assertEquals(1, theNode1.getExpressions().size(), 0);
+        InlinedNodeExpression theInline1 = (InlinedNodeExpression) theNode1.getExpressions().toList().get(0);
+        assertSame(theInline1.getNode(), theNode2);
+
+        assertEquals(1, theNode2.getExpressions().size(), 0);
+        InlinedNodeExpression theInline2 = (InlinedNodeExpression) theNode2.getExpressions().toList().get(0);
+        assertSame(theInline2.getNode(), theNode3);
+
+        assertEquals(1, theNode3.getExpressions().size(), 0);
+        ReturnExpression theReturn = (ReturnExpression) theNode3.getExpressions().toList().get(0);
+
+        assertEquals(1, theGraph.getDominatedNodes().size(), 0);
+    }
+
+    @Test
+    public void testEndlessLoop() {
+        Program theProgram = new Program();
+        ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
+
+        GraphNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
+        theNode1.addExpression(new GotoExpression(new BytecodeOpcodeAddress(10)));
+        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), GraphNode.BlockType.NORMAL);
+        theNode2.addExpression(new GotoExpression(new BytecodeOpcodeAddress(20)));
+        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
+        theNode3.addExpression(new GotoExpression(BytecodeOpcodeAddress.START_AT_ZERO));
+
+        theNode1.addSuccessor(theNode2);
+        theNode2.addSuccessor(theNode3);
+        theNode3.addSuccessor(theNode1);
+
+        theGraph.calculateReachabilityAndMarkBackEdges();
+
+        ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
+        ControlFlowRecoverer.Node theResult = theRecoverer.recoverFrom(theGraph);
+        System.out.println(theResult);
     }
 
     @Test
@@ -105,5 +150,9 @@ public class DominanceTest {
         assertTrue(theDom1.contains(theNode2));
         assertTrue(theDom1.contains(theNode3));
         assertTrue(theDom1.contains(theNode4));
+
+        ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
+
+//        ControlFlowRecoverer.SimpleNode theFlow1 = (ControlFlowRecoverer.SimpleNode) theRecoverer.recoverFrom(theGraph);
     }
 }
