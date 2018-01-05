@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.HashSet;
-import java.util.Set;
+public class ContinueExpression extends Expression {
 
-public class LoopExpression extends Expression implements ExpressionListContainer {
+    private final GraphNode block;
 
-    private final GraphNode body;
-
-    public LoopExpression(GraphNode aBody) {
-        body = aBody;
+    public ContinueExpression(GraphNode aBlock) {
+        block = aBlock;
     }
 
-    @Override
-    public Set<ExpressionList> getExpressionLists() {
-        Set<ExpressionList> theExpressions = new HashSet<>();
-        theExpressions.add(body.getExpressions());
-        return theExpressions;
+    public GraphNode getBlock() {
+        return block;
     }
 }

@@ -20,13 +20,13 @@ public class HelloWorld {
     public static void main(String[] args) {
         int a = 10;
         for (int j = 0; j < 20;j++) {
+
+            for (int k = 50;k<100;k++) {
+                a = a + 2;
+            }
+
             a = a + 1;
         }
-
-        for (int k = 0; k < 30;k++) {
-            a = a + 2;
-        }
-
         int k = 20;
     }
 }

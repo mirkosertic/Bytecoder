@@ -44,7 +44,12 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -88,9 +93,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     public Description getDescription() {
-        Description spec = Description.createSuiteDescription(testClass.getName(),
+        return Description.createSuiteDescription(testClass.getName(),
                 testClass.getJavaClass().getAnnotations());
-        return spec;
     }
 
     @Override
@@ -472,7 +476,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             aRunNotifier.fireTestFinished(theDescription);
         }
     }
-
 
     @Override
     protected void runChild(FrameworkMethod aFrameworkMethod, RunNotifier aRunNotifier) {

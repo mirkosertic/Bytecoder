@@ -35,6 +35,7 @@ import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
@@ -785,10 +786,8 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof GraphNode) {
                 GraphNode theInlinedNode = (GraphNode) theExpression;
                 printlnComment("Inlined node " + theInlinedNode.getStartAddress().getAddress());
-
                 printNodeDebug(theInlinedNode);
-
-                writeExpressions(theInlinedNode.getExpressions());
+                printGraphNode(theInlinedNode);
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
             } else if (theExpression instanceof ExtendedIFExpression) {
@@ -808,7 +807,10 @@ public class JSSSAWriter extends IndentSSAWriter {
                 theDeeper2.println();
 
                 println("}");
-
+            } else if (theExpression instanceof ContinueExpression) {
+                ContinueExpression theContinue = (ContinueExpression) theExpression;
+                GraphNode theNode = theContinue.getBlock();
+                print("continue label_" + theNode.getStartAddress().getAddress() + ";");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }
@@ -895,6 +897,16 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void printGraphNode(GraphNode aNode) {
         switch (aNode.getType()) {
+            case LOOP: {
+                print("label_" + aNode.getStartAddress().getAddress() + ": while(true) {");
+                println();
+
+                withDeeperIndent().writeExpressions(aNode.getExpressions());
+
+                println();
+                println("}");
+                break;
+            }
             default: {
                 writeExpressions(aNode.getExpressions());
                 break;

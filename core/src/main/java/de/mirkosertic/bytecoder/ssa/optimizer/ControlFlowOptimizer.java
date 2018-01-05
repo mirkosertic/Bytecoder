@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.ssa.optimizer;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class ControlFlowRecoverer {
+public class ControlFlowOptimizer implements Optimizer {
 
-    public void recoverFrom(ControlFlowGraph aGraph) {
+    @Override
+    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
         GraphNode theStartNode = aGraph.startNode();
         recoverFrom(aGraph, theStartNode);
     }
@@ -32,55 +40,38 @@ public class ControlFlowRecoverer {
         Set<GraphNode> theDominatedNodes = aGraph.dominatedNodesOf(aNode);
 
         // Check if this is a loop
+        // If is detected if there is a back - edge from any dominated nodes to the loop header
         for (GraphNode theNode : theDominatedNodes) {
             for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {
                 if (theEntry.getKey().getType() == GraphNode.EdgeType.BACK && theEntry.getValue() == aNode) {
                     // Back edge found!, this is clearly a loop
+                    aNode.markAsLoop();
 
-                    // We have set set of dominated nodes
-                    // How we have to check whese all notes can branch to
-                    Set<GraphNode> theBranchTargets = new HashSet<>();
+                    // Now, for every dominate node we check if it branches to the loop header
+                    // this goto is replaced with a continue expression
+                    ContinueExpression theContinue = new ContinueExpression(aNode);
                     for (GraphNode theDominated : theDominatedNodes) {
-                        theBranchTargets.addAll(theDominated.getSuccessors().values());
+                        replaceGotoWith(theDominated.getExpressions(), aNode.getStartAddress(), theContinue);
                     }
 
-                    // If the set of dominated notes contains all the branch targets
-                    // We cannot jump out of the loop and continue otherwise
-                    if (theDominatedNodes.containsAll(theBranchTargets)) {
-                        throw new IllegalStateException("Possible loop!");
-                    } else  {
-                        throw new IllegalStateException("Illegal state");
-                    }
-                    // TODO: implement loop generation here!
+                    break;
                 }
             }
         }
 
-        // If there are no dominated nodes, there are also no successors, this is clearly a simple node
-        if (theDominatedNodes.size() == 1 && theDominatedNodes.contains(aNode)) {
-            return;
-        }
 
+        // Continue to resolve the successors
         Map<GraphNode.Edge, GraphNode> theSuccessors = aNode.getSuccessors();
-        if (theSuccessors.size() == 1) {
-            // We have one successor
-            Map.Entry<GraphNode.Edge, GraphNode> theEntry = theSuccessors.entrySet().iterator().next();
+        for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theSuccessors.entrySet()) {
+            GraphNode theSuccessor = theEntry.getValue();
             if (theEntry.getKey().getType() == GraphNode.EdgeType.NORMAL) {
-                // There is only one forward edge, so we can wrap this in a simple node
-                GraphNode theSuccessor = theEntry.getValue();
-                recoverFrom(aGraph, theSuccessor);
-
-                replaceGotoWith(aNode.getExpressions(), theSuccessor.getStartAddress(),
-                        new InlinedNodeExpression(theSuccessor));
-
+                replaceGotoWith(aNode.getExpressions(), theSuccessor.getStartAddress(), theSuccessor);
                 aGraph.removeDominatedNode(theSuccessor);
-
-                return;
+                recoverFrom(aGraph, theSuccessor);
+            } else {
+                replaceGotoWith(aNode.getExpressions(), theSuccessor.getStartAddress(), new ContinueExpression(theSuccessor));
             }
-            // One successor, and it is a back-edge. This case should not happen, so we throw an exception
-            throw new IllegalStateException("Don't know how to handle " + aNode.getStartAddress().getAddress());
         }
-        throw new IllegalStateException("Don't know how to handle " + aNode.getStartAddress().getAddress());
     }
 
     private void replaceGotoWith(ExpressionList aList, BytecodeOpcodeAddress aAddress, Expression aExpression) {
@@ -89,6 +80,12 @@ public class ControlFlowRecoverer {
                 GotoExpression theGoto = (GotoExpression) theExpression;
                 if (theGoto.getJumpTarget().equals(aAddress)) {
                     aList.replace(theGoto, aExpression);
+                }
+            }
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theList = (ExpressionListContainer) theExpression;
+                for (ExpressionList theSinglle : theList.getExpressionLists()) {
+                    replaceGotoWith(theSinglle, aAddress, aExpression);
                 }
             }
         }
