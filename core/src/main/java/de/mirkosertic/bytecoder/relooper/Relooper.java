@@ -64,7 +64,7 @@ public class Relooper {
         throw new IllegalStateException("What do do now?");
     }
 
-    public Set<GraphNode> jumoTargetsOf(Collection<GraphNode> aNode) {
+    private Set<GraphNode> jumoTargetsOf(Collection<GraphNode> aNode) {
         Set<GraphNode> theResults = new HashSet<>();
         for (GraphNode theNode : aNode) {
             for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {
