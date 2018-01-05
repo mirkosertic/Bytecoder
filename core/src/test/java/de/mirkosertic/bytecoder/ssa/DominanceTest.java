@@ -22,7 +22,6 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class DominanceTest {
@@ -63,22 +62,6 @@ public class DominanceTest {
         assertTrue(theDom2.contains(theNode3));
         assertTrue(theDom2.contains(theNode2));
         assertFalse(theDom2.contains(theNode1));
-
-        ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-        theRecoverer.recoverFrom(theGraph);
-
-        assertEquals(1, theNode1.getExpressions().size(), 0);
-        InlinedNodeExpression theInline1 = (InlinedNodeExpression) theNode1.getExpressions().toList().get(0);
-        assertSame(theInline1.getNode(), theNode2);
-
-        assertEquals(1, theNode2.getExpressions().size(), 0);
-        InlinedNodeExpression theInline2 = (InlinedNodeExpression) theNode2.getExpressions().toList().get(0);
-        assertSame(theInline2.getNode(), theNode3);
-
-        assertEquals(1, theNode3.getExpressions().size(), 0);
-        ReturnExpression theReturn = (ReturnExpression) theNode3.getExpressions().toList().get(0);
-
-        assertEquals(1, theGraph.getDominatedNodes().size(), 0);
     }
 
     @Test
@@ -98,10 +81,6 @@ public class DominanceTest {
         theNode3.addSuccessor(theNode1);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
-
-        ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-        theRecoverer.recoverFrom(theGraph);
-        System.out.println(theGraph);
     }
 
     @Test
@@ -143,8 +122,5 @@ public class DominanceTest {
         assertTrue(theDom1.contains(theNode2));
         assertTrue(theDom1.contains(theNode3));
         assertTrue(theDom1.contains(theNode4));
-
-        ControlFlowRecoverer theRecoverer = new ControlFlowRecoverer();
-        theRecoverer.recoverFrom(theGraph);
     }
 }

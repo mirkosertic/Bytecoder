@@ -29,7 +29,8 @@ public class GraphNode extends Expression {
     public enum BlockType {
         NORMAL,
         EXCEPTION_HANDLER,
-        FINALLY
+        FINALLY,
+        LOOP
     }
 
     public enum EdgeType {
@@ -83,6 +84,10 @@ public class GraphNode extends Expression {
 
     public BlockType getType() {
         return type;
+    }
+
+    public void markAsLoop() {
+        type = BlockType.LOOP;
     }
 
     public Set<GraphNode> getPredecessors() {

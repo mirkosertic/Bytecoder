@@ -737,8 +737,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             throw new ControlFlowProcessingException("Error processing CFG for " + aOwningClass.getThisInfo().getConstant().stringValue() + "." + aMethod.getName().stringValue(), e, theProgram.getControlFlowGraph());
         }
 
-
-        // The final
+        // The final optimization steps
         AllOptimizer theOptimizer = new AllOptimizer();
         theOptimizer.optimize(theProgram.getControlFlowGraph(), linkerContext);
 
