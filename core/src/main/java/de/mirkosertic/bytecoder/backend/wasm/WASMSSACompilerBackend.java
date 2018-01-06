@@ -726,7 +726,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theGlobalVariables.add("stringPool" + i);
 
             theWriter.print("      ;; init of ");
-            theWriter.println(theData);
+            theWriter.println(theData.replaceAll("(?:\\n|\\r)", ""));
             
             theWriter.print("      (set_global $stringPool");
             theWriter.print(i);
