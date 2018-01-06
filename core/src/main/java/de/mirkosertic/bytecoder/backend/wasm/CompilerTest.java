@@ -15,10 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.io.IOException;
-
-import javax.script.ScriptException;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
@@ -28,7 +24,11 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+
+import javax.script.ScriptException;
+import java.io.IOException;
 
 public class CompilerTest {
 
@@ -41,7 +41,7 @@ public class CompilerTest {
         BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true), theTargetClass, "main", theSignature);
+        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.ALL), theTargetClass, "main", theSignature);
 
         System.out.println(theCode.getData());
     }

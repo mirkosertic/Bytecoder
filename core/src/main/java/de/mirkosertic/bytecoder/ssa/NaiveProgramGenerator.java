@@ -125,7 +125,6 @@ import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.ssa.optimizer.AllOptimizer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -736,10 +735,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         } catch (Exception e) {
             throw new ControlFlowProcessingException("Error processing CFG for " + aOwningClass.getThisInfo().getConstant().stringValue() + "." + aMethod.getName().stringValue(), e, theProgram.getControlFlowGraph());
         }
-
-        // The final optimization steps
-        AllOptimizer theOptimizer = new AllOptimizer();
-        theOptimizer.optimize(theProgram.getControlFlowGraph(), linkerContext);
 
         return theProgram;
     }

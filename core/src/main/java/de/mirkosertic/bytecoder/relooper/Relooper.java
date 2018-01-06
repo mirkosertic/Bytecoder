@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.relooper;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 
+import java.io.PrintStream;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +30,15 @@ import java.util.Set;
  */
 public class Relooper {
 
-    interface Block {
+    public static abstract class Block {
+
+        private final Set<GraphNode> entries;
+
+        protected Block(Set<GraphNode> aEntries) {
+            entries = aEntries;
+        }
+
+        public abstract Block next();
     }
 
     /**
@@ -38,13 +48,23 @@ public class Relooper {
      * The block is later translated simply into the code for
      * that label, and the Next block appears right after it.
      */
-    public static class simpleBlock implements Block {
+    public static class SimpleBlock extends Block {
         private final GraphNode internalLabel;
         private final Block next;
 
-        public simpleBlock(GraphNode aInternalLabel, Block aNext) {
+        public SimpleBlock(Set<GraphNode> aEntries, GraphNode aInternalLabel, Block aNext) {
+            super(aEntries);
             internalLabel = aInternalLabel;
             next = aNext;
+        }
+
+        public GraphNode internalLabel() {
+            return internalLabel;
+        }
+
+        @Override
+        public Block next() {
+            return next;
         }
     }
 
@@ -60,22 +80,68 @@ public class Relooper {
      * in other words, that will be reached when the loop is
      * exited.
      */
-    public static class LoopBlock implements Block {
-        private final Block internal;
+    public static class LoopBlock extends Block {
+        private final Block inner;
         private final Block next;
 
-        public LoopBlock(Block aInternal, Block aNext) {
-            internal = aInternal;
+        public LoopBlock(Set<GraphNode> aEntries, Block aInner, Block aNext) {
+            super(aEntries);
+            inner = aInner;
             next = aNext;
+        }
+
+        public Block inner() {
+            return inner;
+        }
+
+        @Override
+        public Block next() {
+            return next;
+        }
+    }
+
+    /**
+     * Multiple: A block that represents a divergence into several possible branches,
+     * that eventually rejoin. A Multiple
+     * block can implement an ‘if’, an ‘if-else’, a ‘switch’, etc.
+     * It is comprised of:
+     * Handled blocks: A set of blocks to which execution
+     * can enter. When we reach the multiple block, we
+     * check which of them should execute, and go there.
+     * When execution of that block is complete, or if none
+     * of the handled blocks was selected for execution, we
+     * proceed to the Next block, below.
+     * Next: A block that will appear just after the Handled
+     * blocks, in other words, that will be reached after code
+     * flow exits the Handled blocks.
+     */
+    public static class MultipleBlock extends Block {
+
+        private final Set<Block> handlers;
+        private final Block next;
+
+        public MultipleBlock(Set<GraphNode> aEntries, Set<Block> aHandlers, Block aNext) {
+            super(aEntries);
+            handlers = aHandlers;
+            next = aNext;
+        }
+
+        @Override
+        public Block next() {
+            return next;
         }
     }
 
     public Block reloop(ControlFlowGraph aGraph) {
-        Set<GraphNode> theLabelSoup = new HashSet<>(aGraph.getKnownNodes());
         Set<GraphNode> theEntries = new HashSet<>();
+        GraphNode theStart = aGraph.startNode();
         theEntries.add(aGraph.startNode());
 
-        return reloop(theEntries, theLabelSoup);
+        // At this point, we use the dominated nodes of our start node as
+        // the initisl "label-soup" for the Relooper. This will exclude
+        // exception handler and finalize blocks from the the CFG and
+        // will reduce the amount of labels to be processed(hopefully)
+        return reloop(theEntries, aGraph.dominatedNodesOf(theStart));
     }
 
     /**
@@ -83,16 +149,16 @@ public class Relooper {
      * points. We wish to create a block comprised of all those
      * labels.
      */
-    private Block reloop(Collection<GraphNode> aEntryLabels, Collection<GraphNode> aLabelSoup) {
+    private Block reloop(Set<GraphNode> aEntryLabels, Set<GraphNode> aLabelSoup) {
 
-        // If there are no entry labels at all, re return null.
+        // If there are no entry labels at all, we return null.
         // This will become the next value of the predecessor block and will mark the end of the
         // invocation chain.
         if (aEntryLabels.isEmpty()) {
             return null;
         }
 
-        Collection theJumptargets = jumpTargetsOf(aLabelSoup);
+        Collection<GraphNode> theJumptargets = jumpTargetsOf(aLabelSoup);
 
         // If we have a single entry, and cannot return to it (by
         // some other label later on branching to it) then create a
@@ -111,7 +177,7 @@ public class Relooper {
                 }
                 Set<GraphNode> theOtherLabels = new HashSet<>(aLabelSoup);
                 theOtherLabels.remove(theEntry);
-                return new simpleBlock(theEntry, reloop(theNextEntries, theOtherLabels));
+                return new SimpleBlock(aEntryLabels, theEntry, reloop(theNextEntries, theOtherLabels));
             }
         }
 
@@ -128,7 +194,7 @@ public class Relooper {
             Set<GraphNode> theInternal = new HashSet<>();
             Set<GraphNode> theNext = new HashSet<>();
             for (GraphNode theTestNode : aLabelSoup) {
-                Set<GraphNode> theReachableLabels = theTestNode.reachableNodes();
+                Set<GraphNode> theReachableLabels = theTestNode.forwardReachableNodes();
                 if (containsAnyOf(theReachableLabels, aEntryLabels)) {
                     theInternal.add(theTestNode);
                 } else {
@@ -152,9 +218,52 @@ public class Relooper {
             Block theReloopedInternal = reloop(aEntryLabels, theInternal);
             Block theReloopedNext = reloop(theNextEntryLabels, theNext);
 
-            return new LoopBlock(theReloopedInternal, theReloopedNext);
+            return new LoopBlock(aEntryLabels, theReloopedInternal, theReloopedNext);
         }
 
+        // If we have more than one entry, try to create a Multiple block:
+        // For each entry, find all the labels it reaches that
+        // cannot be reached by any other entry. If at least one entry
+        // has such labels, return a Multiple block, whose Handled
+        // blocks are blocks for those labels (and whose entries are
+        // those labels), and whose Next block is all the rest. Entries
+        // for the next block are entries that did not become part of
+        // the Handled blocks, and also labels that can be reached
+        // from the Handled blocks.
+        if (aEntryLabels.size() > 1) {
+            Set<GraphNode> theRemainingEntries = new HashSet<>(aEntryLabels);
+            Set<GraphNode> theRest = new HashSet<>(aLabelSoup);
+
+            Map<GraphNode, Set<GraphNode>> theEntryReaches = new HashMap<>();
+            for (GraphNode theEntry : aEntryLabels) {
+                theEntryReaches.put(theEntry, theEntry.reachableNodes());
+            }
+            Set<Block> theHandlers = new HashSet<>();
+            for (Map.Entry<GraphNode, Set<GraphNode>> theEntry : theEntryReaches.entrySet()) {
+                Set<GraphNode> theHandlerEntries = new HashSet<>(theEntry.getValue());
+                for (Map.Entry<GraphNode, Set<GraphNode>> theOtherEntry : theEntryReaches.entrySet()) {
+                    if (theOtherEntry.getKey() != theEntry.getKey()) {
+                        theHandlerEntries.removeAll(theOtherEntry.getValue());
+                    }
+                }
+                if (!theHandlerEntries.isEmpty()) {
+                    theRemainingEntries.remove(theEntry.getKey());
+                    Set<GraphNode> theTagSoup = new HashSet<>();
+                    for (GraphNode theInitial : theHandlerEntries) {
+                        theTagSoup.addAll(theInitial.reachableNodes());
+                    }
+                    theRest.removeAll(theTagSoup);
+                    theHandlers.add(reloop(theHandlerEntries, theTagSoup));
+                }
+            }
+            if (!theHandlers.isEmpty()) {
+                Block theNext = reloop(theRemainingEntries, theRest);
+                return new MultipleBlock(aEntryLabels, theHandlers, theNext);
+            }
+        }
+
+        // If we could not create a Multiple block, then create
+        // a Loop block as described above
         throw new IllegalStateException("What do do now?");
     }
 
@@ -168,12 +277,47 @@ public class Relooper {
         return theResults;
     }
 
-    public boolean containsAnyOf(Collection<GraphNode> aSoup, Collection<GraphNode> aTestLabels) {
+    private boolean containsAnyOf(Collection<GraphNode> aSoup, Collection<GraphNode> aTestLabels) {
         for (GraphNode theTestLabel : aTestLabels) {
             if (aSoup.contains(theTestLabel)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public void debugPrint(PrintStream aStream, Block aBlock) {
+        debugPrint(aStream, aBlock, 0);
+    }
+
+    private void debugPrint(PrintStream aStream, Block aBlock, int aInset) {
+        printInset(aStream, aInset);
+        if (aBlock == null) {
+            aStream.println(" NULL");
+            return;
+        }
+        if (aBlock instanceof SimpleBlock) {
+            aStream.println("SimpleBlock");
+            printInset(aStream, aInset + 1);
+            SimpleBlock theSimple = (SimpleBlock) aBlock;
+            aStream.println(theSimple.internalLabel().getStartAddress().getAddress());
+
+            debugPrint(aStream, theSimple.next(), aInset + 2);
+            return;
+        }
+        if (aBlock instanceof LoopBlock) {
+            aStream.println("Loop");
+            LoopBlock theLoop = (LoopBlock) aBlock;
+            debugPrint(aStream, theLoop.inner(), aInset + 1);
+            debugPrint(aStream, theLoop.next(), aInset + 1);
+            return;
+        }
+        throw new IllegalStateException("No handler for " + aBlock);
+    }
+
+    private void printInset(PrintStream aStream, int aInset) {
+        for (int i = 0; i < aInset; i++) {
+            aStream.print(" ");
+        }
     }
 }

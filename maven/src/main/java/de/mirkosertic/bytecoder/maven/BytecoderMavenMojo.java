@@ -16,21 +16,33 @@
 package de.mirkosertic.bytecoder.maven;
 
 import com.google.common.io.Files;
-import com.google.javascript.jscomp.*;
+import com.google.javascript.jscomp.CommandLineRunner;
+import com.google.javascript.jscomp.CompilationLevel;
 import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.SourceFile;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -41,7 +53,11 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -115,7 +131,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-            CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput);
+            CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.ALL);
             CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
             try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
                 theWriter.println(theCode.getData());
@@ -146,8 +162,8 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 int[] theWASM = wat2wasm(theWASMCompileResult);
                 File theBytecoderWASMFileName = new File(theBytecoderDirectory, "bytecoder.wasm");
                 try (FileOutputStream theFos = new FileOutputStream(theBytecoderWASMFileName)) {
-                    for (int i=0;i<theWASM.length;i++) {
-                        theFos.write(theWASM[i]);
+                    for (int aTheWASM : theWASM) {
+                        theFos.write(aTheWASM);
                     }
                 }
 
@@ -169,7 +185,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
         theDriverServiceBuilder = theDriverServiceBuilder.usingDriverExecutable(new File(theChromeDriverBinary));
 
         ChromeDriverService theDriverService = theDriverServiceBuilder.build();
-        theDriverService.start();;
+        theDriverService.start();
 
         File theTempDirectory = Files.createTempDir();
         File theGeneratedFile = new File(theTempDirectory, "compile.html");
@@ -242,7 +258,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
         }
 
         theDriver.close();
-        theDriverService.stop();;
+        theDriverService.stop();
 
         return theBinaryDara;
     }
