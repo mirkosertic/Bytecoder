@@ -270,4 +270,18 @@ public class GraphNode extends Expression {
         }
         return true;
     }
+
+    public Set<GraphNode> reachableNodes() {
+        Set<GraphNode> theNodes = new HashSet<>();
+        reachableNodes(theNodes, this);
+        return theNodes;
+    }
+
+    private static void reachableNodes(Set<GraphNode> aResult, GraphNode aNode) {
+        if (aResult.add(aNode)) {
+            for (GraphNode theNext : aNode.successors.values()) {
+                reachableNodes(aResult, theNext);
+            }
+        }
+    }
 }
