@@ -16,15 +16,18 @@
 package de.mirkosertic.bytecoder.backend;
 
 import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.ssa.optimizer.Optimizer;
 
 public class CompileOptions {
 
     private final Logger logger;
     private final boolean debugOutput;
+    private final Optimizer optimizer;
 
-    public CompileOptions(Logger aLogger, boolean aDebugOutput) {
+    public CompileOptions(Logger aLogger, boolean aDebugOutput, Optimizer aOptimizer) {
         logger = aLogger;
         debugOutput = aDebugOutput;
+        optimizer = aOptimizer;
     }
 
     public Logger getLogger() {
@@ -33,5 +36,9 @@ public class CompileOptions {
 
     public boolean isDebugOutput() {
         return debugOutput;
+    }
+
+    public Optimizer getOptimizer() {
+        return optimizer;
     }
 }

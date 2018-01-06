@@ -337,6 +337,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
 
+                //Run optimizer
+                aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                 BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
                 StringBuilder theArguments = new StringBuilder();
                 for (Program.Argument theArgument : theSSAProgram.getArguments()) {
