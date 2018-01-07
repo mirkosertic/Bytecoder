@@ -71,4 +71,30 @@ public class RelooperTest {
 
         theRelooper.debugPrint(System.out, theBlock);
     }
+
+    @Test
+    public void testIf() {
+        Program theProgram = new Program();
+        ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
+
+        GraphNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
+        theNode1.addExpression(new GotoExpression(new BytecodeOpcodeAddress(10)));
+
+        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), GraphNode.BlockType.NORMAL);
+        theNode2.addExpression(new GotoExpression(new BytecodeOpcodeAddress(40)));
+
+        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
+        theNode3.addExpression(new ReturnExpression());
+
+        theNode1.addSuccessor(theNode2);
+        theNode1.addSuccessor(theNode3);
+        theNode2.addSuccessor(theNode3);
+
+        theGraph.calculateReachabilityAndMarkBackEdges();
+
+        Relooper theRelooper = new Relooper();
+        Relooper.Block theBlock = theRelooper.reloop(theGraph);
+
+        theRelooper.debugPrint(System.out, theBlock);
+    }
 }

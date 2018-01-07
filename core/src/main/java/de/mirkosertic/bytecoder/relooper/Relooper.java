@@ -126,6 +126,10 @@ public class Relooper {
             next = aNext;
         }
 
+        public Set<Block> handlers() {
+            return handlers;
+        }
+
         @Override
         public Block next() {
             return next;
@@ -141,7 +145,7 @@ public class Relooper {
         // the initisl "label-soup" for the Relooper. This will exclude
         // exception handler and finalize blocks from the the CFG and
         // will reduce the amount of labels to be processed(hopefully)
-        return reloop(theEntries, aGraph.dominatedNodesOf(theStart));
+        return reloop(aGraph, theEntries, aGraph.dominatedNodesOf(theStart));
     }
 
     /**
@@ -149,7 +153,7 @@ public class Relooper {
      * points. We wish to create a block comprised of all those
      * labels.
      */
-    private Block reloop(Set<GraphNode> aEntryLabels, Set<GraphNode> aLabelSoup) {
+    private Block reloop(ControlFlowGraph aGraph, Set<GraphNode> aEntryLabels, Set<GraphNode> aLabelSoup) {
 
         // If there are no entry labels at all, we return null.
         // This will become the next value of the predecessor block and will mark the end of the
@@ -172,12 +176,14 @@ public class Relooper {
                 Set<GraphNode> theNextEntries = new HashSet<>();
                 for (Map.Entry<GraphNode.Edge, GraphNode> theBranch : theEntry.getSuccessors().entrySet()) {
                     if (theBranch.getKey().getType() == GraphNode.EdgeType.NORMAL) {
-                        theNextEntries.add(theBranch.getValue());
+                        GraphNode theNode = theBranch.getValue();
+                        theNextEntries.add(theNode);
                     }
                 }
-                Set<GraphNode> theOtherLabels = new HashSet<>(aLabelSoup);
+
+                Set<GraphNode> theOtherLabels = aGraph.dominatedNodesOf(theEntry);
                 theOtherLabels.remove(theEntry);
-                return new SimpleBlock(aEntryLabels, theEntry, reloop(theNextEntries, theOtherLabels));
+                return new SimpleBlock(aEntryLabels, theEntry, reloop(aGraph, theNextEntries, theOtherLabels));
             }
         }
 
@@ -215,8 +221,8 @@ public class Relooper {
                 }
             }
 
-            Block theReloopedInternal = reloop(aEntryLabels, theInternal);
-            Block theReloopedNext = reloop(theNextEntryLabels, theNext);
+            Block theReloopedInternal = reloop(aGraph, aEntryLabels, theInternal);
+            Block theReloopedNext = reloop(aGraph, theNextEntryLabels, theNext);
 
             return new LoopBlock(aEntryLabels, theReloopedInternal, theReloopedNext);
         }
@@ -250,14 +256,14 @@ public class Relooper {
                     theRemainingEntries.remove(theEntry.getKey());
                     Set<GraphNode> theTagSoup = new HashSet<>();
                     for (GraphNode theInitial : theHandlerEntries) {
-                        theTagSoup.addAll(theInitial.reachableNodes());
+                        theTagSoup.addAll(aGraph.dominatedNodesOf(theInitial));
                     }
                     theRest.removeAll(theTagSoup);
-                    theHandlers.add(reloop(theHandlerEntries, theTagSoup));
+                    theHandlers.add(reloop(aGraph, theHandlerEntries, theTagSoup));
                 }
             }
             if (!theHandlers.isEmpty()) {
-                Block theNext = reloop(theRemainingEntries, theRest);
+                Block theNext = reloop(aGraph, theRemainingEntries, theRest);
                 return new MultipleBlock(aEntryLabels, theHandlers, theNext);
             }
         }
@@ -267,11 +273,13 @@ public class Relooper {
         throw new IllegalStateException("What do do now?");
     }
 
-    private Set<GraphNode> jumpTargetsOf(Collection<GraphNode> aNode) {
+    private Set<GraphNode> jumpTargetsOf(Collection<GraphNode> aLabelSoup) {
         Set<GraphNode> theResults = new HashSet<>();
-        for (GraphNode theNode : aNode) {
+        for (GraphNode theNode : aLabelSoup) {
             for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {
-                theResults.add(theEntry.getValue());
+                if (aLabelSoup.contains(theEntry.getValue())) {
+                    theResults.add(theEntry.getValue());
+                }
             }
         }
         return theResults;
@@ -310,6 +318,15 @@ public class Relooper {
             LoopBlock theLoop = (LoopBlock) aBlock;
             debugPrint(aStream, theLoop.inner(), aInset + 1);
             debugPrint(aStream, theLoop.next(), aInset + 1);
+            return;
+        }
+        if (aBlock instanceof MultipleBlock) {
+            aStream.println("Multiple");
+            MultipleBlock theMultiple = (MultipleBlock) aBlock;
+            for (Block theHandler : theMultiple.handlers()) {
+                debugPrint(aStream, theHandler, aInset + 1);
+            }
+            debugPrint(aStream, theMultiple.next, aInset + 1);
             return;
         }
         throw new IllegalStateException("No handler for " + aBlock);
