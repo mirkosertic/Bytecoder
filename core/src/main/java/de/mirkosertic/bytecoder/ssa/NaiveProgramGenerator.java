@@ -1616,7 +1616,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             TypeRef.Native.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), new IntegerValue(theInitSignature.getArguments().length)));
 
                     for (int i=theInitSignature.getArguments().length-1;i>=0;i--) {
-                        Variable theIndex = aTargetBlock.newVariable(TypeRef.Native.INT, new IntegerValue(i));
+                        Value theIndex = new IntegerValue(i);
                         aTargetBlock.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theArray, theIndex, aHelper.pop()));
                     }
 

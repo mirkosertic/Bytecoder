@@ -422,6 +422,33 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeArrayStoreExpression(ArrayStoreExpression aExpression) {
+    	// If the index is a constant, we can precompute the offset.
+    	if (aExpression.getIndex() instanceof IntegerValue) {
+			int offset = 20 + ((IntegerValue)aExpression.getIndex()).getIntValue() * 4;
+			
+			switch (aExpression.getArrayType().resolve()) {
+                case DOUBLE:
+                case FLOAT: {
+                    print("(f32.store ");
+                    break;
+                }
+                default: {
+                    print("(i32.store ");
+                    break;
+                }
+            }
+			
+			print("offset="+offset+" ");
+			
+			writeValue(aExpression.getArray());
+			print(" ");
+			writeValue(aExpression.getValue());
+			
+			println(")");
+			
+			return;
+    	}
+    	
         switch (aExpression.getArrayType().resolve()) {
             case DOUBLE:
             case FLOAT: {
