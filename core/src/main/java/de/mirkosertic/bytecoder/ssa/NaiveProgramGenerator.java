@@ -840,12 +840,12 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionPOP2 theINS = (BytecodeInstructionPOP2) theInstruction;
                 Value theValue = aHelper.pop();
                 switch (theValue.resolveType().resolve()) {
-                    case LONG:
-                        break;
-                    case DOUBLE:
-                        break;
-                    default:
-                        aHelper.pop();
+                case LONG:
+                    break;
+                case DOUBLE:
+                    break;
+                default:
+                    aHelper.pop();
                 }
             } else if (theInstruction instanceof BytecodeInstructionDUP) {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
@@ -1172,26 +1172,26 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Value theValue = aHelper.pop();
                 BinaryValue theBinaryValue;
                 switch (theINS.getType()) {
-                    case lt:
-                        theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.LESSTHAN, new IntegerValue(0));
-                        break;
-                    case eq:
-                        theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.EQUALS, new IntegerValue(0));
-                        break;
-                    case gt:
-                        theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.GREATERTHAN, new IntegerValue(0));
-                        break;
-                    case ge:
-                        theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.GREATEROREQUALS, new IntegerValue(0));
-                        break;
-                    case le:
-                        theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.LESSTHANOREQUALS, new IntegerValue(0));
-                        break;
-                    case ne:
-                        theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.NOTEQUALS, new IntegerValue(0));
-                        break;
-                    default:
-                        throw new IllegalStateException("Not supported operation : " + theINS.getType());
+                case lt:
+                    theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.LESSTHAN, new IntegerValue(0));
+                    break;
+                case eq:
+                    theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.EQUALS, new IntegerValue(0));
+                    break;
+                case gt:
+                    theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.GREATERTHAN, new IntegerValue(0));
+                    break;
+                case ge:
+                    theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.GREATEROREQUALS, new IntegerValue(0));
+                    break;
+                case le:
+                    theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.LESSTHANOREQUALS, new IntegerValue(0));
+                    break;
+                case ne:
+                    theBinaryValue = new BinaryValue(TypeRef.Native.BOOLEAN, theValue, BinaryValue.Operator.NOTEQUALS, new IntegerValue(0));
+                    break;
+                default:
+                    throw new IllegalStateException("Not supported operation : " + theINS.getType());
                 }
 
                 ExpressionList theExpressions = new ExpressionList();
@@ -1560,7 +1560,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         if (theArgumentConstant instanceof BytecodeDoubleConstant) {
                             BytecodeDoubleConstant thePrimitive = (BytecodeDoubleConstant) theArgumentConstant;
                             theArguments
-                                    .add(theInitNode.newVariable(TypeRef.Native.DOUBLE, new DoubleValue(thePrimitive.getDoubleValue())));
+                            .add(theInitNode.newVariable(TypeRef.Native.DOUBLE, new DoubleValue(thePrimitive.getDoubleValue())));
                             continue;
                         }
                         if (theArgumentConstant instanceof BytecodeMethodHandleConstant) {
@@ -1619,19 +1619,19 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     for (int i=theInitSignature.getArguments().length-1;i>=0;i--) {
                         Value theIndex = new IntegerValue(i);
                         Value theStoredValue = aHelper.pop();
-                        
+
                         if (theStoredValue.resolveType() == TypeRef.Native.INT) {
-                        	// Create Integer object to contain int
-                        	BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(TInteger.class);
-                        	BytecodeTypeRef[] args_def = new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT};
-                        	BytecodeMethodSignature sig = new BytecodeMethodSignature(theType, args_def);
-                        	List<Value> args = new ArrayList<Value>();
-                        	args.add(theStoredValue);
-                        	
-                        	theStoredValue = new InvokeStaticMethodValue(theType, "valueOf", sig, args);
+                            // Create Integer object to contain int
+                            BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(TInteger.class);
+                            BytecodeTypeRef[] args_def = new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT};
+                            BytecodeMethodSignature sig = new BytecodeMethodSignature(theType, args_def);
+                            List<Value> args = new ArrayList<Value>();
+                            args.add(theStoredValue);
+
+                            theStoredValue = new InvokeStaticMethodValue(theType, "valueOf", sig, args);
                             theStoredValue = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theStoredValue);
                         }
-                        
+
                         aTargetBlock.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theArray, theIndex, theStoredValue));
                     }
 
