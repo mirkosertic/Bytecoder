@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
+import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -112,7 +113,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         aRunNotifier.fireTestStarted(theDescription);
         try {
             // Simply invoke using reflection
-            Object theInstance = testClass.getJavaClass().newInstance();
+            Object theInstance = testClass.getJavaClass().getDeclaredConstructor().newInstance();
             Method theMethod = aFrameworkMethod.getMethod();
             theMethod.invoke(theInstance);
 
@@ -174,7 +175,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             StringWriter theStrWriter = new StringWriter();
             PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-            CompileOptions theOptions = new CompileOptions(LOGGER, true);
+            CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
             theCodeWriter.println(theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature).getData());
 
             String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
@@ -253,7 +254,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            CompileOptions theOptions = new CompileOptions(LOGGER, true);
+            CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
             WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
 
             String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".html";

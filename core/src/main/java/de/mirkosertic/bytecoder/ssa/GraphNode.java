@@ -284,4 +284,20 @@ public class GraphNode extends Expression {
             }
         }
     }
+
+    public Set<GraphNode> forwardReachableNodes() {
+        Set<GraphNode> theNodes = new HashSet<>();
+        forwardReachableNodes(theNodes, this);
+        return theNodes;
+    }
+
+    private static void forwardReachableNodes(Set<GraphNode> aResult, GraphNode aNode) {
+        if (aResult.add(aNode)) {
+            for (Map.Entry<Edge,GraphNode> theSuc : aNode.successors.entrySet()) {
+                if (theSuc.getKey().type == EdgeType.NORMAL) {
+                    forwardReachableNodes(aResult, theSuc.getValue());
+                }
+            }
+        }
+    }
 }

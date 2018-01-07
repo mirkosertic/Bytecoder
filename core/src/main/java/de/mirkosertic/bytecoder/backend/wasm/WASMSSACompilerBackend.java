@@ -319,6 +319,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getValue().getBytecodeClass(), t);
 
+                //Run optimizer
+                aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                 theWriter.print("   (func ");
                 theWriter.print("$");
                 theWriter.print(WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature));
