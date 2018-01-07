@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.lang.TInteger;
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
@@ -1599,7 +1600,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     Variable theNewVariable = theInitNode.newVariable(TypeRef.Native.REFERENCE, theInvokeStaticValue);
                     theInitNode.addExpression(new ReturnValueExpression(theNewVariable));
 
-                    // First step, we construct a callsitre
+                    // First step, we construct a callsite
                     ResolveCallsiteObjectValue theValue = new ResolveCallsiteObjectValue(aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);
                     Variable theCallsiteVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theValue);
 
@@ -1617,7 +1618,21 @@ public class NaiveProgramGenerator implements ProgramGenerator {
 
                     for (int i=theInitSignature.getArguments().length-1;i>=0;i--) {
                         Value theIndex = new IntegerValue(i);
-                        aTargetBlock.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theArray, theIndex, aHelper.pop()));
+                        Value theStoredValue = aHelper.pop();
+                        
+                        if (theStoredValue.resolveType() == TypeRef.Native.INT) {
+                        	// Create Integer object to contain int
+                        	BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(TInteger.class);
+                        	BytecodeTypeRef[] args_def = new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT};
+                        	BytecodeMethodSignature sig = new BytecodeMethodSignature(theType, args_def);
+                        	List<Value> args = new ArrayList<Value>();
+                        	args.add(theStoredValue);
+                        	
+                        	theStoredValue = new InvokeStaticMethodValue(theType, "valueOf", sig, args);
+                            theStoredValue = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theStoredValue);
+                        }
+                        
+                        aTargetBlock.addExpression(new ArrayStoreExpression(TypeRef.Native.REFERENCE, theArray, theIndex, theStoredValue));
                     }
 
                     theInvokeArguments.add(theArray);
