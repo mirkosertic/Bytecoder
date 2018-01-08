@@ -109,7 +109,7 @@ public class ControlFlowGraph {
     }
 
     public GraphNode createAt(BytecodeOpcodeAddress aAddress, GraphNode.BlockType aType) {
-        GraphNode theNewBlock = new GraphNode(aType, program, aAddress);
+        GraphNode theNewBlock = new GraphNode(this, aType, program, aAddress);
         addDominatedNode(theNewBlock);
         return theNewBlock;
     }
@@ -282,7 +282,7 @@ public class ControlFlowGraph {
         return theStr.toString();
     }
 
-    public Set<GraphNode> dominatedNodesOf(GraphNode aNode) {
+    protected Set<GraphNode> dominatedNodesOf(GraphNode aNode) {
         Set<GraphNode> theResult = new HashSet<>();
         theResult.add(aNode);
         for (GraphNode theNode : knownNodes) {

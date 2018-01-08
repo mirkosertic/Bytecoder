@@ -158,7 +158,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
         private ParsingHelper(Program aProgram, BytecodeLocalVariableTableAttributeInfo aDebugInfo, GraphNode aBlock, ValueProvider aValueProvider) {
-            stack = new Stack();
+            stack = new Stack<>();
             block = aBlock;
             localVariables = new HashMap<>();
             valueProvider = aValueProvider;
@@ -1505,7 +1505,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
 
                 Program theProgram = new Program();
-                GraphNode theInitNode = new GraphNode(GraphNode.BlockType.NORMAL, theProgram, BytecodeOpcodeAddress.START_AT_ZERO);
+                GraphNode theInitNode = theProgram.getControlFlowGraph().createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
 
                 switch (theMethodRef.getReferenceKind()) {
                 case REF_invokeStatic: {
@@ -1625,7 +1625,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(TInteger.class);
                             BytecodeTypeRef[] args_def = new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT};
                             BytecodeMethodSignature sig = new BytecodeMethodSignature(theType, args_def);
-                            List<Value> args = new ArrayList<Value>();
+                            List<Value> args = new ArrayList<>();
                             args.add(theStoredValue);
 
                             theStoredValue = new InvokeStaticMethodValue(theType, "valueOf", sig, args);

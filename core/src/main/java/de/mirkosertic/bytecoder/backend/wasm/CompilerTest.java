@@ -27,12 +27,9 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
-import javax.script.ScriptException;
-import java.io.IOException;
-
 public class CompilerTest {
 
-    public static void main(String args[]) throws ClassNotFoundException, IOException, ScriptException {
+    public static void main(String args[]) throws ClassNotFoundException {
         ClassLoader theLoader = CompilerTest.class.getClassLoader();
         Class theTargetClass = theLoader.loadClass(HelloWorld.class.getName());
 
@@ -41,7 +38,7 @@ public class CompilerTest {
         BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.ALL), theTargetClass, "main", theSignature);
+        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.RELOOPER), theTargetClass, "main", theSignature);
 
         System.out.println(theCode.getData());
     }

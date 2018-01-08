@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,18 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class ContinueExpression extends Expression {
+public class BreakExpression extends Expression {
 
-    private final Label labelToReturnTo;
+    private final Label blockToBreak;
     private final BytecodeOpcodeAddress jumpTarget;
 
-    public ContinueExpression(Label aLabelToReturnTo, BytecodeOpcodeAddress aJumpTarget) {
-        labelToReturnTo = aLabelToReturnTo;
+    public BreakExpression(Label aBlockToBreak, BytecodeOpcodeAddress aJumpTarget) {
+        blockToBreak = aBlockToBreak;
         jumpTarget = aJumpTarget;
     }
 
-    public Label labelToReturnTo() {
-        return labelToReturnTo;
+    public Label blockToBreak() {
+        return blockToBreak;
     }
 
     public BytecodeOpcodeAddress jumpTarget() {

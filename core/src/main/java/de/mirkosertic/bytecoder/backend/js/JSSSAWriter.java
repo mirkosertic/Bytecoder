@@ -24,10 +24,12 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
@@ -35,7 +37,6 @@ import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
-import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
@@ -98,6 +99,7 @@ import de.mirkosertic.bytecoder.ssa.VariableDescription;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -577,7 +579,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
 
-        if (aValue.getMethodName().equals("invokeWithMagicBehindTheScenes")) {
+        if (Objects.equals(aValue.getMethodName(), "invokeWithMagicBehindTheScenes")) {
             print("(");
         } else {
             print(theTarget);
@@ -807,10 +809,14 @@ public class JSSSAWriter extends IndentSSAWriter {
                 theDeeper2.println();
 
                 println("}");
-            } else if (theExpression instanceof ContinueExpression) {
-                ContinueExpression theContinue = (ContinueExpression) theExpression;
-                GraphNode theNode = theContinue.getBlock();
-                print("continue label_" + theNode.getStartAddress().getAddress() + ";");
+            } else if (theExpression instanceof BreakExpression) {
+                BreakExpression theBreak = (BreakExpression) theExpression;
+                print("__label__ = ");
+                print(theBreak.jumpTarget().getAddress());
+                println(";");
+                print("break $");
+                print(theBreak.blockToBreak().name());
+                println(";");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }
@@ -912,5 +918,64 @@ public class JSSSAWriter extends IndentSSAWriter {
                 break;
             }
         }
+    }
+
+    public void printRelooped(Relooper.Block aBlock) {
+        println("var __label__ = null;");
+        print(aBlock);
+    }
+
+    private void print(Relooper.Block aBlock) {
+        if (aBlock == null) {
+            return;
+        }
+        if (aBlock instanceof Relooper.SimpleBlock) {
+            print((Relooper.SimpleBlock) aBlock);
+            return;
+        }
+        if (aBlock instanceof Relooper.LoopBlock) {
+            print((Relooper.LoopBlock) aBlock);
+            return;
+        }
+        if (aBlock instanceof Relooper.MultipleBlock) {
+            print((Relooper.MultipleBlock) aBlock);
+            return;
+        }
+        throw new IllegalStateException("Not implemented : " + aBlock);
+    }
+
+    private void print(Relooper.SimpleBlock aSimpleBlock) {
+        print("$");
+        print(aSimpleBlock.label().name());
+        println(" : {");
+
+        JSSSAWriter theDeeper = withDeeperIndent();
+        theDeeper.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
+
+        println("}");
+        print(aSimpleBlock.next());
+    }
+
+    private void print(Relooper.LoopBlock aLoopBlock) {
+    }
+
+    private void print(Relooper.MultipleBlock aMultiple) {
+
+        print("$");
+        print(aMultiple.label().name());
+        println(" : switch (__label__) {");
+
+        JSSSAWriter theDeeper = withDeeperIndent();
+        for (Relooper.Block theHandler : aMultiple.handlers()) {
+            theDeeper.print("case ");
+            theDeeper.print(theHandler.label().name());
+            theDeeper.println(" : ");
+
+            JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
+            theHandlerWriter.print(theHandler);
+        }
+
+        println("}");
+        print(aMultiple.next());
     }
 }

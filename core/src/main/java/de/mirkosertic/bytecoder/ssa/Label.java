@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.wasm;
+package de.mirkosertic.bytecoder.ssa;
 
-public class HelloWorld {
+public class Label {
 
-    public static void main(String[] args) {
-        int a = 10;
-        int j = 0;
-        if (a>j) {
-            j = 30;
-        } else {
-            j = 50;
-        }
-        int z = 100 + j;
+    private final String name;
+
+    public Label(String aName) {
+        name = aName;
+    }
+
+    public String name() {
+        return name;
     }
 }
