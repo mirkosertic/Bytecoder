@@ -62,9 +62,11 @@ public class GraphNode extends Expression {
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
     private final List<GraphNodePath> reachableBy;
+    private final ControlFlowGraph owningGraph;
 
-    public GraphNode(BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+    protected GraphNode(ControlFlowGraph aOwningGraph, BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
+        owningGraph = aOwningGraph;
         startAddress = aStartAddress;
         program = aProgram;
         expressions = new ExpressionList();
@@ -271,24 +273,14 @@ public class GraphNode extends Expression {
         return true;
     }
 
-    public Set<GraphNode> reachableNodes() {
-        Set<GraphNode> theNodes = new HashSet<>();
-        reachableNodes(theNodes, this);
-        return theNodes;
-    }
-
-    private static void reachableNodes(Set<GraphNode> aResult, GraphNode aNode) {
-        if (aResult.add(aNode)) {
-            for (GraphNode theNext : aNode.successors.values()) {
-                reachableNodes(aResult, theNext);
-            }
-        }
-    }
-
     public Set<GraphNode> forwardReachableNodes() {
         Set<GraphNode> theNodes = new HashSet<>();
         forwardReachableNodes(theNodes, this);
         return theNodes;
+    }
+
+    public Set<GraphNode> dominatedNodes() {
+        return owningGraph.dominatedNodesOf(this);
     }
 
     private static void forwardReachableNodes(Set<GraphNode> aResult, GraphNode aNode) {

@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -105,7 +106,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
-            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.getKey(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
 
@@ -231,7 +232,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
-            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.getKey(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
 
@@ -293,7 +294,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
-            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.getKey(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
             if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
@@ -368,6 +369,14 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                         theSSAWriter.print(") ;; ");
                         theSSAWriter.println(theVariable.resolveType().resolve().name());
                     }
+                }
+
+                // Try to reloop it!
+                try {
+                    Relooper theRelooper = new Relooper();
+                    // Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+                } catch (Exception e) {
+                    aLinkerContext.getLogger().warn("Error while relooping, but we can continue!", e);
                 }
 
                 ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
@@ -483,7 +492,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.println("__runtimeClass) (i32.const 1))");
 
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
-                if (!theRef.equals(aEntry.getKey())) {
+                if (!Objects.equals(theRef, aEntry.getKey())) {
                     theWriter.print("         (call $");
                     theWriter.print(WASMWriterUtils.toClassName(theRef));
                     theWriter.println("__classinitcheck)");
@@ -687,7 +696,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
-            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.getKey(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
             if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
@@ -785,7 +794,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             if (!aEntry.getValue().getAccessFlags().isInterface()) {
 
-                if (!aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                if (!Objects.equals(aEntry.getKey(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     theWriter.print("      (call $");
                     theWriter.print(JSWriterUtils.toClassName(aEntry.getKey()));
                     theWriter.println("__classinitcheck)");
@@ -823,7 +832,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             if (aEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
-            if (aEntry.getKey().equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.getKey(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
             if (aEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {

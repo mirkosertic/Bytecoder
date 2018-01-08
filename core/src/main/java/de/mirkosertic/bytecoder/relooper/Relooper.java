@@ -15,15 +15,25 @@
  */
 package de.mirkosertic.bytecoder.relooper;
 
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.Label;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.Stack;
 
 /**
  * Implementation of the Relooper Algorithm as described in Alon Zakai's Emscripten Paper.
@@ -33,12 +43,29 @@ public class Relooper {
     public static abstract class Block {
 
         private final Set<GraphNode> entries;
+        private final Label label;
 
         protected Block(Set<GraphNode> aEntries) {
             entries = aEntries;
+            StringBuilder theBuilder = new StringBuilder();
+            for (GraphNode aLabel : aEntries) {
+                if (theBuilder.length() > 0) {
+                    theBuilder.append("_");
+                }
+                theBuilder.append(aLabel.getStartAddress().getAddress());
+            }
+            label = new Label(theBuilder.toString());
+        }
+
+        public Set<GraphNode> entries() {
+            return entries;
         }
 
         public abstract Block next();
+
+        public Label label() {
+            return label;
+        }
     }
 
     /**
@@ -145,7 +172,117 @@ public class Relooper {
         // the initisl "label-soup" for the Relooper. This will exclude
         // exception handler and finalize blocks from the the CFG and
         // will reduce the amount of labels to be processed(hopefully)
-        return reloop(aGraph, theEntries, aGraph.dominatedNodesOf(theStart));
+        Block theBlock =  reloop(aGraph, theEntries, theStart.dominatedNodes());
+
+        // At this point, we have a constructed Relooper-CFG. Now we have to replace
+        // all GOTOs with either corresponding break or continue statements.
+        replaceGotosIn(theBlock);
+
+        // We are done here
+        return theBlock;
+    }
+
+    private void replaceGotosIn(Block aBlock) {
+        replaceGotosIn(new Stack<>(), aBlock);
+    }
+
+    private void replaceGotosIn(Stack<Block> aTraversalStack, Block aBlock) {
+        if (aBlock == null) {
+            return;
+        }
+        if (aBlock instanceof SimpleBlock) {
+            SimpleBlock theSimple = (SimpleBlock) aBlock;
+
+            GraphNode theInternalLabel = theSimple.internalLabel();
+            replaceGotosIn(aTraversalStack, theSimple, theInternalLabel, theInternalLabel.getExpressions());
+
+            replaceGotosIn(aTraversalStack, theSimple.next());
+            return;
+        }
+        if (aBlock instanceof LoopBlock) {
+            LoopBlock theLoop = (LoopBlock) aBlock;
+
+            aTraversalStack.push(theLoop);
+            replaceGotosIn(aTraversalStack, theLoop.inner());
+            aTraversalStack.pop();
+            replaceGotosIn(aTraversalStack, theLoop.next());
+            return;
+        }
+        if (aBlock instanceof MultipleBlock) {
+            MultipleBlock theMultiple = (MultipleBlock) aBlock;
+            aTraversalStack.push(theMultiple);
+            for (Block theHandler : theMultiple.handlers()) {
+                replaceGotosIn(aTraversalStack, theHandler);
+            }
+            aTraversalStack.pop();
+
+            replaceGotosIn(aTraversalStack, theMultiple.next());
+            return;
+        }
+
+        throw new IllegalStateException("Don't know how to handle " + aBlock);
+    }
+
+    private void replaceGotosIn(Stack<Block> aTraversalStack, SimpleBlock aCurrent, GraphNode aLabel, ExpressionList aList) {
+        for (Expression theExpression : aList.toList()) {
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                    replaceGotosIn(aTraversalStack, aCurrent, aLabel, theList);
+                }
+            }
+            if (theExpression instanceof GotoExpression) {
+                GotoExpression theGoto = (GotoExpression) theExpression;
+                boolean theGotoFound = false;
+                // We search the successor edge
+                for (Map.Entry<GraphNode.Edge, GraphNode> theSuc : aLabel.getSuccessors().entrySet()) {
+                    if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.getJumpTarget())) {
+                        theGotoFound = true;
+                        GraphNode theTarget = theSuc.getValue();
+                        // We found the matching edge
+                        if (theSuc.getKey().getType() == GraphNode.EdgeType.NORMAL) {
+                            // We can only branch to the next block
+                            Block theNext = aCurrent.next();
+                            if (theNext == null) {
+                                // we have to leave the current block, this happens on joining control flows.
+                                // We break out of the current block, so the next handler will take action and
+                                // hopefully can handle the new control flow
+                                BreakExpression theBreak = new BreakExpression(aTraversalStack.peek().label(), theTarget.getStartAddress());
+                                aList.replace(theGoto, theBreak);
+                                break;
+                            }
+                            if (!theNext.entries().contains(theTarget)) {
+                                throw new IllegalStateException("Failed to jump to " + theTarget.getStartAddress().getAddress() + " : no matching entry found!");
+                            }
+                            // At this point, we replace the goto with a corresponding break
+                            BreakExpression theBreak = new BreakExpression(aCurrent.label(), theTarget.getStartAddress());
+                            aList.replace(theGoto, theBreak);
+                        } else {
+                            // We can only branch back into the known stack of nested blocks
+                            boolean theSomethingFound = false;
+                            for (int i=aTraversalStack.size() -1;i>=0;i--) {
+                                Block theNestingBlock = aTraversalStack.get(i);
+                                if (theNestingBlock.entries().contains(theTarget)) {
+                                    theSomethingFound = true;
+
+                                    // We can return to the target in the hierarchy
+                                    ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    aList.replace(theGoto, theContinue);
+                                    break;
+                                }
+                            }
+                            if (!theSomethingFound) {
+                                throw new IllegalStateException(
+                                        "No back edge target found for " + theTarget.getStartAddress().getAddress());
+                            }
+                        }
+                    }
+                }
+                if (!theGotoFound) {
+                    throw new IllegalStateException("No GOTO possible for " + theGoto.getJumpTarget().getAddress() + " in label " + aCurrent.label().name());
+                }
+            }
+        }
     }
 
     /**
@@ -174,14 +311,16 @@ public class Relooper {
             GraphNode theEntry = aEntryLabels.iterator().next();
             if (!theJumptargets.contains(theEntry)) {
                 Set<GraphNode> theNextEntries = new HashSet<>();
-                for (Map.Entry<GraphNode.Edge, GraphNode> theBranch : theEntry.getSuccessors().entrySet()) {
-                    if (theBranch.getKey().getType() == GraphNode.EdgeType.NORMAL) {
-                        GraphNode theNode = theBranch.getValue();
-                        theNextEntries.add(theNode);
+                Set<GraphNode> theDominated = theEntry.dominatedNodes();
+                for (Map.Entry<GraphNode.Edge, GraphNode> theSucc : theEntry.getSuccessors().entrySet()) {
+                    if (theSucc.getKey().getType() == GraphNode.EdgeType.NORMAL) {
+                        if (theDominated.contains(theSucc.getValue())) {
+                            theNextEntries.add(theSucc.getValue());
+                        }
                     }
                 }
 
-                Set<GraphNode> theOtherLabels = aGraph.dominatedNodesOf(theEntry);
+                Set<GraphNode> theOtherLabels = new HashSet<>(aLabelSoup);
                 theOtherLabels.remove(theEntry);
                 return new SimpleBlock(aEntryLabels, theEntry, reloop(aGraph, theNextEntries, theOtherLabels));
             }
@@ -237,35 +376,31 @@ public class Relooper {
         // the Handled blocks, and also labels that can be reached
         // from the Handled blocks.
         if (aEntryLabels.size() > 1) {
-            Set<GraphNode> theRemainingEntries = new HashSet<>(aEntryLabels);
             Set<GraphNode> theRest = new HashSet<>(aLabelSoup);
-
+            Set<GraphNode> theRestEntries = new HashSet<>();
             Map<GraphNode, Set<GraphNode>> theEntryReaches = new HashMap<>();
-            for (GraphNode theEntry : aEntryLabels) {
-                theEntryReaches.put(theEntry, theEntry.reachableNodes());
-            }
+
             Set<Block> theHandlers = new HashSet<>();
-            for (Map.Entry<GraphNode, Set<GraphNode>> theEntry : theEntryReaches.entrySet()) {
-                Set<GraphNode> theHandlerEntries = new HashSet<>(theEntry.getValue());
-                for (Map.Entry<GraphNode, Set<GraphNode>> theOtherEntry : theEntryReaches.entrySet()) {
-                    if (theOtherEntry.getKey() != theEntry.getKey()) {
-                        theHandlerEntries.removeAll(theOtherEntry.getValue());
+            for (GraphNode theEntry : aEntryLabels) {
+                Set<GraphNode> theDominated = theEntry.dominatedNodes();
+                theEntryReaches.put(theEntry, theDominated);
+                theRest.removeAll(theDominated);
+
+                Set<GraphNode> theHandlerEntries = new HashSet<>();
+                theHandlerEntries.add(theEntry);
+                theHandlers.add(reloop(aGraph, theHandlerEntries, theDominated));
+            }
+
+            for (Map.Entry<GraphNode, Set<GraphNode>> theHandler : theEntryReaches.entrySet()) {
+                for (GraphNode theJumpTarget : allForrwardJumpTargetsOf(theHandler.getValue())) {
+                    if (theRest.contains(theJumpTarget)) {
+                        theRestEntries.add(theJumpTarget);
                     }
                 }
-                if (!theHandlerEntries.isEmpty()) {
-                    theRemainingEntries.remove(theEntry.getKey());
-                    Set<GraphNode> theTagSoup = new HashSet<>();
-                    for (GraphNode theInitial : theHandlerEntries) {
-                        theTagSoup.addAll(aGraph.dominatedNodesOf(theInitial));
-                    }
-                    theRest.removeAll(theTagSoup);
-                    theHandlers.add(reloop(aGraph, theHandlerEntries, theTagSoup));
-                }
             }
-            if (!theHandlers.isEmpty()) {
-                Block theNext = reloop(aGraph, theRemainingEntries, theRest);
-                return new MultipleBlock(aEntryLabels, theHandlers, theNext);
-            }
+
+            Block theNext = reloop(aGraph, theRestEntries, theRest);
+            return new MultipleBlock(aEntryLabels, theHandlers, theNext);
         }
 
         // If we could not create a Multiple block, then create
@@ -278,6 +413,18 @@ public class Relooper {
         for (GraphNode theNode : aLabelSoup) {
             for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {
                 if (aLabelSoup.contains(theEntry.getValue())) {
+                    theResults.add(theEntry.getValue());
+                }
+            }
+        }
+        return theResults;
+    }
+
+    private Set<GraphNode> allForrwardJumpTargetsOf(Collection<GraphNode> aLabelSoup) {
+        Set<GraphNode> theResults = new HashSet<>();
+        for (GraphNode theNode : aLabelSoup) {
+            for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {
+                if (theEntry.getKey().getType() == GraphNode.EdgeType.NORMAL) {
                     theResults.add(theEntry.getValue());
                 }
             }
@@ -305,23 +452,22 @@ public class Relooper {
             return;
         }
         if (aBlock instanceof SimpleBlock) {
-            aStream.println("SimpleBlock");
-            printInset(aStream, aInset + 1);
+            aStream.println("SimpleBlock " + aBlock.label().name());
             SimpleBlock theSimple = (SimpleBlock) aBlock;
-            aStream.println(theSimple.internalLabel().getStartAddress().getAddress());
+            debugPrint(aStream, aInset +1, theSimple.internalLabel().getExpressions());
 
-            debugPrint(aStream, theSimple.next(), aInset + 2);
+            debugPrint(aStream, theSimple.next(), aInset + 1);
             return;
         }
         if (aBlock instanceof LoopBlock) {
-            aStream.println("Loop");
+            aStream.println("Loop " + aBlock.label().name());
             LoopBlock theLoop = (LoopBlock) aBlock;
             debugPrint(aStream, theLoop.inner(), aInset + 1);
             debugPrint(aStream, theLoop.next(), aInset + 1);
             return;
         }
         if (aBlock instanceof MultipleBlock) {
-            aStream.println("Multiple");
+            aStream.println("Multiple " + aBlock.label().name());
             MultipleBlock theMultiple = (MultipleBlock) aBlock;
             for (Block theHandler : theMultiple.handlers()) {
                 debugPrint(aStream, theHandler, aInset + 1);
@@ -335,6 +481,27 @@ public class Relooper {
     private void printInset(PrintStream aStream, int aInset) {
         for (int i = 0; i < aInset; i++) {
             aStream.print(" ");
+        }
+    }
+
+    private void debugPrint(PrintStream aStream, int aInset, ExpressionList aExpressionList) {
+        for (Expression theExpression : aExpressionList.toList()) {
+            if (theExpression instanceof BreakExpression) {
+                BreakExpression theBreak = (BreakExpression) theExpression;
+                printInset(aStream, aInset);
+                aStream.println(
+                        "Break " + theBreak.blockToBreak().name() + " and jump to " + theBreak.jumpTarget().getAddress());
+            } else if (theExpression instanceof ContinueExpression) {
+                ContinueExpression theContinue = (ContinueExpression) theExpression;
+                printInset(aStream, aInset);
+                aStream.println(
+                        "Continue at " + theContinue.labelToReturnTo().name());
+            } else if (theExpression instanceof ReturnExpression) {
+                printInset(aStream, aInset);
+                aStream.println("Return");
+            } else if (theExpression instanceof GotoExpression) {
+                throw new IllegalStateException("Goto should have been removed!");
+            }
         }
     }
 }

@@ -38,6 +38,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
@@ -394,7 +395,17 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     }
                 }
 
-                theVariablesWriter.print(theSSAProgram.getControlFlowGraph().toRootNode());
+                // Try to reloop it!
+                // This is an experimental switch, try at your own risk!
+                boolean relooperEnabled = false;
+                if (relooperEnabled) {
+                    Relooper theRelooper = new Relooper();
+                    Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                    theVariablesWriter.printRelooped(theReloopedBlock);
+                } else {
+                    theVariablesWriter.print(theSSAProgram.getControlFlowGraph().toRootNode());
+                }
 
                 theWriter.println("    },");
             });
@@ -405,7 +416,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
             theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
-                if (!theRef.equals(theEntry.getKey())) {
+                if (!Objects.equals(theRef, theEntry.getKey())) {
                     theWriter.print("            ");
                     theWriter.print(JSWriterUtils.toClassName(theRef));
                     theWriter.println(".classInitCheck();");
