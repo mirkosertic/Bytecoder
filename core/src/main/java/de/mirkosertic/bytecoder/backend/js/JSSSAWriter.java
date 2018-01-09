@@ -37,6 +37,7 @@ import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
@@ -817,6 +818,14 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print("break $");
                 print(theBreak.blockToBreak().name());
                 println(";");
+            } else if (theExpression instanceof ContinueExpression) {
+                ContinueExpression theContinue = (ContinueExpression) theExpression;
+                print("__label__ = ");
+                print(theContinue.jumpTarget().getAddress());
+                println(";");
+                print("continue $");
+                print(theContinue.labelToReturnTo().name());
+                println(";");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }
@@ -957,13 +966,22 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(Relooper.LoopBlock aLoopBlock) {
+        print("$");
+        print(aLoopBlock.label().name());
+        println(" : for (;;) {");
+
+        JSSSAWriter theDeeper = withDeeperIndent();
+        theDeeper.print(aLoopBlock.inner());
+
+        println("}");
+        print(aLoopBlock.next());
     }
 
     private void print(Relooper.MultipleBlock aMultiple) {
 
         print("$");
         print(aMultiple.label().name());
-        println(" : switch (__label__) {");
+        println(" : for(;;) switch (__label__) {");
 
         JSSSAWriter theDeeper = withDeeperIndent();
         for (Relooper.Block theHandler : aMultiple.handlers()) {
