@@ -399,10 +399,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // This is an experimental switch, try at your own risk!
                 boolean relooperEnabled = false;
                 if (relooperEnabled) {
-                    Relooper theRelooper = new Relooper();
-                    Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+                    try {
+                        Relooper theRelooper = new Relooper();
+                        Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                    theVariablesWriter.printRelooped(theReloopedBlock);
+                        theVariablesWriter.printRelooped(theReloopedBlock);
+                    } catch (Exception e) {
+                        System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
+                        throw new IllegalStateException("Error relooping cfg for " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue(), e);
+                    }
                 } else {
                     theVariablesWriter.print(theSSAProgram.getControlFlowGraph().toRootNode());
                 }
@@ -430,7 +435,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    },");
             theWriter.println();
 
-            theWriter.println("}");
+            theWriter.println("};");
             theWriter.println();
         });
 

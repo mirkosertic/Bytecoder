@@ -45,7 +45,7 @@ public class Relooper {
         private final Set<GraphNode> entries;
         private final Label label;
 
-        protected Block(Set<GraphNode> aEntries) {
+        protected Block(Set<GraphNode> aEntries, String aLabelPrefix) {
             entries = aEntries;
             StringBuilder theBuilder = new StringBuilder();
             for (GraphNode aLabel : aEntries) {
@@ -54,7 +54,7 @@ public class Relooper {
                 }
                 theBuilder.append(aLabel.getStartAddress().getAddress());
             }
-            label = new Label(theBuilder.toString());
+            label = new Label(aLabelPrefix + theBuilder.toString());
         }
 
         public Set<GraphNode> entries() {
@@ -80,7 +80,7 @@ public class Relooper {
         private final Block next;
 
         public SimpleBlock(Set<GraphNode> aEntries, GraphNode aInternalLabel, Block aNext) {
-            super(aEntries);
+            super(aEntries, "");
             internalLabel = aInternalLabel;
             next = aNext;
         }
@@ -112,7 +112,7 @@ public class Relooper {
         private final Block next;
 
         public LoopBlock(Set<GraphNode> aEntries, Block aInner, Block aNext) {
-            super(aEntries);
+            super(aEntries, "L_");
             inner = aInner;
             next = aNext;
         }
@@ -148,7 +148,7 @@ public class Relooper {
         private final Block next;
 
         public MultipleBlock(Set<GraphNode> aEntries, Set<Block> aHandlers, Block aNext) {
-            super(aEntries);
+            super(aEntries, "M_");
             handlers = aHandlers;
             next = aNext;
         }
@@ -172,7 +172,7 @@ public class Relooper {
         // the initisl "label-soup" for the Relooper. This will exclude
         // exception handler and finalize blocks from the the CFG and
         // will reduce the amount of labels to be processed(hopefully)
-        Block theBlock =  reloop(aGraph, theEntries, theStart.dominatedNodes());
+        Block theBlock =  reloop(theEntries, theStart.dominatedNodes());
 
         // At this point, we have a constructed Relooper-CFG. Now we have to replace
         // all GOTOs with either corresponding break or continue statements.
@@ -193,10 +193,13 @@ public class Relooper {
         if (aBlock instanceof SimpleBlock) {
             SimpleBlock theSimple = (SimpleBlock) aBlock;
 
+            aTraversalStack.push(theSimple);
             GraphNode theInternalLabel = theSimple.internalLabel();
             replaceGotosIn(aTraversalStack, theSimple, theInternalLabel, theInternalLabel.getExpressions());
 
             replaceGotosIn(aTraversalStack, theSimple.next());
+            aTraversalStack.pop();
+
             return;
         }
         if (aBlock instanceof LoopBlock) {
@@ -204,8 +207,9 @@ public class Relooper {
 
             aTraversalStack.push(theLoop);
             replaceGotosIn(aTraversalStack, theLoop.inner());
-            aTraversalStack.pop();
+
             replaceGotosIn(aTraversalStack, theLoop.next());
+            aTraversalStack.pop();
             return;
         }
         if (aBlock instanceof MultipleBlock) {
@@ -214,9 +218,9 @@ public class Relooper {
             for (Block theHandler : theMultiple.handlers()) {
                 replaceGotosIn(aTraversalStack, theHandler);
             }
-            aTraversalStack.pop();
 
             replaceGotosIn(aTraversalStack, theMultiple.next());
+            aTraversalStack.pop();
             return;
         }
 
@@ -242,26 +246,32 @@ public class Relooper {
                         // We found the matching edge
                         if (theSuc.getKey().getType() == GraphNode.EdgeType.NORMAL) {
                             // We can only branch to the next block
-                            Block theNext = aCurrent.next();
-                            if (theNext == null) {
-                                // we have to leave the current block, this happens on joining control flows.
-                                // We break out of the current block, so the next handler will take action and
-                                // hopefully can handle the new control flow
-                                BreakExpression theBreak = new BreakExpression(aTraversalStack.peek().label(), theTarget.getStartAddress());
-                                aList.replace(theGoto, theBreak);
-                                break;
+                            // We search the whole hiararchy to find the right block to break out
+
+                            boolean theSomethingFound = false;
+                            for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
+                                Block theNestingBlock = aTraversalStack.get(i);
+                                if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
+                                    BreakExpression theBreak = new BreakExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    aList.replace(theGoto, theBreak);
+                                    theSomethingFound = true;
+                                    break;
+                                } else if (theNestingBlock.entries().contains(theTarget)) {
+                                    ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    aList.replace(theGoto, theContinue);
+                                    theSomethingFound = true;
+                                    break;
+                                }
                             }
-                            if (!theNext.entries().contains(theTarget)) {
-                                throw new IllegalStateException("Failed to jump to " + theTarget.getStartAddress().getAddress() + " : no matching entry found!");
+
+                            if (!theSomethingFound) {
+                                throw new IllegalStateException("Failed to jump to " + theTarget.getStartAddress().getAddress() + " from " + aCurrent.label().name() + " : no matching entry found!");
                             }
-                            // At this point, we replace the goto with a corresponding break
-                            BreakExpression theBreak = new BreakExpression(aCurrent.label(), theTarget.getStartAddress());
-                            aList.replace(theGoto, theBreak);
+
                         } else {
                             // We can only branch back into the known stack of nested blocks
                             boolean theSomethingFound = false;
-                            for (int i=aTraversalStack.size() -1;i>=0;i--) {
-                                Block theNestingBlock = aTraversalStack.get(i);
+                            for (Block theNestingBlock : aTraversalStack) {
                                 if (theNestingBlock.entries().contains(theTarget)) {
                                     theSomethingFound = true;
 
@@ -290,7 +300,7 @@ public class Relooper {
      * points. We wish to create a block comprised of all those
      * labels.
      */
-    private Block reloop(ControlFlowGraph aGraph, Set<GraphNode> aEntryLabels, Set<GraphNode> aLabelSoup) {
+    private Block reloop(Set<GraphNode> aEntryLabels, Set<GraphNode> aLabelSoup) {
 
         // If there are no entry labels at all, we return null.
         // This will become the next value of the predecessor block and will mark the end of the
@@ -310,19 +320,7 @@ public class Relooper {
         if (aEntryLabels.size() == 1) {
             GraphNode theEntry = aEntryLabels.iterator().next();
             if (!theJumptargets.contains(theEntry)) {
-                Set<GraphNode> theNextEntries = new HashSet<>();
-                Set<GraphNode> theDominated = theEntry.dominatedNodes();
-                for (Map.Entry<GraphNode.Edge, GraphNode> theSucc : theEntry.getSuccessors().entrySet()) {
-                    if (theSucc.getKey().getType() == GraphNode.EdgeType.NORMAL) {
-                        if (theDominated.contains(theSucc.getValue())) {
-                            theNextEntries.add(theSucc.getValue());
-                        }
-                    }
-                }
-
-                Set<GraphNode> theOtherLabels = new HashSet<>(aLabelSoup);
-                theOtherLabels.remove(theEntry);
-                return new SimpleBlock(aEntryLabels, theEntry, reloop(aGraph, theNextEntries, theOtherLabels));
+                return createSimpleBlock(aEntryLabels, aLabelSoup, theEntry);
             }
         }
 
@@ -336,34 +334,32 @@ public class Relooper {
         // all the labels in the Next block that can be reached by the
         // Inner block.
         if (theJumptargets.containsAll(aEntryLabels)) {
-            Set<GraphNode> theInternal = new HashSet<>();
-            Set<GraphNode> theNext = new HashSet<>();
-            for (GraphNode theTestNode : aLabelSoup) {
-                Set<GraphNode> theReachableLabels = theTestNode.forwardReachableNodes();
-                if (containsAnyOf(theReachableLabels, aEntryLabels)) {
-                    theInternal.add(theTestNode);
-                } else {
-                    theNext.add(theTestNode);
-                }
-            }
+            // Here we have to distinguish two cases
+            // If we have a single entry, we create a loop block with a
+            // SimpleBlock as its loop body and a next block with a block
+            // the loop body can branch out to.
+            if (aEntryLabels.size() == 1) {
+                GraphNode theSingleEntry = aEntryLabels.iterator().next();
 
-            // We search for branches out of the internal node, this
-            // will mark the entries of the next
-            Set<GraphNode> theNextEntryLabels = new HashSet<>();
-            for (GraphNode theTestNode : theInternal) {
-                for (Map.Entry<GraphNode.Edge, GraphNode> theSuc : theTestNode.getSuccessors().entrySet()) {
-                    if (theSuc.getKey().getType() == GraphNode.EdgeType.NORMAL) {
-                        if (theNextEntryLabels.contains(theSuc.getValue())) {
-                            theNextEntryLabels.add(theSuc.getValue());
-                        }
+                Set<GraphNode> theInternalLabels = theSingleEntry.dominatedNodes();
+                Set<GraphNode> theRestLabels = new HashSet<>(aLabelSoup);
+                theRestLabels.removeAll(theInternalLabels);
+
+                // Search for branch-outs of the current loop
+                Set<GraphNode> theRestEntries = new HashSet<>();
+                for (GraphNode theReachable : theSingleEntry.forwardReachableNodes()) {
+                    if (theRestLabels.contains(theReachable)) {
+                        theRestEntries.add(theReachable);
                     }
                 }
+
+                Block theInternalBlock =
+                        createSimpleBlock(aEntryLabels, theInternalLabels, theSingleEntry);
+                Block theNextBlock = reloop(theRestEntries, theRestLabels);
+
+                return new LoopBlock(aEntryLabels, theInternalBlock, theNextBlock);
             }
-
-            Block theReloopedInternal = reloop(aGraph, aEntryLabels, theInternal);
-            Block theReloopedNext = reloop(aGraph, theNextEntryLabels, theNext);
-
-            return new LoopBlock(aEntryLabels, theReloopedInternal, theReloopedNext);
+            throw new IllegalStateException("Multiple entries in LoopBlock not implemented!");
         }
 
         // If we have more than one entry, try to create a Multiple block:
@@ -388,24 +384,41 @@ public class Relooper {
 
                 Set<GraphNode> theHandlerEntries = new HashSet<>();
                 theHandlerEntries.add(theEntry);
-                theHandlers.add(reloop(aGraph, theHandlerEntries, theDominated));
+                theHandlers.add(reloop(theHandlerEntries, theDominated));
             }
 
             for (Map.Entry<GraphNode, Set<GraphNode>> theHandler : theEntryReaches.entrySet()) {
-                for (GraphNode theJumpTarget : allForrwardJumpTargetsOf(theHandler.getValue())) {
+                for (GraphNode theJumpTarget : allForwardJumpTargetsOf(theHandler.getValue())) {
                     if (theRest.contains(theJumpTarget)) {
                         theRestEntries.add(theJumpTarget);
                     }
                 }
             }
 
-            Block theNext = reloop(aGraph, theRestEntries, theRest);
+            Block theNext = reloop(theRestEntries, theRest);
             return new MultipleBlock(aEntryLabels, theHandlers, theNext);
         }
 
         // If we could not create a Multiple block, then create
         // a Loop block as described above
         throw new IllegalStateException("What do do now?");
+    }
+
+    private Block createSimpleBlock(Set<GraphNode> aEntryLabels, Set<GraphNode> aLabelSoup,
+            GraphNode theEntry) {
+        Set<GraphNode> theNextEntries = new HashSet<>();
+        Set<GraphNode> theDominated = theEntry.dominatedNodes();
+        for (Map.Entry<GraphNode.Edge, GraphNode> theSucc : theEntry.getSuccessors().entrySet()) {
+            if (theSucc.getKey().getType() == GraphNode.EdgeType.NORMAL) {
+                if (theDominated.contains(theSucc.getValue())) {
+                    theNextEntries.add(theSucc.getValue());
+                }
+            }
+        }
+
+        Set<GraphNode> theOtherLabels = new HashSet<>(aLabelSoup);
+        theOtherLabels.remove(theEntry);
+        return new SimpleBlock(aEntryLabels, theEntry, reloop(theNextEntries, theOtherLabels));
     }
 
     private Set<GraphNode> jumpTargetsOf(Collection<GraphNode> aLabelSoup) {
@@ -420,7 +433,7 @@ public class Relooper {
         return theResults;
     }
 
-    private Set<GraphNode> allForrwardJumpTargetsOf(Collection<GraphNode> aLabelSoup) {
+    private Set<GraphNode> allForwardJumpTargetsOf(Collection<GraphNode> aLabelSoup) {
         Set<GraphNode> theResults = new HashSet<>();
         for (GraphNode theNode : aLabelSoup) {
             for (Map.Entry<GraphNode.Edge, GraphNode> theEntry : theNode.getSuccessors().entrySet()) {

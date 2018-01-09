@@ -124,6 +124,45 @@ public class RelooperTest {
         Relooper.Block theBlock = theRelooper.reloop(theGraph);
 
         theRelooper.debugPrint(System.out, theBlock);
+    }
 
+    @Test
+    public void testNestedIfs() {
+
+/**
+        digraph CFG {
+            N0 [shape=none, margin=0, label=<<table><tr><td> V 0</td><td> V 1</td><td> V 2</td><td> V 3</td></tr><tr><td>X</td><td>X</td><td>X</td><td>X</td></tr><tr><td colspan="4"> Node at 0</td></tr><tr><td>X</td><td>X</td><td>X</td><td>X</td></tr><tr><td>REFERENCE</td><td>FLOAT</td><td>FLOAT</td><td>FLOAT</td></tr></table>>];
+            N0 ->    N39;
+            N0 ->    N8;
+            N8 [shape=none, margin=0, label=<<table><tr><td> V 0</td><td> V 1</td><td> V 2</td><td> V 3</td></tr><tr><td>X</td><td>X</td><td>X</td><td>X</td></tr><tr><td colspan="4"> Node at 8</td></tr><tr><td>X</td><td>X</td><td>X</td><td>X</td></tr><tr><td>REFERENCE</td><td>FLOAT</td><td>FLOAT</td><td>FLOAT</td></tr></table>>];
+            N8 ->    N19;
+            N8 ->    N39;
+            N19 [shape=none, margin=0, label=<<table><tr><td> V 0</td><td> V 1</td><td> V 2</td></tr><tr><td>X</td><td>X</td><td>X</td></tr><tr><td colspan="3"> Node at 19</td></tr><tr><td>X</td><td>X</td><td>X</td></tr><tr><td>REFERENCE</td><td>FLOAT</td><td>FLOAT</td></tr></table>>];
+            N19 ->    N39;
+            N39 [shape=none, margin=0, label=<<table><tr><td colspan="0"> Node at 39</td></tr></table>>];
+        }*/
+
+        Program theProgram = new Program();
+        ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
+
+        GraphNode theNode0 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
+        GraphNode theNode8 = theGraph.createAt(new BytecodeOpcodeAddress(8), GraphNode.BlockType.NORMAL);
+        GraphNode theNode19 = theGraph.createAt(new BytecodeOpcodeAddress(19), GraphNode.BlockType.NORMAL);
+        GraphNode theNode39 = theGraph.createAt(new BytecodeOpcodeAddress(39), GraphNode.BlockType.NORMAL);
+
+        theNode0.addSuccessor(theNode8);
+        theNode0.addSuccessor(theNode39);
+
+        theNode8.addSuccessor(theNode19);
+        theNode8.addSuccessor(theNode39);
+
+        theNode19.addSuccessor(theNode39);
+
+        theGraph.calculateReachabilityAndMarkBackEdges();
+
+        Relooper theRelooper = new Relooper();
+        Relooper.Block theBlock = theRelooper.reloop(theGraph);
+
+        theRelooper.debugPrint(System.out, theBlock);
     }
 }
