@@ -154,15 +154,13 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         private final Stack<Value> stack;
         private final Map<Integer, Variable> localVariables;
         private final ValueProvider valueProvider;
-        private final Program program;
         private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
-        private ParsingHelper(Program aProgram, BytecodeLocalVariableTableAttributeInfo aDebugInfo, GraphNode aBlock, ValueProvider aValueProvider) {
+        private ParsingHelper(BytecodeLocalVariableTableAttributeInfo aDebugInfo, GraphNode aBlock, ValueProvider aValueProvider) {
             stack = new Stack<>();
             block = aBlock;
             localVariables = new HashMap<>();
             valueProvider = aValueProvider;
-            program = aProgram;
             localVariableTableAttributeInfo = aDebugInfo;
         }
 
@@ -319,7 +317,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     return theValue;
                 };
 
-                return new ParsingHelper(program, localVariableTableAttributeInfo, startNode, theProvider);
+                return new ParsingHelper(localVariableTableAttributeInfo, startNode, theProvider);
             }
             return finalStatesForNodes.get(aGraphNode);
         }
@@ -366,7 +364,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 }
             }
 
-            ParsingHelper theHelper = new ParsingHelper(program, localVariableTableAttributeInfo, aBlock, theProvider);
+            ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
 
             // Now we import the stack and check if we need to insert phi values
             for (Map.Entry<StackVariableDescription, Set<Value>> theEntry : theStackToImport.entrySet()) {
@@ -420,7 +418,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         public ParsingHelper resolveInitialStateFromPredecessorFor(GraphNode aNode, ParsingHelper aPredecessor) {
             // The node will import the full stack from its predecessor
             ParsingHelper.ValueProvider theProvider = aPredecessor::requestValue;
-            ParsingHelper theNew = new ParsingHelper(program, localVariableTableAttributeInfo, aNode, theProvider);
+            ParsingHelper theNew = new ParsingHelper(localVariableTableAttributeInfo, aNode, theProvider);
             Stack<Value> theStackToImport = aPredecessor.stack;
             for (int i=0;i<theStackToImport.size();i++) {
                 StackVariableDescription theStackDesc = new StackVariableDescription(theStackToImport.size() - i - 1);
@@ -1253,7 +1251,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionANEWARRAY theINS = (BytecodeInstructionANEWARRAY) theInstruction;
                 Value theLength = aHelper.pop();
                 Variable theNewVariable = aTargetBlock.newVariable(
-                        TypeRef.Native.REFERENCE, new NewArrayValue(BytecodeObjectTypeRef.fromUtf8Constant(theINS.getTypeConstant().getConstant()), theLength));
+                        TypeRef.Native.REFERENCE, new NewArrayValue(theINS.getObjectType(), theLength));
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGOTO) {
                 BytecodeInstructionGOTO theINS = (BytecodeInstructionGOTO) theInstruction;
