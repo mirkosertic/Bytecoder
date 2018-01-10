@@ -29,6 +29,14 @@ public class ArrayTest {
         public int test;
     }
 
+    public static class StaticInitHost {
+
+        static float[][] floats = {
+            {10f, 20f, 30f},
+            {100f, 200f, 300f}
+        };
+    }
+
     private static byte[] bytes = new byte[10];
     private static short[] shorts = new short[10];
     private static char[] chars = new char[10];
@@ -65,7 +73,7 @@ public class ArrayTest {
 
     @Test
     public void testInts() {
-        ints[4] = (int) 10;
+        ints[4] = 10;
         Assert.assertEquals(10, ints[4], 0);
         Assert.assertEquals(0, ints[0], 0);
     }
@@ -121,5 +129,13 @@ public class ArrayTest {
         Assert.assertEquals(12, theOArray.length, 0);
         Object[] theOther = theOArray.clone();
         Assert.assertEquals(12, theOther.length, 0);
+    }
+
+    @Test
+    public void testStaticMultiDimInit() {
+        float[][] theFloats = StaticInitHost.floats;
+        Assert.assertEquals(2, theFloats.length, 0);
+        Assert.assertEquals(3, theFloats[0].length, 0);
+        Assert.assertEquals(3, theFloats[0].length, 0);
     }
 }

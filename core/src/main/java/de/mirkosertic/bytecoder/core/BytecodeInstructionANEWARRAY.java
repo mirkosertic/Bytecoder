@@ -32,14 +32,22 @@ public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
         return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
     }
 
-    public BytecodeClassinfoConstant getTypeConstant() {
+    public BytecodeTypeRef getArrayType(BytecodeSignatureParser aSignatureParser) {
+        BytecodeClassinfoConstant theClassInfo = getTypeConstant();
+        String theType = theClassInfo.getConstant().stringValue();
+        if (theType.startsWith("[")) {
+            return aSignatureParser.toFieldType(theClassInfo.getConstant());
+        }
+        return BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant());
+    }
+
+    private BytecodeClassinfoConstant getTypeConstant() {
         return (BytecodeClassinfoConstant) constantPool.constantByIndex(typeIndex - 1);
     }
 
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeClassinfoConstant theConstant = getTypeConstant();
         aLinkerContext.linkClass(getObjectType());
-        aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant.getConstant()));
+        aLinkerContext.linkTypeRef(getArrayType(aLinkerContext.getSignatureParser()));
     }
 }
