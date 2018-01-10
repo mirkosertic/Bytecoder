@@ -18,7 +18,13 @@ package de.mirkosertic.bytecoder.backend.wasm;
 public class HelloWorld {
 
     public static void main(String[] args) {
-        for (int b = 0; b < 100; b++) {
+        int a = 0;
+        int b = 10;
+        if (b<a) {
+            b = 100;
+        } else {
+            b = 200;
         }
+        int z = b + a;
     }
 }

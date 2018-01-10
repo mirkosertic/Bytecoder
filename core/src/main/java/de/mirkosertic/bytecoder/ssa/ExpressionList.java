@@ -38,10 +38,6 @@ public class ExpressionList {
         return expressions.size();
     }
 
-    public Expression firstExpression() {
-        return expressions.get(0);
-    }
-
     public Expression lastExpression() {
         if (expressions.isEmpty()) {
             return null;
@@ -62,21 +58,22 @@ public class ExpressionList {
         expressions.add(expressions.indexOf(aTarget), aNewExpression);
     }
 
-    public void addAfter(Expression aNewExpression, Expression aTarget) {
-        expressions.add(expressions.indexOf(aTarget) + 1, aNewExpression);
-    }
-
     public void replace(Expression aExpressionToReplace, Expression aNewExpression) {
         int p = expressions.indexOf(aExpressionToReplace);
         expressions.remove(p);
         expressions.add(p, aNewExpression);
     }
 
-    public void remove(Expression aExpression) {
-        expressions.remove(aExpression);
+    public void replace(Expression aExpressionToReplace, ExpressionList aList) {
+        int p = expressions.indexOf(aExpressionToReplace);
+        expressions.remove(p);
+        List<Expression> theList = aList.toList();
+        for (int i = theList.size() - 1; i>=0 ; i--) {
+            expressions.add(p, theList.get(i));
+        }
     }
 
-    public void addAll(ExpressionList aExpressionList) {
-        expressions.addAll(aExpressionList.expressions);
+    public void remove(Expression aExpression) {
+        expressions.remove(aExpression);
     }
 }

@@ -15,6 +15,19 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TInteger;
@@ -126,19 +139,6 @@ import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class NaiveProgramGenerator implements ProgramGenerator {
 
@@ -338,7 +338,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             return theCurrent;
         }
 
-        public ParsingHelper resolveInitialPHIStateForNode(Program aProgram, GraphNode aBlock) {
+        public ParsingHelper resolveInitialPHIStateForNode(GraphNode aBlock) {
             ParsingHelper.ValueProvider theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
 
             // We collect the stacks from all predecessor nodes
@@ -630,11 +630,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             for (GraphNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 ExpressionList theCurrentList = theNode.getExpressions();
                 Expression theLast = theCurrentList.lastExpression();
-                while (theLast instanceof GraphNode) {
-                    GraphNode theInlined = (GraphNode) theLast;
-                    theCurrentList = theInlined.getExpressions();
-                    theLast = theCurrentList.lastExpression();
-                }
                 if (theLast instanceof GotoExpression) {
                     GotoExpression theGoto = (GotoExpression) theLast;
                     if (theGoto.getJumpTarget().equals(theNode.getStartAddress())) {
@@ -799,7 +794,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             } else {
                 // we have more than one predecessor
                 // we need to create PHI functions for all the disjunct states in local variables and the stack
-                theParsingState = aCache.resolveInitialPHIStateForNode(aProgram, aCurrentBlock);
+                theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
             }
 
             initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aBlocksByAddress, theParsingState);

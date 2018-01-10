@@ -57,4 +57,8 @@ public class GraphNodePath {
     public boolean contains(GraphNode aNode) {
         return nodes.contains(aNode);
     }
+
+    public void remove(GraphNode aNodeToDelete) {
+        nodes.remove(aNodeToDelete);
+    }
 }

@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 
 public enum KnownOptimizer implements Optimizer {
 
@@ -32,20 +32,16 @@ public enum KnownOptimizer implements Optimizer {
             theOptimizer.add(new InvokeVirtualOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
-    },
-    RELOOPER {
-        @Override
-        public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-            List<Optimizer> theOptimizer = new ArrayList<>();
-            theOptimizer.add(new InefficientIFOptimizer());
-            theOptimizer.add(new InvokeVirtualOptimizer());
-            run(aGraph, aLinkerContext, theOptimizer);
-        }
     };
 
     private static void run(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext, List<Optimizer> aList) {
-        for (Optimizer theOptimizer : aList) {
-            theOptimizer.optimize(aGraph, aLinkerContext);
+        try {
+            for (Optimizer theOptimizer : aList) {
+                theOptimizer.optimize(aGraph, aLinkerContext);
+            }
+        } catch (RuntimeException e) {
+            System.out.println("Error optimizing cfg : " + aGraph.toDOT());
+            throw e;
         }
     }
 }

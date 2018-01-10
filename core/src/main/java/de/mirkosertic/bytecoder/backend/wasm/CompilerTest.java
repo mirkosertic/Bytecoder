@@ -38,7 +38,7 @@ public class CompilerTest {
         BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.RELOOPER), theTargetClass, "main", theSignature);
+        CompileResult theCode = theCompileTarget.compileToJS(new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.ALL, true), theTargetClass, "main", theSignature);
 
         System.out.println(theCode.getData());
     }

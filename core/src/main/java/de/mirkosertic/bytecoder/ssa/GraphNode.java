@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,13 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class GraphNode extends Expression {
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
+public class GraphNode {
 
     public enum BlockType {
         NORMAL,
         EXCEPTION_HANDLER,
         FINALLY,
-        LOOP
     }
 
     public enum EdgeType {
@@ -58,7 +57,7 @@ public class GraphNode extends Expression {
     private final ExpressionList expressions;
     private final Program program;
     private final Map<Edge, GraphNode> successors;
-    private BlockType type;
+    private final BlockType type;
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
     private final List<GraphNodePath> reachableBy;
@@ -88,12 +87,8 @@ public class GraphNode extends Expression {
         return type;
     }
 
-    public void markAsLoop() {
-        type = BlockType.LOOP;
-    }
-
-    public Set<GraphNode> getPredecessors() {
-        Set<GraphNode> theResult = new HashSet<>();
+    public List<GraphNode> getPredecessors() {
+        List<GraphNode> theResult = new ArrayList<>();
         for (GraphNodePath thePath : reachableBy) {
             if (!thePath.isEmpty()) {
                 theResult.add(thePath.lastElement());
@@ -207,7 +202,7 @@ public class GraphNode extends Expression {
     }
 
     public boolean isStrictlyDominatedBy(GraphNode aNode) {
-        Set<GraphNode> thePredecessors = new HashSet<>(getPredecessors());
+        List<GraphNode> thePredecessors = new ArrayList<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
 
@@ -226,12 +221,6 @@ public class GraphNode extends Expression {
                     if (containsGoto(theList)) {
                         return true;
                     }
-                }
-            }
-            if (theExpression instanceof GraphNode) {
-                GraphNode theInline = (GraphNode) theExpression;
-                if (theInline.containsGoto()) {
-                    return true;
                 }
             }
         }
@@ -290,6 +279,29 @@ public class GraphNode extends Expression {
                     forwardReachableNodes(aResult, theSuc.getValue());
                 }
             }
+        }
+    }
+
+    public void removeEdgesTo(GraphNode aNode) {
+        Map<Edge, GraphNode> theNewSucc = new HashMap<>();
+        for (Map.Entry<Edge, GraphNode> theEntry : successors.entrySet()) {
+            if (!(theEntry.getValue() == aNode)) {
+                theNewSucc.put(theEntry.getKey(), theEntry.getValue());
+            }
+        }
+        successors.clear();
+        successors.putAll(theNewSucc);
+    }
+
+    public void removeFromPaths(GraphNode aNode) {
+        for (GraphNodePath thePath : reachableBy) {
+            thePath.remove(aNode);
+        }
+    }
+
+    public void inheritSuccessorsOf(GraphNode aNode) {
+        for (Map.Entry<Edge, GraphNode> theEntry : aNode.getSuccessors().entrySet()) {
+            successors.put(theEntry.getKey(), theEntry.getValue());
         }
     }
 }
