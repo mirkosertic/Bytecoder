@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.relooper;
 
+import java.io.PrintStream;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -25,15 +34,6 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-
-import java.io.PrintStream;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
 
 /**
  * Implementation of the Relooper Algorithm as described in Alon Zakai's Emscripten Paper.
@@ -80,7 +80,7 @@ public class Relooper {
         private final Block next;
 
         public SimpleBlock(Set<GraphNode> aEntries, GraphNode aInternalLabel, Block aNext) {
-            super(aEntries, "");
+            super(aEntries, "S_");
             internalLabel = aInternalLabel;
             next = aNext;
         }
@@ -443,15 +443,6 @@ public class Relooper {
             }
         }
         return theResults;
-    }
-
-    private boolean containsAnyOf(Collection<GraphNode> aSoup, Collection<GraphNode> aTestLabels) {
-        for (GraphNode theTestLabel : aTestLabels) {
-            if (aSoup.contains(theTestLabel)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public void debugPrint(PrintStream aStream, Block aBlock) {

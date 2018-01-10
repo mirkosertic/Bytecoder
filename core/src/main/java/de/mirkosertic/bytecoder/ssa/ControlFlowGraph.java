@@ -15,16 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ControlFlowGraph {
 
@@ -155,14 +154,6 @@ public class ControlFlowGraph {
         return new SequenceOfSimpleNodes(theNodes);
     }
 
-    public void removeDominatedNode(GraphNode aNode) {
-        dominatedNodes.remove(aNode);
-    }
-
-    public void removeDominatedNodes(Collection<GraphNode> aNodea) {
-        dominatedNodes.removeAll(aNodea);
-    }
-
     private String toHTMLLabel(GraphNode aNode) {
         StringBuilder theResult = new StringBuilder("<");
 
@@ -291,5 +282,14 @@ public class ControlFlowGraph {
             }
         }
         return theResult;
+    }
+
+    public void delete(GraphNode aNode) {
+        for (GraphNode theNode : knownNodes) {
+            theNode.removeEdgesTo(aNode);
+            theNode.removeFromPaths(aNode);
+        }
+        knownNodes.remove(aNode);
+        dominatedNodes.remove(aNode);
     }
 }

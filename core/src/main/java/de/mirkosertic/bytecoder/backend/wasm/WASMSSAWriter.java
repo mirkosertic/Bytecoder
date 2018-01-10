@@ -15,6 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
@@ -28,10 +33,12 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
@@ -39,6 +46,7 @@ import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
@@ -93,11 +101,6 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -161,15 +164,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
         return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver, memoryLayouter);
     }
 
-    public void writeStartNode(ControlFlowGraph.Node aNode, int aMethodId) {
-        writeNode(aNode, true, aMethodId);
+    public void writeStartNode(ControlFlowGraph.Node aNode) {
+        writeNode(aNode, true);
     }
 
-    private void writeNode(ControlFlowGraph.Node aNode, boolean aStart, int aMethodId) {
+    private void writeNode(ControlFlowGraph.Node aNode, boolean aStart) {
         if (aNode instanceof ControlFlowGraph.SimpleNode) {
 
             if (aStart) {
-                printStackEnter(aMethodId);
+                printStackEnter();
             }
 
             writeExpressionList(((ControlFlowGraph.SimpleNode) aNode).getNode().getExpressions());
@@ -182,7 +185,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
             println("(local $currentLabel i32)");
 
             if (aStart) {
-                printStackEnter(aMethodId);
+                printStackEnter();
             }
 
             println("(set_local $currentLabel (i32.const 0))");
@@ -206,7 +209,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
                 theChild2.println(")");
 
-                theChild2.writeNode(theJumpTarget, false, aMethodId);
+                theChild2.writeNode(theJumpTarget, false);
 
                 theChild.println("(br $controlflowloop)");
                 theChild.println(")");
@@ -259,10 +262,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeGotoExpression((GotoExpression) aExpression);
             return;
         }
-        if (aExpression instanceof GraphNode) {
-            writeInline((GraphNode) aExpression);
-            return;
-        }
         if (aExpression instanceof ReturnValueExpression) {
             writeReturnExpression((ReturnValueExpression) aExpression);
             return;
@@ -305,6 +304,26 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
         if (aExpression instanceof UnreachableExpression) {
             writeUnreachable((UnreachableExpression) aExpression);
+            return;
+        }
+        if (aExpression instanceof BreakExpression) {
+            BreakExpression theBreak = (BreakExpression) aExpression;
+            print("(set_local $__label__ (i32.const ");
+            print(theBreak.jumpTarget().getAddress());
+            println("))");
+            print("(br $");
+            print(theBreak.blockToBreak().name());
+            println(")");
+            return;
+        }
+        if (aExpression instanceof ContinueExpression) {
+            ContinueExpression theContinue = (ContinueExpression) aExpression;
+            print("(set_local $__label__ (i32.const ");
+            print(theContinue.jumpTarget().getAddress());
+            println("))");
+            print("(br $");
+            print(theContinue.labelToReturnTo().name());
+            println("_inner)");
             return;
         }
 
@@ -553,10 +572,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theChild.writeValue(aExpression.getValue());
 
         println(")");
-    }
-
-    private void writeInline(GraphNode aNode) {
-        writeExpressionList(aNode.getExpressions());
     }
 
     private void writeGotoExpression(GotoExpression aExpression) {
@@ -1694,7 +1709,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
     }
 
-    public void printStackEnter(int aMethodId) {
+    public void printStackEnter() {
 
         int theStackSize = stackSize();
         if (theStackSize > 0) {
@@ -1714,5 +1729,103 @@ public class WASMSSAWriter extends IndentSSAWriter {
         if (theStackSize > 0) {
             println("(set_global $STACKTOP (get_local $OLD_SP))");
         }
+    }
+
+    public void writeRelooped(Relooper.Block aBlock) {
+        println("(local $__label__ i32)");
+        printStackEnter();
+        writeReloopedInternal(aBlock);
+        println("(unreachable)");
+    }
+
+    private void writeReloopedInternal(Relooper.Block aBlock) {
+        if (aBlock == null) {
+            return;
+        }
+        if (aBlock instanceof Relooper.SimpleBlock) {
+            writeSimpleBlock((Relooper.SimpleBlock) aBlock);
+            return;
+        }
+        if (aBlock instanceof Relooper.LoopBlock) {
+            writeLoopBlock((Relooper.LoopBlock) aBlock);
+            return;
+        }
+        if (aBlock instanceof Relooper.MultipleBlock) {
+            writeMultipleBlock((Relooper.MultipleBlock) aBlock);
+            return;
+        }
+        throw new IllegalStateException("Don't know how to handle : " + aBlock);
+    }
+
+    private void writeSimpleBlock(Relooper.SimpleBlock aSimpleBlock) {
+        print("(block $");
+        print(aSimpleBlock.label().name());
+        println();
+
+        WASMSSAWriter theChild = withDeeperIndent();
+        theChild.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+
+        println(")");
+
+        writeReloopedInternal(aSimpleBlock.next());
+    }
+
+    private void writeLoopBlock(Relooper.LoopBlock aLoopBlock) {
+        print("(block $");
+        print(aLoopBlock.label().name());
+        println();
+
+        WASMSSAWriter theChild = withDeeperIndent();
+        theChild.print("(loop $");
+        theChild.print(aLoopBlock.label().name());
+        theChild.println("_inner");
+
+        WASMSSAWriter theChild2 = theChild.withDeeperIndent();
+        theChild2.writeReloopedInternal(aLoopBlock.inner());
+
+        theChild.println(")");
+        println(")");
+
+        writeReloopedInternal(aLoopBlock.next());
+    }
+
+    private void writeMultipleBlock(Relooper.MultipleBlock aMultipleBlock) {
+        print("(block $");
+        print(aMultipleBlock.label().name());
+        println();
+
+        WASMSSAWriter theChild = withDeeperIndent();
+        theChild.print("(loop $");
+        theChild.print(aMultipleBlock.label().name());
+        theChild.println("_inner");
+
+        for (Relooper.Block theHandler : aMultipleBlock.handlers()) {
+            for (GraphNode theEntry : theHandler.entries()) {
+                int theEntryAddress = theEntry.getStartAddress().getAddress();
+
+                WASMSSAWriter theChild2 = theChild.withDeeperIndent();
+
+                theChild2.print("(block $case_");
+                theChild2.print(theEntryAddress);
+                theChild2.println();
+
+                WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
+                theChild3.print("(br_if $case_");
+                theChild3.print(theEntryAddress);
+                theChild3.print(" (i32.ne (get_local $__label__) (i32.const ");
+                theChild3.print(theEntryAddress);
+                theChild3.println(")))");
+
+                theChild3.writeReloopedInternal(theHandler);
+
+                theChild2.println(")");
+            }
+        }
+
+        theChild.println(")");
+
+        println(")");
+
+        writeReloopedInternal(aMultipleBlock.next());
     }
 }

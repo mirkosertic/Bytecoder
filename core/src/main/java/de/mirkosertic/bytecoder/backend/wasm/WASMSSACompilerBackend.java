@@ -15,6 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
@@ -41,16 +51,6 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -372,15 +372,20 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
 
                 // Try to reloop it!
-                try {
-                    Relooper theRelooper = new Relooper();
-                    // Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
-                } catch (Exception e) {
-                    aLinkerContext.getLogger().warn("Error while relooping, but we can continue!", e);
-                }
+                if (aOptions.isRelooper()) {
+                    try {
+                        Relooper theRelooper = new Relooper();
+                        Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
-                theSSAWriter.writeStartNode(theNode, theGeneratedFunctions.indexOf(WASMWriterUtils.toMethodName(aEntry.getKey(), t.getName(), theSignature)));
+                        theSSAWriter.writeRelooped(theReloopedBlock);
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Error relooping cfg", e);
+                    }
+                } else {
+                    // Fallback, as this generates slower and larger code.
+                    ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
+                    theSSAWriter.writeStartNode(theNode);
+                }
 
                 theWriter.println("   )");
                 theWriter.println();
@@ -542,7 +547,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
             }
 
-            theSSAWriter.printStackEnter(theGeneratedFunctions.indexOf(theEntry.getKey()));
+            theSSAWriter.printStackEnter();
             theSSAWriter.writeExpressionList(theEntry.getValue().bootstrapMethod.getExpressions());
 
             theWriter.println("   )");

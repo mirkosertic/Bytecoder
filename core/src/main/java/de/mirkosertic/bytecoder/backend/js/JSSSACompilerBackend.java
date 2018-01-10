@@ -15,6 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
@@ -44,12 +50,6 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -396,9 +396,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 // Try to reloop it!
-                // This is an experimental switch, try at your own risk!
-                boolean relooperEnabled = false;
-                if (relooperEnabled) {
+                if (aOptions.isRelooper()) {
                     try {
                         Relooper theRelooper = new Relooper();
                         Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
@@ -409,6 +407,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         throw new IllegalStateException("Error relooping cfg for " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue(), e);
                     }
                 } else {
+                    // Fallback, as this generates slower and larger code.
                     theVariablesWriter.print(theSSAProgram.getControlFlowGraph().toRootNode());
                 }
 

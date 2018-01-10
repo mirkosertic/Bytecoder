@@ -15,6 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
@@ -96,11 +101,6 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
-
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -786,11 +786,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
                 print(theE.getValue());
                 println(";");
-            } else if (theExpression instanceof GraphNode) {
-                GraphNode theInlinedNode = (GraphNode) theExpression;
-                printlnComment("Inlined node " + theInlinedNode.getStartAddress().getAddress());
-                printNodeDebug(theInlinedNode);
-                printGraphNode(theInlinedNode);
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
             } else if (theExpression instanceof ExtendedIFExpression) {
@@ -912,16 +907,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void printGraphNode(GraphNode aNode) {
         switch (aNode.getType()) {
-            case LOOP: {
-                print("label_" + aNode.getStartAddress().getAddress() + ": while(true) {");
-                println();
-
-                withDeeperIndent().writeExpressions(aNode.getExpressions());
-
-                println();
-                println("}");
-                break;
-            }
             default: {
                 writeExpressions(aNode.getExpressions());
                 break;
@@ -985,9 +970,11 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         JSSSAWriter theDeeper = withDeeperIndent();
         for (Relooper.Block theHandler : aMultiple.handlers()) {
-            theDeeper.print("case ");
-            theDeeper.print(theHandler.label().name());
-            theDeeper.println(" : ");
+            for (GraphNode theEntry : theHandler.entries()) {
+                theDeeper.print("case ");
+                theDeeper.print(theEntry.getStartAddress().getAddress());
+                theDeeper.println(" : ");
+            }
 
             JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
             theHandlerWriter.print(theHandler);

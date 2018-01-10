@@ -16,23 +16,40 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
 
 public class InlineGotoOptimizer implements Optimizer {
 
     @Override
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        for (GraphNode theNode : aGraph.getKnownNodes()) {
-            performNodeInlining(aGraph, theNode, theNode.getExpressions());
+        while (true) {
+            boolean theChanged = false;
+            for (GraphNode theNode : aGraph.getKnownNodes()) {
+                if (performNodeInlining(aGraph, theNode, theNode.getExpressions())) {
+                    theChanged = true;
+                    break;
+                }
+            }
+            if (!theChanged) {
+                return;
+            }
         }
     }
 
-    private void performNodeInlining(ControlFlowGraph aGraph, GraphNode aNode, ExpressionList aList) {
+    private boolean performNodeInlining(ControlFlowGraph aGraph, GraphNode aNode, ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    performNodeInlining(aGraph, aNode, theList);
+                    if (performNodeInlining(aGraph, aNode, theList)) {
+                        return true;
+                    }
                 }
             }
             if (theExpression instanceof GotoExpression) {
@@ -41,8 +58,33 @@ public class InlineGotoOptimizer implements Optimizer {
 
                 if (theTargetNode.isStrictlyDominatedBy(aNode)) {
                     // Node can be inlined
-                    aList.replace(theGOTO, theTargetNode);
-                    aGraph.removeDominatedNode(theTargetNode);
+                    aGraph.delete(theTargetNode);
+                    aList.replace(theGOTO, theTargetNode.getExpressions());
+
+                    aNode.inheritSuccessorsOf(theTargetNode);
+
+                    recomputeGotos(aNode.getExpressions(), theTargetNode.getStartAddress(), aNode.getStartAddress());
+
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void recomputeGotos(ExpressionList aList, BytecodeOpcodeAddress aOriginal, BytecodeOpcodeAddress aNew) {
+        for (Expression theExpression : aList.toList()) {
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                    recomputeGotos(theList, aOriginal, aNew);
+                }
+            }
+            if (theExpression instanceof GotoExpression) {
+                GotoExpression theGoto = (GotoExpression) theExpression;
+                if (theGoto.getJumpTarget().equals(aOriginal)) {
+                    GotoExpression theNewGoto = new GotoExpression(aNew);
+                    aList.replace(theGoto, theNewGoto);
                 }
             }
         }
