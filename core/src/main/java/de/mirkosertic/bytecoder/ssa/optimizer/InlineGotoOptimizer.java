@@ -24,6 +24,8 @@ import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 
+import java.util.Objects;
+
 public class InlineGotoOptimizer implements Optimizer {
 
     @Override
@@ -63,7 +65,9 @@ public class InlineGotoOptimizer implements Optimizer {
 
                     aNode.inheritSuccessorsOf(theTargetNode);
 
-                    recomputeGotos(aNode.getExpressions(), theTargetNode.getStartAddress(), aNode.getStartAddress());
+                    for (GraphNode theNode : aGraph.getKnownNodes()) {
+                        recomputeGotos(theNode.getExpressions(), theTargetNode.getStartAddress(), aNode.getStartAddress());
+                    }
 
                     return true;
                 }
@@ -82,7 +86,7 @@ public class InlineGotoOptimizer implements Optimizer {
             }
             if (theExpression instanceof GotoExpression) {
                 GotoExpression theGoto = (GotoExpression) theExpression;
-                if (theGoto.getJumpTarget().equals(aOriginal)) {
+                if (Objects.equals(theGoto.getJumpTarget(), aOriginal)) {
                     GotoExpression theNewGoto = new GotoExpression(aNew);
                     aList.replace(theGoto, theNewGoto);
                 }

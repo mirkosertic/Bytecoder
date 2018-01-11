@@ -28,7 +28,8 @@ public enum KnownOptimizer implements Optimizer {
         public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
             List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(new InefficientIFOptimizer());
-            //theOptimizer.add(new InlineGotoOptimizer());
+            theOptimizer.add(new InlineFinalNodesOptimizer());
+            theOptimizer.add(new InlineGotoOptimizer());
             theOptimizer.add(new InvokeVirtualOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
