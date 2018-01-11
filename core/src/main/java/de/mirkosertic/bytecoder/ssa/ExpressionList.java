@@ -60,16 +60,20 @@ public class ExpressionList {
 
     public void replace(Expression aExpressionToReplace, Expression aNewExpression) {
         int p = expressions.indexOf(aExpressionToReplace);
-        expressions.remove(p);
-        expressions.add(p, aNewExpression);
+        if (p>=0) {
+            expressions.remove(p);
+            expressions.add(p, aNewExpression);
+        }
     }
 
     public void replace(Expression aExpressionToReplace, ExpressionList aList) {
         int p = expressions.indexOf(aExpressionToReplace);
-        expressions.remove(p);
-        List<Expression> theList = aList.toList();
-        for (int i = theList.size() - 1; i>=0 ; i--) {
-            expressions.add(p, theList.get(i));
+        if (p>=0) {
+            expressions.remove(p);
+            List<Expression> theList = aList.toList();
+            for (int i = theList.size() - 1; i >= 0; i--) {
+                expressions.add(p, theList.get(i));
+            }
         }
     }
 

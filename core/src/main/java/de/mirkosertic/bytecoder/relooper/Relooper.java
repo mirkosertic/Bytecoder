@@ -359,7 +359,6 @@ public class Relooper {
 
                 return new LoopBlock(aEntryLabels, theInternalBlock, theNextBlock);
             }
-            throw new IllegalStateException("Multiple entries in LoopBlock not implemented!");
         }
 
         // If we have more than one entry, try to create a Multiple block:

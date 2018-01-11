@@ -201,6 +201,12 @@ public class GraphNode {
                 theLastExpression instanceof GotoExpression;
     }
 
+    public boolean endsWithReturn() {
+        Expression theLastExpression = expressions.lastExpression();
+        return theLastExpression instanceof ReturnExpression ||
+                theLastExpression instanceof ReturnValueExpression;
+    }
+
     public boolean isStrictlyDominatedBy(GraphNode aNode) {
         List<GraphNode> thePredecessors = new ArrayList<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
@@ -300,7 +306,7 @@ public class GraphNode {
     }
 
     public void inheritSuccessorsOf(GraphNode aNode) {
-        for (Map.Entry<Edge, GraphNode> theEntry : aNode.getSuccessors().entrySet()) {
+        for (Map.Entry<Edge, GraphNode> theEntry : aNode.successors.entrySet()) {
             successors.put(theEntry.getKey(), theEntry.getValue());
         }
     }
