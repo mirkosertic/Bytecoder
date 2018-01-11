@@ -1432,16 +1432,25 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                             .linkStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                     theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
 
-                    InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(
-                            theLinkedClass.getClassName(),
-                            theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                            theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
-                            theArguments);
-                    if (theSignature.getReturnType().isVoid()) {
-                        aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
-                    } else {
+                    BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                    if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "de.mirkosertic.bytecoder.classlib.java.lang.TStrictMath".equals(theLinkedClass.getClassName().name())) {
+                        Value theValue = new SqrtValue(TypeRef.toType(theCalledSignature.getReturnType()), theArguments.get(0));
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
                         aHelper.push(theNewVariable);
+                    } else {
+                        InvokeStaticMethodValue theValue = new InvokeStaticMethodValue(
+                                theLinkedClass.getClassName(),
+                                theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                theCalledSignature,
+                                theArguments);
+                        if (theSignature.getReturnType().isVoid()) {
+                            aTargetBlock.addExpression(new InvokeStaticMethodExpression(theValue));
+                        } else {
+                            Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                            aHelper.push(theNewVariable);
+                        }
                     }
                 }
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {

@@ -89,6 +89,7 @@ import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.SqrtValue;
 import de.mirkosertic.bytecoder.ssa.StackTopValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
@@ -108,11 +109,11 @@ public class JSSSAWriter extends IndentSSAWriter {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
     }
 
-    public JSSSAWriter withDeeperIndent() {
+    private JSSSAWriter withDeeperIndent() {
         return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext);
     }
 
-    public void print(Value aValue) {
+    private void print(Value aValue) {
         if (aValue instanceof Variable) {
             printVariableName((Variable) aValue);
         } else if (aValue instanceof GetStaticValue) {
@@ -195,25 +196,33 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((MemorySizeValue) aValue);
         } else if (aValue instanceof TypeOfValue) {
             print((TypeOfValue) aValue);
+        } else if (aValue instanceof SqrtValue) {
+            print((SqrtValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    public void print(TypeOfValue aValue) {
+    private void print(SqrtValue aValue) {
+        print("Math.sqrt(");
+        print((Value) aValue.resolveFirstArgument());
+        print(")");
+    }
+
+    private void print(TypeOfValue aValue) {
         printVariableName(aValue.resolveFirstArgument());
         print(".clazz.runtimeClass");
     }
 
-    public void print(StackTopValue aValue) {
+    private void print(StackTopValue aValue) {
         print("0");
     }
 
-    public void print(MemorySizeValue aValue) {
+    private void print(MemorySizeValue aValue) {
         print("0");
     }
 
-    public void print(ResolveCallsiteObjectValue aValue) {
+    private void print(ResolveCallsiteObjectValue aValue) {
 
         print(JSWriterUtils.toClassName(aValue.getOwningClass().getThisInfo()));
         print(".resolveStaticCallSiteObject('");
@@ -236,30 +245,30 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("})");
     }
 
-    public void print(RuntimeGeneratedTypeValue aValue) {
+    private void print(RuntimeGeneratedTypeValue aValue) {
         print("{clazz: { resolveVirtualMethod : function(aIdentifier) {return function(inst, _p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9) {return ");
         print(aValue.getMethodRef());
         print("(_p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9);");
         print("}}}}");
     }
 
-    public void print(MethodTypeValue aValue) {
+    private void print(MethodTypeValue aValue) {
         print("'");
         print(aValue.getSignature().toString());
         print("'");
     }
 
-    public void print(MethodHandlesGeneratedLookupValue aValue) {
+    private void print(MethodHandlesGeneratedLookupValue aValue) {
         print("null");
     }
 
-    public void print(ComputedMemoryLocationWriteValue aValue) {
+    private void print(ComputedMemoryLocationWriteValue aValue) {
         print((Value) aValue.resolveFirstArgument());
         print(" + ");
         print((Value) aValue.resolveSecondArgument());
     }
 
-    public void print(ComputedMemoryLocationReadValue aValue) {
+    private void print(ComputedMemoryLocationReadValue aValue) {
         print("bytecoderGlobalMemory[");
         print((Value) aValue.resolveFirstArgument());
         print(" + ");
@@ -267,7 +276,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("]");
     }
 
-    public void print(MethodRefValue aValue) {
+    private void print(MethodRefValue aValue) {
         String theMethodName = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         BytecodeMethodSignature theSignature = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         print(JSWriterUtils.toClassName(aValue.getMethodRef().getClassIndex().getClassConstant()));
@@ -275,30 +284,30 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
     }
 
-    public void print(FloorValue aValue) {
+    private void print(FloorValue aValue) {
         print("Math.floor(");
         print((Value) aValue.resolveFirstArgument());
         print(")");
     }
 
-    public void print(UnknownValue aValue) {
+    private void print(UnknownValue aValue) {
         print("undefined");
     }
 
-    public void print(CurrentExceptionValue aValue) {
+    private void print(CurrentExceptionValue aValue) {
         //TODO: Fix this
         print("'current exception'");
     }
 
-    public void print(MethodParameterValue aValue) {
+    private void print(MethodParameterValue aValue) {
         print("p" + (aValue.getParameterIndex() + 1));
     }
 
-    public void print(SelfReferenceParameterValue aValue) {
+    private void print(SelfReferenceParameterValue aValue) {
         print("thisRef");
     }
 
-    public void print(NewMultiArrayValue aValue) {
+    private void print(NewMultiArrayValue aValue) {
         BytecodeTypeRef theType = aValue.getType();
         Object theDefaultValue = theType.defaultValue();
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
@@ -317,12 +326,12 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    public void print(ClassReferenceValue aValue) {
+    private void print(ClassReferenceValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
         print(".runtimeClass");
     }
 
-    public void print(InstanceOfValue aValue) {
+    private void print(InstanceOfValue aValue) {
         Value theValue = aValue.resolveFirstArgument();
         print("(");
         print(theValue);
@@ -337,22 +346,22 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    public void print(LongValue aValue) {
+    private void print(LongValue aValue) {
         print(aValue.getLongValue());
     }
 
-    public void print(ShortValue aValue) {
+    private void print(ShortValue aValue) {
         print(aValue.getShortValue());
     }
 
-    public void print(NegatedValue aValue) {
+    private void print(NegatedValue aValue) {
         Value theValue = aValue.resolveFirstArgument();
         print("(-");
         print(theValue);
         print(")");
     }
 
-    public void print(CompareValue aValue) {
+    private void print(CompareValue aValue) {
         Value theVariable1 = aValue.resolveFirstArgument();
         Value theVariable2 = aValue.resolveSecondArgument();
         print("(");
@@ -367,7 +376,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(" ? -1 : 0))");
     }
 
-    public void print(NewArrayValue aValue) {
+    private void print(NewArrayValue aValue) {
         BytecodeTypeRef theType = aValue.getType();
         Value theLength = aValue.resolveFirstArgument();
         Object theDefaultValue = theType.defaultValue();
@@ -379,44 +388,44 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    public void print(IntegerValue aValue) {
+    private void print(IntegerValue aValue) {
         print(aValue.getIntValue());
     }
 
-    public void print(FloatValue aValue) {
+    private void print(FloatValue aValue) {
         print(aValue.getFloatValue());
     }
 
-    public void print(DoubleValue aValue) {
+    private void print(DoubleValue aValue) {
         print(aValue.getDoubleValue());
     }
 
-    public void print(StringValue aValue) {
+    private void print(StringValue aValue) {
         String theData = JSWriterUtils.toArray(aValue.getStringValue().getBytes());
         print("bytecoder.newString(");
         print(theData);
         print(")");
     }
 
-    public void print(ArrayLengthValue aValue) {
+    private void print(ArrayLengthValue aValue) {
         print((Value) aValue.resolveFirstArgument());
         print(".data.length");
     }
 
-    public void printArrayIndexReference(Value aValue) {
+    private void printArrayIndexReference(Value aValue) {
         print(".data[");
         print(aValue);
         print("]");
     }
 
-    public void print(ArrayEntryValue aValue) {
+    private void print(ArrayEntryValue aValue) {
         Value theArray = aValue.resolveFirstArgument();
         Value theIndex = aValue.resolveSecondArgument();
         print(theArray);
         printArrayIndexReference(theIndex);
     }
 
-    public void print(TypeConversionValue aValue) {
+    private void print(TypeConversionValue aValue) {
         TypeRef theTargetType = aValue.resolveType();
         Value theValue = aValue.resolveFirstArgument();
         switch (theTargetType.resolve()) {
@@ -434,14 +443,14 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    public void print(GetFieldValue aValue) {
+    private void print(GetFieldValue aValue) {
         Value theTarget = aValue.resolveFirstArgument();
         BytecodeFieldRefConstant theField = aValue.getField();
         print(theTarget);
         printInstanceFieldReference(theField);
     }
 
-    public void print(BinaryValue aValue) {
+    private void print(BinaryValue aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         print(theValue1);
         switch (aValue.getOperator()) {
@@ -503,7 +512,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(theValue2);
     }
 
-    public void print(FixedBinaryValue aValue) {
+    private void print(FixedBinaryValue aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         print(theValue1);
         switch (aValue.getOperator()) {
@@ -521,16 +530,16 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    public void print(ByteValue aValue) {
+    private void print(ByteValue aValue) {
         print(aValue.getByteValue());
     }
 
-    public void print(NewObjectValue aValue) {
+    private void print(NewObjectValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
         print(".emptyInstance()");
     }
 
-    public void print(InvokeStaticMethodValue aValue) {
+    private void print(InvokeStaticMethodValue aValue) {
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -550,7 +559,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    public void print(DirectInvokeMethodValue aValue) {
+    private void print(DirectInvokeMethodValue aValue) {
 
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
@@ -571,7 +580,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    public void print(InvokeVirtualMethodValue aValue) {
+    private void print(InvokeVirtualMethodValue aValue) {
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -597,34 +606,34 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    public void print(NullValue aValue) {
+    private void print(NullValue aValue) {
         print("null");
     }
 
-    public void print(GetStaticValue aValue) {
+    private void print(GetStaticValue aValue) {
         printStaticFieldReference(aValue.getField());
     }
 
-    public void printVariableName(Variable aVariable) {
+    private void printVariableName(Variable aVariable) {
         print(aVariable.getName());
     }
 
-    public void printStaticFieldReference(BytecodeFieldRefConstant aField) {
+    private void printStaticFieldReference(BytecodeFieldRefConstant aField) {
         print(JSWriterUtils.toClassName(aField.getClassIndex().getClassConstant()));
         print(".staticFields.");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
-    public void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
+    private void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
         print(".");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
-    public String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
+    private String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
-    public void writeExpressions(ExpressionList aExpressions) {
+    private void writeExpressions(ExpressionList aExpressions) {
         for (Expression theExpression : aExpressions.toList()) {
             if (theExpression instanceof ReturnExpression) {
                 ReturnExpression theE = (ReturnExpression) theExpression;
@@ -827,7 +836,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    public void printNodeDebug(GraphNode aNode) {
+    private void printNodeDebug(GraphNode aNode) {
         if (options.isDebugOutput()) {
 
             for (GraphNodePath thePath : aNode.reachableBy()) {
@@ -863,7 +872,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         throw new IllegalArgumentException("Not supported node type : " + aNode.getClass());
     }
 
-    public void printSimpleSequenceNode(ControlFlowGraph.SequenceOfSimpleNodes aSequence) {
+    private void printSimpleSequenceNode(ControlFlowGraph.SequenceOfSimpleNodes aSequence) {
         List<ControlFlowGraph.SimpleNode> theNodes = aSequence.getNodes();
         println();
         println(
@@ -901,7 +910,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         println("}}");
     }
 
-    public void printSimpleNode(ControlFlowGraph.SimpleNode aSimpleNode) {
+    private void printSimpleNode(ControlFlowGraph.SimpleNode aSimpleNode) {
         printGraphNode(aSimpleNode.getNode());
     }
 
