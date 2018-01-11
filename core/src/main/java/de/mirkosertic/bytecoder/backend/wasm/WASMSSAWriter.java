@@ -91,6 +91,7 @@ import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.SqrtValue;
 import de.mirkosertic.bytecoder.ssa.StackTopValue;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
@@ -160,7 +161,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         throw new IllegalStateException("Unknown variable : " + aVariable);
     }
 
-    public WASMSSAWriter withDeeperIndent() {
+    private WASMSSAWriter withDeeperIndent() {
         return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver, memoryLayouter);
     }
 
@@ -843,7 +844,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeNewMultiArrayValue((NewMultiArrayValue) aValue);
             return;
         }
+        if (aValue instanceof SqrtValue) {
+            writeSqrtValue((SqrtValue) aValue);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private void writeSqrtValue(SqrtValue aValue) {
+        print("(f32.sqrt ");
+        writeValue(aValue.resolveFirstArgument());
+        print(")");
     }
 
     private void writeNewMultiArrayValue(NewMultiArrayValue aValue) {
