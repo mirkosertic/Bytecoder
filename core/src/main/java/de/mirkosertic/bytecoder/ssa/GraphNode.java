@@ -145,6 +145,7 @@ public class GraphNode {
             if (theVar.isSynthetic()) {
                 return theVar;
             }
+
         }
         return newVariable(aType, aValue, false);
     }
