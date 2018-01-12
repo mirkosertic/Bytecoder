@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.RegisterAllocator;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -355,20 +356,31 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
-                WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver, theMemoryLayout);
-
+                List<Variable> theStackVariables = new ArrayList<>();
                 for (Variable theVariable : theSSAProgram.getVariables()) {
-
-                    if (!(theVariable.isSynthetic()) &&
-                        !theSSAWriter.isStackVariable(theVariable)) {
-
-                        theSSAWriter.print("(local $");
-                        theSSAWriter.print(theVariable.getName());
-                        theSSAWriter.print(" ");
-                        theSSAWriter.print(WASMWriterUtils.toType(theVariable.resolveType()));
-                        theSSAWriter.print(") ;; ");
-                        theSSAWriter.println(theVariable.resolveType().resolve().name());
+                    if (theVariable.resolveType().resolve() == TypeRef.Native.REFERENCE) {
+                        theStackVariables.add(theVariable);
                     }
+                }
+
+                Set<Variable> theVariables = new HashSet<>();
+                for (Variable theVariable : theSSAProgram.getVariables()) {
+                    if (!theVariable.isSynthetic() && !theStackVariables.contains(theVariable)) {
+                        theVariables.add(theVariable);
+                    }
+                }
+                RegisterAllocator theAllocator = new RegisterAllocator(theVariables);
+                WASMSSAWriter theSSAWriter = new WASMSSAWriter(theAllocator, aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver, theMemoryLayout,
+                        theStackVariables);
+
+                for (RegisterAllocator.Register theRegister : theAllocator.allRegisters()) {
+                    theSSAWriter.print("(local $");
+                    theSSAWriter.print(theRegister.getName());
+                    theSSAWriter.print(" ");
+                    theSSAWriter.print(WASMWriterUtils.toType(theRegister.getTypeRef()));
+                    theSSAWriter.print(") ;; ");
+                    theSSAWriter.println(theRegister.getTypeRef().resolve().name());
+
                 }
 
                 // Try to reloop it!
@@ -531,20 +543,31 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             Program theSSAProgram = theEntry.getValue().program;
 
-            WASMSSAWriter theSSAWriter = new WASMSSAWriter(aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver, theMemoryLayout);
-
+            List<Variable> theStackVariables = new ArrayList<>();
             for (Variable theVariable : theSSAProgram.getVariables()) {
-
-                if (!(theVariable.isSynthetic()) &&
-                    !(theSSAWriter.isStackVariable(theVariable))) {
-
-                    theSSAWriter.print("(local $");
-                    theSSAWriter.print(theVariable.getName());
-                    theSSAWriter.print(" ");
-                    theSSAWriter.print(WASMWriterUtils.toType(theVariable.resolveType()));
-                    theSSAWriter.print(") ;; ");
-                    theSSAWriter.println(theVariable.resolveType().resolve().name());
+                if (theVariable.resolveType().resolve() == TypeRef.Native.REFERENCE) {
+                    theStackVariables.add(theVariable);
                 }
+            }
+
+            Set<Variable> theVariables = new HashSet<>();
+            for (Variable theVariable : theSSAProgram.getVariables()) {
+                if (!theVariable.isSynthetic() && !theStackVariables.contains(theVariable)) {
+                    theVariables.add(theVariable);
+                }
+            }
+            RegisterAllocator theAllocator = new RegisterAllocator(theVariables);
+            WASMSSAWriter theSSAWriter = new WASMSSAWriter(theAllocator, aOptions, theSSAProgram, "         ", theWriter, aLinkerContext, theResolver, theMemoryLayout,
+                    theStackVariables);
+
+            for (RegisterAllocator.Register theRegister : theAllocator.allRegisters()) {
+                theSSAWriter.print("(local $");
+                theSSAWriter.print(theRegister.getName());
+                theSSAWriter.print(" ");
+                theSSAWriter.print(WASMWriterUtils.toType(theRegister.getTypeRef()));
+                theSSAWriter.print(") ;; ");
+                theSSAWriter.println(theRegister.getTypeRef().resolve().name());
+
             }
 
             theSSAWriter.printStackEnter();
