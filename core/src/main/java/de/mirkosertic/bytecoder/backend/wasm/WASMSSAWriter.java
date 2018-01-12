@@ -16,12 +16,13 @@
 package de.mirkosertic.bytecoder.backend.wasm;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
+import de.mirkosertic.bytecoder.backend.RegisterAllocator;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
@@ -123,18 +124,16 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private final List<Variable> stackVariables;
     private final IDResolver idResolver;
     private final WASMMemoryLayouter memoryLayouter;
+    private final RegisterAllocator registerAllocator;
 
-    public WASMSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver,
-                         WASMMemoryLayouter aMemoryLayouter) {
+    public WASMSSAWriter(RegisterAllocator aAllocator, CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, IDResolver aIDResolver,
+                         WASMMemoryLayouter aMemoryLayouter,
+            List<Variable> aStackVariables) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
-        stackVariables = new ArrayList<>();
+        registerAllocator = aAllocator;
         idResolver = aIDResolver;
         memoryLayouter = aMemoryLayouter;
-        for (Variable theVariable : aProgram.getVariables()) {
-            if (theVariable.resolveType().resolve() == TypeRef.Native.REFERENCE) {
-                stackVariables.add(theVariable);
-            }
-        }
+        stackVariables = aStackVariables;
     }
 
     private int stackSize() {
@@ -142,18 +141,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     public boolean isStackVariable(Variable aVariable) {
-        for (Variable theVariable : stackVariables) {
-            if (theVariable.getName().equals(aVariable.getName())) {
-                return true;
-            }
-        }
-        return false;
+        return stackVariables.contains(aVariable);
     }
 
     private int stackOffsetFor(Variable aVariable) {
         int theStart = 0;
         for (Variable theVariable : stackVariables) {
-            if (theVariable.getName().equals(aVariable.getName())) {
+            if (theVariable == aVariable) {
                 return theStart;
             }
             theStart += 4;
@@ -162,7 +156,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private WASMSSAWriter withDeeperIndent() {
-        return new WASMSSAWriter(options, program, indent + "    ", writer, linkerContext, idResolver, memoryLayouter);
+        return new WASMSSAWriter(registerAllocator, options, program, indent + "    ", writer, linkerContext, idResolver, memoryLayouter, stackVariables);
     }
 
     public void writeStartNode(ControlFlowGraph.Node aNode) {
@@ -679,8 +673,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         } else {
             println(";; setting local variable with type " + theVariable.resolveType().resolve() + " with value of type " + theNewValue.resolveType().resolve());
+
             print("(set_local $");
-            print(theVariable.getName());
+
+            if (!theVariable.isSynthetic()) {
+                RegisterAllocator.Register theRegister = registerAllocator.resolve(theVariable);
+                print(theRegister.getName());
+            } else {
+                print(theVariable.getName());
+            }
             println();
 
             WASMSSAWriter theChild = withDeeperIndent();
@@ -1173,7 +1174,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeTypeConversion(TypeConversionValue aValue) {
         TypeRef theTargetType = aValue.resolveType();
         Value theSource = aValue.resolveFirstArgument();
-        if (theTargetType.resolve().equals(theSource.resolveType().resolve())) {
+        if (Objects.equals(theTargetType.resolve(), theSource.resolveType().resolve())) {
             // No conversion needed!
             writeValue(theSource);
             return;
@@ -1455,7 +1456,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case LESSTHAN: {
-                if ("i32".equals(theType1)) {
+                if (Objects.equals("i32", theType1)) {
                     println("(" + theType1 + ".lt_s ");
                 } else {
                     println("(" + theType1 + ".lt ");
@@ -1470,7 +1471,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case LESSTHANOREQUALS: {
-                if ("i32".equals(theType1)) {
+                if (Objects.equals("i32", theType1)) {
                     println("(" + theType1 + ".le_s ");
                 } else {
                     println("(" + theType1 + ".le ");
@@ -1485,7 +1486,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case GREATEROREQUALS: {
-                if ("i32".equals(theType1)) {
+                if (Objects.equals("i32", theType1)) {
                     println("(" + theType1 + ".ge_s ");
                 } else {
                     println("(" + theType1 + ".ge ");
@@ -1500,7 +1501,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 break;
             }
             case GREATERTHAN: {
-                if ("i32".equals(theType1)) {
+                if (Objects.equals("i32", theType1)) {
                     println("(" + theType1 + ".gt_s ");
                 } else {
                     println("(" + theType1 + ".gt ");
@@ -1715,7 +1716,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
         } else {
             print("(get_local ");
             print("$");
-            print(aVariable.getName());
+
+            if (aVariable.isSynthetic()) {
+                print(aVariable.getName());
+            } else {
+                RegisterAllocator.Register theRegister = registerAllocator.resolve(aVariable);
+                print(theRegister.getName());
+            }
             print(")");
         }
     }

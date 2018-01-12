@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class Program {
@@ -45,8 +46,10 @@ public class Program {
     private final List<Variable> variables;
     private final Set<Variable> globals;
     private final List<Argument> arguments;
+    private int variableCounter;
 
     public Program() {
+        variableCounter = 0;
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
         globals = new HashSet<>();
@@ -64,7 +67,7 @@ public class Program {
 
     public Argument matchingArgumentOf(LocalVariableDescription aVariableDescription) {
         for (Argument theArgument : arguments) {
-            if (theArgument.variableDescription.equals(aVariableDescription)) {
+            if (Objects.equals(theArgument.variableDescription, aVariableDescription)) {
                 return theArgument;
             }
         }
@@ -75,28 +78,6 @@ public class Program {
         return controlFlowGraph;
     }
 
-    public Set<Variable> globalVariables() {
-        Set<Variable> theVariables = new HashSet<>();
-        for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
-            BlockState theStartState = theNode.toStartState();
-            for (Value theValue : theStartState.getPorts().values()) {
-                if (theValue instanceof Variable) {
-                    theVariables.add((Variable) theValue);
-                }
-            }
-        }
-        return theVariables;
-    }
-
-    public boolean isGlobalVariable(Variable aVariable) {
-        for (Variable theVar : globalVariables()) {
-            if (theVar.getName().equals(aVariable.getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public List<Variable> getVariables() {
         List<Variable> theVariables = new ArrayList<>();
         theVariables.addAll(variables);
@@ -105,8 +86,7 @@ public class Program {
     }
 
     public Variable createVariable(TypeRef aType) {
-        int theIndex = variables.size();
-        Variable theNewVariable = new Variable(aType, "var" + theIndex);
+        Variable theNewVariable = new Variable(aType, "var" + variableCounter++);
         variables.add(theNewVariable);
         return theNewVariable;
     }
@@ -161,33 +141,5 @@ public class Program {
         for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
             theNode.deleteVariable(aVariable);
         }
-    }
-
-    public Variable getVariableByName(String aName) {
-        for (Variable theVariable : variables) {
-            if (aName.equals(theVariable.getName())) {
-                return theVariable;
-            }
-        }
-        return null;
-    }
-
-    public Variable getOrCreateTrulyGlobal(String aName, TypeRef aType) {
-        Variable theVariable = getVariableByName(aName);
-        if (theVariable == null) {
-            theVariable = new Variable(aType, aName);
-            variables.add(theVariable);
-            globals.add(theVariable);
-        }
-        return theVariable;
-    }
-
-    public boolean isTrulyGlobal(Variable aVariable) {
-        return globals.contains(aVariable);
-    }
-
-    public void promoteToTrulyGlobal(Variable aVariable, String aGlobalName) {
-        aVariable.changeNameTo(aGlobalName);
-        globals.add(aVariable);
     }
 }

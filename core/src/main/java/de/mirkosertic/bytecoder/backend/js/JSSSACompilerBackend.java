@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.RegisterAllocator;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -48,7 +49,6 @@ import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
@@ -382,17 +382,23 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theWriter.println("        */");
                 }
 
-                JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram,"        ", theWriter, aLinkerContext);
-                for (Variable theVariable : theSSAProgram.globalVariables()) {
+                Set<Variable> theVariables = new HashSet<>();
+                for (Variable theVariable : theSSAProgram.getVariables()) {
                     if (!theVariable.isSynthetic()) {
-                        theVariablesWriter.print("var ");
-                        theVariablesWriter.print(theVariable.getName());
-                        theVariablesWriter.print(" = null;");
-                        theVariablesWriter.print(" // type is ");
-                        theVariablesWriter.print(theVariable.resolveType().resolve().name());
-                        theVariablesWriter.print(" # of inits = " + theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION).size());
-                        theVariablesWriter.println();
+                        theVariables.add(theVariable);
                     }
+                }
+                RegisterAllocator theAllocator = new RegisterAllocator(theVariables);
+
+                JSSSAWriter theVariablesWriter = new JSSSAWriter(theAllocator, aOptions, theSSAProgram,"        ", theWriter, aLinkerContext);
+
+                for (RegisterAllocator.Register theRegister : theAllocator.allRegisters()) {
+                    theVariablesWriter.print("var ");
+                    theVariablesWriter.print(theRegister.getName());
+                    theVariablesWriter.print(" = null;");
+                    theVariablesWriter.print(" // type is ");
+                    theVariablesWriter.print(theRegister.getTypeRef().resolve().name());
+                    theVariablesWriter.println();
                 }
 
                 // Try to reloop it!
