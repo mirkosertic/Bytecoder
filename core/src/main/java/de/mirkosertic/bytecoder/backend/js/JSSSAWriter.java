@@ -16,15 +16,12 @@
 package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
-import de.mirkosertic.bytecoder.backend.RegisterAllocator;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -108,15 +105,12 @@ import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
-    private final RegisterAllocator registerAllocator;
-
-    public JSSSAWriter(RegisterAllocator aAllocator, CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+    public JSSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
-        registerAllocator = aAllocator;
     }
 
     private JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(registerAllocator, options, program, indent + "    ", writer, linkerContext);
+        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext);
     }
 
     private void print(Value aValue) {
@@ -238,23 +232,12 @@ public class JSSSAWriter extends IndentSSAWriter {
         Program theProgram = aValue.getProgram();
         GraphNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        Set<Variable> theVariables = new HashSet<>();
-        for (Variable theVariable : theProgram.getVariables()) {
-            if (!theVariable.isSynthetic()) {
-                theVariables.add(theVariable);
-            }
-        }
-        RegisterAllocator theAllocator = new RegisterAllocator(theVariables);
+        JSSSAWriter theNested = withDeeperIndent();
 
-        JSSSAWriter theNested = new JSSSAWriter(theAllocator, options, program, indent + "    ", writer, linkerContext);
-
-        for (RegisterAllocator.Register theRegister : theAllocator.allRegisters()) {
+        for (Variable theVariable : theProgram.globalVariables()) {
             theNested.print("var ");
-            theNested.print(theRegister.getName());
-            theNested.print(" = null;");
-            theNested.print(" // type is ");
-            theNested.print(theRegister.getTypeRef().resolve().name());
-            theNested.println();
+            theNested.print(theVariable.getName());
+            theNested.println(" = null;");
         }
 
         theNested.writeExpressions(theBootstrapCode.getExpressions());
@@ -632,12 +615,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void printVariableName(Variable aVariable) {
-        if (!aVariable.isSynthetic()) {
-            RegisterAllocator.Register theRegister = registerAllocator.resolve(aVariable);
-            print(theRegister.getName());
-        } else {
-            print(aVariable.getName());
-        }
+        print(aVariable.getName());
     }
 
     private void printStaticFieldReference(BytecodeFieldRefConstant aField) {
@@ -675,7 +653,11 @@ public class JSSSAWriter extends IndentSSAWriter {
                 if (theValue instanceof ComputedMemoryLocationWriteValue) {
                     continue;
                 }
-                printVariableName(theVariable);
+                if (!program.isGlobalVariable(theVariable)) {
+                    print("var ");
+                }
+
+                print(theVariable.getName());
                 print(" = ");
                 print(theValue);
                 print("; // type is ");

@@ -62,7 +62,6 @@ public class GraphNode {
     private final Map<VariableDescription, Value> exported;
     private final List<GraphNodePath> reachableBy;
     private final ControlFlowGraph owningGraph;
-    private final Set<Variable> createdVariables;
 
     protected GraphNode(ControlFlowGraph aOwningGraph, BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
@@ -74,7 +73,6 @@ public class GraphNode {
         imported = new HashMap<>();
         exported = new HashMap<>();
         reachableBy = new ArrayList<>();
-        createdVariables = new HashSet<>();
     }
 
     public void addReachablePath(GraphNodePath aPath) {
@@ -137,19 +135,21 @@ public class GraphNode {
         return startAddress;
     }
 
-    private Variable registerOwnership(Variable aVariable) {
-        createdVariables.add(aVariable);
-        return aVariable;
-    }
-
     public Variable newVariable(TypeRef aType) {
-        return registerOwnership(program.createVariable(aType));
+        return program.createVariable(aType);
     }
 
     public Variable newVariable(TypeRef aType, Value aValue)  {
+        return newVariable(aType, aValue, false);
+    }
+
+    public Variable newVariable(TypeRef aType, Value aValue, boolean aIsImport)  {
         Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue);
-        return registerOwnership(theNewVariable);
+        if (!aIsImport) {
+            expressions.add(new InitVariableExpression(theNewVariable, aValue));
+        }
+        return theNewVariable;
     }
 
     public Variable newImportedVariable(TypeRef aType, VariableDescription aDescription) {

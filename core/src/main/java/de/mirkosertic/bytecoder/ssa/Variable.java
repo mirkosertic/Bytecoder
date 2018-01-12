@@ -38,17 +38,21 @@ public class Variable extends Value {
     }
 
     private final TypeRef type;
-    private final String name;
+    private String name;
     private final boolean synthetic;
 
-    private Variable(TypeRef aType, String aName, boolean aSynthetic) {
+    private Variable(TypeRef aType, String aName, boolean aSsynthetic) {
         type = aType;
         name = aName;
-        synthetic = aSynthetic;
+        synthetic = aSsynthetic;
     }
 
     public Variable(TypeRef aType, String aName) {
         this(aType, aName, false);
+    }
+
+    public void changeNameTo(String aName) {
+        name = aName;
     }
 
     public void initializeWith(Value aValue) {
