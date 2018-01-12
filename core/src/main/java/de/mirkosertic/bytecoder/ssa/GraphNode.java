@@ -140,6 +140,12 @@ public class GraphNode {
     }
 
     public Variable newVariable(TypeRef aType, Value aValue)  {
+        if (aValue instanceof Variable) {
+            Variable theVar = (Variable) aValue;
+            if (theVar.isSynthetic()) {
+                return theVar;
+            }
+        }
         return newVariable(aType, aValue, false);
     }
 
