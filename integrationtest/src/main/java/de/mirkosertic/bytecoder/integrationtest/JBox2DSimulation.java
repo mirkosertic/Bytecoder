@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.integrationtest;
 
 import de.mirkosertic.bytecoder.annotations.Export;
 import de.mirkosertic.bytecoder.annotations.Import;
+import de.mirkosertic.bytecoder.api.web.Canvas;
+import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
+import de.mirkosertic.bytecoder.api.web.Window;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.collision.shapes.Shape;
@@ -168,9 +171,12 @@ public class JBox2DSimulation {
     }
 
     private static Scene scene;
+    private static CanvasRenderingContext2D renderingContext2D;
 
     public static void main(String[] args) {
         scene = new Scene();
+        Canvas theCanvas = Window.document().getElementById("benchmark-canvas");
+        renderingContext2D = theCanvas.getContext();
     }
 
     @Export("proceedSimulation")
@@ -184,82 +190,43 @@ public class JBox2DSimulation {
         logRuntime((int) theDuration);
     }
 
-    @Import(module = "canvas", name = "canvasClear")
-    public static native void canvasClear();
-
-    @Import(module = "canvas", name = "contextSave")
-    public static native void contextSave();
-
-    @Import(module = "canvas", name = "contextRestore")
-    public static native void contextRestore();
-
-    @Import(module = "canvas", name = "contextTranslate")
-    public static native void contextTranslate(float aX, float aY);
-
-    @Import(module = "canvas", name = "contextScale")
-    public static native void contextScale(float aX, float aY);
-
-    @Import(module = "canvas", name = "contextLineWidth")
-    public static native void contextLineWidth(float aWidth);
-
-    @Import(module = "canvas", name = "contextRotate")
-    public static native void contextRotate(float aAngleInRadians);
-
-    @Import(module = "canvas", name = "contextBeginPath")
-    public static native void contextBeginPath();
-
-    @Import(module = "canvas", name = "contextClosePath")
-    public static native void contextClosePath();
-
-    @Import(module = "canvas", name = "contextMoveTo")
-    public static native void contextMoveTo(float aX, float aY);
-
-    @Import(module = "canvas", name = "contextLineTo")
-    public static native void contextLineTo(float aX, float aY);
-
-    @Import(module = "canvas", name = "contextArc")
-    public static native void contextArc(double x, double y, double radius, double startAngle, double endAngle, boolean anticlockwise);
-
-    @Import(module = "canvas", name = "contextStroke")
-    public static native void contextStroke();
-
     @Import(module = "debug", name = "logRuntime")
     public static native void logRuntime(int aValue);
 
     private static void render() {
-        canvasClear();
-        contextSave();
-        contextTranslate(0, 600);
-        contextScale(1, -1);
-        contextScale(100, 100);
-        contextLineWidth(0.01f);
+        renderingContext2D.clear();
+        renderingContext2D.save();
+        renderingContext2D.translate(0, 600);
+        renderingContext2D.scale(1, -1);
+        renderingContext2D.scale(100, 100);
+        renderingContext2D.lineWidth(0.01f);
         for (Body body = scene.getWorld().getBodyList(); body != null; body = body.getNext()) {
             Vec2 center = body.getPosition();
-            contextSave();
-            contextTranslate(center.x, center.y);
-            contextRotate(body.getAngle());
+            renderingContext2D.save();
+            renderingContext2D.translate(center.x, center.y);
+            renderingContext2D.rotate(body.getAngle());
             for (Fixture fixture = body.getFixtureList(); fixture != null; fixture = fixture.getNext()) {
                 Shape shape = fixture.getShape();
                 if (shape.getType() == ShapeType.CIRCLE) {
                     CircleShape circle = (CircleShape) shape;
-                    contextBeginPath();
-                    contextArc(circle.m_p.x, circle.m_p.y, circle.getRadius(), 0, Math.PI * 2, true);
-                    contextClosePath();
-                    contextStroke();
+                    renderingContext2D.beginPath();
+                    renderingContext2D.arc(circle.m_p.x, circle.m_p.y, circle.getRadius(), 0, Math.PI * 2, true);
+                    renderingContext2D.closePath();
+                    renderingContext2D.stroke();
                 } else if (shape.getType() == ShapeType.POLYGON) {
                     PolygonShape poly = (PolygonShape) shape;
                     Vec2[] vertices = poly.getVertices();
-                    contextBeginPath();
-                    contextMoveTo(vertices[0].x, vertices[0].y);
+                    renderingContext2D.beginPath();
+                    renderingContext2D.moveTo(vertices[0].x, vertices[0].y);
                     for (int i = 1; i < poly.getVertexCount(); ++i) {
-                        contextLineTo(vertices[i].x, vertices[i].y);
+                        renderingContext2D.lineTo(vertices[i].x, vertices[i].y);
                     }
-                    contextClosePath();
-                    contextStroke();
+                    renderingContext2D.closePath();
+                    renderingContext2D.stroke();
                 }
             }
-            contextRestore();
+            renderingContext2D.restore();
         }
-        contextRestore();
+        renderingContext2D.restore();
     }
 }
