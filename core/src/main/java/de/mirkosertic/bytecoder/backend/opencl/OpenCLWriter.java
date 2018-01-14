@@ -97,48 +97,67 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void print(Relooper.SimpleBlock aSimpleBlock) {
-        print("$");
-        print(aSimpleBlock.label().name());
-        println(" : {");
+        OpenCLWriter theWriter = this;
+        if (aSimpleBlock.isLabelRequired()) {
+            print("$");
+            print(aSimpleBlock.label().name());
+            println(" : {");
+            theWriter = theWriter.withDeeperIndent();
+        }
 
-        OpenCLWriter theDeeper = withDeeperIndent();
-        theDeeper.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
+        theWriter.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
 
-        println("}");
+        if (aSimpleBlock.isLabelRequired()) {
+            println("}");
+        }
         print(aSimpleBlock.next());
     }
 
     private void print(Relooper.LoopBlock aLoopBlock) {
-        print("$");
-        print(aLoopBlock.label().name());
-        println(" : for (;;) {");
+        OpenCLWriter theWriter = this;
+        if (aLoopBlock.isLabelRequired()) {
+            print("$");
+            print(aLoopBlock.label().name());
+            print(" : ");
+            theWriter = theWriter.withDeeperIndent();
 
-        OpenCLWriter theDeeper = withDeeperIndent();
-        theDeeper.print(aLoopBlock.inner());
+        }
+        println("for (;;) {");
 
-        println("}");
+        theWriter.print(aLoopBlock.inner());
+
+        if (aLoopBlock.isLabelRequired()) {
+            println("}");
+        }
         print(aLoopBlock.next());
     }
 
     private void print(Relooper.MultipleBlock aMultiple) {
+        OpenCLWriter theWriter = this;
+        if (aMultiple.isLabelRequired()) {
+            print("$");
+            print(aMultiple.label().name());
+            print(" : ");
+            theWriter = theWriter.withDeeperIndent();
+        }
 
-        print("$");
-        print(aMultiple.label().name());
-        println(" : for(;;) switch (__label__) {");
+        println("for(;;) switch (__label__) {");
 
-        OpenCLWriter theDeeper = withDeeperIndent();
         for (Relooper.Block theHandler : aMultiple.handlers()) {
             for (GraphNode theEntry : theHandler.entries()) {
-                theDeeper.print("case ");
-                theDeeper.print(theEntry.getStartAddress().getAddress());
-                theDeeper.println(" : ");
+                theWriter.print("case ");
+                theWriter.print(theEntry.getStartAddress().getAddress());
+                theWriter.println(" : ");
             }
 
-            OpenCLWriter theHandlerWriter = theDeeper.withDeeperIndent();
+            OpenCLWriter theHandlerWriter = theWriter.withDeeperIndent();
             theHandlerWriter.print(theHandler);
         }
 
-        println("}");
+        if (aMultiple.isLabelRequired()) {
+            println("}");
+        }
+
         print(aMultiple.next());
     }
 
