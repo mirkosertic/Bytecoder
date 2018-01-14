@@ -20,22 +20,27 @@ import org.junit.Test;
 public class ContextTest {
 
     @Test
-    public void testSimpleAdd() {
+    public void testSimpleAdd() throws Exception {
         PlatformFactory theFactory = new PlatformFactory();
         Platform thePlatform = theFactory.createPlatform();
-        Context theContext = thePlatform.createContext();
 
         final float[] theA = {10f, 20f, 30f, 40f};
         final float[] theB = {100f, 200f, 300f, 400f};
         final float[] theResult = new float[4];
 
-        theContext.compute(4, new Kernel() {
-            public void add() {
-                int id = get_global_id(0);
-                float a = theA[id];
-                float b = theB[id];
-                theResult[id] = a + b;
-            }
-        });
+        try (Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+                public void add() {
+                    int id = get_global_id(0);
+                    float a = theA[id];
+                    float b = theB[id];
+                    theResult[id] = a + b;
+                }
+            });
+        }
+
+        for (int i=0; i<theResult.length;i++) {
+            System.out.println(theResult[i]);
+        }
     }
 }

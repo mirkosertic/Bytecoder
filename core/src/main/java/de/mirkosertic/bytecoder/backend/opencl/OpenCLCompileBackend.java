@@ -114,7 +114,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
     @Override
     public String generatedFileName() {
-        return "unused";
+        return "BytecoderKernel";
     }
 
     private OpenCLInputOutputs inputOutputsFor(Class aSourceClass, Program aProgram) throws NoSuchFieldException {
