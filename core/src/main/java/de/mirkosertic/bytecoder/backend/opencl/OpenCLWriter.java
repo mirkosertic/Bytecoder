@@ -44,7 +44,7 @@ public class OpenCLWriter extends IndentSSAWriter {
 
     public OpenCLWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, OpenCLInputOutputs aInputOutputs) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
-        inputOutputs = aInputOutputs;;
+        inputOutputs = aInputOutputs;
     }
 
     public void printRelooped(Relooper.Block aBlock) {
@@ -58,12 +58,12 @@ public class OpenCLWriter extends IndentSSAWriter {
             OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
             switch (theArgument.getType()) {
                 case INPUT:
-                    print("__global const float *");
+                    print("__global const float* ");
                     print(theArgument.getField().getName());
                     break;
                 case OUTPUT:
                 case INPUTOUTPUT:
-                    print("__global float *");
+                    print("__global float* ");
                     print(theArgument.getField().getName());
                     break;
             }
@@ -71,7 +71,7 @@ public class OpenCLWriter extends IndentSSAWriter {
 
         println(") {");
         OpenCLWriter theDeeper = withDeeperIndent();
-        theDeeper.println("int __label__ = 0;");
+        theDeeper.println("int $__label__ = 0;");
         theDeeper.print(aBlock);
 
         println("}");
@@ -149,9 +149,11 @@ public class OpenCLWriter extends IndentSSAWriter {
     private void writeExpressions(ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof CommentExpression) {
-                CommentExpression theComment = (CommentExpression) theExpression;
-                print("// ");
-                println(theComment.getValue());
+                if (options.isDebugOutput()) {
+                    CommentExpression theComment = (CommentExpression) theExpression;
+                    print("// ");
+                    println(theComment.getValue());
+                }
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
                 print(toType(theInit.getVariable().resolveType()));

@@ -17,13 +17,7 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 public abstract class Kernel {
 
-    private int globalId;
-
     public int get_global_id(int aParam) {
-        return globalId;
-    }
-
-    void set_global_id(int aValue) {
-        globalId = aValue;
+        return 0;
     }
 }

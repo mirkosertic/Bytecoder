@@ -6,7 +6,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 
 ## High Level Goals
 
-* Ability to cross-compile JVM Bytecode to JavaScript and other languages
+* Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
 * Use other toolchains such as Google Closure Compiler or Binaryen to further optimize generated code
 * Reuse or implement cross-compileable Java Classlib
@@ -29,6 +29,9 @@ The *JavaScript* backend transforms the intermediate representation into JavaScr
 The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled 
 into WebAssembly binary code using the WABT toolchain.
 
+The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the CPU. This backend is designed to enhance
+existing programs running on the JVM to utilizy the vast power of modern GPUs.
+
 ## Memory management
 
 *JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.
@@ -37,6 +40,53 @@ The WebAssembly backend must include garbage collection runtime code for memory 
 Details about WebAssembly are documented [here](WASM.md) 
 
 The JavaScript backend relies on JavaScript garbage collection provided by the browser.
+
+## Using OpenCL
+
+The following program demonstrates the use of the Bytecoder `OpenCL` backend embedded into a JVM program:
+
+```
+PlatformFactory theFactory = new PlatformFactory();
+Platform thePlatform = theFactory.createPlatform();
+
+final float[] theA = {10f, 20f, 30f, 40f};
+final float[] theB = {100f, 200f, 300f, 400f};
+final float[] theResult = new float[4];
+
+try (Context theContext = thePlatform.createContext()) {
+    theContext.compute(4, new Kernel() {
+        public void add() {
+            int id = get_global_id(0);
+            float a = theA[id];
+            float b = theB[id];
+            theResult[id] = a + b;
+        }
+    });
+}
+
+for (int i=0; i<theResult.length;i++) {
+    System.out.println(theResult[i]);
+}
+```
+
+The interesting part is the `Kernel` class. At runtime, the JVM bytecode is translated into an `OpenCL` program and executed
+heavily parallel on the GPU. Writing OpenCL Kernels in Java keeps developer productivity up and allows to write efficient 
+algorithms that can transparently executed on the `GPU`.
+
+Here is an example of the OpenCL C-Code generated for the Java Kernel from above:
+
+```
+__kernel void BytecoderKernel(__global const float* val$theA, 
+                              __global const float* val$theB, 
+                              __global float* val$theResult) {
+    int var1 = get_global_id(0);
+    float var4 = val$theA[var1];
+    float var7 = val$theB[var1];
+    float var9 = var4 + var7;
+    val$theResult[var1] = var9;
+    return;
+}
+```
 
 ## Unit testing
 

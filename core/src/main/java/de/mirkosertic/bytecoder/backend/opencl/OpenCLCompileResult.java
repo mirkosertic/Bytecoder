@@ -31,4 +31,8 @@ public class OpenCLCompileResult implements CompileResult<String> {
     public String getData() {
         return kernelSource;
     }
+
+    public OpenCLInputOutputs getInputOutputs() {
+        return inputOutputs;
+    }
 }
