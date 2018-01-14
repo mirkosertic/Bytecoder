@@ -44,6 +44,7 @@ public class Relooper {
 
         private final Set<GraphNode> entries;
         private final Label label;
+        private boolean labelRequired;
 
         protected Block(Set<GraphNode> aEntries, String aLabelPrefix) {
             entries = aEntries;
@@ -54,7 +55,16 @@ public class Relooper {
                 }
                 theBuilder.append(aLabel.getStartAddress().getAddress());
             }
+            labelRequired = false;
             label = new Label(aLabelPrefix + theBuilder.toString());
+        }
+
+        public boolean isLabelRequired() {
+            return labelRequired;
+        }
+
+        public void requireLabel() {
+            labelRequired = true;
         }
 
         public Set<GraphNode> entries() {
@@ -252,11 +262,13 @@ public class Relooper {
                             for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
                                 Block theNestingBlock = aTraversalStack.get(i);
                                 if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
+                                    theNestingBlock.requireLabel();
                                     BreakExpression theBreak = new BreakExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theBreak);
                                     theSomethingFound = true;
                                     break;
                                 } else if (theNestingBlock.entries().contains(theTarget)) {
+                                    theNestingBlock.requireLabel();
                                     ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theContinue);
                                     theSomethingFound = true;
@@ -276,6 +288,7 @@ public class Relooper {
                                     theSomethingFound = true;
 
                                     // We can return to the target in the hierarchy
+                                    theNestingBlock.requireLabel();
                                     ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theContinue);
                                     break;

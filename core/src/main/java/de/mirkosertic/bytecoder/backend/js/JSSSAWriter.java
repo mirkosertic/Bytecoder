@@ -948,34 +948,47 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(Relooper.SimpleBlock aSimpleBlock) {
-        print("$");
-        print(aSimpleBlock.label().name());
-        println(" : {");
+        JSSSAWriter theWriter = this;
+        if (aSimpleBlock.isLabelRequired()) {
+            print("$");
+            print(aSimpleBlock.label().name());
+            println(" : {");
 
-        JSSSAWriter theDeeper = withDeeperIndent();
-        theDeeper.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
+            theWriter = theWriter.withDeeperIndent();
+        }
 
-        println("}");
+        theWriter.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
+
+        if (aSimpleBlock.isLabelRequired()) {
+            println("}");
+        }
         print(aSimpleBlock.next());
     }
 
     private void print(Relooper.LoopBlock aLoopBlock) {
-        print("$");
-        print(aLoopBlock.label().name());
-        println(" : for (;;) {");
+        if (aLoopBlock.isLabelRequired()) {
+            print("$");
+            print(aLoopBlock.label().name());
+            print(" : ");
+        }
+        println("for (;;) {");
 
         JSSSAWriter theDeeper = withDeeperIndent();
         theDeeper.print(aLoopBlock.inner());
 
         println("}");
+
         print(aLoopBlock.next());
     }
 
     private void print(Relooper.MultipleBlock aMultiple) {
 
-        print("$");
-        print(aMultiple.label().name());
-        println(" : for(;;) switch (__label__) {");
+        if (aMultiple.isLabelRequired()) {
+            print("$");
+            print(aMultiple.label().name());
+            print(" : ");
+        }
+        println("for(;;) switch (__label__) {");
 
         JSSSAWriter theDeeper = withDeeperIndent();
         for (Relooper.Block theHandler : aMultiple.handlers()) {

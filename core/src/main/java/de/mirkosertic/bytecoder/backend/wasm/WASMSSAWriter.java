@@ -1769,52 +1769,67 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeSimpleBlock(Relooper.SimpleBlock aSimpleBlock) {
-        print("(block $");
-        print(aSimpleBlock.label().name());
-        println();
+        WASMSSAWriter theWriter = this;
+        if (aSimpleBlock.isLabelRequired()) {
+            print("(block $");
+            print(aSimpleBlock.label().name());
+            println();
 
-        WASMSSAWriter theChild = withDeeperIndent();
-        theChild.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+            theWriter = theWriter.withDeeperIndent();
+        }
 
-        println(")");
+        theWriter.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+
+        if (aSimpleBlock.isLabelRequired()) {
+            println(")");
+        }
 
         writeReloopedInternal(aSimpleBlock.next());
     }
 
     private void writeLoopBlock(Relooper.LoopBlock aLoopBlock) {
-        print("(block $");
-        print(aLoopBlock.label().name());
-        println();
+        WASMSSAWriter theWriter = this;
+        if (aLoopBlock.isLabelRequired()) {
+            print("(block $");
+            print(aLoopBlock.label().name());
+            println();
+            theWriter = theWriter.withDeeperIndent();
+        }
 
-        WASMSSAWriter theChild = withDeeperIndent();
-        theChild.print("(loop $");
-        theChild.print(aLoopBlock.label().name());
-        theChild.println("_inner");
+        theWriter.print("(loop $");
+        theWriter.print(aLoopBlock.label().name());
+        theWriter.println("_inner");
 
-        WASMSSAWriter theChild2 = theChild.withDeeperIndent();
+        WASMSSAWriter theChild2 = theWriter.withDeeperIndent();
         theChild2.writeReloopedInternal(aLoopBlock.inner());
 
-        theChild.println(")");
-        println(")");
+        theWriter.println(")");
+
+        if (aLoopBlock.isLabelRequired()) {
+            println(")");
+        }
 
         writeReloopedInternal(aLoopBlock.next());
     }
 
     private void writeMultipleBlock(Relooper.MultipleBlock aMultipleBlock) {
-        print("(block $");
-        print(aMultipleBlock.label().name());
-        println();
+        WASMSSAWriter theWriter = this;
+        if (aMultipleBlock.isLabelRequired()) {
+            print("(block $");
+            print(aMultipleBlock.label().name());
+            println();
+            theWriter = theWriter.withDeeperIndent();
+        }
 
-        WASMSSAWriter theChild = withDeeperIndent();
-        theChild.print("(loop $");
-        theChild.print(aMultipleBlock.label().name());
-        theChild.println("_inner");
+        theWriter.print("(loop $");
+        theWriter.print(aMultipleBlock.label().name());
+        theWriter.println("_inner");
 
         for (Relooper.Block theHandler : aMultipleBlock.handlers()) {
             for (GraphNode theEntry : theHandler.entries()) {
                 int theEntryAddress = theEntry.getStartAddress().getAddress();
 
-                WASMSSAWriter theChild2 = theChild.withDeeperIndent();
+                WASMSSAWriter theChild2 = theWriter.withDeeperIndent();
 
                 theChild2.print("(block $case_");
                 theChild2.print(theEntryAddress);
@@ -1833,9 +1848,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
             }
         }
 
-        theChild.println(")");
+        theWriter.println(")");
 
-        println(")");
+        if (aMultipleBlock.isLabelRequired()) {
+            println(")");
+        }
 
         writeReloopedInternal(aMultipleBlock.next());
     }
