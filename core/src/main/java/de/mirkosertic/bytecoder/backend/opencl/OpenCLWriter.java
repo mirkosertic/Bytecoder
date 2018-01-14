@@ -22,7 +22,6 @@ import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
@@ -167,13 +166,14 @@ public class OpenCLWriter extends IndentSSAWriter {
 
     private void writeExpressions(ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
-            if (theExpression instanceof CommentExpression) {
-                if (options.isDebugOutput()) {
-                    CommentExpression theComment = (CommentExpression) theExpression;
+            if (options.isDebugOutput()) {
+                String theComment = theExpression.getComment();
+                if (theComment != null && theComment.length() > 0) {
                     print("// ");
-                    println(theComment.getValue());
+                    println(theComment);
                 }
-            } else if (theExpression instanceof InitVariableExpression) {
+            }
+            if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
                 print(toType(theInit.getVariable().resolveType()));
                 print(" ");

@@ -647,16 +647,14 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         }
                     }
                     if (theSuccessors.size() == 1) {
-                        theNode.getExpressions().add(new CommentExpression("Resolving pass thru direct"));
-                        theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()));
+                        theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()).withComment("Resolving pass thru direct"));
                     } else {
                         theSuccessors = theNode.getSuccessors();
                         if (theSuccessors.size() == 1) {
                             // We will use this one
                             // Sometimes, there is a conditional jump to the only following successor of the block. This
                             // will be eliminated by the previous logic
-                            theNode.getExpressions().add(new CommentExpression("Resolving pass thru direct safety net"));
-                            theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()));
+                            theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()).withComment("Resolving pass thru direct safety net"));
                         } else {
                             throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
                         }
@@ -708,9 +706,9 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         GotoExpression theGoto = (GotoExpression) aPoint.expression;
                         GraphNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.getJumpTarget());
                         BlockState theImportingState = theGotoNode.toStartState();
+                        String theComments = "";
                         for (Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
-                            CommentExpression theComment = new CommentExpression(theImporting.getKey() + " is of type " + theImporting.getValue().resolveType().resolve()+ " with values " + theImporting.getValue().consumedValues(Value.ConsumptionType.INITIALIZATION) + " with PHI " + theImporting.getValue().consumedValues(Value.ConsumptionType.PHIPROPAGATE));
-                            aPoint.expressionList.addBefore(theComment, theGoto);
+                            theComments = theComments + theImporting.getKey() + " is of type " + theImporting.getValue().resolveType().resolve()+ " with values " + theImporting.getValue().consumedValues(Value.ConsumptionType.INITIALIZATION) + " with PHI " + theImporting.getValue().consumedValues(Value.ConsumptionType.PHIPROPAGATE);
                             Value theReceivingValue = theImporting.getValue();
                             ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                             Value theExportingValue = theHelper.requestValue(theImporting.getKey());
@@ -722,6 +720,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                                 aPoint.expressionList.addBefore(theInit, theGoto);
                             }
                         }
+                        theGoto.withComment(theComments);
                     }
                 });
             }
@@ -810,8 +809,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         BytecodeBasicBlock theBytecodeBlock = aBlocksByAddress.apply(aTargetBlock.getStartAddress());
 
         for (BytecodeInstruction theInstruction : theBytecodeBlock.getInstructions()) {
-
-            aTargetBlock.addExpression(new CommentExpression(" OP " + theInstruction.getOpcodeAddress().getAddress()));
 
             if (theInstruction instanceof BytecodeInstructionNOP) {
                 BytecodeInstructionNOP theINS = (BytecodeInstructionNOP) theInstruction;
@@ -1658,8 +1655,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
         }
-
-        aTargetBlock.addExpression(new CommentExpression("Final stack size is " + aHelper.stack.size()));
 
         aHelper.finalizeExportState();
     }

@@ -43,15 +43,7 @@ public class ExpressionList {
             return null;
         }
         int theLastIndex = expressions.size() - 1;
-        Expression theLast = expressions.get(theLastIndex);
-        while(theLast instanceof CommentExpression) {
-            theLastIndex--;
-            if (theLastIndex < 0) {
-                return null;
-            }
-            theLast = expressions.get(theLastIndex);
-        }
-        return theLast;
+        return expressions.get(theLastIndex);
     }
 
     public void addBefore(Expression aNewExpression, Expression aTarget) {
