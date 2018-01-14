@@ -16,4 +16,15 @@
 package de.mirkosertic.bytecoder.ssa;
 
 public class Expression {
+
+    private String comment;
+
+    public <T extends Expression> T withComment(String aComment) {
+        comment = aComment;
+        return (T) this;
+    }
+
+    public String getComment() {
+        return comment;
+    }
 }

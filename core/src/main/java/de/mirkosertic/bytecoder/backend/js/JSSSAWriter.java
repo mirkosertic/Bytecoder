@@ -15,11 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
@@ -38,7 +33,6 @@ import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
@@ -102,6 +96,11 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
+
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -635,16 +634,17 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void writeExpressions(ExpressionList aExpressions) {
         for (Expression theExpression : aExpressions.toList()) {
+            if (options.isDebugOutput()) {
+                String theComment = theExpression.getComment();
+                if (theComment != null && theComment.length() > 0) {
+                    print("// ");
+                    println(theComment);
+                }
+            }
             if (theExpression instanceof ReturnExpression) {
                 ReturnExpression theE = (ReturnExpression) theExpression;
                 print("return");
                 println(";");
-            } else if (theExpression instanceof CommentExpression) {
-                if (options.isDebugOutput()) {
-                    CommentExpression theE = (CommentExpression) theExpression;
-                    print("// ");
-                    println(theE.getValue());
-                }
             } else if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theE = (InitVariableExpression) theExpression;
                 Variable theVariable = theE.getVariable();

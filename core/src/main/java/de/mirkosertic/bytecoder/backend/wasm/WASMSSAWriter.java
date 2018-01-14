@@ -15,11 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
@@ -42,7 +37,6 @@ import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CommentExpression;
 import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
@@ -102,6 +96,11 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -232,15 +231,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeExpression(Expression aExpression) {
+        if (options.isDebugOutput()) {
+            String theComment = aExpression.getComment();
+            if (theComment != null && theComment.length() > 0) {
+                print(";; ");
+                println(theComment);
+            }
+        }
+
         if (aExpression instanceof CheckCastExpression) {
             return;
         }
         if (aExpression instanceof ReturnExpression) {
             writeReturnExpression((ReturnExpression) aExpression);
-            return;
-        }
-        if (aExpression instanceof CommentExpression) {
-            writeCommentExpression((CommentExpression) aExpression);
             return;
         }
         if (aExpression instanceof InitVariableExpression) {
@@ -1660,13 +1663,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
             }
             default:
                 throw new IllegalStateException("Operator not supported : " + aValue.getOperator());
-        }
-    }
-
-    private void writeCommentExpression(CommentExpression aExpression) {
-        if (options.isDebugOutput()) {
-            print(";; ");
-            println(aExpression.getValue());
         }
     }
 
