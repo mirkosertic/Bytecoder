@@ -19,11 +19,16 @@ import de.mirkosertic.bytecoder.backend.CompileResult;
 
 public class OpenCLCompileResult implements CompileResult<String> {
 
-    public OpenCLCompileResult() {
+    private final OpenCLInputOutputs inputOutputs;
+    private final String kernelSource;
+
+    public OpenCLCompileResult(OpenCLInputOutputs aInputOutputs, String aKernelSource) {
+        inputOutputs = aInputOutputs;
+        kernelSource = aKernelSource;
     }
 
     @Override
     public String getData() {
-        return null;
+        return kernelSource;
     }
 }

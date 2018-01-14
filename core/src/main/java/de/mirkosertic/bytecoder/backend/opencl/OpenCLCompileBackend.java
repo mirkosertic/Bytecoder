@@ -25,14 +25,22 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.Value;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -75,8 +83,17 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
         // Ok, at this point we have to map kernel arguments
         // Every member of the kernel class becomes a kernel function argument
+        OpenCLInputOutputs theInputOutputs;
+        try {
+            theInputOutputs = inputOutputsFor(aEntryPointClass, theSSAProgram);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // And then we ca pass it to the code generator to generate the kernel code
+
         StringWriter theStrWriter = new StringWriter();
-        OpenCLWriter theSSAWriter = new OpenCLWriter(aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext);
+        OpenCLWriter theSSAWriter = new OpenCLWriter(aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
 
         // Try to reloop it!
         if (aOptions.isRelooper()) {
@@ -84,21 +101,60 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 Relooper theRelooper = new Relooper();
                 Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                theSSAWriter.writeRelooped(theReloopedBlock);
+                theSSAWriter.printRelooped(theReloopedBlock);
             } catch (Exception e) {
                 throw new IllegalStateException("Error relooping cfg", e);
             }
         } else {
-            // Fallback, as this generates slower and larger code.
-            ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
-            theSSAWriter.writeStartNode(theNode);
+            throw new IllegalArgumentException("Code generation only supported with Relooper enabled!");
         }
 
-        return new OpenCLCompileResult();
+        return new OpenCLCompileResult(theInputOutputs, theStrWriter.toString());
     }
 
     @Override
     public String generatedFileName() {
         return "unused";
+    }
+
+    private OpenCLInputOutputs inputOutputsFor(Class aSourceClass, Program aProgram) throws NoSuchFieldException {
+        OpenCLInputOutputs theResult = new OpenCLInputOutputs();
+        for (GraphNode theNode : aProgram.getControlFlowGraph().getKnownNodes()) {
+            fillInputOutputs(aSourceClass, theNode.getExpressions(), theResult);
+        }
+        return theResult;
+    }
+
+    private void fillInputOutputs(Class aSourceClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) throws NoSuchFieldException {
+        for (Expression theExpression : aExpressionList.toList()) {
+            if (theExpression instanceof ExpressionListContainer) {
+                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                    fillInputOutputs(aSourceClass, theList, aInputOutputs);
+                }
+            }
+            if (theExpression instanceof PutFieldExpression) {
+                PutFieldExpression theField = (PutFieldExpression) theExpression;
+                Field theJVMField = aSourceClass.getDeclaredField(theField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+                aInputOutputs.registerWriteTo(theJVMField);
+
+                registerInputs(aSourceClass, theField.getValue(), aInputOutputs);
+            }
+            if (theExpression instanceof InitVariableExpression) {
+                InitVariableExpression theInit = (InitVariableExpression) theExpression;
+                registerInputs(aSourceClass, theInit.getValue(), aInputOutputs);
+            }
+        }
+    }
+
+    private void registerInputs(Class aSourceClass, Value aValue, OpenCLInputOutputs aInputOutputs) throws NoSuchFieldException {
+        if (aValue instanceof GetFieldValue) {
+            GetFieldValue theGetField = (GetFieldValue) aValue;
+
+            Field theJVMField = aSourceClass.getDeclaredField(theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+            aInputOutputs.registerReadFrom(theJVMField);
+        }
     }
 }
