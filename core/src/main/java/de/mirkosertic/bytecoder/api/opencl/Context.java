@@ -103,7 +103,6 @@ public class Context implements AutoCloseable {
             throw new IllegalArgumentException("A kernel must have exactly one declared method!");
         }
 
-        // TODO: Implement Kernel Caching here
         Method theMethod = theMethods[0];
 
         BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
@@ -114,21 +113,9 @@ public class Context implements AutoCloseable {
 
         System.out.println(theResult.getData());
 
-        String thePRG = "__kernel void BytecoderKernel(__global const float* val$theA, __global const float* val$theB, __global float* val$theResult) {\n" +
-                "    int $__label__ = 0;\n" +
-                "    $S_0 : {\n" +
-                "        int var1 = get_global_id(0);\n" +
-                "        float var4 = val$theA[var1];\n" +
-                "        float var7 = val$theB[var1];\n" +
-                "        float var9 = var4 + var7;\n" +
-                "        val$theResult[var1] = var9;\n" +
-                "        return;\n" +
-                "    }\n" +
-                "}\n";
-
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,
-                1, new String[]{ thePRG }, null, null);
+                1, new String[]{ theResult.getData() }, null, null);
 
         clBuildProgram(theCLProgram, 0, null, null, null, null);
 

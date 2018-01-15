@@ -21,7 +21,6 @@ import java.util.Set;
 
 public class TableSwitchExpression extends Expression implements ExpressionListContainer {
 
-    private final Value value;
     private final long lowValue;
     private final long highValue;
     private final ExpressionList defaultExpressions;
@@ -29,7 +28,7 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
 
     public TableSwitchExpression(Value aValue, long aLowValue, long aHighValue,
             ExpressionList aDefaultPath, Map<Long, ExpressionList> aPathPerOffset) {
-        value = aValue;
+        consume(ConsumptionType.ARGUMENT, aValue);
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
@@ -37,7 +36,7 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
     }
 
     public Value getValue() {
-        return value;
+        return resolveFirstArgument();
     }
 
     public long getLowValue() {

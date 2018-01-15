@@ -204,7 +204,6 @@ public class GraphNode {
                 theLastExpression instanceof TableSwitchExpression ||
                 theLastExpression instanceof LookupSwitchExpression ||
                 theLastExpression instanceof ThrowExpression ||
-                theLastExpression instanceof ExtendedIFExpression ||
                 theLastExpression instanceof GotoExpression;
     }
 

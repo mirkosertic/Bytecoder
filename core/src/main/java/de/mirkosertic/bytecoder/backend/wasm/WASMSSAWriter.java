@@ -48,7 +48,6 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExtendedIFExpression;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.FloorValue;
@@ -256,10 +255,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
         if (aExpression instanceof IFExpression) {
             writeIFExpression((IFExpression) aExpression);
-            return;
-        }
-        if (aExpression instanceof ExtendedIFExpression) {
-            writeExtendedIFExpression((ExtendedIFExpression) aExpression);
             return;
         }
         if (aExpression instanceof GotoExpression) {
@@ -605,41 +600,6 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theChild.println(")");
 
         theChild.writeExpressionList(aExpression.getExpressions());
-
-        println(")");
-    }
-
-    private void writeExtendedIFExpression(ExtendedIFExpression aExpression) {
-
-        print("(block $");
-        print(aExpression.getAddress().getAddress());
-        println("_outer");
-
-        WASMSSAWriter theChild1 = withDeeperIndent();
-
-        theChild1.print("(block $");
-        theChild1.print(aExpression.getAddress().getAddress());
-        theChild1.println("_inner");
-
-        WASMSSAWriter theChild2 = theChild1.withDeeperIndent();
-
-        theChild2.print("(br_if $");
-        theChild2.print(aExpression.getAddress().getAddress());
-        theChild2.println("_inner");
-
-        WASMSSAWriter theChild3 = theChild2.withDeeperIndent();
-        theChild3.print("(i32.eq ");
-        theChild3.writeValue(aExpression.getBooleanValue());
-        theChild3.print(" (i32.const 0)");
-        theChild3.println(")");
-
-        theChild2.println(")");
-
-        theChild2.writeExpressionList(aExpression.getTrueBranch());
-
-        theChild1.println(")");
-
-        theChild1.writeExpressionList(aExpression.getFalseBranch());
 
         println(")");
     }

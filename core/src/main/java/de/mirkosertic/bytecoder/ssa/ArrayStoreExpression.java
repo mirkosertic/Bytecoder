@@ -18,15 +18,12 @@ package de.mirkosertic.bytecoder.ssa;
 public class ArrayStoreExpression extends Expression {
 
     private final TypeRef arrayType;
-    private final Value array;
-    private final Value index;
-    private final Value value;
 
     public ArrayStoreExpression(TypeRef aArrayType, Value aArray, Value aIndex, Value aValue) {
+        consume(ConsumptionType.ARGUMENT, aArray);
+        consume(ConsumptionType.ARGUMENT, aIndex);
+        consume(ConsumptionType.ARGUMENT, aValue);
         arrayType = aArrayType;
-        array = aArray;
-        index = aIndex;
-        value = aValue;
     }
 
     public TypeRef getArrayType() {
@@ -34,14 +31,14 @@ public class ArrayStoreExpression extends Expression {
     }
 
     public Value getArray() {
-        return array;
+        return resolveFirstArgument();
     }
 
     public Value getIndex() {
-        return index;
+        return resolveSecondArgument();
     }
 
     public Value getValue() {
-        return value;
+        return resolveThirdArgument();
     }
 }

@@ -17,13 +17,11 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class DirectInvokeMethodExpression extends Expression {
 
-    private final DirectInvokeMethodValue value;
-
-    public DirectInvokeMethodExpression(DirectInvokeMethodValue value) {
-        this.value = value;
+    public DirectInvokeMethodExpression(DirectInvokeMethodValue aValue) {
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public DirectInvokeMethodValue getValue() {
-        return value;
+        return resolveFirstArgument();
     }
 }

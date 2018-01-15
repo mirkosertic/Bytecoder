@@ -72,4 +72,12 @@ public class ExpressionList {
     public void remove(Expression aExpression) {
         expressions.remove(aExpression);
     }
+
+    public Expression predecessorOf(Expression aExpression) {
+        int p = expressions.indexOf(aExpression);
+        if (p>0) {
+            return expressions.get(p-1);
+        }
+        return null;
+    }
 }

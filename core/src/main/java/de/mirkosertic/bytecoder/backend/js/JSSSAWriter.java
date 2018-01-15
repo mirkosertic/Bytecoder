@@ -44,7 +44,6 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExtendedIFExpression;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.FloorValue;
@@ -797,23 +796,6 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(";");
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
-            } else if (theExpression instanceof ExtendedIFExpression) {
-                ExtendedIFExpression theIF = (ExtendedIFExpression) theExpression;
-                print("if (");
-                print(theIF.getBooleanValue());
-                println(") {");
-
-                JSSSAWriter theDeeper1 = withDeeperIndent();
-                theDeeper1.writeExpressions(theIF.getTrueBranch());
-                theDeeper1.println();
-
-                println("} else {");
-
-                JSSSAWriter theDeeper2 = withDeeperIndent();
-                theDeeper2.writeExpressions(theIF.getFalseBranch());
-                theDeeper2.println();
-
-                println("}");
             } else if (theExpression instanceof BreakExpression) {
                 BreakExpression theBreak = (BreakExpression) theExpression;
                 print("__label__ = ");

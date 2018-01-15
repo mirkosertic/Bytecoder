@@ -17,22 +17,19 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class InitVariableExpression extends Expression {
 
-    private final Variable variable;
-    private final Value value;
-
     public InitVariableExpression(Variable aVariable, Value aValue) {
         if (aValue == null) {
             throw new IllegalStateException("Null not allowed");
         }
-        variable = aVariable;
-        value = aValue;
+        consume(ConsumptionType.ARGUMENT, aVariable);
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public Value getValue() {
-        return value;
+        return resolveSecondArgument();
     }
 
     public Variable getVariable() {
-        return variable;
+        return resolveFirstArgument();
     }
 }

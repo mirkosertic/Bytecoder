@@ -17,13 +17,11 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class InvokeStaticMethodExpression extends Expression {
 
-    private final InvokeStaticMethodValue value;
-
-    public InvokeStaticMethodExpression(InvokeStaticMethodValue value) {
-        this.value = value;
+    public InvokeStaticMethodExpression(InvokeStaticMethodValue aValue) {
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public InvokeStaticMethodValue getValue() {
-        return value;
+        return resolveFirstArgument();
     }
 }

@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class Expression {
+public class Expression extends Value {
 
     private String comment;
 
@@ -26,5 +26,10 @@ public class Expression {
 
     public String getComment() {
         return comment;
+    }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.VOID;
     }
 }
