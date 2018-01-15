@@ -175,6 +175,9 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
             if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
+                if (theInit.getVariable().resolveType().resolve() == TypeRef.Native.REFERENCE) {
+                    print("__global ");
+                }
                 print(toType(theInit.getVariable().resolveType()));
                 print(" ");
                 print(theInit.getVariable().getName());

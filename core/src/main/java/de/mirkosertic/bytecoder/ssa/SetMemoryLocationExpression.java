@@ -17,19 +17,16 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class SetMemoryLocationExpression extends Expression {
 
-    private final Value address;
-    private final Value value;
-
     public SetMemoryLocationExpression(Value aAddress, Value aValue) {
-        address = aAddress;
-        value = aValue;
+        consume(ConsumptionType.ARGUMENT, aAddress);
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public Value getAddress() {
-        return address;
+        return resolveFirstArgument();
     }
 
     public Value getValue() {
-        return value;
+        return resolveSecondArgument();
     }
 }

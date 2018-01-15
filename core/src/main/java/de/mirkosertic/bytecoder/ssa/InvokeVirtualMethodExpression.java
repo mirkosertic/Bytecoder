@@ -17,14 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class InvokeVirtualMethodExpression extends Expression {
 
-    private final InvokeVirtualMethodValue value;
-
-    public InvokeVirtualMethodExpression(InvokeVirtualMethodValue value) {
-        this.value = value;
+    public InvokeVirtualMethodExpression(InvokeVirtualMethodValue aValue) {
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public InvokeVirtualMethodValue getValue() {
-        return value;
+        return resolveFirstArgument();
     }
 
 

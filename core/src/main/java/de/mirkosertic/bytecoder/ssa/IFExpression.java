@@ -23,13 +23,12 @@ import java.util.Set;
 public class IFExpression extends Expression implements ExpressionListContainer {
 
     private final BytecodeOpcodeAddress address;
-    private final Value booleanValue;
     private final ExpressionList expressions;
     private final BytecodeOpcodeAddress gotoAddress;
 
     public IFExpression(BytecodeOpcodeAddress aAddress, BytecodeOpcodeAddress aGotoAddress, Value aBooleanValue, ExpressionList aExpressions) {
+        consume(ConsumptionType.ARGUMENT, aBooleanValue);
         address = aAddress;
-        booleanValue = aBooleanValue;
         expressions = aExpressions;
         gotoAddress = aGotoAddress;
     }
@@ -43,7 +42,7 @@ public class IFExpression extends Expression implements ExpressionListContainer 
     }
 
     public Value getBooleanValue() {
-        return booleanValue;
+        return resolveFirstArgument();
     }
 
     public ExpressionList getExpressions() {

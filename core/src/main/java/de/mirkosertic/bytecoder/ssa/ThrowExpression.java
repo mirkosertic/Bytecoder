@@ -17,13 +17,11 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ThrowExpression extends Expression {
 
-    private final Value value;
-
     public ThrowExpression(Value aValue) {
-        value = aValue;
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     public Value getValue() {
-        return value;
+        return resolveFirstArgument();
     }
 }

@@ -28,7 +28,7 @@ public abstract class Value {
 
     public static class Consumption {
         private final ConsumptionType type;
-        private final Value value;
+        private Value value;
 
         public Consumption(ConsumptionType aType, Value aValue) {
             type = aType;
@@ -42,6 +42,22 @@ public abstract class Value {
     public Value() {
         providesValueFor = new HashSet<>();
         consumesValueFrom = new ArrayList<>();
+    }
+
+    public int getUsageCount() {
+        return providesValueFor.size();
+    }
+
+    public void replaceInConsumedValues(Value aOldValue, Value aNewValue) {
+        if (providesValueFor.contains(aOldValue)) {
+            providesValueFor.remove(aOldValue);
+            providesValueFor.add(aNewValue);
+        }
+        for (Consumption theConsumption : consumesValueFrom) {
+            if (theConsumption.value == aOldValue) {
+                theConsumption.value = aNewValue;
+            }
+        }
     }
 
     public <T extends Value> List<T> consumedValues(ConsumptionType aType) {
