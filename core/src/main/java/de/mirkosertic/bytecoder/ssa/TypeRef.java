@@ -16,13 +16,28 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public interface TypeRef {
 
+    interface ArrayTypeRef extends TypeRef {
+
+        BytecodeArrayTypeRef arrayType();
+    }
+
+    interface ObjectTypeRef extends TypeRef {
+
+        BytecodeObjectTypeRef objectType();
+    }
+
     Native resolve();
+
+    boolean isArray();
+
+    boolean isObject();
 
     enum Native implements TypeRef {
         UNKNOWN {
@@ -135,6 +150,11 @@ public interface TypeRef {
 
                 }
             }
+
+            @Override
+            public boolean isObject() {
+                return true;
+            }
         },VOID {
             @Override
             public Native eventuallyPromoteTo(Native aOtherType) {
@@ -153,15 +173,45 @@ public interface TypeRef {
             return this;
         }
 
+        @Override
+        public boolean isArray() {
+            return false;
+        }
+
+        @Override
+        public boolean isObject() {
+            return false;
+        }
+
         public abstract Native eventuallyPromoteTo(Native aOtherType);
     }
 
-    public static TypeRef toType(BytecodeTypeRef aTypeRef) {
+    static TypeRef toType(final BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isVoid()) {
             return Native.VOID;
         }
         if (aTypeRef.isArray()) {
-            return Native.REFERENCE;
+            return new ArrayTypeRef() {
+                @Override
+                public BytecodeArrayTypeRef arrayType() {
+                    return (BytecodeArrayTypeRef) aTypeRef;
+                }
+
+                @Override
+                public boolean isArray() {
+                    return true;
+                }
+
+                @Override
+                public Native resolve() {
+                    return Native.REFERENCE;
+                }
+
+                @Override
+                public boolean isObject() {
+                    return true;
+                }
+            };
         }
         if (aTypeRef.isPrimitive()) {
             BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
@@ -191,6 +241,26 @@ public interface TypeRef {
         if (BytecodeObjectTypeRef.fromRuntimeClass(Address.class).equals(aTypeRef)) {
             return TypeRef.Native.INT;
         }
-        return Native.REFERENCE;
+        return new ObjectTypeRef() {
+            @Override
+            public BytecodeObjectTypeRef objectType() {
+                return (BytecodeObjectTypeRef) aTypeRef;
+            }
+
+            @Override
+            public Native resolve() {
+                return Native.REFERENCE;
+            }
+
+            @Override
+            public boolean isArray() {
+                return false;
+            }
+
+            @Override
+            public boolean isObject() {
+                return true;
+            }
+        };
     }
 }

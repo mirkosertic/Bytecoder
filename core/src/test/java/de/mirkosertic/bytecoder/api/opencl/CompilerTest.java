@@ -41,7 +41,34 @@ public class CompilerTest {
                 int id = get_global_id(0);
                 float a = theA[id];
                 float b = theB[id];
-                theResult[id] = a + b;
+
+                byte b1 = (byte) 1;
+                short s2 = (short) 2;
+                int s3 = 3;
+                long s4 = 4;
+                float s5 = 5f;
+                double s6 = 6d;
+
+                int d;
+                if (a<b) {
+                    d = 100;
+                    int j = 100;
+                    int k = 2300;
+                    int c = 300;
+                    int dsd = 10010101;
+                } else {
+                    d = 200;
+                    int j = d * d * d * d;
+                    int k = 2300;
+                    int c = 300;
+                    int dsd = 10010101;
+                }
+
+                for (int lala = 100; lala < 200; lala++) {
+                    int k = 100;
+                }
+
+                theResult[id] = a + b + d;
             }
         };
     }
@@ -53,6 +80,48 @@ public class CompilerTest {
         CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
 
         Kernel theKernel = createKernel();
+        Class theKernelClass = theKernel.getClass();
+        System.out.println(theKernelClass);
+
+        Method[] theMethods = theKernelClass.getDeclaredMethods();
+        if (theMethods.length != 1) {
+            throw new IllegalArgumentException("A kernel must have exactly one declared method!");
+        }
+
+        Method theMethod = theMethods[0];
+
+        BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
+
+        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
+        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
+        OpenCLCompileResult theCompiedKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+
+        System.out.println(theCompiedKernel.getData());
+
+    }
+
+    static class Vec2 {
+        float x;
+        float y;
+    }
+
+    @Test
+    public void testKernelWithComplexType() {
+
+        OpenCLCompileBackend backend = new OpenCLCompileBackend();
+        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
+
+        Vec2[] theIn = new Vec2[10];
+        Vec2[] theOut = new Vec2[10];
+        Kernel theKernel = new Kernel() {
+            public void add() {
+                int theIndex = get_global_id(0);
+                Vec2 a = theIn[theIndex];
+                Vec2 b = theOut[theIndex];
+                b.x = a.x;
+                b.y = a.y;
+            }
+        };
         Class theKernelClass = theKernel.getClass();
         System.out.println(theKernelClass);
 

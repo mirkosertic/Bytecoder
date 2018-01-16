@@ -40,7 +40,6 @@ import de.mirkosertic.bytecoder.ssa.Value;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -85,7 +84,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         // Every member of the kernel class becomes a kernel function argument
         OpenCLInputOutputs theInputOutputs;
         try {
-            theInputOutputs = inputOutputsFor(aEntryPointClass, theSSAProgram);
+            theInputOutputs = inputOutputsFor(theLinkerContext, theKernelClass, theSSAProgram);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -117,44 +116,50 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         return "BytecoderKernel";
     }
 
-    private OpenCLInputOutputs inputOutputsFor(Class aSourceClass, Program aProgram) throws NoSuchFieldException {
+    private OpenCLInputOutputs inputOutputsFor(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aKernelClass, Program aProgram) throws NoSuchFieldException {
         OpenCLInputOutputs theResult = new OpenCLInputOutputs();
         for (GraphNode theNode : aProgram.getControlFlowGraph().getKnownNodes()) {
-            fillInputOutputs(aSourceClass, theNode.getExpressions(), theResult);
+            fillInputOutputs(aLinkerContext, aKernelClass, theNode.getExpressions(), theResult);
         }
         return theResult;
     }
 
-    private void fillInputOutputs(Class aSourceClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) throws NoSuchFieldException {
+    private void fillInputOutputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) throws NoSuchFieldException {
         for (Expression theExpression : aExpressionList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    fillInputOutputs(aSourceClass, theList, aInputOutputs);
+                    fillInputOutputs(aContext, aKernelClass, theList, aInputOutputs);
                 }
             }
             if (theExpression instanceof PutFieldExpression) {
-                PutFieldExpression theField = (PutFieldExpression) theExpression;
-                Field theJVMField = aSourceClass.getDeclaredField(theField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+                PutFieldExpression thePutField = (PutFieldExpression) theExpression;
 
-                aInputOutputs.registerWriteTo(theJVMField);
+                BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(thePutField.getField().getClassIndex().getClassConstant().getConstant()));
+                if (theClass == aKernelClass) {
+                    BytecodeLinkedClass.LinkedField theLinkedField = aKernelClass.memberFieldByName(
+                            thePutField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+                    aInputOutputs.registerWriteTo(theLinkedField);
+                }
 
-                registerInputs(aSourceClass, theField.getValue(), aInputOutputs);
             }
             if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
-                registerInputs(aSourceClass, theInit.getValue(), aInputOutputs);
+                registerInputs(aContext, aKernelClass, theInit.getValue(), aInputOutputs);
             }
         }
     }
 
-    private void registerInputs(Class aSourceClass, Value aValue, OpenCLInputOutputs aInputOutputs) throws NoSuchFieldException {
+    private void registerInputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, Value aValue, OpenCLInputOutputs aInputOutputs) {
         if (aValue instanceof GetFieldValue) {
             GetFieldValue theGetField = (GetFieldValue) aValue;
 
-            Field theJVMField = aSourceClass.getDeclaredField(theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-
-            aInputOutputs.registerReadFrom(theJVMField);
+            BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
+            if (theClass == aKernelClass) {
+                BytecodeLinkedClass.LinkedField theField = theClass.memberFieldByName(
+                        theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+                aInputOutputs.registerReadFrom(theField);
+            }
         }
     }
 }

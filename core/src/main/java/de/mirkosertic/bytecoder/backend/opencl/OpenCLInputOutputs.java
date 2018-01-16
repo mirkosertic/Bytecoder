@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 
 public class OpenCLInputOutputs {
 
@@ -30,15 +31,15 @@ public class OpenCLInputOutputs {
             INPUT, OUTPUT, INPUTOUTPUT
         }
 
-        private final Field field;
+        private final BytecodeLinkedClass.LinkedField field;
         private final Type type;
 
-        KernelArgument(Field aField, Type aType) {
-            this.field = aField;
-            this.type = aType;
+        KernelArgument(BytecodeLinkedClass.LinkedField aField, Type aType) {
+            field = aField;
+            type = aType;
         }
 
-        public Field getField() {
+        public BytecodeLinkedClass.LinkedField getField() {
             return field;
         }
 
@@ -53,30 +54,27 @@ public class OpenCLInputOutputs {
         values = new HashMap<>();
     }
 
-    public void registerReadFrom(Field aClassField) {
-        KernelArgument theArgument = values.get(aClassField.getName());
-        if (theArgument == null) {
-            theArgument = new KernelArgument(aClassField, KernelArgument.Type.INPUT);
-            values.put(aClassField.getName(), theArgument);
-        }
+    public void registerReadFrom(BytecodeLinkedClass.LinkedField aLinkedField) {
+        values.computeIfAbsent(aLinkedField.getField().getName().stringValue(),
+                k -> new KernelArgument(aLinkedField, KernelArgument.Type.INPUT));
     }
 
-    public void registerWriteTo(Field aClassField) {
-        KernelArgument theArgument = values.get(aClassField.getName());
+    public void registerWriteTo(BytecodeLinkedClass.LinkedField aLinkedField) {
+        KernelArgument theArgument = values.get(aLinkedField.getField().getName().stringValue());
         if (theArgument == null) {
-            theArgument = new KernelArgument(aClassField, KernelArgument.Type.OUTPUT);
-            values.put(aClassField.getName(), theArgument);
+            theArgument = new KernelArgument(aLinkedField, KernelArgument.Type.OUTPUT);
+            values.put(aLinkedField.getField().getName().stringValue(), theArgument);
         } else {
             if (theArgument.type == KernelArgument.Type.INPUT) {
-                theArgument = new KernelArgument(aClassField, KernelArgument.Type.INPUTOUTPUT);
-                values.put(aClassField.getName(), theArgument);
+                theArgument = new KernelArgument(aLinkedField, KernelArgument.Type.INPUTOUTPUT);
+                values.put(aLinkedField.getField().getName().stringValue(), theArgument);
             }
         }
     }
 
     public List<KernelArgument> arguments() {
         List<KernelArgument> theResult = new ArrayList<>(values.values());
-        theResult.sort(Comparator.comparing(o -> o.field.getName()));
+        theResult.sort(Comparator.comparing(o -> o.field.getField().getName().stringValue()));
         return theResult;
     }
 }
