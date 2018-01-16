@@ -20,7 +20,7 @@ import org.junit.Test;
 public class ContextTest {
 
     @Test
-    public void testSimpleAdd() {
+    public void testSimpleAdd() throws Exception {
         PlatformFactory theFactory = new PlatformFactory();
         Platform thePlatform = theFactory.createPlatform();
 

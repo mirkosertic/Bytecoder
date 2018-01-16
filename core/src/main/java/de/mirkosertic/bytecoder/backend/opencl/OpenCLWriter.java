@@ -18,18 +18,28 @@ package de.mirkosertic.bytecoder.backend.opencl;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
+import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -55,15 +65,20 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print(", ");
             }
             OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
+            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getField().getTypeRef());
             switch (theArgument.getType()) {
                 case INPUT:
-                    print("__global const float* ");
-                    print(theArgument.getField().getName());
+                    print("__global const ");
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument.getField().getField().getName().stringValue());
                     break;
                 case OUTPUT:
                 case INPUTOUTPUT:
-                    print("__global float* ");
-                    print(theArgument.getField().getName());
+                    print("__global ");
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument.getField().getField().getName().stringValue());
                     break;
             }
         }
@@ -195,22 +210,72 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print("] = ");
                 printValue(theValue);
                 println(";");
+            } else if (theExpression instanceof IFExpression) {
+                IFExpression theE = (IFExpression) theExpression;
+                print("if (");
+                printValue(theE.getBooleanValue());
+                println(") {");
+
+                withDeeperIndent().writeExpressions(theE.getExpressions());
+
+                println("}");
+            } else if (theExpression instanceof BreakExpression) {
+                BreakExpression theBreak = (BreakExpression) theExpression;
+                print("$__label__ = ");
+                print(theBreak.jumpTarget().getAddress());
+                println(";");
+                print("break $");
+                print(theBreak.blockToBreak().name());
+                println(";");
+
+            } else if (theExpression instanceof ContinueExpression) {
+                ContinueExpression theContinue = (ContinueExpression) theExpression;
+                print("$__label__ = ");
+                print(theContinue.jumpTarget().getAddress());
+                println(";");
+                print("continue $");
+                print(theContinue.labelToReturnTo().name());
+                println(";");
+
             } else if (theExpression instanceof ReturnExpression) {
                 println("return;");
+            } else if (theExpression instanceof PutFieldExpression) {
+                println("// PUTFIELD TODO");
             } else {
                 throw new IllegalArgumentException("Not supported. " + theExpression);
             }
         }
     }
 
+    private String toStructName(BytecodeObjectTypeRef aObjectType) {
+        String theName = aObjectType.name();
+        int p = theName.lastIndexOf(".");
+        if (p>=0) {
+            return theName.substring(p+1);
+        }
+        return theName;
+    }
+
     private String toType(TypeRef aType) {
+        if (aType.isArray()) {
+            TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
+            return toType(TypeRef.toType(theArray.arrayType().getType())) + "*";
+        }
+        if (aType instanceof TypeRef.ObjectTypeRef) {
+            TypeRef.ObjectTypeRef theObject = (TypeRef.ObjectTypeRef) aType;
+            return toStructName(theObject.objectType());
+        }
         switch (aType.resolve()) {
             case INT:
                 return "int";
             case FLOAT:
                 return "float";
+            case LONG:
+                return "long";
+            case DOUBLE:
+                return "double";
             case REFERENCE:
-                return "float*";
+                return "void*";
             default:
                 throw new IllegalArgumentException("Not supported : " + aType.resolve());
         }
@@ -228,24 +293,105 @@ public class OpenCLWriter extends IndentSSAWriter {
             printArrayEntryValue((ArrayEntryValue) aValue);
         } else if (aValue instanceof BinaryValue) {
             printBinaryValue((BinaryValue) aValue);
+        } else if (aValue instanceof IntegerValue) {
+            printIntegerValue((IntegerValue) aValue);
+        } else if (aValue instanceof LongValue) {
+            printLongValue((LongValue) aValue);
+        } else if (aValue instanceof FloatValue) {
+            printFloatValue((FloatValue) aValue);
+        } else if (aValue instanceof DoubleValue) {
+            printDoubleValue((DoubleValue) aValue);
+        } else if (aValue instanceof TypeConversionValue) {
+            printTypeConversionValue((TypeConversionValue) aValue);
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }
     }
 
+    private void printTypeConversionValue(TypeConversionValue aValue) {
+        print("((");
+        print(toType(aValue.resolveType()));
+        print(") ");
+        printValue(aValue.resolveFirstArgument());
+        print(")");
+    }
+
+    private void printDoubleValue(DoubleValue aValue) {
+        print(aValue.getDoubleValue());
+    }
+
+    private void printFloatValue(FloatValue aValue) {
+        print(aValue.getFloatValue());
+    }
+
+    private void printLongValue(LongValue aValue) {
+        print(aValue.getLongValue());
+    }
+
+    private void printIntegerValue(IntegerValue aValue) {
+        print(aValue.getIntValue());
+    }
+
     private void printBinaryValue(BinaryValue aValue) {
+        Value theValue1 = aValue.resolveFirstArgument();
+        printValue(theValue1);
         switch (aValue.getOperator()) {
-            case ADD: {
-                Value theValue1 = aValue.resolveFirstArgument();
-                Value theValue2 = aValue.resolveSecondArgument();
-                printValue(theValue1);
-                print(" + ");
-                printValue(theValue2);
-                break;
-            }
-            default:
-                throw new IllegalStateException("Not supported " + aValue.getOperator());
+        case ADD:
+            print(" + ");
+            break;
+        case DIV:
+            print(" / ");
+            break;
+        case MUL:
+            print(" * ");
+            break;
+        case SUB:
+            print(" - ");
+            break;
+        case EQUALS:
+            print(" == ");
+            break;
+        case BINARYOR:
+            print(" | ");
+            break;
+        case LESSTHAN:
+            print(" < ");
+            break;
+        case BINARYAND:
+            print(" & ");
+            break;
+        case BINARYXOR:
+            print(" ^ ");
+            break;
+        case NOTEQUALS:
+            print(" != ");
+            break;
+        case REMAINDER:
+            print(" % ");
+            break;
+        case GREATERTHAN:
+            print(" > ");
+            break;
+        case BINARYSHIFTLEFT:
+            print(" << ");
+            break;
+        case GREATEROREQUALS:
+            print(" >= ");
+            break;
+        case BINARYSHIFTRIGHT:
+            print(" >> ");
+            break;
+        case LESSTHANOREQUALS:
+            print(" <= ");
+            break;
+        case BINARYUNSIGNEDSHIFTRIGHT:
+            print(" >>> ");
+            break;
+        default:
+            throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
         }
+        Value theValue2 = aValue.resolveSecondArgument();
+        printValue(theValue2);
     }
 
     private void printGetFieldValue(GetFieldValue aValue) {

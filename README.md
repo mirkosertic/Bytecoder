@@ -11,14 +11,6 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 * Use other toolchains such as Google Closure Compiler or Binaryen to further optimize generated code
 * Reuse or implement cross-compileable Java Classlib
 
-## Dead Code removal and brute force optimizations
-
-Before compiling to the target language, a dead code removal is done to reduce the amount of generated code. Starting
-from an application entry point, the referenced classes, fields, methods and interfaces are searched. Only detected used
-items are then compiled by a target language specific backend. The gathered class and method dependency information are later 
-used for further optimizations such as optimizing virtual method invocation if there is in fact only
-one implementation available.
-
 ## Compiling strategies
 
 The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
@@ -31,15 +23,6 @@ into WebAssembly binary code using the WABT toolchain.
 
 The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the CPU. This backend is designed to enhance
 existing programs running on the JVM to utilizy the vast power of modern GPUs.
-
-## Memory management
-
-*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.
-
-The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
-Details about WebAssembly are documented [here](WASM.md) 
-
-The JavaScript backend relies on JavaScript garbage collection provided by the browser.
 
 ## Using OpenCL
 
@@ -73,20 +56,7 @@ The interesting part is the `Kernel` class. At runtime, the JVM bytecode is tran
 heavily parallel on the GPU. Writing OpenCL Kernels in Java keeps developer productivity up and allows to write efficient 
 algorithms that can transparently executed on the `GPU`.
 
-Here is an example of the OpenCL C-Code generated for the Java Kernel from above:
-
-```
-__kernel void BytecoderKernel(__global const float* val$theA, 
-                              __global const float* val$theB, 
-                              __global float* val$theResult) {
-    int var1 = get_global_id(0);
-    float var4 = val$theA[var1];
-    float var7 = val$theB[var1];
-    float var9 = var4 + var7;
-    val$theResult[var1] = var9;
-    return;
-}
-```
+Details about OpenCL and its usage with Bytecoder are documented [here](OPENCL.md).
 
 ## Unit testing
 
@@ -117,28 +87,27 @@ There is Bytecoder Maven Plugin available.
 
 ## Compiling to JavaScript
 
-
 ```
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>de.mirkosertic.bytecoder</groupId>
-                <artifactId>bytecoder-mavenplugin</artifactId>
-                <version>2018-01-01</version>
-                <configuration>
-                    <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
-                    <backend>js</backend>                    
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+<build>
+    <plugins>
+        <plugin>
+            <groupId>de.mirkosertic.bytecoder</groupId>
+            <artifactId>bytecoder-mavenplugin</artifactId>
+            <version>2018-01-01</version>
+            <configuration>
+                <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
+                <backend>js</backend>                    
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>compile</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
 ```
 
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
@@ -148,26 +117,26 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
 ## Compiling to WebAssembly
 
 ```
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>de.mirkosertic.bytecoder</groupId>
-                <artifactId>bytecoder-mavenplugin</artifactId>
-                <version>2018-01-01</version>
-                <configuration>
-                    <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
-                    <backend>wasm</backend>                    
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+<build>
+    <plugins>
+        <plugin>
+            <groupId>de.mirkosertic.bytecoder</groupId>
+            <artifactId>bytecoder-mavenplugin</artifactId>
+            <version>2018-01-01</version>
+            <configuration>
+                <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
+                <backend>wasm</backend>                    
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>compile</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
 ```
 
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
@@ -178,3 +147,25 @@ Bytecoder relies for WebAssemvly compilation on the WABT toolchain. Compilation 
 the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
 environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
 of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
+
+## Internals
+
+### Integrated compiler optimizations
+
+#### Dead Code removal and brute force optimizations
+
+Before compiling to the target language, a dead code removal is done to reduce the amount of generated code. Starting
+from an application entry point, the referenced classes, fields, methods and interfaces are searched. Only detected used
+items are then compiled by a target language specific backend. The gathered class and method dependency information are later 
+used for further optimizations such as optimizing virtual method invocation if there is in fact only
+one implementation available.
+
+#### Memory management
+
+*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.
+
+The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
+Details about WebAssembly are documented [here](WASM.md) 
+
+The JavaScript backend relies on JavaScript garbage collection provided by the browser.
+

@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import de.mirkosertic.bytecoder.backend.opencl.OpenCLPlatform;
+
 public class PlatformFactory {
 
     public Platform createPlatform() {
-        return new Platform();
+        return new OpenCLPlatform();
     }
 }
