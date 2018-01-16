@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
@@ -37,6 +38,7 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -116,7 +118,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         return "BytecoderKernel";
     }
 
-    private OpenCLInputOutputs inputOutputsFor(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aKernelClass, Program aProgram) throws NoSuchFieldException {
+    private OpenCLInputOutputs inputOutputsFor(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aKernelClass, Program aProgram) {
         OpenCLInputOutputs theResult = new OpenCLInputOutputs();
         for (GraphNode theNode : aProgram.getControlFlowGraph().getKnownNodes()) {
             fillInputOutputs(aLinkerContext, aKernelClass, theNode.getExpressions(), theResult);
@@ -124,7 +126,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         return theResult;
     }
 
-    private void fillInputOutputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) throws NoSuchFieldException {
+    private void fillInputOutputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) {
         for (Expression theExpression : aExpressionList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
@@ -132,6 +134,24 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                     fillInputOutputs(aContext, aKernelClass, theList, aInputOutputs);
                 }
             }
+
+            if (theExpression instanceof ArrayStoreExpression) {
+                ArrayStoreExpression theArrayStore = (ArrayStoreExpression) theExpression;
+                Variable theArray = (Variable) theArrayStore.getArray();
+                Value theSingleInit = theArray.singleInitValue();
+                if (theSingleInit instanceof GetFieldValue) {
+                    GetFieldValue theGetField = (GetFieldValue) theSingleInit;
+
+                    BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
+                    if (theClass == aKernelClass) {
+                        BytecodeLinkedClass.LinkedField theLinkedField = aKernelClass.memberFieldByName(
+                                theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+                        aInputOutputs.registerWriteTo(theLinkedField);
+                    }
+
+                }
+            }
+
             if (theExpression instanceof PutFieldExpression) {
                 PutFieldExpression thePutField = (PutFieldExpression) theExpression;
 
