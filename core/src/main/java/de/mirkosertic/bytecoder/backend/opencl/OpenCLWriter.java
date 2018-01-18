@@ -15,8 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import java.io.PrintWriter;
+import java.util.List;
+
+import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
@@ -43,9 +52,6 @@ import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.util.List;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
@@ -179,6 +185,11 @@ public class OpenCLWriter extends IndentSSAWriter {
         return new OpenCLWriter(options, program, indent + "    ", writer, linkerContext, inputOutputs);
     }
 
+    private void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
+        print(".");
+        print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+    }
+
     private void writeExpressions(ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
             if (options.isDebugOutput()) {
@@ -240,7 +251,15 @@ public class OpenCLWriter extends IndentSSAWriter {
             } else if (theExpression instanceof ReturnExpression) {
                 println("return;");
             } else if (theExpression instanceof PutFieldExpression) {
-                println("// PUTFIELD TODO");
+                PutFieldExpression thePutField = (PutFieldExpression) theExpression;
+                Value theTarget = thePutField.getTarget();
+                BytecodeFieldRefConstant theField = thePutField.getField();
+                Value thevalue = thePutField.getValue();
+                printValue(theTarget);
+                printInstanceFieldReference(theField);
+                print(" = ");
+                printValue(thevalue);
+                println(";");
             } else {
                 throw new IllegalArgumentException("Not supported. " + theExpression);
             }
@@ -248,18 +267,23 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private String toStructName(BytecodeObjectTypeRef aObjectType) {
-        String theName = aObjectType.name();
-        int p = theName.lastIndexOf(".");
-        if (p>=0) {
-            return theName.substring(p+1);
+        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aObjectType);
+        BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
+        BytecodeAnnotation theAnnotation = theBytecodeClass.getAttributes().getAnnotationByType(OpenCLType.class.getName());
+        if (theAnnotation == null) {
+            throw new IllegalArgumentException("No @OpenCLType found for " + aObjectType.name());
         }
-        return theName;
+        return theAnnotation.getElementValueByName("value").stringValue();
     }
 
     private String toType(TypeRef aType) {
+        return toType(aType, true);
+    }
+
+    private String toType(TypeRef aType, boolean aMakePointer) {
         if (aType.isArray()) {
             TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
-            return toType(TypeRef.toType(theArray.arrayType().getType())) + "*";
+            return toType(TypeRef.toType(theArray.arrayType().getType())) + (aMakePointer ? "*" : '&');
         }
         if (aType instanceof TypeRef.ObjectTypeRef) {
             TypeRef.ObjectTypeRef theObject = (TypeRef.ObjectTypeRef) aType;
@@ -395,7 +419,13 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printGetFieldValue(GetFieldValue aValue) {
-        print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        if (theLinkedClass.getSuperClass().getClassName().name().equals(Kernel.class.getName())) {
+            print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        } else {
+            printValue(aValue.resolveFirstArgument());
+            printInstanceFieldReference(aValue.getField());
+        }
     }
 
     private void printArrayEntryValue(ArrayEntryValue aValue) {

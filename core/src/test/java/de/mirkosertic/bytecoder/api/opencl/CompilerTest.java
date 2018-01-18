@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 import java.lang.reflect.Method;
 
+import org.jbox2d.common.Vec2;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -97,12 +98,6 @@ public class CompilerTest {
         OpenCLCompileResult theCompiedKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
 
         System.out.println(theCompiedKernel.getData());
-
-    }
-
-    static class Vec2 {
-        float x;
-        float y;
     }
 
     @Test
@@ -111,13 +106,13 @@ public class CompilerTest {
         OpenCLCompileBackend backend = new OpenCLCompileBackend();
         CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
 
-        Vec2[] theIn = new Vec2[10];
-        Vec2[] theOut = new Vec2[10];
+        Vec2f[] theIn = new Vec2f[10];
+        Vec2f[] theOut = new Vec2f[10];
         Kernel theKernel = new Kernel() {
             public void add() {
                 int theIndex = get_global_id(0);
-                Vec2 a = theIn[theIndex];
-                Vec2 b = theOut[theIndex];
+                Vec2f a = theIn[theIndex];
+                Vec2f b = theOut[theIndex];
                 b.x = a.x;
                 b.y = a.y;
             }
@@ -139,6 +134,5 @@ public class CompilerTest {
         OpenCLCompileResult theCompiedKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
 
         System.out.println(theCompiedKernel.getData());
-
     }
 }

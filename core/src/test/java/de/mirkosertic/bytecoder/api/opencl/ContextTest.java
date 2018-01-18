@@ -43,4 +43,29 @@ public class ContextTest {
             System.out.println(theResult[i]);
         }
     }
+
+    @Test
+    public void testComplexAdd() throws Exception {
+        PlatformFactory theFactory = new PlatformFactory();
+        Platform thePlatform = theFactory.createPlatform();
+
+        final Vec2f[] theA = {new Vec2f(10f, 20f)};
+        final Vec2f[] theB = {new Vec2f(10f, 20f)};
+        final Vec2f[] theResult = new Vec2f[1];
+
+        try (Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+                public void add() {
+                    int id = get_global_id(0);
+                    float ax = theA[id].x;
+                    float bx = theB[id].x;
+                    theResult[id].x = ax + bx;
+                }
+            });
+        }
+
+        for (int i=0; i<theResult.length;i++) {
+            System.out.println(theResult[i]);
+        }
+    }
 }

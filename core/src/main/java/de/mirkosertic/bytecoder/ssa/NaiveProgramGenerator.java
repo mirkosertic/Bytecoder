@@ -30,8 +30,10 @@ import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.lang.TException;
 import de.mirkosertic.bytecoder.classlib.java.lang.TInteger;
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -778,7 +780,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 // In case of synchronized blocks there is an additional reference with the semaphore to release
                 theParsingState = aCache.resolveFinalStateForNode(null);
                 theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
-                theParsingState.push(aCurrentBlock.newVariable(TypeRef.Native.REFERENCE, new CurrentExceptionValue()));
+                theParsingState.push(aCurrentBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(TException.class)), new CurrentExceptionValue()));
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
                 theParsingState = aCache.resolveFinalStateForNode(null);
@@ -887,9 +889,17 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                 Value theIndex = aHelper.pop();
                 Value theTarget = aHelper.pop();
-                Variable theVariable = aTargetBlock.newVariable(
-                        TypeRef.Native.REFERENCE, new ArrayEntryValue(TypeRef.Native.REFERENCE, theTarget, theIndex));
-                aHelper.push(theVariable);
+                TypeRef theType = theTarget.resolveType();
+                if (theType instanceof TypeRef.ArrayTypeRef) {
+                    TypeRef.ArrayTypeRef theArrayTypeRef = (TypeRef.ArrayTypeRef) theTarget.resolveType();
+                    Variable theVariable = aTargetBlock.newVariable(
+                            TypeRef.toType(theArrayTypeRef.arrayType()), new ArrayEntryValue(TypeRef.Native.REFERENCE, theTarget, theIndex));
+                    aHelper.push(theVariable);
+                } else {
+                    Variable theVariable = aTargetBlock.newVariable(
+                            TypeRef.Native.REFERENCE, new ArrayEntryValue(TypeRef.Native.REFERENCE, theTarget, theIndex));
+                    aHelper.push(theVariable);
+                }
             } else if (theInstruction instanceof BytecodeInstructionGenericArrayLOAD) {
                 BytecodeInstructionGenericArrayLOAD theINS = (BytecodeInstructionGenericArrayLOAD) theInstruction;
                 Value theIndex = aHelper.pop();
@@ -943,7 +953,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     aHelper.push(new IntegerValue(theC.getIntegerValue()));
                 } else if (theConstant instanceof BytecodeStringConstant) {
                     BytecodeStringConstant theC = (BytecodeStringConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new StringValue(theC.getValue().stringValue()));
+                    Variable theVariable = aTargetBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(TString.class)), new StringValue(theC.getValue().stringValue()));
                     aHelper.push(theVariable);
                 } else if (theConstant instanceof BytecodeClassinfoConstant) {
                     BytecodeClassinfoConstant theC = (BytecodeClassinfoConstant) theConstant;
@@ -1218,7 +1228,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new RuntimeGeneratedTypeValue());
                         aHelper.push(theNewVariable);
                     } else {
-                        Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new NewObjectValue(theClassInfo));
+                        Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theObjectType), new NewObjectValue(theClassInfo));
                         aHelper.push(theNewVariable);
                     }
                 }
