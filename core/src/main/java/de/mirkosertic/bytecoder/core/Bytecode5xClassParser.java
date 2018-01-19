@@ -338,18 +338,27 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                 int theElementNameIndex = aDis.readUnsignedShort();
                 char theTag = (char) aDis.readUnsignedByte();
                 switch (theTag) {
-                    case 's':
+                    case 's': {
                         int theConstValueIndex = aDis.readUnsignedShort();
                         theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
                                 new BytecodeAnnotation.StringElementValue(theConstValueIndex, aConstantPool),
                                 aConstantPool));
                         break;
-                    case 'c':
+                    }
+                    case 'I': {
+                        int theConstValueIndex = aDis.readUnsignedShort();
+                        theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
+                                new BytecodeAnnotation.IntegerElementValue(theConstValueIndex, aConstantPool),
+                                aConstantPool));
+                        break;
+                    }
+                    case 'c': {
                         int theClassInfoIndex = aDis.readUnsignedShort();
                         theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
                                 new BytecodeAnnotation.ClassElementValue(theClassInfoIndex, aConstantPool, signatureParser),
                                 aConstantPool));
                         break;
+                    }
                     default:
                         throw new IllegalArgumentException("Not supported annotation value type : " + theTag);
                 }

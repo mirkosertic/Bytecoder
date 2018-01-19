@@ -15,16 +15,11 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
+import java.nio.FloatBuffer;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+public interface FloatSerializable {
 
-@Retention(RetentionPolicy.RUNTIME)
-@EmulatedByRuntime
-public @interface OpenCLType {
+    void writeTo(FloatBuffer aBuffer);
 
-    String name();
-
-    int elementCount();
+    void readFrom(FloatBuffer aBuffer);
 }

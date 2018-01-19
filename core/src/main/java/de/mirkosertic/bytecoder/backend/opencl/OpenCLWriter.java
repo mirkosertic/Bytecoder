@@ -186,7 +186,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
-        print(".");
+        print("->");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
@@ -201,9 +201,6 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
             if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
-                if (theInit.getVariable().resolveType().resolve() == TypeRef.Native.REFERENCE) {
-                    print("__global ");
-                }
                 print(toType(theInit.getVariable().resolveType()));
                 print(" ");
                 print(theInit.getVariable().getName());
@@ -273,7 +270,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         if (theAnnotation == null) {
             throw new IllegalArgumentException("No @OpenCLType found for " + aObjectType.name());
         }
-        return theAnnotation.getElementValueByName("value").stringValue();
+        return theAnnotation.getElementValueByName("name").stringValue();
     }
 
     private String toType(TypeRef aType) {
@@ -421,6 +418,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     private void printGetFieldValue(GetFieldValue aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         if (theLinkedClass.getSuperClass().getClassName().name().equals(Kernel.class.getName())) {
+            print("&");
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
             printValue(aValue.resolveFirstArgument());
@@ -431,6 +429,9 @@ public class OpenCLWriter extends IndentSSAWriter {
     private void printArrayEntryValue(ArrayEntryValue aValue) {
         Value theArray = aValue.resolveFirstArgument();
         Value theIndex = aValue.resolveSecondArgument();
+        if (aValue.resolveType().isObject()) {
+            print("&");
+        }
         printValue(theArray);
         print("[");
         printValue(theIndex);
