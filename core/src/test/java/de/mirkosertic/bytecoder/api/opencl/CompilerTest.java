@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 import java.lang.reflect.Method;
 
-import org.jbox2d.common.Vec2;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -95,9 +94,9 @@ public class CompilerTest {
 
         BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-        OpenCLCompileResult theCompiedKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        OpenCLCompileResult theCompiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
 
-        System.out.println(theCompiedKernel.getData());
+        System.out.println(theCompiledKernel.getData());
     }
 
     @Test

@@ -38,6 +38,27 @@ public class BytecodeAnnotation {
         }
     }
 
+    public static class IntegerElementValue implements ElementValue {
+        private final int constValueIndex;
+        private final BytecodeConstantPool constantPool;
+
+        public IntegerElementValue(int aConstValueIndex, BytecodeConstantPool aConstantPool) {
+            constValueIndex = aConstValueIndex;
+            constantPool = aConstantPool;
+        }
+
+        @Override
+        public String stringValue() {
+            return Integer.toString(intVakue());
+        }
+
+        public int intVakue() {
+            BytecodeIntegerConstant theInt = (BytecodeIntegerConstant) constantPool.constantByIndex(constValueIndex - 1);
+            return theInt.getIntegerValue();
+        }
+    }
+
+
     public static class ClassElementValue implements ElementValue {
         private final int classInfoIndex;
         private final BytecodeConstantPool constantPool;

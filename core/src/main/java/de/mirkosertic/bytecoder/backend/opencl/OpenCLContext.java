@@ -1,8 +1,34 @@
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
+import de.mirkosertic.bytecoder.api.opencl.Vec2f;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.jocl.Pointer;
+import org.jocl.Sizeof;
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_kernel;
+import org.jocl.cl_mem;
+import org.jocl.cl_program;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static org.jocl.CL.CL_DEVICE_TYPE_GPU;
 import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
-import static org.jocl.CL.CL_MEM_READ_ONLY;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
 import static org.jocl.CL.CL_TRUE;
 import static org.jocl.CL.clBuildProgram;
@@ -20,31 +46,6 @@ import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
 import static org.jocl.CL.clSetKernelArg;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.jocl.Pointer;
-import org.jocl.Sizeof;
-import org.jocl.cl_command_queue;
-import org.jocl.cl_context;
-import org.jocl.cl_kernel;
-import org.jocl.cl_mem;
-import org.jocl.cl_program;
-
-import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.Kernel;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-
 public class OpenCLContext implements Context {
 
     private static class CachedKernel {
@@ -57,6 +58,20 @@ public class OpenCLContext implements Context {
             inputOutputs = aInputOutputs;
             program = aProgram;
             kernel = aKernel;
+        }
+    }
+
+    private static class DataRef {
+
+        private final Pointer pointer;
+        private final int size;
+
+        DataRef(Pointer aPointer, int aSize) {
+            pointer = aPointer;
+            size = aSize;
+        }
+
+        public void updateFromBuffer() {
         }
     }
 
@@ -98,6 +113,26 @@ public class OpenCLContext implements Context {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
+        /*theResult = new OpenCLCompileResult(theResult.getInputOutputs(), "__kernel void BytecoderKernel(__global const float2* val$theA, __global const float2* val$theB, __global const float2* val$theResult) {\n" +
+                "    int $__label__ = 0;\n" +
+                "    int var1 = get_global_id(0);\n" +
+                "    float2* var2 = &val$theA;\n" +
+                "    float2* var3 = &var2[var1];\n" +
+                "    float var5 = var3->x;\n" +
+                "    float2* var6 = &val$theB;\n" +
+                "    float2* var7 = &var6[var1];\n" +
+                "    float var9 = var7->x;\n" +
+                "    float2* var10 = &val$theResult;\n" +
+                "    float2* var11 = &var10[var1];\n" +
+                "    float var12 = var5 + 100.0;\n" +
+                "    var11->x = var12;\n" +
+                "    float2* var13 = &val$theResult;\n" +
+                "    float2* var14 = &var13[var1];\n" +
+                "    float var15 = var9 + 200.0;\n" +
+                "    var14->y = var15;\n" +
+                "    return;\n" +
+                "}\n");
+*/
         System.out.println(theResult.getData());
 
         // Construct the program
@@ -121,51 +156,40 @@ public class OpenCLContext implements Context {
         // Construct the input and output elements based on object properties
         List<OpenCLInputOutputs.KernelArgument> theArguments = theCachedKernel.inputOutputs.arguments();
         cl_mem theMemObjects[] = new cl_mem[theArguments.size()];
-        Map<Integer, Pointer> theOutputs = new HashMap<>();
+        Map<Integer, DataRef> theOutputs = new HashMap<>();
         try {
             for (int i = 0; i < theArguments.size(); i++) {
 
                 OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
 
                 TypeRef theFieldType = TypeRef.toType(theArgument.getField().getField().getTypeRef());
-                Pointer thePointer;
+                DataRef theDataRef;
                 if (theFieldType.isArray()) {
                     TypeRef.ArrayTypeRef theArrayTypeRef = (TypeRef.ArrayTypeRef) theFieldType;
                     TypeRef theArrayElement = TypeRef.toType(theArrayTypeRef.arrayType().getType());
                     switch (theArrayElement.resolve()) {
-                    case BYTE: {
-                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
-                        theField.setAccessible(true);
-                        byte[] theData = (byte[]) theField.get(aKernel);
-                        thePointer = Pointer.to(theData);
-                        break;
-                    }
-                    case SHORT: {
-                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
-                        theField.setAccessible(true);
-                        short[] theData = (short[]) theField.get(aKernel);
-                        thePointer = Pointer.to(theData);
-                        break;
-                    }
                     case INT: {
                         Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
                         theField.setAccessible(true);
                         int[] theData = (int[]) theField.get(aKernel);
-                        thePointer = Pointer.to(theData);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_int * theData.length);
                         break;
                     }
                     case FLOAT: {
                         Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
                         theField.setAccessible(true);
                         float[] theData = (float[]) theField.get(aKernel);
-                        thePointer = Pointer.to(theData);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_float * theData.length);
                         break;
                     }
-                    case DOUBLE: {
+                    case REFERENCE: {
                         Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
                         theField.setAccessible(true);
-                        double[] theData = (double[]) theField.get(aKernel);
-                        thePointer = Pointer.to(theData);
+                        Object[] theData = (Object[]) theField.get(aKernel);
+
+                        Class theObjectType = theData.getClass().getComponentType();
+
+                        theDataRef = toDataRef(theData, theObjectType);
                         break;
                     }
                     default:
@@ -177,18 +201,18 @@ public class OpenCLContext implements Context {
 
                 switch (theArgument.getType()) {
                 case INPUT:
-                    theMemObjects[i] = clCreateBuffer(context,
+/*                    theMemObjects[i] = clCreateBuffer(context,
                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                            Sizeof.cl_float * aNumberOfStreams, thePointer, null);
+                            theDataRef.size * aNumberOfStreams, theDataRef.pointer, null);
 
-                    break;
+                    break;*/
                 case OUTPUT:
                 case INPUTOUTPUT:
                     theMemObjects[i] = clCreateBuffer(context,
-                            CL_MEM_READ_WRITE,
-                            Sizeof.cl_float * aNumberOfStreams, null, null);
+                            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            theDataRef.size * aNumberOfStreams, theDataRef.pointer, null);
 
-                    theOutputs.put(i, thePointer);
+                    theOutputs.put(i, theDataRef);
 
                     break;
                 }
@@ -209,15 +233,38 @@ public class OpenCLContext implements Context {
                 global_work_size, local_work_size, 0, null, null);
 
         // Read the output data
-        for (Map.Entry<Integer, Pointer> theEntry : theOutputs.entrySet()) {
+        for (Map.Entry<Integer, DataRef> theEntry : theOutputs.entrySet()) {
+            DataRef theDataRef = theEntry.getValue();
             clEnqueueReadBuffer(commandQueue, theMemObjects[theEntry.getKey()], CL_TRUE, 0,
-                    aNumberOfStreams * Sizeof.cl_float, theEntry.getValue(), 0, null, null);
+                    theDataRef.size, theDataRef.pointer, 0, null, null);
+
+            theDataRef.updateFromBuffer();
         }
 
         // Release memory
         for (cl_mem theMem : theMemObjects) {
             clReleaseMemObject(theMem);
         }
+    }
+
+    private DataRef toDataRef(Object[] aArray, Class aDataType) {
+        OpenCLType theType = (OpenCLType) aDataType.getAnnotation(OpenCLType.class);
+        int theSize = aArray.length * theType.elementCount();
+        FloatBuffer theBuffer = FloatBuffer.allocate(theSize);
+        for (Object anAArray : aArray) {
+            Vec2f theVec = (Vec2f) anAArray;
+            theVec.writeTo(theBuffer);
+        }
+        return new DataRef(Pointer.to(theBuffer), Sizeof.cl_float * theSize) {
+            @Override
+            public void updateFromBuffer() {
+                theBuffer.rewind();
+                for (Object anAArray : aArray) {
+                    Vec2f theVec = (Vec2f) anAArray;
+                    theVec.readFrom(theBuffer);
+                }
+            }
+        };
     }
 
     @Override
@@ -229,5 +276,4 @@ public class OpenCLContext implements Context {
         clReleaseCommandQueue(commandQueue);
         clReleaseContext(context);
     }
-
 }

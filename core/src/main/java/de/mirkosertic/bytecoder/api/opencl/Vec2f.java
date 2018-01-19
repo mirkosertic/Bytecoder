@@ -15,8 +15,10 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-@OpenCLType("float2")
-public class Vec2f {
+import java.nio.FloatBuffer;
+
+@OpenCLType(name = "float2", elementCount = 2)
+public class Vec2f implements FloatSerializable {
 
     public float x;
     public float y;
@@ -24,5 +26,24 @@ public class Vec2f {
     public Vec2f(float aX, float aY) {
         this.x = aX;
         this.y = aY;
+    }
+
+    @Override
+    public void writeTo(FloatBuffer aBuffer) {
+        aBuffer.put(x).put(y);
+    }
+
+    @Override
+    public void readFrom(FloatBuffer aBuffer) {
+        x = aBuffer.get();
+        y = aBuffer.get();
+    }
+
+    @Override
+    public String toString() {
+        return "Vec2f{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
     }
 }

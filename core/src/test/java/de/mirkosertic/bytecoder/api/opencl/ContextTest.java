@@ -51,15 +51,16 @@ public class ContextTest {
 
         final Vec2f[] theA = {new Vec2f(10f, 20f)};
         final Vec2f[] theB = {new Vec2f(10f, 20f)};
-        final Vec2f[] theResult = new Vec2f[1];
+        final Vec2f[] theResult = new Vec2f[] {new Vec2f(-1f, -1f)};
 
         try (Context theContext = thePlatform.createContext()) {
-            theContext.compute(4, new Kernel() {
+            theContext.compute(1, new Kernel() {
                 public void add() {
                     int id = get_global_id(0);
                     float ax = theA[id].x;
-                    float bx = theB[id].x;
-                    theResult[id].x = ax + bx;
+                    float ay = theB[id].x;
+                    theResult[id].x = ax + 100;
+                    theResult[id].y = ay + 200;
                 }
             });
         }
