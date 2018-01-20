@@ -43,6 +43,7 @@ import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -74,14 +75,13 @@ public class OpenCLWriter extends IndentSSAWriter {
             TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getField().getTypeRef());
             switch (theArgument.getType()) {
                 case INPUT:
-                    print("__global const ");
+                    print("const ");
                     print(toType(theTypeRef));
                     print(" ");
                     print(theArgument.getField().getField().getName().stringValue());
                     break;
                 case OUTPUT:
                 case INPUTOUTPUT:
-                    print("__global ");
                     print(toType(theTypeRef));
                     print(" ");
                     print(theArgument.getField().getField().getName().stringValue());
@@ -280,7 +280,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     private String toType(TypeRef aType, boolean aMakePointer) {
         if (aType.isArray()) {
             TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
-            return toType(TypeRef.toType(theArray.arrayType().getType())) + (aMakePointer ? "*" : '&');
+            return "__global " + toType(TypeRef.toType(theArray.arrayType().getType())) + (aMakePointer ? "*" : '&');
         }
         if (aType instanceof TypeRef.ObjectTypeRef) {
             TypeRef.ObjectTypeRef theObject = (TypeRef.ObjectTypeRef) aType;
@@ -308,6 +308,8 @@ public class OpenCLWriter extends IndentSSAWriter {
             print(theVariable.getName());
         } else if (aValue instanceof InvokeVirtualMethodValue) {
             printInvokeVirtual((InvokeVirtualMethodValue) aValue);
+        } else if (aValue instanceof InvokeStaticMethodValue) {
+            printInvokeStatic((InvokeStaticMethodValue) aValue);
         } else if (aValue instanceof GetFieldValue) {
             printGetFieldValue((GetFieldValue) aValue);
         } else if (aValue instanceof ArrayEntryValue) {
@@ -418,7 +420,6 @@ public class OpenCLWriter extends IndentSSAWriter {
     private void printGetFieldValue(GetFieldValue aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         if (theLinkedClass.getSuperClass().getClassName().name().equals(Kernel.class.getName())) {
-            print("&");
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
             printValue(aValue.resolveFirstArgument());
@@ -439,10 +440,15 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInvokeVirtual(InvokeVirtualMethodValue aValue) {
+        throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
+    }
+
+    private void printInvokeStatic(InvokeStaticMethodValue aValue) {
         if (aValue.getMethodName().equals("get_global_id")) {
             print("get_global_id(0)");
         } else {
             throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
         }
     }
+
 }

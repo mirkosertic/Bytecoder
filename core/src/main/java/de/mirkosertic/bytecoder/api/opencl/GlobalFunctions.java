@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-public abstract class Kernel {
+public class GlobalFunctions {
 
-    public abstract void processWorkItem();
+    public static int get_global_id(int aParam) {
+        return 0;
+    }
 }

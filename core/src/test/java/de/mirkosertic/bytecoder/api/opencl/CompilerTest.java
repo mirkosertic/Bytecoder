@@ -29,6 +29,8 @@ import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+
 public class CompilerTest {
 
     private Kernel createKernel() {
@@ -37,7 +39,7 @@ public class CompilerTest {
         final float[] theResult = new float[4];
 
         return new Kernel() {
-            public void add() {
+            public void processWorkItem() {
                 int id = get_global_id(0);
                 float a = theA[id];
                 float b = theB[id];
@@ -108,7 +110,7 @@ public class CompilerTest {
         Vec2f[] theIn = new Vec2f[10];
         Vec2f[] theOut = new Vec2f[10];
         Kernel theKernel = new Kernel() {
-            public void add() {
+            public void processWorkItem() {
                 int theIndex = get_global_id(0);
                 Vec2f a = theIn[theIndex];
                 Vec2f b = theOut[theIndex];
