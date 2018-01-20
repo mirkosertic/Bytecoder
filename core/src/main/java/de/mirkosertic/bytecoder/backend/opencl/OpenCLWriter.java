@@ -57,10 +57,12 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 public class OpenCLWriter extends IndentSSAWriter {
 
     private final OpenCLInputOutputs inputOutputs;
+    private final BytecodeLinkedClass kernelClass;
 
-    public OpenCLWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, OpenCLInputOutputs aInputOutputs) {
+    public OpenCLWriter(BytecodeLinkedClass aKernelClass, CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext, OpenCLInputOutputs aInputOutputs) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         inputOutputs = aInputOutputs;
+        kernelClass = aKernelClass;
     }
 
     public void printRelooped(Relooper.Block aBlock) {
@@ -182,7 +184,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private OpenCLWriter withDeeperIndent() {
-        return new OpenCLWriter(options, program, indent + "    ", writer, linkerContext, inputOutputs);
+        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs);
     }
 
     private void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
@@ -419,11 +421,16 @@ public class OpenCLWriter extends IndentSSAWriter {
 
     private void printGetFieldValue(GetFieldValue aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
-        if (theLinkedClass.getSuperClass().getClassName().name().equals(Kernel.class.getName())) {
+        if (theLinkedClass == kernelClass) {
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
-            printValue(aValue.resolveFirstArgument());
-            printInstanceFieldReference(aValue.getField());
+            Value theValue = aValue.resolveFirstArgument();
+            if (theValue instanceof Variable && ((Variable) theValue).isSynthetic()) {
+                print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+            } else {
+                printValue(theValue);
+                printInstanceFieldReference(aValue.getField());
+            }
         }
     }
 

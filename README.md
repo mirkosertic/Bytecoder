@@ -21,7 +21,7 @@ The *JavaScript* backend transforms the intermediate representation into JavaScr
 The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled 
 into WebAssembly binary code using the WABT toolchain.
 
-The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the CPU. This backend is designed to enhance
+The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
 existing programs running on the JVM to utilizy the vast power of modern GPUs.
 
 ## Using OpenCL
