@@ -113,28 +113,6 @@ public class OpenCLContext implements Context {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
-        /*theResult = new OpenCLCompileResult(theResult.getInputOutputs(), "__kernel void BytecoderKernel(__global const float2* val$theA, __global const float2* val$theB, __global const float2* val$theResult) {\n" +
-                "    int $__label__ = 0;\n" +
-                "    int var1 = get_global_id(0);\n" +
-                "    float2* var2 = &val$theA;\n" +
-                "    float2* var3 = &var2[var1];\n" +
-                "    float var5 = var3->x;\n" +
-                "    float2* var6 = &val$theB;\n" +
-                "    float2* var7 = &var6[var1];\n" +
-                "    float var9 = var7->x;\n" +
-                "    float2* var10 = &val$theResult;\n" +
-                "    float2* var11 = &var10[var1];\n" +
-                "    float var12 = var5 + 100.0;\n" +
-                "    var11->x = var12;\n" +
-                "    float2* var13 = &val$theResult;\n" +
-                "    float2* var14 = &var13[var1];\n" +
-                "    float var15 = var9 + 200.0;\n" +
-                "    var14->y = var15;\n" +
-                "    return;\n" +
-                "}\n");
-*/
-        System.out.println(theResult.getData());
-
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,
                 1, new String[]{ theResult.getData() }, null, null);
