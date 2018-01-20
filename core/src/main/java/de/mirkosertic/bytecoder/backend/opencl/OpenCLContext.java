@@ -1,6 +1,7 @@
 package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.api.opencl.Vec2f;
@@ -59,6 +60,11 @@ public class OpenCLContext implements Context {
             program = aProgram;
             kernel = aKernel;
         }
+
+        public void close() {
+            clReleaseKernel(kernel);
+            clReleaseProgram(program);
+        }
     }
 
     private static class DataRef {
@@ -100,16 +106,16 @@ public class OpenCLContext implements Context {
             return theCachedKernel;
         }
 
-        Method[] theMethods = aKernel.getClass().getDeclaredMethods();
-        if (theMethods.length != 1) {
-            throw new IllegalArgumentException("A kernel must have exactly one declared method!");
+        Method theMethod;
+        try {
+            theMethod = aKernel.getClass().getDeclaredMethod("processWorkItem", new Class[0]);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error resolving kernel method", e);
         }
-
-        Method theMethod = theMethods[0];
 
         BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
+        BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
@@ -226,30 +232,32 @@ public class OpenCLContext implements Context {
     }
 
     private DataRef toDataRef(Object[] aArray, Class aDataType) {
-        OpenCLType theType = (OpenCLType) aDataType.getAnnotation(OpenCLType.class);
-        int theSize = aArray.length * theType.elementCount();
-        FloatBuffer theBuffer = FloatBuffer.allocate(theSize);
-        for (Object anAArray : aArray) {
-            Vec2f theVec = (Vec2f) anAArray;
-            theVec.writeTo(theBuffer);
-        }
-        return new DataRef(Pointer.to(theBuffer), Sizeof.cl_float * theSize) {
-            @Override
-            public void updateFromBuffer() {
-                theBuffer.rewind();
-                for (Object anAArray : aArray) {
-                    Vec2f theVec = (Vec2f) anAArray;
-                    theVec.readFrom(theBuffer);
-                }
+        if (FloatSerializable.class.isAssignableFrom(aDataType)) {
+            OpenCLType theType = (OpenCLType) aDataType.getAnnotation(OpenCLType.class);
+            int theSize = aArray.length * theType.elementCount();
+            FloatBuffer theBuffer = FloatBuffer.allocate(theSize);
+            for (Object anAArray : aArray) {
+                Vec2f theVec = (Vec2f) anAArray;
+                theVec.writeTo(theBuffer);
             }
-        };
+            return new DataRef(Pointer.to(theBuffer), Sizeof.cl_float * theSize) {
+                @Override
+                public void updateFromBuffer() {
+                    theBuffer.rewind();
+                    for (Object anAArray : aArray) {
+                        Vec2f theVec = (Vec2f) anAArray;
+                        theVec.readFrom(theBuffer);
+                    }
+                }
+            };
+        }
+        throw new IllegalArgumentException("Not supported datatype : " + aDataType);
     }
 
     @Override
     public void close() {
         for (CachedKernel theCached : cachedKernels.values()) {
-            clReleaseKernel(theCached.kernel);
-            clReleaseProgram(theCached.program);
+            theCached.close();
         }
         clReleaseCommandQueue(commandQueue);
         clReleaseContext(context);

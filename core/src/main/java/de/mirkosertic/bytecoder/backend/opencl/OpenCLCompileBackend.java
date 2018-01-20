@@ -94,7 +94,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         // And then we ca pass it to the code generator to generate the kernel code
 
         StringWriter theStrWriter = new StringWriter();
-        OpenCLWriter theSSAWriter = new OpenCLWriter(aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
+        OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
 
         // Try to reloop it!
         if (aOptions.isRelooper()) {
