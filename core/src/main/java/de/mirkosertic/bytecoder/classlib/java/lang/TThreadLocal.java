@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.opencl;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class GlobalFunctions {
+public class TThreadLocal<T> {
 
-    private static ThreadLocal<Integer> currentId = new ThreadLocal<>();
+    private T value;
 
-    public static void set_global_id(int aDimension, int aValue) {
-        currentId.set(aValue);
+    public T get() {
+        return value;
     }
 
-    @OpenCLFunction("get_global_id")
-    public static int get_global_id(int aDimension) {
-        return currentId.get();
+    public void set(T aValue) {
+        value = aValue;
     }
 }

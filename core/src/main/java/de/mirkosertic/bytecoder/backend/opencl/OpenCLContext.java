@@ -108,7 +108,7 @@ public class OpenCLContext implements Context {
 
         Method theMethod;
         try {
-            theMethod = aKernel.getClass().getDeclaredMethod("processWorkItem", new Class[0]);
+            theMethod = aKernel.getClass().getDeclaredMethod("processWorkItem");
         } catch (Exception e) {
             throw new IllegalArgumentException("Error resolving kernel method", e);
         }
@@ -119,7 +119,19 @@ public class OpenCLContext implements Context {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
-        //System.out.println(theResult.getData());
+        /*theResult = new OpenCLCompileResult(theResult.getInputOutputs(), "__kernel void BytecoderKernel(const __global float2* val$theA, const __global float2* val$theResult) {\n" +
+                "    int $__label__ = 0;\n" +
+                "    int var1 = get_global_id(0);\n" +
+                "    float2 var4_temp = normalize(val$theA[var1]);\n" +
+                "    float2* var4 = &var4_temp;\n" +
+                "    __global float2* var5 = val$theResult;\n" +
+                "    __global float2* var6 = &var5[var1];\n" +
+                "    float var7 = var4->x;\n" +
+                "    var6->x = var7;\n" +
+                "    return;\n" +
+                "}");*/
+
+        System.out.println(theResult.getData());
 
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,

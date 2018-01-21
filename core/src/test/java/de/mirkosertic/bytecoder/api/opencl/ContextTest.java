@@ -78,7 +78,6 @@ public class ContextTest {
         Platform thePlatform = theFactory.createPlatform();
 
         final Vec2f[] theA = {new Vec2f(10f, 20f)};
-        final Vec2f[] theB = {new Vec2f(10f, 20f)};
         final Vec2f[] theResult = new Vec2f[] {new Vec2f(-1f, -1f)};
 
         try (Context theContext = thePlatform.createContext()) {
