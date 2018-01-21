@@ -42,6 +42,7 @@ import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvocationValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
@@ -206,12 +207,28 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
             if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
-                print(toType(theInit.getVariable().resolveType()));
-                print(" ");
-                print(theInit.getVariable().getName());
-                print(" = ");
-                printValue(theInit.getValue());
-                println(";");
+                if (theInit.getVariable().resolveType().isObject() && theInit.getValue() instanceof InvocationValue) {
+                    print(toType(theInit.getVariable().resolveType(), false));
+                    print(" ");
+                    print(theInit.getVariable().getName());
+                    print("_temp = ");
+                    printValue(theInit.getValue());
+                    println(";");
+
+                    print(toType(theInit.getVariable().resolveType(), true));
+                    print(" ");
+                    print(theInit.getVariable().getName());
+                    print(" = &");
+                    print(theInit.getVariable().getName());
+                    println("_temp;");
+                } else {
+                    print(toType(theInit.getVariable().resolveType()));
+                    print(" ");
+                    print(theInit.getVariable().getName());
+                    print(" = ");
+                    printValue(theInit.getValue());
+                    println(";");
+                }
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theStore = (ArrayStoreExpression) theExpression;
                 Value theArray = theStore.getArray();
@@ -282,14 +299,14 @@ public class OpenCLWriter extends IndentSSAWriter {
         return toType(aType, true);
     }
 
-    private String toType(TypeRef aType, boolean aMakePointer) {
+    private String toType(TypeRef aType, boolean aCreatePointer) {
         if (aType.isArray()) {
             TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
-            return "__global " + toType(TypeRef.toType(theArray.arrayType().getType())) + (aMakePointer ? "*" : '&');
+            return "__global " + toType(TypeRef.toType(theArray.arrayType().getType()), false) + "*";
         }
         if (aType instanceof TypeRef.ObjectTypeRef) {
             TypeRef.ObjectTypeRef theObject = (TypeRef.ObjectTypeRef) aType;
-            return toStructName(theObject.objectType());
+            return toStructName(theObject.objectType()) + (aCreatePointer ? "*" : "");
         }
         switch (aType.resolve()) {
             case INT:
@@ -465,9 +482,6 @@ public class OpenCLWriter extends IndentSSAWriter {
                 }
                 String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
                 BytecodeMethodSignature theSignature = aValue.getSignature();
-                if (!theSignature.getReturnType().isPrimitive()) {
-                    print("&(");
-                }
                 print(theMethodName);
                 print("(");
                 List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
@@ -482,9 +496,6 @@ public class OpenCLWriter extends IndentSSAWriter {
                 }
                 print(")");
 
-                if (!theSignature.getReturnType().isPrimitive()) {
-                    print(")");
-                }
                 return;
             }
         }

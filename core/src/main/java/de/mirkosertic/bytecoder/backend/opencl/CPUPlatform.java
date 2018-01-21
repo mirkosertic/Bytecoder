@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.opencl;
+package de.mirkosertic.bytecoder.backend.opencl;
 
-public class GlobalFunctions {
+import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.Platform;
 
-    private static ThreadLocal<Integer> currentId = new ThreadLocal<>();
+public class CPUPlatform implements Platform {
 
-    public static void set_global_id(int aDimension, int aValue) {
-        currentId.set(aValue);
-    }
-
-    @OpenCLFunction("get_global_id")
-    public static int get_global_id(int aDimension) {
-        return currentId.get();
+    @Override
+    public Context createContext() {
+        return new CPUContext();
     }
 }
