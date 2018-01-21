@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import java.io.PrintWriter;
-import java.util.List;
-
-import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLFunction;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
@@ -27,6 +24,8 @@ import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
@@ -53,6 +52,10 @@ import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
@@ -451,11 +454,40 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInvokeStatic(InvokeStaticMethodValue aValue) {
-        if (aValue.getMethodName().equals("get_global_id")) {
-            print("get_global_id(0)");
-        } else {
-            throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
-        }
-    }
+        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aValue.getClassName());
+        List<BytecodeMethod> theMethods = new ArrayList<>();
+        theLinkedClass.forEachMethod(theMethods::add);
+        for (BytecodeMethod theMethod : theMethods) {
+            if (theMethod.getName().stringValue().equals(aValue.getMethodName()) && theMethod.getSignature().metchesExactlyTo(aValue.getSignature())) {
+                BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(OpenCLFunction.class.getName());
+                if (theAnnotation == null) {
+                    throw new IllegalArgumentException("Annotation @OpenCLFunction required for static method " + aValue.getMethodName());
+                }
+                String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
+                BytecodeMethodSignature theSignature = aValue.getSignature();
+                if (!theSignature.getReturnType().isPrimitive()) {
+                    print("&(");
+                }
+                print(theMethodName);
+                print("(");
+                List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+                for (int i=0;i<theArguments.size();i++) {
+                    if (!theSignature.getArguments()[i].isPrimitive()) {
+                        print("*");
+                    }
+                    if (i>0) {
+                        print(",");
+                    }
+                    printValue(theArguments.get(i));
+                }
+                print(")");
 
+                if (!theSignature.getReturnType().isPrimitive()) {
+                    print(")");
+                }
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
+    }
 }

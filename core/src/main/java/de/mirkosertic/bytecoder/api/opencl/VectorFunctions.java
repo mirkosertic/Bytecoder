@@ -17,10 +17,12 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 public class VectorFunctions {
 
+    @OpenCLFunction("normalize")
     public static Vec2f normalize(Vec2f aVector) {
         return aVector;
     }
 
+    @OpenCLFunction("length")
     public static float length(Vec2f aVector) {
         return 0f;
     }

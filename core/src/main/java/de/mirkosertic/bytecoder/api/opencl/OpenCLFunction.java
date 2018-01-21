@@ -15,10 +15,17 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-public class GlobalFunctions {
+import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 
-    @OpenCLFunction("get_global_id")
-    public static int get_global_id(int aParam) {
-        return 0;
-    }
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@EmulatedByRuntime
+@Target(ElementType.METHOD)
+public @interface OpenCLFunction {
+
+    String value();
 }

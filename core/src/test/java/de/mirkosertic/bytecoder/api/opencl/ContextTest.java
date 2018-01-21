@@ -41,8 +41,8 @@ public class ContextTest {
             });
         }
 
-        for (int i=0; i<theResult.length;i++) {
-            System.out.println(theResult[i]);
+        for (float aTheResult : theResult) {
+            System.out.println(aTheResult);
         }
     }
 
@@ -67,8 +67,32 @@ public class ContextTest {
             });
         }
 
-        for (int i=0; i<theResult.length;i++) {
-            System.out.println(theResult[i]);
+        for (Vec2f aTheResult : theResult) {
+            System.out.println(aTheResult);
+        }
+    }
+
+    @Test
+    public void testVectorNormalize() throws Exception {
+        PlatformFactory theFactory = new PlatformFactory();
+        Platform thePlatform = theFactory.createPlatform();
+
+        final Vec2f[] theA = {new Vec2f(10f, 20f)};
+        final Vec2f[] theB = {new Vec2f(10f, 20f)};
+        final Vec2f[] theResult = new Vec2f[] {new Vec2f(-1f, -1f)};
+
+        try (Context theContext = thePlatform.createContext()) {
+            theContext.compute(1, new Kernel() {
+                public void processWorkItem() {
+                    int id = get_global_id(0);
+                    Vec2f theVec = VectorFunctions.normalize(theA[id]);
+                    theResult[id].x = theVec.x;
+                }
+            });
+        }
+
+        for (Vec2f aTheResult : theResult) {
+            System.out.println(aTheResult);
         }
     }
 }

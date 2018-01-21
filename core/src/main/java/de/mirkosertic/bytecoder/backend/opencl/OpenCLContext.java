@@ -119,6 +119,8 @@ public class OpenCLContext implements Context {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
+        //System.out.println(theResult.getData());
+
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,
                 1, new String[]{ theResult.getData() }, null, null);
