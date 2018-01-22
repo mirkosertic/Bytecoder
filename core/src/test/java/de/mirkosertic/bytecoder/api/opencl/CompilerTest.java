@@ -29,8 +29,6 @@ import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
-
 public class CompilerTest {
 
     private Kernel createKernel() {
@@ -114,8 +112,8 @@ public class CompilerTest {
                 int theIndex = get_global_id(0);
                 Vec2f a = theIn[theIndex];
                 Vec2f b = theOut[theIndex];
-                b.x = a.x;
-                b.y = a.y;
+                b.s1 = a.s2;
+                b.s1 = a.s2;
             }
         };
         Class theKernelClass = theKernel.getClass();

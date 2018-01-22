@@ -19,11 +19,36 @@ public class VectorFunctions {
 
     @OpenCLFunction("normalize")
     public static Vec2f normalize(Vec2f aVector) {
-        return aVector;
+        return aVector.normalize();
     }
 
     @OpenCLFunction("length")
     public static float length(Vec2f aVector) {
-        return 0f;
+        return aVector.length();
+    }
+
+    @OpenCLFunction("length")
+    public static float length(Vec4f aVector) {
+        return aVector.length();
+    }
+
+    @OpenCLFunction("cross")
+    public static Vec2f cross(Vec2f aVector, Vec2f aOtherVector) {
+        return aVector.cross(aOtherVector);
+    }
+
+    @OpenCLFunction("cross")
+    public static Vec4f cross(Vec4f aVector, Vec4f aOtherVector) {
+        return aVector.cross(aOtherVector);
+    }
+
+    @OpenCLFunction("dot")
+    public static float dot(Vec2f aVector, Vec2f aOtherVector) {
+        return aVector.dot(aOtherVector);
+    }
+
+    @OpenCLFunction("dot")
+    public static float dot(Vec4f aVector, Vec4f aOtherVector) {
+        return aVector.dot(aOtherVector);
     }
 }

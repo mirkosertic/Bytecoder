@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.GlobalFunctions;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
 
 import java.util.concurrent.CountDownLatch;
@@ -47,7 +46,7 @@ public class CPUContext implements Context {
             final int theWorkItemId = i;
             executorService.submit(() -> {
                 try {
-                    GlobalFunctions.set_global_id(0, theWorkItemId);
+                    aKernel.set_global_id(0, theWorkItemId);
                     aKernel.processWorkItem();
                 } finally {
                     theLatch.countDown();
@@ -55,7 +54,7 @@ public class CPUContext implements Context {
             });
         }
         try {
-            theLatch.wait();
+            theLatch.await();
         } catch (InterruptedException e) {
             throw new IllegalStateException("Something went wrong", e);
         }
