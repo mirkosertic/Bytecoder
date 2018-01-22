@@ -22,14 +22,14 @@ import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 
-public class AliceCarolBobDaveTest {
+public class AliceBobCarolDaveTest {
 
     @Test
     public void testSimilarity() throws Exception {
         Vec4f theAlice = new Vec4f(5f, 1f, 0f, 6f);
-        Vec4f theCarol = new Vec4f(0f, 10f, 3f, 0f);
-        Vec4f theBob = new Vec4f(7f, 2f, 1f, 8f);
-        Vec4f theDave = new Vec4f(2f, 6f, 3f, 2f);
+        Vec4f theBob = new Vec4f(0f, 10f, 3f, 0f);
+        Vec4f theCarol = new Vec4f(2f, 6f, 3f, 2f);
+        Vec4f theDave = new Vec4f(7f, 2f, 1f, 8f);
 
         Vec4f[] theInputs = new Vec4f[] {theAlice, theCarol, theBob, theDave};
 
