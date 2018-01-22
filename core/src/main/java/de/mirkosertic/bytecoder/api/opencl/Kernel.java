@@ -17,5 +17,16 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 public abstract class Kernel {
 
+    private final ThreadLocal<Integer> currentWorkItemId = new ThreadLocal<>();
+
+    @OpenCLFunction("get_global_id")
+    protected int get_global_id(int aDimension) {
+        return currentWorkItemId.get();
+    }
+
+    public void set_global_id(int aDimension, int aId) {
+        currentWorkItemId.set(aId);
+    }
+
     public abstract void processWorkItem();
 }

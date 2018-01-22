@@ -17,8 +17,6 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 import org.junit.Test;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
-
 public class ContextTest {
 
     @Test
@@ -59,10 +57,10 @@ public class ContextTest {
             theContext.compute(1, new Kernel() {
                 public void processWorkItem() {
                     int id = get_global_id(0);
-                    float ax = theA[id].x;
-                    float ay = theB[id].x;
-                    theResult[id].x = ax + 100;
-                    theResult[id].y = ay + 200;
+                    float aS1 = theA[id].s1;
+                    float aS2 = theB[id].s2;
+                    theResult[id].s1 = aS1 + 100;
+                    theResult[id].s2 = aS2 + 200;
                 }
             });
         }
@@ -85,7 +83,7 @@ public class ContextTest {
                 public void processWorkItem() {
                     int id = get_global_id(0);
                     Vec2f theVec = VectorFunctions.normalize(theA[id]);
-                    theResult[id].x = theVec.x;
+                    theResult[id].s1 = theVec.s1;
                 }
             });
         }
