@@ -209,7 +209,7 @@ public class OpenCLContext implements Context {
                 case INPUTOUTPUT:
                     theMemObjects[i] = clCreateBuffer(context,
                             CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            theDataRef.size * aNumberOfStreams, theDataRef.pointer, null);
+                            theDataRef.size, theDataRef.pointer, null);
 
                     theOutputs.put(i, theDataRef);
 
