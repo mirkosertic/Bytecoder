@@ -1,32 +1,19 @@
+/*
+ * Copyright 2018 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.mirkosertic.bytecoder.backend.opencl;
-
-import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
-import de.mirkosertic.bytecoder.api.opencl.Kernel;
-import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
-import de.mirkosertic.bytecoder.api.opencl.Vec2f;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-import org.jocl.Pointer;
-import org.jocl.Sizeof;
-import org.jocl.cl_command_queue;
-import org.jocl.cl_context;
-import org.jocl.cl_kernel;
-import org.jocl.cl_mem;
-import org.jocl.cl_program;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.FloatBuffer;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.jocl.CL.CL_DEVICE_TYPE_GPU;
 import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
@@ -46,6 +33,34 @@ import static org.jocl.CL.clReleaseKernel;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
 import static org.jocl.CL.clSetKernelArg;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jocl.Pointer;
+import org.jocl.Sizeof;
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_kernel;
+import org.jocl.cl_mem;
+import org.jocl.cl_program;
+
+import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
+import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 public class OpenCLContext implements Context {
 
@@ -118,20 +133,6 @@ public class OpenCLContext implements Context {
         BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
-
-        /*theResult = new OpenCLCompileResult(theResult.getInputOutputs(), "__kernel void BytecoderKernel(const __global float2* val$theA, const __global float2* val$theResult) {\n" +
-                "    int $__label__ = 0;\n" +
-                "    int var1 = get_global_id(0);\n" +
-                "    float2 var4_temp = normalize(val$theA[var1]);\n" +
-                "    float2* var4 = &var4_temp;\n" +
-                "    __global float2* var5 = val$theResult;\n" +
-                "    __global float2* var6 = &var5[var1];\n" +
-                "    float var7 = var4->x;\n" +
-                "    var6->x = var7;\n" +
-                "    return;\n" +
-                "}");*/
-
-        System.out.println(theResult.getData());
 
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,
@@ -251,7 +252,7 @@ public class OpenCLContext implements Context {
             int theSize = aArray.length * theType.elementCount();
             FloatBuffer theBuffer = FloatBuffer.allocate(theSize);
             for (Object anAArray : aArray) {
-                Vec2f theVec = (Vec2f) anAArray;
+                FloatSerializable theVec = (FloatSerializable) anAArray;
                 theVec.writeTo(theBuffer);
             }
             return new DataRef(Pointer.to(theBuffer), Sizeof.cl_float * theSize) {
@@ -259,7 +260,7 @@ public class OpenCLContext implements Context {
                 public void updateFromBuffer() {
                     theBuffer.rewind();
                     for (Object anAArray : aArray) {
-                        Vec2f theVec = (Vec2f) anAArray;
+                        FloatSerializable theVec = (FloatSerializable) anAArray;
                         theVec.readFrom(theBuffer);
                     }
                 }

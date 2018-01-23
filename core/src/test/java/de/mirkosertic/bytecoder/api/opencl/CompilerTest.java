@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+
 import java.lang.reflect.Method;
 
 import org.junit.Test;

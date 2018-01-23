@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
-import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
-
+import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 import org.junit.Test;
 
-import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
+import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
 
 public class AliceBobCarolDaveTest {
 
@@ -36,7 +36,7 @@ public class AliceBobCarolDaveTest {
         int[] theMostSimilar = new int[theInputs.length];
         float[] theMostSimilarity = new float[theInputs.length];
 
-        Platform thePlatform = new CPUPlatform();
+        Platform thePlatform = new PlatformFactory().createPlatform();
         try (Context theContext = thePlatform.createContext()) {
             theContext.compute(theInputs.length, new Kernel() {
                 @Override

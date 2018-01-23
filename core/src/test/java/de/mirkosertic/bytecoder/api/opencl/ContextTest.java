@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+
 import org.junit.Test;
 
 public class ContextTest {
