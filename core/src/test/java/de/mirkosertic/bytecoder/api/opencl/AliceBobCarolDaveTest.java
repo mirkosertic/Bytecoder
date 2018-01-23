@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 import org.junit.Test;
 
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_size;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
 
@@ -44,7 +45,7 @@ public class AliceBobCarolDaveTest {
                     int theCurrentWorkItemId = get_global_id(0);
                     Vec4f theCurrent = theInputs[theCurrentWorkItemId];
                     float theCurrentLength = length(theCurrent);
-                    int theMax = 4;
+                    int theMax = get_global_size(0);
 
                     float theMaxSimilarity = -1;
                     int theMaxIndex = -1;
@@ -54,8 +55,10 @@ public class AliceBobCarolDaveTest {
                             Vec4f theOther = theInputs[i];
                             float theOtherLength = length(theOther);
 
-                            if (theCurrentLength * theOtherLength != 0) {
-                                float theSimilarity = dot(theCurrent, theOther) / (theCurrentLength * theOtherLength);
+                            float theLength = theCurrentLength * theOtherLength;
+
+                            if (theLength != 0) {
+                                float theSimilarity = dot(theCurrent, theOther) / (theLength);
 
                                 if (theSimilarity > theMaxSimilarity) {
                                     theMaxSimilarity = theSimilarity;
@@ -74,5 +77,61 @@ public class AliceBobCarolDaveTest {
         for (int i=0;i<theInputs.length;i++) {
             System.out.println("Most similar match for input " + i + " is " + theMostSimilar[i] + " with a similarity of " + theMostSimilarity[i]);
         }
+    }
+
+    @Test
+    public void testPerformance() throws Exception {
+        int theMaxSize = 100000;
+        Vec4f[] theInputs = new Vec4f[theMaxSize];
+        for (int i=0;i<theMaxSize;i++) {
+            theInputs[i] = new Vec4f(5f, 1f, 0f, 6f);
+        }
+
+        int[] theMostSimilar = new int[theInputs.length];
+        float[] theMostSimilarity = new float[theInputs.length];
+
+        long theStart = System.currentTimeMillis();
+
+        Platform thePlatform = new PlatformFactory().createPlatform();
+        //Platform thePlatform = new CPUPlatform();
+        try (Context theContext = thePlatform.createContext()) {
+
+            theContext.compute(theInputs.length, new Kernel() {
+                @Override
+                public void processWorkItem() {
+                    int theCurrentWorkItemId = get_global_id(0);
+                    Vec4f theCurrent = theInputs[theCurrentWorkItemId];
+                    float theCurrentLength = length(theCurrent);
+                    int theMax = get_global_size(0);
+
+                    float theMaxSimilarity = -1;
+                    int theMaxIndex = -1;
+
+                    for (int i = 0; i < theMax; i++) {
+                        if (i != theCurrentWorkItemId) {
+                            Vec4f theOther = theInputs[i];
+                            float theOtherLength = length(theOther);
+
+                            float theLength = theCurrentLength * theOtherLength;
+
+                            if (theLength != 0) {
+                                float theSimilarity = dot(theCurrent, theOther) / (theLength);
+
+                                if (theSimilarity > theMaxSimilarity) {
+                                    theMaxSimilarity = theSimilarity;
+                                    theMaxIndex = i;
+                                }
+                            }
+                        }
+                    }
+
+                    theMostSimilar[theCurrentWorkItemId] = theMaxIndex;
+                    theMostSimilarity[theCurrentWorkItemId] = theMaxSimilarity;
+                }
+            });
+        }
+
+        long theDuration = System.currentTimeMillis() - theStart;
+        System.out.println("Took " + theDuration);
     }
 }
