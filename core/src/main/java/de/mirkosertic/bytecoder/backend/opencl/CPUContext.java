@@ -15,13 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.set_global_id;
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.set_global_size;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
+import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.Kernel;
 
 public class CPUContext implements Context {
 
@@ -46,7 +49,8 @@ public class CPUContext implements Context {
             final int theWorkItemId = i;
             executorService.submit(() -> {
                 try {
-                    aKernel.set_global_id(0, theWorkItemId);
+                    set_global_id(0, theWorkItemId);
+                    set_global_size(0, aNumberOfStreams);
                     aKernel.processWorkItem();
                 } finally {
                     theLatch.countDown();

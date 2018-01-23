@@ -44,6 +44,9 @@ public class TMath extends TObject {
         return a;
     }
 
+    @Import(module = "math", name = "sqrt")
+    public static native double sqrt(double aValue);
+
     @Import(module = "math", name = "ceil")
     public static native double ceil(double aValue);
 

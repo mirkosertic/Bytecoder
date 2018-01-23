@@ -57,6 +57,7 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
@@ -69,7 +70,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         kernelClass = aKernelClass;
     }
 
-    public void printRelooped(Relooper.Block aBlock) {
+    public void printRelooped(Program aProgram, Relooper.Block aBlock) {
         print("__kernel void BytecoderKernel(");
 
         List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
@@ -98,6 +99,16 @@ public class OpenCLWriter extends IndentSSAWriter {
         println(") {");
         OpenCLWriter theDeeper = withDeeperIndent();
         theDeeper.println("int $__label__ = 0;");
+
+        for (Variable theVariable : aProgram.getVariables()) {
+            if (!theVariable.isSynthetic()) {
+                theDeeper.print(toType(theVariable.resolveType(), false));
+                theDeeper.print(" ");
+                theDeeper.print(theVariable.getName());
+                theDeeper.println(";");
+            }
+        }
+
         theDeeper.print(aBlock);
 
         println("}");
@@ -127,16 +138,21 @@ public class OpenCLWriter extends IndentSSAWriter {
         if (aSimpleBlock.isLabelRequired()) {
             print("$");
             print(aSimpleBlock.label().name());
-            println(" : {");
+            println(" :");
             theWriter = theWriter.withDeeperIndent();
         }
 
         theWriter.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
 
-        if (aSimpleBlock.isLabelRequired()) {
-            println("}");
+        if (aSimpleBlock.next() != null) {
+
+            print("$");
+            print(aSimpleBlock.label().name());
+            println("_next:");
+
+            print(aSimpleBlock.next());
+
         }
-        print(aSimpleBlock.next());
     }
 
     private void print(Relooper.LoopBlock aLoopBlock) {
@@ -144,18 +160,20 @@ public class OpenCLWriter extends IndentSSAWriter {
         if (aLoopBlock.isLabelRequired()) {
             print("$");
             print(aLoopBlock.label().name());
-            print(" : ");
+            println(" : ");
             theWriter = theWriter.withDeeperIndent();
 
         }
-        println("for (;;) {");
 
         theWriter.print(aLoopBlock.inner());
 
-        if (aLoopBlock.isLabelRequired()) {
-            println("}");
+        if (aLoopBlock.next() != null) {
+            print("$");
+            print(aLoopBlock.label().name());
+            println("_next:");
+
+            print(aLoopBlock.next());
         }
-        print(aLoopBlock.next());
     }
 
     private void print(Relooper.MultipleBlock aMultiple) {
@@ -167,7 +185,7 @@ public class OpenCLWriter extends IndentSSAWriter {
             theWriter = theWriter.withDeeperIndent();
         }
 
-        println("for(;;) switch (__label__) {");
+        println("switch (__label__) {");
 
         for (Relooper.Block theHandler : aMultiple.handlers()) {
             for (GraphNode theEntry : theHandler.entries()) {
@@ -180,11 +198,15 @@ public class OpenCLWriter extends IndentSSAWriter {
             theHandlerWriter.print(theHandler);
         }
 
-        if (aMultiple.isLabelRequired()) {
-            println("}");
-        }
+        println("}");
 
-        print(aMultiple.next());
+        if (aMultiple.next() != null) {
+            print("$");
+            print(aMultiple.label().name());
+            println("_next:");
+
+            print(aMultiple.next());
+        }
     }
 
     private OpenCLWriter withDeeperIndent() {
@@ -208,8 +230,6 @@ public class OpenCLWriter extends IndentSSAWriter {
             if (theExpression instanceof InitVariableExpression) {
                 InitVariableExpression theInit = (InitVariableExpression) theExpression;
                 if (theInit.getVariable().resolveType().isObject() && theInit.getValue() instanceof InvocationValue) {
-                    print(toType(theInit.getVariable().resolveType(), false));
-                    print(" ");
                     print(theInit.getVariable().getName());
                     print("_temp = ");
                     printValue(theInit.getValue());
@@ -222,8 +242,6 @@ public class OpenCLWriter extends IndentSSAWriter {
                     print(theInit.getVariable().getName());
                     println("_temp;");
                 } else {
-                    print(toType(theInit.getVariable().resolveType()));
-                    print(" ");
                     print(theInit.getVariable().getName());
                     print(" = ");
                     printValue(theInit.getValue());
@@ -254,16 +272,16 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print("$__label__ = ");
                 print(theBreak.jumpTarget().getAddress());
                 println(";");
-                print("break $");
+                print("goto $");
                 print(theBreak.blockToBreak().name());
-                println(";");
+                println("_next;");
 
             } else if (theExpression instanceof ContinueExpression) {
                 ContinueExpression theContinue = (ContinueExpression) theExpression;
                 print("$__label__ = ");
                 print(theContinue.jumpTarget().getAddress());
                 println(";");
-                print("continue $");
+                print("goto $");
                 print(theContinue.labelToReturnTo().name());
                 println(";");
 
@@ -475,7 +493,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         List<BytecodeMethod> theMethods = new ArrayList<>();
         theLinkedClass.forEachMethod(theMethods::add);
         for (BytecodeMethod theMethod : theMethods) {
-            if (theMethod.getName().stringValue().equals(aValue.getMethodName()) && theMethod.getSignature().metchesExactlyTo(aValue.getSignature())) {
+            if (Objects.equals(theMethod.getName().stringValue(), aValue.getMethodName()) && theMethod.getSignature().metchesExactlyTo(aValue.getSignature())) {
                 BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(OpenCLFunction.class.getName());
                 if (theAnnotation == null) {
                     throw new IllegalArgumentException("Annotation @OpenCLFunction required for static method " + aValue.getMethodName());
@@ -486,11 +504,11 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print("(");
                 List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
                 for (int i=0;i<theArguments.size();i++) {
-                    if (!theSignature.getArguments()[i].isPrimitive()) {
-                        print("*");
-                    }
                     if (i>0) {
                         print(",");
+                    }
+                    if (!theSignature.getArguments()[i].isPrimitive()) {
+                        print("*");
                     }
                     printValue(theArguments.get(i));
                 }

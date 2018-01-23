@@ -102,7 +102,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 Relooper theRelooper = new Relooper();
                 Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                theSSAWriter.printRelooped(theReloopedBlock);
+                theSSAWriter.printRelooped(theSSAProgram, theReloopedBlock);
             } catch (Exception e) {
                 throw new IllegalStateException("Error relooping cfg", e);
             }
