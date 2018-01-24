@@ -25,12 +25,15 @@ import java.util.concurrent.ThreadFactory;
 
 import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.core.Logger;
 
 public class CPUContext implements Context {
 
     private final ExecutorService executorService;
+    private final Logger logger;
 
-    public CPUContext() {
+    public CPUContext(Logger aLogger) {
+        logger = aLogger;
         executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
 
             int counter = 0;
