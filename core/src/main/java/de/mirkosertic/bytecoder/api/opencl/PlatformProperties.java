@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.api.opencl;
 
-public interface Logger {
+public interface PlatformProperties {
 
-    void info(String aMessage, Object... aArguments);
-
-    void warn(String aMessage, Object... aArguments);
-
-    void debug(String aMessage, Object... aArguments);
+    String getName();
 }

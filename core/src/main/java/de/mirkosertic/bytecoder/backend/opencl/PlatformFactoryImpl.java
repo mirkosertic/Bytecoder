@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.opencl;
+package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.api.opencl.Platform;
+import de.mirkosertic.bytecoder.api.opencl.PlatformFactory;
 import de.mirkosertic.bytecoder.core.Logger;
 
-import java.util.ServiceLoader;
+public class PlatformFactoryImpl extends PlatformFactory {
 
-public abstract class PlatformFactory {
-
-    public static PlatformFactory resolve() {
-        ServiceLoader<PlatformFactory> theLoader = ServiceLoader.load(PlatformFactory.class);
-        return theLoader.iterator().next();
+    public Platform createPlatform(Logger aLogger) {
+        try {
+            return new OpenCLPlatform(aLogger);
+        } catch (Exception e) {
+            aLogger.warn("Problem while detecting OpenCL device. Using CPU emulation layer", e);
+            return new CPUPlatform(aLogger);
+        }
     }
-
-    public abstract Platform createPlatform(Logger aLogger);
 }

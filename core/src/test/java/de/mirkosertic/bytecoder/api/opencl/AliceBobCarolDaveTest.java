@@ -15,13 +15,15 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
-import org.junit.Test;
-
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_size;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
+
+import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
+import org.junit.Test;
+
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 public class AliceBobCarolDaveTest {
 
@@ -37,7 +39,7 @@ public class AliceBobCarolDaveTest {
         int[] theMostSimilar = new int[theInputs.length];
         float[] theMostSimilarity = new float[theInputs.length];
 
-        Platform thePlatform = new PlatformFactory().createPlatform();
+        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
         try (Context theContext = thePlatform.createContext()) {
             theContext.compute(theInputs.length, new Kernel() {
                 @Override
@@ -84,7 +86,7 @@ public class AliceBobCarolDaveTest {
         int theMaxSize = 100000;
         Vec4f[] theInputs = new Vec4f[theMaxSize];
         for (int i=0;i<theMaxSize;i++) {
-            theInputs[i] = new Vec4f(5f, 1f, 0f, 6f);
+            theInputs[i] = new Vec4f((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
         }
 
         int[] theMostSimilar = new int[theInputs.length];
@@ -92,7 +94,18 @@ public class AliceBobCarolDaveTest {
 
         long theStart = System.currentTimeMillis();
 
-        Platform thePlatform = new PlatformFactory().createPlatform();
+        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+        //Platform thePlatform = new CPUPlatform(new Slf4JLogger());
+
+        PlatformProperties thePlatformProps = thePlatform.getPlatformProperties();
+        System.out.println("Platform is   : " + thePlatformProps.getName());
+
+        DeviceProperties theDevProps = thePlatform.getDeviceProperties();
+        System.out.println("Device        : " + theDevProps.getName());
+        System.out.println(" # CU         : " + theDevProps.getNumberOfComputeUnits());
+        System.out.println(" Clock freq.  : " + theDevProps.getClockFrequency());
+        System.out.println(" Max workgroup: " + theDevProps.getMaxWorkGroupSize());
+
         //Platform thePlatform = new CPUPlatform();
         try (Context theContext = thePlatform.createContext()) {
 

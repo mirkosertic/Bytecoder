@@ -19,12 +19,13 @@ import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 
 import org.junit.Test;
 
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+
 public class ContextTest {
 
     @Test
     public void testSimpleAdd() throws Exception {
-        PlatformFactory theFactory = new PlatformFactory();
-        Platform thePlatform = theFactory.createPlatform();
+        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
 
         final float[] theA = {10f, 20f, 30f, 40f};
         final float[] theB = {100f, 200f, 300f, 400f};
@@ -48,8 +49,7 @@ public class ContextTest {
 
     @Test
     public void testComplexAdd() throws Exception {
-        PlatformFactory theFactory = new PlatformFactory();
-        Platform thePlatform = theFactory.createPlatform();
+        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
 
         final Vec2f[] theA = {new Vec2f(10f, 20f)};
         final Vec2f[] theB = {new Vec2f(10f, 20f)};
@@ -74,8 +74,7 @@ public class ContextTest {
 
     @Test
     public void testVectorNormalize() throws Exception {
-        PlatformFactory theFactory = new PlatformFactory();
-        Platform thePlatform = theFactory.createPlatform();
+        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
 
         final Vec2f[] theA = {new Vec2f(10f, 20f)};
         final Vec2f[] theResult = new Vec2f[] {new Vec2f(-1f, -1f)};

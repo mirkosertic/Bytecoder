@@ -17,5 +17,9 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 public interface Platform {
 
+    PlatformProperties getPlatformProperties();
+
+    DeviceProperties getDeviceProperties();
+
     Context createContext();
 }

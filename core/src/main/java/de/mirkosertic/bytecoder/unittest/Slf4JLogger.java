@@ -38,4 +38,9 @@ public class Slf4JLogger implements Logger {
     public void warn(String aMessage, Object... aArguments) {
         logger.warn(aMessage, aArguments);
     }
+
+    @Override
+    public void debug(String aMessage, Object... aArguments) {
+        logger.debug(aMessage, aArguments);
+    }
 }

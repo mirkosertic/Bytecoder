@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import static org.jocl.CL.CL_DEVICE_TYPE_ALL;
 import static org.jocl.CL.CL_DEVICE_TYPE_GPU;
 import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
@@ -41,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mirkosertic.bytecoder.core.Logger;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_command_queue;
@@ -50,6 +52,7 @@ import org.jocl.cl_mem;
 import org.jocl.cl_program;
 
 import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.DeviceProperties;
 import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
@@ -76,7 +79,7 @@ public class OpenCLContext implements Context {
             kernel = aKernel;
         }
 
-        public void close() {
+        void close() {
             clReleaseKernel(kernel);
             clReleaseProgram(program);
         }
@@ -92,47 +95,62 @@ public class OpenCLContext implements Context {
             size = aSize;
         }
 
-        public void updateFromBuffer() {
+        void updateFromBuffer() {
         }
     }
+
+    private static final Map<Class, OpenCLCompileResult> ALREADY_COMPILED = new HashMap<>();
 
     private final OpenCLCompileBackend backend;
     private final CompileOptions compileOptions;
     private final cl_context context;
     private final cl_command_queue commandQueue;
     private final Map<Class, CachedKernel> cachedKernels;
+    private final DeviceProperties deviceProperties;
+    private final Logger logger;
 
-    OpenCLContext(OpenCLPlatform aPlatform) {
+    OpenCLContext(OpenCLPlatform aPlatform, Logger aLogger) {
+        logger = aLogger;
+        deviceProperties = aPlatform.getDeviceProperties();
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
         compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
 
         context = clCreateContextFromType(
-                aPlatform.contextProperties, CL_DEVICE_TYPE_GPU, null, null, null);
+                aPlatform.contextProperties, CL_DEVICE_TYPE_ALL, null, null, null);
 
         commandQueue =
                 clCreateCommandQueue(context, aPlatform.selectedDevice, 0, null);
     }
 
     private CachedKernel kernelFor(Kernel aKernel) {
+
         Class theKernelClass = aKernel.getClass();
+
         CachedKernel theCachedKernel = cachedKernels.get(theKernelClass);
         if (theCachedKernel != null) {
             return theCachedKernel;
         }
 
-        Method theMethod;
-        try {
-            theMethod = aKernel.getClass().getDeclaredMethod("processWorkItem");
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Error resolving kernel method", e);
+        OpenCLCompileResult theResult = ALREADY_COMPILED.get(theKernelClass);
+        if (theResult == null) {
+            Method theMethod;
+            try {
+                theMethod = aKernel.getClass().getDeclaredMethod("processWorkItem");
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Error resolving kernel method", e);
+            }
+
+            BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
+
+            BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader(), new BytecodePackageReplacer());
+            BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
+            theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
+
+            logger.debug("Generated Kernel code : {}", theResult.getData());
+
+            ALREADY_COMPILED.put(theKernelClass, theResult);
         }
-
-        BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
-
-        BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader(), new BytecodePackageReplacer());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-        OpenCLCompileResult theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,
@@ -224,8 +242,10 @@ public class OpenCLContext implements Context {
         }
 
         // Set the work-item dimensions
-        long global_work_size[] = new long[]{aNumberOfStreams};
-        long local_work_size[] = new long[]{1};
+        long global_work_size[] = new long[] {aNumberOfStreams};
+
+        // Let the driver guess the optimal size
+        long local_work_size[] = null; //new long[] {32};
 
         // Execute the kernel
         clEnqueueNDRangeKernel(commandQueue, theCachedKernel.kernel, 1, null,
@@ -246,7 +266,7 @@ public class OpenCLContext implements Context {
         }
     }
 
-    private DataRef toDataRef(Object[] aArray, Class aDataType) {
+    private static DataRef toDataRef(Object[] aArray, Class aDataType) {
         if (FloatSerializable.class.isAssignableFrom(aDataType)) {
             OpenCLType theType = (OpenCLType) aDataType.getAnnotation(OpenCLType.class);
             int theSize = aArray.length * theType.elementCount();
