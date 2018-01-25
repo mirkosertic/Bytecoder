@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_DEVICE_MAX_CLOCK_FREQUENCY;
 import static org.jocl.CL.CL_DEVICE_MAX_COMPUTE_UNITS;
 import static org.jocl.CL.CL_DEVICE_MAX_WORK_GROUP_SIZE;
@@ -30,12 +29,13 @@ import static org.jocl.CL.clGetPlatformInfo;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 
 import de.mirkosertic.bytecoder.core.Logger;
 import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
-import org.jocl.cl_context_properties;
 import org.jocl.cl_device_id;
 import org.jocl.cl_platform_id;
 
@@ -46,75 +46,132 @@ import de.mirkosertic.bytecoder.api.opencl.PlatformProperties;
 
 public class OpenCLPlatform implements Platform {
 
-    final cl_context_properties contextProperties;
-    final cl_platform_id selectedPlatform;
-    final cl_device_id selectedDevice;
-    final PlatformProperties platformProperties;
-    final DeviceProperties deviceProperties;
+    final Platform selectedPlatform;
+    final Device selectedDevice;
     private final Logger logger;
+
+    static class Device {
+        final cl_device_id id;
+        private final DeviceProperties deviceProperties;
+
+        Device(cl_device_id aId, DeviceProperties aDeviceProperties) {
+            id = aId;
+            deviceProperties = aDeviceProperties;
+        }
+    }
+
+    static class Platform {
+
+        final cl_platform_id id;
+        private final PlatformProperties platformProperties;
+        private final List<Device> deviceList;
+
+        Platform(cl_platform_id aId, PlatformProperties aPlatformProperties) {
+            id = aId;
+            platformProperties = aPlatformProperties;
+            deviceList = new ArrayList<>();
+        }
+    }
 
     public OpenCLPlatform(Logger aLogger) {
 
         logger = aLogger;
 
+        List<Platform> thePlatforms = new ArrayList<>();
+
         // Enable exceptions and subsequently omit error checks in this sample
         CL.setExceptionsEnabled(true);
 
-        cl_platform_id platforms[] = new cl_platform_id[1];
-        clGetPlatformIDs(platforms.length, platforms, null);
+        int[] theNumPlatforms = new int[1];
+        clGetPlatformIDs(theNumPlatforms.length, null, theNumPlatforms);
 
-        selectedPlatform = platforms[0];
+        if (theNumPlatforms[0] == 0) {
+            throw new IllegalArgumentException("No OpenCL Platform found!");
+        }
 
-        platformProperties = () -> getString(selectedPlatform, CL_PLATFORM_NAME);
+        // Find all plattforms and devices
 
-        contextProperties = new cl_context_properties();
-        contextProperties.addProperty(CL_CONTEXT_PLATFORM, selectedPlatform);
+        cl_platform_id thePlattforms[] = new cl_platform_id[theNumPlatforms[0]];
+        clGetPlatformIDs(thePlattforms.length, thePlattforms, null);
 
-        // Obtain the number of devices for the platform
-        int numDevicesArray[] = new int[1];
-        clGetDeviceIDs(selectedPlatform, CL_DEVICE_TYPE_ALL, 0, null, numDevicesArray);
-        int numDevices = numDevicesArray[0];
+        for (int i=0;i<theNumPlatforms[0];i++) {
+            cl_platform_id theSelectedPlatform = thePlattforms[i];
 
-        cl_device_id devices[] = new cl_device_id[numDevices];
-        clGetDeviceIDs(selectedPlatform, CL_DEVICE_TYPE_ALL, numDevices, devices, null);
-        selectedDevice = devices[0];
+            try {
+                Platform thePlatform = new Platform(theSelectedPlatform, () -> getString(theSelectedPlatform, CL_PLATFORM_NAME));
 
-        deviceProperties = new DeviceProperties() {
-            @Override
-            public String getName() {
-                return getString(selectedDevice, CL_DEVICE_NAME);
+                logger.info("Platform with id {} is {}", i, thePlatform.platformProperties.getName());
+
+                // Obtain the number of devices for the platform
+                int numDevicesArray[] = new int[1];
+                clGetDeviceIDs(theSelectedPlatform, CL_DEVICE_TYPE_ALL, 0, null, numDevicesArray);
+                int numDevices = numDevicesArray[0];
+
+                cl_device_id devices[] = new cl_device_id[numDevices];
+                clGetDeviceIDs(theSelectedPlatform, CL_DEVICE_TYPE_ALL, numDevices, devices, null);
+
+                for (cl_device_id theDevice : devices) {
+
+                    cl_device_id theSelectedDevice = theDevice;
+
+                    DeviceProperties theDeviceProperties = new DeviceProperties() {
+                        @Override
+                        public String getName() {
+                            return getString(theSelectedDevice, CL_DEVICE_NAME);
+                        }
+
+                        @Override
+                        public int getNumberOfComputeUnits() {
+                            return getInt(theSelectedDevice, CL_DEVICE_MAX_COMPUTE_UNITS);
+                        }
+
+                        @Override
+                        public long[] getMaxWorkItemSizes() {
+                            return getSizes(theSelectedDevice, CL_DEVICE_MAX_WORK_ITEM_SIZES, 3);
+                        }
+
+                        @Override
+                        public long getMaxWorkGroupSize() {
+                            return getSize(theSelectedDevice, CL_DEVICE_MAX_WORK_GROUP_SIZE);
+                        }
+
+                        @Override
+                        public long getClockFrequency() {
+                            return getLong(theSelectedDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY);
+                        }
+                    };
+
+                    logger.info("Found device {} with #CU {} and max workgroup size {} " + theDeviceProperties.getName() ,theDeviceProperties
+                            .getNumberOfComputeUnits() ,theDeviceProperties.getMaxWorkGroupSize());
+
+                    thePlatform.deviceList.add(new Device(theSelectedDevice, theDeviceProperties));
+                }
+
+                thePlatforms.add(thePlatform);
+            } catch (Exception e) {
+                logger.warn("Error processing device {}", i);
             }
+        }
 
-            @Override
-            public int getNumberOfComputeUnits() {
-                return getInt(selectedDevice, CL_DEVICE_MAX_COMPUTE_UNITS);
-            }
+        if (thePlatforms.isEmpty()) {
+            throw new IllegalStateException("No OpenCP platform detected");
+        }
 
-            @Override
-            public long[] getMaxWorkItemSizes() {
-                return getSizes(selectedDevice, CL_DEVICE_MAX_WORK_ITEM_SIZES, 3);
-            }
+        selectedPlatform = thePlatforms.get(thePlatforms.size() - 1);
 
-            @Override
-            public long getMaxWorkGroupSize() {
-                return getSize(selectedDevice, CL_DEVICE_MAX_WORK_GROUP_SIZE);
-            }
+        logger.info("Device detection done, platform {} selected", thePlatforms.size() - 1);
 
-            @Override
-            public long getClockFrequency() {
-                return getLong(selectedDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY);
-            }
-        };
+        selectedDevice = selectedPlatform.deviceList.get(0);
     }
 
     @Override
     public PlatformProperties getPlatformProperties() {
-        return platformProperties;
+        return selectedPlatform.platformProperties;
     }
 
     @Override
     public DeviceProperties getDeviceProperties() {
-        return deviceProperties;
+        return selectedDevice.deviceProperties;
     }
 
     public Context createContext() {

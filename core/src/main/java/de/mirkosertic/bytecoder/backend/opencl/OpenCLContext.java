@@ -15,10 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_DEVICE_TYPE_ALL;
-import static org.jocl.CL.CL_DEVICE_TYPE_GPU;
 import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
+import static org.jocl.CL.CL_MEM_USE_HOST_PTR;
 import static org.jocl.CL.CL_TRUE;
 import static org.jocl.CL.clBuildProgram;
 import static org.jocl.CL.clCreateBuffer;
@@ -47,12 +48,12 @@ import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_command_queue;
 import org.jocl.cl_context;
+import org.jocl.cl_context_properties;
 import org.jocl.cl_kernel;
 import org.jocl.cl_mem;
 import org.jocl.cl_program;
 
 import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.DeviceProperties;
 import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
@@ -106,21 +107,22 @@ public class OpenCLContext implements Context {
     private final cl_context context;
     private final cl_command_queue commandQueue;
     private final Map<Class, CachedKernel> cachedKernels;
-    private final DeviceProperties deviceProperties;
     private final Logger logger;
 
     OpenCLContext(OpenCLPlatform aPlatform, Logger aLogger) {
         logger = aLogger;
-        deviceProperties = aPlatform.getDeviceProperties();
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
         compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
 
+        cl_context_properties contextProperties = new cl_context_properties();
+        contextProperties.addProperty(CL_CONTEXT_PLATFORM, aPlatform.selectedPlatform.id);
+
         context = clCreateContextFromType(
-                aPlatform.contextProperties, CL_DEVICE_TYPE_ALL, null, null, null);
+                contextProperties, CL_DEVICE_TYPE_ALL, null, null, null);
 
         commandQueue =
-                clCreateCommandQueue(context, aPlatform.selectedDevice, 0, null);
+                clCreateCommandQueue(context, aPlatform.selectedDevice.id, 0, null);
     }
 
     private CachedKernel kernelFor(Kernel aKernel) {
@@ -226,7 +228,7 @@ public class OpenCLContext implements Context {
                 case OUTPUT:
                 case INPUTOUTPUT:
                     theMemObjects[i] = clCreateBuffer(context,
-                            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
                             theDataRef.size, theDataRef.pointer, null);
 
                     theOutputs.put(i, theDataRef);
