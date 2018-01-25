@@ -83,7 +83,7 @@ public class AliceBobCarolDaveTest {
 
     @Test
     public void testPerformance() throws Exception {
-        int theMaxSize = 100000;
+        int theMaxSize = 500000;
         Vec4f[] theInputs = new Vec4f[theMaxSize];
         for (int i=0;i<theMaxSize;i++) {
             theInputs[i] = new Vec4f((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
