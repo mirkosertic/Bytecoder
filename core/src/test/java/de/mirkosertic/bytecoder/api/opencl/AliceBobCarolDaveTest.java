@@ -20,7 +20,6 @@ import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_siz
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
 
-import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
@@ -29,29 +28,45 @@ public class AliceBobCarolDaveTest {
 
     @Test
     public void testSimilarity() throws Exception {
+        // The data of our four friends
         Vec4f theAlice = new Vec4f(5f, 1f, 0f, 6f);
         Vec4f theBob = new Vec4f(0f, 10f, 3f, 0f);
         Vec4f theCarol = new Vec4f(2f, 6f, 3f, 2f);
         Vec4f theDave = new Vec4f(7f, 2f, 1f, 8f);
 
+        // We need an input for our kernel, a list of vectors
         Vec4f[] theInputs = new Vec4f[] {theAlice, theCarol, theBob, theDave};
 
+        // This is the computed output
         int[] theMostSimilar = new int[theInputs.length];
         float[] theMostSimilarity = new float[theInputs.length];
 
+        // We obtain a platform
         Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+        // All computation is done within a context. A context is
+        // used to cache memory buffers and compiled kernels
         try (Context theContext = thePlatform.createContext()) {
+
+            // We fire up the computations
             theContext.compute(theInputs.length, new Kernel() {
+
+                // This method is called for every workitem
                 @Override
                 public void processWorkItem() {
+                    // This is the id of the current work item
                     int theCurrentWorkItemId = get_global_id(0);
+                    // This is the total number of work items
+                    int theMax = get_global_size(0);
+
+                    // We obtain the current work item from the list
                     Vec4f theCurrent = theInputs[theCurrentWorkItemId];
                     float theCurrentLength = length(theCurrent);
-                    int theMax = get_global_size(0);
 
                     float theMaxSimilarity = -1;
                     int theMaxIndex = -1;
 
+                    // And compute the similarities with all other work item
+                    // except itself
                     for (int i = 0;i<theMax;i++) {
                         if (i != theCurrentWorkItemId) {
                             Vec4f theOther = theInputs[i];
@@ -70,12 +85,14 @@ public class AliceBobCarolDaveTest {
                         }
                     }
 
+                    // The highest similarity is written to the output
                     theMostSimilar[theCurrentWorkItemId] = theMaxIndex;
                     theMostSimilarity[theCurrentWorkItemId] = theMaxSimilarity;
                 }
             });
         }
 
+        // Output the results
         for (int i=0;i<theInputs.length;i++) {
             System.out.println("Most similar match for input " + i + " is " + theMostSimilar[i] + " with a similarity of " + theMostSimilarity[i]);
         }
@@ -83,7 +100,7 @@ public class AliceBobCarolDaveTest {
 
     @Test
     public void testPerformance() throws Exception {
-        int theMaxSize = 500000;
+        int theMaxSize = 100000;
         Vec4f[] theInputs = new Vec4f[theMaxSize];
         for (int i=0;i<theMaxSize;i++) {
             theInputs[i] = new Vec4f((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
@@ -106,16 +123,16 @@ public class AliceBobCarolDaveTest {
         System.out.println(" Clock freq.  : " + theDevProps.getClockFrequency());
         System.out.println(" Max workgroup: " + theDevProps.getMaxWorkGroupSize());
 
-        //Platform thePlatform = new CPUPlatform();
         try (Context theContext = thePlatform.createContext()) {
 
             theContext.compute(theInputs.length, new Kernel() {
                 @Override
                 public void processWorkItem() {
                     int theCurrentWorkItemId = get_global_id(0);
+                    int theMax = get_global_size(0);
+
                     Vec4f theCurrent = theInputs[theCurrentWorkItemId];
                     float theCurrentLength = length(theCurrent);
-                    int theMax = get_global_size(0);
 
                     float theMaxSimilarity = -1;
                     int theMaxIndex = -1;

@@ -112,39 +112,37 @@ public class OpenCLPlatform implements Platform {
 
                 for (cl_device_id theDevice : devices) {
 
-                    cl_device_id theSelectedDevice = theDevice;
-
                     DeviceProperties theDeviceProperties = new DeviceProperties() {
                         @Override
                         public String getName() {
-                            return getString(theSelectedDevice, CL_DEVICE_NAME);
+                            return getString(theDevice, CL_DEVICE_NAME);
                         }
 
                         @Override
                         public int getNumberOfComputeUnits() {
-                            return getInt(theSelectedDevice, CL_DEVICE_MAX_COMPUTE_UNITS);
+                            return getInt(theDevice, CL_DEVICE_MAX_COMPUTE_UNITS);
                         }
 
                         @Override
                         public long[] getMaxWorkItemSizes() {
-                            return getSizes(theSelectedDevice, CL_DEVICE_MAX_WORK_ITEM_SIZES, 3);
+                            return getSizes(theDevice, CL_DEVICE_MAX_WORK_ITEM_SIZES, 3);
                         }
 
                         @Override
                         public long getMaxWorkGroupSize() {
-                            return getSize(theSelectedDevice, CL_DEVICE_MAX_WORK_GROUP_SIZE);
+                            return getSize(theDevice, CL_DEVICE_MAX_WORK_GROUP_SIZE);
                         }
 
                         @Override
                         public long getClockFrequency() {
-                            return getLong(theSelectedDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY);
+                            return getLong(theDevice, CL_DEVICE_MAX_CLOCK_FREQUENCY);
                         }
                     };
 
                     logger.info("Found device {} with #CU {} and max workgroup size {} " + theDeviceProperties.getName() ,theDeviceProperties
                             .getNumberOfComputeUnits() ,theDeviceProperties.getMaxWorkGroupSize());
 
-                    thePlatform.deviceList.add(new Device(theSelectedDevice, theDeviceProperties));
+                    thePlatform.deviceList.add(new Device(theDevice, theDeviceProperties));
                 }
 
                 thePlatforms.add(thePlatform);
@@ -157,11 +155,22 @@ public class OpenCLPlatform implements Platform {
             throw new IllegalStateException("No OpenCP platform detected");
         }
 
-        selectedPlatform = thePlatforms.get(thePlatforms.size() - 1);
+        int thePlatformID = thePlatforms.size() - 1;
+        String theOverriddenPlatform = System.getProperty("OPENCL_PLATFORM");
+        if (theOverriddenPlatform != null && theOverriddenPlatform.length() > 0) {
+            thePlatformID = Integer.parseInt(theOverriddenPlatform);
+        }
 
-        logger.info("Device detection done, platform {} selected", thePlatforms.size() - 1);
+        int theDeviceID = 0;
+        String theOverriddenDevice = System.getProperty("OPENCL_DEVICE");
+        if (theOverriddenDevice != null && theOverriddenDevice.length() > 0) {
+            theDeviceID = Integer.parseInt(theOverriddenDevice);
+        }
 
-        selectedDevice = selectedPlatform.deviceList.get(0);
+        selectedPlatform = thePlatforms.get(thePlatformID);
+
+        logger.info("Device detection done, platform {} selected", thePlatformID);
+        selectedDevice = selectedPlatform.deviceList.get(theDeviceID);
     }
 
     @Override
@@ -203,7 +212,7 @@ public class OpenCLPlatform implements Platform {
         return getSizes(device, paramName, 1)[0];
     }
 
-    static long[] getSizes(cl_device_id device, int paramName, int numValues) {
+    private static long[] getSizes(cl_device_id device, int paramName, int numValues) {
         // The size of the returned data has to depend on
         // the size of a size_t, which is handled here
         ByteBuffer buffer = ByteBuffer.allocate(numValues * Sizeof.size_t).order(ByteOrder.nativeOrder());

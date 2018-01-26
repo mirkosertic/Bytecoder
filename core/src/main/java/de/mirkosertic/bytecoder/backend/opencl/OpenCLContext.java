@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend.opencl;
 
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_DEVICE_TYPE_ALL;
-import static org.jocl.CL.CL_MEM_COPY_HOST_PTR;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
 import static org.jocl.CL.CL_MEM_USE_HOST_PTR;
 import static org.jocl.CL.CL_TRUE;
@@ -29,6 +28,7 @@ import static org.jocl.CL.clCreateKernel;
 import static org.jocl.CL.clCreateProgramWithSource;
 import static org.jocl.CL.clEnqueueNDRangeKernel;
 import static org.jocl.CL.clEnqueueReadBuffer;
+import static org.jocl.CL.clFinish;
 import static org.jocl.CL.clReleaseCommandQueue;
 import static org.jocl.CL.clReleaseContext;
 import static org.jocl.CL.clReleaseKernel;
@@ -66,7 +66,7 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
-public class OpenCLContext implements Context {
+class OpenCLContext implements Context {
 
     private static class CachedKernel {
 
@@ -108,9 +108,11 @@ public class OpenCLContext implements Context {
     private final cl_command_queue commandQueue;
     private final Map<Class, CachedKernel> cachedKernels;
     private final Logger logger;
+    private final OpenCLPlatform platform;
 
     OpenCLContext(OpenCLPlatform aPlatform, Logger aLogger) {
         logger = aLogger;
+        platform = aPlatform;
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
         compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
@@ -252,6 +254,9 @@ public class OpenCLContext implements Context {
         // Execute the kernel
         clEnqueueNDRangeKernel(commandQueue, theCachedKernel.kernel, 1, null,
                 global_work_size, local_work_size, 0, null, null);
+
+        // Wait till everything is done
+        clFinish(commandQueue);
 
         // Read the output data
         for (Map.Entry<Integer, DataRef> theEntry : theOutputs.entrySet()) {
