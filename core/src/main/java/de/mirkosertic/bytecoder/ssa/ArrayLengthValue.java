@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ArrayLengthValue extends Value {
+public class ArrayLengthValue extends SideEffectFreeValue {
 
     public ArrayLengthValue(Value aArray) {
         consume(ConsumptionType.ARGUMENT, aArray);

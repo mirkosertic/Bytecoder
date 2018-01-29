@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ArrayEntryValue extends Value {
+public class ArrayEntryValue extends SideEffectFreeValue {
 
     private final TypeRef arrayType;
 

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
-public class InstanceOfValue extends Value {
+public class InstanceOfValue extends SideEffectFreeValue {
 
     private final BytecodeClassinfoConstant type;
 

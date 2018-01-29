@@ -36,7 +36,7 @@ final float[] theResult = new float[4];
 
 try (Context theContext = thePlatform.createContext()) {
     theContext.compute(4, new Kernel() {
-        public void add() {
+        public void processWorkItem() {
             int id = get_global_id(0);
             float a = theA[id];
             float b = theB[id];

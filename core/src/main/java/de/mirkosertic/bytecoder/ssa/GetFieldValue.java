@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 
-public class GetFieldValue extends Value {
+public class GetFieldValue extends SideEffectFreeValue {
 
     private final BytecodeFieldRefConstant field;
 

@@ -29,13 +29,13 @@ public class AliceBobCarolDaveTest {
     @Test
     public void testSimilarity() throws Exception {
         // The data of our four friends
-        Vec4f theAlice = new Vec4f(5f, 1f, 0f, 6f);
-        Vec4f theBob = new Vec4f(0f, 10f, 3f, 0f);
-        Vec4f theCarol = new Vec4f(2f, 6f, 3f, 2f);
-        Vec4f theDave = new Vec4f(7f, 2f, 1f, 8f);
+        Float4 theAlice = new Float4(5f, 1f, 0f, 6f);
+        Float4 theBob = new Float4(0f, 10f, 3f, 0f);
+        Float4 theCarol = new Float4(2f, 6f, 3f, 2f);
+        Float4 theDave = new Float4(7f, 2f, 1f, 8f);
 
         // We need an input for our kernel, a list of vectors
-        Vec4f[] theInputs = new Vec4f[] {theAlice, theCarol, theBob, theDave};
+        Float4[] theInputs = new Float4[] {theAlice, theCarol, theBob, theDave};
 
         // This is the computed output
         int[] theMostSimilar = new int[theInputs.length];
@@ -59,7 +59,7 @@ public class AliceBobCarolDaveTest {
                     int theMax = get_global_size(0);
 
                     // We obtain the current work item from the list
-                    Vec4f theCurrent = theInputs[theCurrentWorkItemId];
+                    Float4 theCurrent = theInputs[theCurrentWorkItemId];
                     float theCurrentLength = length(theCurrent);
 
                     float theMaxSimilarity = -1;
@@ -69,7 +69,7 @@ public class AliceBobCarolDaveTest {
                     // except itself
                     for (int i = 0;i<theMax;i++) {
                         if (i != theCurrentWorkItemId) {
-                            Vec4f theOther = theInputs[i];
+                            Float4 theOther = theInputs[i];
                             float theOtherLength = length(theOther);
 
                             float theLength = theCurrentLength * theOtherLength;
@@ -101,9 +101,9 @@ public class AliceBobCarolDaveTest {
     @Test
     public void testPerformance() throws Exception {
         int theMaxSize = 100000;
-        Vec4f[] theInputs = new Vec4f[theMaxSize];
+        Float4[] theInputs = new Float4[theMaxSize];
         for (int i=0;i<theMaxSize;i++) {
-            theInputs[i] = new Vec4f((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
+            theInputs[i] = new Float4((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
         }
 
         int[] theMostSimilar = new int[theInputs.length];
@@ -131,7 +131,7 @@ public class AliceBobCarolDaveTest {
                     int theCurrentWorkItemId = get_global_id(0);
                     int theMax = get_global_size(0);
 
-                    Vec4f theCurrent = theInputs[theCurrentWorkItemId];
+                    Float4 theCurrent = theInputs[theCurrentWorkItemId];
                     float theCurrentLength = length(theCurrent);
 
                     float theMaxSimilarity = -1;
@@ -139,7 +139,7 @@ public class AliceBobCarolDaveTest {
 
                     for (int i = 0; i < theMax; i++) {
                         if (i != theCurrentWorkItemId) {
-                            Vec4f theOther = theInputs[i];
+                            Float4 theOther = theInputs[i];
                             float theOtherLength = length(theOther);
 
                             float theLength = theCurrentLength * theOtherLength;

@@ -48,16 +48,20 @@ public abstract class Value {
         return providesValueFor.size();
     }
 
-    public void replaceInConsumedValues(Value aOldValue, Value aNewValue) {
+    public boolean replaceInConsumedValues(Value aOldValue, Value aNewValue) {
+        boolean theChanged = false;
         if (providesValueFor.contains(aOldValue)) {
             providesValueFor.remove(aOldValue);
             providesValueFor.add(aNewValue);
+            theChanged = true;
         }
         for (Consumption theConsumption : consumesValueFrom) {
             if (theConsumption.value == aOldValue) {
                 theConsumption.value = aNewValue;
+                theChanged = true;
             }
         }
+        return theChanged;
     }
 
     public <T extends Value> List<T> consumedValues(ConsumptionType aType) {

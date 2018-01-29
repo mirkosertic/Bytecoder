@@ -16,10 +16,12 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -64,18 +66,34 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                     }
                 }
 
-                /*if (theValue instanceof ArrayEntryValue) {
+                if (theValue instanceof ArrayEntryValue) {
                     ArrayEntryValue theArrayEntry = (ArrayEntryValue) theValue;
                     Expression thePredecessor = aExpressions.predecessorOf(theInit);
                     if (thePredecessor instanceof InitVariableExpression) {
                         InitVariableExpression thePred = (InitVariableExpression) thePredecessor;
-                        if (thePred.getVariable() == theArrayEntry.resolveFirstArgument()) {
+                        if (thePred.getVariable() == theArrayEntry.resolveFirstArgument() && thePred.getVariable().getUsageCount() == 2) {
                             theArrayEntry.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
                             aExpressions.remove(thePred);
+
                             return true;
                         }
                     }
-                }*/
+                }
+
+                if (theValue instanceof GetFieldValue) {
+                    GetFieldValue theGetVield = (GetFieldValue) theValue;
+                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
+                    if (thePredecessor instanceof InitVariableExpression) {
+                        InitVariableExpression thePred = (InitVariableExpression) thePredecessor;
+                        if (thePred.getVariable() == theGetVield.resolveFirstArgument()
+                                && thePred.getVariable().getUsageCount() == 2) {
+                            theGetVield.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
+                            aExpressions.remove(thePred);
+
+                            return true;
+                        }
+                    }
+                }
             }
         }
         return false;

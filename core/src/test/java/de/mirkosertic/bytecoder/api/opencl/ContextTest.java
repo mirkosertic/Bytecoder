@@ -51,23 +51,23 @@ public class ContextTest {
     public void testComplexAdd() throws Exception {
         Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
 
-        final Vec2f[] theA = {new Vec2f(10f, 20f)};
-        final Vec2f[] theB = {new Vec2f(10f, 20f)};
-        final Vec2f[] theResult = new Vec2f[] {new Vec2f(-1f, -1f)};
+        final Float2[] theA = {new Float2(10f, 20f)};
+        final Float2[] theB = {new Float2(10f, 20f)};
+        final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
 
         try (Context theContext = thePlatform.createContext()) {
             theContext.compute(1, new Kernel() {
                 public void processWorkItem() {
                     int id = get_global_id(0);
-                    float aS1 = theA[id].s1;
-                    float aS2 = theB[id].s2;
-                    theResult[id].s1 = aS1 + 100;
-                    theResult[id].s2 = aS2 + 200;
+                    float aS0 = theA[id].s0;
+                    float aS1 = theB[id].s1;
+                    theResult[id].s0 = aS0 + 100;
+                    theResult[id].s1 = aS1 + 200;
                 }
             });
         }
 
-        for (Vec2f aTheResult : theResult) {
+        for (Float2 aTheResult : theResult) {
             System.out.println(aTheResult);
         }
     }
@@ -76,20 +76,20 @@ public class ContextTest {
     public void testVectorNormalize() throws Exception {
         Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
 
-        final Vec2f[] theA = {new Vec2f(10f, 20f)};
-        final Vec2f[] theResult = new Vec2f[] {new Vec2f(-1f, -1f)};
+        final Float2[] theA = {new Float2(10f, 20f)};
+        final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
 
         try (Context theContext = thePlatform.createContext()) {
             theContext.compute(1, new Kernel() {
                 public void processWorkItem() {
                     int id = get_global_id(0);
-                    Vec2f theVec = VectorFunctions.normalize(theA[id]);
+                    Float2 theVec = VectorFunctions.normalize(theA[id]);
                     theResult[id].s1 = theVec.s1;
                 }
             });
         }
 
-        for (Vec2f aTheResult : theResult) {
+        for (Float2 aTheResult : theResult) {
             System.out.println(aTheResult);
         }
     }
