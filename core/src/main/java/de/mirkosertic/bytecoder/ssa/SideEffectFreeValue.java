@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+public abstract class SideEffectFreeValue extends Value {
 
-public class GetStaticValue extends SideEffectFreeValue {
-
-    private final BytecodeFieldRefConstant field;
-
-    public GetStaticValue(BytecodeFieldRefConstant aField) {
-        field = aField;
-    }
-
-    public BytecodeFieldRefConstant getField() {
-        return field;
-    }
-
-    @Override
-    public TypeRef resolveType() {
-        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
-    }
 }

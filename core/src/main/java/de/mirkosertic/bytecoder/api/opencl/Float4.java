@@ -17,59 +17,73 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 import java.nio.FloatBuffer;
 
-@OpenCLType(name = "float2", elementCount = 2)
-public class Vec2f implements FloatSerializable {
+@OpenCLType(name = "float4", elementCount = 4)
+public class Float4 implements FloatSerializable {
 
+    public float s0;
     public float s1;
     public float s2;
+    public float s3;
 
-    public Vec2f(float aS1, float aS2) {
+    public Float4(float aS0, float aS1, float aS2, float aS3) {
+        s0 = aS0;
         s1 = aS1;
         s2 = aS2;
+        s3 = aS3;
     }
 
     @Override
     public void writeTo(FloatBuffer aBuffer) {
-        aBuffer.put(s1).put(s2);
+        aBuffer.put(s0).put(s1).put(s2).put(s3);
     }
 
     @Override
     public void readFrom(FloatBuffer aBuffer) {
+        s0 = aBuffer.get();
         s1 = aBuffer.get();
         s2 = aBuffer.get();
+        s3 = aBuffer.get();
     }
 
     @Override
     public String toString() {
-        return "Vec2f{" +
-                "s1=" + s1 +
+        return "Vec4f{" +
+                "s0=" + s0 +
+                ", s1=" + s1 +
                 ", s2=" + s2 +
+                ", s3=" + s3 +
                 '}';
     }
 
-    Vec2f normalize() {
-        return this;
+    static Float4 normalize(Float4 aVector) {
+        throw new IllegalArgumentException("Not implemented for CPU emulation");
     }
 
     float length() {
         float theSquareSum = 0.0f;
+        theSquareSum += s0 * s0;
         theSquareSum += s1 * s1;
         theSquareSum += s2 * s2;
+        theSquareSum += s3 * s3;
         return (float) Math.sqrt(theSquareSum);
 
     }
 
-    Vec2f cross(Vec2f aOtherVector) {
-        return new Vec2f(
+    Float4 cross(Float4 aOtherVector) {
+        return new Float4(
+            s0 * aOtherVector.s0,
             s1 * aOtherVector.s1,
-            s2 * aOtherVector.s2
+            s2 * aOtherVector.s2,
+            s3 * aOtherVector.s3
         );
     }
 
-    float dot(Vec2f aOtherVector) {
+    float dot(Float4 aOtherVector) {
         float theDotProduct = 0.0f;
+        theDotProduct += s0 * aOtherVector.s0;
         theDotProduct += s1 * aOtherVector.s1;
         theDotProduct += s2 * aOtherVector.s2;
+        theDotProduct += s3 * aOtherVector.s3;
         return theDotProduct;
     }
 }

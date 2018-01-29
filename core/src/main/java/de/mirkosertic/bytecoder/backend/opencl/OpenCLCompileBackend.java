@@ -25,20 +25,14 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -127,47 +121,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
     }
 
     private void fillInputOutputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) {
-        for (Expression theExpression : aExpressionList.toList()) {
-            if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    fillInputOutputs(aContext, aKernelClass, theList, aInputOutputs);
-                }
-            }
-
-            if (theExpression instanceof ArrayStoreExpression) {
-                ArrayStoreExpression theArrayStore = (ArrayStoreExpression) theExpression;
-                Variable theArray = (Variable) theArrayStore.getArray();
-                Value theSingleInit = theArray.singleInitValue();
-                if (theSingleInit instanceof GetFieldValue) {
-                    GetFieldValue theGetField = (GetFieldValue) theSingleInit;
-
-                    BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
-                    if (theClass == aKernelClass) {
-                        BytecodeLinkedClass.LinkedField theLinkedField = aKernelClass.memberFieldByName(
-                                theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-                        aInputOutputs.registerWriteTo(theLinkedField);
-                    }
-
-                }
-            }
-
-            if (theExpression instanceof PutFieldExpression) {
-                PutFieldExpression thePutField = (PutFieldExpression) theExpression;
-
-                BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(thePutField.getField().getClassIndex().getClassConstant().getConstant()));
-                if (theClass == aKernelClass) {
-                    BytecodeLinkedClass.LinkedField theLinkedField = aKernelClass.memberFieldByName(
-                            thePutField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-                    aInputOutputs.registerWriteTo(theLinkedField);
-                }
-
-            }
-            if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theInit = (InitVariableExpression) theExpression;
-                registerInputs(aContext, aKernelClass, theInit.getValue(), aInputOutputs);
-            }
-        }
+        aKernelClass.forEachMemberField(aEntry -> {
+            aInputOutputs.registerReadFrom(aEntry.getValue());
+            aInputOutputs.registerWriteTo(aEntry.getValue());
+        });
     }
 
     private void registerInputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, Value aValue, OpenCLInputOutputs aInputOutputs) {

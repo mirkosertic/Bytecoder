@@ -1336,7 +1336,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println();
 
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.printVariableName(aValue.resolveFirstArgument());
+        theChild.writeValue(aValue.resolveFirstArgument());
 
         println(")");
     }

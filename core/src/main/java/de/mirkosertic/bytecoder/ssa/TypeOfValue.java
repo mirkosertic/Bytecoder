@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class TypeOfValue extends Value {
+public class TypeOfValue extends SideEffectFreeValue {
 
     public TypeOfValue(Value aTarget) {
        consume(ConsumptionType.ARGUMENT, aTarget);

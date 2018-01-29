@@ -18,37 +18,42 @@ package de.mirkosertic.bytecoder.api.opencl;
 public class VectorFunctions {
 
     @OpenCLFunction("normalize")
-    public static Vec2f normalize(Vec2f aVector) {
-        return aVector.normalize();
+    public static Float2 normalize(Float2 aVector) {
+        return Float2.normalize(aVector);
+    }
+
+    @OpenCLFunction("normalize")
+    public static Float4 normalize(Float4 aVector) {
+        return Float4.normalize(aVector);
     }
 
     @OpenCLFunction("length")
-    public static float length(Vec2f aVector) {
+    public static float length(Float2 aVector) {
         return aVector.length();
     }
 
     @OpenCLFunction("length")
-    public static float length(Vec4f aVector) {
+    public static float length(Float4 aVector) {
         return aVector.length();
     }
 
     @OpenCLFunction("cross")
-    public static Vec2f cross(Vec2f aVector, Vec2f aOtherVector) {
+    public static Float2 cross(Float2 aVector, Float2 aOtherVector) {
         return aVector.cross(aOtherVector);
     }
 
     @OpenCLFunction("cross")
-    public static Vec4f cross(Vec4f aVector, Vec4f aOtherVector) {
+    public static Float4 cross(Float4 aVector, Float4 aOtherVector) {
         return aVector.cross(aOtherVector);
     }
 
     @OpenCLFunction("dot")
-    public static float dot(Vec2f aVector, Vec2f aOtherVector) {
+    public static float dot(Float2 aVector, Float2 aOtherVector) {
         return aVector.dot(aOtherVector);
     }
 
     @OpenCLFunction("dot")
-    public static float dot(Vec4f aVector, Vec4f aOtherVector) {
+    public static float dot(Float4 aVector, Float4 aOtherVector) {
         return aVector.dot(aOtherVector);
     }
 }

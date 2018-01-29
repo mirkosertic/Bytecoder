@@ -107,15 +107,15 @@ public class CompilerTest {
         OpenCLCompileBackend backend = new OpenCLCompileBackend();
         CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
 
-        Vec2f[] theIn = new Vec2f[10];
-        Vec2f[] theOut = new Vec2f[10];
+        Float2[] theIn = new Float2[10];
+        Float2[] theOut = new Float2[10];
         Kernel theKernel = new Kernel() {
             public void processWorkItem() {
                 int theIndex = get_global_id(0);
-                Vec2f a = theIn[theIndex];
-                Vec2f b = theOut[theIndex];
-                b.s1 = a.s2;
-                b.s1 = a.s2;
+                Float2 a = theIn[theIndex];
+                Float2 b = theOut[theIndex];
+                b.s0 = a.s0;
+                b.s1 = a.s1;
             }
         };
         Class theKernelClass = theKernel.getClass();

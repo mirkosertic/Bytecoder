@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public abstract class PrimitiveValue extends Value {
+public abstract class PrimitiveValue extends SideEffectFreeValue {
 }
