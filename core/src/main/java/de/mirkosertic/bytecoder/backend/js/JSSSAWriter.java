@@ -450,6 +450,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(BinaryValue aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
+        print("(");
         print(theValue1);
         switch (aValue.getOperator()) {
             case ADD:
@@ -508,6 +509,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
         Value theValue2 = aValue.resolveSecondArgument();
         print(theValue2);
+        print(")");
     }
 
     private void print(FixedBinaryValue aValue) {
