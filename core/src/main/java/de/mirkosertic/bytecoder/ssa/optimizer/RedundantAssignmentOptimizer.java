@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
+import de.mirkosertic.bytecoder.ssa.BinaryValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -24,6 +25,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -66,12 +68,38 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                     }
                 }
 
+                /*if (theValue instanceof BinaryValue) {
+                    BinaryValue theBinary = (BinaryValue) theValue;
+                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
+                    if (thePredecessor instanceof InitVariableExpression) {
+                        InitVariableExpression thePred = (InitVariableExpression) thePredecessor;
+                        if (theBinary.resolveFirstArgument() == thePred.getVariable()) {
+                            theBinary.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
+                            aExpressions.remove(thePred);
+
+                            return true;
+                        }
+                        if (theBinary.resolveSecondArgument() == thePred.getVariable()) {
+                            theBinary.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
+                            aExpressions.remove(thePred);
+
+                            return true;
+                        }
+                    }
+                }*/
+
                 if (theValue instanceof ArrayEntryValue) {
                     ArrayEntryValue theArrayEntry = (ArrayEntryValue) theValue;
                     Expression thePredecessor = aExpressions.predecessorOf(theInit);
                     if (thePredecessor instanceof InitVariableExpression) {
                         InitVariableExpression thePred = (InitVariableExpression) thePredecessor;
                         if (thePred.getVariable() == theArrayEntry.resolveFirstArgument() && thePred.getVariable().getUsageCount() == 2) {
+                            theArrayEntry.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
+                            aExpressions.remove(thePred);
+
+                            return true;
+                        }
+                        if (thePred.getVariable() == theArrayEntry.resolveSecondArgument() && thePred.getVariable().getUsageCount() == 2) {
                             theArrayEntry.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
                             aExpressions.remove(thePred);
 
