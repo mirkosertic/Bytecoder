@@ -29,7 +29,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -75,8 +75,8 @@ public class InvokeVirtualOptimizer implements Optimizer {
                 }
             }
 
-            if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theInit = (InitVariableExpression) theExpression;
+            if (theExpression instanceof VariableAssignmentExpression) {
+                VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
                 Variable theVariable = theInit.getVariable();
                 Value theValue = theInit.getValue();
                 if (theValue instanceof InvokeVirtualMethodValue) {
@@ -104,7 +104,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
 
                             theValue.unbind();
 
-                            InitVariableExpression theNewInit = new InitVariableExpression(theVariable, theNewValue);
+                            VariableAssignmentExpression theNewInit = new VariableAssignmentExpression(theVariable, theNewValue);
                             aExpressions.replace(theInit, theNewInit);
                         }
                     }

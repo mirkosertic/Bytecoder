@@ -20,6 +20,7 @@ import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_siz
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
 
+import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;

@@ -154,7 +154,7 @@ public class GraphNode {
         Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue);
         if (!aIsImport) {
-            expressions.add(new InitVariableExpression(theNewVariable, aValue));
+            expressions.add(new VariableAssignmentExpression(theNewVariable, aValue));
         }
         return theNewVariable;
     }
@@ -251,8 +251,8 @@ public class GraphNode {
                     deleteVariable(aVariable, theList);
                 }
             }
-            if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theInit = (InitVariableExpression) theExpression;
+            if (theExpression instanceof VariableAssignmentExpression) {
+                VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
                 if (theInit.getVariable() == aVariable) {
                     aList.remove(theExpression);
                 }

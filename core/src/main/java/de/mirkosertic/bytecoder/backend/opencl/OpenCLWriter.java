@@ -40,7 +40,7 @@ import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvocationValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
@@ -227,8 +227,8 @@ public class OpenCLWriter extends IndentSSAWriter {
                     println(theComment);
                 }
             }
-            if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theInit = (InitVariableExpression) theExpression;
+            if (theExpression instanceof VariableAssignmentExpression) {
+                VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
                 if (theInit.getVariable().resolveType().isObject() && theInit.getValue() instanceof InvocationValue) {
                     print(theInit.getVariable().getName());
                     print("_temp = ");
@@ -397,6 +397,7 @@ public class OpenCLWriter extends IndentSSAWriter {
 
     private void printBinaryValue(BinaryValue aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
+        print("(");
         printValue(theValue1);
         switch (aValue.getOperator()) {
         case ADD:
@@ -455,6 +456,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         }
         Value theValue2 = aValue.resolveSecondArgument();
         printValue(theValue2);
+        print(")");
     }
 
     private void printGetFieldValue(GetFieldValue aValue) {

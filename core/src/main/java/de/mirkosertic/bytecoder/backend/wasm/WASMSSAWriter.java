@@ -56,7 +56,7 @@ import de.mirkosertic.bytecoder.ssa.GetStaticValue;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -100,6 +100,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class WASMSSAWriter extends IndentSSAWriter {
 
@@ -141,7 +142,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     public boolean isStackVariable(Variable aVariable) {
         for (Variable theVariable : stackVariables) {
-            if (theVariable.getName().equals(aVariable.getName())) {
+            if (Objects.equals(theVariable.getName(), aVariable.getName())) {
                 return true;
             }
         }
@@ -151,7 +152,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private int stackOffsetFor(Variable aVariable) {
         int theStart = 0;
         for (Variable theVariable : stackVariables) {
-            if (theVariable.getName().equals(aVariable.getName())) {
+            if (Objects.equals(theVariable.getName(), aVariable.getName())) {
                 return theStart;
             }
             theStart += 4;
@@ -245,8 +246,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeReturnExpression((ReturnExpression) aExpression);
             return;
         }
-        if (aExpression instanceof InitVariableExpression) {
-            writeInitVariableExpression((InitVariableExpression) aExpression);
+        if (aExpression instanceof VariableAssignmentExpression) {
+            writeInitVariableExpression((VariableAssignmentExpression) aExpression);
             return;
         }
         if (aExpression instanceof DirectInvokeMethodExpression) {
@@ -609,7 +610,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println();
     }
 
-    private void writeInitVariableExpression(InitVariableExpression aExpression) {
+    private void writeInitVariableExpression(VariableAssignmentExpression aExpression) {
         Variable theVariable = aExpression.getVariable();
         Value theNewValue = aExpression.getValue();
 
@@ -1136,7 +1137,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeTypeConversion(TypeConversionValue aValue) {
         TypeRef theTargetType = aValue.resolveType();
         Value theSource = aValue.resolveFirstArgument();
-        if (theTargetType.resolve().equals(theSource.resolveType().resolve())) {
+        if (Objects.equals(theTargetType.resolve(), theSource.resolveType().resolve())) {
             // No conversion needed!
             writeValue(theSource);
             return;
@@ -1227,19 +1228,19 @@ public class WASMSSAWriter extends IndentSSAWriter {
         switch (aValue.getOperator()) {
             case ISNULL: {
                 print("(i32.eq ");
-                printVariableName(aValue.resolveFirstArgument());
+                writeValue(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
             case ISNONNULL: {
                 print("(i32.ne ");
-                printVariableName(aValue.resolveFirstArgument());
+                writeValue(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
             case ISZERO: {
                 print("(i32.eq ");
-                printVariableName(aValue.resolveFirstArgument());
+                writeValue(aValue.resolveFirstArgument());
                 print(" (i32.const 0))");
                 break;
             }
