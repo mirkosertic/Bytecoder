@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class InitVariableExpression extends Expression {
+public class VariableAssignmentExpression extends Expression {
 
-    public InitVariableExpression(Variable aVariable, Value aValue) {
+    public VariableAssignmentExpression(Variable aVariable, Value aValue) {
         if (aValue == null) {
             throw new IllegalStateException("Null not allowed");
         }

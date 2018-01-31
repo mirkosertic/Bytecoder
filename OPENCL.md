@@ -15,6 +15,13 @@ Platform thePlatform = theFactory.createPlatform();
 
 The `Platform` instance must only be ontained only once and can be cached.
 
+If you have multiple GPUs or a system with NVIDIA Optimus technology, you
+have multiple OpenCL platform available. One for the NVIDIA GPU, and another
+for the embedded Intel GPU on your CPU. By default Bytecoder logs the available
+platforms at startup and selects the OpenCL platform with the hightest number. 
+If this does not fit, you can always add a `OPENCL_PLATFORM=x` to your JVM properties 
+to set the OpenCL platform to number x.
+
 Every OpenCL computation is done within an OpenCL `Context`. This context
 keeps references to compiled OpenCL programs and allocated memory per `Kernel`.
 It definitely makes sense to cache a created context. Closing and reopening

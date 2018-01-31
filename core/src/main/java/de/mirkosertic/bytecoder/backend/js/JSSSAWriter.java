@@ -53,7 +53,7 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InitVariableExpression;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -646,8 +646,8 @@ public class JSSSAWriter extends IndentSSAWriter {
                 ReturnExpression theE = (ReturnExpression) theExpression;
                 print("return");
                 println(";");
-            } else if (theExpression instanceof InitVariableExpression) {
-                InitVariableExpression theE = (InitVariableExpression) theExpression;
+            } else if (theExpression instanceof VariableAssignmentExpression) {
+                VariableAssignmentExpression theE = (VariableAssignmentExpression) theExpression;
                 Variable theVariable = theE.getVariable();
                 Value theValue = theE.getValue();
 

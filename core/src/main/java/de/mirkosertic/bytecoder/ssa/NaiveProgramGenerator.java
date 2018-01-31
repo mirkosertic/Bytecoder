@@ -225,7 +225,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     /*String theVariableName = localVariableTableAttributeInfo.resolveVariableName(theEntry);
                     Variable theGlobal = program.getOrCreateTrulyGlobal(theVariableName, aValue.resolveType());
                     theGlobal.initializeWith(aValue);
-                    block.addExpression(new InitVariableExpression(theGlobal, aValue));
+                    block.addExpression(new VariableAssignmentExpression(theGlobal, aValue));
                     localVariables.put(aIndex, theGlobal);
                     block.addToExportedList(theGlobal, new LocalVariableDescription(aIndex));
                     return;*/
@@ -718,7 +718,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                                 throw new IllegalStateException("No value for " + theImporting.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theGotoNode.getStartAddress().getAddress());
                             }
                             if (theReceivingValue != theExportingValue) {
-                                InitVariableExpression theInit = new InitVariableExpression((Variable) theReceivingValue, theExportingValue);
+                                VariableAssignmentExpression theInit = new VariableAssignmentExpression((Variable) theReceivingValue, theExportingValue);
                                 aPoint.expressionList.addBefore(theInit, theGoto);
                             }
                         }
@@ -1301,7 +1301,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     theValue.setMethodRef(theArguments.get(1));
                 } else if (theType.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     theTarget.initializeWith(theArguments.get(0));
-                    aTargetBlock.addExpression(new InitVariableExpression(theTarget, theArguments.get(0)));
+                    aTargetBlock.addExpression(new VariableAssignmentExpression(theTarget, theArguments.get(0)));
                 } else {
                     String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
                     if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE.metchesExactlyTo(theSignature)) {

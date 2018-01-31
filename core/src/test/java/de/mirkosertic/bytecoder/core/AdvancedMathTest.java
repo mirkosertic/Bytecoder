@@ -28,4 +28,12 @@ public class AdvancedMathTest {
         float theSin = (float) Math.sin(10d);
         //Assert.assertEquals((float) -0.5440211296081543, theSin, 0);
     }
+
+    @Test
+    public void testOperators() {
+        float a = 10f;
+        float b = 20f;
+        float c = 100f;
+        float d = c + b / a;
+    }
 }
