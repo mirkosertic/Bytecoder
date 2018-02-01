@@ -1,0 +1,46 @@
+<html>
+    <body>
+        <script>
+
+        var StringClass = {
+
+            __initialized: false,
+            __typeId: 10,
+            __implementedTypes: [10, 20, 30, 80],
+
+            NewInstance: function() {
+                this.prop1 = 10;
+                this.prop2 = 20;
+            },
+
+            add: function(p1, p2) {
+              return this.prop1 + p1 + p2;
+            },
+
+            instanceOf: function(aRuntimeClass) {
+                return StringClass.__implementedTypes.includes(aRuntimeClass.__typeId);
+            },
+
+            boot: function() {
+                if (!StringClass.__initialized) {
+                    StringClass.__initialized = true;
+                    StringClass.NewInstance.prototype.getClass = function() {
+                        return StringClass;
+                    };
+                    StringClass.NewInstance.prototype.instanceOf = StringClass.instanceOf;
+                    StringClass.NewInstance.prototype.add = StringClass.add;
+                }
+            },
+        };
+
+        StringClass.boot();
+        var stringInstance = new StringClass.NewInstance();
+
+        console.log(stringInstance.instanceOf(StringClass));
+        console.log(stringInstance.add(20, 30));
+        console.log(stringInstance.prop1);
+        console.log(stringInstance.prop2);
+
+        </script>
+    </body>
+</html>
