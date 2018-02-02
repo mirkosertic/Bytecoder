@@ -39,7 +39,7 @@ public class InlineFinalNodesOptimizer implements Optimizer {
         for (GraphNode theNode : aGraph.getKnownNodes()) {
             if (!theNode.getPredecessors().isEmpty() &&
                  theNode.endsWithReturn() &&
-                 theNode.getExpressions().toList().size() <= 6) {
+                 theNode.getExpressions().toList().size() <= 1) {
                 theFinalNodes.put(theNode.getStartAddress(), theNode);
             }
         }

@@ -34,9 +34,9 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 public class CompilerTest {
 
     private Kernel createKernel() {
-        final float[] theA = {10f, 20f, 30f, 40f};
-        final float[] theB = {100f, 200f, 300f, 400f};
-        final float[] theResult = new float[4];
+        float[] theA = {10f, 20f, 30f, 40f};
+        float[] theB = {100f, 200f, 300f, 400f};
+        float[] theResult = new float[4];
 
         return new Kernel() {
             public void processWorkItem() {
@@ -79,7 +79,7 @@ public class CompilerTest {
     public void testSimpleKernel() {
 
         OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
+        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
 
         Kernel theKernel = createKernel();
         Class theKernelClass = theKernel.getClass();
@@ -105,7 +105,7 @@ public class CompilerTest {
     public void testKernelWithComplexType() {
 
         OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
+        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
 
         Float2[] theIn = new Float2[10];
         Float2[] theOut = new Float2[10];

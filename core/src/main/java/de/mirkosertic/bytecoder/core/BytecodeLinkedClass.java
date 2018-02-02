@@ -15,12 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
-
-import java.util.*;
-import java.util.function.Consumer;
 
 public class BytecodeLinkedClass {
 
@@ -66,8 +70,8 @@ public class BytecodeLinkedClass {
         private final BytecodeField field;
 
         public LinkedField(BytecodeObjectTypeRef aDeclaringType, BytecodeField aField) {
-            this.declaringType = aDeclaringType;
-            this.field = aField;
+            declaringType = aDeclaringType;
+            field = aField;
         }
 
         public BytecodeObjectTypeRef getDeclaringType() {
@@ -100,6 +104,16 @@ public class BytecodeLinkedClass {
         superClass = aSuperClass;
         staticFields = new HashMap<>();
         memberFields = new HashMap<>();
+    }
+
+    public boolean hasMethod(BytecodeMethod aMethod) {
+        for (BytecodeMethod theMethod : knownMethods) {
+            if (Objects.equals(aMethod.getName().stringValue(), theMethod.getName().stringValue()) &&
+                    aMethod.getSignature().metchesExactlyTo(theMethod.getSignature())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean emulatedByRuntime() {

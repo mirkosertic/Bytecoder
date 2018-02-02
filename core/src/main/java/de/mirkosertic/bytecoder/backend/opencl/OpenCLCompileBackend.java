@@ -15,6 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -33,12 +39,6 @@ import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.Value;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Set;
 
 public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult> {
 
@@ -91,17 +91,13 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
 
         // Try to reloop it!
-        if (aOptions.isRelooper()) {
-            try {
-                Relooper theRelooper = new Relooper();
-                Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+        try {
+            Relooper theRelooper = new Relooper();
+            Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                theSSAWriter.printRelooped(theSSAProgram, theReloopedBlock);
-            } catch (Exception e) {
-                throw new IllegalStateException("Error relooping cfg", e);
-            }
-        } else {
-            throw new IllegalArgumentException("Code generation only supported with Relooper enabled!");
+            theSSAWriter.printRelooped(theSSAProgram, theReloopedBlock);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error relooping cfg", e);
         }
 
         return new OpenCLCompileResult(theInputOutputs, theStrWriter.toString());

@@ -40,11 +40,11 @@ import de.mirkosertic.bytecoder.ssa.ReturnExpression;
  */
 public class Relooper {
 
-    public static abstract class Block {
+    public abstract static class Block {
 
         private final Set<GraphNode> entries;
         private final Label label;
-        private boolean labelRequired;
+        private int labelRequired;
 
         protected Block(Set<GraphNode> aEntries, String aLabelPrefix) {
             entries = aEntries;
@@ -55,16 +55,16 @@ public class Relooper {
                 }
                 theBuilder.append(aLabel.getStartAddress().getAddress());
             }
-            labelRequired = false;
+            labelRequired = 0;
             label = new Label(aLabelPrefix + theBuilder.toString());
         }
 
         public boolean isLabelRequired() {
-            return labelRequired;
+            return labelRequired > 0;
         }
 
         public void requireLabel() {
-            labelRequired = true;
+            labelRequired++;
         }
 
         public Set<GraphNode> entries() {
@@ -210,6 +210,17 @@ public class Relooper {
             replaceGotosIn(aTraversalStack, theSimple.next());
             aTraversalStack.pop();
 
+            GraphNode theNode = theSimple.internalLabel;
+            Expression theLastExpression = theNode.getExpressions().lastExpression();
+            // Breaks at the end of the internal label breaking out of the simple block
+            // can be silent, they only need to set the __label__ variable
+            if (theLastExpression instanceof BreakExpression) {
+                BreakExpression theBreak = (BreakExpression) theLastExpression;
+                if (Objects.equals(theBreak.blockToBreak().name(), theSimple.label().name())) {
+                    theBreak.silent();
+                }
+            }
+
             return;
         }
         if (aBlock instanceof LoopBlock) {
@@ -265,6 +276,11 @@ public class Relooper {
                                     theNestingBlock.requireLabel();
                                     BreakExpression theBreak = new BreakExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theBreak);
+
+                                    if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
+                                        theBreak.noSetRequired();
+                                    }
+
                                     theSomethingFound = true;
                                     break;
                                 } else if (theNestingBlock.entries().contains(theTarget)) {

@@ -269,13 +269,16 @@ public class OpenCLWriter extends IndentSSAWriter {
                 println("}");
             } else if (theExpression instanceof BreakExpression) {
                 BreakExpression theBreak = (BreakExpression) theExpression;
-                print("$__label__ = ");
-                print(theBreak.jumpTarget().getAddress());
-                println(";");
-                print("goto $");
-                print(theBreak.blockToBreak().name());
-                println("_next;");
-
+                if (theBreak.isSetLabelRequired()) {
+                    print("$__label__ = ");
+                    print(theBreak.jumpTarget().getAddress());
+                    println(";");
+                }
+                if (!theBreak.isSilent()) {
+                    print("goto $");
+                    print(theBreak.blockToBreak().name());
+                    println("_next;");
+                }
             } else if (theExpression instanceof ContinueExpression) {
                 ContinueExpression theContinue = (ContinueExpression) theExpression;
                 print("$__label__ = ");

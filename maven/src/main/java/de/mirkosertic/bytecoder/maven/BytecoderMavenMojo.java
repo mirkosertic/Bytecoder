@@ -111,12 +111,6 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected boolean debugOutput;
 
     /**
-     * Is the Relooper active? This generates faster and smaller code.
-     */
-    @Parameter(required = false, defaultValue = "true")
-    protected boolean relooperEnabled;
-
-    /**
      * The closure optimization level.
      */
     @Parameter(required = false, defaultValue = "SIMPLE_OPTIMIZATIONS")
@@ -139,7 +133,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
 
-            CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.ALL, relooperEnabled);
+            CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.ALL);
             CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
             try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
                 theWriter.println(theCode.getData());
@@ -304,7 +298,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             theURLs.add(classFiles.toURI().toURL());
 
             return new URLClassLoader(theURLs.toArray(new URL[theURLs.size()]),
-                    this.getClass().getClassLoader());
+                    getClass().getClassLoader());
         } catch (MalformedURLException e) {
             throw new MojoExecutionException("Cannot create classloader", e);
         }
