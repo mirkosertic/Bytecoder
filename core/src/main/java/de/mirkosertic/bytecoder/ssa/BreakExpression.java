@@ -21,10 +21,30 @@ public class BreakExpression extends Expression {
 
     private final Label blockToBreak;
     private final BytecodeOpcodeAddress jumpTarget;
+    private boolean silent;
+    private boolean setLabelRequired;
 
     public BreakExpression(Label aBlockToBreak, BytecodeOpcodeAddress aJumpTarget) {
         blockToBreak = aBlockToBreak;
         jumpTarget = aJumpTarget;
+        silent = false;
+        setLabelRequired = true;
+    }
+
+    public void noSetRequired() {
+        setLabelRequired = false;
+    }
+
+    public void silent() {
+        silent = true;
+    }
+
+    public boolean isSetLabelRequired() {
+        return setLabelRequired;
+    }
+
+    public boolean isSilent() {
+        return silent;
     }
 
     public Label blockToBreak() {

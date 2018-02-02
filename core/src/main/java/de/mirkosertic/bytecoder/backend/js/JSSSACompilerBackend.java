@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
@@ -114,7 +115,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theExceptionRethrower.linkStaticMethod("getLastOutcomeOrNullAndReset", getLastExceptionOutcomeSignature);
 
         StringWriter theStrWriter = new StringWriter();
-        final PrintWriter theWriter = new PrintWriter(theStrWriter);
+        PrintWriter theWriter = new PrintWriter(theStrWriter);
         theWriter.println("'use strict';");
 
         theWriter.println();
@@ -147,8 +148,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
 
         // Construct a String
-        theWriter.println("          var theNewString = " + JSWriterUtils.toClassName(theStringTypeRef) + ".emptyInstance();");
-        theWriter.println("          var theBytes = " + JSWriterUtils.toClassName(theArrayTypeRef) + ".emptyInstance();");
+        theWriter.println("          var theNewString = new " + JSWriterUtils.toClassName(theStringTypeRef) + ".Create();");
+        theWriter.println("          var theBytes = new " + JSWriterUtils.toClassName(theArrayTypeRef) + ".Create();");
         theWriter.println("          theBytes.data = aByteArray;");
         theWriter.println("          " + JSWriterUtils.toClassName(theStringTypeRef) + "." + JSWriterUtils.toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
         theWriter.println("          return theNewString;");
@@ -170,7 +171,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     newArray : function(aLength, aDefault) {");
 
         BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
-        theWriter.println("          var theInstance = " + JSWriterUtils.toClassName(theArrayType)+ ".emptyInstance();");
+        theWriter.println("          var theInstance = new " + JSWriterUtils.toClassName(theArrayType)+ ".Create();");
         theWriter.println("          theInstance.data = [];");
         theWriter.println("          theInstance.data.length = aLength;");
         theWriter.println("          for (var i=0;i<aLength;i++) {");
@@ -178,7 +179,19 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("          }");
         theWriter.println("          return theInstance;");
         theWriter.println("     },");
+
         theWriter.println();
+        theWriter.println("     dynamicType : function(aFunction) { ");
+        theWriter.println("         return new Proxy({}, {");
+        theWriter.println("             get: function(target, name) {");
+        theWriter.println("                 return function(inst, _p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9) {");
+        theWriter.println("                    return aFunction(_p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9);");
+        theWriter.println("                 }");
+        theWriter.println("             }");
+        theWriter.println("         });");
+        theWriter.println("     }, ");
+        theWriter.println();
+
         theWriter.println("     bootstrap : function() {");
         aLinkerContext.forEachClass(theEntry -> {
             if (!theEntry.getValue().getAccessFlags().isInterface()) {
@@ -190,45 +203,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     }");
         theWriter.println("};");
         theWriter.println();
-        theWriter.println("var RUNTIME_CLASS = {");
-        theWriter.println("     resolveVirtualMethod: function(aIdentifier) {");
-        theWriter.println("         switch(aIdentifier) {");
-
-        theClassLinkedCass.forEachVirtualMethod(
-                aClassMethod -> {
-                    if (!aClassMethod.getValue().getTargetMethod().getAccessFlags().isStatic()) {
-                        theWriter.println("             case " + aClassMethod.getKey().getIdentifier() + ": // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
-                        if (Objects.equals("getClass", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                            theWriter.println(
-                                    "                   return " + JSWriterUtils.toClassName(theClassLinkedCass.getClassName()));
-                        } else if (Objects
-                                .equals("toString", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                            theWriter.println("                   throw 'Not implemented';");
-                        } else if (Objects
-                                .equals("equals", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                            theWriter.println("                   throw 'Not implemented';");
-                        } else if (Objects
-                                .equals("hashCode", aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                            theWriter.println("                   throw 'Not implemented';");
-                        } else if (Objects.equals("desiredAssertionStatus",
-                                aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                            theWriter.println("                   return function(callsite) {return false};");
-                        } else if (Objects
-                                .equals("getEnumConstants",
-                                        aClassMethod.getValue().getTargetMethod().getName().stringValue())) {
-                            theWriter.println("                   return function(callsite) {return callsite.jsType().staticFields.$VALUES;};");
-                        } else {
-                            theWriter.println("                   throw {type: 'not implemented virtual name'} // " + aClassMethod.getValue().getTargetMethod().getName().stringValue());
-                        }
-                    }
-                });
-
-        theWriter.println("             default:");
-        theWriter.println("                 throw {type: 'unknown virtual name'}");
-        theWriter.println("         }");
-        theWriter.println("     }");
-        theWriter.println("};");
-        theWriter.println();
 
         aLinkerContext.forEachClass(theEntry -> {
 
@@ -237,92 +211,75 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             }
 
             // Fix constructor invocation delegation
-            final String theOverriddenParentClassName = getOverriddenParentClassFor(theEntry.getValue().getBytecodeClass());
+            String theOverriddenParentClassName = getOverriddenParentClassFor(theEntry.getValue().getBytecodeClass());
 
             String theJSClassName = JSWriterUtils.toClassName(theEntry.getKey());
             theWriter.println("var " + theJSClassName + " = {");
 
             if (!theEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
 
-                theWriter.println("    staticFields : {");
+                // First of all, we add static fields required by the framework
+                theWriter.println("    __name : '" + theEntry.getValue().getClassName().name() + "',");
+                theWriter.println("    __initialized : false,");
+                theWriter.println("    __staticCallSites : [],");
+                theWriter.print("    __typeId : ");
+                theWriter.print(theEntry.getValue().getUniqueId());
+                theWriter.println(",");
+                theWriter.print("    __implementedTypes : [");
+                {
+                    boolean first = true;
+                    for (BytecodeLinkedClass theType : theEntry.getValue().getImplementingTypes()) {
+                        if (!first) {
+                            theWriter.print(",");
+                        }
+                        first = false;
+                        theWriter.print(theType.getUniqueId());
+                    }
+                }
+                theWriter.println("],");
 
-                theWriter.println("        name : '" + theEntry.getValue().getClassName().name() + "',");
-                theWriter.println("        staticCallSites : [],");
-                theWriter.println("        classInitialized : false,");
+                // then we add class specific static fields
                 theEntry.getValue().forEachStaticField(
-                        aFieldEntry -> theWriter.println("        " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
-                theWriter.println("    },");
+                        aFieldEntry -> theWriter.println("    " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
                 theWriter.println();
 
                 theWriter.println("    resolveStaticCallSiteObject: function(aKey, aProducerFunction) {");
                 theWriter.print("        var resolvedCallsiteObject = ");
                 theWriter.print(theJSClassName);
-                theWriter.println(".staticFields.staticCallSites[aKey];");
+                theWriter.println(".__staticCallSites[aKey];");
                 theWriter.println("        if (resolvedCallsiteObject == null) {");
                 theWriter.println("            resolvedCallsiteObject = aProducerFunction();");
                 theWriter.print("            ");
                 theWriter.print(theJSClassName);
-                theWriter.println(".staticFields.staticCallSites[aKey] = resolvedCallsiteObject;");
+                theWriter.println(".__staticCallSites[aKey] = resolvedCallsiteObject;");
                 theWriter.println("        }");
                 theWriter.println("        return resolvedCallsiteObject;");
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    runtimeClass : {");
-                theWriter.println("        jsType: function() {return " + theJSClassName + ";},");
-                theWriter.println("        clazz: RUNTIME_CLASS");
+                // The Constructor function initializes all object members with null
+                theWriter.println("    Create : function() {");
+                theEntry.getValue().forEachMemberField(aField -> theWriter.println("        this." + aField.getKey() + " = null; // declared in " + aField.getValue().getDeclaringType().name()));
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    resolveVirtualMethod : function(aIdentifier) {");
-                theWriter.println("        switch(aIdentifier) {");
-                theEntry.getValue().forEachVirtualMethod(aVirtualMethod -> {
-                    BytecodeLinkedClass.LinkedMethod theLinkTarget = aVirtualMethod.getValue();
-                    if (!aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isAbstract() &&
-                            !aVirtualMethod.getValue().getTargetMethod().getAccessFlags().isStatic()) {
-
-                        theWriter.println("            case " + aVirtualMethod.getKey().getIdentifier() + ":");
-                        if (theLinkTarget.getTargetMethod() != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
-                            theWriter.println(
-                                    "                return " + JSWriterUtils.toClassName(theLinkTarget.getDeclaringType()) + "."
-                                            + JSWriterUtils.toMethodName(
-                                            theLinkTarget.getTargetMethod().getName().stringValue(),
-                                            theLinkTarget.getTargetMethod().getSignature()) + ";");
-                        } else {
-                            theWriter.println(
-                                    "                return function(callsite) {return " + theJSClassName + ".runtimeClass;};");
-                        }
-                    }
-                });
-                theWriter.println("            default:");
-                theWriter.println("                throw {type: 'unknown virtual name'}");
-                theWriter.println("        }");
+                theWriter.println("    instanceOf : function(aType) {");
+                theWriter.println("        return " + theJSClassName +".__implementedTypes.includes(aType.__typeId);");
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    emptyInstance : function() {");
-                theWriter.println("        return {");
-                theEntry.getValue().forEachMemberField(aField -> theWriter.println("            " + aField.getKey() + " : null, // declared in " + aField.getValue().getDeclaringType().name()));
-                theWriter.println("            clazz: " + JSWriterUtils.toClassName(theEntry.getKey())+ "};");
+                theWriter.println("    TClassgetClass : function() {");
+                theWriter.println("        return " + theJSClassName +";");
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    thisIdentifier : function() {");
-                theWriter.println("        return " + theEntry.getValue().getUniqueId());
+                theWriter.println("    BOOLEANdesiredAssertionStatus : function() {");
+                theWriter.println("        return false;");
                 theWriter.println("    },");
                 theWriter.println();
 
-                theWriter.println("    instanceOfType : function(aType) {");
-                theWriter.println("        switch(aType) {");
-
-                for (BytecodeLinkedClass theType : theEntry.getValue().getImplementingTypes()) {
-                    theWriter.println("            case " + theType.getUniqueId() +":");
-                    theWriter.println("                return 1;");
-                }
-
-                theWriter.println("            default:");
-                theWriter.println("                return 0;");
-                theWriter.println("        }");
+                theWriter.println("    A1TObjectgetEnumConstants : function(aClazz) {");
+                theWriter.println("        return aClazz.$VALUES;");
                 theWriter.println("    },");
             }
 
@@ -396,19 +353,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 // Try to reloop it!
-                if (aOptions.isRelooper()) {
-                    try {
-                        Relooper theRelooper = new Relooper();
-                        Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+                try {
+                    Relooper theRelooper = new Relooper();
+                    Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                        theVariablesWriter.printRelooped(theReloopedBlock);
-                    } catch (Exception e) {
-                        System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
-                        throw new IllegalStateException("Error relooping cfg for " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue(), e);
-                    }
-                } else {
-                    // Fallback, as this generates slower and larger code.
-                    theVariablesWriter.print(theSSAProgram.getControlFlowGraph().toRootNode());
+                    theVariablesWriter.printRelooped(theReloopedBlock);
+                } catch (Exception e) {
+                    System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
+                    throw new IllegalStateException("Error relooping cfg for " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue(), e);
                 }
 
                 theWriter.println("    },");
@@ -417,8 +369,43 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             theWriter.println();
             theWriter.println("    classInitCheck : function() {");
-            theWriter.println("        if (" + theJSClassName + ".staticFields.classInitialized == false) {");
-            theWriter.println("            " + theJSClassName + ".staticFields.classInitialized = true;");
+            theWriter.println("        if (!" + theJSClassName + ".__initialized) {");
+            theWriter.println("            " + theJSClassName + ".__initialized = true;");
+
+            // Now we have to setup the prototype
+            theWriter.println("            var thePrototype = " + theJSClassName + ".Create.prototype;");
+            theWriter.println("            thePrototype.instanceOf = " + theJSClassName + ".instanceOf;");
+            theWriter.println("            thePrototype.TClassgetClass = " + theJSClassName + ".TClassgetClass;");
+
+            BytecodeLinkedClass theCurrentClass = theEntry.getValue();
+            Set<String> theAlreadyProcessed = new HashSet<>();
+            while(theCurrentClass != null) {
+
+                BytecodeLinkedClass theCurrentCl = theCurrentClass;
+                BytecodeObjectTypeRef theCurrent = theCurrentClass.getClassName();
+
+                theCurrentClass.forEachMethod(aEntry -> {
+                    if (!aEntry.getAccessFlags().isStatic() &&
+                        !aEntry.getAccessFlags().isAbstract() &&
+                        !aEntry.isConstructor() &&
+                        !aEntry.isClassInitializer() &&
+                        theCurrentCl.hasMethod(aEntry)) {
+                        String theMethodName = JSWriterUtils.toMethodName(aEntry.getName().stringValue(), aEntry.getSignature());
+                        if (theAlreadyProcessed.add(theMethodName)) {
+                            theWriter.print("            thePrototype.");
+                            theWriter.print(theMethodName);
+                            theWriter.print(" = ");
+                            theWriter.print(WASMWriterUtils.toClassName(theCurrent));
+                            theWriter.print(".");
+                            theWriter.print(theMethodName);
+                            theWriter.println(";");
+                        }
+                    }
+                });
+
+                theCurrentClass = theCurrentClass.getSuperClass();
+            }
+
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
                 if (!Objects.equals(theRef, theEntry.getKey())) {
                     theWriter.print("            ");

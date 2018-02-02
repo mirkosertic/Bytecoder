@@ -15,8 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
+import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -37,7 +43,6 @@ import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
@@ -53,7 +58,6 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -94,12 +98,7 @@ import de.mirkosertic.bytecoder.ssa.UnknownValue;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableDescription;
-
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -209,7 +208,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(TypeOfValue aValue) {
         printVariableName(aValue.resolveFirstArgument());
-        print(".clazz.runtimeClass");
+        print(".TClassgetClass()");
     }
 
     private void print(StackTopValue aValue) {
@@ -244,10 +243,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(RuntimeGeneratedTypeValue aValue) {
-        print("{clazz: { resolveVirtualMethod : function(aIdentifier) {return function(inst, _p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9) {return ");
+        print("bytecoder.dynamicType(");
         print(aValue.getMethodRef());
-        print("(_p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9);");
-        print("}}}}");
+        print(")");
     }
 
     private void print(MethodTypeValue aValue) {
@@ -326,7 +324,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(ClassReferenceValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
-        print(".runtimeClass");
     }
 
     private void print(InstanceOfValue aValue) {
@@ -335,10 +332,10 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(theValue);
         print(" == null ? false : ");
         print(theValue);
-        print(".clazz.instanceOfType(");
+        print(".instanceOf(");
 
         BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
-        print(theLinkedClass.getUniqueId());
+        print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
 
         print(")");
         print(")");
@@ -535,8 +532,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(NewObjectValue aValue) {
+        print("new ");
         print(JSWriterUtils.toClassName(aValue.getType()));
-        print(".emptyInstance()");
+        print(".Create()");
     }
 
     private void print(InvokeStaticMethodValue aValue) {
@@ -566,9 +564,15 @@ public class JSSSAWriter extends IndentSSAWriter {
         Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
         List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
-        print(JSWriterUtils.toClassName(aValue.getClazz()));
-        print(".");
-        print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+        if (!"<init>".equals(theMethodName)) {
+            print(theTarget);
+            print(".");
+            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+        } else {
+            print(JSWriterUtils.toClassName(aValue.getClazz()));
+            print(".");
+            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+        }
         print("(");
 
         print(theTarget);
@@ -593,9 +597,9 @@ public class JSSSAWriter extends IndentSSAWriter {
             print("(");
         } else {
             print(theTarget);
-            print(".clazz.resolveVirtualMethod(");
-            print(theMethodIdentifier.getIdentifier());
-            print(")(");
+            print(".");
+            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            print("(");
         }
 
         print(theTarget);
@@ -620,7 +624,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void printStaticFieldReference(BytecodeFieldRefConstant aField) {
         print(JSWriterUtils.toClassName(aField.getClassIndex().getClassConstant()));
-        print(".staticFields.");
+        print(".");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
@@ -800,12 +804,16 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println("throw 'Unreachable';");
             } else if (theExpression instanceof BreakExpression) {
                 BreakExpression theBreak = (BreakExpression) theExpression;
-                print("__label__ = ");
-                print(theBreak.jumpTarget().getAddress());
-                println(";");
-                print("break $");
-                print(theBreak.blockToBreak().name());
-                println(";");
+                if (theBreak.isSetLabelRequired()) {
+                    print("__label__ = ");
+                    print(theBreak.jumpTarget().getAddress());
+                    println(";");
+                }
+                if (!theBreak.isSilent()) {
+                    print("break $");
+                    print(theBreak.blockToBreak().name());
+                    println(";");
+                }
             } else if (theExpression instanceof ContinueExpression) {
                 ContinueExpression theContinue = (ContinueExpression) theExpression;
                 print("__label__ = ");
@@ -840,69 +848,6 @@ public class JSSSAWriter extends IndentSSAWriter {
             }
             for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
                 printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
-            }
-        }
-    }
-
-    public void print(ControlFlowGraph.Node aNode) {
-        if (aNode instanceof ControlFlowGraph.SequenceOfSimpleNodes) {
-            printSimpleSequenceNode((ControlFlowGraph.SequenceOfSimpleNodes) aNode);
-            return;
-        }
-        if (aNode instanceof ControlFlowGraph.SimpleNode) {
-            printSimpleNode((ControlFlowGraph.SimpleNode) aNode);
-            return;
-        }
-        throw new IllegalArgumentException("Not supported node type : " + aNode.getClass());
-    }
-
-    private void printSimpleSequenceNode(ControlFlowGraph.SequenceOfSimpleNodes aSequence) {
-        List<ControlFlowGraph.SimpleNode> theNodes = aSequence.getNodes();
-        println();
-        println(
-                "var currentLabel = " + theNodes.get(0).getNode().getStartAddress().getAddress()
-                        + ";");
-
-        println("controlflowloop: while(true) {switch(currentLabel) {");
-
-        for (ControlFlowGraph.SimpleNode theBlock : theNodes) {
-
-            GraphNode theGraphNode = theBlock.getNode();
-
-            println("    case " + theGraphNode.getStartAddress().getAddress() + ": {");
-
-            JSSSAWriter theJSWriter = withDeeperIndent().withDeeperIndent();
-
-            if (options.isDebugOutput()) {
-                for (Map.Entry<VariableDescription, Value> theImported : theGraphNode.toStartState().getPorts()
-                        .entrySet()) {
-                    theJSWriter.print("// ");
-                    theJSWriter.print(theImported.getValue());
-                    theJSWriter.print(" is imported as ");
-                    theJSWriter
-                            .println(theImported.getKey().toString() + " and type " + theImported.getValue().resolveType());
-                }
-            }
-
-            theJSWriter.printNodeDebug(theGraphNode);
-
-            theJSWriter.printGraphNode(theGraphNode);
-
-            println("    }");
-        }
-        println("    default: throw 'Illegal state exception ' + currentLabel;");
-        println("}}");
-    }
-
-    private void printSimpleNode(ControlFlowGraph.SimpleNode aSimpleNode) {
-        printGraphNode(aSimpleNode.getNode());
-    }
-
-    private void printGraphNode(GraphNode aNode) {
-        switch (aNode.getType()) {
-            default: {
-                writeExpressions(aNode.getExpressions());
-                break;
             }
         }
     }

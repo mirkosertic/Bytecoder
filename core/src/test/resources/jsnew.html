@@ -4,7 +4,6 @@
 
         const StringClass = {
 
-            __initialized: false,
             __typeId: 10,
             __implementedTypes: [10, 20, 30, 80],
 
@@ -21,19 +20,20 @@
                 return StringClass.__implementedTypes.includes(aRuntimeClass.__typeId);
             },
 
-            boot: function() {
+            classInitCheck: function() {
                 if (!StringClass.__initialized) {
                     StringClass.__initialized = true;
-                    StringClass.NewInstance.prototype.getClass = function() {
+                    const currentPrototype = StringClass.NewInstance.prototype;
+                    currentPrototype.getClass = function() {
                         return StringClass;
                     };
-                    StringClass.NewInstance.prototype.instanceOf = StringClass.instanceOf;
-                    StringClass.NewInstance.prototype.add = StringClass.add;
+                    currentPrototype.instanceOf = StringClass.instanceOf;
+                    currentPrototype.add = StringClass.add;
                 }
             },
         };
 
-        StringClass.boot();
+        StringClass.classInitCheck();
         var stringInstance = new StringClass.NewInstance();
 
         console.log(stringInstance.instanceOf(StringClass));

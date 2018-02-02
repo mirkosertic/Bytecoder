@@ -23,13 +23,11 @@ public class CompileOptions {
     private final Logger logger;
     private final boolean debugOutput;
     private final Optimizer optimizer;
-    private final boolean relooper;
 
-    public CompileOptions(Logger aLogger, boolean aDebugOutput, Optimizer aOptimizer, boolean aRelooper) {
+    public CompileOptions(Logger aLogger, boolean aDebugOutput, Optimizer aOptimizer) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
-        relooper = aRelooper;
     }
 
     public Logger getLogger() {
@@ -42,9 +40,5 @@ public class CompileOptions {
 
     public Optimizer getOptimizer() {
         return optimizer;
-    }
-
-    public boolean isRelooper() {
-        return relooper;
     }
 }

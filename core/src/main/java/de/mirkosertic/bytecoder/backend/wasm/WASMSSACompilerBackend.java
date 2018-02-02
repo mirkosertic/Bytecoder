@@ -44,7 +44,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GraphNode;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -159,7 +158,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         });
 
 
-        final Map<String, String> theGlobalTypes = new HashMap<>();
+        Map<String, String> theGlobalTypes = new HashMap<>();
         theGlobalTypes.put("RESOLVEMETHOD", "(func (param i32) (param i32) (result i32))");
         theGlobalTypes.put("INSTANCEOF", "(func (param i32) (param i32) (result i32))");
 
@@ -372,19 +371,13 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 }
 
                 // Try to reloop it!
-                if (aOptions.isRelooper()) {
-                    try {
-                        Relooper theRelooper = new Relooper();
-                        Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+                try {
+                    Relooper theRelooper = new Relooper();
+                    Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                        theSSAWriter.writeRelooped(theReloopedBlock);
-                    } catch (Exception e) {
-                        throw new IllegalStateException("Error relooping cfg", e);
-                    }
-                } else {
-                    // Fallback, as this generates slower and larger code.
-                    ControlFlowGraph.Node theNode = theSSAProgram.getControlFlowGraph().toRootNode();
-                    theSSAWriter.writeStartNode(theNode);
+                    theSSAWriter.writeRelooped(theReloopedBlock);
+                } catch (Exception e) {
+                    throw new IllegalStateException("Error relooping cfg", e);
                 }
 
                 theWriter.println("   )");
