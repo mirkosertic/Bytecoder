@@ -24,7 +24,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.InvocationValue;
@@ -39,7 +39,7 @@ public class RedundantAssignmentOptimizer implements Optimizer {
 
     @Override
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        for (GraphNode theNode : aGraph.getDominatedNodes()) {
+        for (RegionNode theNode : aGraph.getDominatedNodes()) {
             while (optimizeExpressionList(aGraph, theNode.getExpressions(), aLinkerContext));
         }
     }

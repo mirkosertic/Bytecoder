@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.ssa.CompareValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -33,12 +33,12 @@ public class InefficientIFOptimizer implements Optimizer {
 
     @Override
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        for (GraphNode theNode : aGraph.getKnownNodes()) {
+        for (RegionNode theNode : aGraph.getKnownNodes()) {
             checkExpressions(aGraph, theNode, theNode.getExpressions());
         }
     }
 
-    private void checkExpressions(ControlFlowGraph aGraph, GraphNode aNode, ExpressionList aList) {
+    private void checkExpressions(ControlFlowGraph aGraph, RegionNode aNode, ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof IFExpression) {
                 IFExpression theIF = (IFExpression) theExpression;

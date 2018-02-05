@@ -25,8 +25,9 @@ import java.util.function.Consumer;
 import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.annotations.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
+import de.mirkosertic.bytecoder.graph.Node;
 
-public class BytecodeLinkedClass {
+public class BytecodeLinkedClass extends Node {
 
     public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class), new BytecodeTypeRef[0]);
     public static final BytecodeMethod GET_CLASS_PLACEHOLDER = new BytecodeMethod(new BytecodeAccessFlags(0x0001), null, null, null) {
@@ -91,17 +92,15 @@ public class BytecodeLinkedClass {
     private final Map<String, LinkedField> memberFields;
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
-    private final BytecodeLinkedClass superClass;
     private BytecodeMethod classInitializer;
 
-    public BytecodeLinkedClass(int aUniqueId, BytecodeLinkedClass aSuperClass, BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
+    public BytecodeLinkedClass(int aUniqueId, BytecodeLinkerContext aLinkerContext, BytecodeObjectTypeRef aClassName, BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkedMethods = new HashMap<>();
         linkerContext = aLinkerContext;
         knownMethods = new HashSet<>();
-        superClass = aSuperClass;
         staticFields = new HashMap<>();
         memberFields = new HashMap<>();
     }
@@ -137,15 +136,13 @@ public class BytecodeLinkedClass {
         if (aIncludeSelf) {
             theResult.add(this);
         }
-        for (BytecodeInterface theInterface : bytecodeClass.getInterfaces()) {
-            BytecodeLinkedClass theLinkedOrNull = linkerContext.isLinkedOrNull(theInterface.getClassinfoConstant().getConstant());
-            if (theLinkedOrNull != null) {
-                theResult.addAll(theLinkedOrNull.getImplementingTypes());
-            }
-            theInterface.getClassinfoConstant().getConstant().stringValue();
-        }
-        if (superClass != null && aIncludeSuperClass) {
-            theResult.addAll(superClass.getImplementingTypes());
+        outgoingEdges(BytecodeImplementsEdgeType.filter()).forEach(edge -> {
+            BytecodeLinkedClass theLinkedClass = (BytecodeLinkedClass) edge.targetNode();
+            theResult.addAll(theLinkedClass.getImplementingTypes());
+        });
+        BytecodeLinkedClass theSuperClass = getSuperClass();
+        if (theSuperClass != null && aIncludeSuperClass) {
+            theResult.addAll(theSuperClass.getImplementingTypes());
         }
         return theResult;
     }
@@ -155,12 +152,14 @@ public class BytecodeLinkedClass {
     }
 
     public BytecodeLinkedClass getSuperClass() {
-        return superClass;
+        return (BytecodeLinkedClass) singleNodeMatching(
+                BytecodeSuperclassEdgeType.filter()).orElse(null);
     }
 
     public LinkedField memberFieldByName(String aName) {
         return memberFields.get(aName);
     }
+
     public LinkedField staticFieldByName(String aName) {
         return staticFields.get(aName);
     }

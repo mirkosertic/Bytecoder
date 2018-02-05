@@ -21,41 +21,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ControlFlowGraph {
 
-    public interface Node {
-    }
-
-    public static class SequenceOfSimpleNodes implements Node {
-        private final List<SimpleNode> nodes;
-
-        public SequenceOfSimpleNodes(List<SimpleNode> aNodes) {
-            nodes = aNodes;
-        }
-
-        public List<SimpleNode> getNodes() {
-            return nodes;
-        }
-    }
-
-    public static class SimpleNode implements Node {
-        private final GraphNode node;
-
-        public SimpleNode(GraphNode aNode) {
-            node = aNode;
-        }
-
-        public GraphNode getNode() {
-            return node;
-        }
-    }
-
-    private final List<GraphNode> dominatedNodes;
-    private final List<GraphNode> knownNodes;
+    private final List<RegionNode> dominatedNodes;
+    private final List<RegionNode> knownNodes;
     private final Program program;
 
     public ControlFlowGraph(Program aProgram) {
@@ -68,12 +42,12 @@ public class ControlFlowGraph {
         return program;
     }
 
-    public Set<GraphNode> finalNodes() {
-        Set<GraphNode> theNodes = new HashSet<>();
-        for (GraphNode theNode : knownNodes) {
-            Set<GraphNode> theSuccessors = new HashSet<>();
-            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theNode.getSuccessors().entrySet()) {
-                if (theSuccessor.getKey().getType() == GraphNode.EdgeType.NORMAL) {
+    public Set<RegionNode> finalNodes() {
+        Set<RegionNode> theNodes = new HashSet<>();
+        for (RegionNode theNode : knownNodes) {
+            Set<RegionNode> theSuccessors = new HashSet<>();
+            for (Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
+                if (theSuccessor.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                     theSuccessors.add(theSuccessor.getValue());
                 }
             }
@@ -88,14 +62,14 @@ public class ControlFlowGraph {
         calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
     }
 
-    private void calculateReachabilityAndMarkBackEdges(GraphNodePath aPath, GraphNode aNode) {
+    private void calculateReachabilityAndMarkBackEdges(GraphNodePath aPath, RegionNode aNode) {
         aNode.addReachablePath(aPath);
-        for (Map.Entry<GraphNode.Edge, GraphNode> theEdge : aNode.getSuccessors().entrySet()) {
+        for (Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
             GraphNodePath theChildPath = aPath.clone();
             theChildPath.addToPath(aNode);
             if (aPath.contains(theEdge.getValue())) {
                 // This is a back edge
-                theEdge.getKey().changeTo(GraphNode.EdgeType.BACK);
+                theEdge.getKey().changeTo(RegionNode.EdgeType.BACK);
                 theEdge.getValue().addReachablePath(theChildPath);
                 // We have already visited the back edge, so we do not to continue here
                 // As this would lead to an endless loop
@@ -107,24 +81,24 @@ public class ControlFlowGraph {
         }
     }
 
-    public GraphNode createAt(BytecodeOpcodeAddress aAddress, GraphNode.BlockType aType) {
-        GraphNode theNewBlock = new GraphNode(this, aType, program, aAddress);
+    public RegionNode createAt(BytecodeOpcodeAddress aAddress, RegionNode.BlockType aType) {
+        RegionNode theNewBlock = new RegionNode(this, aType, program, aAddress);
         addDominatedNode(theNewBlock);
         return theNewBlock;
     }
 
-    public void addDominatedNode(GraphNode aGraphNode) {
+    public void addDominatedNode(RegionNode aGraphNode) {
         dominatedNodes.add(aGraphNode);
         knownNodes.add(aGraphNode);
     }
 
-    public GraphNode startNode() {
+    public RegionNode startNode() {
         return nodeStartingAt(BytecodeOpcodeAddress.START_AT_ZERO);
     }
 
-    public GraphNode nodeStartingAt(BytecodeOpcodeAddress aAddress) {
-        for (GraphNode theBlock : knownNodes) {
-            if (aAddress.equals(theBlock.getStartAddress())) {
+    public RegionNode nodeStartingAt(BytecodeOpcodeAddress aAddress) {
+        for (RegionNode theBlock : knownNodes) {
+            if (Objects.equals(aAddress, theBlock.getStartAddress())) {
                 return theBlock;
             }
         }
@@ -132,29 +106,15 @@ public class ControlFlowGraph {
     }
 
 
-    public List<GraphNode> getDominatedNodes() {
+    public List<RegionNode> getDominatedNodes() {
         return new ArrayList<>(dominatedNodes);
     }
 
-    public List<GraphNode> getKnownNodes() {
+    public List<RegionNode> getKnownNodes() {
         return new ArrayList<>(knownNodes);
     }
 
-    public Node toRootNode() {
-        if (dominatedNodes.size() == 1) {
-            GraphNode theSingleNode = dominatedNodes.get(0);
-            if (!theSingleNode.containsGoto()) {
-                return new SimpleNode(theSingleNode);
-            }
-        }
-        List<SimpleNode> theNodes = new ArrayList<>();
-        for (GraphNode theNode : dominatedNodes) {
-            theNodes.add(new SimpleNode(theNode));
-        }
-        return new SequenceOfSimpleNodes(theNodes);
-    }
-
-    private String toHTMLLabel(GraphNode aNode) {
+    private String toHTMLLabel(RegionNode aNode) {
         StringBuilder theResult = new StringBuilder("<");
 
         BlockState theStartState = aNode.toStartState();
@@ -251,17 +211,17 @@ public class ControlFlowGraph {
         try (PrintWriter thePW = new PrintWriter(theStr)) {
             thePW.println("digraph CFG {");
 
-            for (GraphNode theNode : knownNodes) {
+            for (RegionNode theNode : knownNodes) {
                 thePW.print("   N" + theNode.getStartAddress().getAddress());
                 thePW.print(" [shape=none, margin=0, label=");
                 thePW.print(toHTMLLabel(theNode));
                 thePW.println("];");
 
-                for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : theNode.getSuccessors().entrySet()) {
+                for (Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
                     thePW.print("   N" + theNode.getStartAddress().getAddress());
                     thePW.print(" -> ");
                     thePW.print("   N" + theSuccessor.getValue().getStartAddress().getAddress());
-                    if (theSuccessor.getKey().getType() == GraphNode.EdgeType.BACK) {
+                    if (theSuccessor.getKey().getType() == RegionNode.EdgeType.BACK) {
                         thePW.print(" [ label = \"back-edge\"]");
                     }
                     thePW.println(";");
@@ -273,10 +233,10 @@ public class ControlFlowGraph {
         return theStr.toString();
     }
 
-    protected Set<GraphNode> dominatedNodesOf(GraphNode aNode) {
-        Set<GraphNode> theResult = new HashSet<>();
+    protected Set<RegionNode> dominatedNodesOf(RegionNode aNode) {
+        Set<RegionNode> theResult = new HashSet<>();
         theResult.add(aNode);
-        for (GraphNode theNode : knownNodes) {
+        for (RegionNode theNode : knownNodes) {
             if (theNode.isOnlyReachableThru(aNode)) {
                 theResult.add(theNode);
             }
@@ -284,8 +244,8 @@ public class ControlFlowGraph {
         return theResult;
     }
 
-    public void delete(GraphNode aNode) {
-        for (GraphNode theNode : knownNodes) {
+    public void delete(RegionNode aNode) {
+        for (RegionNode theNode : knownNodes) {
             theNode.removeEdgesTo(aNode);
             theNode.removeFromPaths(aNode);
         }

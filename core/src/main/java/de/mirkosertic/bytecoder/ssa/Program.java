@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class Program {
@@ -64,7 +65,7 @@ public class Program {
 
     public Argument matchingArgumentOf(LocalVariableDescription aVariableDescription) {
         for (Argument theArgument : arguments) {
-            if (theArgument.variableDescription.equals(aVariableDescription)) {
+            if (Objects.equals(theArgument.variableDescription, aVariableDescription)) {
                 return theArgument;
             }
         }
@@ -77,7 +78,7 @@ public class Program {
 
     public Set<Variable> globalVariables() {
         Set<Variable> theVariables = new HashSet<>();
-        for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
+        for (RegionNode theNode : controlFlowGraph.getKnownNodes()) {
             BlockState theStartState = theNode.toStartState();
             for (Value theValue : theStartState.getPorts().values()) {
                 if (theValue instanceof Variable) {
@@ -90,7 +91,7 @@ public class Program {
 
     public boolean isGlobalVariable(Variable aVariable) {
         for (Variable theVar : globalVariables()) {
-            if (theVar.getName().equals(aVariable.getName())) {
+            if (Objects.equals(theVar.getName(), aVariable.getName())) {
                 return true;
             }
         }
@@ -113,7 +114,7 @@ public class Program {
 
     public Set<BytecodeObjectTypeRef> getStaticReferences() {
         Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
-        for (GraphNode theNode : controlFlowGraph.getDominatedNodes()) {
+        for (RegionNode theNode : controlFlowGraph.getDominatedNodes()) {
             for (Expression theExpression : theNode.getExpressions().toList()) {
                 if (theExpression instanceof PutStaticExpression) {
                     PutStaticExpression theE = (PutStaticExpression) theExpression;
@@ -158,36 +159,8 @@ public class Program {
     public void deleteVariable(Variable aVariable) {
         variables.remove(aVariable);
         globals.remove(aVariable);
-        for (GraphNode theNode : controlFlowGraph.getKnownNodes()) {
+        for (RegionNode theNode : controlFlowGraph.getKnownNodes()) {
             theNode.deleteVariable(aVariable);
         }
-    }
-
-    public Variable getVariableByName(String aName) {
-        for (Variable theVariable : variables) {
-            if (aName.equals(theVariable.getName())) {
-                return theVariable;
-            }
-        }
-        return null;
-    }
-
-    public Variable getOrCreateTrulyGlobal(String aName, TypeRef aType) {
-        Variable theVariable = getVariableByName(aName);
-        if (theVariable == null) {
-            theVariable = new Variable(aType, aName);
-            variables.add(theVariable);
-            globals.add(theVariable);
-        }
-        return theVariable;
-    }
-
-    public boolean isTrulyGlobal(Variable aVariable) {
-        return globals.contains(aVariable);
-    }
-
-    public void promoteToTrulyGlobal(Variable aVariable, String aGlobalName) {
-        aVariable.changeNameTo(aGlobalName);
-        globals.add(aVariable);
     }
 }

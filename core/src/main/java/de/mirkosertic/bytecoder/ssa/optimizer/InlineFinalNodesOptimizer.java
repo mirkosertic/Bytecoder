@@ -25,7 +25,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 public class InlineFinalNodesOptimizer implements Optimizer {
 
@@ -35,25 +35,25 @@ public class InlineFinalNodesOptimizer implements Optimizer {
             return;
         }
 
-        Map<BytecodeOpcodeAddress, GraphNode> theFinalNodes = new HashMap<>();
-        for (GraphNode theNode : aGraph.getKnownNodes()) {
+        Map<BytecodeOpcodeAddress, RegionNode> theFinalNodes = new HashMap<>();
+        for (RegionNode theNode : aGraph.getKnownNodes()) {
             if (!theNode.getPredecessors().isEmpty() &&
-                 theNode.endsWithReturn() &&
+                 theNode.getExpressions().endsWithReturn() &&
                  theNode.getExpressions().toList().size() <= 1) {
                 theFinalNodes.put(theNode.getStartAddress(), theNode);
             }
         }
 
-        for (GraphNode theNode : aGraph.getKnownNodes()) {
+        for (RegionNode theNode : aGraph.getKnownNodes()) {
             inline(theFinalNodes, theNode.getExpressions());
         }
 
-        for (GraphNode theNode : theFinalNodes.values()) {
+        for (RegionNode theNode : theFinalNodes.values()) {
             aGraph.delete(theNode);
         }
     }
 
-    private void inline(Map<BytecodeOpcodeAddress, GraphNode> aFinalNodes, ExpressionList aList) {
+    private void inline(Map<BytecodeOpcodeAddress, RegionNode> aFinalNodes, ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
@@ -63,7 +63,7 @@ public class InlineFinalNodesOptimizer implements Optimizer {
             }
             if (theExpression instanceof GotoExpression) {
                 GotoExpression theGoto = (GotoExpression) theExpression;
-                GraphNode thePotentialFinal = aFinalNodes.get(theGoto.getJumpTarget());
+                RegionNode thePotentialFinal = aFinalNodes.get(theGoto.getJumpTarget());
                 if (thePotentialFinal != null) {
                     aList.replace(theExpression, thePotentialFinal.getExpressions());
                 }

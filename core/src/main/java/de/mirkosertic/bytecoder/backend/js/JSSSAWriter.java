@@ -55,7 +55,7 @@ import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GetStaticValue;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
@@ -227,7 +227,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         println("', function() {");
 
         Program theProgram = aValue.getProgram();
-        GraphNode theBootstrapCode = aValue.getBootstrapMethod();
+        RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
         JSSSAWriter theNested = withDeeperIndent();
 
@@ -828,13 +828,13 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void printNodeDebug(GraphNode aNode) {
+    private void printNodeDebug(RegionNode aNode) {
         if (options.isDebugOutput()) {
 
             for (GraphNodePath thePath : aNode.reachableBy()) {
                 print("// Reachable by path [");
 
-                for (GraphNode theNode : thePath.nodes()) {
+                for (RegionNode theNode : thePath.nodes()) {
                     print(theNode.getStartAddress().getAddress());
                     print(" ");
                 }
@@ -842,11 +842,11 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println("]");
             }
 
-            for (GraphNode thePrececessor : aNode.getPredecessors()) {
+            for (RegionNode thePrececessor : aNode.getPredecessors()) {
                 printlnComment(
                         "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
             }
-            for (Map.Entry<GraphNode.Edge, GraphNode> theSuccessor : aNode.getSuccessors().entrySet()) {
+            for (Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : aNode.getSuccessors().entrySet()) {
                 printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
             }
         }
@@ -921,7 +921,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         JSSSAWriter theDeeper = withDeeperIndent();
         for (Relooper.Block theHandler : aMultiple.handlers()) {
-            for (GraphNode theEntry : theHandler.entries()) {
+            for (RegionNode theEntry : theHandler.entries()) {
                 theDeeper.print("case ");
                 theDeeper.print(theEntry.getStartAddress().getAddress());
                 theDeeper.println(" : ");

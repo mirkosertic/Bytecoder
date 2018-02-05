@@ -23,8 +23,9 @@ import java.util.Map;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.graph.Node;
 
-public class GraphNode {
+public class RegionNode extends Node {
 
     public enum BlockType {
         NORMAL,
@@ -54,25 +55,29 @@ public class GraphNode {
     }
 
     private final BytecodeOpcodeAddress startAddress;
-    private final ExpressionList expressions;
     private final Program program;
-    private final Map<Edge, GraphNode> successors;
+    private final Map<Edge, RegionNode> successors;
     private final BlockType type;
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
     private final List<GraphNodePath> reachableBy;
     private final ControlFlowGraph owningGraph;
+    private final ExpressionList expressions;
 
-    protected GraphNode(ControlFlowGraph aOwningGraph, BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+    protected RegionNode(ControlFlowGraph aOwningGraph, BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
         type = aType;
         owningGraph = aOwningGraph;
         startAddress = aStartAddress;
         program = aProgram;
-        expressions = new ExpressionList();
         successors = new HashMap<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
         reachableBy = new ArrayList<>();
+        expressions = new ExpressionList();
+    }
+
+    public ExpressionList getExpressions() {
+         return expressions;
     }
 
     public void addReachablePath(GraphNodePath aPath) {
@@ -87,8 +92,8 @@ public class GraphNode {
         return type;
     }
 
-    public List<GraphNode> getPredecessors() {
-        List<GraphNode> theResult = new ArrayList<>();
+    public List<RegionNode> getPredecessors() {
+        List<RegionNode> theResult = new ArrayList<>();
         for (GraphNodePath thePath : reachableBy) {
             if (!thePath.isEmpty()) {
                 theResult.add(thePath.lastElement());
@@ -97,8 +102,8 @@ public class GraphNode {
         return theResult;
     }
 
-    public boolean hasBackEdgeTo(GraphNode aNode) {
-        for (Map.Entry<Edge, GraphNode> theEntry : successors.entrySet()) {
+    public boolean hasBackEdgeTo(RegionNode aNode) {
+        for (Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
             if (theEntry.getKey().getType() == EdgeType.BACK) {
                 if (theEntry.getValue() == aNode) {
                     return true;
@@ -108,11 +113,11 @@ public class GraphNode {
         return false;
     }
 
-    public Set<GraphNode> getPredecessorsIgnoringBackEdges() {
-        Set<GraphNode> theResult = new HashSet<>();
+    public Set<RegionNode> getPredecessorsIgnoringBackEdges() {
+        Set<RegionNode> theResult = new HashSet<>();
         for (GraphNodePath thePath : reachableBy) {
             if (!thePath.isEmpty()) {
-                GraphNode theLastElement = thePath.lastElement();
+                RegionNode theLastElement = thePath.lastElement();
                 if (!theLastElement.hasBackEdgeTo(this)) {
                     theResult.add(theLastElement);
                 }
@@ -121,13 +126,13 @@ public class GraphNode {
         return theResult;
     }
 
-    public void addSuccessor(GraphNode aBlock) {
+    public void addSuccessor(RegionNode aBlock) {
         if (!successors.values().contains(aBlock)) {
             successors.put(new Edge(EdgeType.NORMAL), aBlock);
         }
     }
 
-    public Map<Edge, GraphNode> getSuccessors() {
+    public Map<Edge, RegionNode> getSuccessors() {
         return successors;
     }
 
@@ -173,14 +178,6 @@ public class GraphNode {
         imported.put(aDescription, aValue);
     }
 
-    public void addExpression(Expression aExpression) {
-        expressions.add(aExpression);
-    }
-
-    public ExpressionList getExpressions() {
-        return expressions;
-    }
-
     public BlockState toFinalState() {
         BlockState theState = new BlockState();
         for (Map.Entry<VariableDescription, Value> theEntry : exported.entrySet()) {
@@ -197,46 +194,10 @@ public class GraphNode {
         return theState;
     }
 
-    public boolean endWithNeverReturningExpression() {
-        Expression theLastExpression = expressions.lastExpression();
-        return theLastExpression instanceof ReturnExpression ||
-                theLastExpression instanceof ReturnValueExpression ||
-                theLastExpression instanceof TableSwitchExpression ||
-                theLastExpression instanceof LookupSwitchExpression ||
-                theLastExpression instanceof ThrowExpression ||
-                theLastExpression instanceof GotoExpression;
-    }
 
-    public boolean endsWithReturn() {
-        Expression theLastExpression = expressions.lastExpression();
-        return theLastExpression instanceof ReturnExpression ||
-                theLastExpression instanceof ReturnValueExpression;
-    }
-
-    public boolean isStrictlyDominatedBy(GraphNode aNode) {
-        List<GraphNode> thePredecessors = new ArrayList<>(getPredecessors());
+    public boolean isStrictlyDominatedBy(RegionNode aNode) {
+        List<RegionNode> thePredecessors = new ArrayList<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
-    }
-
-    public boolean containsGoto() {
-        return containsGoto(expressions);
-    }
-
-    private boolean containsGoto(ExpressionList aExpressionList) {
-        for (Expression theExpression : aExpressionList.toList()) {
-            if (theExpression instanceof GotoExpression) {
-                return true;
-            }
-            if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    if (containsGoto(theList)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     public void deleteVariable(Variable aVariable) {
@@ -260,7 +221,7 @@ public class GraphNode {
         }
     }
 
-    public boolean isOnlyReachableThru(GraphNode aOtherNode) {
+    public boolean isOnlyReachableThru(RegionNode aOtherNode) {
         // Start nodes are not reachable by anything
         if (reachableBy.isEmpty()) {
             return false;
@@ -274,19 +235,19 @@ public class GraphNode {
         return true;
     }
 
-    public Set<GraphNode> forwardReachableNodes() {
-        Set<GraphNode> theNodes = new HashSet<>();
+    public Set<RegionNode> forwardReachableNodes() {
+        Set<RegionNode> theNodes = new HashSet<>();
         forwardReachableNodes(theNodes, this);
         return theNodes;
     }
 
-    public Set<GraphNode> dominatedNodes() {
+    public Set<RegionNode> dominatedNodes() {
         return owningGraph.dominatedNodesOf(this);
     }
 
-    private static void forwardReachableNodes(Set<GraphNode> aResult, GraphNode aNode) {
+    private static void forwardReachableNodes(Set<RegionNode> aResult, RegionNode aNode) {
         if (aResult.add(aNode)) {
-            for (Map.Entry<Edge,GraphNode> theSuc : aNode.successors.entrySet()) {
+            for (Map.Entry<Edge,RegionNode> theSuc : aNode.successors.entrySet()) {
                 if (theSuc.getKey().type == EdgeType.NORMAL) {
                     forwardReachableNodes(aResult, theSuc.getValue());
                 }
@@ -294,9 +255,9 @@ public class GraphNode {
         }
     }
 
-    public void removeEdgesTo(GraphNode aNode) {
-        Map<Edge, GraphNode> theNewSucc = new HashMap<>();
-        for (Map.Entry<Edge, GraphNode> theEntry : successors.entrySet()) {
+    public void removeEdgesTo(RegionNode aNode) {
+        Map<Edge, RegionNode> theNewSucc = new HashMap<>();
+        for (Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
             if (!(theEntry.getValue() == aNode)) {
                 theNewSucc.put(theEntry.getKey(), theEntry.getValue());
             }
@@ -305,14 +266,14 @@ public class GraphNode {
         successors.putAll(theNewSucc);
     }
 
-    public void removeFromPaths(GraphNode aNode) {
+    public void removeFromPaths(RegionNode aNode) {
         for (GraphNodePath thePath : reachableBy) {
             thePath.remove(aNode);
         }
     }
 
-    public void inheritSuccessorsOf(GraphNode aNode) {
-        for (Map.Entry<Edge, GraphNode> theEntry : aNode.successors.entrySet()) {
+    public void inheritSuccessorsOf(RegionNode aNode) {
+        for (Map.Entry<Edge, RegionNode> theEntry : aNode.successors.entrySet()) {
             successors.put(theEntry.getKey(), theEntry.getValue());
         }
     }

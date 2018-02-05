@@ -59,7 +59,7 @@ import de.mirkosertic.bytecoder.ssa.FloorValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
 import de.mirkosertic.bytecoder.ssa.GetStaticValue;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -111,7 +111,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         String resolveStringPoolFunctionName(String aValue);
 
-        String resolveCallsiteBootstrapFor(BytecodeClass aOwningClass, String aCallsiteId, Program aProgram, GraphNode aBootstrapMethod);
+        String resolveCallsiteBootstrapFor(BytecodeClass aOwningClass, String aCallsiteId, Program aProgram, RegionNode aBootstrapMethod);
 
         int resolveMethodIDByName(String aMethodName);
 
@@ -1726,7 +1726,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theWriter.println("_inner");
 
         for (Relooper.Block theHandler : aMultipleBlock.handlers()) {
-            for (GraphNode theEntry : theHandler.entries()) {
+            for (RegionNode theEntry : theHandler.entries()) {
                 int theEntryAddress = theEntry.getStartAddress().getAddress();
 
                 WASMSSAWriter theChild2 = theWriter.withDeeperIndent();

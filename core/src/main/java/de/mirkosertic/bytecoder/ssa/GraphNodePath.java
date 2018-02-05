@@ -20,9 +20,9 @@ import java.util.List;
 
 public class GraphNodePath {
 
-    private final List<GraphNode> nodes;
+    private final List<RegionNode> nodes;
 
-    protected GraphNodePath(List<GraphNode> aNodes) {
+    protected GraphNodePath(List<RegionNode> aNodes) {
         nodes = aNodes;
     }
 
@@ -34,7 +34,7 @@ public class GraphNodePath {
         return new GraphNodePath(new ArrayList<>(nodes));
     }
 
-    public boolean addToPath(GraphNode aNode) {
+    public boolean addToPath(RegionNode aNode) {
         if (!nodes.contains(aNode)) {
             nodes.add(aNode);
             return true;
@@ -46,19 +46,19 @@ public class GraphNodePath {
         return nodes.isEmpty();
     }
 
-    public GraphNode lastElement() {
+    public RegionNode lastElement() {
         return nodes.get(nodes.size() - 1);
     }
 
-    public List<GraphNode> nodes() {
+    public List<RegionNode> nodes() {
         return nodes;
     }
 
-    public boolean contains(GraphNode aNode) {
+    public boolean contains(RegionNode aNode) {
         return nodes.contains(aNode);
     }
 
-    public void remove(GraphNode aNodeToDelete) {
+    public void remove(RegionNode aNodeToDelete) {
         nodes.remove(aNodeToDelete);
     }
 }

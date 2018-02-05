@@ -193,10 +193,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println();
 
         theWriter.println("     bootstrap : function() {");
-        aLinkerContext.forEachClass(theEntry -> {
-            if (!theEntry.getValue().getAccessFlags().isInterface()) {
+        aLinkerContext.linkedClasses().forEach(aEntry -> {
+            if (!aEntry.targetNode().getAccessFlags().isInterface()) {
                 theWriter.print("          ");
-                theWriter.print(JSWriterUtils.toClassName(theEntry.getKey()));
+                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
                 theWriter.println(".classInitCheck();");
             }
         });
@@ -204,31 +204,31 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("};");
         theWriter.println();
 
-        aLinkerContext.forEachClass(theEntry -> {
+        aLinkerContext.linkedClasses().forEach(theEntry -> {
 
-            if (theEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+            if (theEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
                 return;
             }
 
             // Fix constructor invocation delegation
-            String theOverriddenParentClassName = getOverriddenParentClassFor(theEntry.getValue().getBytecodeClass());
+            String theOverriddenParentClassName = getOverriddenParentClassFor(theEntry.targetNode().getBytecodeClass());
 
-            String theJSClassName = JSWriterUtils.toClassName(theEntry.getKey());
+            String theJSClassName = JSWriterUtils.toClassName(theEntry.edgeType().objectTypeRef());
             theWriter.println("var " + theJSClassName + " = {");
 
-            if (!theEntry.getValue().getBytecodeClass().getAccessFlags().isInterface()) {
+            if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
 
                 // First of all, we add static fields required by the framework
-                theWriter.println("    __name : '" + theEntry.getValue().getClassName().name() + "',");
+                theWriter.println("    __name : '" + theEntry.edgeType().objectTypeRef().name() + "',");
                 theWriter.println("    __initialized : false,");
                 theWriter.println("    __staticCallSites : [],");
                 theWriter.print("    __typeId : ");
-                theWriter.print(theEntry.getValue().getUniqueId());
+                theWriter.print(theEntry.targetNode().getUniqueId());
                 theWriter.println(",");
                 theWriter.print("    __implementedTypes : [");
                 {
                     boolean first = true;
-                    for (BytecodeLinkedClass theType : theEntry.getValue().getImplementingTypes()) {
+                    for (BytecodeLinkedClass theType : theEntry.targetNode().getImplementingTypes()) {
                         if (!first) {
                             theWriter.print(",");
                         }
@@ -239,7 +239,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("],");
 
                 // then we add class specific static fields
-                theEntry.getValue().forEachStaticField(
+                theEntry.targetNode().forEachStaticField(
                         aFieldEntry -> theWriter.println("    " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
                 theWriter.println();
 
@@ -259,7 +259,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 // The Constructor function initializes all object members with null
                 theWriter.println("    Create : function() {");
-                theEntry.getValue().forEachMemberField(aField -> theWriter.println("        this." + aField.getKey() + " = null; // declared in " + aField.getValue().getDeclaringType().name()));
+                theEntry.targetNode().forEachMemberField(aField -> theWriter.println("        this." + aField.getKey() + " = null; // declared in " + aField.getValue().getDeclaringType().name()));
                 theWriter.println("    },");
                 theWriter.println();
 
@@ -285,7 +285,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
 
-            theEntry.getValue().forEachMethod(theMethod -> {
+            theEntry.targetNode().forEachMethod(theMethod -> {
 
                 // Do not generate code for abstract methods
                 if (theMethod.getAccessFlags().isAbstract()) {
@@ -293,7 +293,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
-                Program theSSAProgram = theGenerator.generateFrom(theEntry.getValue().getBytecodeClass(), theMethod);
+                Program theSSAProgram = theGenerator.generateFrom(theEntry.targetNode().getBytecodeClass(), theMethod);
 
                 //Run optimizer
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
@@ -308,7 +308,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {
-                    if (theEntry.getValue().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                    if (theEntry.targetNode().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
                     BytecodeAnnotation theImportAnnotation = theMethod.getAttributes().getAnnotationByType(Import.class.getName());
@@ -328,7 +328,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println();
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
 
-                aOptions.getLogger().info("Compiling " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue());
+                aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
@@ -360,7 +360,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theVariablesWriter.printRelooped(theReloopedBlock);
                 } catch (Exception e) {
                     System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
-                    throw new IllegalStateException("Error relooping cfg for " + theEntry.getValue().getClassName().name() + "." + theMethod.getName().stringValue(), e);
+                    throw new IllegalStateException("Error relooping cfg for " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue(), e);
                 }
 
                 theWriter.println("    },");
@@ -377,7 +377,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("            thePrototype.instanceOf = " + theJSClassName + ".instanceOf;");
             theWriter.println("            thePrototype.TClassgetClass = " + theJSClassName + ".TClassgetClass;");
 
-            BytecodeLinkedClass theCurrentClass = theEntry.getValue();
+            BytecodeLinkedClass theCurrentClass = theEntry.targetNode();
             Set<String> theAlreadyProcessed = new HashSet<>();
             while(theCurrentClass != null) {
 
@@ -407,13 +407,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             }
 
             for (BytecodeObjectTypeRef theRef : theStaticReferences) {
-                if (!Objects.equals(theRef, theEntry.getKey())) {
+                if (!Objects.equals(theRef, theEntry.edgeType().objectTypeRef())) {
                     theWriter.print("            ");
                     theWriter.print(JSWriterUtils.toClassName(theRef));
                     theWriter.println(".classInitCheck();");
                 }
             }
-            if (theEntry.getValue().hasClassInitializer()) {
+            if (theEntry.targetNode().hasClassInitializer()) {
                 theWriter.println("            " + theJSClassName + ".VOIDclinit();");
             }
             theWriter.println("        }");
