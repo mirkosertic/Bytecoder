@@ -25,7 +25,7 @@ import org.junit.Test;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 
@@ -36,12 +36,12 @@ public class InlineGotoOptimizerTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
 
-        GraphNode theNode = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
+        RegionNode theNode = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
 
         theNode.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
         theNode.addSuccessor(theNode2);
-        theNode2.addExpression(new ReturnExpression());
+        theNode2.getExpressions().add(new ReturnExpression());
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
@@ -65,9 +65,9 @@ public class InlineGotoOptimizerTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
 
-        GraphNode theNode = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        GraphNode theNode1 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(40), GraphNode.BlockType.NORMAL);
+        RegionNode theNode = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        RegionNode theNode1 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(40), RegionNode.BlockType.NORMAL);
 
         theNode.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
         theNode.addSuccessor(theNode1);
@@ -75,7 +75,7 @@ public class InlineGotoOptimizerTest {
         theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(40)));
         theNode1.addSuccessor(theNode2);
 
-        theNode2.addExpression(new ReturnExpression());
+        theNode2.getExpressions().add(new ReturnExpression());
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
@@ -99,10 +99,10 @@ public class InlineGotoOptimizerTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
 
-        GraphNode theNode = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        GraphNode theNode1 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(40), GraphNode.BlockType.NORMAL);
-        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(60), GraphNode.BlockType.NORMAL);
+        RegionNode theNode = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        RegionNode theNode1 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(40), RegionNode.BlockType.NORMAL);
+        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(60), RegionNode.BlockType.NORMAL);
 
         theNode.addSuccessor(theNode1);
         theNode.addSuccessor(theNode2);

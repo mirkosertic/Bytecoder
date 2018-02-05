@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class WASMMemoryLayouter {
 
@@ -48,22 +49,22 @@ public class WASMMemoryLayouter {
     public WASMMemoryLayouter(BytecodeLinkerContext aLinkerContext) {
         classes = new HashMap<>();
         superClasses = new HashMap<>();
-        aLinkerContext.forEachClass(aEntry -> registerClass(aEntry.getValue()));
-   }
+        aLinkerContext.linkedClasses().forEach(aEntry -> registerClass(aEntry.targetNode()));
+    }
 
     private List<BytecodeLinkedClass.LinkedField> collectFields(BytecodeLinkedClass aClass) {
         List<BytecodeLinkedClass.LinkedField> theFields = new ArrayList<>();
 
         aClass.forEachMemberField(aEntry -> {
             BytecodeLinkedClass.LinkedField theField = aEntry.getValue();
-            if (theField.getDeclaringType().equals(aClass.getClassName())) {
+            if (Objects.equals(theField.getDeclaringType(), aClass.getClassName())) {
                 theFields.add(theField);
             }
         });
 
         aClass.forEachStaticField(aEntry -> {
             BytecodeLinkedClass.LinkedField theField = aEntry.getValue();
-            if (theField.getDeclaringType().equals(aClass.getClassName())) {
+            if (Objects.equals(theField.getDeclaringType(), aClass.getClassName())) {
                 theFields.add(theField);
             }
         });
@@ -132,7 +133,7 @@ public class WASMMemoryLayouter {
                 int theOffset = OBJECT_HEADER_SIZE;
                 for (BytecodeLinkedClass.LinkedField theField : theFields) {
                     if (!theField.getField().getAccessFlags().isStatic()) {
-                        if (aName.equals(theField.getField().getName().stringValue())) {
+                        if (Objects.equals(aName, theField.getField().getName().stringValue())) {
                             return theOffset;
                         }
                         theOffset+= OBJECT_FIELDSIZE;
@@ -147,7 +148,7 @@ public class WASMMemoryLayouter {
                 int theOffset = CLASS_HEADER_SIZE;
                 for (BytecodeLinkedClass.LinkedField theField : theFields) {
                     if (theField.getField().getAccessFlags().isStatic()) {
-                        if (aName.equals(theField.getField().getName().stringValue())) {
+                        if (Objects.equals(aName, theField.getField().getName().stringValue())) {
                             return theOffset;
                         }
                         theOffset+= OBJECT_FIELDSIZE;

@@ -22,10 +22,10 @@ public class ResolveCallsiteObjectValue extends Value {
     private final String callsiteId;
     private final BytecodeClass owningClass;
     private final Program program;
-    private final GraphNode bootstrapMethod;
+    private final RegionNode bootstrapMethod;
 
     public ResolveCallsiteObjectValue(String aCallsiteId, BytecodeClass aOwningClass,
-            Program aProgram, GraphNode aBootstrapMethod) {
+            Program aProgram, RegionNode aBootstrapMethod) {
         callsiteId = aCallsiteId;
         owningClass = aOwningClass;
         program = aProgram;
@@ -44,7 +44,7 @@ public class ResolveCallsiteObjectValue extends Value {
         return program;
     }
 
-    public GraphNode getBootstrapMethod() {
+    public RegionNode getBootstrapMethod() {
         return bootstrapMethod;
     }
 

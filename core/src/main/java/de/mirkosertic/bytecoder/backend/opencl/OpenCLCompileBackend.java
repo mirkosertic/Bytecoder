@@ -33,7 +33,7 @@ import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -110,7 +110,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
     private OpenCLInputOutputs inputOutputsFor(BytecodeLinkerContext aLinkerContext, BytecodeLinkedClass aKernelClass, Program aProgram) {
         OpenCLInputOutputs theResult = new OpenCLInputOutputs();
-        for (GraphNode theNode : aProgram.getControlFlowGraph().getKnownNodes()) {
+        for (RegionNode theNode : aProgram.getControlFlowGraph().getKnownNodes()) {
             fillInputOutputs(aLinkerContext, aKernelClass, theNode.getExpressions(), theResult);
         }
         return theResult;

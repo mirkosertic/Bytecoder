@@ -80,4 +80,20 @@ public class ExpressionList {
         }
         return null;
     }
+
+    public boolean endWithNeverReturningExpression() {
+        Expression theLastExpression = lastExpression();
+        return theLastExpression instanceof ReturnExpression ||
+                theLastExpression instanceof ReturnValueExpression ||
+                theLastExpression instanceof TableSwitchExpression ||
+                theLastExpression instanceof LookupSwitchExpression ||
+                theLastExpression instanceof ThrowExpression ||
+                theLastExpression instanceof GotoExpression;
+    }
+
+    public boolean endsWithReturn() {
+        Expression theLastExpression = lastExpression();
+        return theLastExpression instanceof ReturnExpression ||
+                theLastExpression instanceof ReturnValueExpression;
+    }
 }

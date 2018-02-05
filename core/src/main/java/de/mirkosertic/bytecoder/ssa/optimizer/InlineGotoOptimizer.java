@@ -22,7 +22,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.util.Objects;
 
@@ -32,7 +32,7 @@ public class InlineGotoOptimizer implements Optimizer {
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
         while (true) {
             boolean theChanged = false;
-            for (GraphNode theNode : aGraph.getKnownNodes()) {
+            for (RegionNode theNode : aGraph.getKnownNodes()) {
                 if (performNodeInlining(aGraph, theNode, theNode.getExpressions())) {
                     theChanged = true;
                     break;
@@ -44,7 +44,7 @@ public class InlineGotoOptimizer implements Optimizer {
         }
     }
 
-    private boolean performNodeInlining(ControlFlowGraph aGraph, GraphNode aNode, ExpressionList aList) {
+    private boolean performNodeInlining(ControlFlowGraph aGraph, RegionNode aNode, ExpressionList aList) {
         for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
@@ -56,7 +56,7 @@ public class InlineGotoOptimizer implements Optimizer {
             }
             if (theExpression instanceof GotoExpression) {
                 GotoExpression theGOTO = (GotoExpression) theExpression;
-                GraphNode theTargetNode = aGraph.nodeStartingAt(theGOTO.getJumpTarget());
+                RegionNode theTargetNode = aGraph.nodeStartingAt(theGOTO.getJumpTarget());
 
                 if (theTargetNode.isStrictlyDominatedBy(aNode)) {
                     // Node can be inlined
@@ -65,7 +65,7 @@ public class InlineGotoOptimizer implements Optimizer {
 
                     aNode.inheritSuccessorsOf(theTargetNode);
 
-                    for (GraphNode theNode : aGraph.getKnownNodes()) {
+                    for (RegionNode theNode : aGraph.getKnownNodes()) {
                         recomputeGotos(theNode.getExpressions(), theTargetNode.getStartAddress(), aNode.getStartAddress());
                     }
 

@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.relooper;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import org.junit.Test;
@@ -30,12 +30,12 @@ public class RelooperTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        GraphNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        theNode1.addExpression(new GotoExpression(new BytecodeOpcodeAddress(10)));
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), GraphNode.BlockType.NORMAL);
-        theNode2.addExpression(new GotoExpression(new BytecodeOpcodeAddress(20)));
-        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
-        theNode3.addExpression(new ReturnExpression());
+        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(10)));
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
+        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new ReturnExpression());
 
         theNode1.addSuccessor(theNode2);
         theNode2.addSuccessor(theNode3);
@@ -53,12 +53,12 @@ public class RelooperTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        GraphNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        theNode1.addExpression(new GotoExpression(new BytecodeOpcodeAddress(10)));
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), GraphNode.BlockType.NORMAL);
-        theNode2.addExpression(new GotoExpression(new BytecodeOpcodeAddress(20)));
-        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
-        theNode3.addExpression(new GotoExpression(BytecodeOpcodeAddress.START_AT_ZERO));
+        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(10)));
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
+        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new GotoExpression(BytecodeOpcodeAddress.START_AT_ZERO));
 
         theNode1.addSuccessor(theNode2);
         theNode2.addSuccessor(theNode3);
@@ -77,14 +77,14 @@ public class RelooperTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        GraphNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        theNode1.addExpression(new GotoExpression(new BytecodeOpcodeAddress(10)));
+        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(10)));
 
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), GraphNode.BlockType.NORMAL);
-        theNode2.addExpression(new GotoExpression(new BytecodeOpcodeAddress(20)));
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
 
-        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
-        theNode3.addExpression(new ReturnExpression());
+        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new ReturnExpression());
 
         theNode1.addSuccessor(theNode2);
         theNode1.addSuccessor(theNode3);
@@ -103,16 +103,16 @@ public class RelooperTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        GraphNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
+        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
 
-        GraphNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), GraphNode.BlockType.NORMAL);
-        theNode2.addExpression(new ReturnExpression());
+        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new ReturnExpression());
 
-        GraphNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), GraphNode.BlockType.NORMAL);
-        theNode3.addExpression(new ReturnExpression());
+        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new ReturnExpression());
 
-        GraphNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), GraphNode.BlockType.NORMAL);
-        theNode4.addExpression(new ReturnExpression());
+        RegionNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
+        theNode4.getExpressions().add(new ReturnExpression());
 
         theNode1.addSuccessor(theNode2);
         theNode1.addSuccessor(theNode3);
@@ -145,10 +145,10 @@ public class RelooperTest {
         Program theProgram = new Program();
         ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        GraphNode theNode0 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, GraphNode.BlockType.NORMAL);
-        GraphNode theNode8 = theGraph.createAt(new BytecodeOpcodeAddress(8), GraphNode.BlockType.NORMAL);
-        GraphNode theNode19 = theGraph.createAt(new BytecodeOpcodeAddress(19), GraphNode.BlockType.NORMAL);
-        GraphNode theNode39 = theGraph.createAt(new BytecodeOpcodeAddress(39), GraphNode.BlockType.NORMAL);
+        RegionNode theNode0 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        RegionNode theNode8 = theGraph.createAt(new BytecodeOpcodeAddress(8), RegionNode.BlockType.NORMAL);
+        RegionNode theNode19 = theGraph.createAt(new BytecodeOpcodeAddress(19), RegionNode.BlockType.NORMAL);
+        RegionNode theNode39 = theGraph.createAt(new BytecodeOpcodeAddress(39), RegionNode.BlockType.NORMAL);
 
         theNode0.addSuccessor(theNode8);
         theNode0.addSuccessor(theNode39);

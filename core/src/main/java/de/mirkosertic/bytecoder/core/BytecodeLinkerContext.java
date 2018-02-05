@@ -16,27 +16,29 @@
 package de.mirkosertic.bytecoder.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import de.mirkosertic.bytecoder.annotations.Export;
+import de.mirkosertic.bytecoder.graph.Edge;
 
 public class BytecodeLinkerContext {
 
-    private final Map<BytecodeObjectTypeRef, BytecodeLinkedClass> linkedClasses;
+    private final RootNode rootNode;
     private final BytecodeLoader loader;
     private final BytecodeMethodCollection methodCollection;
     private final Logger logger;
+    private int classIdCounter;
 
     public BytecodeLinkerContext(BytecodeLoader aLoader, Logger aLogger) {
-        linkedClasses = new HashMap<>();
+        rootNode = new RootNode();
         loader = aLoader;
         methodCollection = new BytecodeMethodCollection();
         logger = aLogger;
+        classIdCounter = 0;
     }
 
     public Logger getLogger() {
@@ -53,14 +55,15 @@ public class BytecodeLinkerContext {
 
     public BytecodeLinkedClass isLinkedOrNull(BytecodeUtf8Constant aConstant) {
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromUtf8Constant(aConstant);
-        return linkedClasses.get(theTypeRef);
+        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleNodeMatching(BytecodeLinkedClassEdgeType.filter(theTypeRef));
+        return theFoundLink.orElse(null);
     }
 
     public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
 
-        BytecodeLinkedClass theLinkedClass = linkedClasses.get(aTypeRef);
-        if (theLinkedClass != null) {
-            return theLinkedClass;
+        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleNodeMatching(BytecodeLinkedClassEdgeType.filter(aTypeRef));
+        if (theFoundLink.isPresent()) {
+            return theFoundLink.get();
         }
 
         try {
@@ -72,8 +75,11 @@ public class BytecodeLinkerContext {
                 theParentClass = linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
-            theLinkedClass = new BytecodeLinkedClass(linkedClasses.size(), theParentClass, this, aTypeRef, theLoadedClass);
-            linkedClasses.put(aTypeRef, theLinkedClass);
+            BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
+            rootNode.addEdgeTo(new BytecodeLinkedClassEdgeType(aTypeRef), theLinkedClass);
+            if (theParentClass != null) {
+                theLinkedClass.addEdgeTo(new BytecodeSuperclassEdgeType(), theParentClass);
+            }
 
             for (BytecodeMethod theMethod : theLoadedClass.getMethods()) {
                 BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
@@ -94,7 +100,8 @@ public class BytecodeLinkerContext {
 
             for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
                 BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
-                linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
+                BytecodeLinkedClass theImplementedClass = linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
+                theLinkedClass.addEdgeTo(new BytecodeImplementsEdgeType(), theImplementedClass);
             }
 
             // Ok, we know that this class is newly linked
@@ -126,8 +133,8 @@ public class BytecodeLinkerContext {
         }
     }
 
-    public void forEachClass(Consumer<Map.Entry<BytecodeObjectTypeRef, BytecodeLinkedClass>> aConsumer) {
-        linkedClasses.entrySet().forEach(aConsumer);
+    public Stream<Edge<BytecodeLinkedClassEdgeType, BytecodeLinkedClass>> linkedClasses() {
+        return rootNode.outgoingEdges(BytecodeLinkedClassEdgeType.filter());
     }
 
     public void linkTypeRef(BytecodeTypeRef aTypeRef) {
@@ -147,12 +154,13 @@ public class BytecodeLinkerContext {
     }
 
     public void addSubclassesOfToSet(Set<BytecodeLinkedClass> aTarget, BytecodeLinkedClass aSuperClass) {
-        for (BytecodeLinkedClass theClass : linkedClasses.values()) {
+        linkedClasses().forEach(aEntry -> {
+            BytecodeLinkedClass theClass = aEntry.targetNode();
             if (theClass.getSuperClass() == aSuperClass) {
                 aTarget.add(theClass);
                 aTarget.addAll(getSubclassesOf(theClass));
             }
-        }
+        });
     }
 
     public Set<BytecodeLinkedClass> getSubclassesOf(BytecodeLinkedClass aParentClass) {
@@ -162,22 +170,24 @@ public class BytecodeLinkerContext {
     }
 
     public Set<BytecodeLinkedClass> getImplementingClassesOf(BytecodeLinkedClass aInterface) {
-        Set<BytecodeLinkedClass> theClasses = new HashSet<>();
-        for (BytecodeLinkedClass theClass : linkedClasses.values()) {
+        final Set<BytecodeLinkedClass> theClasses = new HashSet<>();
+        linkedClasses().forEach(aEntry -> {
+            BytecodeLinkedClass theClass = aEntry.targetNode();
             if (theClass.getImplementingTypes(true, false).contains(aInterface)) {
                 theClasses.add(theClass);
             }
-        }
+        });
         return theClasses;
     }
 
     public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
         List<BytecodeLinkedClass> theResult = new ArrayList<>();
-        for (BytecodeLinkedClass theClass : linkedClasses.values()) {
+        linkedClasses().forEach(aEntry -> {
+            BytecodeLinkedClass theClass = aEntry.targetNode();
             if (theClass.containsVirtualMethod(aIdentifier) && !theClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theResult.add(theClass);
             }
-        }
+        });
         return theResult;
     }
 }

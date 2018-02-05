@@ -38,7 +38,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GraphNode;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -188,7 +188,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         println("switch (__label__) {");
 
         for (Relooper.Block theHandler : aMultiple.handlers()) {
-            for (GraphNode theEntry : theHandler.entries()) {
+            for (RegionNode theEntry : theHandler.entries()) {
                 theWriter.print("case ");
                 theWriter.print(theEntry.getStartAddress().getAddress());
                 theWriter.println(" : ");

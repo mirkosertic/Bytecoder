@@ -69,7 +69,7 @@ public class NaiveProgramGeneratorTest {
         assertEquals(0, theProgram.getVariables().size());
         ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(1, theCFG.getKnownNodes().size());
-        GraphNode theSingleNode = theCFG.startNode();
+        RegionNode theSingleNode = theCFG.startNode();
         assertEquals(3, theSingleNode.getExpressions().size());
     }
 
@@ -96,7 +96,7 @@ public class NaiveProgramGeneratorTest {
         assertEquals(7, theProgram.getVariables().size());
         ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(4, theCFG.getKnownNodes().size());
-        GraphNode theSingleNode = theCFG.startNode();
+        RegionNode theSingleNode = theCFG.startNode();
         assertEquals(8, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }
