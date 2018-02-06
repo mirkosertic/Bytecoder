@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class StringValue extends SideEffectFreeValue {
+public class StringValue extends PrimitiveValue {
 
     private final String stringValue;
 

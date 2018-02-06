@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class MethodParameterValue extends Value {
+public class MethodParameterValue extends PrimitiveValue {
 
     private final int parameterIndex;
     private final TypeRef typeRef;

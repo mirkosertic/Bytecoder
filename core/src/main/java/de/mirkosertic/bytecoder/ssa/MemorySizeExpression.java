@@ -15,25 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-
-public class NewMultiArrayValue extends Value {
-
-    private final BytecodeTypeRef type;
-
-    public NewMultiArrayValue(BytecodeTypeRef aType, List<Value> aDimensions) {
-        type = aType;
-        consume(ConsumptionType.ARGUMENT, aDimensions);
-    }
-
-    public BytecodeTypeRef getType() {
-        return type;
-    }
+public class MemorySizeExpression extends Expression {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return TypeRef.Native.INT;
     }
 }

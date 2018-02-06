@@ -35,66 +35,63 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
+import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
-import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefValue;
-import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.NegatedExpression;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIFunction;
+import de.mirkosertic.bytecoder.ssa.PHIExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.SqrtValue;
-import de.mirkosertic.bytecoder.ssa.StackTopValue;
+import de.mirkosertic.bytecoder.ssa.SqrtExpression;
+import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.TypeOfValue;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -379,7 +376,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeInvokeVirtualExpression(InvokeVirtualMethodExpression aExpression) {
-        writeInvokeVirtualValue(aExpression.getValue());
+        writeInvokeVirtualValue(aExpression);
         println();
     }
 
@@ -444,7 +441,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeInvokeStaticExpression(InvokeStaticMethodExpression aExpression) {
-        writeValue(aExpression.getValue());
+        writeValue(aExpression);
         println();
     }
 
@@ -549,7 +546,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeDirectMethodInvokeExpression(DirectInvokeMethodExpression aExpression) {
-        writeValue(aExpression.getValue());
+        writeValue(aExpression);
         println();
     }
 
@@ -557,7 +554,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         Variable theVariable = aExpression.getVariable();
         Value theNewValue = aExpression.getValue();
 
-        if (theNewValue instanceof PHIFunction) {
+        if (theNewValue instanceof PHIExpression) {
             return;
         }
 
@@ -603,8 +600,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
             printVariableName((Variable) aValue);
             return;
         }
-        if (aValue instanceof BinaryValue) {
-            writeBinaryValue((BinaryValue) aValue);
+        if (aValue instanceof BinaryExpression) {
+            writeBinaryValue((BinaryExpression) aValue);
             return;
         }
         if (aValue instanceof ByteValue) {
@@ -615,56 +612,56 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeIntegerValue((IntegerValue) aValue);
             return;
         }
-        if (aValue instanceof DirectInvokeMethodValue) {
-            writeDirectMethodInvokeValue((DirectInvokeMethodValue) aValue);
+        if (aValue instanceof DirectInvokeMethodExpression) {
+            writeDirectMethodInvokeValue((DirectInvokeMethodExpression) aValue);
             return;
         }
-        if (aValue instanceof InvokeStaticMethodValue) {
-            writeInvokeStaticValue((InvokeStaticMethodValue) aValue);
+        if (aValue instanceof InvokeStaticMethodExpression) {
+            writeInvokeStaticValue((InvokeStaticMethodExpression) aValue);
             return;
         }
-        if (aValue instanceof GetFieldValue) {
-            writeGetFieldValue((GetFieldValue) aValue);
+        if (aValue instanceof GetFieldExpression) {
+            writeGetFieldValue((GetFieldExpression) aValue);
             return;
         }
-        if (aValue instanceof NewObjectValue) {
-            writeNewObjectValue((NewObjectValue) aValue);
+        if (aValue instanceof NewObjectExpression) {
+            writeNewObjectValue((NewObjectExpression) aValue);
             return;
         }
-        if (aValue instanceof GetStaticValue) {
-            writeGetStaticValue((GetStaticValue) aValue);
+        if (aValue instanceof GetStaticExpression) {
+            writeGetStaticValue((GetStaticExpression) aValue);
             return;
         }
         if (aValue instanceof LongValue) {
             writeLongValue((LongValue) aValue);
             return;
         }
-        if (aValue instanceof FixedBinaryValue) {
-            writeFixedBinaryValue((FixedBinaryValue) aValue);
+        if (aValue instanceof FixedBinaryExpression) {
+            writeFixedBinaryValue((FixedBinaryExpression) aValue);
             return;
         }
-        if (aValue instanceof ComputedMemoryLocationReadValue) {
-            writeComputedMemoryLocationValue((ComputedMemoryLocationReadValue) aValue);
+        if (aValue instanceof ComputedMemoryLocationReadExpression) {
+            writeComputedMemoryLocationValue((ComputedMemoryLocationReadExpression) aValue);
             return;
         }
-        if (aValue instanceof ComputedMemoryLocationWriteValue) {
-            writeComputedMemoryLocationValue((ComputedMemoryLocationWriteValue) aValue);
+        if (aValue instanceof ComputedMemoryLocationWriteExpression) {
+            writeComputedMemoryLocationValue((ComputedMemoryLocationWriteExpression) aValue);
             return;
         }
-        if (aValue instanceof TypeConversionValue) {
-            writeTypeConversion((TypeConversionValue) aValue);
+        if (aValue instanceof TypeConversionExpression) {
+            writeTypeConversion((TypeConversionExpression) aValue);
             return;
         }
         if (aValue instanceof NullValue) {
             writeNullValue((NullValue) aValue);
             return;
         }
-        if (aValue instanceof StackTopValue) {
-            writeStackTopValue((StackTopValue) aValue);
+        if (aValue instanceof StackTopExpression) {
+            writeStackTopValue((StackTopExpression) aValue);
             return;
         }
-        if (aValue instanceof MemorySizeValue) {
-            writrMemorySizeValue((MemorySizeValue) aValue);
+        if (aValue instanceof MemorySizeExpression) {
+            writrMemorySizeValue((MemorySizeExpression) aValue);
             return;
         }
         if (aValue instanceof ShortValue) {
@@ -675,96 +672,96 @@ public class WASMSSAWriter extends IndentSSAWriter {
             writeFloatValue((FloatValue) aValue);
             return;
         }
-        if (aValue instanceof InvokeVirtualMethodValue) {
-            writeInvokeVirtualValue((InvokeVirtualMethodValue) aValue);
+        if (aValue instanceof InvokeVirtualMethodExpression) {
+            writeInvokeVirtualValue((InvokeVirtualMethodExpression) aValue);
             return;
         }
-        if (aValue instanceof FloorValue) {
-            writeFloorValue((FloorValue) aValue);
+        if (aValue instanceof FloorExpression) {
+            writeFloorValue((FloorExpression) aValue);
             return;
         }
-        if (aValue instanceof NewArrayValue) {
-            writeNewArrayValue((NewArrayValue) aValue);
+        if (aValue instanceof NewArrayExpression) {
+            writeNewArrayValue((NewArrayExpression) aValue);
             return;
         }
-        if (aValue instanceof ArrayLengthValue) {
-            writeArrayLengthValue((ArrayLengthValue) aValue);
+        if (aValue instanceof ArrayLengthExpression) {
+            writeArrayLengthValue((ArrayLengthExpression) aValue);
             return;
         }
         if (aValue instanceof StringValue) {
             writeStringValue((StringValue) aValue);
             return;
         }
-        if (aValue instanceof ArrayEntryValue) {
-            writeArrayEntryValue((ArrayEntryValue) aValue);
+        if (aValue instanceof ArrayEntryExpression) {
+            writeArrayEntryValue((ArrayEntryExpression) aValue);
             return;
         }
-        if (aValue instanceof CompareValue) {
-            writeCompareValue((CompareValue) aValue);
+        if (aValue instanceof CompareExpression) {
+            writeCompareValue((CompareExpression) aValue);
             return;
         }
-        if (aValue instanceof NegatedValue) {
-            writeNegateValue((NegatedValue) aValue);
+        if (aValue instanceof NegatedExpression) {
+            writeNegateValue((NegatedExpression) aValue);
             return;
         }
-        if (aValue instanceof InstanceOfValue) {
-            writeInstanceOfValue((InstanceOfValue) aValue);
+        if (aValue instanceof InstanceOfExpression) {
+            writeInstanceOfValue((InstanceOfExpression) aValue);
             return;
         }
         if (aValue instanceof DoubleValue) {
             writeDoubleValue((DoubleValue) aValue);
             return;
         }
-        if (aValue instanceof ResolveCallsiteObjectValue) {
-            writeResolveCallSiteObjectValue((ResolveCallsiteObjectValue) aValue);
+        if (aValue instanceof ResolveCallsiteObjectExpression) {
+            writeResolveCallSiteObjectValue((ResolveCallsiteObjectExpression) aValue);
             return;
         }
-        if (aValue instanceof MethodHandlesGeneratedLookupValue) {
-            writeMethodHandlesGeneratedLookupValue((MethodHandlesGeneratedLookupValue) aValue);
+        if (aValue instanceof MethodHandlesGeneratedLookupExpression) {
+            writeMethodHandlesGeneratedLookupValue((MethodHandlesGeneratedLookupExpression) aValue);
             return;
         }
-        if (aValue instanceof MethodTypeValue) {
-            writeMethodTypeValue((MethodTypeValue) aValue);
+        if (aValue instanceof MethodTypeExpression) {
+            writeMethodTypeValue((MethodTypeExpression) aValue);
             return;
         }
-        if (aValue instanceof CurrentExceptionValue) {
-            writeCurrentException((CurrentExceptionValue) aValue);
+        if (aValue instanceof CurrentExceptionExpression) {
+            writeCurrentException((CurrentExceptionExpression) aValue);
             return;
         }
         if (aValue instanceof ClassReferenceValue) {
             writeClassReferenceValue((ClassReferenceValue) aValue);
             return;
         }
-        if (aValue instanceof TypeOfValue) {
-            writeTypeOfValue((TypeOfValue) aValue);
+        if (aValue instanceof TypeOfExpression) {
+            writeTypeOfValue((TypeOfExpression) aValue);
             return;
         }
-        if (aValue instanceof RuntimeGeneratedTypeValue) {
-            writeRuntimeGeneratedTypeValue((RuntimeGeneratedTypeValue) aValue);
+        if (aValue instanceof RuntimeGeneratedTypeExpression) {
+            writeRuntimeGeneratedTypeValue((RuntimeGeneratedTypeExpression) aValue);
             return;
         }
-        if (aValue instanceof MethodRefValue) {
-            writeMethodRefValue((MethodRefValue) aValue);
+        if (aValue instanceof MethodRefExpression) {
+            writeMethodRefValue((MethodRefExpression) aValue);
             return;
         }
-        if (aValue instanceof NewMultiArrayValue) {
-            writeNewMultiArrayValue((NewMultiArrayValue) aValue);
+        if (aValue instanceof NewMultiArrayExpression) {
+            writeNewMultiArrayValue((NewMultiArrayExpression) aValue);
             return;
         }
-        if (aValue instanceof SqrtValue) {
-            writeSqrtValue((SqrtValue) aValue);
+        if (aValue instanceof SqrtExpression) {
+            writeSqrtValue((SqrtExpression) aValue);
             return;
         }
         throw new IllegalStateException("Not supported : " + aValue);
     }
 
-    private void writeSqrtValue(SqrtValue aValue) {
+    private void writeSqrtValue(SqrtExpression aValue) {
         print("(f32.sqrt ");
         writeValue(aValue.resolveFirstArgument());
         print(")");
     }
 
-    private void writeNewMultiArrayValue(NewMultiArrayValue aValue) {
+    private void writeNewMultiArrayValue(NewMultiArrayExpression aValue) {
 
         List<Value> theDimensions = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
@@ -808,7 +805,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(") ;; new array of type " + theType);
     }
 
-    private void writeMethodRefValue(MethodRefValue aValue) {
+    private void writeMethodRefValue(MethodRefExpression aValue) {
         print("(i32.const ");
         
         String theMethodName = WASMWriterUtils.toMethodName(
@@ -821,7 +818,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeRuntimeGeneratedTypeValue(RuntimeGeneratedTypeValue aValue) {
+    private void writeRuntimeGeneratedTypeValue(RuntimeGeneratedTypeExpression aValue) {
         println("(call $newLambda ");
         WASMSSAWriter theChild = withDeeperIndent();
         theChild.writeValue(aValue.getType());
@@ -831,7 +828,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(")");
     }
 
-    private void writeTypeOfValue(TypeOfValue aValue) {
+    private void writeTypeOfValue(TypeOfExpression aValue) {
         print("(i32.load ");
         writeValue(aValue.resolveFirstArgument());
         print(")");
@@ -844,11 +841,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print("__runtimeClass)");
     }
 
-    private void writeCurrentException(CurrentExceptionValue aValue) {
+    private void writeCurrentException(CurrentExceptionExpression aValue) {
         print("(i32.const 0)");
     }
 
-    private void writeMethodTypeValue(MethodTypeValue aValue) {
+    private void writeMethodTypeValue(MethodTypeExpression aValue) {
 //        print("(i32.const ");
 //        print(idResolver.resolveTypeIDForSignature(aValue.getSignature()));
 //        print(")");
@@ -857,11 +854,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print("(i32.const 0)");
     }
 
-    private void writeMethodHandlesGeneratedLookupValue(MethodHandlesGeneratedLookupValue aValue) {
+    private void writeMethodHandlesGeneratedLookupValue(MethodHandlesGeneratedLookupExpression aValue) {
         print("(i32.const 0)");
     }
 
-    private void writeResolveCallSiteObjectValue(ResolveCallsiteObjectValue aValue) {
+    private void writeResolveCallSiteObjectValue(ResolveCallsiteObjectExpression aValue) {
         print("(call $");
         print(idResolver.resolveCallsiteBootstrapFor(
             aValue.getOwningClass(),
@@ -878,7 +875,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeInstanceOfValue(InstanceOfValue aValue) {
+    private void writeInstanceOfValue(InstanceOfExpression aValue) {
 
         BytecodeLinkedClass theClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
 
@@ -889,7 +886,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println("))");
     }
 
-    private void writeNegateValue(NegatedValue aValue) {
+    private void writeNegateValue(NegatedExpression aValue) {
         Value theValue = aValue.resolveFirstArgument();
         switch (theValue.resolveType().resolve()) {
             case DOUBLE:
@@ -907,7 +904,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void writeCompareValue(CompareValue aValue) {
+    private void writeCompareValue(CompareExpression aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         Value theValue2 = aValue.resolveSecondArgument();
 
@@ -932,7 +929,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeArrayEntryValue(ArrayEntryValue aValue) {
+    private void writeArrayEntryValue(ArrayEntryExpression aValue) {
         switch (aValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
@@ -961,7 +958,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeNewArrayValue(NewArrayValue aValue) {
+    private void writeNewArrayValue(NewArrayExpression aValue) {
 
         BytecodeTypeRef theType = aValue.getType();
 
@@ -987,20 +984,20 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(") ;; new array of type " + theType);
     }
 
-    private void writeArrayLengthValue(ArrayLengthValue aValue) {
+    private void writeArrayLengthValue(ArrayLengthExpression aValue) {
         println("(i32.load offset=16 ");
         withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println();
         println(")");
     }
 
-    private void writeFloorValue(FloorValue aValue) {
+    private void writeFloorValue(FloorExpression aValue) {
         println("(i32.trunc_s/f32 (f32.floor ");
         withDeeperIndent().writeValue(aValue.resolveFirstArgument());
         println("))");
     }
 
-    private void writeInvokeVirtualValue(InvokeVirtualMethodValue aValue) {
+    private void writeInvokeVirtualValue(InvokeVirtualMethodExpression aValue) {
 
         idResolver.registerGlobalType(aValue.getSignature(), false);
 
@@ -1065,11 +1062,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeStackTopValue(StackTopValue aValue) {
+    private void writeStackTopValue(StackTopExpression aValue) {
         print("(get_global $STACKTOP)");
     }
 
-    private void writrMemorySizeValue(MemorySizeValue aValue) {
+    private void writrMemorySizeValue(MemorySizeExpression aValue) {
         print("(i32.mul (current_memory) (i32.const 65536))");
     }
 
@@ -1077,7 +1074,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print("(i32.const 0)");
     }
 
-    private void writeTypeConversion(TypeConversionValue aValue) {
+    private void writeTypeConversion(TypeConversionExpression aValue) {
         TypeRef theTargetType = aValue.resolveType();
         Value theSource = aValue.resolveFirstArgument();
         if (Objects.equals(theTargetType.resolve(), theSource.resolveType().resolve())) {
@@ -1145,7 +1142,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void writeComputedMemoryLocationValue(ComputedMemoryLocationWriteValue aValue) {
+    private void writeComputedMemoryLocationValue(ComputedMemoryLocationWriteExpression aValue) {
         println("(i32.add ");
 
         withDeeperIndent().writeValue(aValue.resolveFirstArgument());
@@ -1156,7 +1153,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(")");
     }
 
-    private void writeComputedMemoryLocationValue(ComputedMemoryLocationReadValue aValue) {
+    private void writeComputedMemoryLocationValue(ComputedMemoryLocationReadExpression aValue) {
         println("(i32.load (i32.add ");
 
         withDeeperIndent().writeValue(aValue.resolveFirstArgument());
@@ -1167,7 +1164,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println("))");
     }
 
-    private void writeFixedBinaryValue(FixedBinaryValue aValue) {
+    private void writeFixedBinaryValue(FixedBinaryExpression aValue) {
         switch (aValue.getOperator()) {
             case ISNULL: {
                 print("(i32.eq ");
@@ -1199,7 +1196,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeGetStaticValue(GetStaticValue aValue) {
+    private void writeGetStaticValue(GetStaticExpression aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
@@ -1232,7 +1229,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(")");
     }
 
-    private void writeNewObjectValue(NewObjectValue aValue) {
+    private void writeNewObjectValue(NewObjectExpression aValue) {
 
         BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 
@@ -1257,7 +1254,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
     }
 
-    private void writeGetFieldValue(GetFieldValue aValue) {
+    private void writeGetFieldValue(GetFieldExpression aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
@@ -1285,7 +1282,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println(")");
     }
 
-    private void writeDirectMethodInvokeValue(DirectInvokeMethodValue aValue) {
+    private void writeDirectMethodInvokeValue(DirectInvokeMethodExpression aValue) {
 
         Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
         List<Value> theValues = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
@@ -1304,7 +1301,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeInvokeStaticValue(InvokeStaticMethodValue aValue) {
+    private void writeInvokeStaticValue(InvokeStaticMethodExpression aValue) {
         print("(call $");
         print(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
 
@@ -1331,7 +1328,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void writeBinaryValue(BinaryValue aValue) {
+    private void writeBinaryValue(BinaryExpression aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         Value theValue2 = aValue.resolveSecondArgument();
         String theType1 = WASMWriterUtils.toType(theValue1.resolveType());

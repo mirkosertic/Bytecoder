@@ -31,70 +31,67 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthValue;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadValue;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteValue;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionValue;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryValue;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloorValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
-import de.mirkosertic.bytecoder.ssa.GetStaticValue;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfValue;
+import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MemorySizeValue;
-import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefValue;
-import de.mirkosertic.bytecoder.ssa.MethodTypeValue;
-import de.mirkosertic.bytecoder.ssa.NegatedValue;
-import de.mirkosertic.bytecoder.ssa.NewArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayValue;
-import de.mirkosertic.bytecoder.ssa.NewObjectValue;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.NegatedExpression;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectValue;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeValue;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.SqrtValue;
-import de.mirkosertic.bytecoder.ssa.StackTopValue;
+import de.mirkosertic.bytecoder.ssa.SqrtExpression;
+import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
-import de.mirkosertic.bytecoder.ssa.TypeOfValue;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.UnknownValue;
+import de.mirkosertic.bytecoder.ssa.UnknownExpression;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -113,113 +110,113 @@ public class JSSSAWriter extends IndentSSAWriter {
     private void print(Value aValue) {
         if (aValue instanceof Variable) {
             printVariableName((Variable) aValue);
-        } else if (aValue instanceof GetStaticValue) {
-            print((GetStaticValue) aValue);
+        } else if (aValue instanceof GetStaticExpression) {
+            print((GetStaticExpression) aValue);
         } else if (aValue instanceof NullValue) {
             print((NullValue) aValue);
-        } else if (aValue instanceof InvokeVirtualMethodValue) {
-            print((InvokeVirtualMethodValue) aValue);
-        } else if (aValue instanceof InvokeStaticMethodValue) {
-            print((InvokeStaticMethodValue) aValue);
-        } else if (aValue instanceof NewObjectValue) {
-            print((NewObjectValue) aValue);
+        } else if (aValue instanceof InvokeVirtualMethodExpression) {
+            print((InvokeVirtualMethodExpression) aValue);
+        } else if (aValue instanceof InvokeStaticMethodExpression) {
+            print((InvokeStaticMethodExpression) aValue);
+        } else if (aValue instanceof NewObjectExpression) {
+            print((NewObjectExpression) aValue);
         } else if (aValue instanceof ByteValue) {
             print((ByteValue) aValue);
-        } else if (aValue instanceof BinaryValue) {
-            print((BinaryValue) aValue);
-        } else if (aValue instanceof GetFieldValue) {
-            print((GetFieldValue) aValue);
-        } else if (aValue instanceof TypeConversionValue) {
-            print((TypeConversionValue) aValue);
-        } else if (aValue instanceof ArrayEntryValue) {
-            print((ArrayEntryValue) aValue);
-        } else if (aValue instanceof ArrayLengthValue) {
-            print((ArrayLengthValue) aValue);
+        } else if (aValue instanceof BinaryExpression) {
+            print((BinaryExpression) aValue);
+        } else if (aValue instanceof GetFieldExpression) {
+            print((GetFieldExpression) aValue);
+        } else if (aValue instanceof TypeConversionExpression) {
+            print((TypeConversionExpression) aValue);
+        } else if (aValue instanceof ArrayEntryExpression) {
+            print((ArrayEntryExpression) aValue);
+        } else if (aValue instanceof ArrayLengthExpression) {
+            print((ArrayLengthExpression) aValue);
         } else if (aValue instanceof StringValue) {
             print((StringValue) aValue);
         } else if (aValue instanceof IntegerValue) {
             print((IntegerValue) aValue);
-        } else if (aValue instanceof NewArrayValue) {
-            print((NewArrayValue) aValue);
-        } else if (aValue instanceof DirectInvokeMethodValue) {
-            print((DirectInvokeMethodValue) aValue);
+        } else if (aValue instanceof NewArrayExpression) {
+            print((NewArrayExpression) aValue);
+        } else if (aValue instanceof DirectInvokeMethodExpression) {
+            print((DirectInvokeMethodExpression) aValue);
         } else if (aValue instanceof FloatValue) {
             print((FloatValue) aValue);
         } else if (aValue instanceof DoubleValue) {
             print((DoubleValue) aValue);
-        } else if (aValue instanceof CompareValue) {
-            print((CompareValue) aValue);
-        } else if (aValue instanceof NegatedValue) {
-            print((NegatedValue) aValue);
-        } else if (aValue instanceof FixedBinaryValue) {
-            print((FixedBinaryValue) aValue);
+        } else if (aValue instanceof CompareExpression) {
+            print((CompareExpression) aValue);
+        } else if (aValue instanceof NegatedExpression) {
+            print((NegatedExpression) aValue);
+        } else if (aValue instanceof FixedBinaryExpression) {
+            print((FixedBinaryExpression) aValue);
         } else if (aValue instanceof ShortValue) {
             print((ShortValue) aValue);
-        } else if (aValue instanceof InstanceOfValue) {
-            print((InstanceOfValue) aValue);
+        } else if (aValue instanceof InstanceOfExpression) {
+            print((InstanceOfExpression) aValue);
         } else if (aValue instanceof LongValue) {
             print((LongValue) aValue);
         } else if (aValue instanceof ClassReferenceValue) {
             print((ClassReferenceValue) aValue);
-        } else if (aValue instanceof NewMultiArrayValue) {
-            print((NewMultiArrayValue) aValue);
+        } else if (aValue instanceof NewMultiArrayExpression) {
+            print((NewMultiArrayExpression) aValue);
         } else if (aValue instanceof SelfReferenceParameterValue) {
             print((SelfReferenceParameterValue) aValue);
         } else if (aValue instanceof MethodParameterValue) {
             print((MethodParameterValue) aValue);
-        } else if (aValue instanceof CurrentExceptionValue) {
-            print((CurrentExceptionValue) aValue);
-        } else if (aValue instanceof UnknownValue) {
-            print((UnknownValue) aValue);
-        } else if (aValue instanceof FloorValue) {
-            print((FloorValue) aValue);
-        } else if (aValue instanceof MethodRefValue) {
-            print((MethodRefValue) aValue);
-        } else if (aValue instanceof ComputedMemoryLocationReadValue) {
-            print((ComputedMemoryLocationReadValue) aValue);
-        } else if (aValue instanceof ComputedMemoryLocationWriteValue) {
-            print((ComputedMemoryLocationWriteValue) aValue);
-        } else if (aValue instanceof MethodHandlesGeneratedLookupValue) {
-            print((MethodHandlesGeneratedLookupValue) aValue);
-        } else if (aValue instanceof MethodTypeValue) {
-            print((MethodTypeValue) aValue);
-        } else if (aValue instanceof RuntimeGeneratedTypeValue) {
-            print((RuntimeGeneratedTypeValue) aValue);
-        } else if (aValue instanceof ResolveCallsiteObjectValue) {
-            print((ResolveCallsiteObjectValue) aValue);
-        } else if (aValue instanceof StackTopValue) {
-            print((StackTopValue) aValue);
-        } else if (aValue instanceof MemorySizeValue) {
-            print((MemorySizeValue) aValue);
-        } else if (aValue instanceof TypeOfValue) {
-            print((TypeOfValue) aValue);
-        } else if (aValue instanceof SqrtValue) {
-            print((SqrtValue) aValue);
+        } else if (aValue instanceof CurrentExceptionExpression) {
+            print((CurrentExceptionExpression) aValue);
+        } else if (aValue instanceof UnknownExpression) {
+            print((UnknownExpression) aValue);
+        } else if (aValue instanceof FloorExpression) {
+            print((FloorExpression) aValue);
+        } else if (aValue instanceof MethodRefExpression) {
+            print((MethodRefExpression) aValue);
+        } else if (aValue instanceof ComputedMemoryLocationReadExpression) {
+            print((ComputedMemoryLocationReadExpression) aValue);
+        } else if (aValue instanceof ComputedMemoryLocationWriteExpression) {
+            print((ComputedMemoryLocationWriteExpression) aValue);
+        } else if (aValue instanceof MethodHandlesGeneratedLookupExpression) {
+            print((MethodHandlesGeneratedLookupExpression) aValue);
+        } else if (aValue instanceof MethodTypeExpression) {
+            print((MethodTypeExpression) aValue);
+        } else if (aValue instanceof RuntimeGeneratedTypeExpression) {
+            print((RuntimeGeneratedTypeExpression) aValue);
+        } else if (aValue instanceof ResolveCallsiteObjectExpression) {
+            print((ResolveCallsiteObjectExpression) aValue);
+        } else if (aValue instanceof StackTopExpression) {
+            print((StackTopExpression) aValue);
+        } else if (aValue instanceof MemorySizeExpression) {
+            print((MemorySizeExpression) aValue);
+        } else if (aValue instanceof TypeOfExpression) {
+            print((TypeOfExpression) aValue);
+        } else if (aValue instanceof SqrtExpression) {
+            print((SqrtExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    private void print(SqrtValue aValue) {
+    private void print(SqrtExpression aValue) {
         print("Math.sqrt(");
         print((Value) aValue.resolveFirstArgument());
         print(")");
     }
 
-    private void print(TypeOfValue aValue) {
+    private void print(TypeOfExpression aValue) {
         printVariableName(aValue.resolveFirstArgument());
         print(".TClassgetClass()");
     }
 
-    private void print(StackTopValue aValue) {
+    private void print(StackTopExpression aValue) {
         print("0");
     }
 
-    private void print(MemorySizeValue aValue) {
+    private void print(MemorySizeExpression aValue) {
         print("0");
     }
 
-    private void print(ResolveCallsiteObjectValue aValue) {
+    private void print(ResolveCallsiteObjectExpression aValue) {
 
         print(JSWriterUtils.toClassName(aValue.getOwningClass().getThisInfo()));
         print(".resolveStaticCallSiteObject('");
@@ -242,29 +239,29 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("})");
     }
 
-    private void print(RuntimeGeneratedTypeValue aValue) {
+    private void print(RuntimeGeneratedTypeExpression aValue) {
         print("bytecoder.dynamicType(");
         print(aValue.getMethodRef());
         print(")");
     }
 
-    private void print(MethodTypeValue aValue) {
+    private void print(MethodTypeExpression aValue) {
         print("'");
         print(aValue.getSignature().toString());
         print("'");
     }
 
-    private void print(MethodHandlesGeneratedLookupValue aValue) {
+    private void print(MethodHandlesGeneratedLookupExpression aValue) {
         print("null");
     }
 
-    private void print(ComputedMemoryLocationWriteValue aValue) {
+    private void print(ComputedMemoryLocationWriteExpression aValue) {
         print((Value) aValue.resolveFirstArgument());
         print(" + ");
         print((Value) aValue.resolveSecondArgument());
     }
 
-    private void print(ComputedMemoryLocationReadValue aValue) {
+    private void print(ComputedMemoryLocationReadExpression aValue) {
         print("bytecoderGlobalMemory[");
         print((Value) aValue.resolveFirstArgument());
         print(" + ");
@@ -272,7 +269,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("]");
     }
 
-    private void print(MethodRefValue aValue) {
+    private void print(MethodRefExpression aValue) {
         String theMethodName = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         BytecodeMethodSignature theSignature = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         print(JSWriterUtils.toClassName(aValue.getMethodRef().getClassIndex().getClassConstant()));
@@ -280,17 +277,17 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
     }
 
-    private void print(FloorValue aValue) {
+    private void print(FloorExpression aValue) {
         print("Math.floor(");
         print((Value) aValue.resolveFirstArgument());
         print(")");
     }
 
-    private void print(UnknownValue aValue) {
+    private void print(UnknownExpression aValue) {
         print("undefined");
     }
 
-    private void print(CurrentExceptionValue aValue) {
+    private void print(CurrentExceptionExpression aValue) {
         //TODO: Fix this
         print("'current exception'");
     }
@@ -303,7 +300,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("thisRef");
     }
 
-    private void print(NewMultiArrayValue aValue) {
+    private void print(NewMultiArrayExpression aValue) {
         BytecodeTypeRef theType = aValue.getType();
         Object theDefaultValue = theType.defaultValue();
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
@@ -326,7 +323,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(JSWriterUtils.toClassName(aValue.getType()));
     }
 
-    private void print(InstanceOfValue aValue) {
+    private void print(InstanceOfExpression aValue) {
         Value theValue = aValue.resolveFirstArgument();
         print("(");
         print(theValue);
@@ -349,14 +346,14 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aValue.getShortValue());
     }
 
-    private void print(NegatedValue aValue) {
+    private void print(NegatedExpression aValue) {
         Value theValue = aValue.resolveFirstArgument();
         print("(-");
         print(theValue);
         print(")");
     }
 
-    private void print(CompareValue aValue) {
+    private void print(CompareExpression aValue) {
         Value theVariable1 = aValue.resolveFirstArgument();
         Value theVariable2 = aValue.resolveSecondArgument();
         print("(");
@@ -371,7 +368,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(" ? -1 : 0))");
     }
 
-    private void print(NewArrayValue aValue) {
+    private void print(NewArrayExpression aValue) {
         BytecodeTypeRef theType = aValue.getType();
         Value theLength = aValue.resolveFirstArgument();
         Object theDefaultValue = theType.defaultValue();
@@ -402,7 +399,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(ArrayLengthValue aValue) {
+    private void print(ArrayLengthExpression aValue) {
         print((Value) aValue.resolveFirstArgument());
         print(".data.length");
     }
@@ -413,14 +410,14 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("]");
     }
 
-    private void print(ArrayEntryValue aValue) {
+    private void print(ArrayEntryExpression aValue) {
         Value theArray = aValue.resolveFirstArgument();
         Value theIndex = aValue.resolveSecondArgument();
         print(theArray);
         printArrayIndexReference(theIndex);
     }
 
-    private void print(TypeConversionValue aValue) {
+    private void print(TypeConversionExpression aValue) {
         TypeRef theTargetType = aValue.resolveType();
         Value theValue = aValue.resolveFirstArgument();
         switch (theTargetType.resolve()) {
@@ -438,14 +435,14 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void print(GetFieldValue aValue) {
+    private void print(GetFieldExpression aValue) {
         Value theTarget = aValue.resolveFirstArgument();
         BytecodeFieldRefConstant theField = aValue.getField();
         print(theTarget);
         printInstanceFieldReference(theField);
     }
 
-    private void print(BinaryValue aValue) {
+    private void print(BinaryExpression aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         print("(");
         print(theValue1);
@@ -509,7 +506,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(FixedBinaryValue aValue) {
+    private void print(FixedBinaryExpression aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         print(theValue1);
         switch (aValue.getOperator()) {
@@ -531,13 +528,13 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aValue.getByteValue());
     }
 
-    private void print(NewObjectValue aValue) {
+    private void print(NewObjectExpression aValue) {
         print("new ");
         print(JSWriterUtils.toClassName(aValue.getType()));
         print(".Create()");
     }
 
-    private void print(InvokeStaticMethodValue aValue) {
+    private void print(InvokeStaticMethodExpression aValue) {
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -557,7 +554,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(DirectInvokeMethodValue aValue) {
+    private void print(DirectInvokeMethodExpression aValue) {
 
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
@@ -584,7 +581,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(InvokeVirtualMethodValue aValue) {
+    private void print(InvokeVirtualMethodExpression aValue) {
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -614,7 +611,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("null");
     }
 
-    private void print(GetStaticValue aValue) {
+    private void print(GetStaticExpression aValue) {
         printStaticFieldReference(aValue.getField());
     }
 
@@ -655,7 +652,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 Variable theVariable = theE.getVariable();
                 Value theValue = theE.getValue();
 
-                if (theValue instanceof ComputedMemoryLocationWriteValue) {
+                if (theValue instanceof ComputedMemoryLocationWriteExpression) {
                     continue;
                 }
                 if (!program.isGlobalVariable(theVariable)) {
@@ -689,15 +686,15 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(";");
             } else if (theExpression instanceof InvokeVirtualMethodExpression) {
                 InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
-                print(theE.getValue());
+                print(theE);
                 println(";");
             } else if (theExpression instanceof DirectInvokeMethodExpression) {
                 DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
-                print(theE.getValue());
+                print(theE);
                 println(";");
             } else if (theExpression instanceof InvokeStaticMethodExpression) {
                 InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
-                print(theE.getValue());
+                print(theE);
                 println(";");
             } else if (theExpression instanceof PutFieldExpression) {
                 PutFieldExpression theE = (PutFieldExpression) theExpression;
@@ -792,7 +789,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
                 print("bytecoderGlobalMemory[");
 
-                ComputedMemoryLocationWriteValue theValue = (ComputedMemoryLocationWriteValue) theE.getAddress().consumedValues(Value.ConsumptionType.INITIALIZATION).get(0);
+                ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theE.getAddress().consumedValues(Value.ConsumptionType.INITIALIZATION).get(0);
 
                 print(theValue);
 

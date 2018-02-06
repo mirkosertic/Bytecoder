@@ -15,17 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class TypeConversionValue extends Value {
+public class FloorExpression extends Expression {
 
-    private final TypeRef targetType;
+    private final TypeRef type;
 
-    public TypeConversionValue(Value aValue, TypeRef aTargetType) {
+    public FloorExpression(Value aValue, TypeRef aTargetType) {
+        type = aTargetType;
         consume(ConsumptionType.ARGUMENT, aValue);
-        targetType = aTargetType;
     }
 
     @Override
     public TypeRef resolveType() {
-        return targetType;
+        return type;
     }
 }

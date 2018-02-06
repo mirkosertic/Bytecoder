@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,29 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public abstract class SideEffectFreeValue extends Value {
+public class RuntimeGeneratedTypeExpression extends Expression {
 
+    private Value type;
+    private Value methodRef;
+
+    public Value getType() {
+        return type;
+    }
+
+    public void setType(Value aType) {
+        type = aType;
+    }
+
+    public Value getMethodRef() {
+        return methodRef;
+    }
+
+    public void setMethodRef(Value aMethodRef) {
+        methodRef = aMethodRef;
+    }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
+    }
 }

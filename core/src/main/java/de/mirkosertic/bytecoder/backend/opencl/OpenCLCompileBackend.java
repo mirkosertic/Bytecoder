@@ -32,7 +32,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -124,8 +124,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
     }
 
     private void registerInputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, Value aValue, OpenCLInputOutputs aInputOutputs) {
-        if (aValue instanceof GetFieldValue) {
-            GetFieldValue theGetField = (GetFieldValue) aValue;
+        if (aValue instanceof GetFieldExpression) {
+            GetFieldExpression theGetField = (GetFieldExpression) aValue;
 
             BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
             if (theClass == aKernelClass) {

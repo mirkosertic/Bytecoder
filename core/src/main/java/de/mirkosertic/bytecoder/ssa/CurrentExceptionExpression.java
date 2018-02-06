@@ -15,15 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ComputedMemoryLocationWriteValue extends Value {
-
-    public ComputedMemoryLocationWriteValue(Value aOrigin, Value aOffset) {
-        consume(ConsumptionType.ARGUMENT, aOrigin);
-        consume(ConsumptionType.ARGUMENT, aOffset);
-    }
+public class CurrentExceptionExpression extends Expression {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.INT;
+        return TypeRef.Native.REFERENCE;
     }
 }

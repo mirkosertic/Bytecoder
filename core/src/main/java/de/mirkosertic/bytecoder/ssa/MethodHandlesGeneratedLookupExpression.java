@@ -15,18 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-public class MethodRefValue extends Value {
+public class MethodHandlesGeneratedLookupExpression extends Expression {
 
-    private final BytecodeMethodRefConstant methodRef;
+    private final BytecodeObjectTypeRef owningClass;
 
-    public MethodRefValue(BytecodeMethodRefConstant aMethodRef) {
-        methodRef = aMethodRef;
-    }
-
-    public BytecodeMethodRefConstant getMethodRef() {
-        return methodRef;
+    public MethodHandlesGeneratedLookupExpression(BytecodeObjectTypeRef aOwningClass) {
+        owningClass = aOwningClass;
     }
 
     @Override

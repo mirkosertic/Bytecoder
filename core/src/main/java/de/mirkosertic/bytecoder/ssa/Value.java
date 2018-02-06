@@ -80,18 +80,6 @@ public abstract class Value {
         }
     }
 
-    public <T extends Value> T resolveFirstArgument() {
-        return (T) consumedValues(ConsumptionType.ARGUMENT).get(0);
-    }
-
-    public <T extends Value> T resolveSecondArgument() {
-        return (T) consumedValues(ConsumptionType.ARGUMENT).get(1);
-    }
-
-    public <T extends Value> T resolveThirdArgument() {
-        return (T) consumedValues(ConsumptionType.ARGUMENT).get(2);
-    }
-
     public void consume(ConsumptionType aType, Value aValue) {
         aValue.providesValueFor.add(this);
         consumesValueFrom.add(new Consumption(aType, aValue));

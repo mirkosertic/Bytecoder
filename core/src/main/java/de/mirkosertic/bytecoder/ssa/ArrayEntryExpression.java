@@ -15,23 +15,18 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+public class ArrayEntryExpression extends Expression {
 
-public class GetFieldValue extends SideEffectFreeValue {
+    private final TypeRef arrayType;
 
-    private final BytecodeFieldRefConstant field;
-
-    public GetFieldValue(BytecodeFieldRefConstant aField, Value aTarget) {
-        field = aField;
-        consume(ConsumptionType.ARGUMENT, aTarget);
-    }
-
-    public BytecodeFieldRefConstant getField() {
-        return field;
+    public ArrayEntryExpression(TypeRef aArrayType, Value aArray, Value aIndex) {
+        arrayType = aArrayType;
+        consume(ConsumptionType.ARGUMENT, aArray);
+        consume(ConsumptionType.ARGUMENT, aIndex);
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
+        return arrayType;
     }
 }

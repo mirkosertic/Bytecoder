@@ -15,43 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class BinaryValue extends Value {
+public class TypeConversionExpression extends Expression {
 
-    public enum Operator {
-        EQUALS,
-        LESSTHAN,
-        GREATERTHAN,
-        GREATEROREQUALS,
-        LESSTHANOREQUALS,
-        NOTEQUALS,
-
-        ADD,
-        SUB,
-        DIV,
-        MUL,
-        REMAINDER,
-
-        BINARYXOR,
-        BINARYOR,
-        BINARYAND,
-
-        BINARYSHIFTLEFT,
-        BINARYUNSIGNEDSHIFTRIGHT,
-        BINARYSHIFTRIGHT,
-    }
-
-    private final Operator operator;
     private final TypeRef targetType;
 
-    public BinaryValue(TypeRef aTargetType, Value aValue1, Operator aOperator, Value aValue2) {
-        operator = aOperator;
+    public TypeConversionExpression(Value aValue, TypeRef aTargetType) {
+        consume(ConsumptionType.ARGUMENT, aValue);
         targetType = aTargetType;
-        consume(ConsumptionType.ARGUMENT, aValue1);
-        consume(ConsumptionType.ARGUMENT, aValue2);
-    }
-
-    public Operator getOperator() {
-        return operator;
     }
 
     @Override

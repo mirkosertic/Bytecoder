@@ -16,8 +16,8 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
-import de.mirkosertic.bytecoder.ssa.CompareValue;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -43,8 +43,8 @@ public class InefficientIFOptimizer implements Optimizer {
             if (theExpression instanceof IFExpression) {
                 IFExpression theIF = (IFExpression) theExpression;
                 Value theBooleanValue = theIF.getBooleanValue();
-                if (theBooleanValue instanceof BinaryValue) {
-                    BinaryValue theBinary = (BinaryValue) theBooleanValue;
+                if (theBooleanValue instanceof BinaryExpression) {
+                    BinaryExpression theBinary = (BinaryExpression) theBooleanValue;
                     Value theFirst = theBinary.resolveFirstArgument();
                     Value theSecond = theBinary.resolveSecondArgument();
 
@@ -52,8 +52,8 @@ public class InefficientIFOptimizer implements Optimizer {
                         List<Value> theInits = theFirst.consumedValues(Value.ConsumptionType.INITIALIZATION);
                         if (theInits.size() == 1) {
                             Value theFirstValue = theInits.get(0);
-                            if (theFirstValue instanceof CompareValue) {
-                                CompareValue theCompare = (CompareValue) theFirstValue;
+                            if (theFirstValue instanceof CompareExpression) {
+                                CompareExpression theCompare = (CompareExpression) theFirstValue;
                                 Value theCompareA = theCompare.resolveFirstArgument();
                                 Value theCompareB = theCompare.resolveSecondArgument();
                                 IntegerValue theInteger = (IntegerValue) theSecond;
@@ -74,7 +74,7 @@ public class InefficientIFOptimizer implements Optimizer {
                                             theCompare.unbind();
                                             theBinary.unbind();
                                             // The new boolean expression and the new if
-                                            BinaryValue theNewBooleanValue = new BinaryValue(theBinary.resolveType(), theCompareA, theBinary.getOperator(), theCompareB);
+                                            BinaryExpression theNewBooleanValue = new BinaryExpression(theBinary.resolveType(), theCompareA, theBinary.getOperator(), theCompareB);
                                             IFExpression theNewIf = theIF.withNewBooleanValue(theNewBooleanValue);
                                             aList.replace(theIF, theNewIf);
                                             // Finally, get rid of the removed variable

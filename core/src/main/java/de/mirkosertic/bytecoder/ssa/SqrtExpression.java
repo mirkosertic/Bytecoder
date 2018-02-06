@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+public class SqrtExpression extends Expression {
 
-public class InstanceOfValue extends SideEffectFreeValue {
+    private final TypeRef targetType;
 
-    private final BytecodeClassinfoConstant type;
-
-    public InstanceOfValue(Value aVariable, BytecodeClassinfoConstant aType) {
-        type = aType;
-        consume(ConsumptionType.ARGUMENT, aVariable);
-    }
-
-    public BytecodeClassinfoConstant getType() {
-        return type;
+    public SqrtExpression(TypeRef aTargetType, Value aValue1) {
+        targetType = aTargetType;
+        consume(ConsumptionType.ARGUMENT, aValue1);
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.BOOLEAN;
+        return targetType;
     }
 }

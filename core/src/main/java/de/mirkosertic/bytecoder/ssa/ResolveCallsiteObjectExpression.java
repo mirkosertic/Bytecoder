@@ -17,14 +17,14 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 
-public class ResolveCallsiteObjectValue extends Value {
+public class ResolveCallsiteObjectExpression extends Expression {
 
     private final String callsiteId;
     private final BytecodeClass owningClass;
     private final Program program;
     private final RegionNode bootstrapMethod;
 
-    public ResolveCallsiteObjectValue(String aCallsiteId, BytecodeClass aOwningClass,
+    public ResolveCallsiteObjectExpression(String aCallsiteId, BytecodeClass aOwningClass,
             Program aProgram, RegionNode aBootstrapMethod) {
         callsiteId = aCallsiteId;
         owningClass = aOwningClass;

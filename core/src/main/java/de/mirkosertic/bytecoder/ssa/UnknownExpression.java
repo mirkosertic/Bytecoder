@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class MemorySizeValue extends Value {
+public class UnknownExpression extends Expression {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.INT;
+        return TypeRef.Native.UNKNOWN;
     }
 }

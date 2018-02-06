@@ -15,12 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ComputedMemoryLocationReadValue extends Value {
-
-    public ComputedMemoryLocationReadValue(Value aOrigin, Value aOffset) {
-        consume(ConsumptionType.ARGUMENT, aOrigin);
-        consume(ConsumptionType.ARGUMENT, aOffset);
-    }
+public class StackTopExpression extends Expression {
 
     @Override
     public TypeRef resolveType() {

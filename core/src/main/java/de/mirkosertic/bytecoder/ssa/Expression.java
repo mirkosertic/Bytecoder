@@ -32,4 +32,16 @@ public class Expression extends Value {
     public TypeRef resolveType() {
         return TypeRef.Native.VOID;
     }
+
+    public <T extends Value> T resolveFirstArgument() {
+        return (T) consumedValues(ConsumptionType.ARGUMENT).get(0);
+    }
+
+    public <T extends Value> T resolveSecondArgument() {
+        return (T) consumedValues(ConsumptionType.ARGUMENT).get(1);
+    }
+
+    public <T extends Value> T resolveThirdArgument() {
+        return (T) consumedValues(ConsumptionType.ARGUMENT).get(2);
+    }
 }

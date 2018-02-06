@@ -15,10 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class CurrentExceptionValue extends Value {
+public class ComputedMemoryLocationReadExpression extends Expression {
+
+    public ComputedMemoryLocationReadExpression(Value aOrigin, Value aOffset) {
+        consume(ConsumptionType.ARGUMENT, aOrigin);
+        consume(ConsumptionType.ARGUMENT, aOffset);
+    }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return TypeRef.Native.INT;
     }
 }

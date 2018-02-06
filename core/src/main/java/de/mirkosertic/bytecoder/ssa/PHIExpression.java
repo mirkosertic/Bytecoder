@@ -15,15 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class CompareValue extends Value {
-
-    public CompareValue(Value aValue1, Value aValue2) {
-        consume(ConsumptionType.ARGUMENT, aValue1);
-        consume(ConsumptionType.ARGUMENT, aValue2);
-    }
+public class PHIExpression extends Expression {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.INT;
+        return TypeRef.Native.UNKNOWN;
     }
 }

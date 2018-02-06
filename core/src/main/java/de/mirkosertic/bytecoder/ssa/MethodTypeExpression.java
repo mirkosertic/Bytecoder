@@ -15,30 +15,22 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-public class InvokeStaticMethodValue extends InvocationValue {
+public class MethodTypeExpression extends Expression {
 
-    private final BytecodeObjectTypeRef className;
-    private final String methodName;
+    private final BytecodeMethodSignature signature;
 
-    public InvokeStaticMethodValue(BytecodeObjectTypeRef aClassName, String aMethodName,
-            BytecodeMethodSignature aSignature, List<Value> aArguments) {
-        super(aSignature);
-        className = aClassName;
-        methodName = aMethodName;
-
-        consume(ConsumptionType.ARGUMENT, aArguments);
+    public MethodTypeExpression(BytecodeMethodSignature aSignature) {
+        signature = aSignature;
     }
 
-    public BytecodeObjectTypeRef getClassName() {
-        return className;
+    public BytecodeMethodSignature getSignature() {
+        return signature;
     }
 
-    public String getMethodName() {
-        return methodName;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.REFERENCE;
     }
 }

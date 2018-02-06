@@ -15,22 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public class GetStaticValue extends SideEffectFreeValue {
+public class NewArrayExpression extends Expression {
 
-    private final BytecodeFieldRefConstant field;
+    private final BytecodeTypeRef type;
 
-    public GetStaticValue(BytecodeFieldRefConstant aField) {
-        field = aField;
+    public NewArrayExpression(BytecodeTypeRef aType, Value aLength) {
+        type = aType;
+        consume(ConsumptionType.ARGUMENT, aLength);
     }
 
-    public BytecodeFieldRefConstant getField() {
-        return field;
+    public BytecodeTypeRef getType() {
+        return type;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
+        return TypeRef.Native.REFERENCE;
     }
 }

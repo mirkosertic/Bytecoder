@@ -15,27 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FixedBinaryValue extends Value {
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 
-    public enum Operator {
-        ISNULL,
-        ISNONNULL,
-        ISZERO,
+public class GetFieldExpression extends Expression {
+
+    private final BytecodeFieldRefConstant field;
+
+    public GetFieldExpression(BytecodeFieldRefConstant aField, Value aTarget) {
+        field = aField;
+        consume(ConsumptionType.ARGUMENT, aTarget);
     }
 
-    private final Operator operator;
-
-    public FixedBinaryValue(Value aValue, Operator aOperator) {
-        operator = aOperator;
-        consume(ConsumptionType.ARGUMENT, aValue);
-    }
-
-    public Operator getOperator() {
-        return operator;
+    public BytecodeFieldRefConstant getField() {
+        return field;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.BOOLEAN;
+        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
     }
 }

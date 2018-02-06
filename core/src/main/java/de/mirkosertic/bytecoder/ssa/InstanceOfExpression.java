@@ -15,10 +15,23 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class PHIFunction extends Value {
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+
+public class InstanceOfExpression extends Expression {
+
+    private final BytecodeClassinfoConstant type;
+
+    public InstanceOfExpression(Value aVariable, BytecodeClassinfoConstant aType) {
+        type = aType;
+        consume(ConsumptionType.ARGUMENT, aVariable);
+    }
+
+    public BytecodeClassinfoConstant getType() {
+        return type;
+    }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
+        return TypeRef.Native.BOOLEAN;
     }
 }

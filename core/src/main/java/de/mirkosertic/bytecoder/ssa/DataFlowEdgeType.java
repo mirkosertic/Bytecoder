@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class StackTopValue extends Value {
+import de.mirkosertic.bytecoder.graph.EdgeType;
 
-    @Override
-    public TypeRef resolveType() {
-        return TypeRef.Native.INT;
-    }
+public class DataFlowEdgeType implements EdgeType {
 }

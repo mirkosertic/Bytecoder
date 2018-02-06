@@ -15,22 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+public class NegatedExpression extends Expression {
 
-public class NewObjectValue extends Value {
-
-    private final BytecodeClassinfoConstant type;
-
-    public NewObjectValue(BytecodeClassinfoConstant type) {
-        this.type = type;
-    }
-
-    public BytecodeClassinfoConstant getType() {
-        return type;
+    public NegatedExpression(Value aValue) {
+        consume(ConsumptionType.ARGUMENT, aValue);
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return resolveFirstArgument().resolveType();
     }
 }
