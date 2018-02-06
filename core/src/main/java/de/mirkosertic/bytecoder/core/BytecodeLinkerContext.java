@@ -55,13 +55,13 @@ public class BytecodeLinkerContext {
 
     public BytecodeLinkedClass isLinkedOrNull(BytecodeUtf8Constant aConstant) {
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromUtf8Constant(aConstant);
-        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleNodeMatching(BytecodeLinkedClassEdgeType.filter(theTypeRef));
+        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(theTypeRef));
         return theFoundLink.orElse(null);
     }
 
     public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
 
-        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleNodeMatching(BytecodeLinkedClassEdgeType.filter(aTypeRef));
+        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(aTypeRef));
         if (theFoundLink.isPresent()) {
             return theFoundLink.get();
         }

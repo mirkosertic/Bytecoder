@@ -15,14 +15,25 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class NegatedValue extends Value {
+import java.util.List;
 
-    public NegatedValue(Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+
+public class NewMultiArrayExpression extends Expression {
+
+    private final BytecodeTypeRef type;
+
+    public NewMultiArrayExpression(BytecodeTypeRef aType, List<Value> aDimensions) {
+        type = aType;
+        consume(ConsumptionType.ARGUMENT, aDimensions);
+    }
+
+    public BytecodeTypeRef getType() {
+        return type;
     }
 
     @Override
     public TypeRef resolveType() {
-        return resolveFirstArgument().resolveType();
+        return TypeRef.Native.REFERENCE;
     }
 }

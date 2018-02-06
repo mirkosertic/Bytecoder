@@ -15,15 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+public class TypeOfExpression extends Expression {
 
-public class MethodHandlesGeneratedLookupValue extends Value {
-
-    private final BytecodeObjectTypeRef owningClass;
-
-    public MethodHandlesGeneratedLookupValue(BytecodeObjectTypeRef aOwningClass) {
-        owningClass = aOwningClass;
-    }
+    public TypeOfExpression(Value aTarget) {
+       consume(ConsumptionType.ARGUMENT, aTarget);
+   }
 
     @Override
     public TypeRef resolveType() {

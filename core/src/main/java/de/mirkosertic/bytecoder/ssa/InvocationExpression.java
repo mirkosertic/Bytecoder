@@ -17,11 +17,11 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
-public class InvocationValue extends Value {
+public class InvocationExpression extends Expression {
 
     private final BytecodeMethodSignature signature;
 
-    public InvocationValue(BytecodeMethodSignature aSignature) {
+    public InvocationExpression(BytecodeMethodSignature aSignature) {
         signature = aSignature;
     }
 

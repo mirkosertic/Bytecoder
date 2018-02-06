@@ -15,23 +15,27 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+public class FixedBinaryExpression extends Expression {
 
-public class NewArrayValue extends Value {
-
-    private final BytecodeTypeRef type;
-
-    public NewArrayValue(BytecodeTypeRef aType, Value aLength) {
-        type = aType;
-        consume(ConsumptionType.ARGUMENT, aLength);
+    public enum Operator {
+        ISNULL,
+        ISNONNULL,
+        ISZERO,
     }
 
-    public BytecodeTypeRef getType() {
-        return type;
+    private final Operator operator;
+
+    public FixedBinaryExpression(Value aValue, Operator aOperator) {
+        operator = aOperator;
+        consume(ConsumptionType.ARGUMENT, aValue);
+    }
+
+    public Operator getOperator() {
+        return operator;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return TypeRef.Native.BOOLEAN;
     }
 }

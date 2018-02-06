@@ -16,18 +16,18 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-import de.mirkosertic.bytecoder.ssa.InvocationValue;
+import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -139,8 +139,8 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                 VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
                 Value theValue = theInit.getValue();
 
-                if (theValue instanceof InvocationValue) {
-                    InvocationValue theInvocation = (InvocationValue) theValue;
+                if (theValue instanceof InvocationExpression) {
+                    InvocationExpression theInvocation = (InvocationExpression) theValue;
                     List<Value> theArguments = theInvocation.consumedValues(Value.ConsumptionType.ARGUMENT);
                     Expression thePredecessor = aExpressions.predecessorOf(theInit);
                     if (thePredecessor instanceof VariableAssignmentExpression) {
@@ -167,8 +167,8 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                     }
                 }
 
-                if (theValue instanceof BinaryValue) {
-                    BinaryValue theBinary = (BinaryValue) theValue;
+                if (theValue instanceof BinaryExpression) {
+                    BinaryExpression theBinary = (BinaryExpression) theValue;
                     Expression thePredecessor = aExpressions.predecessorOf(theInit);
                     if (thePredecessor instanceof VariableAssignmentExpression) {
                         VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
@@ -189,8 +189,8 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                     }
                 }
 
-                if (theValue instanceof ArrayEntryValue) {
-                    ArrayEntryValue theArrayEntry = (ArrayEntryValue) theValue;
+                if (theValue instanceof ArrayEntryExpression) {
+                    ArrayEntryExpression theArrayEntry = (ArrayEntryExpression) theValue;
                     Expression thePredecessor = aExpressions.predecessorOf(theInit);
                     if (thePredecessor instanceof VariableAssignmentExpression) {
                         VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
@@ -211,8 +211,8 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                     }
                 }
 
-                if (theValue instanceof GetFieldValue) {
-                    GetFieldValue theGetVield = (GetFieldValue) theValue;
+                if (theValue instanceof GetFieldExpression) {
+                    GetFieldExpression theGetVield = (GetFieldExpression) theValue;
                     Expression thePredecessor = aExpressions.predecessorOf(theInit);
                     if (thePredecessor instanceof VariableAssignmentExpression) {
                         VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;

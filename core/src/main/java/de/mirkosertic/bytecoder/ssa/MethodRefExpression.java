@@ -15,17 +15,22 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FloorValue extends Value {
+import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 
-    private final TypeRef type;
+public class MethodRefExpression extends Expression {
 
-    public FloorValue(Value aValue, TypeRef aTargetType) {
-        type = aTargetType;
-        consume(ConsumptionType.ARGUMENT, aValue);
+    private final BytecodeMethodRefConstant methodRef;
+
+    public MethodRefExpression(BytecodeMethodRefConstant aMethodRef) {
+        methodRef = aMethodRef;
+    }
+
+    public BytecodeMethodRefConstant getMethodRef() {
+        return methodRef;
     }
 
     @Override
     public TypeRef resolveType() {
-        return type;
+        return TypeRef.Native.REFERENCE;
     }
 }

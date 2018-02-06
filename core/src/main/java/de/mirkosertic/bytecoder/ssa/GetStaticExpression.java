@@ -15,22 +15,22 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 
-public class MethodTypeValue extends Value {
+public class GetStaticExpression extends Expression {
 
-    private final BytecodeMethodSignature signature;
+    private final BytecodeFieldRefConstant field;
 
-    public MethodTypeValue(BytecodeMethodSignature aSignature) {
-        signature = aSignature;
+    public GetStaticExpression(BytecodeFieldRefConstant aField) {
+        field = aField;
     }
 
-    public BytecodeMethodSignature getSignature() {
-        return signature;
+    public BytecodeFieldRefConstant getField() {
+        return field;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return TypeRef.toType(field.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType());
     }
 }

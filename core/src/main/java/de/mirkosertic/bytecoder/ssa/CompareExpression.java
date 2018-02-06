@@ -15,29 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class RuntimeGeneratedTypeValue extends Value {
+public class CompareExpression extends Expression {
 
-    private Value type;
-    private Value methodRef;
-
-    public Value getType() {
-        return type;
-    }
-
-    public void setType(Value type) {
-        this.type = type;
-    }
-
-    public Value getMethodRef() {
-        return methodRef;
-    }
-
-    public void setMethodRef(Value methodRef) {
-        this.methodRef = methodRef;
+    public CompareExpression(Value aValue1, Value aValue2) {
+        consume(ConsumptionType.ARGUMENT, aValue1);
+        consume(ConsumptionType.ARGUMENT, aValue2);
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return TypeRef.Native.INT;
     }
 }

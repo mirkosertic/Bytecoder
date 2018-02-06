@@ -15,15 +15,30 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class InvokeVirtualMethodExpression extends Expression {
+import java.util.List;
 
-    public InvokeVirtualMethodExpression(InvokeVirtualMethodValue aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+
+public class InvokeVirtualMethodExpression extends InvocationExpression {
+
+    private final String methodName;
+
+    public InvokeVirtualMethodExpression(BytecodeNameAndTypeConstant aMethod, Value aTarget,
+                                    List<Value> aArguments) {
+        this(aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
+                aTarget, aArguments);
     }
 
-    public InvokeVirtualMethodValue getValue() {
-        return resolveFirstArgument();
+    public InvokeVirtualMethodExpression(String aMethodName, BytecodeMethodSignature aSignature, Value aTarget,
+            List<Value> aArguments) {
+        super(aSignature);
+        methodName = aMethodName;
+        consume(ConsumptionType.INVOCATIONTARGET, aTarget);
+        consume(ConsumptionType.ARGUMENT, aArguments);
     }
 
-
+    public String getMethodName() {
+        return methodName;
+    }
 }

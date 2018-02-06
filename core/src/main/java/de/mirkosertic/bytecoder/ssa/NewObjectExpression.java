@@ -15,14 +15,22 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ArrayLengthValue extends SideEffectFreeValue {
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 
-    public ArrayLengthValue(Value aArray) {
-        consume(ConsumptionType.ARGUMENT, aArray);
+public class NewObjectExpression extends Expression {
+
+    private final BytecodeClassinfoConstant type;
+
+    public NewObjectExpression(BytecodeClassinfoConstant aType) {
+        type = aType;
+    }
+
+    public BytecodeClassinfoConstant getType() {
+        return type;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.INT;
+        return TypeRef.Native.REFERENCE;
     }
 }

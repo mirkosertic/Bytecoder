@@ -152,7 +152,7 @@ public class BytecodeLinkedClass extends Node {
     }
 
     public BytecodeLinkedClass getSuperClass() {
-        return (BytecodeLinkedClass) singleNodeMatching(
+        return (BytecodeLinkedClass) singleOutgoingNodeMatching(
                 BytecodeSuperclassEdgeType.filter()).orElse(null);
     }
 

@@ -28,28 +28,28 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryValue;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryValue;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.GetFieldValue;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvocationValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodValue;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
+import de.mirkosertic.bytecoder.ssa.InvocationExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionValue;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -229,7 +229,7 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
             if (theExpression instanceof VariableAssignmentExpression) {
                 VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                if (theInit.getVariable().resolveType().isObject() && theInit.getValue() instanceof InvocationValue) {
+                if (theInit.getVariable().resolveType().isObject() && theInit.getValue() instanceof InvocationExpression) {
                     print(theInit.getVariable().getName());
                     print("_temp = ");
                     printValue(theInit.getValue());
@@ -349,16 +349,16 @@ public class OpenCLWriter extends IndentSSAWriter {
         if (aValue instanceof Variable) {
             Variable theVariable = (Variable) aValue;
             print(theVariable.getName());
-        } else if (aValue instanceof InvokeVirtualMethodValue) {
-            printInvokeVirtual((InvokeVirtualMethodValue) aValue);
-        } else if (aValue instanceof InvokeStaticMethodValue) {
-            printInvokeStatic((InvokeStaticMethodValue) aValue);
-        } else if (aValue instanceof GetFieldValue) {
-            printGetFieldValue((GetFieldValue) aValue);
-        } else if (aValue instanceof ArrayEntryValue) {
-            printArrayEntryValue((ArrayEntryValue) aValue);
-        } else if (aValue instanceof BinaryValue) {
-            printBinaryValue((BinaryValue) aValue);
+        } else if (aValue instanceof InvokeVirtualMethodExpression) {
+            printInvokeVirtual((InvokeVirtualMethodExpression) aValue);
+        } else if (aValue instanceof InvokeStaticMethodExpression) {
+            printInvokeStatic((InvokeStaticMethodExpression) aValue);
+        } else if (aValue instanceof GetFieldExpression) {
+            printGetFieldValue((GetFieldExpression) aValue);
+        } else if (aValue instanceof ArrayEntryExpression) {
+            printArrayEntryValue((ArrayEntryExpression) aValue);
+        } else if (aValue instanceof BinaryExpression) {
+            printBinaryValue((BinaryExpression) aValue);
         } else if (aValue instanceof IntegerValue) {
             printIntegerValue((IntegerValue) aValue);
         } else if (aValue instanceof LongValue) {
@@ -367,14 +367,14 @@ public class OpenCLWriter extends IndentSSAWriter {
             printFloatValue((FloatValue) aValue);
         } else if (aValue instanceof DoubleValue) {
             printDoubleValue((DoubleValue) aValue);
-        } else if (aValue instanceof TypeConversionValue) {
-            printTypeConversionValue((TypeConversionValue) aValue);
+        } else if (aValue instanceof TypeConversionExpression) {
+            printTypeConversionValue((TypeConversionExpression) aValue);
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }
     }
 
-    private void printTypeConversionValue(TypeConversionValue aValue) {
+    private void printTypeConversionValue(TypeConversionExpression aValue) {
         print("((");
         print(toType(aValue.resolveType()));
         print(") ");
@@ -398,7 +398,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         print(aValue.getIntValue());
     }
 
-    private void printBinaryValue(BinaryValue aValue) {
+    private void printBinaryValue(BinaryExpression aValue) {
         Value theValue1 = aValue.resolveFirstArgument();
         print("(");
         printValue(theValue1);
@@ -462,7 +462,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void printGetFieldValue(GetFieldValue aValue) {
+    private void printGetFieldValue(GetFieldExpression aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         if (theLinkedClass == kernelClass) {
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
@@ -477,7 +477,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         }
     }
 
-    private void printArrayEntryValue(ArrayEntryValue aValue) {
+    private void printArrayEntryValue(ArrayEntryExpression aValue) {
         Value theArray = aValue.resolveFirstArgument();
         Value theIndex = aValue.resolveSecondArgument();
         if (aValue.resolveType().isObject()) {
@@ -489,11 +489,11 @@ public class OpenCLWriter extends IndentSSAWriter {
         print("]");
     }
 
-    private void printInvokeVirtual(InvokeVirtualMethodValue aValue) {
+    private void printInvokeVirtual(InvokeVirtualMethodExpression aValue) {
         throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
     }
 
-    private void printInvokeStatic(InvokeStaticMethodValue aValue) {
+    private void printInvokeStatic(InvokeStaticMethodExpression aValue) {
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aValue.getClassName());
         List<BytecodeMethod> theMethods = new ArrayList<>();
         theLinkedClass.forEachMethod(theMethods::add);

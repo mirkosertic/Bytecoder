@@ -15,13 +15,30 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class InvokeStaticMethodExpression extends Expression {
+import java.util.List;
 
-    public InvokeStaticMethodExpression(InvokeStaticMethodValue aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+
+public class InvokeStaticMethodExpression extends InvocationExpression {
+
+    private final BytecodeObjectTypeRef className;
+    private final String methodName;
+
+    public InvokeStaticMethodExpression(BytecodeObjectTypeRef aClassName, String aMethodName,
+            BytecodeMethodSignature aSignature, List<Value> aArguments) {
+        super(aSignature);
+        className = aClassName;
+        methodName = aMethodName;
+
+        consume(ConsumptionType.ARGUMENT, aArguments);
     }
 
-    public InvokeStaticMethodValue getValue() {
-        return resolveFirstArgument();
+    public BytecodeObjectTypeRef getClassName() {
+        return className;
+    }
+
+    public String getMethodName() {
+        return methodName;
     }
 }

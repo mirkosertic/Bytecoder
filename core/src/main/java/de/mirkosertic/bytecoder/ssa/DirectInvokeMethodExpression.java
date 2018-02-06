@@ -15,13 +15,30 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class DirectInvokeMethodExpression extends Expression {
+import java.util.List;
 
-    public DirectInvokeMethodExpression(DirectInvokeMethodValue aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+
+public class DirectInvokeMethodExpression extends InvocationExpression {
+
+    private final BytecodeObjectTypeRef clazz;
+    private final String methodName;
+
+    public DirectInvokeMethodExpression(BytecodeObjectTypeRef aClazz, String aMethodName,
+            BytecodeMethodSignature aMethodSignature, Value aTarget, List<Value> aArguments) {
+        super(aMethodSignature);
+        clazz = aClazz;
+        methodName = aMethodName;
+        consume(ConsumptionType.INVOCATIONTARGET, aTarget);
+        consume(ConsumptionType.ARGUMENT, aArguments);
     }
 
-    public DirectInvokeMethodValue getValue() {
-        return resolveFirstArgument();
+    public BytecodeObjectTypeRef getClazz() {
+        return clazz;
+    }
+
+    public String getMethodName() {
+        return methodName;
     }
 }

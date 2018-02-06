@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class TypeOfValue extends SideEffectFreeValue {
+public class ArrayLengthExpression extends Expression {
 
-    public TypeOfValue(Value aTarget) {
-       consume(ConsumptionType.ARGUMENT, aTarget);
-   }
+    public ArrayLengthExpression(Value aArray) {
+        consume(ConsumptionType.ARGUMENT, aArray);
+    }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.REFERENCE;
+        return TypeRef.Native.INT;
     }
 }

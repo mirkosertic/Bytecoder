@@ -24,14 +24,12 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodValue;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -48,8 +46,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
         for (Expression theExpression : aExpressions.toList()) {
 
             if (theExpression instanceof InvokeVirtualMethodExpression) {
-                InvokeVirtualMethodExpression theInvokeVirtual = (InvokeVirtualMethodExpression) theExpression;
-                InvokeVirtualMethodValue theValue = theInvokeVirtual.getValue();
+                InvokeVirtualMethodExpression theValue = (InvokeVirtualMethodExpression) theExpression;
 
                 String theMethodName = theValue.getMethodName();
                 BytecodeMethodSignature theSignature = theValue.getSignature();
@@ -65,9 +62,8 @@ public class InvokeVirtualOptimizer implements Optimizer {
                         Value theTarget = theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
                         List<Value> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
 
-                        DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName, theSignature,
+                        DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName, theSignature,
                                 theTarget, theVariables);
-                        DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theNewValue);
                         aExpressions.replace(theExpression, theNewExpression);
 
                         theValue.unbind();
@@ -79,9 +75,9 @@ public class InvokeVirtualOptimizer implements Optimizer {
                 VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
                 Variable theVariable = theInit.getVariable();
                 Value theValue = theInit.getValue();
-                if (theValue instanceof InvokeVirtualMethodValue) {
+                if (theValue instanceof InvokeVirtualMethodExpression) {
 
-                    InvokeVirtualMethodValue theInvokeVirtualValue = (InvokeVirtualMethodValue) theValue;
+                    InvokeVirtualMethodExpression theInvokeVirtualValue = (InvokeVirtualMethodExpression) theValue;
 
                     String theMethodName = theInvokeVirtualValue.getMethodName();
                     BytecodeMethodSignature theSignature = theInvokeVirtualValue.getSignature();
@@ -96,7 +92,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
                         BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
                         if (!theLinked.emulatedByRuntime()) {
                             BytecodeObjectTypeRef theClazz = theLinked.getClassName();
-                            DirectInvokeMethodValue theNewValue = new DirectInvokeMethodValue(theClazz, theMethodName,
+                            DirectInvokeMethodExpression theNewValue = new DirectInvokeMethodExpression(theClazz, theMethodName,
                                     theSignature, theTarget, theVariables);
 
                             theInvokeVirtualValue.unbind();

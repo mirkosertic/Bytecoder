@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class SqrtValue extends Value {
+public class ComputedMemoryLocationWriteExpression extends Expression {
 
-    private final TypeRef targetType;
-
-    public SqrtValue(TypeRef aTargetType, Value aValue1) {
-        targetType = aTargetType;
-        consume(ConsumptionType.ARGUMENT, aValue1);
+    public ComputedMemoryLocationWriteExpression(Value aOrigin, Value aOffset) {
+        consume(ConsumptionType.ARGUMENT, aOrigin);
+        consume(ConsumptionType.ARGUMENT, aOffset);
     }
 
     @Override
     public TypeRef resolveType() {
-        return targetType;
+        return TypeRef.Native.INT;
     }
 }

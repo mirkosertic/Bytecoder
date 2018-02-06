@@ -50,7 +50,7 @@ public class Node {
         return aTargetNode;
     }
 
-    public <T extends Node> Optional<T> singleNodeMatching(Predicate<EdgeType> aPredicate) {
+    public <T extends Node> Optional<T> singleOutgoingNodeMatching(Predicate<EdgeType> aPredicate) {
         List<Edge> theEdges = outgoingEdges(aPredicate).collect(Collectors.toList());
         if (theEdges.isEmpty()) {
             return Optional.empty();
