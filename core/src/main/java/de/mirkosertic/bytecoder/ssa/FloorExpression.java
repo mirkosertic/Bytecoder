@@ -21,7 +21,7 @@ public class FloorExpression extends Expression {
 
     public FloorExpression(Value aValue, TypeRef aTargetType) {
         type = aTargetType;
-        consume(ConsumptionType.ARGUMENT, aValue);
+        receivesDataFrom(aValue);
     }
 
     @Override

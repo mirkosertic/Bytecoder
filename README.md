@@ -13,7 +13,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 
 ## Compiling strategies
 
-The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
+The JVM Bytecode is parsed and transformed into an [intermediate representation](IR.md). This intermediate representation is passed thru 
 optimizer stages and sent to a backend implementation for target code generation.
 
 The *JavaScript* backend transforms the intermediate representation into JavaScript.

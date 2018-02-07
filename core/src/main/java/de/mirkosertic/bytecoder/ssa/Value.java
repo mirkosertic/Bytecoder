@@ -15,91 +15,35 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import de.mirkosertic.bytecoder.graph.Node;
+
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
-public abstract class Value {
+public abstract class Value extends Node {
 
-    public static enum ConsumptionType {
-        ARGUMENT, INVOCATIONTARGET, INITIALIZATION, PHIPROPAGATE
+    protected Value() {
     }
 
-    public static class Consumption {
-        private final ConsumptionType type;
-        private Value value;
+    protected void receivesDataFrom(Value aOtherValue) {
+        aOtherValue.addEdgeTo(new DataFlowEdgeType(), this);
+    }
 
-        public Consumption(ConsumptionType aType, Value aValue) {
-            type = aType;
-            value = aValue;
+    protected void receivesDataFrom(List<Value> aValues) {
+        for (Value aValue : aValues) {
+            receivesDataFrom(aValue);
         }
     }
 
-    private final Set<Value> providesValueFor;
-    private final List<Consumption> consumesValueFrom;
-
-    public Value() {
-        providesValueFor = new HashSet<>();
-        consumesValueFrom = new ArrayList<>();
-    }
-
-    public int getUsageCount() {
-        return providesValueFor.size();
-    }
-
-    public boolean replaceInConsumedValues(Value aOldValue, Value aNewValue) {
-        boolean theChanged = false;
-        if (providesValueFor.contains(aOldValue)) {
-            providesValueFor.remove(aOldValue);
-            providesValueFor.add(aNewValue);
-            theChanged = true;
-        }
-        for (Consumption theConsumption : consumesValueFrom) {
-            if (theConsumption.value == aOldValue) {
-                theConsumption.value = aNewValue;
-                theChanged = true;
-            }
-        }
-        return theChanged;
-    }
-
-    public <T extends Value> List<T> consumedValues(ConsumptionType aType) {
-        List<T> theResult = new ArrayList<>();
-        for (Consumption theConsumption : consumesValueFrom) {
-            if (theConsumption.type == aType) {
-                theResult.add((T) theConsumption.value);
-            }
-        }
-        return theResult;
-    }
-
-    public void consume(ConsumptionType aType, List<? extends Value> aValues) {
-        for (Value theValue : aValues) {
-            consume(aType, theValue);
+    protected void receivesDataFrom(Value... aValues) {
+        for (Value aValue : aValues) {
+            receivesDataFrom(aValue);
         }
     }
 
-    public void consume(ConsumptionType aType, Value aValue) {
-        aValue.providesValueFor.add(this);
-        consumesValueFrom.add(new Consumption(aType, aValue));
+    public <T extends Value> List<T> incomingDataFlows() {
+        return incomingEdges(DataFlowEdgeType.filter()).map(t -> (T) t.sourceNode()).collect(Collectors.toList());
     }
 
     public abstract TypeRef resolveType();
-
-    public void unbind() {
-        for (Value theValue : providesValueFor) {
-            theValue.removeConsumptionFor(theValue);
-        }
-    }
-
-    private void removeConsumptionFor(Value aValue) {
-        List<Consumption> theValuesToRemove = new ArrayList<>();
-        for (Consumption theValue : consumesValueFrom) {
-            if (theValue.value == aValue) {
-                theValuesToRemove.add(theValue);
-            }
-        }
-        consumesValueFrom.removeAll(theValuesToRemove);
-    }
 }

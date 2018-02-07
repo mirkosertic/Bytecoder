@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.graph;
 
 public class Edge<TYPE extends EdgeType, TARGET extends Node> {
 
-    private final Node sourceNode;
+    private Node sourceNode;
     private final TYPE edgeType;
     private final TARGET targetNode;
 
@@ -37,5 +37,9 @@ public class Edge<TYPE extends EdgeType, TARGET extends Node> {
 
     public TARGET targetNode() {
         return targetNode;
+    }
+
+    public void newSourceIs(Node aNewSource) {
+        sourceNode = aNewSource;
     }
 }

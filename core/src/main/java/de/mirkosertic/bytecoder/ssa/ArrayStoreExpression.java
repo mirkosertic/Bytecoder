@@ -20,25 +20,11 @@ public class ArrayStoreExpression extends Expression {
     private final TypeRef arrayType;
 
     public ArrayStoreExpression(TypeRef aArrayType, Value aArray, Value aIndex, Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aArray);
-        consume(ConsumptionType.ARGUMENT, aIndex);
-        consume(ConsumptionType.ARGUMENT, aValue);
         arrayType = aArrayType;
+        receivesDataFrom(aArray, aIndex, aValue);
     }
 
     public TypeRef getArrayType() {
         return arrayType;
-    }
-
-    public Value getArray() {
-        return resolveFirstArgument();
-    }
-
-    public Value getIndex() {
-        return resolveSecondArgument();
-    }
-
-    public Value getValue() {
-        return resolveThirdArgument();
     }
 }

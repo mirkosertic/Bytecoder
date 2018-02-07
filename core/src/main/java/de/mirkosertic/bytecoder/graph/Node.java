@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Node {
+public abstract class Node {
 
     private final List<Edge> outgoingEdges;
     private final List<Edge> incomingEdges;
@@ -48,6 +48,14 @@ public class Node {
         outgoingEdges.add(theNewEdge);
         aTargetNode.addIncomingEdge(theNewEdge);
         return aTargetNode;
+    }
+
+    public <T extends Edge> Stream<T> incomingEdges() {
+        return (Stream<T>) incomingEdges.stream();
+    }
+
+    public <T extends Edge> Stream<T> incomingEdges(Predicate<EdgeType> aPredicate) {
+        return (Stream<T>) incomingEdges().filter(t -> aPredicate.test(t.edgeType()));
     }
 
     public <T extends Node> Optional<T> singleOutgoingNodeMatching(Predicate<EdgeType> aPredicate) {

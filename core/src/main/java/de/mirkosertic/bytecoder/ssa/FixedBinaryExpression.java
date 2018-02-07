@@ -27,7 +27,7 @@ public class FixedBinaryExpression extends Expression {
 
     public FixedBinaryExpression(Value aValue, Operator aOperator) {
         operator = aOperator;
-        consume(ConsumptionType.ARGUMENT, aValue);
+        receivesDataFrom(aValue);
     }
 
     public Operator getOperator() {

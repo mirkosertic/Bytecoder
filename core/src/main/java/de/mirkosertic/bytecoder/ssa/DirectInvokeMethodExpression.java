@@ -30,8 +30,9 @@ public class DirectInvokeMethodExpression extends InvocationExpression {
         super(aMethodSignature);
         clazz = aClazz;
         methodName = aMethodName;
-        consume(ConsumptionType.INVOCATIONTARGET, aTarget);
-        consume(ConsumptionType.ARGUMENT, aArguments);
+
+        receivesDataFrom(aTarget);
+        receivesDataFrom(aArguments);
     }
 
     public BytecodeObjectTypeRef getClazz() {

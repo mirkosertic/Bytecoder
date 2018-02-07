@@ -22,21 +22,11 @@ public class PutFieldExpression extends Expression {
     private final BytecodeFieldRefConstant field;
 
     public PutFieldExpression(BytecodeFieldRefConstant aField, Value aTarget, Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aTarget);
-        consume(ConsumptionType.ARGUMENT, aValue);
-
         field = aField;
+        receivesDataFrom(aTarget, aValue);
     }
 
     public BytecodeFieldRefConstant getField() {
         return field;
-    }
-
-    public Value getTarget() {
-        return resolveFirstArgument();
-    }
-
-    public Value getValue() {
-        return resolveSecondArgument();
     }
 }

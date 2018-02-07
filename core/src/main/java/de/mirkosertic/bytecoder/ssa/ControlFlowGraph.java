@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
@@ -65,7 +66,7 @@ public class ControlFlowGraph {
     private void calculateReachabilityAndMarkBackEdges(GraphNodePath aPath, RegionNode aNode) {
         aNode.addReachablePath(aPath);
         for (Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
-            GraphNodePath theChildPath = aPath.clone();
+            GraphNodePath theChildPath = new GraphNodePath(aPath);
             theChildPath.addToPath(aNode);
             if (aPath.contains(theEdge.getValue())) {
                 // This is a back edge
@@ -114,118 +115,244 @@ public class ControlFlowGraph {
         return new ArrayList<>(knownNodes);
     }
 
-    private String toHTMLLabel(RegionNode aNode) {
-        StringBuilder theResult = new StringBuilder("<");
+    private static class IDRegister {
 
-        BlockState theStartState = aNode.toStartState();
-        BlockState theFinalState = aNode.toFinalState();
-        Set<VariableDescription> theUsedDescs = new HashSet<>();
-        theUsedDescs.addAll(theStartState.getPorts().keySet());
-        theUsedDescs.addAll(theFinalState.getPorts().keySet());
-        List<VariableDescription> theFinalList = new ArrayList<>(theUsedDescs);
+        private final List<Object> objects;
 
-        theResult.append("<table>");
-
-        // Header
-        if (!theFinalList.isEmpty()) {
-            theResult.append("<tr>");
-            for (VariableDescription theDesc : theFinalList) {
-                if (theDesc instanceof LocalVariableDescription) {
-                    LocalVariableDescription theV = (LocalVariableDescription) theDesc;
-                    theResult.append("<td> V ");
-                    theResult.append(theV.getIndex());
-                    theResult.append("</td>");
-                } else {
-                    StackVariableDescription theV = (StackVariableDescription) theDesc;
-                    theResult.append("<td> S ");
-                    theResult.append(theV.getPos());
-                    theResult.append("</td>");
-                }
-            }
-            theResult.append("</tr>");
+        public IDRegister() {
+            objects = new ArrayList<>();
         }
 
-        // Inputs
-        if (!theFinalList.isEmpty()) {
-            theResult.append("<tr>");
-            for (VariableDescription theDesc : theFinalList) {
-                Value theValue = theStartState.findBySlot(theDesc);
-                if (theValue != null) {
-                    if (theValue.consumedValues(Value.ConsumptionType.PHIPROPAGATE).size() > 1) {
-                        theResult.append("<td bgcolor=\"orange\">X</td>");
-                    } else {
-                        theResult.append("<td>X</td>");
-                    }
-                } else {
-                    theResult.append("<td bgcolor=\"lightgray\"></td>");
-                }
+        public String idFor(Object aObject) {
+            if (!objects.contains(aObject)) {
+                objects.add(aObject);
             }
-            theResult.append("</tr>");
+            return "" + objects.indexOf(aObject);
         }
+    }
 
-        // Label
-        theResult.append("<tr>");
-        theResult.append("<td colspan=\"");
-        theResult.append(theFinalList.size());
-        theResult.append("\">");
-        theResult.append(" Node at ").append(aNode.getStartAddress().getAddress());
-        theResult.append("</td></tr>");
+    static class DotContext {
+        final RegionNode regionNode;
+        final ExpressionList expressionList;
+        final String owningNodeName;
 
-        // Outputs
-        if (!theFinalList.isEmpty()) {
-            theResult.append("<tr>");
-            for (VariableDescription theDesc : theFinalList) {
-                Value theValue = theFinalState.findBySlot(theDesc);
-                if (theValue != null) {
-                    theResult.append("<td>X</td>");
-                } else {
-                    theResult.append("<td bgcolor=\"lightgray\"></td>");
-                }
-            }
-            theResult.append("</tr>");
+        public DotContext(RegionNode aRegionNode, ExpressionList aExpressionList, String aOwningNodeName) {
+            regionNode = aRegionNode;
+            expressionList = aExpressionList;
+            owningNodeName = aOwningNodeName;
         }
+    }
 
-        // Types
-        if (!theFinalList.isEmpty()) {
-            theResult.append("<tr>");
-            for (VariableDescription theDesc : theFinalList) {
-                Value theValue = theFinalState.findBySlot(theDesc);
-                if (theValue != null) {
-                    theResult.append("<td>");
-                    theResult.append(theValue.resolveType().resolve());
-                    theResult.append("</td>");
-                } else {
-                    theResult.append("<td></td>");
-                }
-            }
-            theResult.append("</tr>");
+    class DotJump {
+        final String source;
+        final String target;
+        final boolean backEdge;
+
+        public DotJump(String aSource, String aTarget, boolean aBackEdge) {
+            source = aSource;
+            target = aTarget;
+            backEdge = aBackEdge;
         }
-
-        theResult.append("</table>");
-        theResult.append(">");
-        return theResult.toString();
     }
 
     public String toDOT() {
+
+        IDRegister theRegister = new IDRegister();
+        List<DotJump> theJumps = new ArrayList<>();
+
         StringWriter theStr = new StringWriter();
         try (PrintWriter thePW = new PrintWriter(theStr)) {
+
+            Set<Value> theAllValues = new HashSet<>();
+
             thePW.println("digraph CFG {");
 
-            for (RegionNode theNode : knownNodes) {
-                thePW.print("   N" + theNode.getStartAddress().getAddress());
-                thePW.print(" [shape=none, margin=0, label=");
-                thePW.print(toHTMLLabel(theNode));
+            Consumer<DotContext> theExpressionConsumer = new Consumer<DotContext>() {
+
+                @Override
+                public void accept(DotContext aContext) {
+                    List<Expression> theExpressios = aContext.expressionList.toList();
+                    for (Expression theExpression : theExpressios) {
+
+                        theAllValues.add(theExpression);
+
+                        String theNodeName = theRegister.idFor(theExpression);
+
+                        thePW.print("       ");
+                        thePW.print(aContext.owningNodeName);
+                        thePW.print(" -> E_");
+                        thePW.print(theNodeName);
+                        thePW.print("[style=dotted,color=blue,label=\"e-");
+                        thePW.print(theExpressios.indexOf(theExpression));
+                        thePW.println("\"];");
+
+                        printIncomingValues(theExpression, "E_" + theNodeName);
+
+                        if (theExpression instanceof GotoExpression) {
+                            GotoExpression theGoto = (GotoExpression) theExpression;
+                            RegionNode theJumpTarget = nodeStartingAt(theGoto.getJumpTarget());
+
+                            String theJumpTargetRegion = theRegister.idFor(theJumpTarget);
+
+                            theJumps.add(new DotJump("E_" + theNodeName,
+                                    "C_" + theJumpTargetRegion + "_control",
+                                    aContext.regionNode.hasBackEdgeTo(theJumpTarget)));
+                        }
+
+                        if (theExpression instanceof ExpressionListContainer) {
+                            ExpressionListContainer theList = (ExpressionListContainer) theExpression;
+                            for (ExpressionList theCont : theList.getExpressionLists()) {
+                                DotContext theContext = new DotContext(aContext.regionNode, theCont, "E_" + theNodeName);
+                                accept(theContext);
+                            }
+                        }
+                    }
+                }
+
+                private void printIncomingValues(Value aValue, String aReceivingNodeID) {
+                    if (aValue instanceof VariableAssignmentExpression) {
+                        VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aValue;
+                        Variable theTarget = theAssignment.getVariable();
+                        theAllValues.add(theTarget);
+
+                        thePW.print("       ");
+                        thePW.print(aReceivingNodeID);
+                        thePW.print(" -> V_");
+                        thePW.print(theRegister.idFor(theTarget));
+
+                        Value theValue = theAssignment.getValue();
+                        theAllValues.add(theValue);
+
+                        String theValueID = null;
+                        if (theValue instanceof Expression) {
+                            theValueID = "E_" + theRegister.idFor(theValue);
+                        }
+                        if (theValue instanceof PrimitiveValue) {
+                            theValueID = "P_" + theRegister.idFor(theValue);
+                        }
+                        if (theValue instanceof Variable) {
+                            theValueID = "V_" + theRegister.idFor(theValue);
+                        }
+
+                        thePW.print("       ");
+                        thePW.print(theValueID);
+                        thePW.print(" -> ");
+                        thePW.print(aReceivingNodeID);
+                        thePW.println(";");
+                    } else {
+                        List<Value> theIncomingDataFlows = aValue.incomingDataFlows();
+                        for (Value theValue : theIncomingDataFlows) {
+                            theAllValues.add(theValue);
+
+                            String theValueID = null;
+                            if (theValue instanceof Expression) {
+                                theValueID = "E_" + theRegister.idFor(theValue);
+                            }
+                            if (theValue instanceof PrimitiveValue) {
+                                theValueID = "P_" + theRegister.idFor(theValue);
+                            }
+                            if (theValue instanceof Variable) {
+                                theValueID = "V_" + theRegister.idFor(theValue);
+                            }
+
+                            thePW.print("       ");
+
+                            thePW.print(theValueID);
+
+                            thePW.print(" -> ");
+                            thePW.print(aReceivingNodeID);
+                            thePW.println(";");
+
+                            if (theValue instanceof Expression) {
+                                printIncomingValues(theValue, theValueID);
+                            }
+                        }
+                    }
+                }
+            };
+
+            for (RegionNode theRegion : knownNodes) {
+
+                String theRegionID = theRegister.idFor(theRegion);
+
+                thePW.print("   subgraph cluster_");
+                thePW.print(theRegionID);
+                thePW.println(" {");
+
+
+                thePW.print("       label=\"Region Address ");
+                thePW.print(theRegion.getStartAddress().getAddress());
+                thePW.println("\";");
+
+                thePW.println("       style=filled;");
+                thePW.println("       color=lightgray;");
+                thePW.println();
+
+                thePW.print("       C_");
+                thePW.print(theRegionID);
+                thePW.println("_control [shape=box, label=\"Control\"];");
+
+                DotContext theContext = new DotContext(theRegion, theRegion.getExpressions(), "C_" + theRegionID+"_control");
+                theExpressionConsumer.accept(theContext);
+
+                thePW.println("   }");
+            }
+
+            for (Value theValue : theAllValues) {
+
+                String theNodeID = theRegister.idFor(theValue);
+
+                thePW.print("       ");
+
+                if (theValue instanceof Expression) {
+                    thePW.print("E_");
+                }
+                if (theValue instanceof PrimitiveValue) {
+                    thePW.print("P_");
+                }
+                if (theValue instanceof Variable) {
+                    thePW.print("V_");
+                }
+
+                thePW.print(theNodeID);
+
+                thePW.print("[");
+
+                if (theValue instanceof Expression) {
+                    Expression theValueExpression = (Expression) theValue;
+                    thePW.print("label=\"");
+                    thePW.print(theValueExpression.getClass().getSimpleName().replace("Expression", ""));
+                    thePW.print("\"");
+                }
+                if (theValue instanceof PrimitiveValue) {
+                    PrimitiveValue thePrimitive = (PrimitiveValue) theValue;
+                    thePW.print("label=\"");
+                    thePW.print(thePrimitive.getClass().getSimpleName().replace("Value", ""));
+                    thePW.print("\",color=orange");
+                }
+                if (theValue instanceof Variable) {
+                    Variable theVariable = (Variable) theValue;
+                    thePW.print("label=\"");
+                    thePW.print(theVariable.getName());
+                    thePW.print("\",color=green");
+                }
+
                 thePW.println("];");
 
-                for (Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
-                    thePW.print("   N" + theNode.getStartAddress().getAddress());
-                    thePW.print(" -> ");
-                    thePW.print("   N" + theSuccessor.getValue().getStartAddress().getAddress());
-                    if (theSuccessor.getKey().getType() == RegionNode.EdgeType.BACK) {
-                        thePW.print(" [ label = \"back-edge\"]");
-                    }
+            }
+
+            for (DotJump theJump : theJumps) {
+
+                thePW.print("       ");
+                thePW.print(theJump.source);
+                thePW.print(" -> ");
+                thePW.print(theJump.target);
+                if (theJump.backEdge) {
+                    thePW.println(" [label=\"back-edge\"];");
+                } else {
                     thePW.println(";");
                 }
+
             }
 
             thePW.println("}");

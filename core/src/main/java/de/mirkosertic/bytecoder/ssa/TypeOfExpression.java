@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 public class TypeOfExpression extends Expression {
 
     public TypeOfExpression(Value aTarget) {
-       consume(ConsumptionType.ARGUMENT, aTarget);
+        receivesDataFrom(aTarget);
    }
 
     @Override

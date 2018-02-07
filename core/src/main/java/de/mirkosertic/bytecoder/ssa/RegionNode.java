@@ -214,7 +214,8 @@ public class RegionNode extends Node {
             }
             if (theExpression instanceof VariableAssignmentExpression) {
                 VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                if (theInit.getVariable() == aVariable) {
+                List<Value> theIncomingDataFlows = theInit.incomingDataFlows();
+                if (theIncomingDataFlows.get(0) == aVariable) {
                     aList.remove(theExpression);
                 }
             }

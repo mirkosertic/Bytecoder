@@ -18,8 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 public class ComputedMemoryLocationReadExpression extends Expression {
 
     public ComputedMemoryLocationReadExpression(Value aOrigin, Value aOffset) {
-        consume(ConsumptionType.ARGUMENT, aOrigin);
-        consume(ConsumptionType.ARGUMENT, aOffset);
+        receivesDataFrom(aOrigin, aOffset);
     }
 
     @Override

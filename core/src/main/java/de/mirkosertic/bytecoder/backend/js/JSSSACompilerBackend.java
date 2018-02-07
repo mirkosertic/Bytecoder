@@ -49,7 +49,6 @@ import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
@@ -319,21 +318,22 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     JSModule theModule = modules.resolveModule(theImportAnnotation.getElementValueByName("module").stringValue());
                     JSFunction theFunction = theModule.resolveFunction(theImportAnnotation.getElementValueByName("name").stringValue());
                     theWriter.println();
-                    theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                    theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
+                            + ") {");
                     theWriter.println("         " + theFunction.generateCode(theCurrentMethodSignature));
                     theWriter.println("    },");
                     return;
                 }
 
                 theWriter.println();
-                theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments.toString() + ") {");
+                theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
+                        + ") {");
 
                 aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue());
 
                 theStaticReferences.addAll(theSSAProgram.getStaticReferences());
 
                 if (aOptions.isDebugOutput()) {
-                    theWriter.println("        // # basic blocks in flow graph : " + theSSAProgram.getControlFlowGraph().getDominatedNodes().size());
                     theWriter.println("        /**");
                     theWriter.println("        " + theSSAProgram.getControlFlowGraph().toDOT());
                     theWriter.println("        */");
@@ -347,7 +347,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theVariablesWriter.print(" = null;");
                         theVariablesWriter.print(" // type is ");
                         theVariablesWriter.print(theVariable.resolveType().resolve().name());
-                        theVariablesWriter.print(" # of inits = " + theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION).size());
+                        theVariablesWriter.print(" # of inits = " + theVariable.incomingDataFlows().size());
                         theVariablesWriter.println();
                     }
                 }

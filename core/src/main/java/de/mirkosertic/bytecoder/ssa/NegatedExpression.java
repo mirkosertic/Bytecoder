@@ -18,11 +18,11 @@ package de.mirkosertic.bytecoder.ssa;
 public class NegatedExpression extends Expression {
 
     public NegatedExpression(Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
+        receivesDataFrom(aValue);
     }
 
     @Override
     public TypeRef resolveType() {
-        return resolveFirstArgument().resolveType();
+        return incomingDataFlows().get(0).resolveType();
     }
 }

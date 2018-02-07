@@ -143,13 +143,13 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
-public class NaiveProgramGenerator implements ProgramGenerator {
+public final class NaiveProgramGenerator implements ProgramGenerator {
 
     public final static ProgramGeneratorFactory FACTORY = NaiveProgramGenerator::new;
 
-    private static class ParsingHelper {
+    private static final class ParsingHelper {
 
-        interface ValueProvider {
+        @FunctionalInterface interface ValueProvider {
             Value resolveValueFor(VariableDescription aDescription);
         }
 
@@ -349,7 +349,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             int theRequestedStack = -1;
             for (RegionNode thePredecessor : aBlock.getPredecessorsIgnoringBackEdges()) {
                 ParsingHelper theHelper = finalStatesForNodes.get(thePredecessor);
-                if (theHelper.stack.size() > 0) {
+                if (!theHelper.stack.isEmpty()) {
                     if (theRequestedStack == -1) {
                         theRequestedStack = theHelper.stack.size();
                     } else {
@@ -383,7 +383,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                     Variable thePHI = aBlock.newImportedVariable(theType, theEntry.getKey());
                     for (Value theValue : theValues) {
                         thePHI.initializeWith(theValue);
-                        thePHI.consume(Value.ConsumptionType.PHIPROPAGATE, theValue);
                     }
                     theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, thePHI);
                 }
@@ -413,7 +412,6 @@ public class NaiveProgramGenerator implements ProgramGenerator {
             Variable thePHI = aImportingBlock.newImportedVariable(theType, aDescription);
             for (Value theValue : theValues) {
                 thePHI.initializeWith(theValue);
-                thePHI.consume(Value.ConsumptionType.PHIPROPAGATE, theValue);
             }
             return thePHI;
         }
@@ -679,13 +677,13 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                                 throw new IllegalStateException("No value for " + theEntry.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theReceiving.getStartAddress().getAddress());
                             }
                             Variable theReceivingTarget = (Variable) theEntry.getValue();
-                            theReceivingTarget.consume(Value.ConsumptionType.PHIPROPAGATE, theExportingValue);
+                            theReceivingTarget.initializeWith(theExportingValue);
                         }
                     }
                 }
             }
 
-            // Makre sure that all jump conditions are met
+            // Make sure that all jump conditions are met
             for (RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
@@ -712,7 +710,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                         BlockState theImportingState = theGotoNode.toStartState();
                         String theComments = "";
                         for (Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
-                            theComments = theComments + theImporting.getKey() + " is of type " + theImporting.getValue().resolveType().resolve()+ " with values " + theImporting.getValue().consumedValues(Value.ConsumptionType.INITIALIZATION) + " with PHI " + theImporting.getValue().consumedValues(Value.ConsumptionType.PHIPROPAGATE);
+                            theComments = theComments + theImporting.getKey() + " is of type " + theImporting.getValue().resolveType().resolve()+ " with values " + theImporting.getValue().incomingDataFlows();
                             Value theReceivingValue = theImporting.getValue();
                             ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                             Value theExportingValue = theHelper.requestValue(theImporting.getKey());
@@ -741,8 +739,8 @@ public class NaiveProgramGenerator implements ProgramGenerator {
         public final Expression expression;
 
         public TraversalPoint(ExpressionList aExpressionList, Expression aExpression) {
-            this.expressionList = aExpressionList;
-            this.expression = aExpression;
+            expressionList = aExpressionList;
+            expression = aExpression;
         }
     }
 
@@ -1298,7 +1296,7 @@ public class NaiveProgramGenerator implements ProgramGenerator {
                 Variable theTarget = (Variable) aHelper.pop();
                 BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
                 if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(TRuntimeGeneratedType.class))) {
-                    RuntimeGeneratedTypeExpression theValue = (RuntimeGeneratedTypeExpression) theTarget.singleInitValue();
+                    RuntimeGeneratedTypeExpression theValue = (RuntimeGeneratedTypeExpression) theTarget.incomingDataFlows().get(0);
                     theValue.setType(theArguments.get(0));
                     theValue.setMethodRef(theArguments.get(1));
                 } else if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {

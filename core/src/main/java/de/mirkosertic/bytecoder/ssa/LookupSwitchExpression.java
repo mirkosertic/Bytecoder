@@ -26,13 +26,9 @@ public class LookupSwitchExpression extends Expression implements ExpressionList
 
     public LookupSwitchExpression(Value aValue, ExpressionList aDefaultExpressions,
             Map<Long, ExpressionList> aPairs) {
-        consume(ConsumptionType.ARGUMENT, aValue);
         defaultExpressions = aDefaultExpressions;
         pairs = aPairs;
-    }
-
-    public Value getValue() {
-        return resolveFirstArgument();
+        receivesDataFrom(aValue);
     }
 
     public ExpressionList getDefaultExpressions() {

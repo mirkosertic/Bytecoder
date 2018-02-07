@@ -23,7 +23,7 @@ public class NewArrayExpression extends Expression {
 
     public NewArrayExpression(BytecodeTypeRef aType, Value aLength) {
         type = aType;
-        consume(ConsumptionType.ARGUMENT, aLength);
+        receivesDataFrom(aLength);
     }
 
     public BytecodeTypeRef getType() {

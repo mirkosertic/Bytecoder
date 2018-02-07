@@ -21,8 +21,7 @@ public class ArrayEntryExpression extends Expression {
 
     public ArrayEntryExpression(TypeRef aArrayType, Value aArray, Value aIndex) {
         arrayType = aArrayType;
-        consume(ConsumptionType.ARGUMENT, aArray);
-        consume(ConsumptionType.ARGUMENT, aIndex);
+        receivesDataFrom(aArray, aIndex);
     }
 
     @Override

@@ -22,15 +22,11 @@ public class PutStaticExpression extends Expression {
     private final BytecodeFieldRefConstant field;
 
     public PutStaticExpression(BytecodeFieldRefConstant aField, Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
         field = aField;
+        receivesDataFrom(aValue);
     }
 
     public BytecodeFieldRefConstant getField() {
         return field;
-    }
-
-    public Value getValue() {
-        return resolveFirstArgument();
     }
 }

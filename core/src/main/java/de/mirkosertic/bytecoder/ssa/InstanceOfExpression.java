@@ -23,7 +23,7 @@ public class InstanceOfExpression extends Expression {
 
     public InstanceOfExpression(Value aVariable, BytecodeClassinfoConstant aType) {
         type = aType;
-        consume(ConsumptionType.ARGUMENT, aVariable);
+        receivesDataFrom(aVariable);
     }
 
     public BytecodeClassinfoConstant getType() {

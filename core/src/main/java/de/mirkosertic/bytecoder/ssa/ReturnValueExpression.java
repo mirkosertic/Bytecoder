@@ -18,10 +18,6 @@ package de.mirkosertic.bytecoder.ssa;
 public class ReturnValueExpression extends Expression {
 
     public ReturnValueExpression(Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
-    }
-
-    public Value getValue() {
-        return resolveFirstArgument();
+        receivesDataFrom(aValue);
     }
 }
