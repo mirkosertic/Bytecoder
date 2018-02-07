@@ -15,23 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
-import java.util.List;
-
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class InvokeVirtualOptimizer implements Optimizer {
 
@@ -43,7 +30,7 @@ public class InvokeVirtualOptimizer implements Optimizer {
     }
 
     private void optimizeExpressionList(ExpressionList aExpressions, BytecodeLinkerContext aLinkerContext) {
-        for (Expression theExpression : aExpressions.toList()) {
+/*        for (Expression theExpression : aExpressions.toList()) {
 
             if (theExpression instanceof InvokeVirtualMethodExpression) {
                 InvokeVirtualMethodExpression theValue = (InvokeVirtualMethodExpression) theExpression;
@@ -113,6 +100,6 @@ public class InvokeVirtualOptimizer implements Optimizer {
                     optimizeExpressionList(theSub, aLinkerContext);
                 }
             }
-        }
+        }*/
     }
 }

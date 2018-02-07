@@ -23,7 +23,7 @@ public class GetFieldExpression extends Expression {
 
     public GetFieldExpression(BytecodeFieldRefConstant aField, Value aTarget) {
         field = aField;
-        consume(ConsumptionType.ARGUMENT, aTarget);
+        receivesDataFrom(aTarget);
     }
 
     public BytecodeFieldRefConstant getField() {

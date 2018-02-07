@@ -28,15 +28,11 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
 
     public TableSwitchExpression(Value aValue, long aLowValue, long aHighValue,
             ExpressionList aDefaultPath, Map<Long, ExpressionList> aPathPerOffset) {
-        consume(ConsumptionType.ARGUMENT, aValue);
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
         offsets = aPathPerOffset;
-    }
-
-    public Value getValue() {
-        return resolveFirstArgument();
+        receivesDataFrom(aValue);
     }
 
     public long getLowValue() {

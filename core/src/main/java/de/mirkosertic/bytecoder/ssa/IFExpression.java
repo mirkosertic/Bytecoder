@@ -27,10 +27,10 @@ public class IFExpression extends Expression implements ExpressionListContainer 
     private final BytecodeOpcodeAddress gotoAddress;
 
     public IFExpression(BytecodeOpcodeAddress aAddress, BytecodeOpcodeAddress aGotoAddress, Value aBooleanValue, ExpressionList aExpressions) {
-        consume(ConsumptionType.ARGUMENT, aBooleanValue);
         address = aAddress;
         expressions = aExpressions;
         gotoAddress = aGotoAddress;
+        receivesDataFrom(aBooleanValue);
     }
 
     public IFExpression withNewBooleanValue(Value aBooleanValue) {
@@ -39,10 +39,6 @@ public class IFExpression extends Expression implements ExpressionListContainer 
 
     public BytecodeOpcodeAddress getAddress() {
         return address;
-    }
-
-    public Value getBooleanValue() {
-        return resolveFirstArgument();
     }
 
     public ExpressionList getExpressions() {

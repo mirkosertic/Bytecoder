@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
 public class Variable extends Value {
 
     public static Variable createThisRef() {
@@ -38,7 +36,7 @@ public class Variable extends Value {
     }
 
     private final TypeRef type;
-    private String name;
+    private final String name;
     private final boolean synthetic;
 
     private Variable(TypeRef aType, String aName, boolean aSsynthetic) {
@@ -51,22 +49,10 @@ public class Variable extends Value {
         this(aType, aName, false);
     }
 
-    public void changeNameTo(String aName) {
-        name = aName;
-    }
-
     public void initializeWith(Value aValue) {
         // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
-        consume(ConsumptionType.INITIALIZATION, aValue);
-    }
-
-    public Value singleInitValue() {
-        List<Value> theInits = consumedValues(ConsumptionType.INITIALIZATION);
-        if (theInits.size() != 1) {
-            throw new IllegalStateException();
-        }
-        return theInits.get(0);
+        aValue.addEdgeTo(new DataFlowEdgeType(), this);
     }
 
     @Override

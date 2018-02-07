@@ -222,36 +222,40 @@ public class OpenCLWriter extends IndentSSAWriter {
         for (Expression theExpression : aList.toList()) {
             if (options.isDebugOutput()) {
                 String theComment = theExpression.getComment();
-                if (theComment != null && theComment.length() > 0) {
+                if (theComment != null && !theComment.isEmpty()) {
                     print("// ");
                     println(theComment);
                 }
             }
             if (theExpression instanceof VariableAssignmentExpression) {
                 VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                if (theInit.getVariable().resolveType().isObject() && theInit.getValue() instanceof InvocationExpression) {
-                    print(theInit.getVariable().getName());
+
+                Variable theVariable = theInit.getVariable();
+                Value theValue = theInit.getValue();
+                if (theVariable.resolveType().isObject() && theValue instanceof InvocationExpression) {
+                    print(theVariable.getName());
                     print("_temp = ");
-                    printValue(theInit.getValue());
+                    printValue(theValue);
                     println(";");
 
-                    print(toType(theInit.getVariable().resolveType(), true));
+                    print(toType(theVariable.resolveType(), true));
                     print(" ");
-                    print(theInit.getVariable().getName());
+                    print(theVariable.getName());
                     print(" = &");
-                    print(theInit.getVariable().getName());
+                    print(theVariable.getName());
                     println("_temp;");
                 } else {
-                    print(theInit.getVariable().getName());
+                    print(theVariable.getName());
                     print(" = ");
-                    printValue(theInit.getValue());
+                    printValue(theValue);
                     println(";");
                 }
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theStore = (ArrayStoreExpression) theExpression;
-                Value theArray = theStore.getArray();
-                Value theIndex = theStore.getIndex();
-                Value theValue = theStore.getValue();
+                List<Value> theIncomingData = theStore.incomingDataFlows();
+                Value theArray = theIncomingData.get(0);
+                Value theIndex = theIncomingData.get(1);
+                Value theValue = theIncomingData.get(2);
                 printValue(theArray);
                 print("[");
                 printValue(theIndex);
@@ -261,7 +265,7 @@ public class OpenCLWriter extends IndentSSAWriter {
             } else if (theExpression instanceof IFExpression) {
                 IFExpression theE = (IFExpression) theExpression;
                 print("if (");
-                printValue(theE.getBooleanValue());
+                printValue(theE.incomingDataFlows().get(0));
                 println(") {");
 
                 withDeeperIndent().writeExpressions(theE.getExpressions());
@@ -292,9 +296,13 @@ public class OpenCLWriter extends IndentSSAWriter {
                 println("return;");
             } else if (theExpression instanceof PutFieldExpression) {
                 PutFieldExpression thePutField = (PutFieldExpression) theExpression;
-                Value theTarget = thePutField.getTarget();
+
+                List<Value> theIncomingData = thePutField.incomingDataFlows();
+
+                Value theTarget = theIncomingData.get(0);
                 BytecodeFieldRefConstant theField = thePutField.getField();
-                Value thevalue = thePutField.getValue();
+
+                Value thevalue = theIncomingData.get(1);
                 printValue(theTarget);
                 printInstanceFieldReference(theField);
                 print(" = ");
@@ -378,7 +386,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         print("((");
         print(toType(aValue.resolveType()));
         print(") ");
-        printValue(aValue.resolveFirstArgument());
+        printValue(aValue.incomingDataFlows().get(0));
         print(")");
     }
 
@@ -399,9 +407,11 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printBinaryValue(BinaryExpression aValue) {
-        Value theValue1 = aValue.resolveFirstArgument();
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
         print("(");
-        printValue(theValue1);
+        printValue(theIncomingData.get(0));
         switch (aValue.getOperator()) {
         case ADD:
             print(" + ");
@@ -457,8 +467,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         default:
             throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
         }
-        Value theValue2 = aValue.resolveSecondArgument();
-        printValue(theValue2);
+        printValue(theIncomingData.get(1));
         print(")");
     }
 
@@ -467,7 +476,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         if (theLinkedClass == kernelClass) {
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
-            Value theValue = aValue.resolveFirstArgument();
+            Value theValue = aValue.incomingDataFlows().get(0);
             if (theValue instanceof Variable && ((Variable) theValue).isSynthetic()) {
                 print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
             } else {
@@ -478,8 +487,11 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printArrayEntryValue(ArrayEntryExpression aValue) {
-        Value theArray = aValue.resolveFirstArgument();
-        Value theIndex = aValue.resolveSecondArgument();
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theArray = theIncomingData.get(0);
+        Value theIndex = theIncomingData.get(1);
         if (aValue.resolveType().isObject()) {
             print("&");
         }
@@ -507,7 +519,7 @@ public class OpenCLWriter extends IndentSSAWriter {
                 BytecodeMethodSignature theSignature = aValue.getSignature();
                 print(theMethodName);
                 print("(");
-                List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+                List<Value> theArguments = aValue.incomingDataFlows();
                 for (int i=0;i<theArguments.size();i++) {
                     if (i>0) {
                         print(",");

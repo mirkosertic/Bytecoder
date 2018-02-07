@@ -20,8 +20,8 @@ public class TypeConversionExpression extends Expression {
     private final TypeRef targetType;
 
     public TypeConversionExpression(Value aValue, TypeRef aTargetType) {
-        consume(ConsumptionType.ARGUMENT, aValue);
         targetType = aTargetType;
+        receivesDataFrom(aValue);
     }
 
     @Override

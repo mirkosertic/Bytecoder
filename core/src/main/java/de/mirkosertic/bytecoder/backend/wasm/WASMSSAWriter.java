@@ -169,7 +169,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeExpression(Expression aExpression) {
         if (options.isDebugOutput()) {
             String theComment = aExpression.getComment();
-            if (theComment != null && theComment.length() > 0) {
+            if (theComment != null && !theComment.isEmpty()) {
                 print(";; ");
                 println(theComment);
             }
@@ -277,7 +277,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeLookupSwitchExpression(LookupSwitchExpression aExpression) {
         println("(block $outer");
 
-        Value theValue = aExpression.getValue();
+        Value theValue = aExpression.incomingDataFlows().get(0);
 
         WASMSSAWriter theChild2 = withDeeperIndent();
 
@@ -315,7 +315,8 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeTableSwitchExpression(TableSwitchExpression aExpression) {
         println("(block $tableswitch");
 
-        Value theValue = aExpression.getValue();
+        Value theValue = aExpression.incomingDataFlows().get(0);
+
         WASMSSAWriter theChild1 = withDeeperIndent();
 
         theChild1.println("(block $label$0");
@@ -381,9 +382,15 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeArrayStoreExpression(ArrayStoreExpression aExpression) {
+
+        List<Value> theIncomingData = aExpression.incomingDataFlows();
+        Value theArray = theIncomingData.get(0);
+        Value theIndex = theIncomingData.get(1);
+        Value theValue = theIncomingData.get(2);
+
         // If the index is a constant, we can precompute the offset.
-        if (aExpression.getIndex() instanceof IntegerValue) {
-            int offset = 20 + ((IntegerValue)aExpression.getIndex()).getIntValue() * 4;
+        if (theIndex instanceof IntegerValue) {
+            int offset = 20 + ((IntegerValue)theIndex).getIntValue() * 4;
 
             switch (aExpression.getArrayType().resolve()) {
                 case DOUBLE:
@@ -399,9 +406,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
             print("offset="+offset+" ");
 
-            writeValue(aExpression.getArray());
+            writeValue(theArray);
             print(" ");
-            writeValue(aExpression.getValue());
+            writeValue(theValue);
 
             println(")");
 
@@ -423,13 +430,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMSSAWriter theChild = withDeeperIndent();
 
         theChild.print("(i32.add ");
-        theChild.writeValue(aExpression.getArray());
+        theChild.writeValue(theArray);
         theChild.print(" (i32.mul ");
-        theChild.writeValue(aExpression.getIndex());
+        theChild.writeValue(theIndex);
         theChild.print(" (i32.const 4)");
         theChild.println("))");
 
-        theChild.writeValue(aExpression.getValue());
+        theChild.writeValue(theValue);
         theChild.println();
 
         println(")");
@@ -450,8 +457,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
         int theMemoryOffset = theLayout.offsetForClassMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
+        List<Value> theIncomingData = aExpression.incomingDataFlows();
+
         String theClassName = WASMWriterUtils.toClassName(aExpression.getField().getClassIndex().getClassConstant());
-        switch (aExpression.getValue().resolveType().resolve()) {
+        switch (theIncomingData.get(0).resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
                 print("(f32.store offset=");
@@ -471,7 +480,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         theChild.print(theClassName);
         theChild.println("__runtimeClass)");
 
-        theChild.writeValue(aExpression.getValue());
+        theChild.writeValue(theIncomingData.get(0));
 
         println(")");
     }
@@ -479,10 +488,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeSetMemoryLocationExpression(SetMemoryLocationExpression aExpression) {
         println("(i32.store");
 
+        List<Value> theIncomingData = aExpression.incomingDataFlows();
+
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.writeValue(aExpression.getAddress());
+        theChild.writeValue(theIncomingData.get(0));
         theChild.println();
-        theChild.writeValue(aExpression.getValue());
+        theChild.writeValue(theIncomingData.get(1));
         theChild.println();
         println(")");
     }
@@ -507,9 +518,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theMemoryOffset);
         println();
 
+        List<Value> theIncomingData = aExpression.incomingDataFlows();
+
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.writeValue(aExpression.getTarget());
-        theChild.writeValue(aExpression.getValue());
+        theChild.writeValue(theIncomingData.get(0));
+        theChild.writeValue(theIncomingData.get(1));
 
         println(")");
     }
@@ -534,7 +547,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         WASMSSAWriter theChild3 = theChild.withDeeperIndent();
         theChild3.print("(i32.eq ");
-        theChild3.writeValue(aExpression.getBooleanValue());
+        theChild3.writeValue(aExpression.incomingDataFlows().get(0));
         theChild3.print(" (i32.const 0)");
         theChild3.println(")");
 
@@ -551,6 +564,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeInitVariableExpression(VariableAssignmentExpression aExpression) {
+
         Variable theVariable = aExpression.getVariable();
         Value theNewValue = aExpression.getValue();
 
@@ -757,13 +771,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeSqrtValue(SqrtExpression aValue) {
         print("(f32.sqrt ");
-        writeValue(aValue.resolveFirstArgument());
+        writeValue(aValue.incomingDataFlows().get(0));
         print(")");
     }
 
     private void writeNewMultiArrayValue(NewMultiArrayExpression aValue) {
 
-        List<Value> theDimensions = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theDimensions = aValue.incomingDataFlows();
 
         BytecodeTypeRef theType = aValue.getType();
         String theMethodName;
@@ -830,7 +844,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeTypeOfValue(TypeOfExpression aValue) {
         print("(i32.load ");
-        writeValue(aValue.resolveFirstArgument());
+        writeValue(aValue.incomingDataFlows().get(0));
         print(")");
     }
 
@@ -880,14 +894,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
         BytecodeLinkedClass theClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
 
         print("(call $INSTANCEOF_CHECK ");
-        writeValue(aValue.resolveFirstArgument());
+        writeValue(aValue.incomingDataFlows().get(0));
         print(" (i32.const ");
         print(theClass.getUniqueId());
         println("))");
     }
 
     private void writeNegateValue(NegatedExpression aValue) {
-        Value theValue = aValue.resolveFirstArgument();
+        Value theValue = aValue.incomingDataFlows().get(0);
         switch (theValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
@@ -905,8 +919,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeCompareValue(CompareExpression aValue) {
-        Value theValue1 = aValue.resolveFirstArgument();
-        Value theValue2 = aValue.resolveSecondArgument();
+        List<Value> theIncomingFlows = aValue.incomingDataFlows();
+        Value theValue1 = theIncomingFlows.get(0);
+        Value theValue2 = theIncomingFlows.get(1);
 
         TypeRef.Native theValue1Type = theValue1.resolveType().resolve();
         TypeRef.Native theValue2Type = theValue2.resolveType().resolve();
@@ -942,10 +957,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
             }
         }
 
+        List<Value> theIncomingFlows = aValue.incomingDataFlows();
+
         print("(i32.add ");
-        writeValue(aValue.resolveFirstArgument());
+        writeValue(theIncomingFlows.get(0));
         print(" (i32.mul ");
-        writeValue(aValue.resolveSecondArgument());
+        writeValue(theIncomingFlows.get(1));
         print(" (i32.const 4)");
         println("))");
 
@@ -972,7 +989,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
 
-        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.incomingDataFlows().get(0));
 
         // We also need the runtime class
         print(" (get_global $TArray__runtimeClass)");
@@ -986,14 +1003,14 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeArrayLengthValue(ArrayLengthExpression aValue) {
         println("(i32.load offset=16 ");
-        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.incomingDataFlows().get(0));
         println();
         println(")");
     }
 
     private void writeFloorValue(FloorExpression aValue) {
         println("(i32.trunc_s/f32 (f32.floor ");
-        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
+        withDeeperIndent().writeValue(aValue.incomingDataFlows().get(0));
         println("))");
     }
 
@@ -1005,8 +1022,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(WASMWriterUtils.toMethodSignature(aValue.getSignature(), false));
         println();
 
-        Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-        List<Value> theVariables = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theFlows = aValue.incomingDataFlows();
+
+        Value theTarget = theFlows.get(0);
+        List<Value> theVariables = theFlows.subList(1, theFlows.size());
 
         writeValue(theTarget);
         println();
@@ -1076,7 +1095,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeTypeConversion(TypeConversionExpression aValue) {
         TypeRef theTargetType = aValue.resolveType();
-        Value theSource = aValue.resolveFirstArgument();
+        Value theSource = aValue.incomingDataFlows().get(0);
         if (Objects.equals(theTargetType.resolve(), theSource.resolveType().resolve())) {
             // No conversion needed!
             writeValue(theSource);
@@ -1145,9 +1164,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeComputedMemoryLocationValue(ComputedMemoryLocationWriteExpression aValue) {
         println("(i32.add ");
 
-        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        withDeeperIndent().writeValue(theIncomingData.get(0));
         println();
-        withDeeperIndent().writeValue(aValue.resolveSecondArgument());
+        withDeeperIndent().writeValue(theIncomingData.get(1));
         println();
 
         println(")");
@@ -1156,31 +1177,34 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeComputedMemoryLocationValue(ComputedMemoryLocationReadExpression aValue) {
         println("(i32.load (i32.add ");
 
-        withDeeperIndent().writeValue(aValue.resolveFirstArgument());
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        withDeeperIndent().writeValue(theIncomingData.get(0));
         println();
-        withDeeperIndent().writeValue(aValue.resolveSecondArgument());
+        withDeeperIndent().writeValue(theIncomingData.get(1));
         println();
 
         println("))");
     }
 
     private void writeFixedBinaryValue(FixedBinaryExpression aValue) {
+
         switch (aValue.getOperator()) {
             case ISNULL: {
                 print("(i32.eq ");
-                writeValue(aValue.resolveFirstArgument());
+                writeValue(aValue.incomingDataFlows().get(0));
                 print(" (i32.const 0))");
                 break;
             }
             case ISNONNULL: {
                 print("(i32.ne ");
-                writeValue(aValue.resolveFirstArgument());
+                writeValue(aValue.incomingDataFlows().get(0));
                 print(" (i32.const 0))");
                 break;
             }
             case ISZERO: {
                 print("(i32.eq ");
-                writeValue(aValue.resolveFirstArgument());
+                writeValue(aValue.incomingDataFlows().get(0));
                 print(" (i32.const 0))");
                 break;
             }
@@ -1277,15 +1301,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
         println();
 
         WASMSSAWriter theChild = withDeeperIndent();
-        theChild.writeValue(aValue.resolveFirstArgument());
+        theChild.writeValue(aValue.incomingDataFlows().get(0));
 
         println(")");
     }
 
     private void writeDirectMethodInvokeValue(DirectInvokeMethodExpression aValue) {
 
-        Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-        List<Value> theValues = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theTarget = theIncomingData.get(0);
+        List<Value> theValues = theIncomingData.subList(1, theIncomingData.size());
 
         print("(call $");
         print(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
@@ -1307,7 +1333,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         print(" (i32.const 0)"); // UNUSED Argument
 
-        List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theArguments = aValue.incomingDataFlows();
         for (Value theValue : theArguments) {
             print(" ");
             writeValue(theValue);
@@ -1329,8 +1355,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeBinaryValue(BinaryExpression aValue) {
-        Value theValue1 = aValue.resolveFirstArgument();
-        Value theValue2 = aValue.resolveSecondArgument();
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theValue1 = theIncomingData.get(0);
+        Value theValue2 = theIncomingData.get(1);
+
         String theType1 = WASMWriterUtils.toType(theValue1.resolveType());
         String theType2 = WASMWriterUtils.toType(theValue2.resolveType());
         switch (aValue.getOperator()) {
@@ -1575,7 +1605,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
     private void writeReturnExpression(ReturnValueExpression aExpression) {
         printStackExit();
         print("(return ");
-        writeValue(aExpression.getValue());
+        writeValue(aExpression.incomingDataFlows().get(0));
         println(")");
     }
 

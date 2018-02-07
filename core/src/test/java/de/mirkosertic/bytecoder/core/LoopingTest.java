@@ -51,6 +51,13 @@ public class LoopingTest {
     }
 
     @Test
+    public void testSimpleLoop() {
+        for (int i=0;i<10;i++) {
+
+        }
+    }
+
+    @Test
     public void testConplexFlow() {
         int theIndex = 0;
         while (true) {

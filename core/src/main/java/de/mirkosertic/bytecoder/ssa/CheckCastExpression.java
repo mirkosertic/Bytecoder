@@ -22,7 +22,7 @@ public class CheckCastExpression extends Expression {
     private final BytecodeClassinfoConstant type;
 
     public CheckCastExpression(Value aValue, BytecodeClassinfoConstant aType) {
-        consume(ConsumptionType.ARGUMENT, aValue);
         type = aType;
+        receivesDataFrom(aValue);
     }
 }

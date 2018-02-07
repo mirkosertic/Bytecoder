@@ -18,8 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 public class ComputedMemoryLocationWriteExpression extends Expression {
 
     public ComputedMemoryLocationWriteExpression(Value aOrigin, Value aOffset) {
-        consume(ConsumptionType.ARGUMENT, aOrigin);
-        consume(ConsumptionType.ARGUMENT, aOffset);
+        receivesDataFrom(aOrigin, aOffset);
     }
 
     @Override

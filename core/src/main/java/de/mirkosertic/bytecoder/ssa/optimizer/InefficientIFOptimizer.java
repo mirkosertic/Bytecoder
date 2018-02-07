@@ -16,18 +16,9 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.BinaryExpression;
-import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.util.List;
 
 public class InefficientIFOptimizer implements Optimizer {
 
@@ -39,7 +30,7 @@ public class InefficientIFOptimizer implements Optimizer {
     }
 
     private void checkExpressions(ControlFlowGraph aGraph, RegionNode aNode, ExpressionList aList) {
-        for (Expression theExpression : aList.toList()) {
+/*        for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof IFExpression) {
                 IFExpression theIF = (IFExpression) theExpression;
                 Value theBooleanValue = theIF.getBooleanValue();
@@ -90,6 +81,6 @@ public class InefficientIFOptimizer implements Optimizer {
                     }
                 }
             }
-        }
+        }*/
     }
 }

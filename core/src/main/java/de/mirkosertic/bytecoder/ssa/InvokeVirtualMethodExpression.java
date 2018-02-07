@@ -34,8 +34,9 @@ public class InvokeVirtualMethodExpression extends InvocationExpression {
             List<Value> aArguments) {
         super(aSignature);
         methodName = aMethodName;
-        consume(ConsumptionType.INVOCATIONTARGET, aTarget);
-        consume(ConsumptionType.ARGUMENT, aArguments);
+
+        receivesDataFrom(aTarget);
+        receivesDataFrom(aArguments);
     }
 
     public String getMethodName() {

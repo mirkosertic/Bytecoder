@@ -25,7 +25,7 @@ public class NewMultiArrayExpression extends Expression {
 
     public NewMultiArrayExpression(BytecodeTypeRef aType, List<Value> aDimensions) {
         type = aType;
-        consume(ConsumptionType.ARGUMENT, aDimensions);
+        receivesDataFrom(aDimensions);
     }
 
     public BytecodeTypeRef getType() {

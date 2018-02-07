@@ -30,16 +30,14 @@ public class GraphNodePath {
         this(new ArrayList<>());
     }
 
-    public GraphNodePath clone() {
-        return new GraphNodePath(new ArrayList<>(nodes));
+    public GraphNodePath(GraphNodePath aOther) {
+        this(new ArrayList<>(aOther.nodes));
     }
 
-    public boolean addToPath(RegionNode aNode) {
+    public void addToPath(RegionNode aNode) {
         if (!nodes.contains(aNode)) {
             nodes.add(aNode);
-            return true;
         }
-        return false;
     }
 
     public boolean isEmpty() {

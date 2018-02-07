@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 public class ArrayLengthExpression extends Expression {
 
     public ArrayLengthExpression(Value aArray) {
-        consume(ConsumptionType.ARGUMENT, aArray);
+        receivesDataFrom(aArray);
     }
 
     @Override

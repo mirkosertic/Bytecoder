@@ -17,5 +17,11 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.graph.EdgeType;
 
+import java.util.function.Predicate;
+
 public class DataFlowEdgeType implements EdgeType {
+
+    public static Predicate<EdgeType> filter() {
+        return edgeType -> edgeType instanceof DataFlowEdgeType;
+    }
 }

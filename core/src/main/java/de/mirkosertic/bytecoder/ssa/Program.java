@@ -125,7 +125,7 @@ public class Program {
         }
 
         for (Variable theVariable : variables) {
-            for (Value theValue : theVariable.consumedValues(Value.ConsumptionType.INITIALIZATION)) {
+            for (Value theValue : theVariable.incomingDataFlows()) {
                 if (theValue instanceof GetStaticExpression) {
                     GetStaticExpression theStaticValue = (GetStaticExpression) theValue;
                     theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
@@ -159,8 +159,5 @@ public class Program {
     public void deleteVariable(Variable aVariable) {
         variables.remove(aVariable);
         globals.remove(aVariable);
-        for (RegionNode theNode : controlFlowGraph.getKnownNodes()) {
-            theNode.deleteVariable(aVariable);
-        }
     }
 }

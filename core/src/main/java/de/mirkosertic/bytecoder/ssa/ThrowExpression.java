@@ -18,10 +18,6 @@ package de.mirkosertic.bytecoder.ssa;
 public class ThrowExpression extends Expression {
 
     public ThrowExpression(Value aValue) {
-        consume(ConsumptionType.ARGUMENT, aValue);
-    }
-
-    public Value getValue() {
-        return resolveFirstArgument();
+        receivesDataFrom(aValue);
     }
 }

@@ -18,8 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 public class CompareExpression extends Expression {
 
     public CompareExpression(Value aValue1, Value aValue2) {
-        consume(ConsumptionType.ARGUMENT, aValue1);
-        consume(ConsumptionType.ARGUMENT, aValue2);
+        receivesDataFrom(aValue1, aValue2);
     }
 
     @Override

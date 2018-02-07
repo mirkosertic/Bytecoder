@@ -16,24 +16,19 @@
 package de.mirkosertic.bytecoder.ssa.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryExpression;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
-import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-import de.mirkosertic.bytecoder.ssa.InvocationExpression;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RedundantAssignmentOptimizer implements Optimizer {
 
@@ -56,173 +51,24 @@ public class RedundantAssignmentOptimizer implements Optimizer {
                 }
             }
 
-            if (theExpression instanceof IFExpression) {
-                IFExpression theIF = (IFExpression) theExpression;
-                Value theBooleanValue = theIF.getBooleanValue();
+            // Check if a variable assignment is before the current expression
+            Expression theBefore = aExpressions.predecessorOf(theExpression);
+            if (theBefore instanceof VariableAssignmentExpression) {
+                VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
+                List<Value> theConsumedValues = theAssignment.incomingDataFlows();
+                Variable theVariable = (Variable) theConsumedValues.get(0);
+                Value theValue = theConsumedValues.get(1);
 
-                List<Value> theArguments = theBooleanValue.consumedValues(Value.ConsumptionType.ARGUMENT);
-                Expression thePredecessor = aExpressions.predecessorOf(theIF);
-                if (thePredecessor instanceof VariableAssignmentExpression) {
-                    VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                    for (Value theArgument : theArguments) {
-                        if (thePred.getVariable() == theArgument && thePred.getVariable().getUsageCount() == 2) {
-                            theBooleanValue.replaceInConsumedValues(theArgument, thePred.getValue());
-                            aExpressions.remove(thePred);
+                // Check if there is only one data flow
+                List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                if (theDataEdges.size() == 1) {
+                    List<Value> theIncomingData = theExpression.incomingDataFlows();
+                    if (theIncomingData.contains(theVariable)) {
+                        aExpressions.remove(theAssignment);
+                        theDataEdges.get(0).newSourceIs(theValue);
+                        aGraph.getProgram().deleteVariable(theVariable);
 
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            if (theExpression instanceof ArrayStoreExpression) {
-                ArrayStoreExpression theStore = (ArrayStoreExpression) theExpression;
-                Value theTarget = theStore.getArray();
-                Value theIndex = theStore.getIndex();
-                Value theValueToPut = theStore.getValue();
-                Expression thePredecessor = aExpressions.predecessorOf(theStore);
-                if (thePredecessor instanceof VariableAssignmentExpression) {
-                    VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                    if (thePred.getVariable() == theValueToPut && thePred.getVariable().getUsageCount() == 2) {
-                        theStore.replaceInConsumedValues(theValueToPut, thePred.getValue());
-                        aExpressions.remove(thePred);
                         return true;
-                    }
-                    if (thePred.getVariable() == theIndex && thePred.getVariable().getUsageCount() == 2) {
-                        theStore.replaceInConsumedValues(theIndex, thePred.getValue());
-                        aExpressions.remove(thePred);
-                        return true;
-                    }
-                    if (thePred.getVariable() == theTarget && thePred.getVariable().getUsageCount() == 2) {
-                        theStore.replaceInConsumedValues(theTarget, thePred.getValue());
-                        aExpressions.remove(thePred);
-                        return true;
-                    }
-                }
-            }
-
-            if (theExpression instanceof PutFieldExpression) {
-                PutFieldExpression thePut = (PutFieldExpression) theExpression;
-                Value theTarget = thePut.getTarget();
-                Value theValueToPut = thePut.getValue();
-                Expression thePredecessor = aExpressions.predecessorOf(thePut);
-                if (thePredecessor instanceof VariableAssignmentExpression) {
-                    VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                    if (thePred.getVariable() == theValueToPut && thePred.getVariable().getUsageCount() == 2) {
-                        thePut.replaceInConsumedValues(theValueToPut, thePred.getValue());
-                        aExpressions.remove(thePred);
-                        return true;
-                    }
-                    if (thePred.getVariable() == theTarget && thePred.getVariable().getUsageCount() == 2) {
-                        thePut.replaceInConsumedValues(theTarget, thePred.getValue());
-                        aExpressions.remove(thePred);
-                        return true;
-                    }
-                }
-            }
-
-            if (theExpression instanceof ReturnValueExpression) {
-                ReturnValueExpression theReturn = (ReturnValueExpression) theExpression;
-                Value theValueToReturn = theReturn.getValue();
-                Expression thePredecessor = aExpressions.predecessorOf(theReturn);
-                if (thePredecessor instanceof VariableAssignmentExpression) {
-                    VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                    if (thePred.getVariable() == theValueToReturn && thePred.getVariable().getUsageCount() == 2) {
-                        theReturn.replaceInConsumedValues(theValueToReturn, thePred.getValue());
-                        aExpressions.remove(thePred);
-                        return true;
-                    }
-                }
-            }
-
-            if (theExpression instanceof VariableAssignmentExpression) {
-                VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                Value theValue = theInit.getValue();
-
-                if (theValue instanceof InvocationExpression) {
-                    InvocationExpression theInvocation = (InvocationExpression) theValue;
-                    List<Value> theArguments = theInvocation.consumedValues(Value.ConsumptionType.ARGUMENT);
-                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
-                    if (thePredecessor instanceof VariableAssignmentExpression) {
-                        VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                        for (Value theArgument : theArguments) {
-                            if (thePred.getVariable() == theArgument && thePred.getVariable().getUsageCount() == 2) {
-                                theInvocation.replaceInConsumedValues(theArgument, thePred.getValue());
-                                aExpressions.remove(thePred);
-                                return true;
-                            }
-                        }
-                    }
-                }
-
-                if (theValue instanceof Variable) {
-                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
-                    if (thePredecessor instanceof VariableAssignmentExpression) {
-                        VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                        if (thePred.getVariable() == theValue) {
-                            theInit.replaceInConsumedValues(theValue, thePred.getValue());
-                            aExpressions.remove(thePred);
-                            return true;
-                        }
-                    }
-                }
-
-                if (theValue instanceof BinaryExpression) {
-                    BinaryExpression theBinary = (BinaryExpression) theValue;
-                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
-                    if (thePredecessor instanceof VariableAssignmentExpression) {
-                        VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                        if (theBinary.resolveFirstArgument() == thePred.getVariable()
-                                && thePred.getVariable().getUsageCount() == 2) {
-                            theBinary.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
-                            aExpressions.remove(thePred);
-
-                            return true;
-                        }
-                        if (theBinary.resolveSecondArgument() == thePred.getVariable()
-                                && thePred.getVariable().getUsageCount() == 2) {
-                            theBinary.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
-                            aExpressions.remove(thePred);
-
-                            return true;
-                        }
-                    }
-                }
-
-                if (theValue instanceof ArrayEntryExpression) {
-                    ArrayEntryExpression theArrayEntry = (ArrayEntryExpression) theValue;
-                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
-                    if (thePredecessor instanceof VariableAssignmentExpression) {
-                        VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                        if (thePred.getVariable() == theArrayEntry.resolveFirstArgument()
-                                && thePred.getVariable().getUsageCount() == 2) {
-                            theArrayEntry.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
-                            aExpressions.remove(thePred);
-
-                            return true;
-                        }
-                        if (thePred.getVariable() == theArrayEntry.resolveSecondArgument()
-                                && thePred.getVariable().getUsageCount() == 2) {
-                            theArrayEntry.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
-                            aExpressions.remove(thePred);
-
-                            return true;
-                        }
-                    }
-                }
-
-                if (theValue instanceof GetFieldExpression) {
-                    GetFieldExpression theGetVield = (GetFieldExpression) theValue;
-                    Expression thePredecessor = aExpressions.predecessorOf(theInit);
-                    if (thePredecessor instanceof VariableAssignmentExpression) {
-                        VariableAssignmentExpression thePred = (VariableAssignmentExpression) thePredecessor;
-                        if (thePred.getVariable() == theGetVield.resolveFirstArgument()
-                                && thePred.getVariable().getUsageCount() == 2) {
-                            theGetVield.replaceInConsumedValues(thePred.getVariable(), thePred.getValue());
-                            aExpressions.remove(thePred);
-
-                            return true;
-                        }
                     }
                 }
             }

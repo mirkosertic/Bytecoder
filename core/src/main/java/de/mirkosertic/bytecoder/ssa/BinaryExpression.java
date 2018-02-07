@@ -46,8 +46,7 @@ public class BinaryExpression extends Expression {
     public BinaryExpression(TypeRef aTargetType, Value aValue1, Operator aOperator, Value aValue2) {
         operator = aOperator;
         targetType = aTargetType;
-        consume(ConsumptionType.ARGUMENT, aValue1);
-        consume(ConsumptionType.ARGUMENT, aValue2);
+        receivesDataFrom(aValue1, aValue2);
     }
 
     public Operator getOperator() {

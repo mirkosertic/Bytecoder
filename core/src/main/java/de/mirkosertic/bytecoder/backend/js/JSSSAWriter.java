@@ -55,7 +55,6 @@ import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -199,12 +198,12 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(SqrtExpression aValue) {
         print("Math.sqrt(");
-        print((Value) aValue.resolveFirstArgument());
+        print((Value) aValue.incomingDataFlows().get(0));
         print(")");
     }
 
     private void print(TypeOfExpression aValue) {
-        printVariableName(aValue.resolveFirstArgument());
+        print(aValue.incomingDataFlows().get(0));
         print(".TClassgetClass()");
     }
 
@@ -256,16 +255,22 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(ComputedMemoryLocationWriteExpression aValue) {
-        print((Value) aValue.resolveFirstArgument());
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        print(theIncomingData.get(0));
         print(" + ");
-        print((Value) aValue.resolveSecondArgument());
+        print(theIncomingData.get(1));
     }
 
     private void print(ComputedMemoryLocationReadExpression aValue) {
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
         print("bytecoderGlobalMemory[");
-        print((Value) aValue.resolveFirstArgument());
+        print(theIncomingData.get(0));
         print(" + ");
-        print((Value) aValue.resolveSecondArgument());
+        print(theIncomingData.get(1));
         print("]");
     }
 
@@ -279,7 +284,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(FloorExpression aValue) {
         print("Math.floor(");
-        print((Value) aValue.resolveFirstArgument());
+        print(aValue.incomingDataFlows().get(0));
         print(")");
     }
 
@@ -306,7 +311,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
         print("bytecoder.newMultiArray(");
         print("[");
-        List<Value> theDimensions = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theDimensions = aValue.incomingDataFlows();
         for (int i=0;i<theDimensions.size();i++) {
             if (i>0) {
                 print(",");
@@ -324,7 +329,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(InstanceOfExpression aValue) {
-        Value theValue = aValue.resolveFirstArgument();
+        Value theValue = aValue.incomingDataFlows().get(0);
         print("(");
         print(theValue);
         print(" == null ? false : ");
@@ -347,15 +352,18 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(NegatedExpression aValue) {
-        Value theValue = aValue.resolveFirstArgument();
+        Value theValue = aValue.incomingDataFlows().get(0);
         print("(-");
         print(theValue);
         print(")");
     }
 
     private void print(CompareExpression aValue) {
-        Value theVariable1 = aValue.resolveFirstArgument();
-        Value theVariable2 = aValue.resolveSecondArgument();
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theVariable1 = theIncomingData.get(0);
+        Value theVariable2 = theIncomingData.get(1);
         print("(");
         print(theVariable1);
         print(" > ");
@@ -370,7 +378,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(NewArrayExpression aValue) {
         BytecodeTypeRef theType = aValue.getType();
-        Value theLength = aValue.resolveFirstArgument();
+        Value theLength =aValue.incomingDataFlows().get(0);
         Object theDefaultValue = theType.defaultValue();
         String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
         print("bytecoder.newArray(");
@@ -400,7 +408,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(ArrayLengthExpression aValue) {
-        print((Value) aValue.resolveFirstArgument());
+        print(aValue.incomingDataFlows().get(0));
         print(".data.length");
     }
 
@@ -411,15 +419,18 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(ArrayEntryExpression aValue) {
-        Value theArray = aValue.resolveFirstArgument();
-        Value theIndex = aValue.resolveSecondArgument();
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theArray = theIncomingData.get(0);
+        Value theIndex = theIncomingData.get(1);
         print(theArray);
         printArrayIndexReference(theIndex);
     }
 
     private void print(TypeConversionExpression aValue) {
         TypeRef theTargetType = aValue.resolveType();
-        Value theValue = aValue.resolveFirstArgument();
+        Value theValue = aValue.incomingDataFlows().get(0);
         switch (theTargetType.resolve()) {
             case FLOAT:
                 print(theValue);
@@ -436,16 +447,18 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(GetFieldExpression aValue) {
-        Value theTarget = aValue.resolveFirstArgument();
+        Value theTarget = aValue.incomingDataFlows().get(0);
         BytecodeFieldRefConstant theField = aValue.getField();
         print(theTarget);
         printInstanceFieldReference(theField);
     }
 
     private void print(BinaryExpression aValue) {
-        Value theValue1 = aValue.resolveFirstArgument();
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
         print("(");
-        print(theValue1);
+        print(theIncomingData.get(0));
         switch (aValue.getOperator()) {
             case ADD:
                 print(" + ");
@@ -501,13 +514,12 @@ public class JSSSAWriter extends IndentSSAWriter {
             default:
                 throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
         }
-        Value theValue2 = aValue.resolveSecondArgument();
-        print(theValue2);
+        print(theIncomingData.get(1));
         print(")");
     }
 
     private void print(FixedBinaryExpression aValue) {
-        Value theValue1 = aValue.resolveFirstArgument();
+        Value theValue1 = aValue.incomingDataFlows().get(0);
         print(theValue1);
         switch (aValue.getOperator()) {
             case ISNONNULL:
@@ -538,7 +550,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        List<Value> theVariables = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theVariables = aValue.incomingDataFlows();
 
         print(JSWriterUtils.toClassName(aValue.getClassName()));
         print(".");
@@ -558,8 +570,11 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
-        Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-        List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theTarget = theIncomingData.get(0);
+        List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
         if (!"<init>".equals(theMethodName)) {
             print(theTarget);
@@ -585,8 +600,10 @@ public class JSSSAWriter extends IndentSSAWriter {
         String theMethodName = aValue.getMethodName();
         BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        Value theTarget = aValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-        List<Value> theArguments = aValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+        List<Value> theIncomingData = aValue.incomingDataFlows();
+
+        Value theTarget = theIncomingData.get(0);
+        List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
         BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
 
@@ -638,7 +655,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         for (Expression theExpression : aExpressions.toList()) {
             if (options.isDebugOutput()) {
                 String theComment = theExpression.getComment();
-                if (theComment != null && theComment.length() > 0) {
+                if (theComment != null && !theComment.isEmpty()) {
                     print("// ");
                     println(theComment);
                 }
@@ -649,6 +666,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(";");
             } else if (theExpression instanceof VariableAssignmentExpression) {
                 VariableAssignmentExpression theE = (VariableAssignmentExpression) theExpression;
+
                 Variable theVariable = theE.getVariable();
                 Value theValue = theE.getValue();
 
@@ -667,20 +685,20 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof PutStaticExpression) {
                 PutStaticExpression theE = (PutStaticExpression) theExpression;
                 BytecodeFieldRefConstant theField = theE.getField();
-                Value theValue = theE.getValue();
+                Value theValue = theE.incomingDataFlows().get(0);
                 printStaticFieldReference(theField);
                 print(" = ");
                 print(theValue);
                 println(";");
             } else if (theExpression instanceof ReturnValueExpression) {
                 ReturnValueExpression theE = (ReturnValueExpression) theExpression;
-                Value theValue = theE.getValue();
+                Value theValue = theE.incomingDataFlows().get(0);
                 print("return ");
                 print(theValue);
                 println(";");
             } else if (theExpression instanceof ThrowExpression) {
                 ThrowExpression theE = (ThrowExpression) theExpression;
-                Value theValue = theE.getValue();
+                Value theValue = theE.incomingDataFlows().get(0);
                 print("throw ");
                 print(theValue);
                 println(";");
@@ -698,9 +716,13 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(";");
             } else if (theExpression instanceof PutFieldExpression) {
                 PutFieldExpression theE = (PutFieldExpression) theExpression;
-                Value theTarget = theE.getTarget();
+
+                List<Value> theIncomingData = theE.incomingDataFlows();
+
+                Value theTarget = theIncomingData.get(0);
                 BytecodeFieldRefConstant theField = theE.getField();
-                Value thevalue = theE.getValue();
+
+                Value thevalue = theIncomingData.get(1);
                 print(theTarget);
                 printInstanceFieldReference(theField);
                 print(" = ");
@@ -709,7 +731,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof IFExpression) {
                 IFExpression theE = (IFExpression) theExpression;
                 print("if (");
-                print(theE.getBooleanValue());
+                print(theE.incomingDataFlows().get(0));
                 println(") {");
 
                 withDeeperIndent().writeExpressions(theE.getExpressions());
@@ -721,9 +743,12 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
                 ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
-                Value theArray = theE.getArray();
-                Value theIndex = theE.getIndex();
-                Value theValue = theE.getValue();
+
+                List<Value> theIncomingData = theE.incomingDataFlows();
+
+                Value theArray = theIncomingData.get(0);
+                Value theIndex = theIncomingData.get(1);
+                Value theValue = theIncomingData.get(2);
                 print(theArray);
                 printArrayIndexReference(theIndex);
                 print(" = ");
@@ -734,7 +759,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 // Completely ignored
             } else if (theExpression instanceof TableSwitchExpression) {
                 TableSwitchExpression theE = (TableSwitchExpression) theExpression;
-                Value theValue = theE.getValue();
+                Value theValue = theE.incomingDataFlows().get(0);
 
                 print("if (");
                 print(theValue);
@@ -769,7 +794,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof LookupSwitchExpression) {
                 LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
                 print("switch(");
-                print(theE.getValue());
+                print(theE.incomingDataFlows().get(0));
                 println(") {");
 
                 for (Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
@@ -787,15 +812,17 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof SetMemoryLocationExpression) {
                 SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
+                List<Value> theIncomingData = theE.incomingDataFlows();
+
                 print("bytecoderGlobalMemory[");
 
-                ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theE.getAddress().consumedValues(Value.ConsumptionType.INITIALIZATION).get(0);
+                ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
 
                 print(theValue);
 
                 print("] = ");
 
-                print(theE.getValue());
+                print(theIncomingData.get(1));
                 println(";");
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
@@ -821,30 +848,6 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println(";");
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
-            }
-        }
-    }
-
-    private void printNodeDebug(RegionNode aNode) {
-        if (options.isDebugOutput()) {
-
-            for (GraphNodePath thePath : aNode.reachableBy()) {
-                print("// Reachable by path [");
-
-                for (RegionNode theNode : thePath.nodes()) {
-                    print(theNode.getStartAddress().getAddress());
-                    print(" ");
-                }
-
-                println("]");
-            }
-
-            for (RegionNode thePrececessor : aNode.getPredecessors()) {
-                printlnComment(
-                        "Predecessor of this block is " + thePrececessor.getStartAddress().getAddress());
-            }
-            for (Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : aNode.getSuccessors().entrySet()) {
-                printlnComment("Successor of this block is " + theSuccessor.getValue().getStartAddress().getAddress() + " with edge type " + theSuccessor.getKey().getType());
             }
         }
     }

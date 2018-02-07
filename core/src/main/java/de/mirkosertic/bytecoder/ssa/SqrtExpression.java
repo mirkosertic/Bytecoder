@@ -19,9 +19,9 @@ public class SqrtExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public SqrtExpression(TypeRef aTargetType, Value aValue1) {
+    public SqrtExpression(TypeRef aTargetType, Value aValue) {
         targetType = aTargetType;
-        consume(ConsumptionType.ARGUMENT, aValue1);
+        receivesDataFrom(aValue);
     }
 
     @Override
