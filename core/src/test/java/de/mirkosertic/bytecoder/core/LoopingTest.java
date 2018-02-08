@@ -53,7 +53,21 @@ public class LoopingTest {
     @Test
     public void testSimpleLoop() {
         for (int i=0;i<10;i++) {
-
+            switch (i) {
+                case 0: {
+                    int k = 20;
+                    break;
+                }
+                case 6:
+                case 5: {
+                    int k = 30;
+                    break;
+                }
+                default: {
+                    int k = 5;
+                    break;
+                }
+            }
         }
     }
 
