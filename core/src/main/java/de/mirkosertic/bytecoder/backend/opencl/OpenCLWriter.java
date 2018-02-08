@@ -32,6 +32,7 @@ import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -185,7 +186,7 @@ public class OpenCLWriter extends IndentSSAWriter {
             theWriter = theWriter.withDeeperIndent();
         }
 
-        println("switch (__label__) {");
+        println("switch ($__label__) {");
 
         for (Relooper.Block theHandler : aMultiple.handlers()) {
             for (RegionNode theEntry : theHandler.entries()) {
@@ -377,9 +378,28 @@ public class OpenCLWriter extends IndentSSAWriter {
             printDoubleValue((DoubleValue) aValue);
         } else if (aValue instanceof TypeConversionExpression) {
             printTypeConversionValue((TypeConversionExpression) aValue);
+        } else if (aValue instanceof CompareExpression) {
+            printCompareExpression((CompareExpression) aValue);
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }
+    }
+
+    private void printCompareExpression(CompareExpression aExpression) {
+        List<Value> theIncomingData = aExpression.incomingDataFlows();
+
+        Value theVariable1 = theIncomingData.get(0);
+        Value theVariable2 = theIncomingData.get(1);
+        print("(");
+        printValue(theVariable1);
+        print(" > ");
+        printValue(theVariable2);
+        print(" ? 1 ");
+        print(" : (");
+        printValue(theVariable1);
+        print(" < ");
+        printValue(theVariable2);
+        print(" ? -1 : 0))");
     }
 
     private void printTypeConversionValue(TypeConversionExpression aValue) {
