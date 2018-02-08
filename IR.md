@@ -18,6 +18,7 @@ the following intermediate representation graph is generated:
 
 ![Intermediate representation graph](docassets/ir_loopexample.svg)
 
+
 This graph combines data flow analysis and control flow into one big graph. Using this graph makes data and
 control flow dependencies explicit and lays foundation for a variety of optimizations that can be performed on it to
 either reduce code size or improve execution speed.
