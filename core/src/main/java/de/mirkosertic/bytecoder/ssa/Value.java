@@ -45,5 +45,14 @@ public abstract class Value extends Node {
         return incomingEdges(DataFlowEdgeType.filter()).map(t -> (T) t.sourceNode()).collect(Collectors.toList());
     }
 
+    public void replaceIncomingDataEdge(Value aOldValue, Value aNewValue) {
+        incomingEdges(DataFlowEdgeType.filter()).forEach(aEdge -> {
+            if (aEdge.sourceNode() == aOldValue) {
+                aEdge.newSourceIs(aNewValue);
+            }
+        });
+    }
+
+
     public abstract TypeRef resolveType();
 }

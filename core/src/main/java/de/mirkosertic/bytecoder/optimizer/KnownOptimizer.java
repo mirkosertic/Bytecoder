@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa.optimizer;
+package de.mirkosertic.bytecoder.optimizer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ public enum KnownOptimizer implements Optimizer {
             //theOptimizer.add(new InlineFinalNodesOptimizer());
             //theOptimizer.add(new InlineGotoOptimizer());
             //theOptimizer.add(new InvokeVirtualOptimizer());
-            //theOptimizer.add(new RedundantAssignmentOptimizer());
+            theOptimizer.add(new RedundantAssignmentOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
     };

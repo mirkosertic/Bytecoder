@@ -63,7 +63,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.Logger;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 class OpenCLContext implements Context {

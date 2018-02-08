@@ -56,7 +56,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
-import de.mirkosertic.bytecoder.ssa.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
