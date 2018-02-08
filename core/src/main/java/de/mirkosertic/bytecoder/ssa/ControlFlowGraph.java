@@ -239,6 +239,11 @@ public class ControlFlowGraph {
                         thePW.print(" -> ");
                         thePW.print(aReceivingNodeID);
                         thePW.println(";");
+
+                        if (theValue instanceof Expression) {
+                            printIncomingValues(theValue, theValueID);
+                        }
+
                     } else {
                         List<Value> theIncomingDataFlows = aValue.incomingDataFlows();
                         for (Value theValue : theIncomingDataFlows) {
@@ -348,9 +353,9 @@ public class ControlFlowGraph {
                 thePW.print(" -> ");
                 thePW.print(theJump.target);
                 if (theJump.backEdge) {
-                    thePW.println(" [label=\"back-edge\"];");
+                    thePW.println(" [label=\"back-edge\",color=blue,style=dotted];");
                 } else {
-                    thePW.println(";");
+                    thePW.println("[color=blue,style=dotted];");
                 }
 
             }
