@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
+import java.util.List;
 import java.util.Objects;
 
 public class InlineGotoOptimizer implements Optimizer {
@@ -33,7 +34,8 @@ public class InlineGotoOptimizer implements Optimizer {
         while (true) {
             boolean theChanged = false;
             for (RegionNode theNode : aGraph.getKnownNodes()) {
-                if (performNodeInlining(aGraph, theNode, theNode.getExpressions())) {
+                List<BytecodeOpcodeAddress> theJumpTargets = theNode.getExpressions().jumpTargets();
+                if (performNodeInlining(aGraph, theNode, theNode.getExpressions(), theJumpTargets)) {
                     theChanged = true;
                     break;
                 }
@@ -44,12 +46,12 @@ public class InlineGotoOptimizer implements Optimizer {
         }
     }
 
-    private boolean performNodeInlining(ControlFlowGraph aGraph, RegionNode aNode, ExpressionList aList) {
+    private boolean performNodeInlining(ControlFlowGraph aGraph, RegionNode aNode, ExpressionList aList, List<BytecodeOpcodeAddress> aJumpTargets) {
         for (Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (ExpressionList theList : theContainer.getExpressionLists()) {
-                    if (performNodeInlining(aGraph, aNode, theList)) {
+                    if (performNodeInlining(aGraph, aNode, theList, aJumpTargets)) {
                         return true;
                     }
                 }
@@ -59,17 +61,28 @@ public class InlineGotoOptimizer implements Optimizer {
                 RegionNode theTargetNode = aGraph.nodeStartingAt(theGOTO.getJumpTarget());
 
                 if (theTargetNode.isStrictlyDominatedBy(aNode)) {
-                    // Node can be inlined
-                    aGraph.delete(theTargetNode);
-                    aList.replace(theGOTO, theTargetNode.getExpressions());
 
-                    aNode.inheritSuccessorsOf(theTargetNode);
-
-                    for (RegionNode theNode : aGraph.getKnownNodes()) {
-                        recomputeGotos(theNode.getExpressions(), theTargetNode.getStartAddress(), aNode.getStartAddress());
+                    BytecodeOpcodeAddress theJumpTarget = theGOTO.getJumpTarget();
+                    int theCount = 0;
+                    for (BytecodeOpcodeAddress theEntry : aJumpTargets) {
+                        if (theEntry.equals(theJumpTarget)) {
+                            theCount++;
+                        }
                     }
 
-                    return true;
+                    if (theCount == 1) {
+                        // Node can be inlined
+                        aGraph.delete(theTargetNode);
+                        aList.replace(theGOTO, theTargetNode.getExpressions());
+
+                        aNode.inheritSuccessorsOf(theTargetNode);
+
+                        for (RegionNode theNode : aGraph.getKnownNodes()) {
+                            recomputeGotos(theNode.getExpressions(), theTargetNode.getStartAddress(), aNode.getStartAddress());
+                        }
+
+                        return true;
+                    }
                 }
             }
         }
