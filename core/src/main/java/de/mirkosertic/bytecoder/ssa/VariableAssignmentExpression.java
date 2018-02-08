@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class VariableAssignmentExpression extends Expression {
 
     private final Variable variable;
-    private final Value value;
+    private Value value;
 
     public VariableAssignmentExpression(Variable aVariable, Value aValue) {
         if (aValue == null) {
@@ -34,5 +37,19 @@ public class VariableAssignmentExpression extends Expression {
 
     public Value getValue() {
         return value;
+    }
+
+    @Override
+    public void replaceIncomingDataEdge(Value aOldValue, Value aNewValue) {
+        if (value == aOldValue) {
+            value = aNewValue;
+        }
+    }
+
+    @Override
+    public <T extends Value> List<T> incomingDataFlows() {
+        List<T> theResult = new ArrayList<>();
+        theResult.add((T) value);
+        return theResult;
     }
 }
