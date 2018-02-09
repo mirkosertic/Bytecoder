@@ -27,12 +27,17 @@ public class DirectInvokeMethodExpression extends InvocationExpression {
 
     public DirectInvokeMethodExpression(BytecodeObjectTypeRef aClazz, String aMethodName,
             BytecodeMethodSignature aMethodSignature, Value aTarget, List<Value> aArguments) {
-        super(aMethodSignature);
-        clazz = aClazz;
-        methodName = aMethodName;
+        this(aClazz, aMethodName, aMethodSignature);
 
         receivesDataFrom(aTarget);
         receivesDataFrom(aArguments);
+    }
+
+    public DirectInvokeMethodExpression(BytecodeObjectTypeRef aClazz, String aMethodName,
+            BytecodeMethodSignature aMethodSignature) {
+        super(aMethodSignature);
+        clazz = aClazz;
+        methodName = aMethodName;
     }
 
     public BytecodeObjectTypeRef getClazz() {

@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.graph.Node;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import de.mirkosertic.bytecoder.graph.Node;
 
 public abstract class Value extends Node {
 
@@ -53,6 +53,12 @@ public abstract class Value extends Node {
         });
     }
 
+    public void routeIntomingDataFlowsTo(DirectInvokeMethodExpression aNewExpression) {
+        incomingEdges(DataFlowEdgeType.filter()).forEach(aEdge -> {
+            aEdge.newTargetId(aNewExpression);
+            aNewExpression.addIncomingEdge(aEdge);
+        });
+    }
 
     public abstract TypeRef resolveType();
 }

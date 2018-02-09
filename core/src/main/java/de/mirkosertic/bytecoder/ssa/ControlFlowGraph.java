@@ -219,6 +219,7 @@ public class ControlFlowGraph {
                         thePW.print(aReceivingNodeID);
                         thePW.print(" -> V_");
                         thePW.print(theRegister.idFor(theTarget));
+                        thePW.println(";");
 
                         Value theValue = theAssignment.getValue();
                         theAllValues.add(theValue);
@@ -307,7 +308,7 @@ public class ControlFlowGraph {
 
                 String theNodeID = theRegister.idFor(theValue);
 
-                thePW.print("       ");
+                thePW.print("   ");
 
                 if (theValue instanceof Expression) {
                     thePW.print("E_");
@@ -348,7 +349,7 @@ public class ControlFlowGraph {
 
             for (DotJump theJump : theJumps) {
 
-                thePW.print("       ");
+                thePW.print("   ");
                 thePW.print(theJump.source);
                 thePW.print(" -> ");
                 thePW.print(theJump.target);
