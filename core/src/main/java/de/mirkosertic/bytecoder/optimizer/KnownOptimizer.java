@@ -30,7 +30,7 @@ public enum KnownOptimizer implements Optimizer {
             //theOptimizer.add(new InefficientIFOptimizer());
             //theOptimizer.add(new InlineFinalNodesOptimizer());
             theOptimizer.add(new InlineGotoOptimizer());
-            //theOptimizer.add(new InvokeVirtualOptimizer());
+            theOptimizer.add(new InvokeVirtualOptimizer());
             theOptimizer.add(new RedundantAssignmentOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
@@ -42,8 +42,7 @@ public enum KnownOptimizer implements Optimizer {
                 theOptimizer.optimize(aGraph, aLinkerContext);
             }
         } catch (RuntimeException e) {
-            System.out.println("Error optimizing cfg : " + aGraph.toDOT());
-            throw e;
+            throw new RuntimeException("Error optimizing cfg : " + aGraph.toDOT(), e);
         }
     }
 }

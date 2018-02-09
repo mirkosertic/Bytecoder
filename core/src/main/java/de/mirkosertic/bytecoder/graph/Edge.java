@@ -19,7 +19,7 @@ public class Edge<TYPE extends EdgeType, TARGET extends Node> {
 
     private Node sourceNode;
     private final TYPE edgeType;
-    private final TARGET targetNode;
+    private TARGET targetNode;
 
     public Edge(Node aSourceNode, TYPE aType, TARGET aTargetNode) {
         sourceNode = aSourceNode;
@@ -41,5 +41,9 @@ public class Edge<TYPE extends EdgeType, TARGET extends Node> {
 
     public void newSourceIs(Node aNewSource) {
         sourceNode = aNewSource;
+    }
+
+    public void newTargetId(TARGET aNewTarget) {
+        targetNode = aNewTarget;
     }
 }

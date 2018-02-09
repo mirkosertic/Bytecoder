@@ -15,91 +15,76 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-public class InvokeVirtualOptimizer implements Optimizer {
+import java.util.List;
+import java.util.Optional;
+
+public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
     @Override
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        for (RegionNode theNode : aGraph.getDominatedNodes()) {
-            optimizeExpressionList(theNode.getExpressions(), aLinkerContext);
+        visit(aGraph, aLinkerContext);
+    }
+
+    @Override
+    protected void visit(ControlFlowGraph aGraph, ExpressionList aList, Expression aExpression,
+            BytecodeLinkerContext aLinkerContext) {
+        if (aExpression instanceof InvokeVirtualMethodExpression) {
+            visit(aList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext);
+        }
+        if (aExpression instanceof VariableAssignmentExpression) {
+            visit((VariableAssignmentExpression) aExpression, aLinkerContext);
         }
     }
 
-    private void optimizeExpressionList(ExpressionList aExpressions, BytecodeLinkerContext aLinkerContext) {
-/*        for (Expression theExpression : aExpressions.toList()) {
+    private void visit(VariableAssignmentExpression aExpression, BytecodeLinkerContext aLinkerContext) {
+        Value theValue = aExpression.getValue();
+        if (theValue instanceof InvokeVirtualMethodExpression) {
+            Optional<DirectInvokeMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
+            theNewExpression.ifPresent(
+                    directInvokeMethodExpression -> aExpression.replaceIncomingDataEdge(theValue, directInvokeMethodExpression));
+        }
+    }
 
-            if (theExpression instanceof InvokeVirtualMethodExpression) {
-                InvokeVirtualMethodExpression theValue = (InvokeVirtualMethodExpression) theExpression;
+    private void visit(ExpressionList aExpressions, InvokeVirtualMethodExpression aExpression, BytecodeLinkerContext aLinkerContext) {
+        Optional<DirectInvokeMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
+        theNewExpression
+                .ifPresent(directInvokeMethodExpression -> aExpressions.replace(aExpression, directInvokeMethodExpression));
+    }
 
-                String theMethodName = theValue.getMethodName();
-                BytecodeMethodSignature theSignature = theValue.getSignature();
+    private Optional<DirectInvokeMethodExpression> visit(InvokeVirtualMethodExpression aExpression, BytecodeLinkerContext aLinkerContext) {
+        String theMethodName = aExpression.getMethodName();
+        BytecodeMethodSignature theSignature = aExpression.getSignature();
 
-                BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
-                List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
-                if (theLinkedClasses.size() == 1) {
-                    // There is only one class implementing this method, so we can make a direct call
-                    BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
-                    if (!theLinked.emulatedByRuntime()) {
-                        BytecodeObjectTypeRef theClazz = theLinked.getClassName();
+        BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
+        List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
+        if (theLinkedClasses.size() == 1) {
+            // There is only one class implementing this method, so we can make a direct call
+            BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
+            if (!theLinked.emulatedByRuntime()) {
+                BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                        Value theTarget = theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-                        List<Value> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
+                DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName, theSignature);
+                aExpression.routeIntomingDataFlowsTo(theNewExpression);
 
-                        DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName, theSignature,
-                                theTarget, theVariables);
-                        aExpressions.replace(theExpression, theNewExpression);
+                aLinkerContext.getLogger().info("Replaced virtual with direct call");
 
-                        theValue.unbind();
-                    }
-                }
+                return Optional.of(theNewExpression);
             }
-
-            if (theExpression instanceof VariableAssignmentExpression) {
-                VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                Variable theVariable = theInit.getVariable();
-                Value theValue = theInit.getValue();
-                if (theValue instanceof InvokeVirtualMethodExpression) {
-
-                    InvokeVirtualMethodExpression theInvokeVirtualValue = (InvokeVirtualMethodExpression) theValue;
-
-                    String theMethodName = theInvokeVirtualValue.getMethodName();
-                    BytecodeMethodSignature theSignature = theInvokeVirtualValue.getSignature();
-
-                    Value theTarget = theValue.consumedValues(Value.ConsumptionType.INVOCATIONTARGET).get(0);
-                    List<Value> theVariables = theValue.consumedValues(Value.ConsumptionType.ARGUMENT);
-
-                    BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
-                    List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
-                    if (theLinkedClasses.size() == 1) {
-                        // There is only one class implementing this method, so we can make a direct call
-                        BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
-                        if (!theLinked.emulatedByRuntime()) {
-                            BytecodeObjectTypeRef theClazz = theLinked.getClassName();
-                            DirectInvokeMethodExpression theNewValue = new DirectInvokeMethodExpression(theClazz, theMethodName,
-                                    theSignature, theTarget, theVariables);
-
-                            theInvokeVirtualValue.unbind();
-                            theVariable.initializeWith(theNewValue);
-
-                            theValue.unbind();
-
-                            VariableAssignmentExpression theNewInit = new VariableAssignmentExpression(theVariable, theNewValue);
-                            aExpressions.replace(theInit, theNewInit);
-                        }
-                    }
-                }
-            }
-
-            if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theSub : theContainer.getExpressionLists()) {
-                    optimizeExpressionList(theSub, aLinkerContext);
-                }
-            }
-        }*/
+        }
+        return Optional.empty();
     }
 }
