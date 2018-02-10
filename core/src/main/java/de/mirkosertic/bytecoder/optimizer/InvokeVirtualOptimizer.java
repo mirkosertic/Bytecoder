@@ -78,7 +78,7 @@ public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implement
                 BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
                 DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName, theSignature);
-                aExpression.routeIntomingDataFlowsTo(theNewExpression);
+                aExpression.routeIncomingDataFlowsTo(theNewExpression);
 
                 aLinkerContext.getLogger().info("Replaced virtual with direct call");
 
