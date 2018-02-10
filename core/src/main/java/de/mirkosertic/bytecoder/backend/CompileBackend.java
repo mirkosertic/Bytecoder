@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.Logger;
 
 public interface CompileBackend<T extends CompileResult> {
 

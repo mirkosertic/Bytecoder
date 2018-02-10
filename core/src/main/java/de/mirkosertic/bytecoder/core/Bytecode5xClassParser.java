@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.annotations.IsObject;
+import de.mirkosertic.bytecoder.api.IsObject;
 
 import java.io.DataInput;
 import java.io.IOException;

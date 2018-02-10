@@ -22,8 +22,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.annotations.Import;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.graph.Node;
 

@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
-import de.mirkosertic.bytecoder.annotations.Export;
-import de.mirkosertic.bytecoder.annotations.Import;
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.web.Canvas;
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
 import de.mirkosertic.bytecoder.api.web.Window;

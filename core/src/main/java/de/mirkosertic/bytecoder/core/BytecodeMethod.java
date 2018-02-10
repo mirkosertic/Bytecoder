@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.annotations.DelegatesTo;
+import de.mirkosertic.bytecoder.api.DelegatesTo;
 
 public class BytecodeMethod {
 

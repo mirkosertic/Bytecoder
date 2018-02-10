@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.api.opencl.Platform;
 import de.mirkosertic.bytecoder.api.opencl.PlatformFactory;
-import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.api.Logger;
 
 public class PlatformFactoryImpl extends PlatformFactory {
 

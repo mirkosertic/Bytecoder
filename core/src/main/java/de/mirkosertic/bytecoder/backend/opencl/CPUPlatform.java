@@ -19,7 +19,7 @@ import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.DeviceProperties;
 import de.mirkosertic.bytecoder.api.opencl.Platform;
 import de.mirkosertic.bytecoder.api.opencl.PlatformProperties;
-import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.api.Logger;
 
 public class CPUPlatform implements Platform {
 
