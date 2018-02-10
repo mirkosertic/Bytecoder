@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
-import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.optimizer.Optimizer;
 
 public class CompileOptions {

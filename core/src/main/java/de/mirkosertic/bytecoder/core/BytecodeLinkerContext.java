@@ -22,7 +22,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import de.mirkosertic.bytecoder.annotations.Export;
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.graph.Edge;
 
 public class BytecodeLinkerContext {

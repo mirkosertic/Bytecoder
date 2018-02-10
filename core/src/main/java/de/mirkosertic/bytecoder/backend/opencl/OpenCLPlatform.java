@@ -32,7 +32,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.api.Logger;
 import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;

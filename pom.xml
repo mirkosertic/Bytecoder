@@ -40,6 +40,8 @@
     </scm>
 
     <modules>
+        <module>api</module>
+        <module>classlib</module>
         <module>core</module>
         <module>maven</module>
         <module>integrationtest</module>
@@ -54,6 +56,16 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>bytecoder-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>bytecoder-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>bytecoder-classlib</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

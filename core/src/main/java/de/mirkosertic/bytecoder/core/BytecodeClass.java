@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.annotations.OverrideParentClass;
+import de.mirkosertic.bytecoder.api.OverrideParentClass;
 
 public class BytecodeClass {
 

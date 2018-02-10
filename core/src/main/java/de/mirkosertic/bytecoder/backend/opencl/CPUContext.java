@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadFactory;
 
 import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
-import de.mirkosertic.bytecoder.core.Logger;
+import de.mirkosertic.bytecoder.api.Logger;
 
 public class CPUContext implements Context {
 

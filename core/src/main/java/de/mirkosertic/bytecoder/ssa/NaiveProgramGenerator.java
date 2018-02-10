@@ -1442,7 +1442,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                     if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "de.mirkosertic.bytecoder.classlib.java.lang.TStrictMath".equals(theLinkedClass.getClassName().name())) {
+                            && "TStrictMath".equals(theLinkedClass.getClassName().name())) {
                         Value theValue = new SqrtExpression(TypeRef.toType(theCalledSignature.getReturnType()), theArguments.get(0));
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
                         aHelper.push(theNewVariable);

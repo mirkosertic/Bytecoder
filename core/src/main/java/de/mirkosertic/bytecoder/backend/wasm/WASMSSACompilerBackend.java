@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import de.mirkosertic.bytecoder.annotations.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.annotations.Export;
-import de.mirkosertic.bytecoder.annotations.Import;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
