@@ -14,7 +14,7 @@ public void testSimpleLoop() {
 }
 ```
 
-the following intermediate representation graph is generated:
+the following intermediate representation graph is generated (in its first, unoptimized form):
 
 ![Intermediate representation graph](docassets/ir_loopexample.svg)
 
