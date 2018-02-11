@@ -9,31 +9,39 @@
     </parent>
 
     <artifactId>bytecoder-classlib</artifactId>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <name>Bytecoder Classlib</name>
     <description>Bytecoder Classlib</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>bytecoder-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>2.1.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>bytecoder.api</module>
+        <module>java.base</module>
+        <module>bytecoder.opencl</module>
+        <module>bytecoder.web</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder.api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>java.base</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder.opencl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder.web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
