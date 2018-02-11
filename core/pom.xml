@@ -16,8 +16,19 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>bytecoder-classlib</artifactId>
-            <version>${project.version}</version>
+            <artifactId>bytecoder.api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>bytecoder.opencl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>java.base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>bytecoder.web</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

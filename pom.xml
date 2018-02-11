@@ -40,7 +40,6 @@
     </scm>
 
     <modules>
-        <module>api</module>
         <module>classlib</module>
         <module>core</module>
         <module>maven</module>
@@ -60,7 +59,22 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>bytecoder-api</artifactId>
+                <artifactId>bytecoder.api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>bytecoder.web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>bytecoder.opencl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>java.base</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
