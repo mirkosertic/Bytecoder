@@ -21,7 +21,12 @@ the following intermediate representation graph is generated (in its first, unop
 
 This graph combines data flow analysis and control flow into one big graph. Using this graph makes data and
 control flow dependencies explicit and lays foundation for a variety of optimizations that can be performed on it to
-either reduce code size or improve execution speed.
+either reduce code size or improve execution speed. Optimizing the program simply becomes an optimizing
+the graph problem.
+
+The following graph shows the further optimized version of the previous loop:
+
+![Intermediate representation graph optimized](docassets/ir_loopexample_optimized.svg) 
 
 Part of the compiler optimization is the [relooper step](core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf).
 Relooping tries to recover high level control flow constructs from the intermediate representation. This step eliminates
