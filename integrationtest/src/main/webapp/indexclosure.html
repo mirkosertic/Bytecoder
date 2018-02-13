@@ -52,7 +52,138 @@
             var theCanvas = document.getElementById("benchmark-canvas");
             var theCanvasContext = theCanvas.getContext("2d");
 
-            // Our module for dynamic linking
+            // dynamic linking
+            bytecoder.imports.tsystem = {
+                currentTimeMillis: function() {
+                    return Date.now();
+                },
+                nanoTime: function() {
+                    return Date.now() * 1000000;
+                },
+                writeByteArrayToConsole: function(thisRef, p1) {
+                    bytecoder.logByteArrayAsString(p1);
+                },
+                logDebug: function(thisref, p1) {
+                    bytecoder.logDebug(p1);
+                },
+            };
+            bytecoder.imports.tprintstream = {
+                logDebug: function(p1) {
+                    bytecoder.logDebug(p1);
+                },
+            };
+            bytecoder.imports.tmath = {
+                ceil: function(p1) {
+                    return Math.ceil(p1);
+                },
+                floor: function(p1) {
+                    return Math.floor(p1);
+                },
+                sin: function(p1) {
+                    return Math.sin(p1);
+                },
+                cos: function(p1) {
+                    return Math.cos(p1);
+                },
+                sqrt: function(p1) {
+                    return Math.sqrt(p1);
+                },
+                round: function(p1) {
+                    return Math.round(p1);
+                },
+                NaN: function(p1) {
+                    return NaN;
+                },
+                atan2: function(p1, p2) {
+                    return Math.atan2(p1, p2);
+                },
+                max: function(p1, p2) {
+                    return Math.max(p1, p2);
+                },
+                random: function() {
+                    return Math.random();
+                },
+                tan: function(p1) {
+                    return Math.tan(p1);
+                },
+                toRadians: function(p1) {
+                    return Math.toRadians(p1);
+                },
+                toDegrees: function(p1) {
+                    return Math.toDegrees(p1);
+                },
+                min: function (p1, p2) {
+                    return Math.min(p1, p2);
+                },
+                add: function(p1, p2) {
+                    return p1 + p2;
+                }
+            };
+            bytecoder.imports.tstrictmath = {
+                sin: function(p1) {
+                    return Math.sin(p1);
+                },
+                cos: function(p1) {
+                    return Math.cos(p1);
+                },
+                sqrt: function(p1) {
+                    return Math.sqrt(p1);
+                },
+                round: function(p1) {
+                    return Math.round(p1);
+                },
+                atan2: function(p1, p2) {
+                    return Math.atan2(p1, p2);
+                },
+            };
+            bytecoder.imports.canvas = {
+                canvasClear : function(thisref) {
+                    theCanvasContext.fillStyle = "white";
+                    theCanvasContext.strokeStyke = "grey";
+                    theCanvasContext.fillRect(0, 0, 600, 600);
+                },
+                contextSave : function(thisref) {
+                    theCanvasContext.save();
+                },
+                contextRestore : function(thisref) {
+                    theCanvasContext.restore();
+                },
+                contextTranslate : function(thisref,aX, aY) {
+                    theCanvasContext.translate(aX, aY);
+                },
+                contextScale : function(thisref,aX, aY) {
+                    theCanvasContext.scale(aX, aY);
+                },
+                contextLineWidth : function(thisref,aWidth) {
+                    theCanvasContext.lineWidth = aWidth;
+                },
+                contextRotate : function(thisref,aAngleInRadians) {
+                    theCanvasContext.rotate(aAngleInRadians);
+                },
+                contextBeginPath : function(thisref) {
+                    theCanvasContext.beginPath();
+                },
+                contextClosePath : function(thisref) {
+                    theCanvasContext.closePath();
+                },
+                contextMoveTo: function(thisref,aX, aY) {
+                    theCanvasContext.moveTo(aX, aY);
+                },
+                contextLineTo : function(thisref,aX, aY) {
+                    theCanvasContext.lineTo(aX, aY);
+                },
+                contextArc : function(thisref,x, y, radius, startAngle, endAngle, anticlockwise) {
+                    if (anticlockwise == 0) {
+                        theCanvasContext.arc(x, y, radius, startAngle, endAngle, false);
+                    } else {
+                        theCanvasContext.arc(x, y, radius, startAngle, endAngle, true);
+                    }
+                },
+                contextStroke : function(thisref) {
+                    theCanvasContext.stroke();
+                }
+            };
+
             var canvas = {
 
                 canvasClear : function() {
@@ -117,7 +248,7 @@
             var lastRuntime = 0;
             var lastRuntimeTimeSeries = [];
 
-            var debug = {
+            bytecoder.imports.debug = {
                 logRuntime : function(a) {
                     lastRuntimeTimeSeries.push(a);
                     if (lastRuntimeTimeSeries.length > 500) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.js;
+package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+public class BytecodeImportedLink {
 
-public class JSFunction {
+    private final String moduleName;
+    private final String linkName;
 
-    private final String jsCode;
-
-    public JSFunction(String aJSCode) {
-        jsCode = aJSCode;
+    public BytecodeImportedLink(String aModuleName, String aLinkName) {
+        moduleName = aModuleName;
+        linkName = aLinkName;
     }
 
-    public String generateCode(BytecodeMethodSignature aSignature) {
-        return jsCode;
+    public String getModuleName() {
+        return moduleName;
+    }
+
+    public String getLinkName() {
+        return linkName;
     }
 }

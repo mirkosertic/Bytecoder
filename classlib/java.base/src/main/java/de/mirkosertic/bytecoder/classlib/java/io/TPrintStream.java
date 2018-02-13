@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.classlib.java.io;
 
 import java.io.IOException;
 
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 
 public class TPrintStream extends TFilterOutputStream {
@@ -30,7 +29,6 @@ public class TPrintStream extends TFilterOutputStream {
         target = aTarget;
     }
 
-    @Import(module = "system", name = "logDebug")
     public native void logDebug(long aValue);
 
     public void println(long aValue) {

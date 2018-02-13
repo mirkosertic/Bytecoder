@@ -30,6 +30,8 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
@@ -66,19 +68,22 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         Set<BytecodeMethod> theBytecodeMethods = new HashSet<>();
         theKernelClass.forEachMethod(theBytecodeMethods::add);
 
-        if (theBytecodeMethods.size() != 1) {
-            throw new IllegalArgumentException("Invalid number of loaded methods : " + theBytecodeMethods.size());
-        }
+        StringWriter theStrWriter = new StringWriter();
+
+        OpenCLInputOutputs theInputOutputs;
+
+        // First of all, we link the kernel method
+        BytecodeMethod theKernelMethod = theKernelClass.getBytecodeClass().methodByNameAndSignatureOrNull("processWorkItem", new BytecodeMethodSignature(
+                BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
-        Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theBytecodeMethods.iterator().next());
+        Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theKernelMethod);
 
         //Run optimizer
         aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
         // Ok, at this point we have to map kernel arguments
         // Every member of the kernel class becomes a kernel function argument
-        OpenCLInputOutputs theInputOutputs;
         try {
             theInputOutputs = inputOutputsFor(theLinkerContext, theKernelClass, theSSAProgram);
         } catch (Exception e) {
@@ -86,16 +91,37 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         }
 
         // And then we ca pass it to the code generator to generate the kernel code
-
-        StringWriter theStrWriter = new StringWriter();
         OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
 
-        // Try to reloop it!
+        // We use the relooper here
+        Relooper theRelooper = new Relooper();
+
+        // Now, we write the auxiliary methods
+        theKernelClass.forEachMethod(aMethod -> {
+            if (aMethod != theKernelMethod) {
+                Program theSSAProgram1 = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), aMethod);
+
+                //Run optimizer
+                aOptions.getOptimizer().optimize(theSSAProgram1.getControlFlowGraph(), aLinkerContext);
+
+                // Write the method to the output
+                // Try to reloop it!
+                try {
+                    Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram1.getControlFlowGraph());
+
+                    theSSAWriter.printReloopedInline(aMethod, theSSAProgram1, theReloopedBlock);
+                } catch (Exception e) {
+                    throw new IllegalStateException("Error relooping cfg", e);
+                }
+
+            }
+        });
+
+        // Finally, we write the kernel method
         try {
-            Relooper theRelooper = new Relooper();
             Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-            theSSAWriter.printRelooped(theSSAProgram, theReloopedBlock);
+            theSSAWriter.printReloopedKernel(theSSAProgram, theReloopedBlock);
         } catch (Exception e) {
             throw new IllegalStateException("Error relooping cfg", e);
         }

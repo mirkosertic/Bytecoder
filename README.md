@@ -9,7 +9,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
-* Use other toolchains such as Google Closure Compiler or Binaryen to further optimize generated code
+* Use other tool chains such as Google Closure Compiler or Binaryen to further optimize generated code
 * Reuse or implement cross-compileable Java Classlib
 
 ## Compiling strategies
@@ -23,7 +23,7 @@ The *WebAssembly* backend transforms the intermediate representation into WebAss
 into WebAssembly binary code using the WABT toolchain.
 
 The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
-existing programs running on the JVM to utilizy the vast power of modern GPUs.
+existing programs running on the JVM to utilize the vast power of modern GPUs.
 
 ## Using OpenCL
 
@@ -59,6 +59,10 @@ algorithms that can transparently executed on the `GPU`.
 
 Details about OpenCL and its usage with Bytecoder are documented [here](OPENCL.md).
 
+## Java to Target Platform Interop
+
+Details about this are documented [here](INTEROP.md).
+
 ## Unit testing
 
 Bytecoder comes with built in JUnit Testing support using a specialized test runner. This test runner compiles the body of the test method to a target language
@@ -80,7 +84,7 @@ public class SimpleMathTest {
 }
 ```
 
-Is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This testrunner also supports comparison of original Java code and its crosscompiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
+Is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This test runner also supports comparison of original Java code and its cross compiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
 ## Maven Plugin
 
@@ -144,7 +148,7 @@ You have to set a main class with a valid `public static void main(String[] args
 The plugin will invoke the WebAssembly compiler which will do all the heavy lifting. The generated
 WebAssembly text file and compiled binaries will be placed in the Maven `target/bytecoder` directory. 
 
-Bytecoder relies for WebAssemvly compilation on the WABT toolchain. Compilation is done by invoking the JS version of 
+Bytecoder relies for WebAssembly compilation on the WABT toolchain. Compilation is done by invoking the JS version of 
 the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
 environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
 of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
@@ -163,7 +167,7 @@ one implementation available.
 
 #### Memory management
 
-*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. Webassembly has currently no GC support in version 1.0.
+*JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. WebAssembly has currently no GC support in version 1.0.
 
 The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
 Details about WebAssembly are documented [here](WASM.md) 

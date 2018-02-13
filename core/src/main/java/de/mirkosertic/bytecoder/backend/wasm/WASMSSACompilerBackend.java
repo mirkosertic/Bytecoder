@@ -27,7 +27,6 @@ import java.util.Set;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
@@ -37,6 +36,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -117,10 +117,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     if (aEntry.targetNode().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
-                    BytecodeAnnotation theImportAnnotation = t.getAttributes().getAnnotationByType(Import.class.getName());
-                    if (theImportAnnotation == null) {
-                        throw new IllegalStateException("No @Import annotation found. Potential linker error!");
-                    }
+
+                    BytecodeImportedLink theLink = aEntry.targetNode().linkfor(t);
 
                     // Imported function
 
@@ -128,9 +126,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     theWriter.print("$");
                     theWriter.print(WASMWriterUtils.toMethodName(aEntry.edgeType().objectTypeRef(), t.getName(), theSignature));
                     theWriter.print(" (import \"");
-                    theWriter.print(theImportAnnotation.getElementValueByName("module").stringValue());
+                    theWriter.print(theLink.getModuleName());
                     theWriter.print("\" \"");
-                    theWriter.print(theImportAnnotation.getElementValueByName("name").stringValue());
+                    theWriter.print(theLink.getLinkName());
                     theWriter.print("\") ");
 
                     theWriter.print("(param $thisRef");

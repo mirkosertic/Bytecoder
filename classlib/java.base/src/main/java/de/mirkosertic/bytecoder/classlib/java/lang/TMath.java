@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.Import;
-
 public class TMath extends TObject {
 
     public static final double E = 2.7182818284590452354;
@@ -44,43 +42,30 @@ public class TMath extends TObject {
         return a;
     }
 
-    @Import(module = "math", name = "sqrt")
     public static native double sqrt(double aValue);
 
-    @Import(module = "math", name = "ceil")
     public static native double ceil(double aValue);
 
-    @Import(module = "math", name = "NaN")
     public static native float getNaN();
 
-    @Import(module = "math", name = "floor")
     public static native double floor(double aValue);
 
-    @Import(module = "math", name = "sin")
     public static native double sin(double aValue);
 
-    @Import(module = "math", name = "cos")
     public static native double cos(double aValue);
 
-    @Import(module = "math", name = "random")
     public static native double random();
 
-    @Import(module = "math", name = "toRadians")
     public static native double toRadians(double aValue);
 
-    @Import(module = "math", name = "toDegrees")
     public static native double toDegrees(double aValue);
 
-    @Import(module = "math", name = "tan")
     public static native double tan(double aValue);
 
-    @Import(module = "math", name = "max")
     public static native long max(long aValue1, long aValue2);
 
-    @Import(module = "math", name = "max")
     public static native int max(int aValue1, int aValue2);
 
-    @Import(module = "math", name = "min")
     public static native int min(int aValue1, int aValue2);
 
     public static int getExponent(float f) {
