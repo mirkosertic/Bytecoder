@@ -34,6 +34,7 @@ import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -41,6 +42,7 @@ import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
@@ -71,7 +73,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         kernelClass = aKernelClass;
     }
 
-    public void printRelooped(Program aProgram, Relooper.Block aBlock) {
+    public void printReloopedKernel(Program aProgram, Relooper.Block aBlock) {
         print("__kernel void BytecoderKernel(");
 
         List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
@@ -98,6 +100,74 @@ public class OpenCLWriter extends IndentSSAWriter {
         }
 
         println(") {");
+        OpenCLWriter theDeeper = withDeeperIndent();
+        theDeeper.println("int $__label__ = 0;");
+
+        for (Variable theVariable : aProgram.getVariables()) {
+            if (!theVariable.isSynthetic()) {
+                theDeeper.print(toType(theVariable.resolveType(), false));
+                theDeeper.print(" ");
+                theDeeper.print(theVariable.getName());
+                theDeeper.println(";");
+            }
+        }
+
+        theDeeper.print(aBlock);
+
+        println("}");
+    }
+
+    public void printReloopedInline(BytecodeMethod aMethod, Program aProgram, Relooper.Block aBlock) {
+
+        BytecodeMethodSignature theSignature = aMethod.getSignature();
+
+        print("__inline ");
+        print(toType(TypeRef.toType(theSignature.getReturnType())));
+        print(" ");
+        print(aMethod.getName().stringValue());
+        print("(");
+
+        boolean theFirst = true;
+        List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
+        for (int i = 0; i<theArguments.size(); i++) {
+            if (theFirst) {
+                theFirst = false;
+            } else {
+                print(", ");
+            }
+            OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
+            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getField().getTypeRef());
+            switch (theArgument.getType()) {
+            case INPUT:
+                print("const ");
+                print(toType(theTypeRef));
+                print(" ");
+                print(theArgument.getField().getField().getName().stringValue());
+                break;
+            case OUTPUT:
+            case INPUTOUTPUT:
+                print(toType(theTypeRef));
+                print(" ");
+                print(theArgument.getField().getField().getName().stringValue());
+                break;
+            }
+        }
+
+        List<Program.Argument> theProgramArguments = aProgram.getArguments();
+        for (int i=1;i<theProgramArguments.size();i++) {
+            Program.Argument theArgument = theProgramArguments.get(i);
+            if (theFirst) {
+                theFirst = false;
+            } else {
+                print(", ");
+            }
+            print(toType(theArgument.getVariable().resolveType()));
+            print(" ");
+            print(theArgument.getVariable().getName());
+        }
+
+        println(") {");
+
         OpenCLWriter theDeeper = withDeeperIndent();
         theDeeper.println("int $__label__ = 0;");
 
@@ -265,9 +335,9 @@ public class OpenCLWriter extends IndentSSAWriter {
                 println(";");
             } else if (theExpression instanceof IFExpression) {
                 IFExpression theE = (IFExpression) theExpression;
-                print("if (");
+                print("if ");
                 printValue(theE.incomingDataFlows().get(0));
-                println(") {");
+                println(" {");
 
                 withDeeperIndent().writeExpressions(theE.getExpressions());
 
@@ -308,6 +378,13 @@ public class OpenCLWriter extends IndentSSAWriter {
                 printInstanceFieldReference(theField);
                 print(" = ");
                 printValue(thevalue);
+                println(";");
+            } else if (theExpression instanceof ReturnValueExpression) {
+                ReturnValueExpression theReturn = (ReturnValueExpression) theExpression;
+
+                List<Value> theIncomingData = theReturn.incomingDataFlows();
+                print("return ");
+                printValue(theIncomingData.get(0));
                 println(";");
             } else {
                 throw new IllegalArgumentException("Not supported. " + theExpression);
@@ -380,9 +457,41 @@ public class OpenCLWriter extends IndentSSAWriter {
             printTypeConversionValue((TypeConversionExpression) aValue);
         } else if (aValue instanceof CompareExpression) {
             printCompareExpression((CompareExpression) aValue);
+        } else if (aValue instanceof DirectInvokeMethodExpression) {
+            printDirectInvokeMethodExpression((DirectInvokeMethodExpression) aValue);
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }
+    }
+
+    private void printDirectInvokeMethodExpression(DirectInvokeMethodExpression aExpression) {
+        print(aExpression.getMethodName());
+        print("(");
+
+        List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
+        boolean theFirst = true;
+        for (int i = 0; i<theArguments.size(); i++) {
+            theFirst = false;
+            if (i>0) {
+                print(", ");
+            }
+            OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
+            print(theArgument.getField().getField().getName().stringValue());
+        }
+
+        List<Value> theMethodArguments = aExpression.incomingDataFlows();
+        for (int i=1;i<theMethodArguments.size();i++) {
+            Value theValue = theMethodArguments.get(i);
+            if (theFirst) {
+                theFirst = false;
+            } else {
+                print(",");
+            }
+            print("&");
+            printValue(theValue);
+        }
+
+        print(")");
     }
 
     private void printCompareExpression(CompareExpression aExpression) {

@@ -22,14 +22,12 @@ import java.util.Objects;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OverrideParentClass;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
@@ -37,6 +35,7 @@ import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -55,7 +54,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
     private final BytecodeMethodSignature registerExceptionOutcomeSignature;
     private final BytecodeMethodSignature getLastExceptionOutcomeSignature;
-    private final JSModules modules;
     private final ProgramGeneratorFactory programGeneratorFactory;
 
     public JSSSACompilerBackend(ProgramGeneratorFactory aProgramGeneratorFactory) {
@@ -63,35 +61,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         programGeneratorFactory = aProgramGeneratorFactory;
         registerExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
         getLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
-        modules = new JSModules();
-
-        JSModule theMathModule = new JSModule();
-        theMathModule.registerFunction("ceil", new JSFunction("return Math.ceil(p1);"));
-        theMathModule.registerFunction("floor", new JSFunction("return Math.floor(p1);"));
-        theMathModule.registerFunction("sin", new JSFunction("return Math.sin(p1);"));
-        theMathModule.registerFunction("cos", new JSFunction("return Math.cos(p1);"));
-        theMathModule.registerFunction("sqrt", new JSFunction("return Math.sqrt(p1);"));
-        theMathModule.registerFunction("round", new JSFunction("return Math.round(p1);"));
-        theMathModule.registerFunction("NaN", new JSFunction("return NaN;"));
-        theMathModule.registerFunction("atan2", new JSFunction("return Math.atan2(p1, p2);"));
-        theMathModule.registerFunction("max", new JSFunction("return Math.max(p1, p2);"));
-        theMathModule.registerFunction("random", new JSFunction("return Math.random();"));
-        theMathModule.registerFunction("tan", new JSFunction("return Math.tan(p1);"));
-        theMathModule.registerFunction("toRadians", new JSFunction("return Math.toRadians(p1);"));
-        theMathModule.registerFunction("toDegrees", new JSFunction("return Math.toDegrees(p1);"));
-        theMathModule.registerFunction("min", new JSFunction("return Math.min(p1, p2);"));
-
-        // Jusr for performance tests
-        theMathModule.registerFunction("add", new JSFunction("return p1 + p2;"));
-
-        JSModule theSystemModule = new JSModule();
-        theSystemModule.registerFunction("currentTimeMillis", new JSFunction("return Date.now();"));
-        theSystemModule.registerFunction("nanoTime", new JSFunction("return Date.now() * 1000000;"));
-        theSystemModule.registerFunction("logByteArrayAsString", new JSFunction("bytecoder.logByteArrayAsString(p1);"));
-        theSystemModule.registerFunction("logDebug", new JSFunction("bytecoder.logDebug(p1);"));
-
-        modules.register("math", theMathModule);
-        modules.register("system", theSystemModule);
     }
 
     private String getOverriddenParentClassFor(BytecodeClass aBytecodeClass) {
@@ -105,8 +74,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
     @Override
     public JSCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
-
-        BytecodeLinkedClass theClassLinkedCass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
 
         BytecodeLinkedClass theExceptionRethrower = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 ExceptionRethrower.class));
@@ -189,6 +156,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("             }");
         theWriter.println("         });");
         theWriter.println("     }, ");
+        theWriter.println();
+
+        theWriter.println("     imports : [],");
         theWriter.println();
 
         theWriter.println("     bootstrap : function() {");
@@ -310,17 +280,21 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     if (theEntry.targetNode().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
-                    BytecodeAnnotation theImportAnnotation = theMethod.getAttributes().getAnnotationByType(Import.class.getName());
-                    if (theImportAnnotation == null) {
-                        throw new IllegalStateException("No @Import annotation found. Potential linker error!");
-                    }
 
-                    JSModule theModule = modules.resolveModule(theImportAnnotation.getElementValueByName("module").stringValue());
-                    JSFunction theFunction = theModule.resolveFunction(theImportAnnotation.getElementValueByName("name").stringValue());
+                    BytecodeImportedLink theLink = theEntry.targetNode().linkfor(theMethod);
+
                     theWriter.println();
                     theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
                             + ") {");
-                    theWriter.println("         " + theFunction.generateCode(theCurrentMethodSignature));
+
+                    theWriter.print("         return bytecoder.imports.");
+                    theWriter.print(theLink.getModuleName());
+                    theWriter.print(".");
+                    theWriter.print(theLink.getLinkName());
+                    theWriter.print("(");
+                    theWriter.print(theArguments);
+                    theWriter.println(");");
+
                     theWriter.println("    },");
                     return;
                 }

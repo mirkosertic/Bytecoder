@@ -25,7 +25,7 @@ public class TSystem {
 
     public static final TPrintStream out = new TPrintStream(new TOutputStream() {
 
-        @Import(module = "system", name = "logByteArrayAsString")
+        @Import(module = "tsystem", name = "writeByteArrayToConsole")
         public native void writeByteArrayToConsole(byte[] aBytes);
 
         private TStringBuilder currentLine = new TStringBuilder();
@@ -45,16 +45,12 @@ public class TSystem {
         }
     });
 
-    @Import(module = "system", name = "nanoTime")
     public static native long nanoTime();
 
-    @Import(module = "system", name = "currentTimeMillis")
     public static native long currentTimeMillis();
 
-    @Import(module = "system", name = "logDebug")
     public static native void logDebug(long aValue);
 
-    @Import(module = "system", name = "logDebug")
     public static native void logDebug(Object aValue);
 
     public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {

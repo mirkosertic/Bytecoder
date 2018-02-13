@@ -15,22 +15,15 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.Import;
-
 public class TStrictMath {
 
-    @Import(module = "math", name = "sqrt")
     public static native double sqrt(double aValue);
 
-    @Import(module = "math", name = "sin")
     public static native double sin(double aValue);
 
-    @Import(module = "math", name = "cos")
     public static native double cos(double aValue);
 
-    @Import(module = "math", name = "round")
     public static native int round(float aFloat);
 
-    @Import(module = "math", name = "atan2")
     public static native double atan2(double aValue1, double aValue2);
 }

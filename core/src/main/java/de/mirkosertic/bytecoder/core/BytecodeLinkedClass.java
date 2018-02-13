@@ -372,10 +372,8 @@ public class BytecodeLinkedClass extends Node {
         if (!aMethod.getAccessFlags().isAbstract()) {
             if (aMethod.getAccessFlags().isNative()) {
                 if (bytecodeClass.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) == null) {
-                    if (aMethod.getAttributes().getAnnotationByType(Import.class.getName()) == null) {
-                        throw new IllegalStateException("Method " + aMethod.getName().stringValue()
-                                + " declared as native, but no @Import annotation found");
-                    }
+                    // Will be linked dynamically
+                    // No need to worry
                 }
             } else {
                 BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
@@ -418,5 +416,25 @@ public class BytecodeLinkedClass extends Node {
 
     public boolean containsVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
         return linkedMethods.containsKey(aIdentifier);
+    }
+
+    public BytecodeImportedLink linkfor(BytecodeMethod aMethod) {
+        BytecodeAnnotation theImportAnnotation = aMethod.getAttributes().getAnnotationByType(Import.class.getName());
+        if (theImportAnnotation == null) {
+            String theClassName = className.name();
+            int p = theClassName.lastIndexOf(".");
+            if (p>=0) {
+                theClassName = theClassName.substring(p + 1);
+            }
+            // No import declaration found
+            // By default we derive the module name from the classname to lower case
+            // the link name is the method name
+            return new BytecodeImportedLink(
+                theClassName.toLowerCase(),
+                aMethod.getName().stringValue()
+            );
+        }
+        return new BytecodeImportedLink(theImportAnnotation.getElementValueByName("module").stringValue(),
+                theImportAnnotation.getElementValueByName("name").stringValue());
     }
 }

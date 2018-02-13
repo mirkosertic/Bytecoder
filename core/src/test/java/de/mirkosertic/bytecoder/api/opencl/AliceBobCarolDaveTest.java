@@ -20,7 +20,6 @@ import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_siz
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
 
-import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
@@ -98,6 +97,77 @@ public class AliceBobCarolDaveTest {
             System.out.println("Most similar match for input " + i + " is " + theMostSimilar[i] + " with a similarity of " + theMostSimilarity[i]);
         }
     }
+
+    @Test
+    public void testSimilarityWithMethodInKernel() throws Exception {
+        // The data of our four friends
+        Float4 theAlice = new Float4(5f, 1f, 0f, 6f);
+        Float4 theBob = new Float4(0f, 10f, 3f, 0f);
+        Float4 theCarol = new Float4(2f, 6f, 3f, 2f);
+        Float4 theDave = new Float4(7f, 2f, 1f, 8f);
+
+        // We need an input for our kernel, a list of vectors
+        Float4[] theInputs = new Float4[] {theAlice, theCarol, theBob, theDave};
+
+        // This is the computed output
+        int[] theMostSimilar = new int[theInputs.length];
+        float[] theMostSimilarity = new float[theInputs.length];
+
+        // We obtain a platform
+        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+        // All computation is done within a context. A context is
+        // used to cache memory buffers and compiled kernels
+        try (Context theContext = thePlatform.createContext()) {
+
+            // We fire up the computations
+            theContext.compute(theInputs.length, new Kernel() {
+
+                private float similarityOf(Float4 a, Float4 b) {
+                    return dot(a, b) / length(a) * length(b);
+                }
+
+                // This method is called for every workitem
+                @Override
+                public void processWorkItem() {
+                    // This is the id of the current work item
+                    int theCurrentWorkItemId = get_global_id(0);
+                    // This is the total number of work items
+                    int theMax = get_global_size(0);
+
+                    // We obtain the current work item from the list
+                    Float4 theCurrent = theInputs[theCurrentWorkItemId];
+
+                    float theMaxSimilarity = -1;
+                    int theMaxIndex = -1;
+
+                    // And compute the similarities with all other work item
+                    // except itself
+                    for (int i = 0;i<theMax;i++) {
+                        if (i != theCurrentWorkItemId) {
+                            Float4 theOther = theInputs[i];
+
+                            float theSimilarity = similarityOf(theCurrent, theOther);
+
+                            if (theSimilarity > theMaxSimilarity) {
+                                theMaxSimilarity = theSimilarity;
+                                theMaxIndex = i;
+                            }
+                        }
+                    }
+
+                    // The highest similarity is written to the output
+                    theMostSimilar[theCurrentWorkItemId] = theMaxIndex;
+                    theMostSimilarity[theCurrentWorkItemId] = theMaxSimilarity;
+                }
+            });
+        }
+
+        // Output the results
+        for (int i=0;i<theInputs.length;i++) {
+            System.out.println("Most similar match for input " + i + " is " + theMostSimilar[i] + " with a similarity of " + theMostSimilarity[i]);
+        }
+    }
+
 
     @Test
     public void testPerformance() throws Exception {
