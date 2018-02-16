@@ -27,6 +27,8 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeField;
+import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -58,7 +60,6 @@ import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -79,6 +80,7 @@ import de.mirkosertic.bytecoder.ssa.PHIExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -504,9 +506,10 @@ public class WASMSSAWriter extends IndentSSAWriter {
         int theMemoryOffset = theLayout.offsetForInstanceMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
-        BytecodeLinkedClass.LinkedField theField = theLinkedClass.memberFieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        BytecodeFieldMap theInstanceFields = theLinkedClass.instanceFieldMap();
+        BytecodeFieldMap.Entry<BytecodeField> theField = theInstanceFields.fieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        switch (TypeRef.toType(theField.getField().getTypeRef()).resolve()) {
+        switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT:
                 print("(f32.store offset=");
@@ -1226,12 +1229,13 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         int theMemoryOffset = theLayout.offsetForClassMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        BytecodeLinkedClass.LinkedField theField = theLinkedClass.staticFieldByName(
+        BytecodeFieldMap theStaticFields = theLinkedClass.staticFieldMap();
+        BytecodeFieldMap.Entry<BytecodeField> theField = theStaticFields.fieldByName(
                 aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
         );
 
         String theClassName = WASMWriterUtils.toClassName(aValue.getField().getClassIndex().getClassConstant());
-        switch (TypeRef.toType(theField.getField().getTypeRef()).resolve()) {
+        switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT: {
                 print("(f32.load offset=");
@@ -1284,11 +1288,12 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         int theMemoryOffset = theLayout.offsetForInstanceMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        BytecodeLinkedClass.LinkedField theField = theLinkedClass.memberFieldByName(
+        BytecodeFieldMap theInstanceFields = theLinkedClass.instanceFieldMap();
+        BytecodeFieldMap.Entry<BytecodeField> theField = theInstanceFields.fieldByName(
                 aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
         );
 
-        switch (TypeRef.toType(theField.getField().getTypeRef()).resolve()) {
+        switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT:
                 print("(f32.load offset=");

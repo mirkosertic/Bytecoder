@@ -44,10 +44,6 @@ public class BytecodeMethodCollection {
         return knownIdentifier.get(toSignature(aMethodName, aSignature));
     }
 
-    private String toSignature(BytecodeMethod aMethod) {
-        return toSignature(aMethod.getName().stringValue(), aMethod.getSignature());
-    }
-
     private String toSignature(String aMethodName, BytecodeMethodSignature aSignature) {
         StringBuilder theStringBuilder = new StringBuilder();
         theStringBuilder.append(toSignature(aSignature.getReturnType()));

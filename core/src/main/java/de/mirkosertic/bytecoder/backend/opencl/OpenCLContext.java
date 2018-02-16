@@ -185,28 +185,28 @@ class OpenCLContext implements Context {
 
                 OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
 
-                TypeRef theFieldType = TypeRef.toType(theArgument.getField().getField().getTypeRef());
+                TypeRef theFieldType = TypeRef.toType(theArgument.getField().getValue().getTypeRef());
                 DataRef theDataRef;
                 if (theFieldType.isArray()) {
                     TypeRef.ArrayTypeRef theArrayTypeRef = (TypeRef.ArrayTypeRef) theFieldType;
                     TypeRef theArrayElement = TypeRef.toType(theArrayTypeRef.arrayType().getType());
                     switch (theArrayElement.resolve()) {
                     case INT: {
-                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
+                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
                         theField.setAccessible(true);
                         int[] theData = (int[]) theField.get(aKernel);
                         theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_int * theData.length);
                         break;
                     }
                     case FLOAT: {
-                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
+                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
                         theField.setAccessible(true);
                         float[] theData = (float[]) theField.get(aKernel);
                         theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_float * theData.length);
                         break;
                     }
                     case REFERENCE: {
-                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getField().getName().stringValue());
+                        Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
                         theField.setAccessible(true);
                         Object[] theData = (Object[]) theField.get(aKernel);
 
@@ -216,10 +216,10 @@ class OpenCLContext implements Context {
                         break;
                     }
                     default:
-                        throw new IllegalArgumentException("Not supported array element type " + theArrayElement.resolve() + " for kernel argument " + theArgument.getField().getField().getName());
+                        throw new IllegalArgumentException("Not supported array element type " + theArrayElement.resolve() + " for kernel argument " + theArgument.getField().getValue().getName());
                     }
                 } else {
-                    throw new IllegalArgumentException("Type " + theFieldType + " is not supported for kernel argument " + theArgument.getField().getField().getName().stringValue());
+                    throw new IllegalArgumentException("Type " + theFieldType + " is not supported for kernel argument " + theArgument.getField().getValue().getName().stringValue());
                 }
 
                 switch (theArgument.getType()) {

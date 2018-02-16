@@ -37,6 +37,8 @@ public class BytecodeInstructionGETSTATIC extends BytecodeInstruction {
         BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
         BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
-        theLinkedClass.linkStaticField(theName.getName());
+        if (!theLinkedClass.linkStaticField(theName.getName())) {
+            throw new IllegalStateException("Cannot link static field " + theName.getName().stringValue() + " in " + theLinkedClass.getClassName().name());
+        }
     }
 }

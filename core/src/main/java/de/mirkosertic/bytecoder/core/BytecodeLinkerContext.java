@@ -79,7 +79,7 @@ public class BytecodeLinkerContext {
             BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
             rootNode.addEdgeTo(new BytecodeLinkedClassEdgeType(aTypeRef), theLinkedClass);
             if (theParentClass != null) {
-                theLinkedClass.addEdgeTo(new BytecodeSuperclassEdgeType(), theParentClass);
+                theLinkedClass.addEdgeTo(new BytecodeSubclassOfEdgeType(), theParentClass);
             }
 
             for (BytecodeMethod theMethod : theLoadedClass.getMethods()) {
@@ -109,10 +109,6 @@ public class BytecodeLinkerContext {
             // We automatically link every virtual method for the superclasses and implementing interfaces
             final BytecodeLinkedClass theFinalClass = theLinkedClass;
             for (BytecodeLinkedClass theSuperClassOrType : theLinkedClass.getImplementingTypes(true, false)) {
-                // Makre sure all fields are known
-                theSuperClassOrType.forEachMemberField(
-                        aEntry -> theFinalClass.linkField(new BytecodeUtf8Constant(aEntry.getKey())));
-
                 // Also link the virtual methods
                 theSuperClassOrType.forEachVirtualMethod(
                         aEntry -> {

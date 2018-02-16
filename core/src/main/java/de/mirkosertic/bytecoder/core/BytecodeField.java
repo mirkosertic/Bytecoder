@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeField {
+import de.mirkosertic.bytecoder.graph.Node;
+
+public class BytecodeField extends Node {
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;

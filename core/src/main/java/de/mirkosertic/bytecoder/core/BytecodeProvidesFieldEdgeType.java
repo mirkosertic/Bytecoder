@@ -15,13 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.graph.EdgeType;
-
 import java.util.function.Predicate;
 
-public class BytecodeSuperclassEdgeType implements EdgeType {
+import de.mirkosertic.bytecoder.graph.EdgeType;
+
+public class BytecodeProvidesFieldEdgeType implements EdgeType {
 
     public static Predicate<EdgeType> filter() {
-        return edgeType -> edgeType instanceof BytecodeSuperclassEdgeType;
-    }
+        return edgeType -> edgeType instanceof BytecodeProvidesFieldEdgeType;
+    };
 }

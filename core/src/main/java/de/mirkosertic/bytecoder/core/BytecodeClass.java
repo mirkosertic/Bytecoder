@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.Objects;
+
 import de.mirkosertic.bytecoder.api.OverrideParentClass;
 
 public class BytecodeClass {
@@ -57,7 +59,7 @@ public class BytecodeClass {
 
     public BytecodeField fieldByName(String aName) {
         for (BytecodeField theField : fields) {
-            if (theField.getName().stringValue().equals(aName)) {
+            if (Objects.equals(theField.getName().stringValue(), aName)) {
                 return theField;
             }
         }
@@ -66,7 +68,7 @@ public class BytecodeClass {
 
     public BytecodeMethod methodByNameAndSignatureOrNull(String aMethodName, BytecodeMethodSignature aSignature) {
         for (BytecodeMethod theMethod : methods) {
-            if (aMethodName.equals(theMethod.getName().stringValue()) && theMethod.getSignature().metchesExactlyTo(aSignature)) {
+            if (Objects.equals(aMethodName, theMethod.getName().stringValue()) && theMethod.getSignature().metchesExactlyTo(aSignature)) {
                 return theMethod;
             }
         }

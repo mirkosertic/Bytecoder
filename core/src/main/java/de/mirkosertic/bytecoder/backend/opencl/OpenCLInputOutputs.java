@@ -21,7 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeField;
+import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
 
 public class OpenCLInputOutputs {
 
@@ -31,15 +32,15 @@ public class OpenCLInputOutputs {
             INPUT, OUTPUT, INPUTOUTPUT
         }
 
-        private final BytecodeLinkedClass.LinkedField field;
+        private final BytecodeFieldMap.Entry<BytecodeField> field;
         private final Type type;
 
-        KernelArgument(BytecodeLinkedClass.LinkedField aField, Type aType) {
+        KernelArgument(BytecodeFieldMap.Entry<BytecodeField> aField, Type aType) {
             field = aField;
             type = aType;
         }
 
-        public BytecodeLinkedClass.LinkedField getField() {
+        public BytecodeFieldMap.Entry<BytecodeField> getField() {
             return field;
         }
 
@@ -54,27 +55,27 @@ public class OpenCLInputOutputs {
         values = new HashMap<>();
     }
 
-    public void registerReadFrom(BytecodeLinkedClass.LinkedField aLinkedField) {
-        values.computeIfAbsent(aLinkedField.getField().getName().stringValue(),
+    public void registerReadFrom(BytecodeFieldMap.Entry<BytecodeField> aLinkedField) {
+        values.computeIfAbsent(aLinkedField.getValue().getName().stringValue(),
                 k -> new KernelArgument(aLinkedField, KernelArgument.Type.INPUT));
     }
 
-    public void registerWriteTo(BytecodeLinkedClass.LinkedField aLinkedField) {
-        KernelArgument theArgument = values.get(aLinkedField.getField().getName().stringValue());
+    public void registerWriteTo(BytecodeFieldMap.Entry<BytecodeField> aLinkedField) {
+        KernelArgument theArgument = values.get(aLinkedField.getValue().getName().stringValue());
         if (theArgument == null) {
             theArgument = new KernelArgument(aLinkedField, KernelArgument.Type.OUTPUT);
-            values.put(aLinkedField.getField().getName().stringValue(), theArgument);
+            values.put(aLinkedField.getValue().getName().stringValue(), theArgument);
         } else {
             if (theArgument.type == KernelArgument.Type.INPUT) {
                 theArgument = new KernelArgument(aLinkedField, KernelArgument.Type.INPUTOUTPUT);
-                values.put(aLinkedField.getField().getName().stringValue(), theArgument);
+                values.put(aLinkedField.getValue().getName().stringValue(), theArgument);
             }
         }
     }
 
     public List<KernelArgument> arguments() {
         List<KernelArgument> theResult = new ArrayList<>(values.values());
-        theResult.sort(Comparator.comparing(o -> o.field.getField().getName().stringValue()));
+        theResult.sort(Comparator.comparing(o -> o.field.getValue().getName().stringValue()));
         return theResult;
     }
 }

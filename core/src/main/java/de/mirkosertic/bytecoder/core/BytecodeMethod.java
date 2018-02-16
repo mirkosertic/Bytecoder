@@ -16,8 +16,9 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.DelegatesTo;
+import de.mirkosertic.bytecoder.graph.Node;
 
-public class BytecodeMethod {
+public class BytecodeMethod extends Node {
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;
@@ -72,9 +73,5 @@ public class BytecodeMethod {
 
     public boolean isClassInitializer() {
         return name.stringValue().equals("<clinit>");
-    }
-
-    public boolean canThrowAnyException() {
-        return false;
     }
 }

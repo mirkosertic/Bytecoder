@@ -38,6 +38,8 @@ public class BytecodeInstructionPUTFIELD extends BytecodeInstruction {
         BytecodeNameIndex theName = theFieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
         BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
-        theLinkedClass.linkField(theName.getName());
+        if (!theLinkedClass.linkField(theName.getName())) {
+            throw new IllegalStateException("Cannot link field " + theName.getName().stringValue() + " in " + theLinkedClass.getClassName().name());
+        }
     }
 }

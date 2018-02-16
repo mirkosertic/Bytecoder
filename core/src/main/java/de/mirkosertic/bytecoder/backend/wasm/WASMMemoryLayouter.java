@@ -15,16 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import com.google.common.collect.Lists;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import de.mirkosertic.bytecoder.core.BytecodeField;
+import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class WASMMemoryLayouter {
 
@@ -43,116 +44,61 @@ public class WASMMemoryLayouter {
         int classSize();
     }
 
-    private final Map<BytecodeObjectTypeRef, List<BytecodeLinkedClass.LinkedField>> classes;
-    private final Map<BytecodeObjectTypeRef, BytecodeObjectTypeRef> superClasses;
+    private final Map<BytecodeObjectTypeRef, BytecodeFieldMap> instanceFields;
+    private final Map<BytecodeObjectTypeRef, BytecodeFieldMap> classFields;
 
     public WASMMemoryLayouter(BytecodeLinkerContext aLinkerContext) {
-        classes = new HashMap<>();
-        superClasses = new HashMap<>();
+        instanceFields = new HashMap<>();
+        classFields = new HashMap<>();
         aLinkerContext.linkedClasses().forEach(aEntry -> registerClass(aEntry.targetNode()));
     }
 
-    private List<BytecodeLinkedClass.LinkedField> collectFields(BytecodeLinkedClass aClass) {
-        List<BytecodeLinkedClass.LinkedField> theFields = new ArrayList<>();
-
-        aClass.forEachMemberField(aEntry -> {
-            BytecodeLinkedClass.LinkedField theField = aEntry.getValue();
-            if (Objects.equals(theField.getDeclaringType(), aClass.getClassName())) {
-                theFields.add(theField);
-            }
-        });
-
-        aClass.forEachStaticField(aEntry -> {
-            BytecodeLinkedClass.LinkedField theField = aEntry.getValue();
-            if (Objects.equals(theField.getDeclaringType(), aClass.getClassName())) {
-                theFields.add(theField);
-            }
-        });
-
-        return theFields;
-    }
-
     private void registerClass(BytecodeLinkedClass aClass) {
-        if (aClass.getSuperClass() != null) {
-            registerClass(aClass.getSuperClass());
-        }
-
-        if (!classes.containsKey(aClass)) {
-            classes.put(aClass.getClassName(), collectFields(aClass));
-            if (aClass.getSuperClass() != null) {
-                superClasses.put(aClass.getClassName(), aClass.getSuperClass().getClassName());
-            }
-        }
+        instanceFields.put(aClass.getClassName(), aClass.instanceFieldMap());
+        classFields.put(aClass.getClassName(), aClass.staticFieldMap());
     }
-
-    private List<BytecodeLinkedClass.LinkedField> allFieldsFor(BytecodeObjectTypeRef aType) {
-        List<BytecodeLinkedClass.LinkedField> theFoundFields = new ArrayList<>();
-        BytecodeObjectTypeRef theStartingType = aType;
-        while (theStartingType != null) {
-            theFoundFields.addAll(classes.get(theStartingType));
-            theStartingType = superClasses.get(theStartingType);
-        }
-        // We inverse the list, so the the fields from the inheritance root comes first in the list, and not last
-        return Lists.reverse(theFoundFields);
-    }
-
 
     public MemoryLayout layoutFor(BytecodeObjectTypeRef aType) {
-        if (!classes.containsKey(aType)) {
+        if (!classFields.containsKey(aType)) {
             throw new IllegalArgumentException("No field information found for " + aType.name());
         }
         return new MemoryLayout() {
-
             @Override
             public int instanceSize() {
-                List<BytecodeLinkedClass.LinkedField> theFields = allFieldsFor(aType);
-                int theOffset = OBJECT_HEADER_SIZE;
-                for (BytecodeLinkedClass.LinkedField theField : theFields) {
-                    if (!theField.getField().getAccessFlags().isStatic()) {
-                        theOffset+= OBJECT_FIELDSIZE;
-                    }
-                }
-                return theOffset;
+                BytecodeFieldMap theInstanceFields = instanceFields.get(aType);
+                return OBJECT_HEADER_SIZE + OBJECT_FIELDSIZE * (int) theInstanceFields.stream().count();
             }
 
             @Override
             public int classSize() {
-                List<BytecodeLinkedClass.LinkedField> theFields = allFieldsFor(aType);
-                int theOffset = CLASS_HEADER_SIZE;
-                for (BytecodeLinkedClass.LinkedField theField : theFields) {
-                    if (theField.getField().getAccessFlags().isStatic()) {
-                        theOffset+= OBJECT_FIELDSIZE;
-                    }
-                }
-                return theOffset;
+                BytecodeFieldMap theClassFields = classFields.get(aType);
+                return CLASS_HEADER_SIZE + OBJECT_FIELDSIZE * (int) theClassFields.stream().count();
             }
 
             @Override
             public int offsetForInstanceMember(String aName) {
-                List<BytecodeLinkedClass.LinkedField> theFields = allFieldsFor(aType);
+                BytecodeFieldMap theInstanceFields = instanceFields.get(aType);
+                List<BytecodeFieldMap.Entry<BytecodeField>> theFields = theInstanceFields.stream().collect(Collectors.toList());
                 int theOffset = OBJECT_HEADER_SIZE;
-                for (BytecodeLinkedClass.LinkedField theField : theFields) {
-                    if (!theField.getField().getAccessFlags().isStatic()) {
-                        if (Objects.equals(aName, theField.getField().getName().stringValue())) {
-                            return theOffset;
-                        }
-                        theOffset+= OBJECT_FIELDSIZE;
+                for (BytecodeFieldMap.Entry<BytecodeField> theField : theFields) {
+                    if (Objects.equals(aName, theField.getValue().getName().stringValue())) {
+                        return theOffset;
                     }
+                    theOffset+= OBJECT_FIELDSIZE;
                 }
-                throw new IllegalArgumentException("Field " + aName + " not found for type " + aType.name());
+                throw new IllegalArgumentException("Member field " + aName + " not found for type " + aType.name());
             }
 
             @Override
             public int offsetForClassMember(String aName) {
-                List<BytecodeLinkedClass.LinkedField> theFields = allFieldsFor(aType);
+                BytecodeFieldMap theInstanceFields = classFields.get(aType);
+                List<BytecodeFieldMap.Entry<BytecodeField>> theFields = theInstanceFields.stream().collect(Collectors.toList());
                 int theOffset = CLASS_HEADER_SIZE;
-                for (BytecodeLinkedClass.LinkedField theField : theFields) {
-                    if (theField.getField().getAccessFlags().isStatic()) {
-                        if (Objects.equals(aName, theField.getField().getName().stringValue())) {
-                            return theOffset;
-                        }
-                        theOffset+= OBJECT_FIELDSIZE;
+                for (BytecodeFieldMap.Entry<BytecodeField> theField : theFields) {
+                    if (Objects.equals(aName, theField.getValue().getName().stringValue())) {
+                        return theOffset;
                     }
+                    theOffset+= OBJECT_FIELDSIZE;
                 }
                 throw new IllegalArgumentException("Static field " + aName + " not found for type " + aType.name());
             }
