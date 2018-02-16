@@ -82,19 +82,19 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print(", ");
             }
             OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
-            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getField().getTypeRef());
+            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getValue().getTypeRef());
             switch (theArgument.getType()) {
                 case INPUT:
                     print("const ");
                     print(toType(theTypeRef));
                     print(" ");
-                    print(theArgument.getField().getField().getName().stringValue());
+                    print(theArgument.getField().getValue().getName().stringValue());
                     break;
                 case OUTPUT:
                 case INPUTOUTPUT:
                     print(toType(theTypeRef));
                     print(" ");
-                    print(theArgument.getField().getField().getName().stringValue());
+                    print(theArgument.getField().getValue().getName().stringValue());
                     break;
             }
         }
@@ -136,19 +136,19 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print(", ");
             }
             OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
-            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getField().getTypeRef());
+            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getValue().getTypeRef());
             switch (theArgument.getType()) {
             case INPUT:
                 print("const ");
                 print(toType(theTypeRef));
                 print(" ");
-                print(theArgument.getField().getField().getName().stringValue());
+                print(theArgument.getField().getValue().getName().stringValue());
                 break;
             case OUTPUT:
             case INPUTOUTPUT:
                 print(toType(theTypeRef));
                 print(" ");
-                print(theArgument.getField().getField().getName().stringValue());
+                print(theArgument.getField().getValue().getName().stringValue());
                 break;
             }
         }
@@ -476,7 +476,7 @@ public class OpenCLWriter extends IndentSSAWriter {
                 print(", ");
             }
             OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
-            print(theArgument.getField().getField().getName().stringValue());
+            print(theArgument.getField().getValue().getName().stringValue());
         }
 
         List<Value> theMethodArguments = aExpression.incomingDataFlows();

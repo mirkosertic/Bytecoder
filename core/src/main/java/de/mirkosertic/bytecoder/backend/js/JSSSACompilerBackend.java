@@ -35,6 +35,7 @@ import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -163,7 +164,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.println("     bootstrap : function() {");
         aLinkerContext.linkedClasses().forEach(aEntry -> {
-            if (!aEntry.targetNode().getAccessFlags().isInterface()) {
+            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
                 theWriter.print("          ");
                 theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
                 theWriter.println(".classInitCheck();");
@@ -208,8 +209,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("],");
 
                 // then we add class specific static fields
-                theEntry.targetNode().forEachStaticField(
-                        aFieldEntry -> theWriter.println("    " + aFieldEntry.getKey() + " : null, // declared in " + aFieldEntry.getValue().getDeclaringType().name() ));
+                BytecodeFieldMap theStaticFields = theEntry.targetNode().staticFieldMap();
+                theStaticFields.stream().forEach(
+                        aFieldEntry -> theWriter.println("    " + aFieldEntry.getValue().getName().stringValue() + " : null, // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
                 theWriter.println();
 
                 theWriter.println("    resolveStaticCallSiteObject: function(aKey, aProducerFunction) {");
@@ -227,8 +229,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println();
 
                 // The Constructor function initializes all object members with null
+
+                BytecodeFieldMap theInstanceFields = theEntry.targetNode().instanceFieldMap();
                 theWriter.println("    Create : function() {");
-                theEntry.targetNode().forEachMemberField(aField -> theWriter.println("        this." + aField.getKey() + " = null; // declared in " + aField.getValue().getDeclaringType().name()));
+                theInstanceFields.stream().forEach(
+                        aFieldEntry -> theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = null; // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
                 theWriter.println("    },");
                 theWriter.println();
 

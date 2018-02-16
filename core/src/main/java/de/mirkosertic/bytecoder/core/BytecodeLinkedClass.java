@@ -66,30 +66,10 @@ public class BytecodeLinkedClass extends Node {
         }
     }
 
-    public static class LinkedField {
-        private final BytecodeObjectTypeRef declaringType;
-        private final BytecodeField field;
-
-        public LinkedField(BytecodeObjectTypeRef aDeclaringType, BytecodeField aField) {
-            declaringType = aDeclaringType;
-            field = aField;
-        }
-
-        public BytecodeObjectTypeRef getDeclaringType() {
-            return declaringType;
-        }
-
-        public BytecodeField getField() {
-            return field;
-        }
-    }
-
     private final int uniqueId;
     private final BytecodeObjectTypeRef className;
     private final BytecodeClass bytecodeClass;
     private final Map<BytecodeVirtualMethodIdentifier, LinkedMethod> linkedMethods;
-    private final Map<String, LinkedField> staticFields;
-    private final Map<String, LinkedField> memberFields;
     private final BytecodeLinkerContext linkerContext;
     private final Set<BytecodeMethod> knownMethods;
     private BytecodeMethod classInitializer;
@@ -101,8 +81,6 @@ public class BytecodeLinkedClass extends Node {
         linkedMethods = new HashMap<>();
         linkerContext = aLinkerContext;
         knownMethods = new HashSet<>();
-        staticFields = new HashMap<>();
-        memberFields = new HashMap<>();
     }
 
     public boolean hasMethod(BytecodeMethod aMethod) {
@@ -147,21 +125,9 @@ public class BytecodeLinkedClass extends Node {
         return theResult;
     }
 
-    public BytecodeAccessFlags getAccessFlags() {
-        return bytecodeClass.getAccessFlags();
-    }
-
     public BytecodeLinkedClass getSuperClass() {
         return (BytecodeLinkedClass) singleOutgoingNodeMatching(
-                BytecodeSuperclassEdgeType.filter()).orElse(null);
-    }
-
-    public LinkedField memberFieldByName(String aName) {
-        return memberFields.get(aName);
-    }
-
-    public LinkedField staticFieldByName(String aName) {
-        return staticFields.get(aName);
+                BytecodeSubclassOfEdgeType.filter()).orElse(null);
     }
 
     public void linkClassInitializer(BytecodeMethod aMethod) {
@@ -169,47 +135,131 @@ public class BytecodeLinkedClass extends Node {
         linkStaticMethod(aMethod.getName().stringValue(), aMethod.getSignature());
     }
 
-    public void linkStaticField(BytecodeUtf8Constant aName) {
+    public boolean linkStaticField(BytecodeUtf8Constant aName) {
         String theFieldName = aName.stringValue();
-        if (!staticFields.containsKey(theFieldName)) {
-            BytecodeField theField = bytecodeClass.fieldByName(aName.stringValue());
-            if (theField == null) {
-                throw new RuntimeException("No field " + aName.stringValue() + " in " + className.name());
+
+        // Do we already have a link?
+        Map<String, BytecodeField> theFields = new HashMap<>();
+        outgoingEdges(BytecodeProvidesFieldEdgeType.filter()).map(t-> (BytecodeField) t.targetNode()).forEach(t -> theFields.put(t.getName().stringValue(), t));
+
+        BytecodeField theField = theFields.get(theFieldName);
+        if (theField != null) {
+            if (!theField.getAccessFlags().isStatic()) {
+                throw new IllegalStateException("Field " + theFieldName + " is not static in " + className.name());
             }
-            staticFields.put(theFieldName, new LinkedField(className, theField));
-            linkerContext.linkTypeRef(theField.getTypeRef());
+            return true;
         }
+
+        theField = bytecodeClass.fieldByName(theFieldName);
+        if (theField != null) {
+            if (!theField.getAccessFlags().isStatic()) {
+                throw new IllegalStateException("Field " + theFieldName + " is not static in " + className.name());
+            }
+
+            addEdgeTo(new BytecodeProvidesFieldEdgeType(), theField);
+
+            linkerContext.linkTypeRef(theField.getTypeRef());
+
+            return true;
+        }
+
+        // Implementing interfaces can also provide static fields
+        for (BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
+            if (theImplementedInterface.linkStaticField(aName)) {
+                return true;
+            }
+        }
+
+        BytecodeLinkedClass theSuperClass = getSuperClass();
+        if (theSuperClass != null) {
+            return theSuperClass.linkStaticField(aName);
+        }
+
+        return false;
     }
 
-    public void linkField(BytecodeUtf8Constant aName) {
+    public boolean linkField(BytecodeUtf8Constant aName) {
+
         String theFieldName = aName.stringValue();
-        if (!memberFields.containsKey(theFieldName)) {
 
-            BytecodeObjectTypeRef theClassName = className;
-            BytecodeLinkedClass theClass = this;
+        // Do we already have a link?
+        Map<String, BytecodeField> theFields = new HashMap<>();
+        outgoingEdges(BytecodeProvidesFieldEdgeType.filter()).map(t-> (BytecodeField) t.targetNode()).forEach(t -> theFields.put(t.getName().stringValue(), t));
 
-            while(theClass != null) {
-
-                BytecodeField theField = theClass.bytecodeClass.fieldByName(aName.stringValue());
-                if (theField != null) {
-                    memberFields.put(theFieldName, new LinkedField(theClassName, theField));
-                    linkerContext.linkTypeRef(theField.getTypeRef());
-                    if (theClass != this) {
-                        theClass.linkField(aName);
-                    }
-                    return;
-                }
-
-                if (theClass.bytecodeClass.getSuperClass() != BytecodeClassinfoConstant.OBJECT_CLASS) {
-                    theClassName = BytecodeObjectTypeRef.fromUtf8Constant(theClass.bytecodeClass.getSuperClass().getConstant());
-
-                    theClass = linkerContext.linkClass(theClassName);
-                } else {
-                    theClass = null;
-                }
+        BytecodeField theField = theFields.get(theFieldName);
+        if (theField != null) {
+            if (theField.getAccessFlags().isStatic()) {
+                throw new IllegalStateException("Field " + theFieldName + " is static in " + className.name());
             }
-            throw new IllegalArgumentException("No such field : " + aName + " in " + className.name());
+            return true;
         }
+
+        theField = bytecodeClass.fieldByName(theFieldName);
+        if (theField != null) {
+            if (theField.getAccessFlags().isStatic()) {
+                throw new IllegalStateException("Field " + theFieldName + " is static in " + className.name());
+            }
+
+            addEdgeTo(new BytecodeProvidesFieldEdgeType(), theField);
+
+            linkerContext.linkTypeRef(theField.getTypeRef());
+
+            return true;
+        }
+
+        BytecodeLinkedClass theSuperClass = getSuperClass();
+        if (theSuperClass != null) {
+            return theSuperClass.linkField(aName);
+        }
+
+        return false;
+    }
+
+    public BytecodeFieldMap instanceFieldMap() {
+        BytecodeLinkedClass theSuperclass = getSuperClass();
+        final BytecodeFieldMap theMap = theSuperclass != null ? theSuperclass.instanceFieldMap() : new BytecodeFieldMap();
+
+        outgoingEdges(BytecodeProvidesFieldEdgeType.filter())
+                .map(t -> (BytecodeField) t.targetNode()).forEach(aField -> {
+            if (!aField.getAccessFlags().isStatic()) {
+                theMap.register(BytecodeLinkedClass.this, aField);
+            }
+        });
+        return theMap;
+    }
+
+    public BytecodeFieldMap staticFieldMap() {
+        BytecodeLinkedClass theSuperclass = getSuperClass();
+        final BytecodeFieldMap theMap = theSuperclass != null ? theSuperclass.staticFieldMap() : new BytecodeFieldMap();
+
+        for (BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
+            BytecodeFieldMap theInterfaceFields = theImplementedInterface.staticFieldMap();
+            theMap.merge(theInterfaceFields);
+        }
+
+        outgoingEdges(BytecodeProvidesFieldEdgeType.filter())
+                .map(t -> (BytecodeField) t.targetNode()).forEach(aField -> {
+            if (aField.getAccessFlags().isStatic()) {
+                theMap.register(BytecodeLinkedClass.this, aField);
+            }
+        });
+        return theMap;
+    }
+
+    public BytecodeMethodMap methodsMap() {
+        BytecodeLinkedClass theSuperclass = getSuperClass();
+        final BytecodeMethodMap theMap = theSuperclass != null ? theSuperclass.methodsMap() : new BytecodeMethodMap();
+
+        for (BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
+            BytecodeMethodMap theInterfaceMethods = theImplementedInterface.methodsMap();
+            theMap.merge(theInterfaceMethods);
+        }
+
+        outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
+                .map(t -> (BytecodeMethod) t.targetNode()).forEach(aMethod -> {
+            theMap.register(BytecodeLinkedClass.this, aMethod);
+        });
+        return theMap;
     }
 
     private void link(BytecodeTypeRef aTypeRef) {
@@ -402,14 +452,6 @@ public class BytecodeLinkedClass extends Node {
         knownMethods.forEach(aMethod);
     }
 
-    public void forEachStaticField(Consumer<Map.Entry<String, LinkedField>> aConsumer) {
-        staticFields.entrySet().forEach(aConsumer);
-    }
-
-    public void forEachMemberField(Consumer<Map.Entry<String, LinkedField>> aConsumer) {
-        memberFields.entrySet().forEach(aConsumer);
-    }
-
     public boolean hasClassInitializer() {
         return classInitializer != null;
     }
@@ -422,7 +464,7 @@ public class BytecodeLinkedClass extends Node {
         BytecodeAnnotation theImportAnnotation = aMethod.getAttributes().getAnnotationByType(Import.class.getName());
         if (theImportAnnotation == null) {
             String theClassName = className.name();
-            int p = theClassName.lastIndexOf(".");
+            int p = theClassName.lastIndexOf('.');
             if (p>=0) {
                 theClassName = theClassName.substring(p + 1);
             }

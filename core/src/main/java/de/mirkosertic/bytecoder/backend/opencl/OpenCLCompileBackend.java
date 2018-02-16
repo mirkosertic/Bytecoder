@@ -23,6 +23,7 @@ import java.util.Set;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -35,11 +36,11 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 
 public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult> {
@@ -143,9 +144,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
     }
 
     private void fillInputOutputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) {
-        aKernelClass.forEachMemberField(aEntry -> {
-            aInputOutputs.registerReadFrom(aEntry.getValue());
-            aInputOutputs.registerWriteTo(aEntry.getValue());
+        BytecodeFieldMap theInstanceFields = aKernelClass.instanceFieldMap();
+        theInstanceFields.stream().forEach(aEntry -> {
+            aInputOutputs.registerReadFrom(aEntry);
+            aInputOutputs.registerWriteTo(aEntry);
         });
     }
 
@@ -155,7 +157,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
             BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
             if (theClass == aKernelClass) {
-                BytecodeLinkedClass.LinkedField theField = theClass.memberFieldByName(
+                BytecodeFieldMap theInstanceFields = aKernelClass.instanceFieldMap();
+                BytecodeFieldMap.Entry theField = theInstanceFields.fieldByName(
                         theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
                 aInputOutputs.registerReadFrom(theField);
             }

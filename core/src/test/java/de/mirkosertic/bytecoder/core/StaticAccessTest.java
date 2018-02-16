@@ -36,8 +36,8 @@ public class StaticAccessTest {
         StaticClassWithStuffInside.member = 12;
         StaticClassWithStuffInside.member2 = theText;
         int theResult = StaticClassWithStuffInside.member;
-        String theResdult2 = StaticClassWithStuffInside.member2;
-        Assert.assertSame(theText, theResdult2);
+        String theResult2 = StaticClassWithStuffInside.member2;
+        Assert.assertSame(theText, theResult2);
         Assert.assertEquals(12, theResult, 0);
     }
 

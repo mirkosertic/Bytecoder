@@ -36,6 +36,7 @@ import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -44,10 +45,10 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -57,7 +58,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         private final Program program;
         private final RegionNode bootstrapMethod;
 
-        public CallSite(Program aProgram, RegionNode aBootstrapMethod) {
+        private CallSite(Program aProgram, RegionNode aBootstrapMethod) {
             program = aProgram;
             bootstrapMethod = aBootstrapMethod;
         }
@@ -715,7 +716,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(theLayout.classSize());
             theWriter.print(")");
 
-            if (aEntry.targetNode().staticFieldByName("$VALUES") != null) {
+            BytecodeFieldMap theStaticFields = aEntry.targetNode().staticFieldMap();
+            if (theStaticFields.fieldByName("$VALUES") != null) {
                 theWriter.print(" (i32.const ");
                 theWriter.print(theLayout.offsetForClassMember("$VALUES"));
                 theWriter.println(")");
@@ -787,7 +789,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 return;
             }
 
-            if (!aEntry.targetNode().getAccessFlags().isInterface()) {
+            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
 
                 if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     theWriter.print("      (call $");
@@ -881,7 +883,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
         return new WASMCompileResult(aLinkerContext, theGeneratedFunctions, theStringWriter.toString(), theMemoryLayout);
     }
-
 
     @Override
     public String generatedFileName() {
