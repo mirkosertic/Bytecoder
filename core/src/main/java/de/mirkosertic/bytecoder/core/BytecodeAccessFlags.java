@@ -35,6 +35,14 @@ public class BytecodeAccessFlags {
         return (value & 0x0001) > 0;
     }
 
+    public boolean isPrivate() {
+        return (value & 0x0002) > 0;
+    }
+
+    public boolean isProtected() {
+        return (value & 0x0004) > 0;
+    }
+
     public boolean isFinal() {
         return (value & 0x0010) > 0;
     }

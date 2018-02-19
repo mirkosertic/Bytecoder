@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
@@ -40,10 +41,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -51,16 +49,19 @@ import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
@@ -129,27 +130,26 @@ public class OpenCLWriter extends IndentSSAWriter {
 
         boolean theFirst = true;
         List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
-        for (int i = 0; i<theArguments.size(); i++) {
+        for (OpenCLInputOutputs.KernelArgument theArgument1 : theArguments) {
             if (theFirst) {
                 theFirst = false;
             } else {
                 print(", ");
             }
-            OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
-            TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getValue().getTypeRef());
-            switch (theArgument.getType()) {
-            case INPUT:
-                print("const ");
-                print(toType(theTypeRef));
-                print(" ");
-                print(theArgument.getField().getValue().getName().stringValue());
-                break;
-            case OUTPUT:
-            case INPUTOUTPUT:
-                print(toType(theTypeRef));
-                print(" ");
-                print(theArgument.getField().getValue().getName().stringValue());
-                break;
+            TypeRef theTypeRef = TypeRef.toType(theArgument1.getField().getValue().getTypeRef());
+            switch (theArgument1.getType()) {
+                case INPUT:
+                    print("const ");
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument1.getField().getValue().getName().stringValue());
+                    break;
+                case OUTPUT:
+                case INPUTOUTPUT:
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument1.getField().getValue().getName().stringValue());
+                    break;
             }
         }
 
@@ -393,7 +393,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private String toStructName(BytecodeObjectTypeRef aObjectType) {
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aObjectType);
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aObjectType);
         BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
         BytecodeAnnotation theAnnotation = theBytecodeClass.getAttributes().getAnnotationByType(OpenCLType.class.getName());
         if (theAnnotation == null) {
@@ -601,7 +601,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printGetFieldValue(GetFieldExpression aValue) {
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         if (theLinkedClass == kernelClass) {
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
@@ -635,10 +635,11 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInvokeStatic(InvokeStaticMethodExpression aValue) {
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aValue.getClassName());
-        List<BytecodeMethod> theMethods = new ArrayList<>();
-        theLinkedClass.forEachMethod(theMethods::add);
-        for (BytecodeMethod theMethod : theMethods) {
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getClassName());
+        BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
+        AtomicBoolean theFound = new AtomicBoolean(false);
+        theMethods.stream().forEach(aMethodMapsEntry -> {
+            BytecodeMethod theMethod = aMethodMapsEntry.getValue();
             if (Objects.equals(theMethod.getName().stringValue(), aValue.getMethodName()) && theMethod.getSignature().metchesExactlyTo(aValue.getSignature())) {
                 BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(OpenCLFunction.class.getName());
                 if (theAnnotation == null) {
@@ -660,9 +661,11 @@ public class OpenCLWriter extends IndentSSAWriter {
                 }
                 print(")");
 
-                return;
+                theFound.set(true);
             }
+        });
+        if (!theFound.get()) {
+            throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
         }
-        throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
     }
 }

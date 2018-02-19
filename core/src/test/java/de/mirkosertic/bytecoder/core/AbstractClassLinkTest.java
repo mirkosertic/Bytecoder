@@ -50,6 +50,30 @@ public class AbstractClassLinkTest {
         }
     }
 
+    public abstract class BaseClass {
+
+        public abstract int compute();
+
+        public int getValue() {
+            return compute();
+        }
+    }
+
+    public class SubClass extends BaseClass {
+
+        @Override
+        public int compute() {
+            return 1000;
+        }
+    }
+
+    @Test
+    public void testInheritedAbstractMethod() {
+        SubClass theSub = new SubClass();
+        int theResult = theSub.compute();
+        Assert.assertEquals(1000, theResult, 0);
+    }
+
     @Test
     public void testLinkAndAbstractInvocation() {
         Instance theInstance = new Instance();

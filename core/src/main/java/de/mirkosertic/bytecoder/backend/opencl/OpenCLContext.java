@@ -156,8 +156,6 @@ class OpenCLContext implements Context {
             ALREADY_COMPILED.put(theKernelClass, theResult);
         }
 
-        System.out.println(theResult.getData());
-
         // Construct the program
         cl_program theCLProgram = clCreateProgramWithSource(context,
                 1, new String[]{ theResult.getData() }, null, null);

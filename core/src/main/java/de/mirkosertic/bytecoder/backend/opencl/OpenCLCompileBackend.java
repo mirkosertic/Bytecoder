@@ -15,19 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Set;
-
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
@@ -42,6 +37,10 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
 
 public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult> {
 
@@ -61,13 +60,11 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
     public OpenCLCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(loader, aOptions.getLogger());
-        BytecodeLinkedClass theKernelClass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass));
+        BytecodeLinkedClass theKernelClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass));
 
-        theKernelClass.linkVirtualMethod(aEntryPointMethodName, aEntryPointSignatue);
+        theKernelClass.resolveVirtualMethod(aEntryPointMethodName, aEntryPointSignatue);
 
-        // Now we need to retrive the method
-        Set<BytecodeMethod> theBytecodeMethods = new HashSet<>();
-        theKernelClass.forEachMethod(theBytecodeMethods::add);
+        BytecodeResolvedMethods theMethodMap = theKernelClass.resolvedMethods();
 
         StringWriter theStrWriter = new StringWriter();
 
@@ -97,10 +94,15 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         // We use the relooper here
         Relooper theRelooper = new Relooper();
 
-        // Now, we write the auxiliary methods
-        theKernelClass.forEachMethod(aMethod -> {
-            if (aMethod != theKernelMethod) {
-                Program theSSAProgram1 = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), aMethod);
+        theMethodMap.stream().forEach(aMethodMapEntry -> {
+            BytecodeMethod theMethod = aMethodMapEntry.getValue();
+
+            if (theMethod.isConstructor()) {
+                return;
+            }
+
+            if (theMethod != theKernelMethod) {
+                Program theSSAProgram1 = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer
                 aOptions.getOptimizer().optimize(theSSAProgram1.getControlFlowGraph(), aLinkerContext);
@@ -110,7 +112,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 try {
                     Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram1.getControlFlowGraph());
 
-                    theSSAWriter.printReloopedInline(aMethod, theSSAProgram1, theReloopedBlock);
+                    theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock);
                 } catch (Exception e) {
                     throw new IllegalStateException("Error relooping cfg", e);
                 }
@@ -144,8 +146,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
     }
 
     private void fillInputOutputs(BytecodeLinkerContext aContext, BytecodeLinkedClass aKernelClass, ExpressionList aExpressionList, OpenCLInputOutputs aInputOutputs) {
-        BytecodeFieldMap theInstanceFields = aKernelClass.instanceFieldMap();
-        theInstanceFields.stream().forEach(aEntry -> {
+        BytecodeResolvedFields theInstanceFields = aKernelClass.resolvedFields();
+        theInstanceFields.streamForInstanceFields().forEach(aEntry -> {
             aInputOutputs.registerReadFrom(aEntry);
             aInputOutputs.registerWriteTo(aEntry);
         });
@@ -155,10 +157,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         if (aValue instanceof GetFieldExpression) {
             GetFieldExpression theGetField = (GetFieldExpression) aValue;
 
-            BytecodeLinkedClass theClass = aContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
+            BytecodeLinkedClass theClass = aContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theGetField.getField().getClassIndex().getClassConstant().getConstant()));
             if (theClass == aKernelClass) {
-                BytecodeFieldMap theInstanceFields = aKernelClass.instanceFieldMap();
-                BytecodeFieldMap.Entry theField = theInstanceFields.fieldByName(
+                BytecodeResolvedFields theInstanceFields = aKernelClass.resolvedFields();
+                BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(
                         theGetField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
                 aInputOutputs.registerReadFrom(theField);
             }

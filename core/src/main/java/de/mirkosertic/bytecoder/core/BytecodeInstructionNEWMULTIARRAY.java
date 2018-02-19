@@ -44,7 +44,7 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
 
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        aLinkerContext.linkClass(getObjectType());
+        aLinkerContext.resolveClass(getObjectType());
 
         BytecodeClassinfoConstant theConstant = getTypeConstant();
         String theClassName = theConstant.getConstant().stringValue();

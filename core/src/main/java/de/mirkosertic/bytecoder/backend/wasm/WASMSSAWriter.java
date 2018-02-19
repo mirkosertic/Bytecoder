@@ -27,8 +27,7 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeField;
-import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -505,9 +504,9 @@ public class WASMSSAWriter extends IndentSSAWriter {
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
         int theMemoryOffset = theLayout.offsetForInstanceMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
-        BytecodeFieldMap theInstanceFields = theLinkedClass.instanceFieldMap();
-        BytecodeFieldMap.Entry<BytecodeField> theField = theInstanceFields.fieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
+        BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
@@ -853,7 +852,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeClassReferenceValue(ClassReferenceValue aValue) {
         print("(get_global $");
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(aValue.getType());
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getType());
         print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
         print("__runtimeClass)");
     }
@@ -894,7 +893,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeInstanceOfValue(InstanceOfExpression aValue) {
 
-        BytecodeLinkedClass theClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
+        BytecodeLinkedClass theClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
 
         print("(call $INSTANCEOF_CHECK ");
         writeValue(aValue.incomingDataFlows().get(0));
@@ -1224,15 +1223,16 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeGetStaticValue(GetStaticExpression aValue) {
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         int theMemoryOffset = theLayout.offsetForClassMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-
-        BytecodeFieldMap theStaticFields = theLinkedClass.staticFieldMap();
-        BytecodeFieldMap.Entry<BytecodeField> theField = theStaticFields.fieldByName(
-                aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
-        );
+        String theFieldName = aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
+        BytecodeResolvedFields.FieldEntry theField = theStaticFields.fieldByName(theFieldName);
+        if (!theField.getValue().getAccessFlags().isStatic()) {
+            throw new IllegalStateException("Field " + theFieldName + " is not static!");
+        }
 
         String theClassName = WASMWriterUtils.toClassName(aValue.getField().getClassIndex().getClassConstant());
         switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
@@ -1269,7 +1269,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
                 new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                         Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theType);
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theType);
         print("(call $");
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
@@ -1283,15 +1283,17 @@ public class WASMSSAWriter extends IndentSSAWriter {
     }
 
     private void writeGetFieldValue(GetFieldExpression aValue) {
-        BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
         WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         int theMemoryOffset = theLayout.offsetForInstanceMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        String theFieldName = aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
 
-        BytecodeFieldMap theInstanceFields = theLinkedClass.instanceFieldMap();
-        BytecodeFieldMap.Entry<BytecodeField> theField = theInstanceFields.fieldByName(
-                aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()
-        );
+        BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
+        BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(theFieldName);
+        if (theField.getValue().getAccessFlags().isStatic()) {
+            throw new IllegalStateException("Field " + theFieldName + " is static!");
+        }
 
         switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:

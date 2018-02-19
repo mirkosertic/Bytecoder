@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.core;
 import de.mirkosertic.bytecoder.api.DelegatesTo;
 import de.mirkosertic.bytecoder.graph.Node;
 
+import java.util.Objects;
+
 public class BytecodeMethod extends Node {
 
     private final BytecodeAccessFlags accessFlags;
@@ -49,14 +51,18 @@ public class BytecodeMethod extends Node {
         if (theDelegatesTo != null) {
             BytecodeAnnotation.ElementValue theMethodToDelegate = theDelegatesTo.getElementValueByName("methodName");
             String theDelegatingMethod = theMethodToDelegate.stringValue();
-            return aContextClass.methodByNameAndSignatureOrNull(theDelegatingMethod, getSignature()).getCode(aContextClass);
+            BytecodeMethod theMethod = aContextClass.methodByNameAndSignatureOrNull(theDelegatingMethod, getSignature());
+            if (theMethod == null) {
+                throw new IllegalStateException("Cannot find method " + theDelegatingMethod + " in " + aContextClass.getThisInfo().getConstant().stringValue());
+            }
+            return theMethod.getCode(aContextClass);
         }
         return attributeByType(BytecodeCodeAttributeInfo.class);
     }
 
     public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
         for (BytecodeAttributeInfo theInfo : attributes) {
-            if (theInfo.getClass().equals(aAttributeClass)) {
+            if (Objects.equals(theInfo.getClass(), aAttributeClass)) {
                 return (T) theInfo;
             }
         }
@@ -68,10 +74,10 @@ public class BytecodeMethod extends Node {
     }
 
     public boolean isConstructor() {
-        return name.stringValue().equals("<init>");
+        return Objects.equals(name.stringValue(), "<init>");
     }
 
     public boolean isClassInitializer() {
-        return name.stringValue().equals("<clinit>");
+        return Objects.equals(name.stringValue(), "<clinit>");
     }
 }

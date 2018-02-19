@@ -1435,20 +1435,20 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     }
                 } else {
                     BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                    BytecodeLinkedClass theLinkedClass = linkerContext.linkClass(theClassToInvoke)
-                            .linkStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                    linkerContext.resolveClass(theClassToInvoke)
+                            .resolveStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                     theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
 
                     BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                     if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "TStrictMath".equals(theLinkedClass.getClassName().name())) {
+                            && "de.mirkosertic.bytecoder.classlib.java.lang.TStrictMath".equals(theClassToInvoke.name())) {
                         Value theValue = new SqrtExpression(TypeRef.toType(theCalledSignature.getReturnType()), theArguments.get(0));
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
                         aHelper.push(theNewVariable);
                     } else {
                         InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(
-                                theLinkedClass.getClassName(),
+                                theClassToInvoke,
                                 theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                 theCalledSignature,
                                 theArguments);
