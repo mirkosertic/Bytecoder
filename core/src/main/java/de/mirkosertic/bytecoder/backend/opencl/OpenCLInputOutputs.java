@@ -21,8 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import de.mirkosertic.bytecoder.core.BytecodeField;
-import de.mirkosertic.bytecoder.core.BytecodeFieldMap;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 
 public class OpenCLInputOutputs {
 
@@ -32,15 +31,15 @@ public class OpenCLInputOutputs {
             INPUT, OUTPUT, INPUTOUTPUT
         }
 
-        private final BytecodeFieldMap.Entry<BytecodeField> field;
+        private final BytecodeResolvedFields.FieldEntry field;
         private final Type type;
 
-        KernelArgument(BytecodeFieldMap.Entry<BytecodeField> aField, Type aType) {
+        KernelArgument(BytecodeResolvedFields.FieldEntry aField, Type aType) {
             field = aField;
             type = aType;
         }
 
-        public BytecodeFieldMap.Entry<BytecodeField> getField() {
+        public BytecodeResolvedFields.FieldEntry getField() {
             return field;
         }
 
@@ -55,12 +54,12 @@ public class OpenCLInputOutputs {
         values = new HashMap<>();
     }
 
-    public void registerReadFrom(BytecodeFieldMap.Entry<BytecodeField> aLinkedField) {
+    public void registerReadFrom(BytecodeResolvedFields.FieldEntry aLinkedField) {
         values.computeIfAbsent(aLinkedField.getValue().getName().stringValue(),
                 k -> new KernelArgument(aLinkedField, KernelArgument.Type.INPUT));
     }
 
-    public void registerWriteTo(BytecodeFieldMap.Entry<BytecodeField> aLinkedField) {
+    public void registerWriteTo(BytecodeResolvedFields.FieldEntry aLinkedField) {
         KernelArgument theArgument = values.get(aLinkedField.getValue().getName().stringValue());
         if (theArgument == null) {
             theArgument = new KernelArgument(aLinkedField, KernelArgument.Type.OUTPUT);

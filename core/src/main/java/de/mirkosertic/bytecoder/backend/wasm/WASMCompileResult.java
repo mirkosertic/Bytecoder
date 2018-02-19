@@ -36,7 +36,7 @@ public class WASMCompileResult implements CompileResult<String> {
     }
 
     public int getTypeIDFor(BytecodeObjectTypeRef aObjecType) {
-        return linkerContext.linkClass(aObjecType).getUniqueId();
+        return linkerContext.resolveClass(aObjecType).getUniqueId();
     }
 
     public int getSizeOf(BytecodeObjectTypeRef aObjectType) {

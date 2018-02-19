@@ -47,7 +47,7 @@ public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
 
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        aLinkerContext.linkClass(getObjectType());
+        aLinkerContext.resolveClass(getObjectType());
         aLinkerContext.linkTypeRef(getArrayType(aLinkerContext.getSignatureParser()));
     }
 }

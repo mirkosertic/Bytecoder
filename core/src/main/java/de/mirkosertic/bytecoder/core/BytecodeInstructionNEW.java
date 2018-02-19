@@ -33,6 +33,6 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
-        aLinkerContext.linkClass(theObjectType);
+        aLinkerContext.resolveClass(theObjectType);
     }
 }

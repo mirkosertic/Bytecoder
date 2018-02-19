@@ -15,48 +15,47 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.io.IOException;
-
-import org.junit.Test;
-
 import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Test;
+
+import java.io.IOException;
 
 public class BytecodeLoaderTest {
 
     @Test
-    public void testLoadRuntime1() throws IOException {
+    public void testLoadRuntime1() {
         BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.linkClass(new BytecodeObjectTypeRef(Object.class.getName()));
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()));
     }
 
     @Test
-    public void testLoadRuntime2() throws IOException {
+    public void testLoadRuntime2() {
         BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.linkClass(new BytecodeObjectTypeRef(String.class.getName()));
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(String.class.getName()));
     }
 
     @Test
-    public void testLoadRuntime3() throws IOException {
+    public void testLoadRuntime3() {
         BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.linkClass(new BytecodeObjectTypeRef(Math.class.getName()));
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Math.class.getName()));
     }
 
     @Test
-    public void testLoadRuntime4() throws IOException {
+    public void testLoadRuntime4() {
         BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.linkClass(new BytecodeObjectTypeRef(Class.class.getName()));
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Class.class.getName()));
     }
 
     @Test
-    public void testLoadRuntime5() throws IOException {
+    public void testLoadRuntime5() {
         BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.linkClass(new BytecodeObjectTypeRef(TObject.class.getName()));
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(TObject.class.getName()));
     }
 
     @Test

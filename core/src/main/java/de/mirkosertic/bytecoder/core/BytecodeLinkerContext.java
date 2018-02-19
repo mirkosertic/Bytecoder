@@ -15,16 +15,14 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
-
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.graph.Edge;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class BytecodeLinkerContext {
 
@@ -60,7 +58,7 @@ public class BytecodeLinkerContext {
         return theFoundLink.orElse(null);
     }
 
-    public BytecodeLinkedClass linkClass(BytecodeObjectTypeRef aTypeRef) {
+    public BytecodeLinkedClass resolveClass(BytecodeObjectTypeRef aTypeRef) {
 
         Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(aTypeRef));
         if (theFoundLink.isPresent()) {
@@ -73,7 +71,7 @@ public class BytecodeLinkerContext {
             BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
             if (theSuperClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
                 BytecodeUtf8Constant theSuperClassName = theSuperClass.getConstant();
-                theParentClass = linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
+                theParentClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
             BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
@@ -87,39 +85,22 @@ public class BytecodeLinkerContext {
                 if (theAnnotation != null) {
                     // The method should be exported
                     if (theMethod.getAccessFlags().isStatic()) {
-                        theLinkedClass.linkStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                        theLinkedClass.resolveStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature());
                     } else {
-                        theLinkedClass.linkVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                        theLinkedClass.resolveVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
                     }
                 }
             }
 
             BytecodeMethod theMethod = theLoadedClass.classInitializerOrNull();
             if (theMethod != null) {
-                theLinkedClass.linkClassInitializer(theMethod);
+                theLinkedClass.resolveClassInitializer(theMethod);
             }
 
             for (BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
                 BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
-                BytecodeLinkedClass theImplementedClass = linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
+                BytecodeLinkedClass theImplementedClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
                 theLinkedClass.addEdgeTo(new BytecodeImplementsEdgeType(), theImplementedClass);
-            }
-
-            // Ok, we know that this class is newly linked
-            // We automatically link every virtual method for the superclasses and implementing interfaces
-            final BytecodeLinkedClass theFinalClass = theLinkedClass;
-            for (BytecodeLinkedClass theSuperClassOrType : theLinkedClass.getImplementingTypes(true, false)) {
-                // Also link the virtual methods
-                theSuperClassOrType.forEachVirtualMethod(
-                        aEntry -> {
-                            BytecodeMethod theMethod1 = aEntry.getValue().getTargetMethod();
-                            if (theMethod1.getAccessFlags().isStatic()) {
-                                logger.info("Linking static method {} with Signature {} in {}", theMethod1.getName().stringValue() , theMethod1.getSignature(), theFinalClass.getClassName().name());
-                                theFinalClass.linkStaticMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
-                            } else {
-                                theFinalClass.linkVirtualMethod(theMethod1.getName().stringValue(), theMethod1.getSignature());
-                            }
-                        });
             }
 
             logger.info("Linked  {}" ,theLinkedClass.getClassName().name());
@@ -147,44 +128,25 @@ public class BytecodeLinkerContext {
             return;
         }
         BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
-        linkClass(theTypeRef);
+        resolveClass(theTypeRef);
     }
 
-    public void addSubclassesOfToSet(Set<BytecodeLinkedClass> aTarget, BytecodeLinkedClass aSuperClass) {
-        linkedClasses().forEach(aEntry -> {
-            BytecodeLinkedClass theClass = aEntry.targetNode();
-            if (theClass.getSuperClass() == aSuperClass) {
-                aTarget.add(theClass);
-                aTarget.addAll(getSubclassesOf(theClass));
-            }
-        });
-    }
-
-    public Set<BytecodeLinkedClass> getSubclassesOf(BytecodeLinkedClass aParentClass) {
-        Set<BytecodeLinkedClass> theClasses = new HashSet<>();
-        addSubclassesOfToSet(theClasses, aParentClass);
-        return theClasses;
-    }
-
-    public Set<BytecodeLinkedClass> getImplementingClassesOf(BytecodeLinkedClass aInterface) {
-        final Set<BytecodeLinkedClass> theClasses = new HashSet<>();
-        linkedClasses().forEach(aEntry -> {
-            BytecodeLinkedClass theClass = aEntry.targetNode();
-            if (theClass.getImplementingTypes(true, false).contains(aInterface)) {
-                theClasses.add(theClass);
-            }
-        });
-        return theClasses;
+    public void resolveAbstractMethodsInSubclasses() {
+        List<BytecodeLinkedClass> theLinkedClasses = linkedClasses().map(Edge::targetNode).collect(Collectors.toList());
+        for (BytecodeLinkedClass theLinked : theLinkedClasses) {
+            theLinked.resolveInheritedAbstractMethods();
+        }
+        if (linkedClasses().count() != theLinkedClasses.size()) {
+            // New classes were added, we maybe have to resolve them as well
+            resolveAbstractMethodsInSubclasses();
+        }
     }
 
     public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(BytecodeVirtualMethodIdentifier aIdentifier) {
-        List<BytecodeLinkedClass> theResult = new ArrayList<>();
-        linkedClasses().forEach(aEntry -> {
-            BytecodeLinkedClass theClass = aEntry.targetNode();
-            if (theClass.containsVirtualMethod(aIdentifier) && !theClass.getBytecodeClass().getAccessFlags().isInterface()) {
-                theResult.add(theClass);
-            }
-        });
-        return theResult;
+        return linkedClasses()
+                .map(Edge::targetNode)
+                .filter(t -> !t.getBytecodeClass().getAccessFlags().isInterface())
+                .filter(t -> t.implementsMethod(aIdentifier))
+                .collect(Collectors.toList());
     }
 }

@@ -37,10 +37,10 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeConstant theConstant = constant();
         if (theConstant instanceof BytecodeStringConstant) {
-            aLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
+            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
 
             BytecodeObjectTypeRef theObjectTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
-            aLinkerContext.linkClass(theObjectTypeRef).linkConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+            aLinkerContext.resolveClass(theObjectTypeRef).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                             new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         }
         if (theConstant instanceof BytecodeClassinfoConstant) {
@@ -49,7 +49,7 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
                 BytecodeTypeRef theType = aLinkerContext.getSignatureParser().toFieldType(theClassInfo.getConstant());
                 aLinkerContext.linkTypeRef(theType);
             } else {
-                aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
+                aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
             }
         }
     }

@@ -35,9 +35,9 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
             case REF_invokeStatic:
                 BytecodeMethodRefConstant theStaticReference = (BytecodeMethodRefConstant) aReference;
 
-                BytecodeLinkedClass theLinkedClass = aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theStaticReference.getClassIndex().getClassConstant().getConstant()));
+                BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theStaticReference.getClassIndex().getClassConstant().getConstant()));
                 BytecodeNameAndTypeConstant theNameAndType = theStaticReference.getNameAndTypeIndex().getNameAndType();
-                theLinkedClass.linkVirtualMethod(theNameAndType.getNameIndex().getName().stringValue(),
+                theLinkedClass.resolveVirtualMethod(theNameAndType.getNameIndex().getName().stringValue(),
                         theNameAndType.getDescriptorIndex().methodSignature());
                 break;
             default:
@@ -60,8 +60,8 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
         switch (theMethodRef.getReferenceKind()) {
             case REF_invokeStatic: {
                 // Link the static method
-                aLinkerContext.linkClass(BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()))
-                        .linkStaticMethod(theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()))
+                        .resolveStaticMethod(theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                 theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
 
                 // in this case we assume that the invoke dynamic can be replaced by an invokestatic
@@ -72,7 +72,7 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
                         BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
 
                         BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
-                        aLinkerContext.linkClass(theClass).linkStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                        aLinkerContext.resolveClass(theClass).resolveStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                 theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
                     }
                 }

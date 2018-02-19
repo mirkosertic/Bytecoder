@@ -28,6 +28,7 @@ import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
@@ -37,7 +38,7 @@ import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
 public class CompileTarget {
 
-    public static enum BackendType {
+    public enum BackendType {
         js {
             @Override
             public CompileBackend createBackend() {
@@ -69,22 +70,32 @@ public class CompileTarget {
     public CompileResult compileToJS(CompileOptions aOptions, Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aOptions.getLogger());
 
-        BytecodeLinkedClass theClassLinkedCass = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
-        theClassLinkedCass.linkConstructorInvocation(new BytecodeMethodSignature(
+        BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
+        theClassLinkedCass.resolveConstructorInvocation(new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
 
         // Lambda handling
-        BytecodeLinkedClass theCallsite = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TCallSite.class));
-        theCallsite.linkVirtualMethod("getTarget", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+        BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TCallSite.class));
+        theCallsite.resolveVirtualMethod("getTarget", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 TMethodHandle.class), new BytecodeTypeRef[0]));
 
-        BytecodeLinkedClass theMethodHandle = theLinkerContext.linkClass(BytecodeObjectTypeRef.fromRuntimeClass(TMethodHandle.class));
-        theMethodHandle.linkVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class),
+        BytecodeLinkedClass theMethodHandle = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TMethodHandle.class));
+        theMethodHandle.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class),
                 new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), 1)}));
 
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 
-        theLinkerContext.linkClass(theTypeRef).linkStaticMethod(aMethodName, aSignature);
+        BytecodeLinkedClass theClass = theLinkerContext.resolveClass(theTypeRef);
+        BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+        if (theMethod.getAccessFlags().isStatic()) {
+            theClass.resolveStaticMethod(aMethodName, aSignature);
+        } else {
+            theClass.resolveVirtualMethod(aMethodName, aSignature);
+        }
+
+        // Before code generation we have to make sure that all abstract method implementations are linked correctly
+        aOptions.getLogger().info("Resolving abstract method hierarchy");
+        theLinkerContext.resolveAbstractMethodsInSubclasses();
 
         return backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);
     }

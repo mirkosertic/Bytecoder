@@ -421,7 +421,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("                             nanoTime: function() {return Date.now() * 1000000;},");
             theWriter.println("                             logDebug: bytecoder_logDebug,");
-            theWriter.println("                             logByteArrayAsString: bytecoder_logByteArrayAsString,");
+            theWriter.println("                             writeByteArrayToConsole: bytecoder_logByteArrayAsString,");
             theWriter.println("                         },");
             theWriter.println("                         tprintstream: {");
             theWriter.println("                             logDebug: bytecoder_logDebug,");
