@@ -148,6 +148,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     }, ");
         theWriter.println();
 
+        theWriter.println("     resolveStaticCallSiteObject: function(aWhere, aKey, aProducerFunction) {");
+        theWriter.println("         var resolvedCallsiteObject = aWhere.__staticCallSites[aKey];");
+        theWriter.println("         if (resolvedCallsiteObject == null) {");
+        theWriter.println("             resolvedCallsiteObject = aProducerFunction();");
+        theWriter.println("             aWhere.__staticCallSites[aKey] = resolvedCallsiteObject;");
+        theWriter.println("         }");
+        theWriter.println("         return resolvedCallsiteObject;");
+        theWriter.println("     },");
+        theWriter.println();
+
         theWriter.println("     imports : [],");
         theWriter.println();
 
@@ -165,85 +175,64 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         aLinkerContext.linkedClasses().forEach(theEntry -> {
 
-            if (theEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                return;
-            }
-
             String theJSClassName = JSWriterUtils.toClassName(theEntry.edgeType().objectTypeRef());
             theWriter.println("var " + theJSClassName + " = {");
 
-            if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-
-                // First of all, we add static fields required by the framework
-                theWriter.println("    __name : '" + theEntry.edgeType().objectTypeRef().name() + "',");
-                theWriter.println("    __initialized : false,");
-                theWriter.println("    __staticCallSites : [],");
-                theWriter.print("    __typeId : ");
-                theWriter.print(theEntry.targetNode().getUniqueId());
-                theWriter.println(",");
-                theWriter.print("    __implementedTypes : [");
-                {
-                    boolean first = true;
-                    for (BytecodeLinkedClass theType : theEntry.targetNode().getImplementingTypes()) {
-                        if (!first) {
-                            theWriter.print(",");
-                        }
-                        first = false;
-                        theWriter.print(theType.getUniqueId());
+            // First of all, we add static fields required by the framework
+            theWriter.println("    __name : '" + theEntry.edgeType().objectTypeRef().name() + "',");
+            theWriter.println("    __initialized : false,");
+            theWriter.println("    __staticCallSites : [],");
+            theWriter.print("    __typeId : ");
+            theWriter.print(theEntry.targetNode().getUniqueId());
+            theWriter.println(",");
+            theWriter.print("    __implementedTypes : [");
+            {
+                boolean first = true;
+                for (BytecodeLinkedClass theType : theEntry.targetNode().getImplementingTypes()) {
+                    if (!first) {
+                        theWriter.print(",");
                     }
+                    first = false;
+                    theWriter.print(theType.getUniqueId());
                 }
-                theWriter.println("],");
-
-                // then we add class specific static fields
-                BytecodeResolvedFields theStaticFields = theEntry.targetNode().resolvedFields();
-                theStaticFields.streamForStaticFields().forEach(
-                        aFieldEntry -> theWriter.println("    " + aFieldEntry.getValue().getName().stringValue() + " : null, // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
-                theWriter.println();
-
-                theWriter.println("    resolveStaticCallSiteObject: function(aKey, aProducerFunction) {");
-                theWriter.print("        var resolvedCallsiteObject = ");
-                theWriter.print(theJSClassName);
-                theWriter.println(".__staticCallSites[aKey];");
-                theWriter.println("        if (resolvedCallsiteObject == null) {");
-                theWriter.println("            resolvedCallsiteObject = aProducerFunction();");
-                theWriter.print("            ");
-                theWriter.print(theJSClassName);
-                theWriter.println(".__staticCallSites[aKey] = resolvedCallsiteObject;");
-                theWriter.println("        }");
-                theWriter.println("        return resolvedCallsiteObject;");
-                theWriter.println("    },");
-                theWriter.println();
-
-                if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isAbstract()) {
-                    // The Constructor function initializes all object members with null
-                    // Only non abstract classes can be instantiated
-                    BytecodeResolvedFields theInstanceFields = theEntry.targetNode().resolvedFields();
-                    theWriter.println("    Create : function() {");
-                    theInstanceFields.streamForInstanceFields().forEach(
-                            aFieldEntry -> theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = null; // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
-                    theWriter.println("    },");
-                    theWriter.println();
-                }
-
-                theWriter.println("    instanceOf : function(aType) {");
-                theWriter.println("        return " + theJSClassName + ".__implementedTypes.includes(aType.__typeId);");
-                theWriter.println("    },");
-                theWriter.println();
-
-                theWriter.println("    TClassgetClass : function() {");
-                theWriter.println("        return " + theJSClassName + ";");
-                theWriter.println("    },");
-                theWriter.println();
-
-                theWriter.println("    BOOLEANdesiredAssertionStatus : function() {");
-                theWriter.println("        return false;");
-                theWriter.println("    },");
-                theWriter.println();
-
-                theWriter.println("    A1TObjectgetEnumConstants : function(aClazz) {");
-                theWriter.println("        return aClazz.$VALUES;");
-                theWriter.println("    },");
             }
+            theWriter.println("],");
+
+            // then we add class specific static fields
+            BytecodeResolvedFields theStaticFields = theEntry.targetNode().resolvedFields();
+            theStaticFields.streamForStaticFields().forEach(
+                    aFieldEntry -> theWriter.println("    " + aFieldEntry.getValue().getName().stringValue() + " : null, // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
+            theWriter.println();
+
+            if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isAbstract()) {
+                // The Constructor function initializes all object members with null
+                // Only non abstract classes can be instantiated
+                BytecodeResolvedFields theInstanceFields = theEntry.targetNode().resolvedFields();
+                theWriter.println("    Create : function() {");
+                theInstanceFields.streamForInstanceFields().forEach(
+                        aFieldEntry -> theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = null; // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
+                theWriter.println("    },");
+                theWriter.println();
+            }
+
+            theWriter.println("    instanceOf : function(aType) {");
+            theWriter.println("        return " + theJSClassName + ".__implementedTypes.includes(aType.__typeId);");
+            theWriter.println("    },");
+            theWriter.println();
+
+            theWriter.println("    TClassgetClass : function() {");
+            theWriter.println("        return " + theJSClassName + ";");
+            theWriter.println("    },");
+            theWriter.println();
+
+            theWriter.println("    BOOLEANdesiredAssertionStatus : function() {");
+            theWriter.println("        return false;");
+            theWriter.println("    },");
+            theWriter.println();
+
+            theWriter.println("    A1TObjectgetEnumConstants : function(aClazz) {");
+            theWriter.println("        return aClazz.$VALUES;");
+            theWriter.println("    },");
 
             Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
 

@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TSerializable;
+import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
 
 public class TRandom implements TSerializable {
 

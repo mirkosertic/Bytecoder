@@ -16,6 +16,9 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
+
+import java.util.Objects;
 
 public class TEnum extends TObject implements TSerializable {
 
@@ -38,7 +41,7 @@ public class TEnum extends TObject implements TSerializable {
 
     public static Enum valueOf(Class<Enum> aClass, String aValue) {
         for (Enum theEnum : aClass.getEnumConstants()) {
-            if (theEnum.name().equals(aValue)) {
+            if (Objects.equals(theEnum.name(), aValue)) {
                 return theEnum;
             }
         }

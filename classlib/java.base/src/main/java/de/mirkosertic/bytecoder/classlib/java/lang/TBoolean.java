@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
+
 public class TBoolean extends TObject implements TSerializable {
 
     public static final TBoolean TRUE = new TBoolean(true);

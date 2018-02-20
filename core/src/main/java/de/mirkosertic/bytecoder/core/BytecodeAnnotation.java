@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.Objects;
+
 public class BytecodeAnnotation {
 
     public interface ElementValue {
@@ -35,6 +37,21 @@ public class BytecodeAnnotation {
         public String stringValue() {
             BytecodeUtf8Constant theString = (BytecodeUtf8Constant) constantPool.constantByIndex(constValueIndex - 1);
             return theString.stringValue();
+        }
+    }
+
+    public static class BooleanElementValue implements ElementValue {
+        private final int constValueIndex;
+        private final BytecodeConstantPool constantPool;
+
+        public BooleanElementValue(int aConstValueIndex, BytecodeConstantPool aConstantPool) {
+            constValueIndex = aConstValueIndex;
+            constantPool = aConstantPool;
+        }
+
+        @Override
+        public String stringValue() {
+            throw new IllegalStateException("Not implemented yet");
         }
     }
 
@@ -75,6 +92,28 @@ public class BytecodeAnnotation {
             BytecodeUtf8Constant theConstant = (BytecodeUtf8Constant) constantPool.constantByIndex(classInfoIndex - 1);
             BytecodeTypeRef[] theTypes = signatureParser.toTypes(theConstant.stringValue());
             return theTypes[0].name();
+        }
+    }
+
+    public static class EnumElementValue implements ElementValue {
+        public EnumElementValue(BytecodeConstantPool aConstantPool,
+                int aTypeNameIndex, int aConstNameIndex) {
+        }
+
+        @Override
+        public String stringValue() {
+            throw new IllegalStateException("Not implemented yet");
+        }
+    }
+
+    public static class ArrayElementValue implements ElementValue {
+        public ArrayElementValue(BytecodeConstantPool aConstantPool,
+                ElementValue[] aValues) {
+        }
+
+        @Override
+        public String stringValue() {
+            throw new IllegalStateException("Not implemented yet");
         }
     }
 
@@ -119,7 +158,7 @@ public class BytecodeAnnotation {
 
     public ElementValue getElementValueByName(String aAttributeName) {
         for (ElementValuePair thePair : elementValuePairs) {
-            if (thePair.getName().stringValue().equals(aAttributeName)) {
+            if (Objects.equals(thePair.getName().stringValue(), aAttributeName)) {
                 return thePair.getValue();
             }
         }

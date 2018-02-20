@@ -60,22 +60,24 @@ public class BytecodeLinkerContext {
 
     public BytecodeLinkedClass resolveClass(BytecodeObjectTypeRef aTypeRef) {
 
-        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(aTypeRef));
+        BytecodeObjectTypeRef theRealName = loader.toRealName(aTypeRef);
+        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(theRealName));
         if (theFoundLink.isPresent()) {
             return theFoundLink.get();
         }
 
         try {
-            BytecodeLinkedClass theParentClass = null;
             BytecodeClass theLoadedClass = loader.loadByteCode(aTypeRef);
+            BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
+            rootNode.addEdgeTo(new BytecodeLinkedClassEdgeType(theRealName), theLinkedClass);
+
+            BytecodeLinkedClass theParentClass = null;
             BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
             if (theSuperClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
                 BytecodeUtf8Constant theSuperClassName = theSuperClass.getConstant();
                 theParentClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
-            BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
-            rootNode.addEdgeTo(new BytecodeLinkedClassEdgeType(aTypeRef), theLinkedClass);
             if (theParentClass != null) {
                 theLinkedClass.addEdgeTo(new BytecodeSubclassOfEdgeType(), theParentClass);
             }

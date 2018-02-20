@@ -217,8 +217,10 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(ResolveCallsiteObjectExpression aValue) {
 
+
+        print("bytecoder.resolveStaticCallSiteObject(");
         print(JSWriterUtils.toClassName(aValue.getOwningClass().getThisInfo()));
-        print(".resolveStaticCallSiteObject('");
+        print(",'");
         print(aValue.getCallsiteId());
         println("', function() {");
 

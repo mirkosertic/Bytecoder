@@ -36,6 +36,10 @@ public class BytecodeLoader {
         return signatureParser;
     }
 
+    public BytecodeObjectTypeRef toRealName(BytecodeObjectTypeRef aTypeRef) {
+        return packageReplacer.replaceTypeIn(aTypeRef);
+    }
+
     public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
 
         String theResourceName = packageReplacer.replaceTypeIn(aTypeRef).name().replace(".", "/") + ".class";
@@ -57,6 +61,8 @@ public class BytecodeLoader {
         int theMinorVersion = aStream.readUnsignedShort();
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
+            case 49:
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
             case 50:
                 return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
             case 51:

@@ -22,36 +22,6 @@ import java.util.stream.Stream;
 
 public class BytecodeResolvedMethods {
 
-    private static class MethodIdentifier {
-        private final String methodName;
-        private final BytecodeMethodSignature signature;
-
-        public MethodIdentifier(String aName, BytecodeMethodSignature aSignature) {
-            methodName = aName;
-            signature = aSignature;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            MethodIdentifier that = (MethodIdentifier) o;
-            if (!methodName.equals(that.methodName)) {
-                return false;
-            }
-            if (!(signature.getArguments().length == that.signature.getArguments().length)) {
-                return false;
-            }
-            return Objects.equals(methodName, that.methodName) &&
-                    Objects.equals(signature, that.signature);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(methodName, signature);
-        }
-    }
-
     public static class MethodEntry {
         private final BytecodeLinkedClass providingClass;
         private final BytecodeMethod value;
@@ -68,8 +38,23 @@ public class BytecodeResolvedMethods {
         public BytecodeMethod getValue() {
             return value;
         }
-    }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            MethodEntry that = (MethodEntry) o;
+            return Objects.equals(providingClass, that.providingClass) &&
+                    Objects.equals(value, that.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(providingClass, value);
+        }
+    }
 
     protected final List<MethodEntry> entries;
 
@@ -78,11 +63,18 @@ public class BytecodeResolvedMethods {
     }
 
     public void merge(BytecodeResolvedMethods aOtherMethods) {
-        entries.addAll(aOtherMethods.entries);
+        for (MethodEntry theOtherEntry : aOtherMethods.entries) {
+            if (!entries.contains(theOtherEntry)) {
+                entries.add(theOtherEntry);
+            }
+        }
     }
 
     public void register(BytecodeLinkedClass aProvidingClass, BytecodeMethod aMethod) {
-        entries.add(new MethodEntry(aProvidingClass, aMethod));
+        MethodEntry theNewEntry = new MethodEntry(aProvidingClass, aMethod);
+        if (!entries.contains(theNewEntry)) {
+            entries.add(theNewEntry);
+        }
     }
 
     public Stream<MethodEntry> stream() {

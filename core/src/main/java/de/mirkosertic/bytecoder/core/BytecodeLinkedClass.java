@@ -223,6 +223,12 @@ public class BytecodeLinkedClass extends Node {
             return true;
         }
 
+        // Try to find default methods and also mark usage
+        // of interface methods
+        for (BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
+            theImplementedInterface.resolveVirtualMethod(aMethodName, aSignature);
+        }
+
         BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
         if (theMethod != null) {
             if (theMethod.getAccessFlags().isStatic()) {
@@ -392,6 +398,6 @@ public class BytecodeLinkedClass extends Node {
         // Do we already have a link?
         return outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
                 .map(t -> (BytecodeMethod) t.targetNode())
-                .map(t -> linkerContext.getMethodCollection().identifierFor(t)).anyMatch(t -> t.equals(aIdentifier));
+                .map(t -> linkerContext.getMethodCollection().identifierFor(t)).anyMatch(t -> Objects.equals(t, aIdentifier));
     }
 }
