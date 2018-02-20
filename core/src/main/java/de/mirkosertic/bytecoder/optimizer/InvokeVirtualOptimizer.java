@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
@@ -75,14 +76,19 @@ public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implement
             // There is only one class implementing this method, so we can make a direct call
             BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
             if (!theLinked.emulatedByRuntime()) {
-                BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName, theSignature);
-                aExpression.routeIncomingDataFlowsTo(theNewExpression);
+                BytecodeMethod theMethod = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+                if (!theMethod.getAccessFlags().isAbstract()) {
+                    BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                aLinkerContext.getLogger().info("Replaced virtual with direct call");
+                    DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName,
+                            theSignature);
+                    aExpression.routeIncomingDataFlowsTo(theNewExpression);
 
-                return Optional.of(theNewExpression);
+                    aLinkerContext.getLogger().info("Replaced virtual with direct call");
+
+                    return Optional.of(theNewExpression);
+                }
             }
         }
         return Optional.empty();

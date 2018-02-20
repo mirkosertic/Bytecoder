@@ -614,7 +614,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             // This will traverse the CFG from bottom to top
             for (RegionNode theNode : theProgram.getControlFlowGraph().finalNodes()) {
                 initializeBlock(theProgram, aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
-                        theBasicBlockByAddress);
+                            theBasicBlockByAddress);
             }
 
             // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or

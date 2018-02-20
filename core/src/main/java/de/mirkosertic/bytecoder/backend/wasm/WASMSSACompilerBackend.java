@@ -116,6 +116,11 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
             theMethodMap.stream().forEach(aMethodMapEntry -> {
 
+                // Only add implementation methods
+                if (!(aMethodMapEntry.getProvidingClass() == aEntry.targetNode())) {
+                    return;
+                }
+
                 BytecodeMethod t = aMethodMapEntry.getValue();
                 BytecodeMethodSignature theSignature = t.getSignature();
 
@@ -232,9 +237,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-            if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                return;
-            }
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
@@ -254,14 +256,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 // Do not generate code for abstract methods
                 if (t.getAccessFlags().isAbstract()) {
-                    return;
-                }
-                // Static methods cannot be called virtually
-                if (t.getAccessFlags().isStatic()) {
-                    return;
-                }
-                // Private methods also cannot be called virtually
-                if (t.getAccessFlags().isPrivate()) {
                     return;
                 }
                 // Constructors for the same reason
@@ -311,9 +305,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         // Now everything else
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-            if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                return;
-            }
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
@@ -353,7 +344,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
                 theWriter.print("   (func ");
                 theWriter.print("$");
-                theWriter.print(WASMWriterUtils.toMethodName(aEntry.edgeType().objectTypeRef(), t.getName(), theSignature));
+                theWriter.print(WASMWriterUtils.toMethodName(aEntry.targetNode().getClassName(), t.getName(), theSignature));
                 theWriter.print(" ");
 
                 if (t.getAccessFlags().isStatic()) {
@@ -735,9 +726,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         // Globals for static class data
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-            if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                return;
-            }
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
@@ -834,13 +822,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 return;
             }
 
-            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-
-                if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                    theWriter.print("      (call $");
-                    theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
-                    theWriter.println("__classinitcheck)");
-                }
+            if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                theWriter.print("      (call $");
+                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
+                theWriter.println("__classinitcheck)");
             }
         });
 
@@ -871,9 +856,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         // Globals for static class data
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-            if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                return;
-            }
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }

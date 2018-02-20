@@ -50,9 +50,52 @@ public class InterfaceLinkTest {
         }
     }
 
+    public interface DefaultInterface {
+
+        default int getValue() {
+            return 42;
+        }
+    }
+
+    public static class DefaultClass implements DefaultInterface {
+
+    }
+
+    public interface WithDefaultMethod {
+
+        default int getValue() {
+            return 42;
+        }
+    }
+
+    public static class ImplWithDefaultMethod implements WithDefaultMethod  {
+
+        public int computeValue() {
+            return getValue();
+        }
+    }
+
+    @Test
+    public void testDefaultMethodInvocation() {
+        ImplWithDefaultMethod theImpl = new ImplWithDefaultMethod();
+        Assert.assertEquals(theImpl.computeValue(), 42, 0);
+    }
+
+    @Test
+    public void testDefaultMethodInvocationAnonymous() {
+        WithDefaultMethod theImpl = new WithDefaultMethod() {};
+        Assert.assertEquals(theImpl.getValue(), 42, 0);
+    }
+
     @Test
     public void testCompute() {
         Runner theRunner = new Runner();
         Assert.assertEquals(theRunner.compute(), 10, 0);
+    }
+
+    @Test
+    public void testDefaultMethod() {
+        DefaultClass theInstance = new DefaultClass();
+        Assert.assertEquals(theInstance.getValue(), 42, 0);
     }
 }

@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
 
 public class TString extends TObject implements TSerializable, TComparable<TString>, TCharSequence {
 

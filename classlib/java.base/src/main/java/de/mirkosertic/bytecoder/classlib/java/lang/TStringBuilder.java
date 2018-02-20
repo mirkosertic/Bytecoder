@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
 import de.mirkosertic.bytecoder.classlib.java.text.TDecimalFormatSymbols;
 
 public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {

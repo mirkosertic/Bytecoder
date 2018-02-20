@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-public class BytecodeInterfaceRefConstant extends BytecodeRefConstant {
+public class BytecodeInterfaceRefConstant extends BytecodeMethodRefConstant {
 
     public BytecodeInterfaceRefConstant(BytecodeClassIndex aClassIndex, BytecodeNameAndTypeIndex aNameAndTypeIndex) {
         super(aClassIndex, aNameAndTypeIndex);

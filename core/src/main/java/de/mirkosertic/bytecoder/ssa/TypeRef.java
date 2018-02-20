@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
+import java.util.Objects;
+
 public interface TypeRef {
 
     interface ArrayTypeRef extends TypeRef {
@@ -52,6 +54,8 @@ public interface TypeRef {
                 switch (aOtherType) {
                     case BYTE:
                         return BYTE;
+                    case INT:
+                        return INT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
 
@@ -100,6 +104,8 @@ public interface TypeRef {
                     case INT:
                         return INT;
                     case BOOLEAN:
+                        return INT;
+                    case BYTE:
                         return INT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
@@ -238,7 +244,7 @@ public interface TypeRef {
                 throw new IllegalStateException("Not supported : " + aTypeRef);
             }
         }
-        if (BytecodeObjectTypeRef.fromRuntimeClass(Address.class).equals(aTypeRef)) {
+        if (Objects.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class), aTypeRef)) {
             return TypeRef.Native.INT;
         }
         return new ObjectTypeRef() {
