@@ -600,6 +600,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
         }
 
+        // And add dependencies for exception handlers and finally blocks
+        for (BytecodeExceptionTableEntry theHandler : theBytecode.getExceptionHandlers()) {
+            RegionNode theStart = theProgram.getControlFlowGraph().nodeStartingAt(theHandler.getStartPC());
+            RegionNode theHandlerNode = theProgram.getControlFlowGraph().nodeStartingAt(theHandler.getHandlerPc());
+            theStart.addSuccessor(theHandlerNode);
+        }
+
         // Now we can add the SSA instructions to the graph nodes
         Set<RegionNode> theVisited = new HashSet<>();
         RegionNode theStart = theProgram.getControlFlowGraph().startNode();
@@ -778,7 +785,12 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 // We only have the thrown exception on the stack!
                 // Everything else is at the same state as on control flow enter
                 // In case of synchronized blocks there is an additional reference with the semaphore to release
-                theParsingState = aCache.resolveFinalStateForNode(null);
+                if (thePredecessors.size() == 1) {
+                    RegionNode thePredecessor = thePredecessors.iterator().next();
+                    theParsingState = aCache.resolveFinalStateForNode(thePredecessor);
+                } else {
+                    theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
+                }
                 theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
                 theParsingState.push(aCurrentBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(TException.class)), new CurrentExceptionExpression()));
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
@@ -817,9 +829,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 // Completely ignored
             } else if (theInstruction instanceof BytecodeInstructionMONITORENTER) {
                 BytecodeInstructionMONITORENTER theINS = (BytecodeInstructionMONITORENTER) theInstruction;
+                // Pop the reference for the lock from the stack
+                aHelper.pop();
                 // Completely ignored
             } else if (theInstruction instanceof BytecodeInstructionMONITOREXIT) {
                 BytecodeInstructionMONITOREXIT theINS = (BytecodeInstructionMONITOREXIT) theInstruction;
+                // Pop the reference for the lock from the stack
+                aHelper.pop();
                 // Completely ignored
             } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
                 BytecodeInstructionCHECKCAST theINS = (BytecodeInstructionCHECKCAST) theInstruction;
