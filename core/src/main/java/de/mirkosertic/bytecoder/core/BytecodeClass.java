@@ -79,7 +79,7 @@ public class BytecodeClass {
         BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
         if (theDelegatesTo != null) {
             BytecodeAnnotation.ElementValue theParentOverride = theDelegatesTo.getElementValueByName("parentClass");
-            return new BytecodeClassinfoConstant(-1, null, null) {
+            return new BytecodeClassinfoConstant(-1, null) {
                 @Override
                 public BytecodeUtf8Constant getConstant() {
                     return new BytecodeUtf8Constant(theParentOverride.stringValue().replace(".","/"));

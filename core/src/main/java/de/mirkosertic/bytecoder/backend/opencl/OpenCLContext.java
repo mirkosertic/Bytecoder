@@ -60,7 +60,6 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
@@ -147,7 +146,7 @@ class OpenCLContext implements Context {
 
             BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
-            BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader(), new BytecodePackageReplacer());
+            BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader());
             BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
             theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 

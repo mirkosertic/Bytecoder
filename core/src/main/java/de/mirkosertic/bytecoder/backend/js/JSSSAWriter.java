@@ -16,19 +16,23 @@
 package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
@@ -54,7 +58,6 @@ import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -75,6 +78,7 @@ import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -98,12 +102,16 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
-    public JSSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+    private final ConstantPool constantPool;
+
+    public JSSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext,
+            ConstantPool aConstantPool) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
+        constantPool = aConstantPool;
     }
 
     private JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext);
+        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool);
     }
 
     private void print(Value aValue) {
@@ -338,8 +346,14 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(theValue);
         print(".instanceOf(");
 
-        BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
-        print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+        BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
+        if (!theConstant.stringValue().startsWith("[")) {
+            BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
+            print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+        } else {
+            BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+        }
 
         print(")");
         print(")");
@@ -403,10 +417,10 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(StringValue aValue) {
-        String theData = JSWriterUtils.toArray(aValue.getStringValue().getBytes());
-        print("bytecoder.newString(");
-        print(theData);
-        print(")");
+        int theIndex = constantPool.register(aValue);
+        print("bytecoder.stringpool[");
+        print(theIndex);
+        print("]");
     }
 
     private void print(ArrayLengthExpression aValue) {

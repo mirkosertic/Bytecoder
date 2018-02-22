@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api;
+package de.mirkosertic.bytecoder.classlib.shadow.java.io;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import de.mirkosertic.bytecoder.api.Substitutes;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Substitutes {
+import java.io.IOException;
+import java.io.InputStream;
 
-    String value();
+@SubstitutesInClass(InputStream.class)
+public abstract class TInputStream extends InputStream {
+
+    @Substitutes("read")
+    public int read(byte b[], int off, int len) throws IOException {
+        return 0;
+    }
 }

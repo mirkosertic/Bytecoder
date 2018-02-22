@@ -29,7 +29,7 @@ public enum KnownOptimizer implements Optimizer {
             List<Optimizer> theOptimizer = new ArrayList<>();
             //theOptimizer.add(new InefficientIFOptimizer());
             //theOptimizer.add(new InlineFinalNodesOptimizer());
-            theOptimizer.add(new InlineGotoOptimizer());
+            // theOptimizer.add(new InlineGotoOptimizer());
             theOptimizer.add(new InvokeVirtualOptimizer());
             theOptimizer.add(new RedundantAssignmentOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);

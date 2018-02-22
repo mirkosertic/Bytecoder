@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,9 +28,9 @@ public class TDoubleTest {
 
     @Test
     public void testCompare() {
-        TAssert.assertEquals(TDouble.compare(10d, 20d), -1, 0);
-        TAssert.assertEquals(TDouble.compare(10d, 10d), 0, 0);
-        TAssert.assertEquals(TDouble.compare(20d, 10d), 1, 0);
+        Assert.assertEquals(TDouble.compare(10d, 20d), -1, 0);
+        Assert.assertEquals(TDouble.compare(10d, 10d), 0, 0);
+        Assert.assertEquals(TDouble.compare(20d, 10d), 1, 0);
     }
 
     @Test

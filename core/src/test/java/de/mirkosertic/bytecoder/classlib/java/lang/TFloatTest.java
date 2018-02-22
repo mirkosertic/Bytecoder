@@ -15,22 +15,23 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class TFloatTest {
 
     @Test
     public void testCompare() {
-        TAssert.assertEquals(TFloat.compare(10f, 20f), -1, 0);
-        TAssert.assertEquals(TFloat.compare(10f, 10f), 0, 0);
-        TAssert.assertEquals(TFloat.compare(20f, 10f), 1, 0);
+        Assert.assertEquals(TFloat.compare(10f, 20f), -1, 0);
+        Assert.assertEquals(TFloat.compare(10f, 10f), 0, 0);
+        Assert.assertEquals(TFloat.compare(20f, 10f), 1, 0);
     }
 
     @Test

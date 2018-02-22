@@ -13,16 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api;
+package de.mirkosertic.bytecoder.backend;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.List;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Substitutes {
+import de.mirkosertic.bytecoder.ssa.StringValue;
 
-    String value();
+public class ConstantPool {
+
+    private List<StringValue> knownValues;
+
+    public ConstantPool() {
+        knownValues = new ArrayList<>();
+    }
+
+    public int register(StringValue aValue) {
+        knownValues.add(aValue);
+        return knownValues.size() - 1;
+    }
+
+    public List<StringValue> stringValues() {
+        return knownValues;
+    }
 }

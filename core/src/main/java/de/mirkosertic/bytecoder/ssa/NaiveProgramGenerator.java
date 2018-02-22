@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,11 +32,6 @@ import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.classlib.java.lang.TException;
-import de.mirkosertic.bytecoder.classlib.java.lang.TInteger;
-import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
 import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
@@ -60,6 +56,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
@@ -655,18 +652,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                     Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                         }
                     }
-                    if (theSuccessors.size() == 1) {
-                        theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()).withComment("Resolving pass thru direct"));
+
+                    List<RegionNode> theSuccessorRegions = theSuccessors.values().stream().filter(t -> t.getType() == RegionNode.BlockType.NORMAL).collect(
+                            Collectors.toList());
+
+                    if (theSuccessorRegions.size() == 1) {
+                        theNode.getExpressions().add(new GotoExpression(theSuccessorRegions.get(0).getStartAddress()).withComment("Resolving pass thru direct"));
                     } else {
-                        theSuccessors = theNode.getSuccessors();
-                        if (theSuccessors.size() == 1) {
-                            // We will use this one
-                            // Sometimes, there is a conditional jump to the only following successor of the block. This
-                            // will be eliminated by the previous logic
-                            theNode.getExpressions().add(new GotoExpression(theSuccessors.values().iterator().next().getStartAddress()).withComment("Resolving pass thru direct safety net"));
-                        } else {
-                            throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
-                        }
+                        throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
                     }
                 }
             }
@@ -792,7 +785,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
                 }
                 theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
-                theParsingState.push(aCurrentBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(TException.class)), new CurrentExceptionExpression()));
+                theParsingState.push(aCurrentBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)), new CurrentExceptionExpression()));
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
                 theParsingState = aCache.resolveFinalStateForNode(null);
@@ -859,6 +852,21 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 BytecodeInstructionDUP theINS = (BytecodeInstructionDUP) theInstruction;
                 Value theValue = aHelper.peek();
                 aHelper.push(theValue);
+            } else if (theInstruction instanceof BytecodeInstructionDUP2) {
+                BytecodeInstructionDUP2 theINS = (BytecodeInstructionDUP2) theInstruction;
+                Value theValue1 = aHelper.pop();
+                if (theValue1.resolveType().resolve() == TypeRef.Native.LONG || theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+                    // Category 2
+                    aHelper.push(theValue1);
+                    aHelper.push(theValue1);
+                } else {
+                    // Category 1
+                    Value theValue2 = aHelper.pop();
+                    aHelper.push(theValue2);
+                    aHelper.push(theValue1);
+                    aHelper.push(theValue2);
+                    aHelper.push(theValue1);
+                }
             } else if (theInstruction instanceof BytecodeInstructionDUP2X1) {
                 BytecodeInstructionDUP2X1 theINS = (BytecodeInstructionDUP2X1) theInstruction;
                 Value theValue1 = aHelper.pop();
@@ -969,7 +977,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     aHelper.push(new IntegerValue(theC.getIntegerValue()));
                 } else if (theConstant instanceof BytecodeStringConstant) {
                     BytecodeStringConstant theC = (BytecodeStringConstant) theConstant;
-                    Variable theVariable = aTargetBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(TString.class)), new StringValue(theC.getValue().stringValue()));
+                    Variable theVariable = aTargetBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(String.class)), new StringValue(theC.getValue().stringValue()));
                     aHelper.push(theVariable);
                 } else if (theConstant instanceof BytecodeClassinfoConstant) {
                     BytecodeClassinfoConstant theC = (BytecodeClassinfoConstant) theConstant;
@@ -1608,7 +1616,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                         int theVarArgsLength = theArgumentsLength - theSignatureLength + 1;
                         Variable theNewVarargsArray = theInitNode.newVariable(TypeRef.Native.REFERENCE, new NewArrayExpression(
-                                BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), new IntegerValue(theVarArgsLength)));
+                                BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new IntegerValue(theVarArgsLength)));
                         for (int i = theSignatureLength - 1; i < theArgumentsLength; i++) {
                             Value theVariable = theArguments.get(i);
                             theArguments.remove(theVariable);
@@ -1631,7 +1639,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                     // Second step, we invoke the callsite to get whatever we are searching
                     InvokeVirtualMethodExpression theGetTargetValue = new InvokeVirtualMethodExpression("getTarget",
-                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TMethodHandle.class),
+                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
                                     new BytecodeTypeRef[0]),
                             theCallsiteVariable, new ArrayList<>());
                     Variable theMethodHandleVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theGetTargetValue);
@@ -1639,7 +1647,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     List<Value> theInvokeArguments = new ArrayList<>();
 
                     Variable theArray = aTargetBlock.newVariable(
-                            TypeRef.Native.REFERENCE, new NewArrayExpression(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), new IntegerValue(theInitSignature.getArguments().length)));
+                            TypeRef.Native.REFERENCE, new NewArrayExpression(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new IntegerValue(theInitSignature.getArguments().length)));
 
                     for (int i=theInitSignature.getArguments().length-1;i>=0;i--) {
                         Value theIndex = new IntegerValue(i);
@@ -1647,7 +1655,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                         if (theStoredValue.resolveType() == TypeRef.Native.INT) {
                             // Create Integer object to contain int
-                            BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(TInteger.class);
+                            BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(Integer.class);
                             BytecodeTypeRef[] args_def = new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT};
                             BytecodeMethodSignature sig = new BytecodeMethodSignature(theType, args_def);
                             List<Value> args = new ArrayList<>();
@@ -1663,9 +1671,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     theInvokeArguments.add(theArray);
 
                     InvokeVirtualMethodExpression theInvokeValue = new InvokeVirtualMethodExpression("invokeExact",
-                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class),
+                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                                     new BytecodeTypeRef[] {
-                                            new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), 1) }),
+                                            new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1) }),
                             theMethodHandleVariable, theInvokeArguments);
 
                     Variable theInvokeExactResult = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theInvokeValue);

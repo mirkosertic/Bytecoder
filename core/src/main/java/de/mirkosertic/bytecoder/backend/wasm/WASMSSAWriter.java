@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend.wasm;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -107,7 +107,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
         int resolveVTableMethodByType(BytecodeObjectTypeRef aObjectType);
 
-        String resolveStringPoolFunctionName(String aValue);
+        String resolveStringPoolFunctionName(StringValue aValue);
 
         String resolveCallsiteBootstrapFor(BytecodeClass aOwningClass, String aCallsiteId, Program aProgram, RegionNode aBootstrapMethod);
 
@@ -815,7 +815,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(" (get_global $TArray__runtimeClass)");
         // Plus the vtable index
         print(" (i32.const ");
-        print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class)));
+        print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
         print(")");
 
         println(") ;; new array of type " + theType);
@@ -973,14 +973,11 @@ public class WASMSSAWriter extends IndentSSAWriter {
 
     private void writeStringValue(StringValue aValue) {
         print("(get_global $");
-        print(idResolver.resolveStringPoolFunctionName(aValue.getStringValue()));
+        print(idResolver.resolveStringPoolFunctionName(aValue));
         print(")");
     }
 
-    private void writeNewArrayValue(NewArrayExpression aValue) {
-
-        BytecodeTypeRef theType = aValue.getType();
-
+    private void writeNewArray(Value aValue) {
         String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newArray",
@@ -991,16 +988,21 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(theMethodName);
         print(" (i32.const 0) "); // UNUSED argument
 
-        withDeeperIndent().writeValue(aValue.incomingDataFlows().get(0));
+        // Length
+        withDeeperIndent().writeValue(aValue);
 
         // We also need the runtime class
         print(" (get_global $TArray__runtimeClass)");
         // Plus the vtable index
         print(" (i32.const ");
-        print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class)));
+        print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
         print(")");
 
-        println(") ;; new array of type " + theType);
+        println(")");
+    }
+
+    private void writeNewArrayValue(NewArrayExpression aValue) {
+        writeNewArray(aValue.incomingDataFlows().get(0));
     }
 
     private void writeArrayLengthValue(ArrayLengthExpression aValue) {

@@ -15,8 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.core.*;
+import java.lang.reflect.Array;
+
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 
 public class WASMWriterUtils {
@@ -74,7 +81,7 @@ public class WASMWriterUtils {
     public static String toClassName(BytecodeObjectTypeRef aTypeRef) {
         if (aTypeRef.name().endsWith(";")) {
             // This seems to be an array
-            return toClassName(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
+            return toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
         }
         return toClassNameInternal(aTypeRef.name());
     }

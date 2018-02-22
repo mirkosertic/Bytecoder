@@ -33,6 +33,12 @@ public class BytecodeInstructionINSTANCEOF extends BytecodeInstruction {
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeClassinfoConstant theType = getTypeRef();
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theType.getConstant()));
+        BytecodeUtf8Constant theName = theType.getConstant();
+        if (theName.stringValue().startsWith("[")) {
+            BytecodeTypeRef theTypeRef = aLinkerContext.getSignatureParser().toFieldType(theName);
+            aLinkerContext.resolveTypeRef(theTypeRef);
+        } else {
+            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theName));
+        }
     }
 }

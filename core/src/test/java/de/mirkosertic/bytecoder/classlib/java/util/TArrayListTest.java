@@ -22,7 +22,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.classlib.org.junit.TAssert;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -80,9 +79,9 @@ public class TArrayListTest {
     @Test
     public void isEmpty() throws Exception {
         TArrayList theList = new TArrayList();
-        TAssert.assertTrue(theList.isEmpty());
+        Assert.assertTrue(theList.isEmpty());
         theList.add("Hello");
-        TAssert.assertFalse(theList.isEmpty());
+        Assert.assertFalse(theList.isEmpty());
     }
 
     @Test

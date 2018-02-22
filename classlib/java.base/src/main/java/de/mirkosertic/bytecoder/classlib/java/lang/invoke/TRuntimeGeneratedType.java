@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
+import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodType;
+
 public class TRuntimeGeneratedType {
 
     private final TMethodType type;

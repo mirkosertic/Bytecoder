@@ -22,30 +22,29 @@ import java.io.InputStream;
 
 public class BytecodeLoader {
 
-    private final BytecodePackageReplacer packageReplacer;
     private final BytecodeSignatureParser signatureParser;
     private final ClassLoader classLoader;
+    private final BytecodeReplacer bytecodeReplacer;
 
-    public BytecodeLoader(ClassLoader aClassLoader, BytecodePackageReplacer aPackageReplacer) {
+    public BytecodeLoader(ClassLoader aClassLoader) {
         classLoader = aClassLoader;
-        packageReplacer = aPackageReplacer;
-        signatureParser = new BytecodeSignatureParser(aPackageReplacer);
+        bytecodeReplacer = new BytecodeReplacer(this);
+        signatureParser = new BytecodeSignatureParser();
     }
 
     public BytecodeSignatureParser getSignatureParser() {
         return signatureParser;
     }
 
-    public BytecodeObjectTypeRef toRealName(BytecodeObjectTypeRef aTypeRef) {
-        return packageReplacer.replaceTypeIn(aTypeRef);
-    }
-
     public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
 
-        String theResourceName = packageReplacer.replaceTypeIn(aTypeRef).name().replace(".", "/") + ".class";
-        InputStream theStream = classLoader.getResourceAsStream(theResourceName);
+        String theResourceName = aTypeRef.name().replace(".", "/") + ".class";
+        InputStream theStream = classLoader.getResourceAsStream("modules/java.base/classes/" + theResourceName);
         if (theStream == null) {
-            throw new ClassNotFoundException(theResourceName);
+            theStream = classLoader.getResourceAsStream(theResourceName);
+            if (theStream == null) {
+                throw new ClassNotFoundException(theResourceName);
+            }
         }
         try (DataInputStream dis = new DataInputStream(theStream)) {
             BytecodeClassParser parser = parseHeader(dis);
@@ -62,15 +61,15 @@ public class BytecodeLoader {
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
             case 49:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, bytecodeReplacer);
             case 50:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, bytecodeReplacer);
             case 51:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, bytecodeReplacer);
             case 52:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, bytecodeReplacer);
             case 53:
-                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, packageReplacer);
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, bytecodeReplacer);
         }
         throw new IllegalArgumentException("Not Supported bytecode format : " + theMajorVersion);
     }

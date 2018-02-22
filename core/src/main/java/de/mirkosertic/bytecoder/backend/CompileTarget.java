@@ -15,15 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSACompilerBackend;
-import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
-import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
-import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TCallSite;
-import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TMethodHandle;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -31,7 +29,6 @@ import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
@@ -60,7 +57,7 @@ public class CompileTarget {
 
     public CompileTarget(ClassLoader aClassLoader, BackendType aType) {
         backend = aType.createBackend();
-        bytecodeLoader = new BytecodeLoader(aClassLoader, new BytecodePackageReplacer());
+        bytecodeLoader = new BytecodeLoader(aClassLoader);
     }
 
     public String generatedFileName() {
@@ -70,18 +67,18 @@ public class CompileTarget {
     public CompileResult compileToJS(CompileOptions aOptions, Class aClass, String aMethodName, BytecodeMethodSignature aSignature) {
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aOptions.getLogger());
 
-        BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class));
+        BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
         theClassLinkedCass.resolveConstructorInvocation(new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
 
         // Lambda handling
-        BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TCallSite.class));
+        BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(CallSite.class));
         theCallsite.resolveVirtualMethod("getTarget", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                TMethodHandle.class), new BytecodeTypeRef[0]));
+                MethodHandle.class), new BytecodeTypeRef[0]));
 
-        BytecodeLinkedClass theMethodHandle = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TMethodHandle.class));
-        theMethodHandle.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class),
-                new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TObject.class), 1)}));
+        BytecodeLinkedClass theMethodHandle = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class));
+        theMethodHandle.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
 
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 

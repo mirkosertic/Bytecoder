@@ -19,8 +19,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.classlib.java.lang.TStringBuilder;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -59,14 +57,14 @@ public class StringTest {
 
     @Test
     public void testStringBuilder() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         String theResult = theBuilder.toString();
         Assert.assertEquals(theResult.length(), 0, 0);
     }
 
     public void testStringBuilderAppend() {
-        TStringBuilder theBuilder = new TStringBuilder();
-        theBuilder.append(new TString("123".getBytes()));
+        StringBuilder theBuilder = new StringBuilder();
+        theBuilder.append(new String("123".getBytes()));
         String theResult = theBuilder.toString();
         Assert.assertEquals(theResult.length(), 3, 0);
     }

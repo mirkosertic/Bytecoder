@@ -51,7 +51,6 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -169,7 +168,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                    TThrowable.class), new BytecodeTypeRef[0]);
+                    Throwable.class), new BytecodeTypeRef[0]);
 
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 

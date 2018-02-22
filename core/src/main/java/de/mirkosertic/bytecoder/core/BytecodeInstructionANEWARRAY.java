@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import java.lang.reflect.Array;
 
 public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
 
@@ -29,7 +29,7 @@ public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
     }
 
     public BytecodeObjectTypeRef getObjectType() {
-        return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+        return BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
     }
 
     public BytecodeTypeRef getArrayType(BytecodeSignatureParser aSignatureParser) {
@@ -48,6 +48,6 @@ public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
     @Override
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         aLinkerContext.resolveClass(getObjectType());
-        aLinkerContext.linkTypeRef(getArrayType(aLinkerContext.getSignatureParser()));
+        aLinkerContext.resolveTypeRef(getArrayType(aLinkerContext.getSignatureParser()));
     }
 }

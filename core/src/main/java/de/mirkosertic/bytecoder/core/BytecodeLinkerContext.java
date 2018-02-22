@@ -60,8 +60,7 @@ public class BytecodeLinkerContext {
 
     public BytecodeLinkedClass resolveClass(BytecodeObjectTypeRef aTypeRef) {
 
-        BytecodeObjectTypeRef theRealName = loader.toRealName(aTypeRef);
-        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(theRealName));
+        Optional<BytecodeLinkedClass> theFoundLink = rootNode.singleOutgoingNodeMatching(BytecodeLinkedClassEdgeType.filter(aTypeRef));
         if (theFoundLink.isPresent()) {
             return theFoundLink.get();
         }
@@ -69,7 +68,7 @@ public class BytecodeLinkerContext {
         try {
             BytecodeClass theLoadedClass = loader.loadByteCode(aTypeRef);
             BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
-            rootNode.addEdgeTo(new BytecodeLinkedClassEdgeType(theRealName), theLinkedClass);
+            rootNode.addEdgeTo(new BytecodeLinkedClassEdgeType(aTypeRef), theLinkedClass);
 
             BytecodeLinkedClass theParentClass = null;
             BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
@@ -117,7 +116,7 @@ public class BytecodeLinkerContext {
         return rootNode.outgoingEdges(BytecodeLinkedClassEdgeType.filter());
     }
 
-    public void linkTypeRef(BytecodeTypeRef aTypeRef) {
+    public void resolveTypeRef(BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isVoid()) {
             return;
         }
@@ -126,7 +125,7 @@ public class BytecodeLinkerContext {
         }
         if (aTypeRef.isArray()) {
             BytecodeArrayTypeRef theArray = (BytecodeArrayTypeRef) aTypeRef;
-            linkTypeRef(theArray.getType());
+            resolveTypeRef(theArray.getType());
             return;
         }
         BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;

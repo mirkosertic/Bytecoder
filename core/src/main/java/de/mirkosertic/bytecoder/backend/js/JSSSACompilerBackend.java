@@ -15,40 +15,40 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Array;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
+import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -58,8 +58,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
     public JSSSACompilerBackend(ProgramGeneratorFactory aProgramGeneratorFactory) {
         programGeneratorFactory = aProgramGeneratorFactory;
-        registerExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class)});
-        getLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TThrowable.class), new BytecodeTypeRef[0]);
+        registerExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
+        getLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
     }
 
     @Override
@@ -97,8 +97,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.println("     newString : function(aByteArray) { ");
 
-        BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
-        BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+        BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
+        BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
 
         BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
@@ -126,7 +126,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println();
         theWriter.println("     newArray : function(aLength, aDefault) {");
 
-        BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+        BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
         theWriter.println("          var theInstance = new " + JSWriterUtils.toClassName(theArrayType)+ ".Create();");
         theWriter.println("          theInstance.data = [];");
         theWriter.println("          theInstance.data.length = aLength;");
@@ -161,17 +161,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     imports : [],");
         theWriter.println();
 
-        theWriter.println("     bootstrap : function() {");
-        aLinkerContext.linkedClasses().forEach(aEntry -> {
-            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.print("          ");
-                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
-                theWriter.println(".classInitCheck();");
-            }
-        });
-        theWriter.println("     }");
+        theWriter.println("     stringpool : [],");
+        theWriter.println();
+
         theWriter.println("};");
         theWriter.println();
+
+        ConstantPool thePool = new ConstantPool();
 
         aLinkerContext.linkedClasses().forEach(theEntry -> {
 
@@ -179,7 +175,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("var " + theJSClassName + " = {");
 
             // First of all, we add static fields required by the framework
-            theWriter.println("    __name : '" + theEntry.edgeType().objectTypeRef().name() + "',");
             theWriter.println("    __initialized : false,");
             theWriter.println("    __staticCallSites : [],");
             theWriter.print("    __typeId : ");
@@ -251,7 +246,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     return;
                 }
 
-                aLinkerContext.getLogger().info("Compiling {}", theEntry.targetNode().getClassName().name()  + "." + theMethod.getName().stringValue());
+                System.out.println("Compiling " + theEntry.targetNode().getClassName().name()  + "." + theMethod.getName().stringValue());
 
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod);
@@ -305,7 +300,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theWriter.println("        */");
                 }
 
-                JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, "        ", theWriter, aLinkerContext);
+                JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, "        ", theWriter, aLinkerContext, thePool);
                 for (Variable theVariable : theSSAProgram.globalVariables()) {
                     if (!theVariable.isSynthetic()) {
                         theVariablesWriter.print("var ");
@@ -355,7 +350,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.print("            thePrototype.");
                         theWriter.print(theMethodName);
                         theWriter.print(" = ");
-                        theWriter.print(WASMWriterUtils.toClassName(aEntry.getProvidingClass().getClassName()));
+                        theWriter.print(JSWriterUtils.toClassName(aEntry.getProvidingClass().getClassName()));
                         theWriter.print(".");
                         theWriter.print(theMethodName);
                         theWriter.println(";");
@@ -381,6 +376,27 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("};");
             theWriter.println();
         });
+
+        theWriter.println();
+        theWriter.println("bytecoder.bootstrap = function() {");
+        aLinkerContext.linkedClasses().forEach(aEntry -> {
+            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.print("    ");
+                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
+                theWriter.println(".classInitCheck();");
+            }
+        });
+
+        List<StringValue> theValues = thePool.stringValues();
+        for (int i=0; i<theValues.size(); i++) {
+            StringValue theValue = theValues.get(i);
+            theWriter.print("    bytecoder.stringpool[");
+            theWriter.print(i);
+            theWriter.print("] = bytecoder.newString(");
+            theWriter.print(JSWriterUtils.toArray(theValue.getStringValue().getBytes()));
+            theWriter.println(");");
+        }
+        theWriter.println("}");
 
         theWriter.flush();
 

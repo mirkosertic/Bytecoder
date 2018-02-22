@@ -72,11 +72,23 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
                         BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
 
                         BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
-                        aLinkerContext.resolveClass(theClass).resolveStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                                theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                        BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theClass);
+                        BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(
+                                theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature()
+                        );
+                        if (theMethod.getAccessFlags().isStatic()) {
+                            theLinkedClass.resolveStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                    theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                        } else if (theMethod.getAccessFlags().isPrivate()) {
+                            theLinkedClass.resolvePrivateMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                    theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                        } else {
+                            theLinkedClass.resolveVirtualMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                    theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                        }
                     }
                 }
-
                 break;
             }
             default:

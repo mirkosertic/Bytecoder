@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.classlib.java.lang.TClass;
 import de.mirkosertic.bytecoder.graph.Node;
 
 import java.util.HashMap;
@@ -30,7 +29,7 @@ import java.util.stream.Collectors;
 
 public class BytecodeLinkedClass extends Node {
 
-    public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(TClass.class), new BytecodeTypeRef[0]);
+    public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]);
     public static final BytecodeMethod GET_CLASS_PLACEHOLDER = new BytecodeMethod(new BytecodeAccessFlags(0x0001), null, null, null) {
         @Override
         public BytecodeUtf8Constant getName() {
@@ -115,7 +114,7 @@ public class BytecodeLinkedClass extends Node {
 
             addEdgeTo(new BytecodeProvidesFieldEdgeType(), theField);
 
-            linkerContext.linkTypeRef(theField.getTypeRef());
+            linkerContext.resolveTypeRef(theField.getTypeRef());
 
             return true;
         }
@@ -159,7 +158,7 @@ public class BytecodeLinkedClass extends Node {
 
             addEdgeTo(new BytecodeProvidesFieldEdgeType(), theField);
 
-            linkerContext.linkTypeRef(theField.getTypeRef());
+            linkerContext.resolveTypeRef(theField.getTypeRef());
 
             return true;
         }
@@ -324,7 +323,7 @@ public class BytecodeLinkedClass extends Node {
 
         BytecodeLinkedClass theSuperClass = getSuperClass();
         if (theSuperClass != null) {
-            return theSuperClass.resolveVirtualMethod(aMethodName, aSignature);
+            return theSuperClass.resolveStaticMethod(aMethodName, aSignature);
         }
 
         return false;

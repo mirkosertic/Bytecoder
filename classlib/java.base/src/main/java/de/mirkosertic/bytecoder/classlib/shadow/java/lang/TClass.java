@@ -13,15 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
 import de.mirkosertic.bytecoder.api.Substitutes;
-import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class VM {
+@SubstitutesInClass(Class.class)
+public class TClass {
 
-    @Substitutes(originalClass = TObject.class, method = "<init>")
-    public void emptyObjectConstructor() {
+    @Substitutes("registerNatives")
+    private static void registerNatives() {
+    }
 
+    @Substitutes("desiredAssertionStatus")
+    public boolean desiredAssertionStatus() {
+        return false;
+    }
+
+    @Substitutes("getTypeName")
+    public String getTypeName() {
+        return "";
     }
 }

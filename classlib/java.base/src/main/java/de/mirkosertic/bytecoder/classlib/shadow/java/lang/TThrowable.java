@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import de.mirkosertic.bytecoder.api.Substitutes;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Substitutes {
+import java.io.PrintStream;
 
-    String value();
+@SubstitutesInClass(Throwable.class)
+public class TThrowable {
+
+    @Substitutes("printStackTrace")
+    public void printStackTrace() {
+    }
+
+    @Substitutes("printStackTrace")
+    public void printStackTrace(PrintStream s) {
+    }
 }
