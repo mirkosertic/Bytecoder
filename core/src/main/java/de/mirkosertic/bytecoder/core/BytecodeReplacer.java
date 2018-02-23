@@ -15,49 +15,44 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
-
-import java.util.Objects;
-
 public class BytecodeReplacer {
 
-    private final BytecodeLoader loader;
+    public static class MergeResult {
+
+        private final BytecodeMethod[] methods;
+        private final BytecodeField[] fields;
+
+        MergeResult(BytecodeMethod[] aMethods, BytecodeField[] aFields) {
+            methods = aMethods;
+            fields = aFields;
+        }
+
+        public BytecodeMethod[] getMethods() {
+            return methods;
+        }
+
+        public BytecodeField[] getFields() {
+            return fields;
+        }
+    }
+
+    protected final BytecodeLoader loader;
 
     public BytecodeReplacer(BytecodeLoader aLoader) {
         loader = aLoader;
     }
 
-    private BytecodeMethod replaceMethodFrom(BytecodeMethod aMethod, BytecodeClass aShadowType) {
-        for (BytecodeMethod theShadowMethod : aShadowType.getMethods()) {
-            BytecodeAnnotation theAnnotation = theShadowMethod.getAttributes().getAnnotationByType(Substitutes.class.getName());
-            if (theAnnotation != null) {
-                String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
-                if (Objects.equals(theMethodName, aMethod.getName().stringValue()) && theShadowMethod.getSignature().metchesExactlyTo(aMethod.getSignature())) {
-                    return aMethod.replaceAndFlagsFrom(theShadowMethod);
-                }
-            }
-        }
-        return aMethod;
+    public MergeResult replace(
+            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields) {
+        return new MergeResult(aMethods, aFields);
     }
 
-    public BytecodeMethod[] replace(
-            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods) {
-        BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
-        StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.shadow." + theObjectType.name());
-        int p = theShadowName.lastIndexOf(".");
-        if (p>0) {
-            theShadowName.insert(p+1, "T");
-        }
-        try {
-            BytecodeClass theShadowType = loader.loadByteCode(new BytecodeObjectTypeRef(theShadowName.toString()));
-            BytecodeMethod[] theMethods = new BytecodeMethod[aMethods.length];
-            for (int i=0;i<aMethods.length;i++) {
-                theMethods[i] = replaceMethodFrom(aMethods[i], theShadowType);
-            }
-            return theMethods;
-        } catch (Exception  e) {
-            // No shadow type found
-            return aMethods;
-        }
+    public BytecodeTypeRef replaceTypeIn(BytecodeObjectTypeRef aType) {
+        return aType;
     }
+
+    public BytecodeUtf8Constant replaceTypeIn(BytecodeUtf8Constant aType) {
+        return aType;
+    }
+
 }

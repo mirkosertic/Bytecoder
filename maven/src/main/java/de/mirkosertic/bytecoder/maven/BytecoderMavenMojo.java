@@ -58,7 +58,6 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -131,7 +130,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             File theBytecoderFileName = new File(theBytecoderDirectory, theCompileTarget.generatedFileName());
 
             BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                    new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(TString.class), 1) });
+                    new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
             CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.ALL);
             CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);

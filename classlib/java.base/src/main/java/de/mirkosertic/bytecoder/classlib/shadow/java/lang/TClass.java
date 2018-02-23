@@ -21,8 +21,8 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(Class.class)
 public class TClass {
 
-    @Substitutes("registerNatives")
-    private static void registerNatives() {
+    @Substitutes("<clinit>")
+    private static void emptyClassInit() {
     }
 
     @Substitutes("desiredAssertionStatus")
@@ -33,5 +33,64 @@ public class TClass {
     @Substitutes("getTypeName")
     public String getTypeName() {
         return "";
+    }
+
+    @Substitutes("getName")
+    public String getName() {
+        return "";
+    }
+
+    @Substitutes("getComponentType")
+    public Class getComponentType() {
+        return null;
+    }
+
+    @Substitutes("getDeclaringClass")
+    public Class<?> getDeclaringClass() throws SecurityException {
+        return null;
+    }
+
+    @Substitutes("getSimpleName")
+    public String getSimpleName() {
+        return "";
+    }
+
+    @Substitutes("isEnum")
+    public boolean isEnum() {
+        return false;
+    }
+
+    @Substitutes("getEnumConstants")
+    public Object[] getEnumConstants() {
+        return null;
+    }
+
+    @Substitutes("getPrimitiveClass")
+    public static Class<?> getPrimitiveClass(String aName) {
+        if ("byte".equals(aName)) {
+            return Byte.class;
+        }
+        if ("char".equals(aName)) {
+            return Character.class;
+        }
+        if ("short".equals(aName)) {
+            return Short.class;
+        }
+        if ("int".equals(aName)) {
+            return Integer.class;
+        }
+        if ("float".equals(aName)) {
+            return Float.class;
+        }
+        if ("double".equals(aName)) {
+            return Double.class;
+        }
+        if ("long".equals(aName)) {
+            return Long.class;
+        }
+        if ("boolean".equals(aName)) {
+            return Boolean.class;
+        }
+        throw new RuntimeException(aName);
     }
 }

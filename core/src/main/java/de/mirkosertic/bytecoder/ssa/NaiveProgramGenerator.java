@@ -59,6 +59,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
@@ -895,6 +896,25 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theValue2);
                 aHelper.push(theValue1);
 
+            } else if (theInstruction instanceof BytecodeInstructionDUPX2) {
+                BytecodeInstructionDUPX2 theINS = (BytecodeInstructionDUPX2) theInstruction;
+                Value theValue1 = aHelper.pop();
+                Value theValue2 = aHelper.pop();
+
+                if (theValue2.resolveType().resolve() == TypeRef.Native.LONG || theValue2.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+                    // Form 2
+                    aHelper.push(theValue1);
+                    aHelper.push(theValue2);
+                    aHelper.push(theValue1);
+                } else {
+                    // Form 1
+                    Value theValue3 = aHelper.pop();
+
+                    aHelper.push(theValue1);
+                    aHelper.push(theValue3);
+                    aHelper.push(theValue2);
+                    aHelper.push(theValue1);
+                }
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 BytecodeInstructionGETSTATIC theINS = (BytecodeInstructionGETSTATIC) theInstruction;
                 GetStaticExpression theValue = new GetStaticExpression(theINS.getConstant());

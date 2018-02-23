@@ -23,22 +23,62 @@ import java.nio.charset.Charset;
 @SubstitutesInClass(String.class)
 public class TString {
 
+    @Substitutes("<clinit>")
+    private static void emptyClassInit() {
+    }
+
+    private byte[] data;
+
     @Substitutes("<init>")
     void defaultConstructor(byte[] aData) {
+        data = aData;
+    }
+
+    @Substitutes("<init>")
+    void defaultConstructor(String aData) {
+        byte[] theOtherData = aData.getBytes();
+        data = new byte[theOtherData.length];
+        for (int i=0;i<theOtherData.length;i++) {
+            data[i] = theOtherData[i];
+        }
     }
 
     @Substitutes("getBytes")
     public byte[] getBytes(String charsetName) {
-        return null;
+        return data;
     }
 
     @Substitutes("getBytes")
     public byte[] getBytes(Charset charset) {
-        return null;
+        return data;
     }
 
     @Substitutes("getBytes")
     public byte[] getBytes() {
-        return null;
+        return data;
+    }
+
+    @Substitutes("equals")
+    public boolean equals(Object aOtherObject) {
+        if (aOtherObject == null) {
+            return false;
+        }
+        if (!(aOtherObject instanceof String)) {
+            return false;
+        }
+        String theOtherString = (String) aOtherObject;
+        byte[] theData = theOtherString.getBytes();
+        byte[] theThisData = getBytes();
+        if (theData.length != theThisData.length) {
+            return false;
+        }
+
+        for (int i=0;i<theData.length;i++) {
+            if (!(theData[i] == theThisData[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -25,6 +26,18 @@ import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class TStringTest {
+
+    @Test
+    public void testString() {
+        String lala = "Mirko";
+        byte[] theData = lala.getBytes();
+        assertEquals(5, theData.length, 0);
+    }
+
+    @Test
+    public void testEquals1() {
+        assertTrue("123".equals("123"));
+    }
 
     @Test
     public void testEquals() {

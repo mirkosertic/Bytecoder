@@ -21,8 +21,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(Object.class)
 public class TObject {
 
-    @Substitutes("registerNatives")
-    private static void registerNatives() {
-
+    @Substitutes("<clinit>")
+    private static void emptyClassInit() {
     }
 }

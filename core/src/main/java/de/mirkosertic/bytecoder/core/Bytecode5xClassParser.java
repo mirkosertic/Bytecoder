@@ -72,13 +72,17 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
         }
 
+        BytecodeReplacer.MergeResult theResult = bytecodeReplacer.replace(theThisClass,
+                theMethods,
+                theFields);
+
         return new BytecodeClass(theConstantPool,
                 theAccessFlags,
                 theThisClass,
                 theSuperClass,
                 theInterfaces,
-                theFields,
-                bytecodeReplacer.replace(theThisClass, theMethods),
+                theResult.getFields(),
+                theResult.getMethods(),
                 theClassAttributes);
     }
 
@@ -144,7 +148,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private void parseConstantPool_CONSTANT_Class(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theNameIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool));
+        aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool, bytecodeReplacer));
     }
 
     private void parseConstantPool_CONSTANT_Fieldref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {

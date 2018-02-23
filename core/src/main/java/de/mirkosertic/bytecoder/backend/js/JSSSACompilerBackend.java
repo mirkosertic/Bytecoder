@@ -379,13 +379,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.println();
         theWriter.println("bytecoder.bootstrap = function() {");
-        aLinkerContext.linkedClasses().forEach(aEntry -> {
-            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.print("    ");
-                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
-                theWriter.println(".classInitCheck();");
-            }
-        });
 
         List<StringValue> theValues = thePool.stringValues();
         for (int i=0; i<theValues.size(); i++) {
@@ -396,6 +389,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.print(JSWriterUtils.toArray(theValue.getStringValue().getBytes()));
             theWriter.println(");");
         }
+
+        aLinkerContext.linkedClasses().forEach(aEntry -> {
+            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.print("    ");
+                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
+                theWriter.println(".classInitCheck();");
+            }
+        });
+
         theWriter.println("}");
 
         theWriter.flush();

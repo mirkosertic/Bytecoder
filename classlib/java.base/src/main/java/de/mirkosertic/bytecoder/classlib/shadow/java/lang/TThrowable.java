@@ -21,7 +21,11 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import java.io.PrintStream;
 
 @SubstitutesInClass(Throwable.class)
-public class TThrowable {
+public class TThrowable extends Throwable {
+
+    @Substitutes("<clinit>")
+    private static void emptyClassInit() {
+    }
 
     @Substitutes("printStackTrace")
     public void printStackTrace() {
@@ -29,5 +33,10 @@ public class TThrowable {
 
     @Substitutes("printStackTrace")
     public void printStackTrace(PrintStream s) {
+    }
+
+    @Substitutes("fillInStackTrace")
+    public Throwable fillInStackTrace() {
+        return this;
     }
 }

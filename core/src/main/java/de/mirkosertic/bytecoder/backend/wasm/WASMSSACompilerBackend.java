@@ -31,10 +31,10 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
-import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -78,6 +78,8 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
     public WASMCompileResult generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue) {
 
         // Link required mamory management code
+        BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+
         BytecodeLinkedClass theManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
         theManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
         theManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
@@ -94,7 +96,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
-        theStringClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        if (!theStringClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}))) {
+            throw new IllegalStateException("No matching constructor!");
+        }
 
         StringWriter theStringWriter = new StringWriter();
         PrintWriter theWriter = new PrintWriter(theStringWriter);
@@ -576,7 +580,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   (func $newRuntimeClass (param $type i32) (param $staticSize i32) (param $enumValuesOffset i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
-        theWriter.print("              (call $MemoryManager_AddressnewObjectINTINTINT (i32.const 0) (get_local $staticSize) (i32.const -1) (i32.const ");
+        theWriter.print("              (call $");
+        theWriter.print(WASMWriterUtils.toClassName(theManagerClass.getClassName()));
+        theWriter.print("_AddressnewObjectINTINTINT (i32.const 0) (get_local $staticSize) (i32.const -1) (i32.const ");
         theWriter.print(theGeneratedFunctions.indexOf("RUNTIMECLASS__resolvevtableindex"));
         theWriter.println("))");
         theWriter.println("         )");
@@ -598,7 +604,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   (func $newLambda (param $type i32) (param $implMethodNumber i32) (result i32)");
         theWriter.println("         (local $newRef i32)");
         theWriter.println("         (set_local $newRef");
-        theWriter.print("            (call $MemoryManager_AddressnewObjectINTINTINT (i32.const 0) (i32.const 12) (get_local $type) (i32.const ");
+        theWriter.print("            (call $");
+        theWriter.print(WASMWriterUtils.toClassName(theManagerClass.getClassName()));
+        theWriter.print("_AddressnewObjectINTINTINT (i32.const 0) (i32.const 12) (get_local $type) (i32.const ");
         theWriter.print(theLambdaVTableResolveIndex);
         theWriter.println("))");
         theWriter.println("         )");
@@ -767,7 +775,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 theWriter.print("      (call $");
-                theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
+                theWriter.print(WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
                 theWriter.println("__classinitcheck)");
             }
         });
@@ -780,7 +788,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             byte[] theDataBytes = theData.getBytes();
 
             theGlobalVariables.add("stringPool" + i);
-            theGlobalVariables.add("stringPool" + i + "_array");
+            theGlobalVariables.add("stringPool" + i + "__array");
 
             theWriter.print("      (set_global $stringPool");
             theWriter.print(i);
@@ -800,7 +808,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(")");
 
             // We also need the runtime class
-            theWriter.print(" (get_global $TArray__runtimeClass)");
+            theWriter.print(" (get_global $");
+            theWriter.print(WASMWriterUtils.toClassName(theArrayClass.getClassName()));
+            theWriter.print("__runtimeClass");
+            theWriter.print(")");
             // Plus the vtable index
             theWriter.print(" (i32.const ");
             theWriter.print(theResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
@@ -825,7 +836,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             theWriter.print("      (set_global $stringPool");
             theWriter.print(i);
-            theWriter.print(" (call $MemoryManager_AddressnewObjectINTINTINT");
+            theWriter.print(" (call $");
+            theWriter.print(WASMWriterUtils.toClassName(theManagerClass.getClassName()));
+            theWriter.print("_AddressnewObjectINTINTINT");
 
             theWriter.print(" (i32.const 0)"); // Unused argument
 
@@ -842,7 +855,9 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             theWriter.print(")");
             theWriter.println("))");
 
-            theWriter.print("      (call $TString_VOIDinitINT ");
+            theWriter.print("      (call $");
+            theWriter.print(WASMWriterUtils.toClassName(theStringClass.getClassName()));
+            theWriter.print("_VOIDinitA1BYTE ");
             theWriter.print(" (get_global $stringPool");
             theWriter.print(i);
             theWriter.print(")");

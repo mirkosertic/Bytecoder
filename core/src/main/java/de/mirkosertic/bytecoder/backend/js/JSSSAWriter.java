@@ -24,7 +24,6 @@ import java.util.Objects;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
-import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -349,10 +348,10 @@ public class JSSSAWriter extends IndentSSAWriter {
         BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
         if (!theConstant.stringValue().startsWith("[")) {
             BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
-            print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+            print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
         } else {
             BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-            print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
+            print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
         }
 
         print(")");

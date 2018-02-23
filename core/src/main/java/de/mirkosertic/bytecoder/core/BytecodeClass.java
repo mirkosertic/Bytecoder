@@ -57,6 +57,10 @@ public class BytecodeClass {
         return constantPool;
     }
 
+    public BytecodeField[] fields() {
+        return fields;
+    }
+
     public BytecodeField fieldByName(String aName) {
         for (BytecodeField theField : fields) {
             if (Objects.equals(theField.getName().stringValue(), aName)) {
@@ -79,7 +83,7 @@ public class BytecodeClass {
         BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
         if (theDelegatesTo != null) {
             BytecodeAnnotation.ElementValue theParentOverride = theDelegatesTo.getElementValueByName("parentClass");
-            return new BytecodeClassinfoConstant(-1, null) {
+            return new BytecodeClassinfoConstant(-1, null, null) {
                 @Override
                 public BytecodeUtf8Constant getConstant() {
                     return new BytecodeUtf8Constant(theParentOverride.stringValue().replace(".","/"));

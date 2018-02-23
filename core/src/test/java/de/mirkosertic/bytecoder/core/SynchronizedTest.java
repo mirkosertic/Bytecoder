@@ -27,7 +27,6 @@ public class SynchronizedTest {
     public void testSynchronizedBlock() {
         synchronized (this) {
             int x = 1 + 2;
-            String test = "Mirko";
         }
     }
 }
