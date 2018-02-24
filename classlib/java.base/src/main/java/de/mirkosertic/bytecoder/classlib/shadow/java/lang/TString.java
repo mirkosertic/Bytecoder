@@ -58,6 +58,11 @@ public class TString {
         return data;
     }
 
+    @Substitutes("length")
+    public int length() {
+        return data.length;
+    }
+
     @Substitutes("equals")
     public boolean equals(Object aOtherObject) {
         if (aOtherObject == null) {

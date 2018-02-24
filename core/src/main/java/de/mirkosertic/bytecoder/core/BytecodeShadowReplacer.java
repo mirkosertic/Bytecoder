@@ -23,8 +23,11 @@ import java.util.Objects;
 
 public class BytecodeShadowReplacer extends BytecodeReplacer {
 
-    public BytecodeShadowReplacer(BytecodeLoader aLoader) {
+    private final BytecodeReplacer defaultReplacer;
+
+    public BytecodeShadowReplacer(BytecodeLoader aLoader, BytecodeReplacer aDefaultReplacer) {
         super(aLoader);
+        defaultReplacer = aDefaultReplacer;
     }
 
     private BytecodeMethod replaceMethodFrom(BytecodeMethod aMethod, BytecodeClass aShadowType) {
@@ -43,13 +46,15 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
     public MergeResult replace(
             BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields) {
         BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
-        StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.shadow." + theObjectType.name());
+        StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.shadow.").append(theObjectType.name());
         int p = theShadowName.lastIndexOf(".");
         if (p>0) {
             theShadowName.insert(p+1, "T");
         }
         try {
-            BytecodeClass theShadowType = loader.loadByteCode(new BytecodeObjectTypeRef(theShadowName.toString()));
+            String theShadowNameStr = theShadowName.toString();
+            defaultReplacer.addTypeMap(theShadowNameStr, theObjectType.name());
+            BytecodeClass theShadowType = loader.loadByteCode(new BytecodeObjectTypeRef(theShadowNameStr), defaultReplacer);
 
             List<BytecodeField> theFields = new ArrayList<>();
             // Import fields from shadow type

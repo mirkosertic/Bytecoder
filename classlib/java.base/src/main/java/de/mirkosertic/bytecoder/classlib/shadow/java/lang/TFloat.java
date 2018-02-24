@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
 import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.java.lang.TMath;
 
 @SubstitutesInClass(Float.class)
 public class TFloat {
@@ -52,6 +51,7 @@ public class TFloat {
         return floatToIntBits(value);
     }
 
+    @Substitutes("floatToIntBits")
     public static int floatToIntBits(float value) {
         if (value == Float.POSITIVE_INFINITY) {
             return 0x7F800000;
@@ -60,8 +60,8 @@ public class TFloat {
         } else if (Float.isNaN(value)) {
             return 0x7FC00000;
         }
-        float abs = de.mirkosertic.bytecoder.classlib.java.lang.TMath.abs(value);
-        int exp = TMath.getExponent(abs);
+        float abs = Math.abs(value);
+        int exp = Math.getExponent(abs);
         int negExp = -exp + 23;
         if (exp < -126) {
             exp = -127;
@@ -99,5 +99,4 @@ public class TFloat {
         float value = mantissa * binaryExponent(rawExp - 127 - 23);
         return !negative ? value : -value;
     }
-
 }

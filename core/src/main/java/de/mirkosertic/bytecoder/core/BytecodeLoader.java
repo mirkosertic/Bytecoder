@@ -30,7 +30,7 @@ public class BytecodeLoader {
     public BytecodeLoader(ClassLoader aClassLoader) {
         classLoader = aClassLoader;
         bytecodeReplacer = new BytecodeReplacer(this);
-        shadowReplacer = new BytecodeShadowReplacer(this);
+        shadowReplacer = new BytecodeShadowReplacer(this, bytecodeReplacer);
         signatureParser = new BytecodeSignatureParser(bytecodeReplacer);
     }
 

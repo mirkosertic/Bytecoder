@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class BytecodeReplacer {
 
     public static class MergeResult {
@@ -37,9 +40,15 @@ public class BytecodeReplacer {
     }
 
     protected final BytecodeLoader loader;
+    private final Map<String, String> typeMap;
 
     public BytecodeReplacer(BytecodeLoader aLoader) {
         loader = aLoader;
+        typeMap = new HashMap<>();
+    }
+
+    public void addTypeMap(String aOld, String aNew) {
+        typeMap.put(aOld, aNew);
     }
 
     public MergeResult replace(
@@ -48,10 +57,19 @@ public class BytecodeReplacer {
     }
 
     public BytecodeTypeRef replaceTypeIn(BytecodeObjectTypeRef aType) {
+        String theNew = typeMap.get(aType.name());
+        if (theNew != null) {
+            return new BytecodeObjectTypeRef(theNew);
+        }
         return aType;
     }
 
     public BytecodeUtf8Constant replaceTypeIn(BytecodeUtf8Constant aType) {
+        String theTypeName = aType.stringValue().replace("/", ".");
+        String theNew = typeMap.get(theTypeName);
+        if (theNew != null) {
+            return new BytecodeUtf8Constant(theNew.replace(".","/"));
+        }
         return aType;
     }
 
