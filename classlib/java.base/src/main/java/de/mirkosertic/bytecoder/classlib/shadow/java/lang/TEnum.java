@@ -13,18 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import de.mirkosertic.bytecoder.api.Substitutes;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface SubstitutesInClass {
+import java.util.Objects;
 
-    Class value();
+@SubstitutesInClass(Enum.class)
+public class TEnum {
 
-    boolean completeReplace() default false;
+    @Substitutes("valueOf")
+    public static Enum valueOf(Class<Enum> aClass, String aValue) {
+        for (Enum theEnum : aClass.getEnumConstants()) {
+            if (Objects.equals(theEnum.name(), aValue)) {
+                return theEnum;
+            }
+        }
+        throw new IllegalArgumentException();
+    }
 }

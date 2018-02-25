@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.nio.charset.Charset;
 
-@SubstitutesInClass(String.class)
+@SubstitutesInClass(value = String.class, completeReplace = true)
 public class TString {
 
     @Substitutes("<clinit>")

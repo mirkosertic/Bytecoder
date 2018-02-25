@@ -255,7 +255,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    },");
             theWriter.println();
 
-            theWriter.println("    A1TObjectgetEnumConstants : function(aClazz) {");
+            theWriter.println("    A1javalangObjectgetEnumConstants : function(aClazz) {");
             theWriter.println("        return aClazz.$VALUES;");
             theWriter.println("    },");
 
