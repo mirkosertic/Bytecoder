@@ -18,10 +18,9 @@ package de.mirkosertic.bytecoder.backend.js;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -171,6 +170,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         aLinkerContext.linkedClasses().forEach(theEntry -> {
 
+            // Here we collect everything that is required for class initialization
+            // this includes the super class, all implementing interfaces and also static
+            // dependencies of the class initialization code
+            List<BytecodeObjectTypeRef> theInitDependencies = new ArrayList<>();
+            BytecodeLinkedClass theSuperClass = theEntry.targetNode().getSuperClass();
+            if (theSuperClass != null) {
+                theInitDependencies.add(theSuperClass.getClassName());
+            }
+            for (BytecodeLinkedClass theInterface : theEntry.targetNode().getImplementingTypes()) {
+                if (!theInitDependencies.contains(theInterface.getClassName())) {
+                    theInitDependencies.add(theInterface.getClassName());
+                }
+            }
+
             String theJSClassName = JSWriterUtils.toClassName(theEntry.edgeType().objectTypeRef());
             theWriter.println("var " + theJSClassName + " = {");
 
@@ -205,7 +218,24 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 BytecodeResolvedFields theInstanceFields = theEntry.targetNode().resolvedFields();
                 theWriter.println("    Create : function() {");
                 theInstanceFields.streamForInstanceFields().forEach(
-                        aFieldEntry -> theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = null; // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
+                        aFieldEntry -> {
+                            BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
+                            if (theFieldType.isPrimitive()) {
+                                BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
+                                switch (thePrimitive) {
+                                    case BOOLEAN: {
+                                        theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = false; // declared in " + aFieldEntry.getProvidingClass().getClassName().name());
+                                        break;
+                                    }
+                                    default: {
+                                        theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = 0; // declared in " + aFieldEntry.getProvidingClass().getClassName().name());
+                                        break;
+                                    }
+                                }
+                            } else {
+                                theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = null; // declared in " + aFieldEntry.getProvidingClass().getClassName().name());
+                            }
+                        });
                 theWriter.println("    },");
                 theWriter.println();
             }
@@ -228,8 +258,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    A1TObjectgetEnumConstants : function(aClazz) {");
             theWriter.println("        return aClazz.$VALUES;");
             theWriter.println("    },");
-
-            Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
 
             BytecodeResolvedMethods theMethods = theEntry.targetNode().resolvedMethods();
 
@@ -292,7 +320,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue());
 
-                theStaticReferences.addAll(theSSAProgram.getStaticReferences());
+                if (theMethod.getName().stringValue().equals("<clinit>")) {
+                    for (BytecodeObjectTypeRef theRef : theSSAProgram.getStaticReferences()) {
+                        if (!theInitDependencies.contains(theRef)) {
+                            theInitDependencies.add(theRef);
+                        }
+                    }
+                }
 
                 if (aOptions.isDebugOutput()) {
                     theWriter.println("        /**");
@@ -358,7 +392,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 });
             }
 
-            for (BytecodeObjectTypeRef theRef : theStaticReferences) {
+            for (BytecodeObjectTypeRef theRef : theInitDependencies) {
                 if (!Objects.equals(theRef, theEntry.edgeType().objectTypeRef())) {
                     theWriter.print("            ");
                     theWriter.print(JSWriterUtils.toClassName(theRef));
@@ -379,7 +413,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.println();
         theWriter.println("bytecoder.bootstrap = function() {");
-
         List<StringValue> theValues = thePool.stringValues();
         for (int i=0; i<theValues.size(); i++) {
             StringValue theValue = theValues.get(i);

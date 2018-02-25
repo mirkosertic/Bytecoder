@@ -134,6 +134,9 @@ public class Program {
                     GetStaticExpression theStaticValue = (GetStaticExpression) theValue;
                     theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
                 }
+                if (theValue instanceof StringValue) {
+                    theResult.add(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
+                }
                 if (theValue instanceof ClassReferenceValue) {
                     ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;
                     theResult.add(theClassRef.getType());

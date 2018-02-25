@@ -21,6 +21,17 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(Float.class)
 public class TFloat {
 
+    @Substitutes("compare")
+    public static int compare(float f1, float f2) {
+        if(f1 < f2) {
+            return -1;
+        }
+        if(f1 > f2) {
+            return 1;
+        }
+        return 0;
+    }
+
     private static float binaryExponent(int n) {
         float result = 1;
         if (n >= 0) {

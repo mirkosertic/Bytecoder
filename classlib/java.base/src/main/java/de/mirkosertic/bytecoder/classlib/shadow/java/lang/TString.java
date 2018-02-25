@@ -35,6 +35,11 @@ public class TString {
     }
 
     @Substitutes("<init>")
+    void defaultConstructorWithCoder(byte[] aData, byte acoder) {
+        data = aData;
+    }
+
+    @Substitutes("<init>")
     void defaultConstructor(String aData) {
         byte[] theOtherData = aData.getBytes();
         data = new byte[theOtherData.length];
@@ -85,5 +90,12 @@ public class TString {
         }
 
         return true;
+    }
+
+    @Substitutes("getBytes")
+    void getBytes(byte[] dst, int dstBegin, byte coder) {
+        for (int i=0;i<data.length;i++) {
+            dst[dstBegin++] = data[i];
+        }
     }
 }
