@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang.reflect;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public class TArray {
 
     @Override

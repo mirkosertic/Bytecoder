@@ -42,7 +42,7 @@ public class TEnum {
 
     public static Enum valueOf(Class<Enum> aClass, String aValue) {
         for (Enum theEnum : aClass.getEnumConstants()) {
-            if (Objects.equals(theEnum.name(), aValue)) {
+            if (theEnum.name().equals(aValue)) {
                 return theEnum;
             }
         }

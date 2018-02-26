@@ -24,13 +24,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TDoubleTest {
+public class DoubleTest {
 
     @Test
     public void testCompare() {
-        Assert.assertEquals(TDouble.compare(10d, 20d), -1, 0);
-        Assert.assertEquals(TDouble.compare(10d, 10d), 0, 0);
-        Assert.assertEquals(TDouble.compare(20d, 10d), 1, 0);
+        Assert.assertEquals(Double.compare(10d, 20d), -1, 0);
+        Assert.assertEquals(Double.compare(10d, 10d), 0, 0);
+        Assert.assertEquals(Double.compare(20d, 10d), 1, 0);
     }
 
     @Test

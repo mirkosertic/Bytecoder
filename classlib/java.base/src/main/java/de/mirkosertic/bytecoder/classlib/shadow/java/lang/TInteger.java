@@ -86,7 +86,7 @@ public class TInteger extends Number {
     }
 
     public static Integer valueOf(int aValue) {
-        return aValue;
+        return new Integer(aValue);
     }
 
     public static Integer valueOf(String aValue) {

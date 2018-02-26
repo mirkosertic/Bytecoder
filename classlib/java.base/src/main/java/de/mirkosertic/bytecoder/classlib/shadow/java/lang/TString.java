@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TString implements java.io.Serializable, Comparable<TString> {
+public class TString implements java.io.Serializable, Comparable<String> {
 
     private int computedHash;
     private byte[] data;
@@ -68,7 +68,7 @@ public class TString implements java.io.Serializable, Comparable<TString> {
     }
 
     @Override
-    public int compareTo(TString o) {
+    public int compareTo(String o) {
         return 0;
     }
 
@@ -81,15 +81,16 @@ public class TString implements java.io.Serializable, Comparable<TString> {
         if (this == aOtherObject) {
             return true;
         }
-        if (!(aOtherObject instanceof TString)) {
+        if (!(aOtherObject instanceof String)) {
             return false;
         }
-        TString theOtherString = (TString) aOtherObject;
+        String theOtherString = (String) aOtherObject;
         if (!(theOtherString.length() == data.length)) {
             return false;
         }
+        byte[] theOtherData = theOtherString.getBytes();
         for (int i=0;i<data.length;i++) {
-            if (data[i] != theOtherString.data[i]) {
+            if (data[i] != theOtherData[i]) {
                 return false;
             }
         }

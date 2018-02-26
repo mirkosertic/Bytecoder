@@ -15,15 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import static org.junit.Assert.assertEquals;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TStringBuilderTest {
+public class StringBuilderTest {
 
     @Test
     public void testEmpty() {
@@ -48,42 +47,42 @@ public class TStringBuilderTest {
 
     @Test
     public void testAppendInteger() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123);
         assertEquals(3, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendNegativeInteger() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(-123);
         assertEquals(4, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendFloat() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123.123f);
         assertEquals("123.123", theBuilder.toString());
     }
 
     @Test
     public void testAppendNegativeFloat() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(-123.123f);
         assertEquals("-123.123", theBuilder.toString());
     }
 
     @Test
     public void testAppendDouble() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123.123d);
         assertEquals("123.123", theBuilder.toString());
     }
 
     @Test
     public void testAppendNegativeDouble() {
-        TStringBuilder theBuilder = new TStringBuilder();
+        StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(-123.123d);
         assertEquals("-123.123", theBuilder.toString());
     }

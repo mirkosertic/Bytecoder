@@ -15,21 +15,20 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TArrayListTest {
+public class ArrayListTest {
 
     @Test
     public void add() throws Exception {
-        TArrayList theList = new TArrayList();
+        ArrayList theList = new ArrayList();
         Assert.assertTrue(theList.add(new Integer(1)));
         Assert.assertTrue(theList.add(new Integer(2)));
         Assert.assertTrue(theList.add(new Integer(3)));
@@ -57,7 +56,7 @@ public class TArrayListTest {
 
     @Test
     public void clear() throws Exception {
-        TArrayList theList = new TArrayList();
+        ArrayList theList = new ArrayList();
         theList.add(new Integer(1));
         theList.add(new Integer(2));
         Assert.assertFalse(theList.isEmpty());
@@ -68,7 +67,7 @@ public class TArrayListTest {
 
     @Test
     public void contains() throws Exception {
-        TArrayList theList = new TArrayList();
+        ArrayList theList = new ArrayList();
         theList.add(new Integer(1));
         theList.add(new Integer(2));
         Assert.assertFalse(theList.contains("Hello"));
@@ -78,7 +77,7 @@ public class TArrayListTest {
 
     @Test
     public void isEmpty() throws Exception {
-        TArrayList theList = new TArrayList();
+        ArrayList theList = new ArrayList();
         Assert.assertTrue(theList.isEmpty());
         theList.add("Hello");
         Assert.assertFalse(theList.isEmpty());
@@ -86,7 +85,7 @@ public class TArrayListTest {
 
     @Test
     public void remove() throws Exception {
-        TArrayList theList = new TArrayList();
+        ArrayList theList = new ArrayList();
         theList.add(new Integer(1));
         theList.add(new Integer(2));
         Assert.assertTrue(theList.remove(new Integer(1)));
@@ -98,7 +97,7 @@ public class TArrayListTest {
 
     @Test
     public void testToArray() {
-        TArrayList theList = new TArrayList();
+        ArrayList theList = new ArrayList();
         theList.add("A");
         theList.add("B");
         Object[] theArray = theList.toArray();

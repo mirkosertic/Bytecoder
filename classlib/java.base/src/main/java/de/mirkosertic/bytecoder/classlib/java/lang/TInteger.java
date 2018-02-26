@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 public class TInteger extends TNumber {
 
@@ -85,11 +86,11 @@ public class TInteger extends TNumber {
     }
 
     public static TInteger valueOf(String aValue) {
-        return new TInteger((int) TNumber.stringToLong(aValue));
+        return new TInteger((int) VM.stringToLong(aValue));
     }
 
     public static int parseInt(String aString) {
-        return (int) TNumber.stringToLong(aString);
+        return (int) VM.stringToLong(aString);
     }
 
     public static String toString(int aValue) {
@@ -99,6 +100,6 @@ public class TInteger extends TNumber {
     }
 
     public static String toHexString(int aValue) {
-        return TNumber.longToHex(aValue);
+        return VM.longToHex(aValue);
     }
 }

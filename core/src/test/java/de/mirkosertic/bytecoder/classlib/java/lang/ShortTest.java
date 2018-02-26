@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TShortTest {
+public class ShortTest {
 
     @Test
     public void testEquals() throws Exception {

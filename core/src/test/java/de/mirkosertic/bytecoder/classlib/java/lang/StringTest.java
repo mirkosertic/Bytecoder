@@ -15,17 +15,16 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-
 @RunWith(BytecoderUnitTestRunner.class)
-public class TStringTest {
+public class StringTest {
 
     @Test
     public void testString() {

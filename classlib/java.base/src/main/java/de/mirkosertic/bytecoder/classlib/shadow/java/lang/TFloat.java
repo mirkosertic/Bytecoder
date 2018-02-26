@@ -218,7 +218,7 @@ public class TFloat extends Number {
     }
 
     public static Float valueOf(float aValue) {
-        return aValue;
+        return new Float(aValue);
     }
 
     public static Float valueOf(String aValue) {

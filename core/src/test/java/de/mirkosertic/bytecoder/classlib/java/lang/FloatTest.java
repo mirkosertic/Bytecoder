@@ -15,23 +15,22 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
-public class TFloatTest {
+public class FloatTest {
 
     @Test
     public void testCompare() {
-        Assert.assertEquals(TFloat.compare(10f, 20f), -1, 0);
-        Assert.assertEquals(TFloat.compare(10f, 10f), 0, 0);
-        Assert.assertEquals(TFloat.compare(20f, 10f), 1, 0);
+        Assert.assertEquals(Float.compare(10f, 20f), -1, 0);
+        Assert.assertEquals(Float.compare(10f, 10f), 0, 0);
+        Assert.assertEquals(Float.compare(20f, 10f), 1, 0);
     }
 
     @Test
@@ -90,12 +89,12 @@ public class TFloatTest {
 
     @Test
     public void testValueOfString1() {
-        assertEquals(123.25, TFloat.valueOf("123.25").floatValue(), 0);
+        assertEquals(123.25, Float.valueOf("123.25").floatValue(), 0);
     }
 
     @Test
     public void testValueOfString2() {
-        assertEquals(-123.25, TFloat.valueOf("-123.25").floatValue(), 0);
+        assertEquals(-123.25, Float.valueOf("-123.25").floatValue(), 0);
     }
 
     @Test

@@ -10,7 +10,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
 * Use other tool chains such as Google Closure Compiler or Binaryen to further optimize generated code
-* Reuse or implement cross-compileable Java Classlib
+* Use OpenJDK as Java Classlib
 
 ## Compiling strategies
 

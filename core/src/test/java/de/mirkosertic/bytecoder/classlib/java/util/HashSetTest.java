@@ -15,19 +15,18 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.HashSet;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashSet;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-
 @RunWith(BytecoderUnitTestRunner.class)
-public class THashSetTest {
+public class HashSetTest {
 
     @Test
     public void testAddContainsRemove() {
