@@ -15,28 +15,20 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.io.PrintStream;
 
-@SubstitutesInClass(Throwable.class)
-public class TThrowable extends Throwable {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-    @Substitutes("<clinit>")
-    private static void emptyClassInit() {
-    }
+@SubstitutesInClass(completeReplace = true)
+public class TThrowable {
 
-    @Substitutes("printStackTrace")
     public void printStackTrace() {
     }
 
-    @Substitutes("printStackTrace")
     public void printStackTrace(PrintStream s) {
     }
 
-    @Substitutes("fillInStackTrace")
     public Throwable fillInStackTrace() {
-        return this;
+        return (Throwable) (Object) this;
     }
 }

@@ -245,7 +245,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    },");
             theWriter.println();
 
-            theWriter.println("    TClassgetClass : function() {");
+            theWriter.println("    ClassgetClass : function() {");
             theWriter.println("        return " + theJSClassName + ";");
             theWriter.println("    },");
             theWriter.println();
@@ -320,7 +320,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue());
 
-                if (theMethod.getName().stringValue().equals("<clinit>")) {
+                if (Objects.equals(theMethod.getName().stringValue(), "<clinit>")) {
                     for (BytecodeObjectTypeRef theRef : theSSAProgram.getStaticReferences()) {
                         if (!theInitDependencies.contains(theRef)) {
                             theInitDependencies.add(theRef);
@@ -372,7 +372,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // Only in case this class can be instantiated of course
                 theWriter.println("            var thePrototype = " + theJSClassName + ".Create.prototype;");
                 theWriter.println("            thePrototype.instanceOf = " + theJSClassName + ".instanceOf;");
-                theWriter.println("            thePrototype.TClassgetClass = " + theJSClassName + ".TClassgetClass;");
+                theWriter.println("            thePrototype.ClassgetClass = " + theJSClassName + ".ClassgetClass;");
 
                 theMethods.stream().forEach(aEntry -> {
                     BytecodeMethod theMethod = aEntry.getValue();

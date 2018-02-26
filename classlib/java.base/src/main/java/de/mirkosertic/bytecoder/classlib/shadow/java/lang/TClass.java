@@ -15,57 +15,43 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@SubstitutesInClass(Class.class)
+@SubstitutesInClass(completeReplace = true)
 public class TClass {
 
-    @Substitutes("<clinit>")
-    private static void emptyClassInit() {
-    }
-
-    @Substitutes("desiredAssertionStatus")
     public boolean desiredAssertionStatus() {
         return false;
     }
 
-    @Substitutes("getTypeName")
     public String getTypeName() {
         return "";
     }
 
-    @Substitutes("getName")
     public String getName() {
         return "";
     }
 
-    @Substitutes("getComponentType")
     public Class getComponentType() {
         return null;
     }
 
-    @Substitutes("getDeclaringClass")
     public Class<?> getDeclaringClass() throws SecurityException {
         return null;
     }
 
-    @Substitutes("getSimpleName")
     public String getSimpleName() {
         return "";
     }
 
-    @Substitutes("isEnum")
     public boolean isEnum() {
         return false;
     }
 
-    @Substitutes("getEnumConstants")
     public Object[] getEnumConstants() {
         return null;
     }
 
-    @Substitutes("getPrimitiveClass")
     public static Class<?> getPrimitiveClass(String aName) {
         if ("byte".equals(aName)) {
             return Byte.class;

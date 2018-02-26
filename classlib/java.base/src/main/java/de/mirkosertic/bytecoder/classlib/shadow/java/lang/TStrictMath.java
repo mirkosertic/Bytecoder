@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-public class TArray extends TObject {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-    @Override
-    public TObject clone() {
-        return this;
-    }
+@SubstitutesInClass(completeReplace = true)
+public class TStrictMath {
+
+    public static native double sqrt(double aValue);
+
+    public static native double sin(double aValue);
+
+    public static native double cos(double aValue);
+
+    public static native int round(float aFloat);
+
+    public static native double atan2(double aValue1, double aValue2);
 }

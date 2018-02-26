@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
+package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.java.lang.TObject;
 
-@SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public class TArray extends TObject {
 
-    public abstract TMethodHandle getTarget();
-
-    public abstract TMethodType type();
+    @Override
+    public TObject clone() {
+        return this;
+    }
 }

@@ -15,28 +15,43 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import de.mirkosertic.bytecoder.api.IsObject;
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-@IsObject
-public class TObject {
+public class TBoolean {
 
-    @Substitutes("<init>")
-    public void emptyConstructor() {
+    public static final Boolean TRUE = new Boolean(true);
+
+    public static final Boolean FALSE = new Boolean(false);
+
+    private boolean booleanValue;
+
+    public TBoolean(boolean aBooleanValue) {
+        booleanValue = aBooleanValue;
     }
 
-    public boolean equals(Object aObject) {
-        return this == aObject;
+    public boolean booleanValue() {
+        return booleanValue;
     }
 
-    public int hashCode() {
-        return 0;
+    public static Boolean valueOf(String aValue) {
+        if (parseBoolean(aValue)) {
+            return TRUE;
+        }
+        return FALSE;
     }
 
-    public Object clone() throws CloneNotSupportedException {
-        throw new CloneNotSupportedException();
+    public static Boolean valueOf(boolean aValue) {
+        if (aValue) {
+            return TRUE;
+        }
+        return FALSE;
     }
 
+    public static boolean parseBoolean(String aValue) {
+        if (aValue != null && aValue.equalsIgnoreCase("true")) {
+            return true;
+        }
+        return false;
+    }
 }

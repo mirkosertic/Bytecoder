@@ -18,9 +18,22 @@ package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public class TLambdaMetafactory {
 
-    public abstract TMethodHandle getTarget();
+    public static TCallSite metafactory(TMethodHandles.Lookup aCaller,
+                                        String aName,
+                                        TMethodType aInvokedType,
+                                        TMethodType aSamMethodType,
+                                        TMethodHandle aImplMethod,
+                                        TMethodType aInstantiatedMethodType) {
 
-    public abstract TMethodType type();
+        TRuntimeGeneratedType theType = new TRuntimeGeneratedType(aInvokedType, aImplMethod);
+
+        return new TConstantCallSite(new TMethodHandle() {
+            @Override
+            public Object invokeExact(Object[] args) {
+                return theType;
+            }
+        }, aInvokedType);
+    }
 }

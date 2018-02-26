@@ -18,9 +18,23 @@ package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public class TConstantCallSite extends TCallSite {
 
-    public abstract TMethodHandle getTarget();
+    private final TMethodHandle methodHandle;
+    private final TMethodType methodType;
 
-    public abstract TMethodType type();
+    public TConstantCallSite(TMethodHandle aMethodHandle, TMethodType aMethodType) {
+        methodHandle = aMethodHandle;
+        methodType = aMethodType;
+    }
+
+    @Override
+    public TMethodHandle getTarget() {
+        return methodHandle;
+    }
+
+    @Override
+    public TMethodType type() {
+        return methodType;
+    }
 }

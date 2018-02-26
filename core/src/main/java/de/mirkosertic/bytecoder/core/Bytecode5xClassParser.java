@@ -74,7 +74,9 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
         BytecodeReplacer.MergeResult theResult = bytecodeReplacer.replace(theThisClass,
                 theMethods,
-                theFields);
+                theFields,
+                theSuperClass,
+                theInterfaces);
 
         return new BytecodeClass(theConstantPool,
                 theAccessFlags,

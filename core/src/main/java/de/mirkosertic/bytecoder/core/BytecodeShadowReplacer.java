@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.IsObject;
 import de.mirkosertic.bytecoder.api.Substitutes;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +45,12 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
         return aMethod;
     }
 
+    @Override
     public MergeResult replace(
-            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields) {
+            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields,
+            BytecodeClassinfoConstant aSuperClass,
+            BytecodeInterface[] aInterfaces) {
+
         BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
         StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.shadow.").append(theObjectType.name());
         int p = theShadowName.lastIndexOf(".");
@@ -55,6 +61,37 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
             String theShadowNameStr = theShadowName.toString();
             defaultReplacer.addTypeMap(theShadowNameStr, theObjectType.name());
             BytecodeClass theShadowType = loader.loadByteCode(new BytecodeObjectTypeRef(theShadowNameStr), defaultReplacer);
+
+            BytecodeClassinfoConstant theSuperClass = theShadowType.getSuperClass();
+            if (theShadowType.getAttributes().getAnnotationByType(IsObject.class.getName()) != null) {
+                theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
+            }
+
+            BytecodeAnnotation theClassAnnotation = theShadowType.getAttributes().getAnnotationByType(SubstitutesInClass.class.getName());
+            if (theClassAnnotation == null) {
+                // No valid shadow type
+                return new MergeResult(
+                        aMethods,
+                        aFields,
+                        aSuperClass,
+                        aInterfaces
+                );
+            }
+
+            if (Objects.equals(theClassAnnotation.getElementValueByName("completeReplace").stringValue(), "true")) {
+
+                List<BytecodeMethod> theMethods = new ArrayList<>();
+                for (BytecodeMethod aMethod : theShadowType.getMethods()) {
+                    theMethods.add(replaceMethodFrom(aMethod, theShadowType));
+                }
+
+                return new MergeResult(
+                        theMethods.toArray(new BytecodeMethod[theMethods.size()]),
+                        theShadowType.fields(),
+                        theSuperClass,
+                        theShadowType.getInterfaces()
+                );
+            }
 
             List<BytecodeField> theFields = new ArrayList<>();
             // Import fields from shadow type
@@ -73,13 +110,17 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
 
             return new MergeResult(
                     theMethods.toArray(new BytecodeMethod[theMethods.size()]),
-                    theFields.toArray(new BytecodeField[theFields.size()])
+                    theFields.toArray(new BytecodeField[theFields.size()]),
+                    theSuperClass,
+                    aInterfaces
             );
         } catch (Exception  e) {
             // No shadow type found
             return new MergeResult(
                     aMethods,
-                    aFields
+                    aFields,
+                    aSuperClass,
+                    aInterfaces
             );
         }
     }

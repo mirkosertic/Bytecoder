@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
+package de.mirkosertic.bytecoder.classlib.shadow.java.text;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public class TDecimalFormatSymbols {
 
-    public abstract TMethodHandle getTarget();
+    private static final TDecimalFormatSymbols INSTANCE = new TDecimalFormatSymbols();
 
-    public abstract TMethodType type();
+    public static TDecimalFormatSymbols getInstance() {
+        return INSTANCE;
+    }
+
+    public char getDecimalSeparator() {
+        return '.';
+    }
 }

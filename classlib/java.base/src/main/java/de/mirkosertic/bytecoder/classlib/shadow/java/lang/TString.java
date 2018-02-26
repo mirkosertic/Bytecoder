@@ -15,87 +15,166 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.nio.charset.Charset;
+@SubstitutesInClass(completeReplace = true)
+public class TString implements java.io.Serializable, Comparable<TString> {
 
-@SubstitutesInClass(value = String.class, completeReplace = true)
-public class TString {
-
-    @Substitutes("<clinit>")
-    private static void emptyClassInit() {
-    }
-
+    private int computedHash;
     private byte[] data;
 
-    @Substitutes("<init>")
-    void defaultConstructor(byte[] aData) {
-        data = aData;
-    }
-
-    @Substitutes("<init>")
-    void defaultConstructorWithCoder(byte[] aData, byte acoder) {
-        data = aData;
-    }
-
-    @Substitutes("<init>")
-    void defaultConstructor(String aData) {
-        byte[] theOtherData = aData.getBytes();
-        data = new byte[theOtherData.length];
-        for (int i=0;i<theOtherData.length;i++) {
-            data[i] = theOtherData[i];
+    public TString(int aSize) {
+        data = new byte[aSize];
+        for (int i=0;i<aSize;i++) {
+            data[i] = 0;
         }
     }
 
-    @Substitutes("getBytes")
-    public byte[] getBytes(String charsetName) {
-        return data;
+    public TString(char[] aData) {
+        data = new byte[aData.length];
+        for (int i=0;i<aData.length;i++) {
+            data[i] = (byte) aData[i];
+        }
     }
 
-    @Substitutes("getBytes")
-    public byte[] getBytes(Charset charset) {
-        return data;
+    public void setCharAt(int aIndex, byte aChar) {
+        data[aIndex] = aChar;
     }
 
-    @Substitutes("getBytes")
+    @Override
+    public String toString() {
+        Object a = this;
+        return (String) a;
+    }
+
+    public TString(byte[] aData) {
+        data = aData;
+    }
+
+    public TString(TString aOtherString) {
+        data = aOtherString.data;
+    }
+
+    public TString() {
+        data = new byte[0];
+    }
+
     public byte[] getBytes() {
         return data;
     }
 
-    @Substitutes("length")
+    public char charAt(int aIndex) {
+        return (char) data[aIndex];
+    }
+
+    @Override
+    public int compareTo(TString o) {
+        return 0;
+    }
+
     public int length() {
         return data.length;
     }
 
-    @Substitutes("equals")
+    @Override
     public boolean equals(Object aOtherObject) {
-        if (aOtherObject == null) {
+        if (this == aOtherObject) {
+            return true;
+        }
+        if (!(aOtherObject instanceof TString)) {
             return false;
         }
-        if (!(aOtherObject instanceof String)) {
+        TString theOtherString = (TString) aOtherObject;
+        if (!(theOtherString.length() == data.length)) {
             return false;
         }
-        String theOtherString = (String) aOtherObject;
-        byte[] theData = theOtherString.getBytes();
-        byte[] theThisData = getBytes();
-        if (theData.length != theThisData.length) {
-            return false;
-        }
-
-        for (int i=0;i<theData.length;i++) {
-            if (!(theData[i] == theThisData[i])) {
+        for (int i=0;i<data.length;i++) {
+            if (data[i] != theOtherString.data[i]) {
                 return false;
             }
         }
-
         return true;
     }
 
-    @Substitutes("getBytes")
-    void getBytes(byte[] dst, int dstBegin, byte coder) {
-        for (int i=0;i<data.length;i++) {
-            dst[dstBegin++] = data[i];
+    public boolean equalsIgnoreCase(String aOtherObject) {
+        if ((Object) this == aOtherObject) {
+            return true;
         }
+        if (aOtherObject == null) {
+            return false;
+        }
+        if (!(aOtherObject.length() == data.length)) {
+            return false;
+        }
+        for (int i=0;i<data.length;i++) {
+            byte[] theOtherData = ((String)aOtherObject).getBytes();
+            if (Character.toLowerCase((char)data[i]) != Character.toLowerCase((char) theOtherData[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = computedHash;
+        if (h == 0 && data.length > 0) {
+            for (int i = 0; i < data.length; i++) {
+                h = 31 * h + data[i];
+            }
+            computedHash = h;
+        }
+        return h;
+    }
+
+    public int indexOf(int aChar) {
+        for (int i=0;i<data.length;i++) {
+            if (data[i] == aChar) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int lastIndexOf(String aValue) {
+        return -1;
+    }
+
+    public String substring(int aStart) {
+        int theLength = data.length - aStart;
+        byte[] theNewData = new byte[theLength];
+        for (int i=0;i<theLength;i++) {
+            theNewData[i] = data[i + aStart];
+        }
+        return new String(theNewData);
+    }
+
+    public String substring(int aStart, int aEnd) {
+        int theLength = aEnd - aStart;
+        byte[] theNewData = new byte[theLength];
+        for (int i=0;i<theLength;i++) {
+            theNewData[i] = data[i + aStart];
+        }
+        return new String(theNewData);
+    }
+
+    public String replace(char aOldChar, char aNewChar) {
+        byte[] theNewData = new byte[data.length];
+        for (int i=0;i<data.length;i++) {
+            byte theData = data[i];
+            if (theData == aOldChar) {
+                theData = (byte) aNewChar;
+            }
+            theNewData[i] = theData;
+        }
+        return new String(theNewData);
+    }
+
+    public char[] toCharArray() {
+        char[] theResult = new char[data.length];
+        for (int i=0;i<data.length;i++) {
+            theResult[i] = (char) data[i];
+        }
+        return theResult;
     }
 }

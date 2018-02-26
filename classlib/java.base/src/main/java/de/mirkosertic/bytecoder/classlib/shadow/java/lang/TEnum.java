@@ -15,15 +15,31 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.util.Objects;
 
-@SubstitutesInClass(Enum.class)
+import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public class TEnum {
 
-    @Substitutes("valueOf")
+    private final String name;
+    private final int ordinalNumber;
+
+    @NoExceptionCheck
+    protected TEnum(String aName, int aOrdinalNumber) {
+        name = aName;
+        ordinalNumber = aOrdinalNumber;
+    }
+
+    public int ordinal() {
+        return ordinalNumber;
+    }
+
+    public String name() {
+        return name;
+    }
+
     public static Enum valueOf(Class<Enum> aClass, String aValue) {
         for (Enum theEnum : aClass.getEnumConstants()) {
             if (Objects.equals(theEnum.name(), aValue)) {

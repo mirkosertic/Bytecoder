@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
-
-    public abstract TMethodHandle getTarget();
-
-    public abstract TMethodType type();
+public abstract class TAbstractStringBuilder implements Appendable, CharSequence {
 }

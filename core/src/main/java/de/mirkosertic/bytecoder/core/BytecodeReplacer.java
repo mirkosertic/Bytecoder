@@ -24,10 +24,15 @@ public class BytecodeReplacer {
 
         private final BytecodeMethod[] methods;
         private final BytecodeField[] fields;
+        private final BytecodeClassinfoConstant superClass;
+        private final BytecodeInterface[] interfaces;
 
-        MergeResult(BytecodeMethod[] aMethods, BytecodeField[] aFields) {
+        public MergeResult(BytecodeMethod[] aMethods, BytecodeField[] aFields,
+                BytecodeClassinfoConstant aSuperClass, BytecodeInterface[] aInterfaces) {
             methods = aMethods;
             fields = aFields;
+            superClass = aSuperClass;
+            interfaces = aInterfaces;
         }
 
         public BytecodeMethod[] getMethods() {
@@ -36,6 +41,14 @@ public class BytecodeReplacer {
 
         public BytecodeField[] getFields() {
             return fields;
+        }
+
+        public BytecodeClassinfoConstant getSuperClass() {
+            return superClass;
+        }
+
+        public BytecodeInterface[] getInterfaces() {
+            return interfaces;
         }
     }
 
@@ -52,8 +65,10 @@ public class BytecodeReplacer {
     }
 
     public MergeResult replace(
-            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields) {
-        return new MergeResult(aMethods, aFields);
+            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields,
+            BytecodeClassinfoConstant aSuperClass,
+            BytecodeInterface[] aInterfaces) {
+        return new MergeResult(aMethods, aFields, aSuperClass, aInterfaces);
     }
 
     public BytecodeTypeRef replaceTypeIn(BytecodeObjectTypeRef aType) {

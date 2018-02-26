@@ -18,9 +18,9 @@ package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public class TMethodHandles {
 
-    public abstract TMethodHandle getTarget();
-
-    public abstract TMethodType type();
+    @SubstitutesInClass(completeReplace = true)
+    public static class Lookup {
+    }
 }

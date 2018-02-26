@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
+package de.mirkosertic.bytecoder.classlib.shadow.java.io;
+
+import java.io.IOException;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public abstract class TOutputStream {
 
-    public abstract TMethodHandle getTarget();
+    public abstract void write(int aValue) throws IOException;
 
-    public abstract TMethodType type();
+    public abstract void close() throws IOException;
 }

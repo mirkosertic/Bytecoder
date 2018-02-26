@@ -24,7 +24,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface SubstitutesInClass {
 
-    Class value();
-
     boolean completeReplace() default false;
 }

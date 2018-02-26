@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
+public interface TCharSequence {
 
-    public abstract TMethodHandle getTarget();
+    int length();
 
-    public abstract TMethodType type();
+    byte[] getBytes();
+
+    char charAt(int index);
 }

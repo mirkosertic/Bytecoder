@@ -15,16 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.io;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.io.IOException;
 import java.io.InputStream;
 
-@SubstitutesInClass(InputStream.class)
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public abstract class TInputStream extends InputStream {
 
-    @Substitutes("read")
     public int read(byte b[], int off, int len) throws IOException {
         return 0;
     }

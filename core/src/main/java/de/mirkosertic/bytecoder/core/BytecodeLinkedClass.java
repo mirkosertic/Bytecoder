@@ -323,7 +323,6 @@ public class BytecodeLinkedClass extends Node {
 
         BytecodeLinkedClass theSuperClass = getSuperClass();
         if (theSuperClass != null) {
-            System.out.println(theSuperClass.getClassName().name() + "." + aMethodName);
             return theSuperClass.resolveStaticMethod(aMethodName, aSignature);
         }
 

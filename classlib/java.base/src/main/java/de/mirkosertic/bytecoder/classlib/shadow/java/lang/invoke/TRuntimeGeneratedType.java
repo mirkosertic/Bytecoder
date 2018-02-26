@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.net;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+public class TRuntimeGeneratedType {
 
-import java.net.SocketPermission;
+    private final TMethodType type;
+    private final TMethodHandle implementation;
 
-@SubstitutesInClass(SocketPermission.class)
-public class TSocketPermission {
-
-    @Substitutes("<clinit>")
-    public static void emptyClassInit() {
-    }
-
-    @Substitutes("<init>")
-    public void emptyConstructor(String host, String action) {
+    public TRuntimeGeneratedType(TMethodType aType, TMethodHandle aImplementation) {
+        type = aType;
+        implementation = aImplementation;
     }
 }

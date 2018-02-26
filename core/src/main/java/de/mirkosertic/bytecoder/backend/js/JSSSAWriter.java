@@ -211,7 +211,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
-        print(".TClassgetClass()");
+        print(".ClassgetClass()");
     }
 
     private void print(StackTopExpression aValue) {

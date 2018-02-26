@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
-public class TDouble extends TNumber {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+
+@SubstitutesInClass(completeReplace = true)
+public class TDouble extends Number {
 
     private final double doubleValue;
 
@@ -30,9 +34,9 @@ public class TDouble extends TNumber {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TDouble tDouble = (TDouble) o;
+        Double aDouble = (Double) o;
 
-        if (Double.compare(tDouble.doubleValue, doubleValue) != 0)
+        if (Double.compare(aDouble.doubleValue(), doubleValue) != 0)
             return false;
 
         return true;
@@ -86,12 +90,12 @@ public class TDouble extends TNumber {
     public static double parseDouble(String aValue) {
         int p = aValue.indexOf('.');
         if (p<0) {
-            return TNumber.stringToLong(aValue);
+            return VM.stringToLong(aValue);
         }
         String thePrefix = aValue.substring(0, p);
         String theSuffix = aValue.substring(p + 1);
-        long theA = TNumber.stringToLong(thePrefix);
-        long theB = TNumber.stringToLong(theSuffix);
+        long theA = VM.stringToLong(thePrefix);
+        long theB = VM.stringToLong(theSuffix);
         int theMultiplier = 1;
         int theLength = Long.toString(theB).length();
         while(theLength > 0) {
@@ -118,7 +122,7 @@ public class TDouble extends TNumber {
     }
 
     public static String toString(double aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
+        StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }

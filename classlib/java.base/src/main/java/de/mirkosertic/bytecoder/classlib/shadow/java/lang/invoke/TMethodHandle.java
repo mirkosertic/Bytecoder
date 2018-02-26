@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
 
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.invoke.MethodHandle;
+@SubstitutesInClass(completeReplace = true)
+public abstract class TMethodHandle {
 
-@SubstitutesInClass(MethodHandle.class)
-public class TMethodHandle {
-
-    @Substitutes("<clinit>")
-    public static void emptyClassInitializer() {
-    }
+    public abstract Object invokeExact(Object[] args);
 }
