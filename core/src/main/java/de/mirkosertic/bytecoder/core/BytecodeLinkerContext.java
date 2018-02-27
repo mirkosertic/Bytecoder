@@ -135,7 +135,7 @@ public class BytecodeLinkerContext {
     public void resolveAbstractMethodsInSubclasses() {
         List<BytecodeLinkedClass> theLinkedClasses = linkedClasses().map(Edge::targetNode).collect(Collectors.toList());
         for (BytecodeLinkedClass theLinked : theLinkedClasses) {
-            theLinked.resolveInheritedAbstractMethods();
+            theLinked.resolveInheritedOverriddenMethods();
         }
         if (linkedClasses().count() != theLinkedClasses.size()) {
             // New classes were added, we maybe have to resolve them as well

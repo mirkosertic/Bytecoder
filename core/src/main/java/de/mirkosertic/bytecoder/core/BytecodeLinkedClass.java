@@ -380,14 +380,14 @@ public class BytecodeLinkedClass extends Node {
                 theImportAnnotation.getElementValueByName("name").stringValue());
     }
 
-    public void resolveInheritedAbstractMethods() {
+    public void resolveInheritedOverriddenMethods() {
         Set<BytecodeLinkedClass> theHierarchy = getImplementingTypes(true, false);
 
         // Now we walk the hierarchy up and try to resolve all abstract methods
         for (BytecodeLinkedClass theClass : theHierarchy) {
             BytecodeResolvedMethods theResolvedMethods = theClass.resolvedMethods();
-            List<BytecodeMethod> theAbstractMethods = theResolvedMethods.stream().filter(t -> t.getValue().getAccessFlags().isAbstract()).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
-            for (BytecodeMethod theMethod : theAbstractMethods) {
+            List<BytecodeMethod> theInstanceMethods = theResolvedMethods.stream().filter(t -> !t.getValue().getAccessFlags().isPrivate() && !t.getValue().getAccessFlags().isStatic()).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
+            for (BytecodeMethod theMethod : theInstanceMethods) {
                 BytecodeLinkedClass.this.resolveVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
             }
         }

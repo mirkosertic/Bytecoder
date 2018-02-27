@@ -263,6 +263,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             theMethods.stream().forEach(aEntry -> {
                 BytecodeMethod theMethod = aEntry.getValue();
+                BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
 
                 // Do not generate code for abstract methods
                 if (theMethod.getAccessFlags().isAbstract()) {
@@ -271,10 +272,40 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 if (!(aEntry.getProvidingClass() == theEntry.targetNode())) {
                     // Skip methods not implemented in this class
+                    // But include static methods, as they are inherited from the base classes
+                    if (aEntry.getValue().getAccessFlags().isStatic()) {
+
+                        StringBuilder theArguments = new StringBuilder();;
+                        for (int i=0;i<theCurrentMethodSignature.getArguments().length;i++) {
+                            if (i>0) {
+                                theArguments.append(",");
+                            }
+                            theArguments.append("p");
+                            theArguments.append(i);
+                        }
+
+                        // Static methods will just delegate to the implementation in the class
+                        theWriter.println();
+                        theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
+                                + ") {");
+                        if (!theCurrentMethodSignature.getReturnType().isVoid()) {
+                            theWriter.print("         return ");
+                        } else {
+                            theWriter.print("         ");
+                        }
+                        theWriter.print(JSWriterUtils.toClassName(aEntry.getProvidingClass().getClassName()));
+                        theWriter.print(".");
+                        theWriter.print(JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature));
+                        theWriter.print("(");
+                        theWriter.print(theArguments);
+                        theWriter.println(");");
+
+                        theWriter.println("    },");
+                    }
                     return;
                 }
 
-                System.out.println("Compiling " + theEntry.targetNode().getClassName().name()  + "." + theMethod.getName().stringValue());
+                aLinkerContext.getLogger().info("Compiling {}.{}", theEntry.targetNode().getClassName().name(), theMethod.getName().stringValue());
 
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod);
@@ -282,7 +313,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 //Run optimizer
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
-                BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
                 StringBuilder theArguments = new StringBuilder();
                 for (Program.Argument theArgument : theSSAProgram.getArguments()) {
                     if (theArguments.length() > 0) {

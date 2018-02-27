@@ -20,6 +20,8 @@ import java.lang.reflect.Method;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSACompilerBackend;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -69,13 +71,9 @@ public class CompileTarget {
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
 
         // Lambda handling
-/*        BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(CallSite.class));
-        theCallsite.resolveVirtualMethod("getTarget", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                MethodHandle.class), new BytecodeTypeRef[0]));
-
-        BytecodeLinkedClass theMethodHandle = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class));
-        theMethodHandle.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));*/
+        BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.ImplementingCallsite.class));
+        theCallsite.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
 
         BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 

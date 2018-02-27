@@ -17,10 +17,20 @@ package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
 
 import java.io.PrintStream;
 
+import de.mirkosertic.bytecoder.api.DelegatesTo;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TThrowable {
+
+    public TThrowable(String aMessage) {
+    }
+
+    public TThrowable() {
+    }
+
+    private void doNothing() {
+    }
 
     public void printStackTrace() {
     }

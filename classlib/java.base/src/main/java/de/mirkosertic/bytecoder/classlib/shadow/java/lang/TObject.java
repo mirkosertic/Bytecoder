@@ -27,6 +27,10 @@ public class TObject {
     public void emptyConstructor() {
     }
 
+    public String toString() {
+        return "";
+    }
+
     public boolean equals(Object aObject) {
         return this == aObject;
     }

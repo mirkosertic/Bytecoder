@@ -38,6 +38,15 @@ public class StaticInheritanceTest {
         }
     }
 
+    public static class SubSubclass extends Subclass {
+
+        @Override
+        public int call() {
+            return Subclass.getInt();
+        }
+    }
+
+
     @Test
     public void testInheritedMethodInvocation() {
         Assert.assertEquals(42, Subclass.getInt(), 0);
@@ -46,6 +55,12 @@ public class StaticInheritanceTest {
     @Test
     public void testInvokeFromWithinInstance() {
         Subclass theInstance = new Subclass();
+        Assert.assertEquals(42, theInstance.call(), 0);
+    }
+
+    @Test
+    public void testInvokeFromWithinInstanceSubclass() {
+        SubSubclass theInstance = new SubSubclass();
         Assert.assertEquals(42, theInstance.call(), 0);
     }
 }

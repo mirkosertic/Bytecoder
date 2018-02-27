@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.classlib.java.lang.invoke.TRuntimeGeneratedType;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -1268,7 +1268,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT);
                     aHelper.push(theNewVariable);
                 } else {
-                    if (Objects.equals(theObjectType, BytecodeObjectTypeRef.fromRuntimeClass(TRuntimeGeneratedType.class))) {
+                    if (Objects.equals(theObjectType, BytecodeObjectTypeRef.fromRuntimeClass(VM.RuntimeGeneratedType.class))) {
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new RuntimeGeneratedTypeExpression());
                         aHelper.push(theNewVariable);
                     } else {
@@ -1339,7 +1339,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 Variable theTarget = (Variable) aHelper.pop();
                 BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(TRuntimeGeneratedType.class))) {
+                if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(VM.RuntimeGeneratedType.class))) {
                     RuntimeGeneratedTypeExpression theValue = (RuntimeGeneratedTypeExpression) theTarget.incomingDataFlows().get(0);
                     theValue.setType(theArguments.get(0));
                     theValue.setMethodRef(theArguments.get(1));
@@ -1657,13 +1657,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     ResolveCallsiteObjectExpression theValue = new ResolveCallsiteObjectExpression(aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);
                     Variable theCallsiteVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theValue);
 
-                    // Second step, we invoke the callsite to get whatever we are searching
-                    InvokeVirtualMethodExpression theGetTargetValue = new InvokeVirtualMethodExpression("getTarget",
-                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
-                                    new BytecodeTypeRef[0]),
-                            theCallsiteVariable, new ArrayList<>());
-                    Variable theMethodHandleVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theGetTargetValue);
-
                     List<Value> theInvokeArguments = new ArrayList<>();
 
                     Variable theArray = aTargetBlock.newVariable(
@@ -1694,7 +1687,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                                     new BytecodeTypeRef[] {
                                             new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1) }),
-                            theMethodHandleVariable, theInvokeArguments);
+                            theCallsiteVariable, theInvokeArguments);
 
                     Variable theInvokeExactResult = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theInvokeValue);
                     aHelper.push(theInvokeExactResult);

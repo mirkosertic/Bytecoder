@@ -178,4 +178,8 @@ public class TString implements java.io.Serializable, Comparable<String> {
         }
         return theResult;
     }
+
+    public static String valueOf(Object obj) {
+        return (obj == null) ? "null" : obj.toString();
+    }
 }

@@ -15,7 +15,31 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import java.lang.invoke.ConstantCallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+
 public class VM {
+
+    public static abstract class ImplementingCallsite extends ConstantCallSite {
+
+        public ImplementingCallsite(MethodHandle target) {
+            super(target);
+        }
+
+        public abstract Object invokeExact(Object... args) throws Throwable;
+    }
+
+    public static class RuntimeGeneratedType {
+
+        private final MethodType type;
+        private final MethodHandle implementation;
+
+        public RuntimeGeneratedType(MethodType aType, MethodHandle aImplementation) {
+            type = aType;
+            implementation = aImplementation;
+        }
+    }
 
     public static final char NEWLINE = '\n';
 
@@ -112,5 +136,4 @@ public class VM {
         }
         return theResult.reverse().toString();
     }
-
 }

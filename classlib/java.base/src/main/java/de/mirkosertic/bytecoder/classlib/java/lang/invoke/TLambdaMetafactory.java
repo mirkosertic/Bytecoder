@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import de.mirkosertic.bytecoder.classlib.VM;
+
 public class TLambdaMetafactory {
 
     public static TCallSite metafactory(TMethodHandles.Lookup aCaller,
@@ -24,7 +26,7 @@ public class TLambdaMetafactory {
                                         TMethodHandle aImplMethod,
                                         TMethodType aInstantiatedMethodType) {
 
-        TRuntimeGeneratedType theType = new TRuntimeGeneratedType(aInvokedType, aImplMethod);
+        VM.RuntimeGeneratedType theType = new VM.RuntimeGeneratedType(null, null);
 
         return new TConstantCallSite(new TMethodHandle() {
             @Override
