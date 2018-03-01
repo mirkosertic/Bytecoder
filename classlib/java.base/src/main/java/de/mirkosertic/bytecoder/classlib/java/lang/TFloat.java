@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
-public class TFloat extends TNumber implements TComparable<TFloat> {
+@SubstitutesInClass(completeReplace = true)
+public class TFloat extends Number {
 
     public static final float POSITIVE_INFINITY = 1 / 0.0f;
     public static final float NEGATIVE_INFINITY = -POSITIVE_INFINITY;
@@ -25,12 +27,10 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
 
     private float floatValue;
 
-    @NoExceptionCheck
     public TFloat(float aValue) {
         floatValue = aValue;
     }
 
-    @NoExceptionCheck
     public TFloat(double aValue) {
         floatValue = (float) aValue;
     }
@@ -55,9 +55,16 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         return (int) floatValue;
     }
 
-    @Override
-    public int compareTo(TFloat o) {
-        return 0;
+    public int compareTo(Float o) {
+        float f = floatValue;
+        float k = o.floatValue();
+        if (f == k) {
+            return 0;
+        }
+        if (f > k) {
+            return 1;
+        }
+        return -1;
     }
 
     public static int compare(float f1, float f2) {
@@ -150,8 +157,8 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         } else if (isNaN(value)) {
             return 0x7FC00000;
         }
-        float abs = TMath.abs(value);
-        int exp = TMath.getExponent(abs);
+        float abs = de.mirkosertic.bytecoder.classlib.java.lang.TMath.abs(value);
+        int exp = Math.getExponent(abs);
         int negExp = -exp + 23;
         if (exp < -126) {
             exp = -127;
@@ -192,12 +199,12 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
     public static float parseFloat(String aValue) {
         int p = aValue.indexOf('.');
         if (p<0) {
-            return TNumber.stringToLong(aValue);
+            return VM.stringToLong(aValue);
         }
         String thePrefix = aValue.substring(0, p);
         String theSuffix = aValue.substring(p + 1);
-        long theA = TNumber.stringToLong(thePrefix);
-        long theB = TNumber.stringToLong(theSuffix);
+        long theA = VM.stringToLong(thePrefix);
+        long theB = VM.stringToLong(theSuffix);
         int theMultiplier = 1;
         int theLength = Long.toString(theB).length();
         while(theLength > 0) {
@@ -210,17 +217,17 @@ public class TFloat extends TNumber implements TComparable<TFloat> {
         return theA - ((float) theB) / theMultiplier;
     }
 
-    public static TFloat valueOf(float aValue) {
-        return new TFloat(aValue);
+    public static Float valueOf(float aValue) {
+        return new Float(aValue);
     }
 
-    public static TFloat valueOf(String aValue) {
-        return new TFloat(parseFloat(aValue));
+    public static Float valueOf(String aValue) {
+        return parseFloat(aValue);
     }
 
     public static String toString(float aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
-        theBuffer.append(aValue);
-        return theBuffer.toString();
+        StringBuilder theBuilder = new StringBuilder();
+        theBuilder.append(aValue);
+        return theBuilder.toString();
     }
 }

@@ -53,7 +53,7 @@
             var theCanvasContext = theCanvas.getContext("2d");
 
             // dynamic linking
-            bytecoder.imports.tsystem = {
+            bytecoder.imports.system = {
                 currentTimeMillis: function() {
                     return Date.now();
                 },
@@ -67,12 +67,12 @@
                     bytecoder.logDebug(p1);
                 },
             };
-            bytecoder.imports.tprintstream = {
+            bytecoder.imports.printstream = {
                 logDebug: function(p1) {
                     bytecoder.logDebug(p1);
                 },
             };
-            bytecoder.imports.tmath = {
+            bytecoder.imports.math = {
                 ceil: function(p1) {
                     return Math.ceil(p1);
                 },
@@ -119,7 +119,7 @@
                     return p1 + p2;
                 }
             };
-            bytecoder.imports.tstrictmath = {
+            bytecoder.imports.strictmath = {
                 sin: function(p1) {
                     return Math.sin(p1);
                 },
@@ -268,14 +268,14 @@
             console.log("Init");
             bytecoder.bootstrap();
 
-            JBox2DSimulation.VOIDmainA1TString();
+            dmbiJBox2DSimulation.VOIDmainA1jlString();
             console.log("Ready");
 
             document.getElementById("button").style.display = "block";
 
             var stepFunction = function(timestamp) {
                 stats.begin();
-                JBox2DSimulation.VOIDproceedSimulation();
+                dmbiJBox2DSimulation.VOIDproceedSimulation();
                 stats.end();
 
                 window.requestAnimationFrame(stepFunction);

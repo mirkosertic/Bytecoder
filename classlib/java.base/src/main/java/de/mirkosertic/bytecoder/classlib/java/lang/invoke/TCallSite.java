@@ -15,9 +15,15 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public abstract class TCallSite {
 
-    public abstract TMethodHandle getTarget();
+    public abstract MethodHandle getTarget();
 
-    public abstract TMethodType type();
+    public abstract MethodType type();
 }

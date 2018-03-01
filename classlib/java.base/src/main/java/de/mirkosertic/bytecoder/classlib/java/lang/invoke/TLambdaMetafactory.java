@@ -15,24 +15,31 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
+@SubstitutesInClass(completeReplace = true)
 public class TLambdaMetafactory {
 
-    public static TCallSite metafactory(TMethodHandles.Lookup aCaller,
+    public static CallSite metafactory(MethodHandles.Lookup aCaller,
                                         String aName,
-                                        TMethodType aInvokedType,
-                                        TMethodType aSamMethodType,
-                                        TMethodHandle aImplMethod,
-                                        TMethodType aInstantiatedMethodType) {
+                                        MethodType aInvokedType,
+                                        MethodType aSamMethodType,
+                                        MethodHandle aImplMethod,
+                                        MethodType aInstantiatedMethodType) throws Throwable {
 
-        VM.RuntimeGeneratedType theType = new VM.RuntimeGeneratedType(null, null);
+        VM.RuntimeGeneratedType theType = new VM.RuntimeGeneratedType(aInvokedType, aImplMethod);
 
-        return new TConstantCallSite(new TMethodHandle() {
+        return new VM.ImplementingCallsite(null) {
             @Override
-            public Object invokeExact(Object[] args) {
+            public Object invokeExact(Object... args) throws Throwable {
                 return theType;
             }
-        }, aInvokedType);
+        };
     }
 }

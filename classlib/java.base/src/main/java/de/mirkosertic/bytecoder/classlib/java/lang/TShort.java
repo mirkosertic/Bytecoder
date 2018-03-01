@@ -16,8 +16,11 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
-public class TShort extends TNumber {
+@SubstitutesInClass(completeReplace = true)
+public class TShort extends Number {
 
     private short shortValue;
 
@@ -33,9 +36,9 @@ public class TShort extends TNumber {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TShort tShort = (TShort) o;
+        Short tShort = (Short) o;
 
-        if (shortValue != tShort.shortValue)
+        if (shortValue != tShort.shortValue())
             return false;
 
         return true;
@@ -86,15 +89,15 @@ public class TShort extends TNumber {
     }
 
     public static TShort valueOf(String aValue) {
-        return new TShort((short) TNumber.stringToLong(aValue));
+        return new TShort((short) VM.stringToLong(aValue));
     }
 
     public static short parseShort(String aString) {
-        return (short) TNumber.stringToLong(aString);
+        return (short) VM.stringToLong(aString);
     }
 
     public static String toString(short aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
+        StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }

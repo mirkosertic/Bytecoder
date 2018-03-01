@@ -16,8 +16,12 @@
 package de.mirkosertic.bytecoder.classlib.java.io;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
-public class TByteArrayOutputStream extends TOutputStream {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public class TByteArrayOutputStream extends OutputStream {
 
     @Override
     public void write(int aValue) throws IOException {

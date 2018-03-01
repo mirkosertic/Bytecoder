@@ -739,6 +739,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
                 Value thevalue = theIncomingData.get(1);
                 print(theTarget);
+
                 printInstanceFieldReference(theField);
                 print(" = ");
                 print(thevalue);

@@ -15,12 +15,21 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+
+@SubstitutesInClass(completeReplace = true)
 public class TStringConcatFactory {
 
-    public static TCallSite makeConcat(TMethodHandles.Lookup aLookup, String aName, TMethodType aConcatType) {
-        return new TConstantCallSite(new TMethodHandle() {
+    public static CallSite makeConcat(MethodHandles.Lookup aLookup, String aName, MethodType aConcatType) {
+
+        return new VM.ImplementingCallsite(null) {
             @Override
-            public Object invokeExact(Object[] args) {
+            public Object invokeExact(Object... args) throws Throwable {
                 StringBuilder theResult = new StringBuilder();
                 if (args != null) {
                     for (int i=0;i<args.length;i++) {
@@ -29,13 +38,14 @@ public class TStringConcatFactory {
                 }
                 return theResult.toString();
             }
-        }, aConcatType);
+        };
     }
 
-    public static TCallSite	makeConcatWithConstants(TMethodHandles.Lookup aLookup, String aName, TMethodType aConcatType, String aRecipe, Object... aConstants) {
-        return new TConstantCallSite(new TMethodHandle() {
+    public static CallSite makeConcatWithConstants(MethodHandles.Lookup aLookup, String aName, MethodType aConcatType, String aRecipe, Object... aConstants) {
+
+        return new VM.ImplementingCallsite(null) {
             @Override
-            public Object invokeExact(Object[] args) {
+            public Object invokeExact(Object... args) throws Throwable {
                 int theConstIndex = 0;
                 int theDynIndex = 0;
                 StringBuilder theResult = new StringBuilder();
@@ -51,6 +61,6 @@ public class TStringConcatFactory {
                 }
                 return theResult.toString();
             }
-        }, aConcatType);
+        };
     }
 }

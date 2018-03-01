@@ -15,18 +15,23 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
-public class THashSet<T> implements TSet<T> {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public class THashSet<T>  {
 
     private static class Bucket<V> {
 
         private final int hashCode;
-        private final TArrayList<V> values;
+        private final ArrayList<V> values;
 
         public Bucket(int aHashCode) {
             hashCode = aHashCode;
-            values = new TArrayList<>();
+            values = new ArrayList<>();
         }
 
         public boolean contains(V aValue) {
@@ -48,10 +53,10 @@ public class THashSet<T> implements TSet<T> {
         }
     }
 
-    private final TArrayList<Bucket<T>> buckets;
+    private final ArrayList<Bucket<T>> buckets;
 
     public THashSet() {
-        buckets = new TArrayList<>();
+        buckets = new ArrayList<>();
     }
 
     public Bucket<T> findByHashCode(int aHashCode) {
@@ -64,9 +69,8 @@ public class THashSet<T> implements TSet<T> {
         return null;
     }
 
-    @Override
-    public TIterator<T> iterator() {
-        return new TIterator<T>() {
+    public Iterator<T> iterator() {
+        return new Iterator<T>() {
 
             int index = -1;
             Object[] data = toArray();
@@ -83,7 +87,6 @@ public class THashSet<T> implements TSet<T> {
         };
     }
 
-    @Override
     public boolean add(T aObject) {
         int theHashCode = aObject.hashCode();
         Bucket<T> theBucket = findByHashCode(theHashCode);
@@ -100,12 +103,10 @@ public class THashSet<T> implements TSet<T> {
         return false;
     }
 
-    @Override
     public void clear() {
         buckets.clear();
     }
 
-    @Override
     public boolean contains(T aObject) {
         int theHashCode = aObject.hashCode();
         Bucket<T> theBucket = findByHashCode(theHashCode);
@@ -115,12 +116,10 @@ public class THashSet<T> implements TSet<T> {
         return theBucket.contains(aObject);
     }
 
-    @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
-    @Override
     public boolean remove(T aObject) {
         int theHashcode = aObject.hashCode();
         Bucket<T> theBucket = findByHashCode(theHashcode);
@@ -130,7 +129,6 @@ public class THashSet<T> implements TSet<T> {
         return theBucket.remove(aObject);
     }
 
-    @Override
     public int size() {
         int theSize = 0;
         for (int i=0;i<buckets.size();i++) {
@@ -140,7 +138,6 @@ public class THashSet<T> implements TSet<T> {
         return theSize;
     }
 
-    @Override
     public Object[] toArray() {
         int theSize = size();
         int theIndex = 0;
@@ -154,7 +151,6 @@ public class THashSet<T> implements TSet<T> {
         return theResult;
     }
 
-    @Override
     public Object[] toArray(Object[] aTarget) {
         int theIndex = 0;
         Object[] theResult = aTarget;
@@ -167,7 +163,6 @@ public class THashSet<T> implements TSet<T> {
         return theResult;
     }
 
-    @Override
     public boolean addAll(Collection<T> aOtherCollection) {
         boolean theChanged = false;
         for (T aValue : aOtherCollection) {
@@ -178,7 +173,6 @@ public class THashSet<T> implements TSet<T> {
         return theChanged;
     }
 
-    @Override
     public boolean removeAll(Collection<T> aOtherCollection) {
         boolean theChanged = false;
         for (T aValue : aOtherCollection) {

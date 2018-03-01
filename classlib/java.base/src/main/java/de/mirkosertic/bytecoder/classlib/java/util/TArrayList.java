@@ -16,17 +16,20 @@
 package de.mirkosertic.bytecoder.classlib.java.util;
 
 import java.util.Collection;
+import java.util.Iterator;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 
-public class TArrayList<T> implements TList<T> {
+@SubstitutesInClass(completeReplace = true)
+public class TArrayList<T> {
 
     private static final int INITIAL_CAPACITY = 10;
 
     private Object[] data;
     private int currentLength;
 
-    public TArrayList(TCollection<T> aData) {
+    public TArrayList(Collection<T> aData) {
         this();
     }
 
@@ -35,20 +38,17 @@ public class TArrayList<T> implements TList<T> {
         currentLength =0;
     }
 
-    @Override
     public Object[] toArray() {
         Object[] theNewArray = new Object[currentLength];
         System.arraycopy(data, 0, theNewArray, 0, currentLength);
         return theNewArray;
     }
 
-    @Override
     public Object[] toArray(Object[] aTarget) {
         System.arraycopy(data, 0, aTarget, 0, currentLength);
         return aTarget;
     }
 
-    @Override
     public boolean add(T aObject) {
         currentLength++;
         if (currentLength >= data.length) {
@@ -60,7 +60,6 @@ public class TArrayList<T> implements TList<T> {
         return true;
     }
 
-    @Override
     public T get(int aIndex) throws ArrayIndexOutOfBoundsException {
         if (aIndex >=currentLength || aIndex < 0) {
             throw new ArrayIndexOutOfBoundsException();
@@ -68,13 +67,11 @@ public class TArrayList<T> implements TList<T> {
         return (T) data[aIndex];
     }
 
-    @Override
     public void clear() {
         currentLength = 0;
         data = new Object[INITIAL_CAPACITY];
     }
 
-    @Override
     public boolean contains(T aObject) {
         for (int i = 0; i<currentLength; i++) {
             Object theData = data[i];
@@ -87,12 +84,10 @@ public class TArrayList<T> implements TList<T> {
         return false;
     }
 
-    @Override
     public boolean isEmpty() {
         return size() == 0;
     }
 
-    @Override
     public boolean remove(Object aObject) {
         for (int i = 0; i < currentLength ; i++) {
             Object theData = data[i];
@@ -111,14 +106,12 @@ public class TArrayList<T> implements TList<T> {
         return false;
     }
 
-    @Override
     public int size() {
         return currentLength;
     }
 
-    @Override
-    public TIterator<T> iterator() {
-        return new TIterator<T>() {
+    public Iterator<T> iterator() {
+        return new Iterator<T>() {
 
             private int index = 0;
 
@@ -134,7 +127,6 @@ public class TArrayList<T> implements TList<T> {
         };
     }
 
-    @Override
     public boolean addAll(Collection<T> aOtherCollection) {
         boolean theChanged = false;
         for (T aValue : aOtherCollection) {
@@ -145,7 +137,6 @@ public class TArrayList<T> implements TList<T> {
         return theChanged;
     }
 
-    @Override
     public boolean removeAll(Collection<T> aOtherCollection) {
         boolean theChanged = false;
         for (T aValue : aOtherCollection) {

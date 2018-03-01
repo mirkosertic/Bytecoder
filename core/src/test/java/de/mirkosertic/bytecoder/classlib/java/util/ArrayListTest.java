@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLong;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class ArrayListTest {

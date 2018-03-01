@@ -209,7 +209,33 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             // then we add class specific static fields
             BytecodeResolvedFields theStaticFields = theEntry.targetNode().resolvedFields();
             theStaticFields.streamForStaticFields().forEach(
-                    aFieldEntry -> theWriter.println("    " + aFieldEntry.getValue().getName().stringValue() + " : null, // declared in " + aFieldEntry.getProvidingClass().getClassName().name()));
+                    aFieldEntry -> {
+                        BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
+                        if (theFieldType.isPrimitive()) {
+                            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
+                            switch (thePrimitive) {
+                            case BOOLEAN: {
+                                theWriter.print("    ");
+                                theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                theWriter.print(" : false, // declared in ");
+                                theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                                break;
+                            }
+                            default: {
+                                theWriter.print("    ");
+                                theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                theWriter.print(" : 0, // declared in ");
+                                theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                                break;
+                            }
+                            }
+                        } else {
+                            theWriter.print("    ");
+                            theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                            theWriter.print(" : null, // declared in ");
+                            theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                        }
+                    });
             theWriter.println();
 
             if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isAbstract()) {
@@ -224,16 +250,25 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                 BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
                                 switch (thePrimitive) {
                                     case BOOLEAN: {
-                                        theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = false; // declared in " + aFieldEntry.getProvidingClass().getClassName().name());
+                                        theWriter.print("        this.");
+                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                        theWriter.print(" = false; // declared in ");
+                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                                         break;
                                     }
                                     default: {
-                                        theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = 0; // declared in " + aFieldEntry.getProvidingClass().getClassName().name());
+                                        theWriter.print("        this.");
+                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                        theWriter.print(" = 0; // declared in ");
+                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                                         break;
                                     }
                                 }
                             } else {
-                                theWriter.println("        this." + aFieldEntry.getValue().getName().stringValue() + " = null; // declared in " + aFieldEntry.getProvidingClass().getClassName().name());
+                                theWriter.print("        this.");
+                                theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                theWriter.print(" = null; // declared in ");
+                                theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                             }
                         });
                 theWriter.println("    },");
@@ -241,12 +276,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             }
 
             theWriter.println("    instanceOf : function(aType) {");
-            theWriter.println("        return " + theJSClassName + ".__implementedTypes.includes(aType.__typeId);");
+            theWriter.print("        return ");
+            theWriter.print(theJSClassName);
+            theWriter.println(".__implementedTypes.includes(aType.__typeId);");
             theWriter.println("    },");
             theWriter.println();
 
             theWriter.println("    ClassgetClass : function() {");
-            theWriter.println("        return " + theJSClassName + ";");
+            theWriter.print("        return ");
+            theWriter.print(theJSClassName);
+            theWriter.println(";");
             theWriter.println("    },");
             theWriter.println();
 
@@ -265,6 +304,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 BytecodeMethod theMethod = aEntry.getValue();
                 BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
 
+                // If the method is provided by the runtime, we do not need to generate the implementation
+                if (theMethod.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                    return;
+                }
+
                 // Do not generate code for abstract methods
                 if (theMethod.getAccessFlags().isAbstract()) {
                     return;
@@ -273,7 +317,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 if (!(aEntry.getProvidingClass() == theEntry.targetNode())) {
                     // Skip methods not implemented in this class
                     // But include static methods, as they are inherited from the base classes
-                    if (aEntry.getValue().getAccessFlags().isStatic()) {
+                    if (aEntry.getValue().getAccessFlags().isStatic() && !aEntry.getValue().isClassInitializer()) {
 
                         StringBuilder theArguments = new StringBuilder();;
                         for (int i=0;i<theCurrentMethodSignature.getArguments().length;i++) {

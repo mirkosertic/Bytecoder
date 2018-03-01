@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,26 +15,23 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.DelegatesTo;
 import de.mirkosertic.bytecoder.api.IsObject;
-import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.Substitutes;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+@SubstitutesInClass(completeReplace = true)
 @IsObject
 public class TObject {
 
-    @DelegatesTo(methodName = "doNothing")
-    @NoExceptionCheck
-    public TObject() {
-    }
-
-    public void doNothing() {
+    @Substitutes("<init>")
+    public void emptyConstructor() {
     }
 
     public String toString() {
         return "";
     }
 
-    public boolean equals(TObject aObject) {
+    public boolean equals(Object aObject) {
         return this == aObject;
     }
 
@@ -45,4 +42,5 @@ public class TObject {
     public Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
+
 }

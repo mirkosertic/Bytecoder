@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,29 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.NoExceptionCheck;
-import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
-import de.mirkosertic.bytecoder.classlib.java.text.TDecimalFormatSymbols;
+import java.text.DecimalFormatSymbols;
 
-public class TStringBuilder extends TAbstractStringBuilder implements TSerializable {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-    private static final TDecimalFormatSymbols FORMAT_SYMBOLS = new TDecimalFormatSymbols();
+@SubstitutesInClass(completeReplace = true)
+public class TStringBuilder {
+
+    private static final DecimalFormatSymbols FORMAT_SYMBOLS = new DecimalFormatSymbols();
 
     private byte[] byteData;
 
-    @NoExceptionCheck
     public TStringBuilder() {
         byteData = new byte[0];
     }
 
-    @NoExceptionCheck
     public TStringBuilder(byte[] aData) {
         byteData = aData;
     }
 
-    @Override
-    @NoExceptionCheck
     public int length() {
         return byteData.length;
     }
 
-    @Override
     public char charAt(int aIndex) {
         return (char) byteData[aIndex];
     }
@@ -67,14 +63,13 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         return this;
     }
 
-    @Override
-    public TStringBuilder append(TCharSequence aCharSequence) {
-        byte[] theOtherData = aCharSequence.getBytes();
+    public TStringBuilder append(CharSequence aCharSequence) {
+        byte[] theOtherData = ((TString) aCharSequence).getBytes();
         internalAdd(theOtherData);
         return this;
     }
 
-    public TStringBuilder append(TString aString) {
+    public TStringBuilder append(String aString) {
         byte[] theOtherData = aString.getBytes();
         internalAdd(theOtherData);
         return this;
@@ -192,14 +187,10 @@ public class TStringBuilder extends TAbstractStringBuilder implements TSerializa
         return this;
     }
 
-    @Override
-    @NoExceptionCheck
     public byte[] getBytes() {
         return byteData;
     }
 
-    @Override
-    @NoExceptionCheck
     public String toString() {
         return new String(byteData);
     }

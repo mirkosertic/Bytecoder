@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class TBoolean extends TObject implements TSerializable {
+@SubstitutesInClass(completeReplace = true)
+public class TBoolean {
 
-    public static final TBoolean TRUE = new TBoolean(true);
+    public static final Boolean TRUE = new Boolean(true);
 
-    public static final TBoolean FALSE = new TBoolean(false);
+    public static final Boolean FALSE = new Boolean(false);
 
     private boolean booleanValue;
 
@@ -33,24 +34,28 @@ public class TBoolean extends TObject implements TSerializable {
         return booleanValue;
     }
 
-    public static TBoolean valueOf(String aValue) {
+    public static Boolean valueOf(String aValue) {
         if (parseBoolean(aValue)) {
             return TRUE;
         }
         return FALSE;
     }
 
-    public static TBoolean valueOf(boolean aValue) {
+    public static Boolean valueOf(boolean aValue) {
         if (aValue) {
-            return TRUE;
+            return new Boolean(true);
         }
-        return FALSE;
+        return new Boolean(false);
     }
 
     public static boolean parseBoolean(String aValue) {
         if (aValue != null && aValue.equalsIgnoreCase("true")) {
             return true;
         }
+        return false;
+    }
+
+    public static boolean getBoolean(String aPropertyName) {
         return false;
     }
 }

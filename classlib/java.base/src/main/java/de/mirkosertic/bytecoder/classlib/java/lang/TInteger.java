@@ -16,9 +16,13 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
-public class TInteger extends TNumber {
+@SubstitutesInClass(completeReplace = true)
+public class TInteger extends Number {
+
+    public static final Class<Integer> TYPE = Integer.class;
 
     private final int integerValue;
 
@@ -81,12 +85,12 @@ public class TInteger extends TNumber {
         return toString(integerValue);
     }
 
-    public static TInteger valueOf(int aValue) {
-        return new TInteger(aValue);
+    public static Integer valueOf(int aValue) {
+        return new Integer(aValue);
     }
 
-    public static TInteger valueOf(String aValue) {
-        return new TInteger((int) VM.stringToLong(aValue));
+    public static Integer valueOf(String aValue) {
+        return new Integer((int) VM.stringToLong(aValue));
     }
 
     public static int parseInt(String aString) {
@@ -94,7 +98,7 @@ public class TInteger extends TNumber {
     }
 
     public static String toString(int aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
+        StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }

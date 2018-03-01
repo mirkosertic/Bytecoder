@@ -44,7 +44,7 @@ public class BytecodeLoader {
 
     public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef, BytecodeReplacer aDefaultReplacer) throws IOException, ClassNotFoundException {
         String theResourceName = aTypeRef.name().replace(".", "/") + ".class";
-        InputStream theStream = classLoader.getResourceAsStream("modules/java.base/classes/" + theResourceName);
+        InputStream theStream = classLoader.getResourceAsStream("META-INF/modules/java.base/classes/" + theResourceName);
         if (theStream != null) {
             try (DataInputStream dis = new DataInputStream(theStream)) {
                 BytecodeClassParser parser = parseHeader(dis, shadowReplacer);

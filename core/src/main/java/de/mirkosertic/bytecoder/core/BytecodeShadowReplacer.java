@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,7 +53,7 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
             BytecodeInterface[] aInterfaces) {
 
         BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
-        StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.shadow.").append(theObjectType.name());
+        StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.").append(theObjectType.name());
         int p = theShadowName.lastIndexOf(".");
         if (p>0) {
             theShadowName.insert(p+1, "T");
@@ -95,13 +96,8 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
 
             List<BytecodeField> theFields = new ArrayList<>();
             // Import fields from shadow type
-            for (BytecodeField theField : theShadowType.fields()) {
-                theFields.add(theField);
-            }
-
-            for (BytecodeField theField : aFields) {
-                theFields.add(theField);
-            }
+            theFields.addAll(Arrays.asList(theShadowType.fields()));
+            theFields.addAll(Arrays.asList(aFields));
 
             List<BytecodeMethod> theMethods = new ArrayList<>();
             for (BytecodeMethod aMethod : aMethods) {

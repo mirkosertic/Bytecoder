@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import java.io.FileDescriptor;
 import java.net.InetAddress;

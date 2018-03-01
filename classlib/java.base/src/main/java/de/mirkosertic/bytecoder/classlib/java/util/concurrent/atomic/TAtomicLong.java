@@ -15,9 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util.concurrent.atomic;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TNumber;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class TAtomicLong extends TNumber {
+@SubstitutesInClass(completeReplace = true)
+public class TAtomicLong extends Number {
 
     private long value;
 

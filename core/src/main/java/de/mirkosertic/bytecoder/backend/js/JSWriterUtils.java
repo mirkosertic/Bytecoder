@@ -19,6 +19,8 @@ import java.lang.reflect.Array;
 
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeField;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -49,8 +51,22 @@ public class JSWriterUtils {
         return theName;
     }
 
-    public static String toClassNameInternal(String aClassName) {
-        return aClassName.replace(".","");
+    private static String toClassNameInternal(String aClassName) {
+        int p = aClassName.lastIndexOf(".");
+        String theSimpleName = aClassName.substring(p + 1);
+        String thePackageName = aClassName.substring(0, p);
+        StringBuilder theResult = new StringBuilder();
+        while(thePackageName.length() > 0) {
+            theResult.append(Character.toLowerCase(thePackageName.charAt(0)));
+            int j = thePackageName.indexOf(".");
+            if (j>=0) {
+                thePackageName = thePackageName.substring(j + 1);
+            } else {
+                thePackageName = "";
+            }
+        }
+
+        return theResult.append(theSimpleName).toString();
     }
 
     public static String toClassName(BytecodeObjectTypeRef aTypeRef) {

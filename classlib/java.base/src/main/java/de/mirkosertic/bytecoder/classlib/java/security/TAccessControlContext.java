@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang.invoke;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
+package de.mirkosertic.bytecoder.classlib.java.security;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TCallSite {
-
-    public abstract MethodHandle getTarget();
-
-    public abstract MethodType type();
+public class TAccessControlContext {
 }

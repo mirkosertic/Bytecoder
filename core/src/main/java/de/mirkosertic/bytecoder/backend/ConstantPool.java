@@ -29,6 +29,10 @@ public class ConstantPool {
     }
 
     public int register(StringValue aValue) {
+        int p = knownValues.indexOf(aValue);
+        if (p>=0) {
+            return p;
+        }
         knownValues.add(aValue);
         return knownValues.size() - 1;
     }

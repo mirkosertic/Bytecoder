@@ -644,6 +644,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
                 if (!theNode.getExpressions().endWithNeverReturningExpression()) {
                     Map<RegionNode.Edge, RegionNode> theSuccessors = theNode.getSuccessors();
+
                     for (Expression theExpression : theCurrentList.toList()) {
                         if (theExpression instanceof IFExpression) {
                             IFExpression theIF = (IFExpression) theExpression;
@@ -660,7 +661,19 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     if (theSuccessorRegions.size() == 1) {
                         theNode.getExpressions().add(new GotoExpression(theSuccessorRegions.get(0).getStartAddress()).withComment("Resolving pass thru direct"));
                     } else {
-                        throw new IllegalStateException("Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress().getAddress());
+                        // Special case, the node includes gotos and a fall thru to the same node
+                        theSuccessors = theNode.getSuccessors();
+                        theSuccessorRegions = theSuccessors.values().stream().filter(t -> t.getType() == RegionNode.BlockType.NORMAL).collect(
+                                Collectors.toList());
+
+                        if (theSuccessorRegions.size() == 1) {
+                            theNode.getExpressions().add(new GotoExpression(theSuccessorRegions.get(0).getStartAddress())
+                                    .withComment("Resolving pass thru direct"));
+                        } else {
+                            throw new IllegalStateException(
+                                    "Invalid number of successors : " + theSuccessors.size() + " for " + theNode.getStartAddress()
+                                            .getAddress());
+                        }
                     }
                 }
             }

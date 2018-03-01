@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TMath extends TObject {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public class TMath {
 
     public static final double E = 2.7182818284590452354;
     public static final double PI = 3.14159265358979323846;

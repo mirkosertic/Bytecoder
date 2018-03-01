@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.NoExceptionCheck;
-import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class TString extends TObject implements TSerializable, TComparable<TString>, TCharSequence {
+@SubstitutesInClass(completeReplace = true)
+public class TString implements java.io.Serializable, Comparable<String> {
 
     private int computedHash;
     private byte[] data;
 
-    @NoExceptionCheck
     public TString(int aSize) {
         data = new byte[aSize];
         for (int i=0;i<aSize;i++) {
@@ -31,7 +30,6 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         }
     }
 
-    @NoExceptionCheck
     public TString(char[] aData) {
         data = new byte[aData.length];
         for (int i=0;i<aData.length;i++) {
@@ -49,37 +47,31 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         return (String) a;
     }
 
-    @NoExceptionCheck
     public TString(byte[] aData) {
         data = aData;
     }
 
-    @NoExceptionCheck
     public TString(TString aOtherString) {
         data = aOtherString.data;
     }
 
-    @NoExceptionCheck
     public TString() {
         data = new byte[0];
     }
 
-    @Override
     public byte[] getBytes() {
         return data;
     }
 
-    @Override
     public char charAt(int aIndex) {
         return (char) data[aIndex];
     }
 
     @Override
-    public int compareTo(TString o) {
+    public int compareTo(String o) {
         return 0;
     }
 
-    @Override
     public int length() {
         return data.length;
     }
@@ -89,23 +81,24 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         if (this == aOtherObject) {
             return true;
         }
-        if (!(aOtherObject instanceof TString)) {
+        if (!(aOtherObject instanceof String)) {
             return false;
         }
-        TString theOtherString = (TString) aOtherObject;
+        String theOtherString = (String) aOtherObject;
         if (!(theOtherString.length() == data.length)) {
             return false;
         }
+        byte[] theOtherData = theOtherString.getBytes();
         for (int i=0;i<data.length;i++) {
-            if (data[i] != theOtherString.data[i]) {
+            if (data[i] != theOtherData[i]) {
                 return false;
             }
         }
         return true;
     }
 
-    public boolean equalsIgnoreCase(TString aOtherObject) {
-        if (this == aOtherObject) {
+    public boolean equalsIgnoreCase(String aOtherObject) {
+        if ((Object) this == aOtherObject) {
             return true;
         }
         if (aOtherObject == null) {
@@ -115,7 +108,8 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
             return false;
         }
         for (int i=0;i<data.length;i++) {
-            if (TCharacter.toLowerCase((char)data[i]) != TCharacter.toLowerCase((char) aOtherObject.data[i])) {
+            byte[] theOtherData = ((String)aOtherObject).getBytes();
+            if (Character.toLowerCase((char)data[i]) != Character.toLowerCase((char) theOtherData[i])) {
                 return false;
             }
         }
@@ -143,29 +137,29 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
         return -1;
     }
 
-    public int lastIndexOf(TString aValue) {
+    public int lastIndexOf(String aValue) {
         return -1;
     }
 
-    public TString substring(int aStart) {
+    public String substring(int aStart) {
         int theLength = data.length - aStart;
         byte[] theNewData = new byte[theLength];
         for (int i=0;i<theLength;i++) {
             theNewData[i] = data[i + aStart];
         }
-        return new TString(theNewData);
+        return new String(theNewData);
     }
 
-    public TString substring(int aStart, int aEnd) {
+    public String substring(int aStart, int aEnd) {
         int theLength = aEnd - aStart;
         byte[] theNewData = new byte[theLength];
         for (int i=0;i<theLength;i++) {
             theNewData[i] = data[i + aStart];
         }
-        return new TString(theNewData);
+        return new String(theNewData);
     }
 
-    public TString replace(char aOldChar, char aNewChar) {
+    public String replace(char aOldChar, char aNewChar) {
         byte[] theNewData = new byte[data.length];
         for (int i=0;i<data.length;i++) {
             byte theData = data[i];
@@ -174,7 +168,7 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
             }
             theNewData[i] = theData;
         }
-        return new TString(theNewData);
+        return new String(theNewData);
     }
 
     public char[] toCharArray() {
@@ -183,5 +177,9 @@ public class TString extends TObject implements TSerializable, TComparable<TStri
             theResult[i] = (char) data[i];
         }
         return theResult;
+    }
+
+    public static String valueOf(Object obj) {
+        return (obj == null) ? "null" : obj.toString();
     }
 }

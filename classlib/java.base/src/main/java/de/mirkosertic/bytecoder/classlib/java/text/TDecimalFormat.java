@@ -1,4 +1,4 @@
-package de.mirkosertic.bytecoder.classlib.shadow.java.lang;
+package de.mirkosertic.bytecoder.classlib.java.text;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 

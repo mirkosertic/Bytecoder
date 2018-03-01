@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib.java.io;
 
-public interface TSet<T> extends TCollection<T> {
+import java.io.IOException;
+import java.io.InputStream;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public abstract class TInputStream extends InputStream {
+
+    public int read(byte b[], int off, int len) throws IOException {
+        return 0;
+    }
 }
