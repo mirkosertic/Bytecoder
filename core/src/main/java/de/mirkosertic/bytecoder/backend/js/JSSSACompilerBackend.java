@@ -19,8 +19,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -184,6 +187,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
             }
 
+            BytecodeLinkedClass theLinkedClass = theEntry.targetNode();
+            BytecodeResolvedMethods theMethods = theEntry.targetNode().resolvedMethods();
+
             String theJSClassName = JSWriterUtils.toClassName(theEntry.edgeType().objectTypeRef());
             theWriter.println("var " + theJSClassName + " = {");
 
@@ -297,8 +303,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    A1jlObjectgetEnumConstants : function(aClazz) {");
             theWriter.println("        return aClazz.$VALUES;");
             theWriter.println("    },");
-
-            BytecodeResolvedMethods theMethods = theEntry.targetNode().resolvedMethods();
 
             theMethods.stream().forEach(aEntry -> {
                 BytecodeMethod theMethod = aEntry.getValue();

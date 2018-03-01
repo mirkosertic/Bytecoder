@@ -557,18 +557,27 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theDriver = newDriverForTest();
             theDriver.get(theGeneratedFile.toURI().toURL().toString());
 
+            long theStart = System.currentTimeMillis();
+            boolean theTestSuccedded = false;
 
-            List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
-            if (theAll.size() < 1) {
-                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
-            }
-            for (LogEntry theEntry : theAll) {
-                System.out.println(theEntry.getMessage());
-            }
-            LogEntry theLast = theAll.get(theAll.size() - 1);
+            while (!theTestSuccedded && System.currentTimeMillis() - theStart < 10 * 1000) {
+                List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+                for (LogEntry theEntry : theAll) {
+                    String theMessage = theEntry.getMessage();
+                    System.out.println(theMessage);
 
-            if (!theLast.getMessage().contains("Test finished OK")) {
-                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
+                    if (theMessage.contains("Test finished OK")) {
+                        theTestSuccedded = true;
+                    }
+                }
+
+                if (!theTestSuccedded) {
+                    Thread.sleep(100);
+                }
+            }
+
+            if (!theTestSuccedded) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
             }
 
         } catch (ControlFlowProcessingException e) {
@@ -591,7 +600,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } else {
             testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            //testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }
 }

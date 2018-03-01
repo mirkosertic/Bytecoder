@@ -812,7 +812,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         }
 
         // We also need the runtime class
-        print(" (get_global $Array__runtimeClass)");
+        print(" (get_global $jlrArray__runtimeClass)");
         // Plus the vtable index
         print(" (i32.const ");
         print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
@@ -992,7 +992,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         withDeeperIndent().writeValue(aValue);
 
         // We also need the runtime class
-        print(" (get_global $Array__runtimeClass)");
+        print(" (get_global $jlrArray__runtimeClass)");
         // Plus the vtable index
         print(" (i32.const ");
         print(idResolver.resolveVTableMethodByType(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
