@@ -43,9 +43,9 @@ public class TBoolean {
 
     public static Boolean valueOf(boolean aValue) {
         if (aValue) {
-            return new Boolean(true);
+            return TRUE;
         }
-        return new Boolean(false);
+        return FALSE;
     }
 
     public static boolean parseBoolean(String aValue) {

@@ -16,9 +16,11 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
-public class TByte extends TNumber {
+@SubstitutesInClass(completeReplace = true)
+public class TByte extends Number {
 
     private byte byteValue;
 

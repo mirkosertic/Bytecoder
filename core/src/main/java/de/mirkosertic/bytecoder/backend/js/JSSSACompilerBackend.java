@@ -106,7 +106,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("          var theNewString = new " + JSWriterUtils.toClassName(theStringTypeRef) + ".Create();");
         theWriter.println("          var theBytes = new " + JSWriterUtils.toClassName(theArrayTypeRef) + ".Create();");
         theWriter.println("          theBytes.data = aByteArray;");
-        theWriter.println("          " + JSWriterUtils.toClassName(theStringTypeRef) + "." + JSWriterUtils.toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
+        theWriter.println("          " + JSWriterUtils.toClassName(theStringTypeRef) + '.' + JSWriterUtils.toMethodName("init", theStringConstructorSignature) + "(theNewString, theBytes);");
         theWriter.println("          return theNewString;");
         theWriter.println("     },");
         theWriter.println();
@@ -294,7 +294,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    },");
             theWriter.println();
 
-            theWriter.println("    A1javalangObjectgetEnumConstants : function(aClazz) {");
+            theWriter.println("    A1jlObjectgetEnumConstants : function(aClazz) {");
             theWriter.println("        return aClazz.$VALUES;");
             theWriter.println("    },");
 
@@ -322,9 +322,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         StringBuilder theArguments = new StringBuilder();;
                         for (int i=0;i<theCurrentMethodSignature.getArguments().length;i++) {
                             if (i>0) {
-                                theArguments.append(",");
+                                theArguments.append(',');
                             }
-                            theArguments.append("p");
+                            theArguments.append('p');
                             theArguments.append(i);
                         }
 
@@ -360,7 +360,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 StringBuilder theArguments = new StringBuilder();
                 for (Program.Argument theArgument : theSSAProgram.getArguments()) {
                     if (theArguments.length() > 0) {
-                        theArguments.append(",");
+                        theArguments.append(',');
                     }
                     theArguments.append(theArgument.getVariable().getName());
                 }
@@ -392,7 +392,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
                         + ") {");
 
-                aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue());
+                aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + '.' + theMethod.getName().stringValue());
 
                 if (Objects.equals(theMethod.getName().stringValue(), "<clinit>")) {
                     for (BytecodeObjectTypeRef theRef : theSSAProgram.getStaticReferences()) {
@@ -429,7 +429,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theVariablesWriter.printRelooped(theReloopedBlock);
                 } catch (Exception e) {
                     System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
-                    throw new IllegalStateException("Error relooping cfg for " + theEntry.targetNode().getClassName().name() + "." + theMethod.getName().stringValue(), e);
+                    throw new IllegalStateException("Error relooping cfg for " + theEntry.targetNode().getClassName().name() + '.'
+                            + theMethod.getName().stringValue(), e);
                 }
 
                 theWriter.println("    },");
@@ -518,8 +519,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aProgram.getExceptionHandlers());
         if (theActiveHandlers.length == 0) {
             // Missing catch block
-            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome",
-                    registerExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + '.' + JSWriterUtils.toMethodName("registerExceptionOutcome",
+                    registerExceptionOutcomeSignature) + '(' + aExceptionVariableName + ");");
             aWriter.println(aInset + "return;");
         } else {
             for (BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
@@ -530,14 +531,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         aWriter.println(
                                 aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId()
                                         + ")) {");
-                        aWriter.println(aInset + "    currentLabel = " + theEntry.getHandlerPc().getAddress() + ";");
+                        aWriter.println(aInset + "    currentLabel = " + theEntry.getHandlerPc().getAddress() + ';');
                         aWriter.println(aInset + "    continue controlflowloop;");
-                        aWriter.println(aInset + "}");
+                        aWriter.println(aInset + '}');
                     }
                 }
             }
-            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + "." + JSWriterUtils.toMethodName("registerExceptionOutcome",
-                    registerExceptionOutcomeSignature) + "(" + aExceptionVariableName + ");");
+            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + '.' + JSWriterUtils.toMethodName("registerExceptionOutcome",
+                    registerExceptionOutcomeSignature) + '(' + aExceptionVariableName + ");");
             aWriter.println(aInset + "return;");
         }
     }

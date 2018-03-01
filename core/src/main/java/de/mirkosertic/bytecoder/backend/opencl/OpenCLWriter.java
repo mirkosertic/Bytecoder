@@ -304,13 +304,13 @@ public class OpenCLWriter extends IndentSSAWriter {
                 Variable theVariable = theInit.getVariable();
                 Value theValue = theInit.getValue();
                 if (theVariable.resolveType().isObject() && theValue instanceof InvocationExpression) {
+                    print(toType(theVariable.resolveType(), false));
+                    print(" ");
                     print(theVariable.getName());
                     print("_temp = ");
                     printValue(theValue);
                     println(";");
 
-                    print(toType(theVariable.resolveType(), true));
-                    print(" ");
                     print(theVariable.getName());
                     print(" = &");
                     print(theVariable.getName());

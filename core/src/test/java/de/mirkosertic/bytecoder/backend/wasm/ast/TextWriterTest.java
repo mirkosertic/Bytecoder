@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
-@SubstitutesInClass(completeReplace = true)
-public class TThreadLocal<T> {
+import org.junit.Test;
 
-    private T value;
+public class TextWriterTest {
 
-    public T get() {
-        return value;
-    }
+    @Test
+    public void testAdd() {
+        StringWriter theWriter = new StringWriter();
+        PrintWriter thePW = new PrintWriter(theWriter);
 
-    public void set(T aValue) {
-        value = aValue;
+        SI32Add theAdd = new SI32Add();
+
+        theAdd.addValue(new SI32Const(10));
+        theAdd.addValue(new SI32Const(40));
+
+        TextWriter theSWriter = new TextWriter(thePW);
+        theSWriter.write(theAdd);
+
+        System.out.println(theWriter.toString());
     }
 }

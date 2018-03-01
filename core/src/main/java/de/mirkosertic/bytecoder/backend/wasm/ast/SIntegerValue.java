@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+public class SIntegerValue extends SValue {
 
-@SubstitutesInClass(completeReplace = true)
-public class TThreadLocal<T> {
+    private final int value;
 
-    private T value;
-
-    public T get() {
-        return value;
+    public SIntegerValue(int aValue) {
+        value = aValue;
     }
 
-    public void set(T aValue) {
-        value = aValue;
+    public int getValue() {
+        return value;
     }
 }
