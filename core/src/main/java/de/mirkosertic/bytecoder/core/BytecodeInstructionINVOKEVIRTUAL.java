@@ -43,9 +43,9 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
             // We are linking an Array here, so mark the corresponding name
             BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
             aLinkerContext.resolveClass(theTypeRef).resolveVirtualMethod(theName.stringValue(), theSig);
-
         } else {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant)).resolveVirtualMethod(theName.stringValue(), theSig);
+            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant))
+                    .resolveVirtualMethod(theName.stringValue(), theSig);
         }
     }
 }

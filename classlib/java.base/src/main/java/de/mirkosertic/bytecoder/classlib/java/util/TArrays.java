@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
@@ -32,5 +32,9 @@ public class TArrays {
             theResult.add(theValue);
         }
         return theResult;
+    }
+
+    public static <T> T[] copyOf(T[] original, int newLength) {
+        throw new IllegalStateException();
     }
 }

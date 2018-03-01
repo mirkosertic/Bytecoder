@@ -24,4 +24,9 @@ public class TArray {
     public Object clone() {
         return this;
     }
+
+    public static Object newInstance(Class<?> componentType, int length)
+            throws NegativeArraySizeException {
+        throw new IllegalStateException();
+    }
 }

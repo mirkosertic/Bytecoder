@@ -32,9 +32,15 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
 
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
         if ("<init>".equals(theName.stringValue())) {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName)).resolveConstructorInvocation(theSig);
+            if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName))
+                    .resolveConstructorInvocation(theSig)) {
+                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue());
+            }
         } else {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName)).resolvePrivateMethod(theName.stringValue(), theSig);
+           if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName))
+                    .resolvePrivateMethod(theName.stringValue(), theSig)) {
+                   throw new IllegalStateException("Cannot find private method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue());
+           }
         }
     }
 }
