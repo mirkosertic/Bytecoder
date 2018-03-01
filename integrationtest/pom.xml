@@ -54,7 +54,7 @@
                             <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
                         </configuration>
                     </execution>
-<!--                    <execution>
+                    <execution>
                         <id>wasm</id>
                         <goals>
                             <goal>compile</goal>
@@ -63,7 +63,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>wasm</backend>
                         </configuration>
-                    </execution>-->
+                    </execution>
                 </executions>
             </plugin>
 
