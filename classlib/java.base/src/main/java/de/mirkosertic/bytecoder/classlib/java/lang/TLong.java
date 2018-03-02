@@ -19,7 +19,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
-public class TLong extends TNumber {
+public class TLong extends Number {
 
     private final long longValue;
 
@@ -50,16 +50,6 @@ public class TLong extends TNumber {
     @Override
     public int intValue() {
         return (int) longValue;
-    }
-
-    @Override
-    public byte byteValue() {
-        return (byte) longValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) longValue;
     }
 
     @Override

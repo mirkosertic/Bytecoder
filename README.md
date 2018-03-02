@@ -10,7 +10,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
 * Use other tool chains such as Google Closure Compiler or Binaryen to further optimize generated code
-* Use OpenJDK as Java Classlib
+* Use OpenJDK 10 as Java Classlib
 
 ## Compiling strategies
 
@@ -173,4 +173,3 @@ The WebAssembly backend must include garbage collection runtime code for memory 
 Details about WebAssembly are documented [here](WASM.md) 
 
 The JavaScript backend relies on JavaScript garbage collection provided by the browser.
-

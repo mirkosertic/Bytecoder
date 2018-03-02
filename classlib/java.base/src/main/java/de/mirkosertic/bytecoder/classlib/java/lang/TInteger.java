@@ -37,16 +37,6 @@ public class TInteger extends Number {
     }
 
     @Override
-    public byte byteValue() {
-        return (byte) integerValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) integerValue;
-    }
-
-    @Override
     public float floatValue() {
         return integerValue;
     }

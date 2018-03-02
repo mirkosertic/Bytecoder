@@ -19,11 +19,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -173,22 +170,24 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         aLinkerContext.linkedClasses().forEach(theEntry -> {
 
+            BytecodeLinkedClass theLinkedClass = theEntry.targetNode();
+
+
             // Here we collect everything that is required for class initialization
             // this includes the super class, all implementing interfaces and also static
             // dependencies of the class initialization code
             List<BytecodeObjectTypeRef> theInitDependencies = new ArrayList<>();
-            BytecodeLinkedClass theSuperClass = theEntry.targetNode().getSuperClass();
+            BytecodeLinkedClass theSuperClass = theLinkedClass.getSuperClass();
             if (theSuperClass != null) {
                 theInitDependencies.add(theSuperClass.getClassName());
             }
-            for (BytecodeLinkedClass theInterface : theEntry.targetNode().getImplementingTypes()) {
+            for (BytecodeLinkedClass theInterface : theLinkedClass.getImplementingTypes()) {
                 if (!theInitDependencies.contains(theInterface.getClassName())) {
                     theInitDependencies.add(theInterface.getClassName());
                 }
             }
 
-            BytecodeLinkedClass theLinkedClass = theEntry.targetNode();
-            BytecodeResolvedMethods theMethods = theEntry.targetNode().resolvedMethods();
+            BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
 
             String theJSClassName = JSWriterUtils.toClassName(theEntry.edgeType().objectTypeRef());
             theWriter.println("var " + theJSClassName + " = {");
@@ -197,12 +196,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("    __initialized : false,");
             theWriter.println("    __staticCallSites : [],");
             theWriter.print("    __typeId : ");
-            theWriter.print(theEntry.targetNode().getUniqueId());
+            theWriter.print(theLinkedClass.getUniqueId());
             theWriter.println(",");
             theWriter.print("    __implementedTypes : [");
             {
                 boolean first = true;
-                for (BytecodeLinkedClass theType : theEntry.targetNode().getImplementingTypes()) {
+                for (BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
                     if (!first) {
                         theWriter.print(",");
                     }
@@ -213,7 +212,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("],");
 
             // then we add class specific static fields
-            BytecodeResolvedFields theStaticFields = theEntry.targetNode().resolvedFields();
+            BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
             theStaticFields.streamForStaticFields().forEach(
                     aFieldEntry -> {
                         BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
@@ -244,10 +243,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     });
             theWriter.println();
 
-            if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isAbstract()) {
+            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
                 // The Constructor function initializes all object members with null
                 // Only non abstract classes can be instantiated
-                BytecodeResolvedFields theInstanceFields = theEntry.targetNode().resolvedFields();
+                BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
                 theWriter.println("    Create : function() {");
                 theInstanceFields.streamForInstanceFields().forEach(
                         aFieldEntry -> {
@@ -281,28 +280,30 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println();
             }
 
-            theWriter.println("    instanceOf : function(aType) {");
-            theWriter.print("        return ");
-            theWriter.print(theJSClassName);
-            theWriter.println(".__implementedTypes.includes(aType.__typeId);");
-            theWriter.println("    },");
-            theWriter.println();
+            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.println("    instanceOf : function(aType) {");
+                theWriter.print("        return ");
+                theWriter.print(theJSClassName);
+                theWriter.println(".__implementedTypes.includes(aType.__typeId);");
+                theWriter.println("    },");
+                theWriter.println();
 
-            theWriter.println("    ClassgetClass : function() {");
-            theWriter.print("        return ");
-            theWriter.print(theJSClassName);
-            theWriter.println(";");
-            theWriter.println("    },");
-            theWriter.println();
+                theWriter.println("    ClassgetClass : function() {");
+                theWriter.print("        return ");
+                theWriter.print(theJSClassName);
+                theWriter.println(";");
+                theWriter.println("    },");
+                theWriter.println();
 
-            theWriter.println("    BOOLEANdesiredAssertionStatus : function() {");
-            theWriter.println("        return false;");
-            theWriter.println("    },");
-            theWriter.println();
+                theWriter.println("    BOOLEANdesiredAssertionStatus : function() {");
+                theWriter.println("        return false;");
+                theWriter.println("    },");
+                theWriter.println();
 
-            theWriter.println("    A1jlObjectgetEnumConstants : function(aClazz) {");
-            theWriter.println("        return aClazz.$VALUES;");
-            theWriter.println("    },");
+                theWriter.println("    A1jlObjectgetEnumConstants : function(aClazz) {");
+                theWriter.println("        return aClazz.$VALUES;");
+                theWriter.println("    },");
+            }
 
             theMethods.stream().forEach(aEntry -> {
                 BytecodeMethod theMethod = aEntry.getValue();
@@ -318,7 +319,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     return;
                 }
 
-                if (!(aEntry.getProvidingClass() == theEntry.targetNode())) {
+                if (!(aEntry.getProvidingClass() == theLinkedClass)) {
                     // Skip methods not implemented in this class
                     // But include static methods, as they are inherited from the base classes
                     if (aEntry.getValue().getAccessFlags().isStatic() && !aEntry.getValue().isClassInitializer()) {
@@ -353,7 +354,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     return;
                 }
 
-                aLinkerContext.getLogger().info("Compiling {}.{}", theEntry.targetNode().getClassName().name(), theMethod.getName().stringValue());
+                aLinkerContext.getLogger().info("Compiling {}.{}", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
                 Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod);
@@ -370,11 +371,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {
-                    if (theEntry.targetNode().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                    if (theLinkedClass.getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                         return;
                     }
 
-                    BytecodeImportedLink theLink = theEntry.targetNode().linkfor(theMethod);
+                    BytecodeImportedLink theLink = theLinkedClass.linkfor(theMethod);
 
                     theWriter.println();
                     theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
@@ -395,8 +396,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println();
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
                         + ") {");
-
-                aOptions.getLogger().info("Compiling " + theEntry.targetNode().getClassName().name() + '.' + theMethod.getName().stringValue());
 
                 if (Objects.equals(theMethod.getName().stringValue(), "<clinit>")) {
                     for (BytecodeObjectTypeRef theRef : theSSAProgram.getStaticReferences()) {
@@ -433,7 +432,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theVariablesWriter.printRelooped(theReloopedBlock);
                 } catch (Exception e) {
                     System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
-                    throw new IllegalStateException("Error relooping cfg for " + theEntry.targetNode().getClassName().name() + '.'
+                    throw new IllegalStateException("Error relooping cfg for " + theLinkedClass.getClassName().name() + '.'
                             + theMethod.getName().stringValue(), e);
                 }
 
@@ -446,7 +445,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.println("        if (!" + theJSClassName + ".__initialized) {");
             theWriter.println("            " + theJSClassName + ".__initialized = true;");
 
-            if (!theEntry.targetNode().getBytecodeClass().getAccessFlags().isAbstract()) {
+            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
                 // Now we have to setup the prototype
                 // Only in case this class can be instantiated of course
                 theWriter.println("            var thePrototype = " + theJSClassName + ".Create.prototype;");
@@ -478,7 +477,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theWriter.println(".classInitCheck();");
                 }
             }
-            if (theEntry.targetNode().hasClassInitializer()) {
+            if (theLinkedClass.hasClassInitializer()) {
                 theWriter.println("            " + theJSClassName + ".VOIDclinit();");
             }
             theWriter.println("        }");

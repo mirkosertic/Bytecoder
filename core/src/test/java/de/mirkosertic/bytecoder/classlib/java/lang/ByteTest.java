@@ -36,7 +36,8 @@ public class ByteTest {
 
     @Test
     public void testHashCode() throws Exception {
-        assertEquals(new Byte((byte) 10), new Byte((byte) 10));
+        System.out.println(new Byte((byte) 10).hashCode());
+        assertEquals(new Byte((byte) 10).hashCode(), 10, 0);
     }
 
     @Test

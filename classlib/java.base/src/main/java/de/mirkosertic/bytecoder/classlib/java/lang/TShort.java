@@ -55,16 +55,6 @@ public class TShort extends Number {
     }
 
     @Override
-    public byte byteValue() {
-        return (byte) shortValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return shortValue;
-    }
-
-    @Override
     public float floatValue() {
         return (float) shortValue;
     }

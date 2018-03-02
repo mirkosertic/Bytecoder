@@ -96,16 +96,6 @@ public class TFloat extends Number {
     }
 
     @Override
-    public byte byteValue() {
-        return (byte) floatValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) floatValue;
-    }
-
-    @Override
     public long longValue() {
         return (long) floatValue;
     }

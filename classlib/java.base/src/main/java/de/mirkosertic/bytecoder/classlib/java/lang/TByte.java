@@ -55,16 +55,6 @@ public class TByte extends Number {
     }
 
     @Override
-    public byte byteValue() {
-        return byteValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) byteValue;
-    }
-
-    @Override
     public float floatValue() {
         return (float) byteValue;
     }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.IsObject;
 import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
@@ -22,6 +23,10 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 @IsObject
 public class TObject {
+
+    @EmulatedByRuntime
+    public TObject() {
+    }
 
     @Substitutes("<init>")
     public void emptyConstructor() {
@@ -42,5 +47,4 @@ public class TObject {
     public Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
-
 }
