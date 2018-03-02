@@ -316,54 +316,118 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         // Now everything else
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
+            BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
-            if (aEntry.targetNode().getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+            if (theLinkedClass.getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                 return;
             }
 
             Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
 
-            BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
+            BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
             theMethodMap.stream().forEach(aMethodMapEntry -> {
 
-                BytecodeMethod t = aMethodMapEntry.getValue();
+                BytecodeMethod theMethod = aMethodMapEntry.getValue();
+                BytecodeMethodSignature theSignature = theMethod.getSignature();
 
                 // If the method is provided by the runtime, we do not need to generate the implementation
-                if (t.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
+                if (theMethod.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null) {
                     return;
                 }
 
                 // Do not generate code for abstract methods
-                if (t.getAccessFlags().isAbstract()) {
+                if (theMethod.getAccessFlags().isAbstract()) {
                     return;
                 }
 
-                if (t.getAccessFlags().isNative()) {
+                if (theMethod.getAccessFlags().isNative()) {
                     // Already written
                     return;
                 }
 
-                if (!(aMethodMapEntry.getProvidingClass() == aEntry.targetNode())) {
+                if (!(aMethodMapEntry.getProvidingClass() == theLinkedClass)) {
                     // Skip methods not implemented here
+                    // Skip methods not implemented in this class
+                    // But include static methods, as they are inherited from the base classes
+                    if (aMethodMapEntry.getValue().getAccessFlags().isStatic() && !aMethodMapEntry.getValue().isClassInitializer()) {
+
+                        // We need to create a delegate function here
+
+                        theWriter.print("   (func ");
+                        theWriter.print("$");
+                        theWriter.print(WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature));
+                        theWriter.print(" ");
+
+                        theWriter.print("(param $UNUSED");
+                        theWriter.print(" ");
+                        theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                        theWriter.print(") ");
+
+                        StringBuilder theArguments = new StringBuilder();
+                        theArguments.append("(get_local $UNUSED)");
+
+                        for (int i=0;i<theSignature.getArguments().length;i++) {
+                            theWriter.print("(param $p");
+                            theWriter.print(i);
+                            theWriter.print(" ");
+                            theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[i])));
+                            theWriter.print(") ");
+
+                            theArguments.append(" (get_local $p");
+                            theArguments.append(i);
+                            theArguments.append(")");
+                        }
+
+                        if (!theSignature.getReturnType().isVoid()) {
+                            theWriter.print("(result "); // result
+                            theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                            theWriter.print(")");
+                        }
+                        theWriter.println();
+
+                        // Static methods will just delegate to the implementation in the class
+                        theWriter.println();
+                        if (!theSignature.getReturnType().isVoid()) {
+                            theWriter.print("         (return ");
+                            theWriter.print("(call $");
+
+                            theWriter.print(WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(), theSignature));
+
+                            theWriter.print(" ");
+
+                            theWriter.print(theArguments);
+
+                            theWriter.println(")))");
+
+                        } else {
+                            theWriter.print("         (call $");
+
+                            theWriter.print(WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(), theSignature));
+                            theWriter.print(" ");
+
+                            theWriter.print(theArguments);
+
+                            theWriter.println("))");
+                        }
+                    }
                     return;
                 }
 
-                BytecodeMethodSignature theSignature = t.getSignature();
-
                 ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
-                Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), t);
+                Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                 theWriter.print("   (func ");
                 theWriter.print("$");
-                theWriter.print(WASMWriterUtils.toMethodName(aEntry.targetNode().getClassName(), t.getName(), theSignature));
+                theWriter.print(WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature));
                 theWriter.print(" ");
 
-                if (t.getAccessFlags().isStatic()) {
+                if (theMethod.getAccessFlags().isStatic()) {
                     theWriter.print("(param $UNUSED");
                     theWriter.print(" ");
                     theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
@@ -422,7 +486,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
 
             String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
 
-            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
+            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
 
                 theWriter.print("   (func ");
                 theWriter.print("$");
@@ -500,7 +564,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 theWriter.print(theClassName);
                 theWriter.println("__instanceof (param $thisRef i32) (param $p1 i32) (result i32)");
 
-                for (BytecodeLinkedClass theType : aEntry.targetNode().getImplementingTypes()) {
+                for (BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
 
                     theWriter.print("         (block $block");
                     theWriter.print(theType.getUniqueId());
@@ -546,7 +610,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
             }
 
 
-            if (aEntry.targetNode().hasClassInitializer()) {
+            if (theLinkedClass.hasClassInitializer()) {
                 theWriter.print("         (call $");
                 theWriter.print(theClassName);
                 theWriter.println("_VOIDclinit (i32.const 0))");

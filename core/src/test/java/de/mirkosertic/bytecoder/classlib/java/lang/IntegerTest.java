@@ -36,7 +36,7 @@ public class IntegerTest {
 
     @Test
     public void testHashCode() throws Exception {
-        assertEquals(new Integer((int) 10), new Integer((int) 10));
+        assertEquals(new Integer((int) 10).hashCode(), new Integer((int) 10).hashCode(), 0);
     }
 
     @Test
