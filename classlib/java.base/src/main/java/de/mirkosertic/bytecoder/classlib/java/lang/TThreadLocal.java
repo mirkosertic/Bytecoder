@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public class TThreadLocal<T> {
 
     private T value;

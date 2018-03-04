@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.classlib.java.io;
 
 import java.io.IOException;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public abstract class TOutputStream {
 
     public abstract void write(int aValue) throws IOException;

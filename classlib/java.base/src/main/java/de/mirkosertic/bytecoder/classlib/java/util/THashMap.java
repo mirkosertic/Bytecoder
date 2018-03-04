@@ -15,26 +15,31 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
-import de.mirkosertic.bytecoder.classlib.java.lang.TCloneable;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable, TCloneable {
+@SubstitutesInClass(completeReplace = true)
+public class THashMap<K, V> {
 
     private static class Bucket<K, V> {
 
         private final int hashCode;
-        private final TArrayList<AbstractEntry<K, V>> values;
+        private final ArrayList<TAbstractMap.AbstractEntry<K, V>> values;
 
         public Bucket(int aHashCode) {
             hashCode = aHashCode;
-            values = new TArrayList<>();
+            values = new ArrayList<>();
         }
 
         public boolean containsKey(K aKey) {
             for (int i=0;i<values.size();i++) {
-                Entry<K, V> theEntry = values.get(i);
+                Map.Entry<K, V> theEntry = values.get(i);
                 if (theEntry.getKey().equals(aKey)) {
                     return true;
                 }
@@ -44,21 +49,21 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
 
         public V put(K aKey, V aValue) {
             for (int i=0;i<values.size();i++) {
-                AbstractEntry<K, V> theEntry = values.get(i);
+                TAbstractMap.AbstractEntry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
                     V theOldValue = theEntry.value;
                     theEntry.value = aValue;
                     return theOldValue;
                 }
             }
-            AbstractEntry<K, V> theNewEntry = new AbstractEntry<>(aKey, aValue);
+            TAbstractMap.AbstractEntry<K, V> theNewEntry = new TAbstractMap.AbstractEntry<>(aKey, aValue);
             values.add(theNewEntry);
             return null;
         }
 
         public V get(K aKey) {
             for (int i=0;i<values.size();i++) {
-                AbstractEntry<K, V> theEntry = values.get(i);
+                TAbstractMap.AbstractEntry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
                     return theEntry.value;
                 }
@@ -68,7 +73,7 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
 
         public V remove(K aKey) {
             for (int i=0;i<values.size();i++) {
-                AbstractEntry<K, V> theEntry = values.get(i);
+                TAbstractMap.AbstractEntry<K, V> theEntry = values.get(i);
                 if (theEntry.key.equals(aKey)) {
                     V theOldValue = theEntry.value;
                     values.remove(theEntry);
@@ -99,7 +104,6 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return null;
     }
 
-    @Override
     public boolean containsKey(K aKey) {
         Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
         if (theBucket != null) {
@@ -108,7 +112,6 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return false;
     }
 
-    @Override
     public V put(K aKey, V aValue) {
         int theHashCode = aKey.hashCode();
         Bucket<K, V> theBucket = findByHashCode(theHashCode);
@@ -119,7 +122,6 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return theBucket.put(aKey, aValue);
     }
 
-    @Override
     public V get(K aKey) {
         Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
         if (theBucket != null) {
@@ -128,7 +130,6 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return null;
     }
 
-    @Override
     public V remove(K aKey) {
         Bucket<K, V> theBucket = findByHashCode(aKey.hashCode());
         if (theBucket != null) {
@@ -141,11 +142,10 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return null;
     }
 
-    @Override
-    public TCollection<V> values() {
-        TSet<V> theResult = new THashSet<>();
+    public Collection<V> values() {
+        Set<V> theResult = new HashSet<>();
         for (int i=0;i<buckets.size();i++) {
-            TArrayList<Map.Entry<K,V>> theEntries = buckets.get(i).values;
+            List<Map.Entry<K,V>> theEntries = buckets.get(i).values;
             for (int k=0;k<theEntries.size();k++) {
                 theResult.add(theEntries.get(k).getValue());
             }
@@ -153,11 +153,10 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return theResult;
     }
 
-    @Override
-    public TSet<TMap.Entry<K, V>> entrySet() {
-        TSet<TMap.Entry<K,V>> theResult = new THashSet<>();
+    public Set<Map.Entry<K, V>> entrySet() {
+        Set<Map.Entry<K,V>> theResult = new HashSet<>();
         for (int i=0;i<buckets.size();i++) {
-            TArrayList<AbstractEntry<K, V>> theValues = buckets.get(i).values;
+            ArrayList<Map.Entry<K, V>> theValues = buckets.get(i).values;
             for (int j=0;j<theValues.size();j++) {
                 theResult.add(theValues.get(j));
             }
@@ -165,13 +164,12 @@ public class THashMap<K, V> extends TAbstractMap<K, V> implements TSerializable,
         return theResult;
     }
 
-    @Override
-    public TSet<K> keySet() {
-        TSet<K> theResult = new THashSet<>();
+    public Set<K> keySet() {
+        Set<K> theResult = new HashSet<>();
         for (int i=0;i<buckets.size();i++) {
-            TArrayList<AbstractEntry<K,V>> theEntries = buckets.get(i).values;
+            ArrayList<Map.Entry<K,V>> theEntries = buckets.get(i).values;
             for (int k=0;k<theEntries.size();k++) {
-                theResult.add(theEntries.get(k).key);
+                theResult.add(theEntries.get(k).getKey());
             }
         }
         return theResult;

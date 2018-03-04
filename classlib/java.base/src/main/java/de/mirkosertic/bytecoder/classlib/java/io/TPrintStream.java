@@ -15,18 +15,19 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
+import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class TPrintStream extends TFilterOutputStream {
+@SubstitutesInClass(completeReplace = true)
+public class TPrintStream extends FilterOutputStream {
 
     public static final char NEWLINE = '\n';
 
-    private final TOutputStream target;
-
-    public TPrintStream(TOutputStream aTarget) {
-        target = aTarget;
+    public TPrintStream(OutputStream aTarget) {
+        super(aTarget);
     }
 
     public native void logDebug(long aValue);
@@ -43,7 +44,7 @@ public class TPrintStream extends TFilterOutputStream {
         print(NEWLINE);
     }
 
-    public void println(TString aValue) throws IOException {
+    public void println(String aValue) throws IOException {
         for (int i=0;i<aValue.length();i++) {
             print((char) aValue.charAt(i));
         }
@@ -51,15 +52,6 @@ public class TPrintStream extends TFilterOutputStream {
     }
 
     public void print(char aChar) throws IOException {
-        target.write(aChar);
-    }
-
-    @Override
-    public void write(int aValue) throws IOException {
-        target.write(aValue);
-    }
-
-    @Override
-    public void close() throws IOException {
+        write((int) aChar);
     }
 }

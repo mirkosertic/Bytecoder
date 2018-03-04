@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import java.lang.reflect.Array;
 
 public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGenericInvoke {
 
@@ -38,14 +38,14 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
 
             BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
             BytecodeTypeRef theSingleType = theTypes[0];
-            aLinkerContext.linkTypeRef(theSingleType);
+            aLinkerContext.resolveTypeRef(theSingleType);
 
             // We are linking an Array here, so mark the corresponding name
-            BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+            BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
             aLinkerContext.resolveClass(theTypeRef).resolveVirtualMethod(theName.stringValue(), theSig);
-
         } else {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant)).resolveVirtualMethod(theName.stringValue(), theSig);
+            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant))
+                    .resolveVirtualMethod(theName.stringValue(), theSig);
         }
     }
 }

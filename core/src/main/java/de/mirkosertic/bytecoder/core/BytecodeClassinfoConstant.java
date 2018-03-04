@@ -21,18 +21,18 @@ public class BytecodeClassinfoConstant implements BytecodeConstant {
 
     private final int nameIndex;
     private final BytecodeConstantPool constantPool;
-    private final BytecodePackageReplacer packageReplacer;
+    private final BytecodeReplacer bytecodeReplacer;
 
-    public BytecodeClassinfoConstant(int aNameIndex, BytecodeConstantPool aConstantPool, BytecodePackageReplacer aReplacer) {
+    public BytecodeClassinfoConstant(int aNameIndex, BytecodeConstantPool aConstantPool, BytecodeReplacer aReplacer) {
         nameIndex = aNameIndex;
         constantPool = aConstantPool;
-        packageReplacer = aReplacer;
+        bytecodeReplacer = aReplacer;
     }
 
     public BytecodeUtf8Constant getConstant() {
         BytecodeUtf8Constant theClassNameConstant = (BytecodeUtf8Constant) constantPool.constantByIndex(nameIndex - 1);
-        if (packageReplacer != null) {
-            return packageReplacer.replaceTypeIn(theClassNameConstant);
+        if (bytecodeReplacer != null) {
+            return bytecodeReplacer.replaceTypeIn(theClassNameConstant);
         }
         return theClassNameConstant;
     }

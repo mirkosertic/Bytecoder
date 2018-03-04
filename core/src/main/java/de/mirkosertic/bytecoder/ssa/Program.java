@@ -114,7 +114,7 @@ public class Program {
 
     public Set<BytecodeObjectTypeRef> getStaticReferences() {
         Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
-        for (RegionNode theNode : controlFlowGraph.getDominatedNodes()) {
+        for (RegionNode theNode : controlFlowGraph.getKnownNodes()) {
             for (Expression theExpression : theNode.getExpressions().toList()) {
                 if (theExpression instanceof PutStaticExpression) {
                     PutStaticExpression theE = (PutStaticExpression) theExpression;
@@ -126,9 +126,16 @@ public class Program {
 
         for (Variable theVariable : variables) {
             for (Value theValue : theVariable.incomingDataFlows()) {
+                if (theValue instanceof InvokeStaticMethodExpression) {
+                    InvokeStaticMethodExpression theInvokeStatic = (InvokeStaticMethodExpression) theValue;
+                    theResult.add(theInvokeStatic.getClassName());
+                }
                 if (theValue instanceof GetStaticExpression) {
                     GetStaticExpression theStaticValue = (GetStaticExpression) theValue;
                     theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
+                }
+                if (theValue instanceof StringValue) {
+                    theResult.add(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
                 }
                 if (theValue instanceof ClassReferenceValue) {
                     ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;

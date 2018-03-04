@@ -81,16 +81,16 @@
 
             // Our module for dynamic linking
             var importObject = {
-                tsystem: {
+                system: {
                     currentTimeMillis: function(aCaller) {return (Date.now() - 1514628979781);},
                     nanoTime: function(aCaller) {return (Date.now() - 1514628979781) * 1000000;},
                     logDebug: bytecoder_logDebug,
                     writeByteArrayToConsole: bytecoder_logByteArrayAsString,
                 },
-                tprintstream: {
+                printstream: {
                     logDebug: bytecoder_logDebug,
                 },
-                tmath: {
+                math: {
                     floor: function (thisref, p1) {return Math.floor(p1);},
                     ceil: function (thisref, p1) {return Math.ceil(p1);},
                     sin: function (thisref, p1) {return Math.sin(p1);},
@@ -99,11 +99,9 @@
                     float_rem: function(a, b) {return a % b;},
                     sqrt: function(thisref, p1) {return Math.sqrt(p1);},
                     add: function(thisref, p1, p2) {return p1 + p2;},
-                },
-                math: {
                     float_rem: function(a, b) {return a % b;},
                 },
-                tstrictmath: {
+                strictmath: {
                     floor: function (thisref, p1) {return Math.floor(p1);},
                     ceil: function (thisref, p1) {return Math.ceil(p1);},
                     sin: function (thisref, p1) {return Math.sin(p1);},

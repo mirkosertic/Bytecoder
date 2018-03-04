@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import java.lang.reflect.Array;
 
 public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
 
@@ -27,7 +27,7 @@ public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
     }
 
     public BytecodeObjectTypeRef getObjectType() {
-        return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+        return BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
     }
 
     public BytecodePrimitiveTypeRef getPrimitiveType() {

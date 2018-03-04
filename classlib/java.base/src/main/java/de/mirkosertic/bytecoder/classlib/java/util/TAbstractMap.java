@@ -15,9 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-public abstract class TAbstractMap<K, V> implements TMap<K, V> {
+import java.util.Map;
 
-    public static class AbstractEntry<K, V> implements Entry<K, V> {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public abstract class TAbstractMap<K, V>  {
+
+    public static class AbstractEntry<K, V> implements Map.Entry<K, V> {
         protected final K key;
         protected V value;
 
@@ -34,6 +39,13 @@ public abstract class TAbstractMap<K, V> implements TMap<K, V> {
         @Override
         public V getValue() {
             return value;
+        }
+
+        @Override
+        public V setValue(V aValue) {
+            V theTemp = value;
+            value = aValue;
+            return theTemp;
         }
     }
 }

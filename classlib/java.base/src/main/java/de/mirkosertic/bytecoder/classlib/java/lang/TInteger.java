@@ -16,8 +16,13 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
-public class TInteger extends TNumber {
+@SubstitutesInClass(completeReplace = true)
+public class TInteger extends Number {
+
+    public static final Class<Integer> TYPE = Integer.class;
 
     private final int integerValue;
 
@@ -29,16 +34,6 @@ public class TInteger extends TNumber {
     @Override
     public int intValue() {
         return integerValue;
-    }
-
-    @Override
-    public byte byteValue() {
-        return (byte) integerValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) integerValue;
     }
 
     @Override
@@ -80,25 +75,25 @@ public class TInteger extends TNumber {
         return toString(integerValue);
     }
 
-    public static TInteger valueOf(int aValue) {
-        return new TInteger(aValue);
+    public static Integer valueOf(int aValue) {
+        return new Integer(aValue);
     }
 
-    public static TInteger valueOf(String aValue) {
-        return new TInteger((int) TNumber.stringToLong(aValue));
+    public static Integer valueOf(String aValue) {
+        return new Integer((int) VM.stringToLong(aValue));
     }
 
     public static int parseInt(String aString) {
-        return (int) TNumber.stringToLong(aString);
+        return (int) VM.stringToLong(aString);
     }
 
     public static String toString(int aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
+        StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
 
     public static String toHexString(int aValue) {
-        return TNumber.longToHex(aValue);
+        return VM.longToHex(aValue);
     }
 }

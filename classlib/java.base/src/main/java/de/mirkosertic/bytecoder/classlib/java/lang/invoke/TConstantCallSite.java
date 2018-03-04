@@ -15,23 +15,27 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public class TConstantCallSite extends TCallSite {
 
-    private final TMethodHandle methodHandle;
-    private final TMethodType methodType;
+    private final MethodHandle methodHandle;
 
-    public TConstantCallSite(TMethodHandle aMethodHandle, TMethodType aMethodType) {
+    public TConstantCallSite(MethodHandle aMethodHandle) {
         methodHandle = aMethodHandle;
-        methodType = aMethodType;
     }
 
     @Override
-    public TMethodHandle getTarget() {
+    public MethodHandle getTarget() {
         return methodHandle;
     }
 
     @Override
-    public TMethodType type() {
-        return methodType;
+    public MethodType type() {
+        return methodHandle.type();
     }
 }

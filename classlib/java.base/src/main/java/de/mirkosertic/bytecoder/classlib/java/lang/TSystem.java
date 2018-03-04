@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,30 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.classlib.java.io.TOutputStream;
-import de.mirkosertic.bytecoder.classlib.java.io.TPrintStream;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
+@SubstitutesInClass(completeReplace = true)
 public class TSystem {
 
-    public static final TPrintStream out = new TPrintStream(new TOutputStream() {
+    public static final PrintStream out = new PrintStream(new OutputStream() {
 
-        @Import(module = "tsystem", name = "writeByteArrayToConsole")
+        @Import(module = "system", name = "writeByteArrayToConsole")
         public native void writeByteArrayToConsole(byte[] aBytes);
 
-        private TStringBuilder currentLine = new TStringBuilder();
+        private StringBuilder currentLine = new StringBuilder();
 
         @Override
         public void write(int aValue) throws IOException {
-            if (aValue != TPrintStream.NEWLINE) {
+            if (aValue != VM.NEWLINE) {
                 currentLine.append((char) aValue);
             } else {
-                writeByteArrayToConsole(currentLine.getBytes());
-                currentLine = new TStringBuilder();
+                writeByteArrayToConsole(currentLine.toString().getBytes());
+                currentLine = new StringBuilder();
             }
         }
 

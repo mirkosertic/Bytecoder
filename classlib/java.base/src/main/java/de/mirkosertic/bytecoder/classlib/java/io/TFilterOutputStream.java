@@ -15,5 +15,22 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
-public abstract class TFilterOutputStream extends TOutputStream {
+import java.io.IOException;
+import java.io.OutputStream;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public class TFilterOutputStream extends OutputStream {
+
+    private final OutputStream delegate;
+
+    public TFilterOutputStream(OutputStream aDelegate) {
+        delegate = aDelegate;
+    }
+
+    @Override
+    public void write(int b) throws IOException {
+        delegate.write(b);
+    }
 }

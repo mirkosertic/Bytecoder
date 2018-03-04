@@ -27,7 +27,6 @@ import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileResult;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
@@ -94,7 +93,7 @@ public class CompilerTest {
 
         BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
+        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theCompiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
 
@@ -130,7 +129,7 @@ public class CompilerTest {
 
         BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
+        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         OpenCLCompileResult theCompiedKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
 

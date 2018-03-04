@@ -79,6 +79,8 @@ public interface TypeRef {
                 switch (aOtherType) {
                     case CHAR:
                         return CHAR;
+                    case INT:
+                        return INT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
 
@@ -106,6 +108,10 @@ public interface TypeRef {
                     case BOOLEAN:
                         return INT;
                     case BYTE:
+                        return INT;
+                    case CHAR:
+                        return INT;
+                    case REFERENCE:
                         return INT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);

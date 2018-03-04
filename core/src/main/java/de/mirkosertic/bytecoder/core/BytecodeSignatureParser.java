@@ -21,10 +21,10 @@ import java.util.List;
 
 public class BytecodeSignatureParser {
 
-    private final BytecodePackageReplacer packageReplacer;
+    private final BytecodeReplacer replacer;
 
-    public BytecodeSignatureParser(BytecodePackageReplacer aPackageReplacer) {
-        packageReplacer = aPackageReplacer;
+    public BytecodeSignatureParser(BytecodeReplacer aReplacer) {
+        replacer = aReplacer;
     }
 
     private void add(List<BytecodeTypeRef> aTypes, BytecodeTypeRef aType, boolean isArray, int arrayDepth) {
@@ -60,7 +60,7 @@ public class BytecodeSignatureParser {
                         }
                         break;
                     case ';':
-                        add(theResult, packageReplacer.replaceTypeIn(new BytecodeObjectTypeRef(objectName.toString().replace("/","."))), isArray, arrayDepth);
+                        add(theResult, replacer.replaceTypeIn(new BytecodeObjectTypeRef(objectName.toString().replace("/","."))), isArray, arrayDepth);
                         isObject = false;
                         isArray = false;
                         objectName = null;

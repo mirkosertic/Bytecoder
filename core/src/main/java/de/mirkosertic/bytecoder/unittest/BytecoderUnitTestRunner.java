@@ -51,7 +51,6 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
-import de.mirkosertic.bytecoder.classlib.java.lang.TThrowable;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -169,7 +168,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                    TThrowable.class), new BytecodeTypeRef[0]);
+                    Throwable.class), new BytecodeTypeRef[0]);
 
             BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
@@ -182,7 +181,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
             theCodeWriter.println();
-            theCodeWriter.println("bytecoder.imports.tsystem = {");
+            theCodeWriter.println("bytecoder.imports.system = {");
             theCodeWriter.println("     currentTimeMillis: function() {");
             theCodeWriter.println("         return Date.now();");
             theCodeWriter.println("     },");
@@ -195,13 +194,18 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCodeWriter.println("     logDebug: function(p1) {");
             theCodeWriter.println("         bytecoder.logDebug(p1);");
             theCodeWriter.println("     },");
+            theCodeWriter.println("     arraycopy: function(src, srcPos, dest, destPos, length) {");
+            theCodeWriter.println("         for (i=0;i<length;i++) {");
+            theCodeWriter.println("             dest.data[destPos++] = src.data[srcPos++];");
+            theCodeWriter.println("         }");
+            theCodeWriter.println("     }");
             theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.tprintstream = {");
+            theCodeWriter.println("bytecoder.imports.printstream = {");
             theCodeWriter.println("     logDebug: function(thisref, p1) {");
             theCodeWriter.println("         bytecoder.logDebug(p1);");
             theCodeWriter.println("     },");
             theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.tmath = {");
+            theCodeWriter.println("bytecoder.imports.math = {");
             theCodeWriter.println("     ceil: function(p1) {");
             theCodeWriter.println("         return Math.ceil(p1);");
             theCodeWriter.println("     },");
@@ -248,7 +252,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCodeWriter.println("         return p1 + p2;");
             theCodeWriter.println("     }");
             theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.tstrictmath = {");
+            theCodeWriter.println("bytecoder.imports.strictmath = {");
             theCodeWriter.println("     sin: function(p1) {");
             theCodeWriter.println("         return Math.sin(p1);");
             theCodeWriter.println("     },");
@@ -417,16 +421,16 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
             theWriter.println();
             theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
-            theWriter.println("                         tsystem: {");
+            theWriter.println("                         system: {");
             theWriter.println("                             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("                             nanoTime: function() {return Date.now() * 1000000;},");
             theWriter.println("                             logDebug: bytecoder_logDebug,");
             theWriter.println("                             writeByteArrayToConsole: bytecoder_logByteArrayAsString,");
             theWriter.println("                         },");
-            theWriter.println("                         tprintstream: {");
+            theWriter.println("                         printstream: {");
             theWriter.println("                             logDebug: bytecoder_logDebug,");
             theWriter.println("                         },");
-            theWriter.println("                         tmath: {");
+            theWriter.println("                         math: {");
             theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
             theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
             theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
@@ -435,11 +439,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
-            theWriter.println("                         },");
-            theWriter.println("                         math: {");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                         },");
-            theWriter.println("                         tstrictmath: {");
+            theWriter.println("                         strictmath: {");
             theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
             theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
             theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
@@ -555,18 +557,27 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theDriver = newDriverForTest();
             theDriver.get(theGeneratedFile.toURI().toURL().toString());
 
+            long theStart = System.currentTimeMillis();
+            boolean theTestSuccedded = false;
 
-            List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
-            if (theAll.size() < 1) {
-                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
-            }
-            for (LogEntry theEntry : theAll) {
-                System.out.println(theEntry.getMessage());
-            }
-            LogEntry theLast = theAll.get(theAll.size() - 1);
+            while (!theTestSuccedded && System.currentTimeMillis() - theStart < 10 * 1000) {
+                List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+                for (LogEntry theEntry : theAll) {
+                    String theMessage = theEntry.getMessage();
+                    System.out.println(theMessage);
 
-            if (!theLast.getMessage().contains("Test finished OK")) {
-                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
+                    if (theMessage.contains("Test finished OK")) {
+                        theTestSuccedded = true;
+                    }
+                }
+
+                if (!theTestSuccedded) {
+                    Thread.sleep(100);
+                }
+            }
+
+            if (!theTestSuccedded) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
             }
 
         } catch (ControlFlowProcessingException e) {
