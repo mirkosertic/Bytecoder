@@ -15,9 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class TRandom implements TSerializable {
+@SubstitutesInClass(completeReplace = true)
+public class TRandom {
 
     public TRandom() {
     }

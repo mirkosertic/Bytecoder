@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,19 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.NoExceptionCheck;
-import de.mirkosertic.bytecoder.classlib.java.io.TSerializable;
-
 import java.util.Objects;
 
-public class TEnum extends TObject implements TSerializable {
+import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-    private final TString name;
+@SubstitutesInClass(completeReplace = true)
+public class TEnum {
+
+    private final String name;
     private final int ordinalNumber;
 
     @NoExceptionCheck
-    protected TEnum(TString aName, int aOrdinalNumber) {
+    protected TEnum(String aName, int aOrdinalNumber) {
         name = aName;
         ordinalNumber = aOrdinalNumber;
     }
@@ -35,13 +36,13 @@ public class TEnum extends TObject implements TSerializable {
         return ordinalNumber;
     }
 
-    public TString name() {
+    public String name() {
         return name;
     }
 
     public static Enum valueOf(Class<Enum> aClass, String aValue) {
         for (Enum theEnum : aClass.getEnumConstants()) {
-            if (Objects.equals(theEnum.name(), aValue)) {
+            if (theEnum.name().equals(aValue)) {
                 return theEnum;
             }
         }

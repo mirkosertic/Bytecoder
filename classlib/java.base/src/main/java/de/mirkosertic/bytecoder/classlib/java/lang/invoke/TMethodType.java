@@ -15,5 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
 public class TMethodType {
 }

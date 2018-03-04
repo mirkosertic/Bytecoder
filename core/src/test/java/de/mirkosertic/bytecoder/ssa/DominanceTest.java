@@ -118,7 +118,7 @@ public class DominanceTest {
         assertFalse(theNode4.isOnlyReachableThru(theNode3));
 
         Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
-        assertEquals(3, theDom1.size(), 0);
+        assertEquals(4, theDom1.size(), 0);
         assertTrue(theDom1.contains(theNode2));
         assertTrue(theDom1.contains(theNode3));
         assertTrue(theDom1.contains(theNode4));

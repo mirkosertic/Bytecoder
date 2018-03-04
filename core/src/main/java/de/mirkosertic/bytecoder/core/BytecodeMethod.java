@@ -34,6 +34,10 @@ public class BytecodeMethod extends Node {
         attributes = aAttributes;
     }
 
+    public BytecodeMethod replaceAndFlagsFrom(BytecodeMethod aOtherMethod) {
+        return new BytecodeMethod(aOtherMethod.accessFlags, name, signature, aOtherMethod.attributes);
+    }
+
     public BytecodeAttributes getAttributes() {
         return new BytecodeAttributes(attributes);
     }

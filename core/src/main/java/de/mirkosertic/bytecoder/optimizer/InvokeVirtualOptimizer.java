@@ -85,8 +85,6 @@ public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implement
                             theSignature);
                     aExpression.routeIncomingDataFlowsTo(theNewExpression);
 
-                    aLinkerContext.getLogger().info("Replaced virtual with direct call");
-
                     return Optional.of(theNewExpression);
                 }
             }

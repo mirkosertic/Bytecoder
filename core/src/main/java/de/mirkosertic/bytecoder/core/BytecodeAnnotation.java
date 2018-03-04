@@ -51,7 +51,11 @@ public class BytecodeAnnotation {
 
         @Override
         public String stringValue() {
-            throw new IllegalStateException("Not implemented yet");
+            BytecodeIntegerConstant theConstant = (BytecodeIntegerConstant) constantPool.constantByIndex(constValueIndex - 1);
+            if (theConstant.getIntegerValue() == 1) {
+                return "true";
+            }
+            return "false";
         }
     }
 

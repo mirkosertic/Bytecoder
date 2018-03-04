@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
+import java.lang.reflect.Array;
 
 public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
 
@@ -35,7 +35,7 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
     }
 
     public BytecodeObjectTypeRef getObjectType() {
-        return BytecodeObjectTypeRef.fromRuntimeClass(TArray.class);
+        return BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
     }
 
     public int getDimensions() {
@@ -50,6 +50,6 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
         String theClassName = theConstant.getConstant().stringValue();
 
         BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
-        aLinkerContext.linkTypeRef(theTypes[0]);
+        aLinkerContext.resolveTypeRef(theTypes[0]);
     }
 }

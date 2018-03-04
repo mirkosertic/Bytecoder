@@ -57,6 +57,10 @@ public class BytecodeClass {
         return constantPool;
     }
 
+    public BytecodeField[] fields() {
+        return fields;
+    }
+
     public BytecodeField fieldByName(String aName) {
         for (BytecodeField theField : fields) {
             if (Objects.equals(theField.getName().stringValue(), aName)) {

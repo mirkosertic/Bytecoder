@@ -25,7 +25,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePackageReplacer;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
@@ -48,7 +47,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
     private final ProgramGeneratorFactory programGeneratorFactory;
 
     public OpenCLCompileBackend() {
-        loader = new BytecodeLoader(getClass().getClassLoader(), new BytecodePackageReplacer());
+        loader = new BytecodeLoader(getClass().getClassLoader());
         programGeneratorFactory = NaiveProgramGenerator.FACTORY;
     }
 

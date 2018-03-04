@@ -70,7 +70,7 @@ public class NaiveProgramGeneratorTest {
         ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(1, theCFG.getKnownNodes().size());
         RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(3, theSingleNode.getExpressions().size());
+        assertEquals(1, theSingleNode.getExpressions().size());
     }
 
     @Test
@@ -93,11 +93,11 @@ public class NaiveProgramGeneratorTest {
         theBytecodeProgram.addInstruction(new BytecodeInstructionGenericRETURN(new BytecodeOpcodeAddress(102), BytecodePrimitiveTypeRef.INT));
 
         Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        assertEquals(7, theProgram.getVariables().size());
+        assertEquals(6, theProgram.getVariables().size());
         ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(4, theCFG.getKnownNodes().size());
         RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(8, theSingleNode.getExpressions().size());
+        assertEquals(2, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }
 

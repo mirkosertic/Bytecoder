@@ -15,5 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public abstract class TAbstractStringBuilder extends TObject implements TAppendable, TCharSequence {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+@SubstitutesInClass(completeReplace = true)
+public abstract class TAbstractStringBuilder implements Appendable, CharSequence {
 }

@@ -15,8 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.classlib.java.lang.TArray;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
+import java.lang.reflect.Array;
 
 public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
 
@@ -37,17 +36,18 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
     public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
         BytecodeConstant theConstant = constant();
         if (theConstant instanceof BytecodeStringConstant) {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(TArray.class));
+            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
 
-            BytecodeObjectTypeRef theObjectTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(TString.class);
-            aLinkerContext.resolveClass(theObjectTypeRef).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+            BytecodeObjectTypeRef theObjectTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
+            aLinkerContext.resolveClass(theObjectTypeRef)
+                    .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                             new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         }
         if (theConstant instanceof BytecodeClassinfoConstant) {
             BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
             if (theClassInfo.getConstant().stringValue().startsWith("[")) {
                 BytecodeTypeRef theType = aLinkerContext.getSignatureParser().toFieldType(theClassInfo.getConstant());
-                aLinkerContext.linkTypeRef(theType);
+                aLinkerContext.resolveTypeRef(theType);
             } else {
                 aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
             }

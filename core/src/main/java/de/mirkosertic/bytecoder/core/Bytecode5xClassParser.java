@@ -42,14 +42,14 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private final BytecodeProgramParser programmParser;
     private final BytecodeSignatureParser signatureParser;
-    private final BytecodePackageReplacer packageReplacer;
+    private final BytecodeReplacer bytecodeReplacer;
 
     public Bytecode5xClassParser(BytecodeProgramParser aParser,
             BytecodeSignatureParser aSignatureParser,
-            BytecodePackageReplacer aPackageReplacer) {
+            BytecodeReplacer aReplacer) {
         programmParser = aParser;
         signatureParser = aSignatureParser;
-        packageReplacer = aPackageReplacer;
+        bytecodeReplacer = aReplacer;
     }
 
     @Override
@@ -72,13 +72,19 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
         }
 
+        BytecodeReplacer.MergeResult theResult = bytecodeReplacer.replace(theThisClass,
+                theMethods,
+                theFields,
+                theSuperClass,
+                theInterfaces);
+
         return new BytecodeClass(theConstantPool,
                 theAccessFlags,
                 theThisClass,
                 theSuperClass,
                 theInterfaces,
-                theFields,
-                theMethods,
+                theResult.getFields(),
+                theResult.getMethods(),
                 theClassAttributes);
     }
 
@@ -144,7 +150,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
 
     private void parseConstantPool_CONSTANT_Class(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
         int theNameIndex = aDis.readUnsignedShort();
-        aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool, packageReplacer));
+        aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool, bytecodeReplacer));
     }
 
     private void parseConstantPool_CONSTANT_Fieldref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {

@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.Objects;
+
 public class StringValue extends PrimitiveValue {
 
     private final String stringValue;
@@ -30,5 +32,20 @@ public class StringValue extends PrimitiveValue {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        StringValue that = (StringValue) o;
+        return Objects.equals(stringValue, that.stringValue);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(stringValue);
     }
 }

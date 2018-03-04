@@ -15,7 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-public class TLong extends TNumber {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+
+@SubstitutesInClass(completeReplace = true)
+public class TLong extends Number {
 
     private final long longValue;
 
@@ -30,9 +34,9 @@ public class TLong extends TNumber {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TLong tLong = (TLong) o;
+        Long tLong = (Long) o;
 
-        if (longValue != tLong.longValue)
+        if (longValue != tLong.longValue())
             return false;
 
         return true;
@@ -46,16 +50,6 @@ public class TLong extends TNumber {
     @Override
     public int intValue() {
         return (int) longValue;
-    }
-
-    @Override
-    public byte byteValue() {
-        return (byte) longValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) longValue;
     }
 
     @Override
@@ -78,25 +72,25 @@ public class TLong extends TNumber {
         return toString(longValue);
     }
 
-    public static TLong valueOf(long aValue) {
-        return new TLong(aValue);
+    public static Long valueOf(long aValue) {
+        return new Long(aValue);
     }
 
-    public static TLong valueOf(String aValue) {
-        return new TLong(TNumber.stringToLong(aValue));
+    public static Long valueOf(String aValue) {
+        return new Long(VM.stringToLong(aValue));
     }
 
     public static long parseLong(String aString) {
-        return TNumber.stringToLong(aString);
+        return VM.stringToLong(aString);
     }
 
     public static String toString(long aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
+        StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
 
     public static String toHexString(long aValue) {
-        return TNumber.longToHex(aValue);
+        return VM.longToHex(aValue);
     }
 }

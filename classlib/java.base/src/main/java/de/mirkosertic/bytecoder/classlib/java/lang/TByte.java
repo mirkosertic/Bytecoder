@@ -16,8 +16,11 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
-public class TByte extends TNumber {
+@SubstitutesInClass(completeReplace = true)
+public class TByte extends Number {
 
     private byte byteValue;
 
@@ -52,16 +55,6 @@ public class TByte extends TNumber {
     }
 
     @Override
-    public byte byteValue() {
-        return byteValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) byteValue;
-    }
-
-    @Override
     public float floatValue() {
         return (float) byteValue;
     }
@@ -86,15 +79,15 @@ public class TByte extends TNumber {
     }
 
     public static TByte valueOf(String aValue) {
-        return new TByte((byte) TNumber.stringToLong(aValue));
+        return new TByte((byte) VM.stringToLong(aValue));
     }
 
     public static byte parseByte(String aString) {
-        return (byte) TNumber.stringToLong(aString);
+        return (byte) VM.stringToLong(aString);
     }
 
     public static String toString(byte aValue) {
-        TStringBuilder theBuffer = new TStringBuilder();
+        StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
