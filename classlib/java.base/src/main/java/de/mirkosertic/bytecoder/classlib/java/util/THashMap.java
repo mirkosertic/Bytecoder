@@ -88,10 +88,10 @@ public class THashMap<K, V> {
         }
     }
 
-    private final TArrayList<Bucket> buckets;
+    private final ArrayList<Bucket> buckets;
 
     public THashMap() {
-        buckets = new TArrayList<>();
+        buckets = new ArrayList<>();
     }
 
     private Bucket<K, V> findByHashCode(int aHashCode) {

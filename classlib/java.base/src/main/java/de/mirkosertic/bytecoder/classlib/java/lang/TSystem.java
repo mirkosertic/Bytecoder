@@ -31,16 +31,16 @@ public class TSystem {
         @Import(module = "system", name = "writeByteArrayToConsole")
         public native void writeByteArrayToConsole(byte[] aBytes);
 
-        private StringBuilder currentLine = new StringBuilder();
+        @Override
+        public void write(int b) throws IOException {
+            byte[] theData = new byte[1];
+            theData[0] = (byte) b;
+            write(theData);
+        }
 
         @Override
-        public void write(int aValue) throws IOException {
-            if (aValue != VM.NEWLINE) {
-                currentLine.append((char) aValue);
-            } else {
-                writeByteArrayToConsole(currentLine.toString().getBytes());
-                currentLine = new StringBuilder();
-            }
+        public void write(byte[] b, int off, int len) throws IOException {
+            writeByteArrayToConsole(b);
         }
 
         @Override

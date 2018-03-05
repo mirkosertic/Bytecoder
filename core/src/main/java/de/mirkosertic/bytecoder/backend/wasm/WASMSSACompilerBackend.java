@@ -355,62 +355,69 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                     if (aMethodMapEntry.getValue().getAccessFlags().isStatic() && !aMethodMapEntry.getValue().isClassInitializer()) {
 
                         // We need to create a delegate function here
+                        if (!theMethodMap.isImplementedBy(aMethodMapEntry.getValue(), theLinkedClass)) {
 
-                        theWriter.print("   (func ");
-                        theWriter.print("$");
-                        theWriter.print(WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature));
-                        theWriter.print(" ");
-
-                        theWriter.print("(param $UNUSED");
-                        theWriter.print(" ");
-                        theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                        theWriter.print(") ");
-
-                        StringBuilder theArguments = new StringBuilder();
-                        theArguments.append("(get_local $UNUSED)");
-
-                        for (int i=0;i<theSignature.getArguments().length;i++) {
-                            theWriter.print("(param $p");
-                            theWriter.print(i);
+                            theWriter.print("   (func ");
+                            theWriter.print("$");
+                            theWriter.print(WASMWriterUtils
+                                    .toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature));
                             theWriter.print(" ");
-                            theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[i])));
+
+                            theWriter.print("(param $UNUSED");
+                            theWriter.print(" ");
+                            theWriter.print(WASMWriterUtils.toType(TypeRef.Native.REFERENCE));
                             theWriter.print(") ");
 
-                            theArguments.append(" (get_local $p");
-                            theArguments.append(i);
-                            theArguments.append(")");
-                        }
+                            StringBuilder theArguments = new StringBuilder();
+                            theArguments.append("(get_local $UNUSED)");
 
-                        if (!theSignature.getReturnType().isVoid()) {
-                            theWriter.print("(result "); // result
-                            theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
-                            theWriter.print(")");
-                        }
-                        theWriter.println();
+                            for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                theWriter.print("(param $p");
+                                theWriter.print(i);
+                                theWriter.print(" ");
+                                theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[i])));
+                                theWriter.print(") ");
 
-                        // Static methods will just delegate to the implementation in the class
-                        theWriter.println();
-                        if (!theSignature.getReturnType().isVoid()) {
-                            theWriter.print("         (return ");
-                            theWriter.print("(call $");
+                                theArguments.append(" (get_local $p");
+                                theArguments.append(i);
+                                theArguments.append(")");
+                            }
 
-                            theWriter.print(WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(), theSignature));
+                            if (!theSignature.getReturnType().isVoid()) {
+                                theWriter.print("(result "); // result
+                                theWriter.print(WASMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                                theWriter.print(")");
+                            }
+                            theWriter.println();
 
-                            theWriter.print(" ");
+                            // Static methods will just delegate to the implementation in the class
+                            theWriter.println();
+                            if (!theSignature.getReturnType().isVoid()) {
+                                theWriter.print("         (return ");
+                                theWriter.print("(call $");
 
-                            theWriter.print(theArguments);
+                                theWriter.print(WASMWriterUtils
+                                        .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(),
+                                                theSignature));
 
-                            theWriter.println(")))");
+                                theWriter.print(" ");
 
-                        } else {
-                            theWriter.print("         (call $");
+                                theWriter.print(theArguments);
 
-                            theWriter.print(WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(), theSignature));
-                            theWriter.print(" ");
+                                theWriter.println(")))");
 
-                            theWriter.print(theArguments);
+                            } else {
+                                theWriter.print("         (call $");
 
-                            theWriter.println("))");
+                                theWriter.print(WASMWriterUtils
+                                        .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(),
+                                                theSignature));
+                                theWriter.print(" ");
+
+                                theWriter.print(theArguments);
+
+                                theWriter.println("))");
+                            }
                         }
                     }
                     return;

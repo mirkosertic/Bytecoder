@@ -20,38 +20,39 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
 public class TPrintStream extends FilterOutputStream {
-
-    public static final char NEWLINE = '\n';
 
     public TPrintStream(OutputStream aTarget) {
         super(aTarget);
     }
 
-    public native void logDebug(long aValue);
-
-    public void println(long aValue) {
-        logDebug(aValue);
+    public void println(long aValue) throws IOException {
+        print(Long.toString(aValue));
+        println();
     }
 
-    public void println(int aValue) {
-        logDebug(aValue);
-    }
-
-    public void println() throws IOException {
-        print(NEWLINE);
-    }
-
-    public void println(String aValue) throws IOException {
-        for (int i=0;i<aValue.length();i++) {
-            print((char) aValue.charAt(i));
-        }
-        print(NEWLINE);
+    public void println(int aValue) throws IOException {
+        print(Integer.toString(aValue));
+        println();
     }
 
     public void print(char aChar) throws IOException {
         write((int) aChar);
+    }
+
+    public void println() throws IOException {
+        print(VM.NEWLINE);
+    }
+
+    public void print(String aValue) throws IOException {
+        write(aValue.getBytes());
+    }
+
+    public void println(String aValue) throws IOException {
+        print(aValue);
+        println();
     }
 }

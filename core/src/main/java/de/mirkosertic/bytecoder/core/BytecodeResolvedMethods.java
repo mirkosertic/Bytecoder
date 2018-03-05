@@ -80,4 +80,18 @@ public class BytecodeResolvedMethods {
     public Stream<MethodEntry> stream() {
         return entries.stream();
     }
+
+    public boolean isImplementedBy(BytecodeMethod aMethod, BytecodeLinkedClass aClass) {
+        for (MethodEntry theEntry : entries) {
+            if (theEntry.getProvidingClass() == aClass) {
+                BytecodeMethod theSourceMethod = theEntry.getValue();
+                if (theSourceMethod.getName().stringValue().equals(aMethod.getName().stringValue())) {
+                    if (aMethod.getSignature().metchesExactlyTo(theSourceMethod.getSignature())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }
