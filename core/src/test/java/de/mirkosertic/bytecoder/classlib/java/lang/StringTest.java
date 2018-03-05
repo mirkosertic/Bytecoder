@@ -54,4 +54,9 @@ public class StringTest {
         assertFalse("123".equalsIgnoreCase(new String("321")));
         assertFalse("123".equalsIgnoreCase(null));
     }
+
+    @Test
+    public void testLength() {
+        assertEquals(10, "0123456789".length(), 0);
+    }
 }

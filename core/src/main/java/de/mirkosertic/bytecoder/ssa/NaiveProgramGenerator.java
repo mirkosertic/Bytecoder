@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1014,7 +1015,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     aHelper.push(theVariable);
                 } else if (theConstant instanceof BytecodeClassinfoConstant) {
                     BytecodeClassinfoConstant theC = (BytecodeClassinfoConstant) theConstant;
-                    aHelper.push(new ClassReferenceValue(BytecodeObjectTypeRef.fromUtf8Constant(theC.getConstant())));
+
+                    BytecodeUtf8Constant theUTF8 = theC.getConstant();
+                    if (theUTF8.stringValue().startsWith("[")) {
+                        aHelper.push(new ClassReferenceValue(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
+                    } else {
+                        aHelper.push(new ClassReferenceValue(BytecodeObjectTypeRef.fromUtf8Constant(theC.getConstant())));
+                    }
                 } else {
                     throw new IllegalArgumentException("Unsupported constant type : " + theConstant);
                 }

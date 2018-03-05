@@ -22,6 +22,12 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public abstract class TOutputStream {
 
+    public void write(byte[] aBytes) throws IOException {
+        write(aBytes, 0, aBytes.length);
+    }
+
+    public abstract void write(byte b[], int off, int len) throws IOException;
+
     public abstract void write(int aValue) throws IOException;
 
     public abstract void close() throws IOException;

@@ -440,6 +440,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
             theWriter.println("                             float_rem: function(a, b) {return a % b;},");
+            theWriter.println("                             max: function(p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("                             min: function(p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("                         },");
             theWriter.println("                         strictmath: {");
             theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");

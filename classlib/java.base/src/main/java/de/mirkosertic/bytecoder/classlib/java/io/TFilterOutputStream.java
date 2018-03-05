@@ -30,7 +30,27 @@ public class TFilterOutputStream extends OutputStream {
     }
 
     @Override
+    public void write(byte[] b) throws IOException {
+        write(b, 0, b.length);
+    }
+
+    @Override
     public void write(int b) throws IOException {
         delegate.write(b);
+    }
+
+    @Override
+    public void close() throws IOException {
+        delegate.close();
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        delegate.write(b, off, len);
+    }
+
+    @Override
+    public void flush() throws IOException {
+        delegate.flush();
     }
 }
