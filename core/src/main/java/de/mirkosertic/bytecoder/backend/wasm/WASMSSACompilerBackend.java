@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
@@ -500,49 +501,45 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
                 theWriter.print(theClassName);
                 theWriter.println("__resolvevtableindex (param $thisRef i32) (param $p1 i32) (result i32)");
 
-                theMethodMap.stream().forEach(aMethodMapEntry -> {
-
+                List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
+                Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
+                for (int i=theEntries.size()-1;i>=0;i--) {
+                    BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
                     BytecodeMethod theMethod = aMethodMapEntry.getValue();
-                    if (theMethod.getAccessFlags().isStatic()) {
-                        return;
-                    }
-                    if (theMethod.getAccessFlags().isPrivate()) {
-                        return;
-                    }
-                    if (theMethod.isConstructor()) {
-                        return;
-                    }
-                    if (theMethod.getAccessFlags().isAbstract()) {
-                        return;
-                    }
 
-                    if (theMethod == BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) {
-                        // This method cannot be called as it is handled by TypeOfValue
-                        return;
+                    if (!theMethod.getAccessFlags().isStatic() &&
+                        !theMethod.getAccessFlags().isPrivate() &&
+                        !theMethod.isConstructor() &&
+                        !theMethod.getAccessFlags().isAbstract() &&
+                        (theMethod != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER)) {
+
+                        BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                .identifierFor(theMethod);
+
+                        if (theVisitedMethods.add(theMethodIdentifier)) {
+
+                            theWriter.println("         (block $b");
+                            theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
+                            theWriter.print(theMethodIdentifier.getIdentifier());
+                            theWriter.println(")))");
+
+                            String theFullMethodName = WASMWriterUtils
+                                    .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
+                                            theMethod.getName(),
+                                            theMethod.getSignature());
+
+                            int theIndex = theGeneratedFunctions.indexOf(theFullMethodName);
+                            if (theIndex < 0) {
+                                throw new IllegalStateException("Unknown index : " + theFullMethodName);
+                            }
+
+                            theWriter.print("             (return (i32.const ");
+                            theWriter.print(theIndex);
+                            theWriter.println("))");
+                            theWriter.println("         )");
+                        }
                     }
-
-                    BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
-                            .identifierFor(theMethod);
-
-                    theWriter.println("         (block $b");
-                    theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
-                    theWriter.print(theMethodIdentifier.getIdentifier());
-                    theWriter.println(")))");
-
-                    String theFullMethodName = WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
-                            theMethod.getName(),
-                            theMethod.getSignature());
-
-                    int theIndex = theGeneratedFunctions.indexOf(theFullMethodName);
-                    if (theIndex < 0) {
-                        throw new IllegalStateException("Unknown index : " + theFullMethodName);
-                    }
-
-                    theWriter.print("             (return (i32.const ");
-                    theWriter.print(theIndex);
-                    theWriter.println("))");
-                    theWriter.println("         )");
-                });
+                };
 
                 theWriter.println("         (block $b");
                 theWriter.print("             (br_if $b (i32.ne (get_local $p1) (i32.const ");
