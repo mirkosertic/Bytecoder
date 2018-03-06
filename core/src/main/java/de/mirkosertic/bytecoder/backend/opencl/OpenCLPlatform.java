@@ -152,7 +152,7 @@ public class OpenCLPlatform implements Platform {
         }
 
         if (thePlatforms.isEmpty()) {
-            throw new IllegalStateException("No OpenCP platform detected");
+            throw new IllegalStateException("No OpenCL platform detected");
         }
 
         int thePlatformID = thePlatforms.size() - 1;
