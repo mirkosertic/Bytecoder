@@ -35,6 +35,18 @@ public class TArrays {
     }
 
     public static <T> T[] copyOf(T[] original, int newLength) {
-        throw new IllegalStateException();
+        T[] theResult = (T[]) new Object[newLength];
+        for (int i=0;i<original.length;i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static <T> T[] copyOf(T[] original, int newLength, Class aType) {
+        T[] theResult = (T[]) new Object[newLength];
+        for (int i=0;i<original.length;i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
     }
 }

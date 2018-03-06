@@ -19,8 +19,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -452,22 +455,30 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("            thePrototype.instanceOf = " + theJSClassName + ".instanceOf;");
                 theWriter.println("            thePrototype.ClassgetClass = " + theJSClassName + ".ClassgetClass;");
 
-                theMethods.stream().forEach(aEntry -> {
+                List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethods.stream().collect(Collectors.toList());
+                Set<String> theVisitedMethods = new HashSet<>();
+
+                for (int i=theEntries.size()-1;i>=0;i--) {
+                    BytecodeResolvedMethods.MethodEntry aEntry = theEntries.get(i);
                     BytecodeMethod theMethod = aEntry.getValue();
+
+                    String theMethodName = JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature());
                     if (!theMethod.getAccessFlags().isStatic() &&
                             !theMethod.getAccessFlags().isAbstract() &&
                             !theMethod.isConstructor() &&
                             !theMethod.isClassInitializer()) {
-                        String theMethodName = JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature());
-                        theWriter.print("            thePrototype.");
-                        theWriter.print(theMethodName);
-                        theWriter.print(" = ");
-                        theWriter.print(JSWriterUtils.toClassName(aEntry.getProvidingClass().getClassName()));
-                        theWriter.print(".");
-                        theWriter.print(theMethodName);
-                        theWriter.println(";");
+
+                        if (theVisitedMethods.add(theMethodName)) {
+                            theWriter.print("            thePrototype.");
+                            theWriter.print(theMethodName);
+                            theWriter.print(" = ");
+                            theWriter.print(JSWriterUtils.toClassName(aEntry.getProvidingClass().getClassName()));
+                            theWriter.print(".");
+                            theWriter.print(theMethodName);
+                            theWriter.println(";");
+                        }
                     }
-                });
+                }
             }
 
             for (BytecodeObjectTypeRef theRef : theInitDependencies) {
