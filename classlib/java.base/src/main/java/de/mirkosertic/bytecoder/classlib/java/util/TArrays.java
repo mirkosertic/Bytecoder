@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
@@ -35,16 +35,16 @@ public class TArrays {
     }
 
     public static <T> T[] copyOf(T[] original, int newLength) {
-        T[] theResult = (T[]) new Object[newLength];
-        for (int i=0;i<original.length;i++) {
-            theResult[i] = original[i];
-        }
-        return theResult;
+        return copyOf(original, newLength, null);
     }
 
     public static <T> T[] copyOf(T[] original, int newLength, Class aType) {
+        int theMax = original.length;
+        if (newLength < theMax) {
+            theMax = newLength;
+        }
         T[] theResult = (T[]) new Object[newLength];
-        for (int i=0;i<original.length;i++) {
+        for (int i=0;i<theMax;i++) {
             theResult[i] = original[i];
         }
         return theResult;

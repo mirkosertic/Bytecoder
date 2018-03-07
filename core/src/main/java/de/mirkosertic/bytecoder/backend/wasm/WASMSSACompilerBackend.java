@@ -182,7 +182,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         List<String> theGeneratedFunctions = new ArrayList<>();
         theGeneratedFunctions.add("LAMBDA__resolvevtableindex");
         theGeneratedFunctions.add("RUNTIMECLASS__resolvevtableindex");
-        theGeneratedFunctions.add("jlClass_A1ObjectgetEnumConstants");
+        theGeneratedFunctions.add("jlClass_A1jlObjectgetEnumConstants");
         theGeneratedFunctions.add("jlClass_BOOLEANdesiredAssertionStatus");
 
         List<BytecodeLinkedClass> theLinkedClasses = new ArrayList<>();
@@ -756,7 +756,7 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("   )");
         theWriter.println();
 
-        theWriter.println("   (func $jlClass_A1ObjectgetEnumConstants (param $thisRef i32) (result i32)");
+        theWriter.println("   (func $jlClass_A1jlObjectgetEnumConstants (param $thisRef i32) (result i32)");
         theWriter.println("     (return (i32.load (i32.load offset=12 (get_local $thisRef))))");
         theWriter.println("   )");
         theWriter.println();

@@ -1281,7 +1281,7 @@ public class WASMSSAWriter extends IndentSSAWriter {
         print(WASMWriterUtils.toClassName(theLinkedClass.getClassName()));
         print("__runtimeClass) (i32.const ");
         print(idResolver.resolveVTableMethodByType(theType));
-        print(")) ;; object of type " + aValue.getType().getConstant().stringValue());
+        print("))");
     }
 
     private void writeGetFieldValue(GetFieldExpression aValue) {

@@ -1506,8 +1506,19 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                     if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "de.mirkosertic.bytecoder.classlib.java.lang.TStrictMath".equals(theClassToInvoke.name())) {
-                        Value theValue = new SqrtExpression(TypeRef.toType(theCalledSignature.getReturnType()), theArguments.get(0));
+                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
+                        Value theValue = new SqrtExpression(TypeRef.toType(theCalledSignature.getReturnType()),
+                                theArguments.get(0));
+                        Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("newInstance".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                                && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
+
+                        Value theArrayType = theArguments.get(0);
+                        Value theArraySize = theArguments.get(1);
+
+                        Value theValue = new NewArrayExpression(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theArraySize);
                         Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
                         aHelper.push(theNewVariable);
                     } else {
