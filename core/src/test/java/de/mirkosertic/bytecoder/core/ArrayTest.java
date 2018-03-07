@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
+import java.lang.reflect.Array;
+
 @RunWith(BytecoderUnitTestRunner.class)
 public class ArrayTest {
 
@@ -35,6 +37,28 @@ public class ArrayTest {
             {10f, 20f, 30f},
             {100f, 200f, 300f}
         };
+    }
+
+    public static class MemberWithArray {
+
+        transient Object[] elementData;
+
+        MemberWithArray() {
+            elementData = new Object[10];
+        }
+
+        public Object testGetAndPut() {
+            Object[] theData = elementData;
+            Object theResult = null;
+            try {
+                theResult = theData[1];
+            } catch (Exception e) {
+                theResult = theData[2];
+            } finally {
+                theResult = theData[3];
+            }
+            return theResult;
+        }
     }
 
     private static byte[] bytes = new byte[10];
@@ -137,5 +161,17 @@ public class ArrayTest {
         Assert.assertEquals(2, theFloats.length, 0);
         Assert.assertEquals(3, theFloats[0].length, 0);
         Assert.assertEquals(3, theFloats[0].length, 0);
+    }
+
+    @Test
+    public void testReflectiveCreation() {
+        Object[] theArray = (Object[]) Array.newInstance(Object.class, 10);
+        Assert.assertEquals(10, theArray.length, 0);
+    }
+
+    @Test
+    public void testIndirectAccess() {
+        MemberWithArray theInstance = new MemberWithArray();
+        theInstance.testGetAndPut();
     }
 }

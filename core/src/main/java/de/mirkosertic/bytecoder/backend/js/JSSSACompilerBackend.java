@@ -175,7 +175,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             BytecodeLinkedClass theLinkedClass = theEntry.targetNode();
 
-
             // Here we collect everything that is required for class initialization
             // this includes the super class, all implementing interfaces and also static
             // dependencies of the class initialization code
