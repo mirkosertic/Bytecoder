@@ -63,4 +63,8 @@ public class TSystem {
             theTarget[aTargetPos + i] = theSource[aSourcePos + i];
         }
     }
+
+    public static int identityHashCode(Object aValue) {
+        return aValue.hashCode();
+    }
 }
