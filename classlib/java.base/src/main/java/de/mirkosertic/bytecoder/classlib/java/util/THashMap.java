@@ -112,6 +112,19 @@ public class THashMap<K, V> {
         return false;
     }
 
+    public int size() {
+        int theResult = 0;
+        for (int i=0;i<buckets.size();i++) {
+            Bucket<K, V> theBuckets = buckets.get(i);
+            theResult += theBuckets.values.size();
+        }
+        return theResult;
+    }
+
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
     public V put(K aKey, V aValue) {
         int theHashCode = aKey.hashCode();
         Bucket<K, V> theBucket = findByHashCode(theHashCode);
