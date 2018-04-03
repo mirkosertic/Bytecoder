@@ -45,9 +45,43 @@ public class InvokeDynamicTest {
         };
     }
 
+    interface Adder {
+        int add(int aValue);
+    }
+
+    public static int add(int aValue) {
+        return aValue + 1;
+    }
+
+    public int addMethodRef(int aValue) {
+        return aValue + 1;
+    }
+
+    public int add(Adder adder) {
+        return adder.add(10);
+    }
+
     @Test
     public void testLambdaArguments() {
         int theResult = computeWith((x,y) -> x + y, 10, 20);
         Assert.assertEquals(theResult, 30, 0);
+    }
+
+    @Test
+    public void testLambdaAdd() {
+        int theResult = add((i) -> i + 10);
+        Assert.assertEquals(20, theResult, 0);
+    }
+
+    @Test
+    public void testStaticMethodRefAdd() {
+        int theResult = add(InvokeDynamicTest::add);
+        Assert.assertEquals(11, theResult, 0);
+    }
+
+    @Test
+    public void testInstanceMethodRefAdd() {
+        int theResult = add(this::addMethodRef);
+        Assert.assertEquals(11, theResult, 0);
     }
 }
