@@ -5,7 +5,7 @@
     <parent>
         <groupId>de.mirkosertic.bytecoder</groupId>
         <artifactId>bytecoder-classlib</artifactId>
-        <version>2018-03-01-SNAPSHOT</version>
+        <version>2018-04-03</version>
     </parent>
 
     <artifactId>bytecoder.api</artifactId>
