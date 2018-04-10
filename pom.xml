@@ -4,7 +4,7 @@
 
     <groupId>de.mirkosertic.bytecoder</groupId>
     <artifactId>bytecoder-parent</artifactId>
-    <version>2018-05-04-SNAPSHOT</version>
+    <version>2018-04-10</version>
     <packaging>pom</packaging>
     <name>Bytecoder Parent POM</name>
     <description>Parent POM for Bytecoder</description>
@@ -36,7 +36,7 @@
         <url>https://github.com/mirkosertic/Bytecoder</url>
         <connection>scm:git:https://github.com/mirkosertic/Bytecoder.git</connection>
         <developerConnection>scm:git:https://github.com/mirkosertic/Bytecoder.git</developerConnection>
-        <tag>2018-04-03</tag>
+        <tag>2018-04-10</tag>
     </scm>
 
     <modules>
