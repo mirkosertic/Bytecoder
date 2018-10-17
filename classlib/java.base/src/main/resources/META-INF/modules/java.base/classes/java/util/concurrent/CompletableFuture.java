@@ -2490,13 +2490,13 @@ public class CompletableFuture<T> implements Future<T>, CompletionStage<T> {
         for (Completion p = stack; p != null; p = p.next)
             ++count;
         return super.toString() +
-            ((r == null) ?
-             ((count == 0) ?
-              "[Not completed]" :
-              "[Not completed, " + count + " dependents]") :
-             (((r instanceof AltResult) && ((AltResult)r).ex != null) ?
-              "[Completed exceptionally]" :
-              "[Completed normally]"));
+            ((r == null)
+             ? ((count == 0)
+                ? "[Not completed]"
+                : "[Not completed, " + count + " dependents]")
+             : (((r instanceof AltResult) && ((AltResult)r).ex != null)
+                ? "[Completed exceptionally: " + ((AltResult)r).ex + "]"
+                : "[Completed normally]"));
     }
 
     // jdk9 additions
@@ -2883,7 +2883,7 @@ public class CompletableFuture<T> implements Future<T>, CompletionStage<T> {
             STACK = l.findVarHandle(CompletableFuture.class, "stack", Completion.class);
             NEXT = l.findVarHandle(Completion.class, "next", Completion.class);
         } catch (ReflectiveOperationException e) {
-            throw new Error(e);
+            throw new ExceptionInInitializerError(e);
         }
 
         // Reduce the risk of rare disastrous classloading in first call to

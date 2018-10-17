@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -216,7 +216,7 @@ public abstract class FileChannel
      * <tr>
      *   <th scope="row" > {@link StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} </th>
      *   <td> When this option is present then the implementation makes a
-     *   <em>best effort</em> attempt to delete the file when closed by the
+     *   <em>best effort</em> attempt to delete the file when closed by
      *   the {@link #close close} method. If the {@code close} method is not
      *   invoked then a <em>best effort</em> attempt is made to delete the file
      *   when the Java virtual machine terminates. </td>
@@ -335,8 +335,13 @@ public abstract class FileChannel
     public static FileChannel open(Path path, OpenOption... options)
         throws IOException
     {
-        Set<OpenOption> set = new HashSet<>(options.length);
-        Collections.addAll(set, options);
+        Set<OpenOption> set;
+        if (options.length == 0) {
+            set = Collections.emptySet();
+        } else {
+            set = new HashSet<>();
+            Collections.addAll(set, options);
+        }
         return open(path, set, NO_ATTRIBUTES);
     }
 

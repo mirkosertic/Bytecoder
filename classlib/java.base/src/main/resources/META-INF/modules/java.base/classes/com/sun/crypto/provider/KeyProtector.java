@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,6 @@
 package com.sun.crypto.provider;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.security.Security;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -35,15 +33,14 @@ import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.UnrecoverableKeyException;
 import java.security.AlgorithmParameters;
+import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherSpi;
 import javax.crypto.SecretKey;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SealedObject;
 import javax.crypto.spec.*;
 import sun.security.x509.AlgorithmId;
@@ -74,6 +71,8 @@ final class KeyProtector {
     // keys in the keystore implementation that comes with JDK 1.2)
     private static final String KEY_PROTECTOR_OID = "1.3.6.1.4.1.42.2.17.1.1";
 
+    private static final int MAX_ITERATION_COUNT = 5000000;
+    private static final int ITERATION_COUNT = 200000;
     private static final int SALT_LEN = 20; // the salt length
     private static final int DIGEST_LEN = 20;
 
@@ -100,7 +99,7 @@ final class KeyProtector {
         SunJCE.getRandom().nextBytes(salt);
 
         // create PBE parameters from salt and iteration count
-        PBEParameterSpec pbeSpec = new PBEParameterSpec(salt, 20);
+        PBEParameterSpec pbeSpec = new PBEParameterSpec(salt, ITERATION_COUNT);
 
         // create PBE key from password
         PBEKeySpec pbeKeySpec = new PBEKeySpec(this.password);
@@ -155,6 +154,9 @@ final class KeyProtector {
                 pbeParams.init(encodedParams);
                 PBEParameterSpec pbeSpec =
                         pbeParams.getParameterSpec(PBEParameterSpec.class);
+                if (pbeSpec.getIterationCount() > MAX_ITERATION_COUNT) {
+                    throw new IOException("PBE iteration count too large");
+                }
 
                 // create PBE key from password
                 PBEKeySpec pbeKeySpec = new PBEKeySpec(this.password);
@@ -285,7 +287,7 @@ final class KeyProtector {
         SunJCE.getRandom().nextBytes(salt);
 
         // create PBE parameters from salt and iteration count
-        PBEParameterSpec pbeSpec = new PBEParameterSpec(salt, 20);
+        PBEParameterSpec pbeSpec = new PBEParameterSpec(salt, ITERATION_COUNT);
 
         // create PBE key from password
         PBEKeySpec pbeKeySpec = new PBEKeySpec(this.password);
@@ -326,13 +328,22 @@ final class KeyProtector {
                 throw new UnrecoverableKeyException("Cannot get " +
                                                     "algorithm parameters");
             }
+            PBEParameterSpec pbeSpec;
+            try {
+                pbeSpec = params.getParameterSpec(PBEParameterSpec.class);
+            } catch (InvalidParameterSpecException ipse) {
+                throw new IOException("Invalid PBE algorithm parameters");
+            }
+            if (pbeSpec.getIterationCount() > MAX_ITERATION_COUNT) {
+                throw new IOException("PBE iteration count too large");
+            }
             PBEWithMD5AndTripleDESCipher cipherSpi;
             cipherSpi = new PBEWithMD5AndTripleDESCipher();
             Cipher cipher = new CipherForKeyProtector(cipherSpi,
                                                       SunJCE.getInstance(),
                                                       "PBEWithMD5AndTripleDES");
             cipher.init(Cipher.DECRYPT_MODE, skey, params);
-            return (Key)soForKeyProtector.getObject(cipher);
+            return soForKeyProtector.getKey(cipher);
         } catch (NoSuchAlgorithmException ex) {
             // Note: this catch needed to be here because of the
             // later catch of GeneralSecurityException

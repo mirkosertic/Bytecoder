@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
@@ -45,7 +44,9 @@ import java.util.stream.Stream;
 
 import jdk.internal.misc.JavaLangAccess;
 import jdk.internal.misc.SharedSecrets;
+import jdk.internal.module.Modules;
 import jdk.internal.module.ServicesCatalog;
+import jdk.internal.util.StaticProperty;
 
 /**
  * Find resources and packages in modules defined to the boot class loader or
@@ -57,7 +58,7 @@ public class BootLoader {
 
     // The unnamed module for the boot loader
     private static final Module UNNAMED_MODULE;
-    private static final String JAVA_HOME = System.getProperty("java.home");
+    private static final String JAVA_HOME = StaticProperty.javaHome();
 
     static {
         UNNAMED_MODULE = SharedSecrets.getJavaLangAccess().defineUnnamedModule(null);
@@ -67,7 +68,7 @@ public class BootLoader {
     // ServiceCatalog for the boot class loader
     private static final ServicesCatalog SERVICES_CATALOG = ServicesCatalog.create();
 
-    // ClassLoaderValue map for boot class loader
+    // ClassLoaderValue map for the boot class loader
     private static final ConcurrentHashMap<?, ?> CLASS_LOADER_VALUE_MAP
         = new ConcurrentHashMap<>();
 
@@ -101,8 +102,8 @@ public class BootLoader {
     }
 
     /**
-     * Register a module with this class loader so that its classes (and
-     * resources) become visible via this class loader.
+     * Registers a module with this class loader so that its classes
+     * (and resources) become visible via this class loader.
      */
     public static void loadModule(ModuleReference mref) {
         ClassLoaders.bootLoader().loadModule(mref);
@@ -243,22 +244,23 @@ public class BootLoader {
                 mn = location.substring(5, location.length());
             } else if (location.startsWith("file:/")) {
                 // named module in exploded image
-                Path path = Paths.get(URI.create(location));
-                Path modulesDir = Paths.get(JAVA_HOME, "modules");
+                Path path = Path.of(URI.create(location));
+                Path modulesDir = Path.of(JAVA_HOME, "modules");
                 if (path.startsWith(modulesDir)) {
                     mn = path.getFileName().toString();
                 }
             }
 
+            // return the Module object for the module name. The Module may
+            // in the boot layer or a child layer for the case that the module
+            // is loaded into a running VM
             if (mn != null) {
-                // named module from runtime image or exploded module
-                Optional<Module> om = ModuleLayer.boot().findModule(mn);
-                if (!om.isPresent())
-                    throw new InternalError(mn + " not in boot layer");
-                return om.get();
+                String name = mn;
+                return Modules.findLoadedModule(mn)
+                    .orElseThrow(() -> new InternalError(name + " not loaded"));
+            } else {
+                return null;
             }
-
-            return null;
         }
 
         /**
@@ -267,7 +269,7 @@ public class BootLoader {
         private static URL toFileURL(String location) {
             return AccessController.doPrivileged(new PrivilegedAction<>() {
                 public URL run() {
-                    Path path = Paths.get(location);
+                    Path path = Path.of(location);
                     if (Files.isRegularFile(path)) {
                         try {
                             return path.toUri().toURL();
@@ -285,7 +287,7 @@ public class BootLoader {
         private static Manifest getManifest(String location) {
             return AccessController.doPrivileged(new PrivilegedAction<>() {
                 public Manifest run() {
-                    Path jar = Paths.get(location);
+                    Path jar = Path.of(location);
                     try (InputStream in = Files.newInputStream(jar);
                          JarInputStream jis = new JarInputStream(in, false)) {
                         return jis.getManifest();

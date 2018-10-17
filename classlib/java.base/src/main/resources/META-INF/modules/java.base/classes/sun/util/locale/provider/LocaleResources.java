@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,14 +44,17 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.text.MessageFormat;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import sun.security.action.GetPropertyAction;
 import sun.util.calendar.ZoneInfo;
 import sun.util.resources.LocaleData;
 import sun.util.resources.OpenListResourceBundle;
@@ -86,6 +89,9 @@ public class LocaleResources {
     private static final String CALENDAR_NAMES = "CALN.";
     private static final String NUMBER_PATTERNS_CACHEKEY = "NP";
     private static final String DATE_TIME_PATTERN = "DTP.";
+
+    // TimeZoneNamesBundle exemplar city prefix
+    private static final String TZNB_EXCITY_PREFIX = "timezone.excity.";
 
     // null singleton cache value
     private static final Object NULLOBJECT = new Object();
@@ -122,23 +128,21 @@ public class LocaleResources {
         return (byte[]) localeData.getBreakIteratorResources(locale).getObject(key);
     }
 
-    int getCalendarData(String key) {
-        Integer caldata;
+    public String getCalendarData(String key) {
+        String caldata = "";
         String cacheKey = CALENDAR_DATA  + key;
 
         removeEmptyReferences();
 
         ResourceReference data = cache.get(cacheKey);
-        if (data == null || ((caldata = (Integer) data.get()) == null)) {
+        if (data == null || ((caldata = (String) data.get()) == null)) {
             ResourceBundle rb = localeData.getCalendarData(locale);
             if (rb.containsKey(key)) {
-                caldata = Integer.parseInt(rb.getString(key));
-            } else {
-                caldata = 0;
+                caldata = rb.getString(key);
             }
 
             cache.put(cacheKey,
-                      new ResourceReference(cacheKey, (Object) caldata, referenceQueue));
+                      new ResourceReference(cacheKey, caldata, referenceQueue));
         }
 
         return caldata;
@@ -256,23 +260,32 @@ public class LocaleResources {
         return (String) localeName;
     }
 
-    String[] getTimeZoneNames(String key) {
-        String[] names = null;
-        String cacheKey = TIME_ZONE_NAMES + '.' + key;
+    public Object getTimeZoneNames(String key) {
+        Object val = null;
+        String cacheKey = TIME_ZONE_NAMES + key;
 
         removeEmptyReferences();
         ResourceReference data = cache.get(cacheKey);
 
-        if (Objects.isNull(data) || Objects.isNull((names = (String[]) data.get()))) {
+        if (Objects.isNull(data) || Objects.isNull(val = data.get())) {
             TimeZoneNamesBundle tznb = localeData.getTimeZoneNames(locale);
             if (tznb.containsKey(key)) {
-                names = tznb.getStringArray(key);
+                if (key.startsWith(TZNB_EXCITY_PREFIX)) {
+                    val = tznb.getString(key);
+                    assert val instanceof String;
+                    trace("tznb: %s key: %s, val: %s\n", tznb, key, val);
+                } else {
+                    String[] names = tznb.getStringArray(key);
+                    trace("tznb: %s key: %s, names: %s, %s, %s, %s, %s, %s, %s\n", tznb, key,
+                        names[0], names[1], names[2], names[3], names[4], names[5], names[6]);
+                    val = names;
+                }
                 cache.put(cacheKey,
-                          new ResourceReference(cacheKey, (Object) names, referenceQueue));
+                          new ResourceReference(cacheKey, val, referenceQueue));
             }
         }
 
-        return names;
+        return val;
     }
 
     @SuppressWarnings("unchecked")
@@ -297,24 +310,37 @@ public class LocaleResources {
         Set<String> keyset = getZoneIDs();
         // Use a LinkedHashSet to preseve the order
         Set<String[]> value = new LinkedHashSet<>();
+        Set<String> tzIds = new HashSet<>(Set.of(TimeZone.getAvailableIDs()));
         for (String key : keyset) {
-            value.add(rb.getStringArray(key));
+            if (!key.startsWith(TZNB_EXCITY_PREFIX)) {
+                value.add(rb.getStringArray(key));
+                tzIds.remove(key);
+            }
         }
 
-        // Add aliases data for CLDR
         if (type == LocaleProviderAdapter.Type.CLDR) {
-            // Note: TimeZoneNamesBundle creates a String[] on each getStringArray call.
+            // Add aliases data for CLDR
             Map<String, String> aliases = ZoneInfo.getAliasTable();
-            for (String alias : aliases.keySet()) {
-                if (!keyset.contains(alias)) {
-                    String tzid = aliases.get(alias);
-                    if (keyset.contains(tzid)) {
-                        String[] val = rb.getStringArray(tzid);
-                        val[0] = alias;
+            // Note: TimeZoneNamesBundle creates a String[] on each getStringArray call.
+
+            // Add timezones which are not present in this keyset,
+            // so that their fallback names will be generated at runtime.
+            tzIds.stream().filter(i -> (!i.startsWith("Etc/GMT")
+                    && !i.startsWith("GMT")
+                    && !i.startsWith("SystemV")))
+                    .forEach(tzid -> {
+                        String[] val = new String[7];
+                        if (keyset.contains(tzid)) {
+                            val = rb.getStringArray(tzid);
+                        } else {
+                            String tz = aliases.get(tzid);
+                            if (keyset.contains(tz)) {
+                                val = rb.getStringArray(tz);
+                            }
+                        }
+                        val[0] = tzid;
                         value.add(val);
-                    }
-                }
-            }
+                    });
         }
         return value.toArray(new String[0][]);
     }
@@ -514,6 +540,15 @@ public class LocaleResources {
 
         String getCacheKey() {
             return cacheKey;
+        }
+    }
+
+    private static final boolean TRACE_ON = Boolean.valueOf(
+        GetPropertyAction.privilegedGetProperty("locale.resources.debug", "false"));
+
+    public static void trace(String format, Object... params) {
+        if (TRACE_ON) {
+            System.out.format(format, params);
         }
     }
 }

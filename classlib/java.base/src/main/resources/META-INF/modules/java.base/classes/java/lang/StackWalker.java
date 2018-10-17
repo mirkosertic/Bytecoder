@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,10 +26,12 @@ package java.lang;
 
 import jdk.internal.reflect.CallerSensitive;
 
-import java.util.*;
+import java.lang.invoke.MethodType;
+import java.util.EnumSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -96,7 +98,7 @@ public final class StackWalker {
      * @since 9
      * @jvms 2.6
      */
-    public static interface StackFrame {
+    public interface StackFrame {
         /**
          * Gets the <a href="ClassLoader.html#name">binary name</a>
          * of the declaring class of the method represented by this stack frame.
@@ -126,6 +128,47 @@ public final class StackWalker {
          *         Option.RETAIN_CLASS_REFERENCE}.
          */
         public Class<?> getDeclaringClass();
+
+        /**
+         * Returns the {@link MethodType} representing the parameter types and
+         * the return type for the method represented by this stack frame.
+         *
+         * @implSpec
+         * The default implementation throws {@code UnsupportedOperationException}.
+         *
+         * @return the {@code MethodType} for this stack frame
+         *
+         * @throws UnsupportedOperationException if this {@code StackWalker}
+         *         is not configured with {@link Option#RETAIN_CLASS_REFERENCE
+         *         Option.RETAIN_CLASS_REFERENCE}.
+         *
+         * @since 10
+         */
+        public default MethodType getMethodType() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Returns the <i>descriptor</i> of the method represented by
+         * this stack frame as defined by
+         * <cite>The Java Virtual Machine Specification</cite>.
+         *
+         * @implSpec
+         * The default implementation throws {@code UnsupportedOperationException}.
+         *
+         * @return the descriptor of the method represented by
+         *         this stack frame
+         *
+         * @see MethodType#fromMethodDescriptorString(String, ClassLoader)
+         * @see MethodType#toMethodDescriptorString()
+         * @jvms 4.3.3 Method Descriptor
+         *
+         * @since 10
+         */
+        public default String getDescriptor() {
+            throw new UnsupportedOperationException();
+        }
+
 
         /**
          * Returns the index to the code array of the {@code Code} attribute
@@ -253,6 +296,7 @@ public final class StackWalker {
     private final Set<Option> options;
     private final ExtendedOption extendedOption;
     private final int estimateDepth;
+    final boolean retainClassRef; // cached for performance
 
     /**
      * Returns a {@code StackWalker} instance.
@@ -369,6 +413,7 @@ public final class StackWalker {
         this.options = options;
         this.estimateDepth = estimateDepth;
         this.extendedOption = extendedOption;
+        this.retainClassRef = hasOption(Option.RETAIN_CLASS_REFERENCE);
     }
 
     private static void checkPermission(Set<Option> options) {
@@ -547,7 +592,7 @@ public final class StackWalker {
      */
     @CallerSensitive
     public Class<?> getCallerClass() {
-        if (!options.contains(Option.RETAIN_CLASS_REFERENCE)) {
+        if (!retainClassRef) {
             throw new UnsupportedOperationException("This stack walker " +
                     "does not have RETAIN_CLASS_REFERENCE access");
         }
@@ -573,12 +618,5 @@ public final class StackWalker {
 
     boolean hasLocalsOperandsOption() {
         return extendedOption == ExtendedOption.LOCALS_AND_OPERANDS;
-    }
-
-    void ensureAccessEnabled(Option access) {
-        if (!hasOption(access)) {
-            throw new UnsupportedOperationException("No access to " + access +
-                    ": " + options.toString());
-        }
     }
 }

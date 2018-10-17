@@ -38,6 +38,7 @@ import java.io.Serializable;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import jdk.internal.misc.SharedSecrets;
 
 /**
  * Resizable-array implementation of the {@link Deque} interface.  Array
@@ -79,7 +80,7 @@ import java.util.function.UnaryOperator;
  * Iterator} interfaces.
  *
  * <p>This class is a member of the
- * <a href="{@docRoot}/java/util/package-summary.html#CollectionsFramework">
+ * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
  *
  * @author  Josh Bloch and Doug Lea
@@ -207,11 +208,11 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      */
     public ArrayDeque(Collection<? extends E> c) {
         this(c.size());
-        addAll(c);
+        copyElements(c);
     }
 
     /**
-     * Increments i, mod modulus.
+     * Circularly increments i, mod modulus.
      * Precondition and postcondition: 0 <= i < modulus.
      */
     static final int inc(int i, int modulus) {
@@ -220,7 +221,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
     }
 
     /**
-     * Decrements i, mod modulus.
+     * Circularly decrements i, mod modulus.
      * Precondition and postcondition: 0 <= i < modulus.
      */
     static final int dec(int i, int modulus) {
@@ -233,7 +234,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * Precondition: 0 <= i < modulus, 0 <= distance <= modulus.
      * @return index 0 <= i < modulus
      */
-    static final int add(int i, int distance, int modulus) {
+    static final int inc(int i, int distance, int modulus) {
         if ((i += distance) - modulus >= 0) i -= modulus;
         return i;
     }
@@ -321,8 +322,12 @@ public class ArrayDeque<E> extends AbstractCollection<E>
         final int s, needed;
         if ((needed = (s = size()) + c.size() + 1 - elements.length) > 0)
             grow(needed);
-        c.forEach(this::addLast);
+        copyElements(c);
         return size() > s;
+    }
+
+    private void copyElements(Collection<? extends E> c) {
+        c.forEach(this::addLast);
     }
 
     /**
@@ -825,7 +830,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
             final int i, n;
             return ((n = sub(getFence(), i = cursor, es.length) >> 1) <= 0)
                 ? null
-                : new DeqSpliterator(i, cursor = add(i, n, es.length));
+                : new DeqSpliterator(i, cursor = inc(i, n, es.length));
         }
 
         public void forEachRemaining(Consumer<? super E> action) {
@@ -1194,6 +1199,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
 
         // Read in size and allocate array
         int size = s.readInt();
+        SharedSecrets.getJavaObjectInputStreamAccess().checkArray(s, Object[].class, size + 1);
         elements = new Object[size + 1];
         this.tail = size;
 

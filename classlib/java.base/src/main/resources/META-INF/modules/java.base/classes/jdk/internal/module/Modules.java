@@ -35,6 +35,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ public class Modules {
      * Creates a new Module. The module has the given ModuleDescriptor and
      * is defined to the given class loader.
      *
-     * The resulting Module is in a larval state in that it does not not read
+     * The resulting Module is in a larval state in that it does not read
      * any other module and does not have any exports.
      *
      * The URI is for information purposes only.
@@ -249,7 +250,19 @@ public class Modules {
 
     }
 
-    // the top-most system layer
-    private static ModuleLayer topLayer;
+    /**
+     * Finds the module with the given name in the boot layer or any child
+     * layers created to load the "java.instrument" or "jdk.management.agent"
+     * modules into a running VM.
+     */
+    public static Optional<Module> findLoadedModule(String name) {
+        ModuleLayer top = topLayer;
+        if (top == null)
+            top = ModuleLayer.boot();
+        return top.findModule(name);
+    }
+
+    // the top-most layer
+    private static volatile ModuleLayer topLayer;
 
 }

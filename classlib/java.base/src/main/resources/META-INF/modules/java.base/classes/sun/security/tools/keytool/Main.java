@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,8 @@
 package sun.security.tools.keytool;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.CodeSigner;
 import java.security.CryptoPrimitive;
 import java.security.KeyStore;
@@ -72,6 +74,7 @@ import sun.security.pkcs10.PKCS10Attribute;
 import sun.security.provider.X509Factory;
 import sun.security.provider.certpath.ssl.SSLServerCertStore;
 import sun.security.util.Password;
+import sun.security.util.SecurityProviderConstants;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -131,8 +134,6 @@ public final class Main {
     private Set<Pair <String, String>> providers = null;
     private Set<Pair <String, String>> providerClasses = null;
     private String storetype = null;
-    private boolean hasStoretypeOption = false;
-    private boolean hasSrcStoretypeOption = false;
     private String srcProviderName = null;
     private String providerName = null;
     private String pathlist = null;
@@ -168,7 +169,12 @@ public final class Main {
     private List<String> ids = new ArrayList<>();   // used in GENCRL
     private List<String> v3ext = new ArrayList<>();
 
-    // Warnings on weak algorithms
+    // In-place importkeystore is special.
+    // A backup is needed, and no need to prompt for deststorepass.
+    private boolean inplaceImport = false;
+    private String inplaceBackupName = null;
+
+    // Warnings on weak algorithms etc
     private List<String> weakWarnings = new ArrayList<>();
 
     private static final DisabledAlgorithmConstraints DISABLED_CHECK =
@@ -517,9 +523,11 @@ public final class Main {
 
             if (c != null) {
                 command = c;
-            } else if (collator.compare(flags, "-help") == 0 ||
-                    collator.compare(flags, "-h") == 0 ||
-                    collator.compare(flags, "-?") == 0) {
+            } else if (collator.compare(flags, "--help") == 0 ||
+                       collator.compare(flags, "-h") == 0 ||
+                       collator.compare(flags, "-?") == 0 ||
+                       // -help: legacy.
+                       collator.compare(flags, "-help") == 0) {
                 help = true;
             } else if (collator.compare(flags, "-conf") == 0) {
                 i++;
@@ -541,14 +549,12 @@ public final class Main {
                 passwords.add(storePass);
             } else if (collator.compare(flags, "-storetype") == 0 ||
                     collator.compare(flags, "-deststoretype") == 0) {
-                storetype = args[++i];
-                hasStoretypeOption = true;
+                storetype = KeyStoreUtil.niceStoreTypeName(args[++i]);
             } else if (collator.compare(flags, "-srcstorepass") == 0) {
                 srcstorePass = getPass(modifier, args[++i]);
                 passwords.add(srcstorePass);
             } else if (collator.compare(flags, "-srcstoretype") == 0) {
-                srcstoretype = args[++i];
-                hasSrcStoretypeOption = true;
+                srcstoretype = KeyStoreUtil.niceStoreTypeName(args[++i]);
             } else if (collator.compare(flags, "-srckeypass") == 0) {
                 srckeyPass = getPass(modifier, args[++i]);
                 passwords.add(srckeyPass);
@@ -700,16 +706,6 @@ public final class Main {
             ksfname = KeyStoreUtil.getCacerts();
         }
 
-        if (storetype == null) {
-            storetype = KeyStore.getDefaultType();
-        }
-        storetype = KeyStoreUtil.niceStoreTypeName(storetype);
-
-        if (srcstoretype == null) {
-            srcstoretype = KeyStore.getDefaultType();
-        }
-        srcstoretype = KeyStoreUtil.niceStoreTypeName(srcstoretype);
-
         if (P11KEYSTORE.equalsIgnoreCase(storetype) ||
                 KeyStoreUtil.isWindowsKeyStore(storetype)) {
             token = true;
@@ -732,11 +728,6 @@ public final class Main {
             (command == KEYPASSWD || command == STOREPASSWD)) {
             throw new UnsupportedOperationException(MessageFormat.format(rb.getString
                         (".storepasswd.and.keypasswd.commands.not.supported.if.storetype.is.{0}"), storetype));
-        }
-
-        if (P12KEYSTORE.equalsIgnoreCase(storetype) && command == KEYPASSWD) {
-            throw new UnsupportedOperationException(rb.getString
-                        (".keypasswd.commands.not.supported.if.storetype.is.PKCS12"));
         }
 
         if (token && (keyPass != null || newPass != null || destKeyPass != null)) {
@@ -846,37 +837,52 @@ public final class Main {
                 ("New.password.must.be.at.least.6.characters"));
         }
 
+        // Set this before inplaceImport check so we can compare name.
+        if (ksfname == null) {
+            ksfname = System.getProperty("user.home") + File.separator
+                    + ".keystore";
+        }
+
+        KeyStore srcKeyStore = null;
+        if (command == IMPORTKEYSTORE) {
+            inplaceImport = inplaceImportCheck();
+            if (inplaceImport) {
+                // We load srckeystore first so we have srcstorePass that
+                // can be assigned to storePass
+                srcKeyStore = loadSourceKeyStore();
+                if (storePass == null) {
+                    storePass = srcstorePass;
+                }
+            }
+        }
+
         // Check if keystore exists.
         // If no keystore has been specified at the command line, try to use
         // the default, which is located in $HOME/.keystore.
         // If the command is "genkey", "identitydb", "import", or "printcert",
         // it is OK not to have a keystore.
-        if (isKeyStoreRelated(command)) {
-            if (ksfname == null) {
-                ksfname = System.getProperty("user.home") + File.separator
-                    + ".keystore";
-            }
 
-            if (!nullStream) {
-                try {
-                    ksfile = new File(ksfname);
-                    // Check if keystore file is empty
-                    if (ksfile.exists() && ksfile.length() == 0) {
-                        throw new Exception(rb.getString
-                        ("Keystore.file.exists.but.is.empty.") + ksfname);
-                    }
-                    ksStream = new FileInputStream(ksfile);
-                } catch (FileNotFoundException e) {
-                    if (command != GENKEYPAIR &&
+        // DO NOT open the existing keystore if this is an in-place import.
+        // The keystore should be created as brand new.
+        if (isKeyStoreRelated(command) && !nullStream && !inplaceImport) {
+            try {
+                ksfile = new File(ksfname);
+                // Check if keystore file is empty
+                if (ksfile.exists() && ksfile.length() == 0) {
+                    throw new Exception(rb.getString
+                            ("Keystore.file.exists.but.is.empty.") + ksfname);
+                }
+                ksStream = new FileInputStream(ksfile);
+            } catch (FileNotFoundException e) {
+                if (command != GENKEYPAIR &&
                         command != GENSECKEY &&
                         command != IDENTITYDB &&
                         command != IMPORTCERT &&
                         command != IMPORTPASS &&
                         command != IMPORTKEYSTORE &&
                         command != PRINTCRL) {
-                        throw new Exception(rb.getString
-                                ("Keystore.file.does.not.exist.") + ksfname);
-                    }
+                    throw new Exception(rb.getString
+                            ("Keystore.file.does.not.exist.") + ksfname);
                 }
             }
         }
@@ -900,9 +906,13 @@ public final class Main {
         // Create new keystore
         // Probe for keystore type when filename is available
         if (ksfile != null && ksStream != null && providerName == null &&
-            hasStoretypeOption == false) {
+                storetype == null && !inplaceImport) {
             keyStore = KeyStore.getInstance(ksfile, storePass);
+            storetype = keyStore.getType();
         } else {
+            if (storetype == null) {
+                storetype = KeyStore.getDefaultType();
+            }
             if (providerName == null) {
                 keyStore = KeyStore.getInstance(storetype);
             } else {
@@ -930,11 +940,20 @@ public final class Main {
              * Null stream keystores are loaded later.
              */
             if (!nullStream) {
-                keyStore.load(ksStream, storePass);
+                if (inplaceImport) {
+                    keyStore.load(null, storePass);
+                } else {
+                    keyStore.load(ksStream, storePass);
+                }
                 if (ksStream != null) {
                     ksStream.close();
                 }
             }
+        }
+
+        if (P12KEYSTORE.equalsIgnoreCase(storetype) && command == KEYPASSWD) {
+            throw new UnsupportedOperationException(rb.getString
+                    (".keypasswd.commands.not.supported.if.storetype.is.PKCS12"));
         }
 
         // All commands that create or modify the keystore require a keystore
@@ -1040,11 +1059,6 @@ public final class Main {
                 Object[] source = {"-keypass"};
                 System.err.println(form.format(source));
                 keyPass = storePass;
-            }
-            if (newPass != null && !Arrays.equals(storePass, newPass)) {
-                Object[] source = {"-new"};
-                System.err.println(form.format(source));
-                newPass = storePass;
             }
             if (destKeyPass != null && !Arrays.equals(storePass, destKeyPass)) {
                 Object[] source = {"-destkeypass"};
@@ -1167,7 +1181,11 @@ public final class Main {
                 }
             }
         } else if (command == IMPORTKEYSTORE) {
-            doImportKeyStore();
+            // When not in-place import, srcKeyStore is not loaded yet.
+            if (srcKeyStore == null) {
+                srcKeyStore = loadSourceKeyStore();
+            }
+            doImportKeyStore(srcKeyStore);
             kssave = true;
         } else if (command == KEYCLONE) {
             keyPassNew = newPass;
@@ -1222,10 +1240,7 @@ public final class Main {
             doSelfCert(alias, dname, sigAlgName);
             kssave = true;
         } else if (command == STOREPASSWD) {
-            storePassNew = newPass;
-            if (storePassNew == null) {
-                storePassNew = getNewPasswd("keystore password", storePass);
-            }
+            doChangeStorePasswd();
             kssave = true;
         } else if (command == GENCERT) {
             if (alias == null) {
@@ -1295,6 +1310,51 @@ public final class Main {
                     try (FileOutputStream fout = new FileOutputStream(ksfname)) {
                         fout.write(bout.toByteArray());
                     }
+                }
+            }
+        }
+
+        if (isKeyStoreRelated(command)
+                && !token && !nullStream && ksfname != null) {
+
+            // JKS storetype warning on the final result keystore
+            File f = new File(ksfname);
+            char[] pass = (storePassNew!=null) ? storePassNew : storePass;
+            if (f.exists()) {
+                // Probe for real type. A JKS can be loaded as PKCS12 because
+                // DualFormat support, vice versa.
+                keyStore = KeyStore.getInstance(f, pass);
+                String realType = keyStore.getType();
+                if (realType.equalsIgnoreCase("JKS")
+                        || realType.equalsIgnoreCase("JCEKS")) {
+                    boolean allCerts = true;
+                    for (String a : Collections.list(keyStore.aliases())) {
+                        if (!keyStore.entryInstanceOf(
+                                a, TrustedCertificateEntry.class)) {
+                            allCerts = false;
+                            break;
+                        }
+                    }
+                    // Don't warn for "cacerts" style keystore.
+                    if (!allCerts) {
+                        weakWarnings.add(String.format(
+                                rb.getString("jks.storetype.warning"),
+                                realType, ksfname));
+                    }
+                }
+                if (inplaceImport) {
+                    String realSourceStoreType = KeyStore.getInstance(
+                            new File(inplaceBackupName), srcstorePass).getType();
+                    String format =
+                            realType.equalsIgnoreCase(realSourceStoreType) ?
+                            rb.getString("backup.keystore.warning") :
+                            rb.getString("migrate.keystore.warning");
+                    weakWarnings.add(
+                            String.format(format,
+                                    srcksfname,
+                                    realSourceStoreType,
+                                    inplaceBackupName,
+                                    realType));
                 }
             }
         }
@@ -1742,9 +1802,11 @@ public final class Main {
     {
         if (keysize == -1) {
             if ("EC".equalsIgnoreCase(keyAlgName)) {
-                keysize = 256;
-            } else {
-                keysize = 2048;     // RSA and DSA
+                keysize = SecurityProviderConstants.DEF_EC_KEY_SIZE;
+            } else if ("RSA".equalsIgnoreCase(keyAlgName)) {
+                keysize = SecurityProviderConstants.DEF_RSA_KEY_SIZE;
+            } else if ("DSA".equalsIgnoreCase(keyAlgName)) {
+                keysize = SecurityProviderConstants.DEF_DSA_KEY_SIZE;
             }
         }
 
@@ -1989,12 +2051,40 @@ public final class Main {
         }
     }
 
+    boolean inplaceImportCheck() throws Exception {
+        if (P11KEYSTORE.equalsIgnoreCase(srcstoretype) ||
+                KeyStoreUtil.isWindowsKeyStore(srcstoretype)) {
+            return false;
+        }
+
+        if (srcksfname != null) {
+            File srcksfile = new File(srcksfname);
+            if (srcksfile.exists() && srcksfile.length() == 0) {
+                throw new Exception(rb.getString
+                        ("Source.keystore.file.exists.but.is.empty.") +
+                        srcksfname);
+            }
+            if (srcksfile.getCanonicalFile()
+                    .equals(new File(ksfname).getCanonicalFile())) {
+                return true;
+            } else {
+                // Informational, especially if destkeystore is not
+                // provided, which default to ~/.keystore.
+                System.err.println(String.format(rb.getString(
+                        "importing.keystore.status"), srcksfname, ksfname));
+                return false;
+            }
+        } else {
+            throw new Exception(rb.getString
+                    ("Please.specify.srckeystore"));
+        }
+    }
+
     /**
      * Load the srckeystore from a stream, used in -importkeystore
      * @return the src KeyStore
      */
     KeyStore loadSourceKeyStore() throws Exception {
-        boolean isPkcs11 = false;
 
         InputStream is = null;
         File srcksfile = null;
@@ -2007,29 +2097,22 @@ public final class Main {
                 System.err.println();
                 tinyHelp();
             }
-            isPkcs11 = true;
         } else {
-            if (srcksfname != null) {
-                srcksfile = new File(srcksfname);
-                    if (srcksfile.exists() && srcksfile.length() == 0) {
-                        throw new Exception(rb.getString
-                                ("Source.keystore.file.exists.but.is.empty.") +
-                                srcksfname);
-                }
-                is = new FileInputStream(srcksfile);
-            } else {
-                throw new Exception(rb.getString
-                        ("Please.specify.srckeystore"));
-            }
+            srcksfile = new File(srcksfname);
+            is = new FileInputStream(srcksfile);
         }
 
         KeyStore store;
         try {
             // Probe for keystore type when filename is available
             if (srcksfile != null && is != null && srcProviderName == null &&
-                hasSrcStoretypeOption == false) {
+                    srcstoretype == null) {
                 store = KeyStore.getInstance(srcksfile, srcstorePass);
+                srcstoretype = store.getType();
             } else {
+                if (srcstoretype == null) {
+                    srcstoretype = KeyStore.getDefaultType();
+                }
                 if (srcProviderName == null) {
                     store = KeyStore.getInstance(srcstoretype);
                 } else {
@@ -2087,17 +2170,32 @@ public final class Main {
      * keep alias unchanged if no name conflict, otherwise, prompt.
      * keep keypass unchanged for keys
      */
-    private void doImportKeyStore() throws Exception {
+    private void doImportKeyStore(KeyStore srcKS) throws Exception {
 
         if (alias != null) {
-            doImportKeyStoreSingle(loadSourceKeyStore(), alias);
+            doImportKeyStoreSingle(srcKS, alias);
         } else {
             if (dest != null || srckeyPass != null) {
                 throw new Exception(rb.getString(
                         "if.alias.not.specified.destalias.and.srckeypass.must.not.be.specified"));
             }
-            doImportKeyStoreAll(loadSourceKeyStore());
+            doImportKeyStoreAll(srcKS);
         }
+
+        if (inplaceImport) {
+            // Backup to file.old or file.old2...
+            // The keystore is not rewritten yet now.
+            for (int n = 1; /* forever */; n++) {
+                inplaceBackupName = srcksfname + ".old" + (n == 1 ? "" : n);
+                File bkFile = new File(inplaceBackupName);
+                if (!bkFile.exists()) {
+                    Files.copy(Path.of(srcksfname), bkFile.toPath());
+                    break;
+                }
+            }
+
+        }
+
         /*
          * Information display rule of -importkeystore
          * 1. inside single, shows failure
@@ -2153,8 +2251,9 @@ public final class Main {
             newPass = destKeyPass;
             pp = new PasswordProtection(destKeyPass);
         } else if (objs.snd != null) {
-            newPass = objs.snd;
-            pp = new PasswordProtection(objs.snd);
+            newPass = P12KEYSTORE.equalsIgnoreCase(storetype) ?
+                    storePass : objs.snd;
+            pp = new PasswordProtection(newPass);
         }
 
         try {
@@ -2635,12 +2734,12 @@ public final class Main {
                     if (rfc) {
                         dumpCert(cert, out);
                     } else {
-                        out.println("Certificate #" + i++);
+                        out.println("Certificate #" + i);
                         out.println("====================================");
                         printX509Cert((X509Certificate)cert, out);
                         out.println();
                     }
-                    checkWeak(oneInMany(rb.getString("the.certificate"), i, chain.size()), cert);
+                    checkWeak(oneInMany(rb.getString("the.certificate"), i++, chain.size()), cert);
                 } catch (Exception e) {
                     if (debug) {
                         e.printStackTrace();
@@ -2657,6 +2756,28 @@ public final class Main {
             }
         }
     }
+
+    private void doChangeStorePasswd() throws Exception {
+        storePassNew = newPass;
+        if (storePassNew == null) {
+            storePassNew = getNewPasswd("keystore password", storePass);
+        }
+        if (P12KEYSTORE.equalsIgnoreCase(storetype)) {
+            // When storetype is PKCS12, we need to change all keypass as well
+            for (String alias : Collections.list(keyStore.aliases())) {
+                if (!keyStore.isCertificateEntry(alias)) {
+                    // keyPass should be either null or same with storePass,
+                    // but keep it in case one day we want to "normalize"
+                    // a PKCS12 keystore having different passwords.
+                    Pair<Entry, char[]> objs
+                            = recoverEntry(keyStore, alias, storePass, keyPass);
+                    keyStore.setEntry(alias, objs.fst,
+                            new PasswordProtection(storePassNew));
+                }
+            }
+        }
+    }
+
     /**
      * Creates a self-signed certificate, and stores it as a single-element
      * certificate chain.
@@ -4489,6 +4610,8 @@ public final class Main {
                 System.err.printf(" %-20s%s\n", c, rb.getString(c.description));
             }
             System.err.println();
+            System.err.println(rb.getString(
+                    "Use.keytool.help.for.all.available.commands"));
             System.err.println(rb.getString(
                     "Use.keytool.command.name.help.for.usage.of.command.name"));
         }

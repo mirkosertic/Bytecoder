@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,7 +43,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,8 +65,6 @@ import java.util.zip.ZipFile;
 import jdk.internal.jmod.JmodFile;
 import jdk.internal.jmod.JmodFile.Section;
 import jdk.internal.perf.PerfCounter;
-import jdk.internal.util.jar.VersionedStream;
-
 
 /**
  * A {@code ModuleFinder} that locates modules on the file system by searching
@@ -112,7 +109,7 @@ public class ModulePath implements ModuleFinder {
     }
 
     /**
-     * Returns a ModuleFinder that that locates modules on the file system by
+     * Returns a ModuleFinder that locates modules on the file system by
      * searching a sequence of directories and/or packaged modules. The modules
      * may be patched by the given ModulePatcher.
      */
@@ -121,7 +118,7 @@ public class ModulePath implements ModuleFinder {
     }
 
     /**
-     * Returns a ModuleFinder that that locates modules on the file system by
+     * Returns a ModuleFinder that locates modules on the file system by
      * searching a sequence of directories and/or packaged modules.
      */
     public static ModuleFinder of(Path... entries) {
@@ -129,7 +126,7 @@ public class ModulePath implements ModuleFinder {
     }
 
     /**
-     * Returns a ModuleFinder that that locates modules on the file system by
+     * Returns a ModuleFinder that locates modules on the file system by
      * searching a sequence of directories and/or packaged modules.
      *
      * @param version The release version to use for multi-release JAR files
@@ -362,7 +359,7 @@ public class ModulePath implements ModuleFinder {
         URI uri = mref.location().orElse(null);
         if (uri != null) {
             if (uri.getScheme().equalsIgnoreCase("file")) {
-                Path file = Paths.get(uri);
+                Path file = Path.of(uri);
                 return file.getFileName().toString();
             } else {
                 return uri.toString();
@@ -515,7 +512,7 @@ public class ModulePath implements ModuleFinder {
             builder.version(vs);
 
         // scan the names of the entries in the JAR file
-        Map<Boolean, Set<String>> map = VersionedStream.stream(jf)
+        Map<Boolean, Set<String>> map = jf.versionedStream()
                 .filter(e -> !e.isDirectory())
                 .map(JarEntry::getName)
                 .filter(e -> (e.endsWith(".class") ^ e.startsWith(SERVICES_PREFIX)))
@@ -615,7 +612,7 @@ public class ModulePath implements ModuleFinder {
     }
 
     private Set<String> jarPackages(JarFile jf) {
-        return VersionedStream.stream(jf)
+        return jf.versionedStream()
                 .filter(e -> !e.isDirectory())
                 .map(JarEntry::getName)
                 .map(this::toPackageName)

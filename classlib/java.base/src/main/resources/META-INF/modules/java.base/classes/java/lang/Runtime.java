@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.StringTokenizer;
+
+import jdk.internal.misc.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 
@@ -77,18 +79,14 @@ public class Runtime {
      * serves as a status code; by convention, a nonzero status code indicates
      * abnormal termination.
      *
-     * <p> The virtual machine's shutdown sequence consists of two phases.  In
-     * the first phase all registered {@link #addShutdownHook shutdown hooks},
-     * if any, are started in some unspecified order and allowed to run
-     * concurrently until they finish.  In the second phase all uninvoked
-     * finalizers are run if {@link #runFinalizersOnExit finalization-on-exit}
-     * has been enabled.  Once this is done the virtual machine {@link #halt halts}.
+     * <p> All registered {@linkplain #addShutdownHook shutdown hooks}, if any,
+     * are started in some unspecified order and allowed to run concurrently
+     * until they finish.  Once this is done the virtual machine
+     * {@linkplain #halt halts}.
      *
-     * <p> If this method is invoked after the virtual machine has begun its
-     * shutdown sequence then if shutdown hooks are being run this method will
-     * block indefinitely.  If shutdown hooks have already been run and on-exit
-     * finalization has been enabled then this method halts the virtual machine
-     * with the given status code if the status is nonzero; otherwise, it
+     * <p> If this method is invoked after all shutdown hooks have already
+     * been run and the status is nonzero then this method halts the
+     * virtual machine with the given status code. Otherwise, this method
      * blocks indefinitely.
      *
      * <p> The {@link System#exit(int) System.exit} method is the
@@ -107,7 +105,6 @@ public class Runtime {
      * @see java.lang.SecurityManager#checkExit(int)
      * @see #addShutdownHook
      * @see #removeShutdownHook
-     * @see #runFinalizersOnExit
      * @see #halt(int)
      */
     public void exit(int status) {
@@ -140,10 +137,9 @@ public class Runtime {
      * thread.  When the virtual machine begins its shutdown sequence it will
      * start all registered shutdown hooks in some unspecified order and let
      * them run concurrently.  When all the hooks have finished it will then
-     * run all uninvoked finalizers if finalization-on-exit has been enabled.
-     * Finally, the virtual machine will halt.  Note that daemon threads will
-     * continue to run during the shutdown sequence, as will non-daemon threads
-     * if shutdown was initiated by invoking the {@link #exit exit} method.
+     * halt. Note that daemon threads will continue to run during the shutdown
+     * sequence, as will non-daemon threads if shutdown was initiated by
+     * invoking the {@link #exit exit} method.
      *
      * <p> Once the shutdown sequence has begun it can be stopped only by
      * invoking the {@link #halt halt} method, which forcibly
@@ -253,10 +249,9 @@ public class Runtime {
      *
      * <p> This method should be used with extreme caution.  Unlike the
      * {@link #exit exit} method, this method does not cause shutdown
-     * hooks to be started and does not run uninvoked finalizers if
-     * finalization-on-exit has been enabled.  If the shutdown sequence has
-     * already been initiated then this method does not wait for any running
-     * shutdown hooks or finalizers to finish their work.
+     * hooks to be started.  If the shutdown sequence has already been
+     * initiated then this method does not wait for any running
+     * shutdown hooks to finish their work.
      *
      * @param  status
      *         Termination status. By convention, a nonzero status code
@@ -280,47 +275,8 @@ public class Runtime {
         if (sm != null) {
             sm.checkExit(status);
         }
+        Shutdown.beforeHalt();
         Shutdown.halt(status);
-    }
-
-    /**
-     * Enable or disable finalization on exit; doing so specifies that the
-     * finalizers of all objects that have finalizers that have not yet been
-     * automatically invoked are to be run before the Java runtime exits.
-     * By default, finalization on exit is disabled.
-     *
-     * <p>If there is a security manager,
-     * its {@code checkExit} method is first called
-     * with 0 as its argument to ensure the exit is allowed.
-     * This could result in a SecurityException.
-     *
-     * @param value true to enable finalization on exit, false to disable
-     * @deprecated  This method is inherently unsafe.  It may result in
-     *      finalizers being called on live objects while other threads are
-     *      concurrently manipulating those objects, resulting in erratic
-     *      behavior or deadlock.
-     *      This method is subject to removal in a future version of Java SE.
-     *
-     * @throws  SecurityException
-     *        if a security manager exists and its {@code checkExit}
-     *        method doesn't allow the exit.
-     *
-     * @see     java.lang.Runtime#exit(int)
-     * @see     java.lang.Runtime#gc()
-     * @see     java.lang.SecurityManager#checkExit(int)
-     * @since   1.1
-     */
-    @Deprecated(since="1.2", forRemoval=true)
-    public static void runFinalizersOnExit(boolean value) {
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            try {
-                security.checkExit(0);
-            } catch (SecurityException e) {
-                throw new SecurityException("runFinalizersOnExit");
-            }
-        }
-        Shutdown.setRunFinalizersOnExit(value);
     }
 
     /**
@@ -702,9 +658,6 @@ public class Runtime {
      */
     public native void gc();
 
-    /* Wormhole for calling java.lang.ref.Finalizer.runFinalization */
-    private static native void runFinalization0();
-
     /**
      * Runs the finalization methods of any objects pending finalization.
      * Calling this method suggests that the Java virtual machine expend
@@ -724,7 +677,7 @@ public class Runtime {
      * @see     java.lang.Object#finalize()
      */
     public void runFinalization() {
-        runFinalization0();
+        SharedSecrets.getJavaLangRefAccess().runFinalization();
     }
 
     /**
@@ -765,7 +718,9 @@ public class Runtime {
      * with the VM, then the JNI_OnLoad_L function exported by the library
      * is invoked rather than attempting to load a dynamic library.
      * A filename matching the argument does not have to exist in the file
-     * system. See the JNI Specification for more details.
+     * system.
+     * See the <a href="{@docRoot}/../specs/jni/index.html"> JNI Specification</a>
+     * for more details.
      *
      * Otherwise, the filename argument is mapped to a native library image in
      * an implementation-dependent manner.
@@ -782,14 +737,14 @@ public class Runtime {
      * convenient means of invoking this method.
      *
      * @param      filename   the file to load.
-     * @exception  SecurityException  if a security manager exists and its
+     * @throws     SecurityException  if a security manager exists and its
      *             {@code checkLink} method doesn't allow
      *             loading of the specified dynamic library
-     * @exception  UnsatisfiedLinkError  if either the filename is not an
+     * @throws     UnsatisfiedLinkError  if either the filename is not an
      *             absolute path name, the native library is not statically
      *             linked with the VM, or the library cannot be mapped to
      *             a native library image by the host system.
-     * @exception  NullPointerException if {@code filename} is
+     * @throws     NullPointerException if {@code filename} is
      *             {@code null}
      * @see        java.lang.Runtime#getRuntime()
      * @see        java.lang.SecurityException
@@ -818,7 +773,8 @@ public class Runtime {
      * specific prefix, file extension or path. If a native library
      * called {@code libname} is statically linked with the VM, then the
      * JNI_OnLoad_{@code libname} function exported by the library is invoked.
-     * See the JNI Specification for more details.
+     * See the <a href="{@docRoot}/../specs/jni/index.html"> JNI Specification</a>
+     * for more details.
      *
      * Otherwise, the libname argument is loaded from a system library
      * location and mapped to a native library image in an implementation-
@@ -844,14 +800,14 @@ public class Runtime {
      * name, the second and subsequent calls are ignored.
      *
      * @param      libname   the name of the library.
-     * @exception  SecurityException  if a security manager exists and its
+     * @throws     SecurityException  if a security manager exists and its
      *             {@code checkLink} method doesn't allow
      *             loading of the specified dynamic library
-     * @exception  UnsatisfiedLinkError if either the libname argument
+     * @throws     UnsatisfiedLinkError if either the libname argument
      *             contains a file path, the native library is not statically
      *             linked with the VM,  or the library cannot be mapped to a
      *             native library image by the host system.
-     * @exception  NullPointerException if {@code libname} is
+     * @throws     NullPointerException if {@code libname} is
      *             {@code null}
      * @see        java.lang.SecurityException
      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
@@ -871,62 +827,6 @@ public class Runtime {
     "Directory separator should not appear in library name: " + libname);
         }
         ClassLoader.loadLibrary(fromClass, libname, false);
-    }
-
-    /**
-     * Creates a localized version of an input stream. This method takes
-     * an {@code InputStream} and returns an {@code InputStream}
-     * equivalent to the argument in all respects except that it is
-     * localized: as characters in the local character set are read from
-     * the stream, they are automatically converted from the local
-     * character set to Unicode.
-     * <p>
-     * If the argument is already a localized stream, it may be returned
-     * as the result.
-     *
-     * @param      in InputStream to localize
-     * @return     a localized input stream
-     * @see        java.io.InputStream
-     * @see        java.io.BufferedReader#BufferedReader(java.io.Reader)
-     * @see        java.io.InputStreamReader#InputStreamReader(java.io.InputStream)
-     * @deprecated As of JDK&nbsp;1.1, the preferred way to translate a byte
-     * stream in the local encoding into a character stream in Unicode is via
-     * the {@code InputStreamReader} and {@code BufferedReader}
-     * classes.
-     * This method is subject to removal in a future version of Java SE.
-     */
-    @Deprecated(since="1.1", forRemoval=true)
-    public InputStream getLocalizedInputStream(InputStream in) {
-        return in;
-    }
-
-    /**
-     * Creates a localized version of an output stream. This method
-     * takes an {@code OutputStream} and returns an
-     * {@code OutputStream} equivalent to the argument in all respects
-     * except that it is localized: as Unicode characters are written to
-     * the stream, they are automatically converted to the local
-     * character set.
-     * <p>
-     * If the argument is already a localized stream, it may be returned
-     * as the result.
-     *
-     * @deprecated As of JDK&nbsp;1.1, the preferred way to translate a
-     * Unicode character stream into a byte stream in the local encoding is via
-     * the {@code OutputStreamWriter}, {@code BufferedWriter}, and
-     * {@code PrintWriter} classes.
-     * This method is subject to removal in a future version of Java SE.
-     *
-     * @param      out OutputStream to localize
-     * @return     a localized output stream
-     * @see        java.io.OutputStream
-     * @see        java.io.BufferedWriter#BufferedWriter(java.io.Writer)
-     * @see        java.io.OutputStreamWriter#OutputStreamWriter(java.io.OutputStream)
-     * @see        java.io.PrintWriter#PrintWriter(java.io.OutputStream)
-     */
-    @Deprecated(since="1.1", forRemoval=true)
-    public OutputStream getLocalizedOutputStream(OutputStream out) {
-        return out;
     }
 
     /**
@@ -952,81 +852,68 @@ public class Runtime {
      *
      * <h2><a id="verNum">Version numbers</a></h2>
      *
-     * <p> A <em>version number</em>, {@code $VNUM}, is a non-empty sequence
-     * of elements separated by period characters (U+002E).  An element is
-     * either zero, or an unsigned integer numeral without leading zeros.  The
-     * final element in a version number must not be zero.  The format is:
-     * </p>
+     * <p> A <em>version number</em>, {@code $VNUM}, is a non-empty sequence of
+     * elements separated by period characters (U+002E).  An element is either
+     * zero, or an unsigned integer numeral without leading zeros.  The final
+     * element in a version number must not be zero.  When an element is
+     * incremented, all subsequent elements are removed.  The format is: </p>
      *
      * <blockquote><pre>
-     *     [1-9][0-9]*((\.0)*\.[1-9][0-9]*)*
+     * [1-9][0-9]*((\.0)*\.[1-9][0-9]*)*
      * </pre></blockquote>
      *
-     * <p> The sequence may be of arbitrary length but the first three
-     * elements are assigned specific meanings, as follows:</p>
+     * <p> The sequence may be of arbitrary length but the first four elements
+     * are assigned specific meanings, as follows:</p>
      *
      * <blockquote><pre>
-     *     $MAJOR.$MINOR.$SECURITY
+     * $FEATURE.$INTERIM.$UPDATE.$PATCH
      * </pre></blockquote>
      *
      * <ul>
      *
-     * <li><p> <a id="major">{@code $MAJOR}</a> --- The major version
-     * number, incremented for a major release that contains significant new
-     * features as specified in a new edition of the Java&#160;SE Platform
-     * Specification, <em>e.g.</em>, <a
-     * href="https://jcp.org/en/jsr/detail?id=337">JSR 337</a> for
-     * Java&#160;SE&#160;8.  Features may be removed in a major release, given
-     * advance notice at least one major release ahead of time, and
-     * incompatible changes may be made when justified. The {@code $MAJOR}
-     * version number of JDK&#160;8 is {@code 8}; the {@code $MAJOR} version
-     * number of JDK&#160;9 is {@code 9}.  When {@code $MAJOR} is incremented,
-     * all subsequent elements are removed. </p></li>
+     * <li><p> <a id="FEATURE">{@code $FEATURE}</a> &#x2014; The
+     * feature-release counter, incremented for every feature release
+     * regardless of release content.  Features may be added in a feature
+     * release; they may also be removed, if advance notice was given at least
+     * one feature release ahead of time.  Incompatible changes may be made
+     * when justified. </p></li>
      *
-     * <li><p> <a id="minor">{@code $MINOR}</a> --- The minor version
-     * number, incremented for a minor update release that may contain
-     * compatible bug fixes, revisions to standard APIs mandated by a
-     * <a href="https://jcp.org/en/procedures/jcp2#5.3">Maintenance Release</a>
-     * of the relevant Platform Specification, and implementation features
-     * outside the scope of that Specification such as new JDK-specific APIs,
-     * additional service providers, new garbage collectors, and ports to new
-     * hardware architectures. </p></li>
+     * <li><p> <a id="INTERIM">{@code $INTERIM}</a> &#x2014; The
+     * interim-release counter, incremented for non-feature releases that
+     * contain compatible bug fixes and enhancements but no incompatible
+     * changes, no feature removals, and no changes to standard APIs.
+     * </p></li>
      *
-     * <li><p> <a id="security">{@code $SECURITY}</a> --- The security
-     * level, incremented for a security update release that contains critical
-     * fixes including those necessary to improve security.  {@code $SECURITY}
-     * is <strong>not</strong> reset when {@code $MINOR} is incremented.  A
-     * higher value of {@code $SECURITY} for a given {@code $MAJOR} value,
-     * therefore, always indicates a more secure release, regardless of the
-     * value of {@code $MINOR}. </p></li>
+     * <li><p> <a id="UPDATE">{@code $UPDATE}</a> &#x2014; The update-release
+     * counter, incremented for compatible update releases that fix security
+     * issues, regressions, and bugs in newer features. </p></li>
+     *
+     * <li><p> <a id="PATCH">{@code $PATCH}</a> &#x2014; The emergency
+     * patch-release counter, incremented only when it's necessary to produce
+     * an emergency release to fix a critical issue. </p></li>
      *
      * </ul>
      *
-     * <p> The fourth and later elements of a version number are free for use
-     * by downstream consumers of this code base.  Such a consumer may,
-     * <em>e.g.</em>, use the fourth element to identify patch releases which
-     * contain a small number of critical non-security fixes in addition to
-     * the security fixes in the corresponding security release. </p>
+     * <p> The fifth and later elements of a version number are free for use by
+     * platform implementors, to identify implementor-specific patch
+     * releases. </p>
      *
-     * <p> The version number does not include trailing zero elements;
-     * <em>i.e.</em>, {@code $SECURITY} is omitted if it has the value zero,
-     * and {@code $MINOR} is omitted if both {@code $MINOR} and {@code
-     * $SECURITY} have the value zero. </p>
+     * <p> A version number never has trailing zero elements.  If an element
+     * and all those that follow it logically have the value zero then all of
+     * them are omitted. </p>
      *
      * <p> The sequence of numerals in a version number is compared to another
      * such sequence in numerical, pointwise fashion; <em>e.g.</em>, {@code
-     * 9.9.1} is less than {@code 9.10.3}. If one sequence is shorter than
-     * another then the missing elements of the shorter sequence are
-     * considered to be less than the corresponding elements of the longer
-     * sequence; <em>e.g.</em>, {@code 9.1.2} is less than {@code 9.1.2.1}.
-     * </p>
+     * 10.0.4} is less than {@code 10.1.2}.  If one sequence is shorter than
+     * another then the missing elements of the shorter sequence are considered
+     * to be less than the corresponding elements of the longer sequence;
+     * <em>e.g.</em>, {@code 10.0.2} is less than {@code 10.0.2.1}. </p>
      *
      * <h2><a id="verStr">Version strings</a></h2>
      *
-     * <p> A <em>version string</em>, {@code $VSTR}, consists of a version
-     * number {@code $VNUM}, as described above, optionally followed by
-     * pre-release and build information, in one of the following formats:
-     * </p>
+     * <p> A <em>version string</em>, {@code $VSTR}, is a version number {@code
+     * $VNUM}, as described above, optionally followed by pre-release and build
+     * information, in one of the following formats: </p>
      *
      * <blockquote><pre>
      *     $VNUM(-$PRE)?\+$BUILD(-$OPT)?
@@ -1039,19 +926,19 @@ public class Runtime {
      * <ul>
      *
      * <li><p> <a id="pre">{@code $PRE}</a>, matching {@code ([a-zA-Z0-9]+)}
-     * --- A pre-release identifier.  Typically {@code ea}, for a
-     * potentially unstable early-access release under active development,
-     * or {@code internal}, for an internal developer build. </p></li>
+     * &#x2014; A pre-release identifier.  Typically {@code ea}, for a
+     * potentially unstable early-access release under active development, or
+     * {@code internal}, for an internal developer build. </p></li>
      *
      * <li><p> <a id="build">{@code $BUILD}</a>, matching {@code
-     * (0|[1-9][0-9]*)} --- The build number, incremented for each promoted
+     * (0|[1-9][0-9]*)} &#x2014; The build number, incremented for each promoted
      * build.  {@code $BUILD} is reset to {@code 1} when any portion of {@code
      * $VNUM} is incremented. </p></li>
      *
-     * <li><p> <a id="opt">{@code $OPT}</a>, matching {@code
-     * ([-a-zA-Z0-9.]+)} --- Additional build information, if desired.  In
-     * the case of an {@code internal} build this will often contain the date
-     * and time of the build. </p></li>
+     * <li><p> <a id="opt">{@code $OPT}</a>, matching {@code ([-a-zA-Z0-9.]+)}
+     * &#x2014; Additional build information, if desired.  In the case of an
+     * {@code internal} build this will often contain the date and time of the
+     * build. </p></li>
      *
      * </ul>
      *
@@ -1135,7 +1022,7 @@ public class Runtime {
                 throw new NullPointerException();
 
             // Shortcut to avoid initializing VersionPattern when creating
-            // major version constants during startup
+            // feature-version constants during startup
             if (isSimpleNumber(s)) {
                 return new Version(List.of(Integer.parseInt(s)),
                         Optional.empty(), Optional.empty(), Optional.empty());
@@ -1165,16 +1052,23 @@ public class Runtime {
                     m.group(VersionPattern.OPT_GROUP));
 
             // empty '+'
-            if ((m.group(VersionPattern.PLUS_GROUP) != null)
-                    && !build.isPresent()) {
-                if (optional.isPresent()) {
-                    if (pre.isPresent())
-                        throw new IllegalArgumentException("'+' found with"
-                            + " pre-release and optional components:'" + s
-                            + "'");
+            if (!build.isPresent()) {
+                if (m.group(VersionPattern.PLUS_GROUP) != null) {
+                    if (optional.isPresent()) {
+                        if (pre.isPresent())
+                            throw new IllegalArgumentException("'+' found with"
+                                + " pre-release and optional components:'" + s
+                                + "'");
+                    } else {
+                        throw new IllegalArgumentException("'+' found with neither"
+                            + " build or optional components: '" + s + "'");
+                    }
                 } else {
-                    throw new IllegalArgumentException("'+' found with neither"
-                        + " build or optional components: '" + s + "'");
+                    if (optional.isPresent() && !pre.isPresent()) {
+                        throw new IllegalArgumentException("optional component"
+                            + " must be preceeded by a pre-release component"
+                            + " or '+': '" + s + "'");
+                    }
                 }
             }
             return new Version(List.of(version), pre, build, optional);
@@ -1192,43 +1086,114 @@ public class Runtime {
         }
 
         /**
-         * Returns the <a href="#major">major</a> version number.
+         * Returns the value of the <a href="#FEATURE">feature</a> element of
+         * the version number.
          *
-         * @return  The major version number
+         * @return The value of the feature element
+         *
+         * @since 10
          */
-        public int major() {
+        public int feature() {
             return version.get(0);
         }
 
         /**
-         * Returns the <a href="#minor">minor</a> version number or zero if it
-         * was not set.
+         * Returns the value of the <a href="#INTERIM">interim</a> element of
+         * the version number, or zero if it is absent.
          *
-         * @return  The minor version number or zero if it was not set
+         * @return The value of the interim element, or zero
+         *
+         * @since 10
          */
-        public int minor() {
+        public int interim() {
             return (version.size() > 1 ? version.get(1) : 0);
         }
 
         /**
-         * Returns the <a href="#security">security</a> version number or zero
-         * if it was not set.
+         * Returns the value of the <a href="#UPDATE">update</a> element of the
+         * version number, or zero if it is absent.
          *
-         * @return  The security version number or zero if it was not set
+         * @return The value of the update element, or zero
+         *
+         * @since 10
          */
-        public int security() {
+        public int update() {
             return (version.size() > 2 ? version.get(2) : 0);
         }
 
         /**
-         * Returns an unmodifiable {@link java.util.List List} of the
-         * integer numerals contained in the <a href="#verNum">version
-         * number</a>.  The {@code List} always contains at least one
-         * element corresponding to the <a href="#major">major version
-         * number</a>.
+         * Returns the value of the <a href="#PATCH">patch</a> element of the
+         * version number, or zero if it is absent.
          *
-         * @return  An unmodifiable list of the integer numerals
-         *          contained in the version number
+         * @return The value of the patch element, or zero
+         *
+         * @since 10
+         */
+        public int patch() {
+            return (version.size() > 3 ? version.get(3) : 0);
+        }
+
+        /**
+         * Returns the value of the major element of the version number.
+         *
+         * @deprecated As of Java&nbsp;SE 10, the first element of a version
+         * number is not the major-release number but the feature-release
+         * counter, incremented for every time-based release.  Use the {@link
+         * #feature()} method in preference to this method.  For compatibility,
+         * this method returns the value of the <a href="#FEATURE">feature</a>
+         * element.
+         *
+         * @return The value of the feature element
+         */
+        @Deprecated(since = "10")
+        public int major() {
+            return feature();
+        }
+
+        /**
+         * Returns the value of the minor element of the version number, or
+         * zero if it is absent.
+         *
+         * @deprecated As of Java&nbsp;SE 10, the second element of a version
+         * number is not the minor-release number but the interim-release
+         * counter, incremented for every interim release.  Use the {@link
+         * #interim()} method in preference to this method.  For compatibility,
+         * this method returns the value of the <a href="#INTERIM">interim</a>
+         * element, or zero if it is absent.
+         *
+         * @return The value of the interim element, or zero
+         */
+        @Deprecated(since = "10")
+        public int minor() {
+            return interim();
+        }
+
+        /**
+         * Returns the value of the security element of the version number, or
+         * zero if it is absent.
+         *
+         * @deprecated As of Java&nbsp;SE 10, the third element of a version
+         * number is not the security level but the update-release counter,
+         * incremented for every update release.  Use the {@link #update()}
+         * method in preference to this method.  For compatibility, this method
+         * returns the value of the <a href="#UPDATE">update</a> element, or
+         * zero if it is absent.
+         *
+         * @return  The value of the update element, or zero
+         */
+        @Deprecated(since = "10")
+        public int security() {
+            return update();
+        }
+
+        /**
+         * Returns an unmodifiable {@link java.util.List List} of the integers
+         * represented in the <a href="#verNum">version number</a>.
+         * The {@code List} always contains at least one element corresponding to
+         * the <a href="#FEATURE">feature version number</a>.
+         *
+         * @return  An unmodifiable list of the integers
+         *          represented in the version number
          */
         public List<Integer> version() {
             return version;

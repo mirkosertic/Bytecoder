@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -120,6 +120,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import sun.text.spi.JavaTimeDateTimePatternProvider;
+import sun.util.locale.provider.CalendarDataUtility;
 import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.LocaleResources;
 import sun.util.locale.provider.TimeZoneNameUtility;
@@ -198,6 +199,10 @@ public final class DateTimeFormatterBuilder {
      * Gets the formatting pattern for date and time styles for a locale and chronology.
      * The locale and chronology are used to lookup the locale specific format
      * for the requested dateStyle and/or timeStyle.
+     * <p>
+     * If the locale contains the "rg" (region override)
+     * <a href="../../util/Locale.html#def_locale_extension">Unicode extensions</a>,
+     * the formatting pattern is overridden with the one appropriate for the region.
      *
      * @param dateStyle  the FormatStyle for the date, null for time-only pattern
      * @param timeStyle  the FormatStyle for the time, null for date-only pattern
@@ -216,7 +221,8 @@ public final class DateTimeFormatterBuilder {
         LocaleProviderAdapter adapter = LocaleProviderAdapter.getAdapter(JavaTimeDateTimePatternProvider.class, locale);
         JavaTimeDateTimePatternProvider provider = adapter.getJavaTimeDateTimePatternProvider();
         String pattern = provider.getJavaTimeDateTimePattern(convertStyle(timeStyle),
-                         convertStyle(dateStyle), chrono.getCalendarType(), locale);
+                         convertStyle(dateStyle), chrono.getCalendarType(),
+                         CalendarDataUtility.findRegionOverride(locale));
         return pattern;
     }
 
@@ -786,6 +792,11 @@ public final class DateTimeFormatterBuilder {
         Map<TextStyle, Map<Long, String>> map = Collections.singletonMap(TextStyle.FULL, copy);
         final LocaleStore store = new LocaleStore(map);
         DateTimeTextProvider provider = new DateTimeTextProvider() {
+            @Override
+            public String getText(Chronology chrono, TemporalField field,
+                                  long value, TextStyle style, Locale locale) {
+                return store.getText(value, style);
+            }
             @Override
             public String getText(TemporalField field, long value, TextStyle style, Locale locale) {
                 return store.getText(value, style);
@@ -3043,7 +3054,7 @@ public final class DateTimeFormatterBuilder {
      * Prints and parses a numeric date-time field with optional padding.
      */
     static final class FractionPrinterParser extends NumberPrinterParser {
-       private final boolean decimalPoint;
+        private final boolean decimalPoint;
 
         /**
          * Constructor.
@@ -4256,7 +4267,7 @@ public final class DateTimeFormatterBuilder {
          * @return the position after the parse
          */
         private int parseOffsetBased(DateTimeParseContext context, CharSequence text, int prefixPos, int position, OffsetIdPrinterParser parser) {
-            String prefix = text.toString().substring(prefixPos, position).toUpperCase();
+            String prefix = text.subSequence(prefixPos, position).toString().toUpperCase();
             if (position >= text.length()) {
                 context.setParsed(ZoneId.of(prefix));
                 return position;
@@ -4775,7 +4786,7 @@ public final class DateTimeFormatterBuilder {
     //-----------------------------------------------------------------------
     /**
      * Prints or parses a localized pattern from a localized field.
-     * The specific formatter and parameters is not selected until the
+     * The specific formatter and parameters is not selected until
      * the field is to be printed or parsed.
      * The locale is needed to select the proper WeekFields from which
      * the field for day-of-week, week-of-month, or week-of-year is selected.

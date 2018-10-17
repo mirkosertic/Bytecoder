@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,9 @@
 package sun.util.cldr;
 
 import java.security.AccessController;
+import java.security.AccessControlException;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.text.spi.BreakIteratorProvider;
 import java.text.spi.CollatorProvider;
@@ -35,14 +38,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.ServiceConfigurationError;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.spi.CalendarDataProvider;
+import java.util.spi.CalendarNameProvider;
+import java.util.spi.TimeZoneNameProvider;
 import sun.util.locale.provider.JRELocaleProviderAdapter;
-import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.LocaleDataMetaInfo;
+import sun.util.locale.provider.LocaleProviderAdapter;
 
 /**
  * LocaleProviderAdapter implementation for the CLDR locale data.
@@ -58,8 +65,14 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
 
     // parent locales map
     private static volatile Map<Locale, Locale> parentLocalesMap;
+    // language aliases map
+    private static volatile Map<String,String> langAliasesMap;
+    // cache to hold  locale to locale mapping for language aliases.
+    private static final Map<Locale, Locale> langAliasesCache;
     static {
         parentLocalesMap = new ConcurrentHashMap<>();
+        langAliasesMap = new ConcurrentHashMap<>();
+        langAliasesCache = new ConcurrentHashMap<>();
         // Assuming these locales do NOT have irregular parent locales.
         parentLocalesMap.put(Locale.ROOT, Locale.ROOT);
         parentLocalesMap.put(Locale.ENGLISH, Locale.ENGLISH);
@@ -81,8 +94,8 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
                     return null;
                 }
             });
-        }  catch (Exception e) {
-            // Catch any exception, and continue as if only CLDR's base locales exist.
+        } catch (PrivilegedActionException pae) {
+            throw new InternalError(pae.getCause());
         }
 
         nonBaseMetaInfo = nbmi;
@@ -103,8 +116,62 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
     }
 
     @Override
+    public CalendarDataProvider getCalendarDataProvider() {
+        if (calendarDataProvider == null) {
+            CalendarDataProvider provider = AccessController.doPrivileged(
+                (PrivilegedAction<CalendarDataProvider>) () ->
+                    new CLDRCalendarDataProviderImpl(
+                        getAdapterType(),
+                        getLanguageTagSet("CalendarData")));
+
+            synchronized (this) {
+                if (calendarDataProvider == null) {
+                    calendarDataProvider = provider;
+                }
+            }
+        }
+        return calendarDataProvider;
+    }
+
+    @Override
+    public CalendarNameProvider getCalendarNameProvider() {
+        if (calendarNameProvider == null) {
+            CalendarNameProvider provider = AccessController.doPrivileged(
+                    (PrivilegedAction<CalendarNameProvider>) ()
+                    -> new CLDRCalendarNameProviderImpl(
+                            getAdapterType(),
+                            getLanguageTagSet("FormatData")));
+
+            synchronized (this) {
+                if (calendarNameProvider == null) {
+                    calendarNameProvider = provider;
+                }
+            }
+        }
+        return calendarNameProvider;
+    }
+
+    @Override
     public CollatorProvider getCollatorProvider() {
         return null;
+    }
+
+    @Override
+    public TimeZoneNameProvider getTimeZoneNameProvider() {
+        if (timeZoneNameProvider == null) {
+            TimeZoneNameProvider provider = AccessController.doPrivileged(
+                (PrivilegedAction<TimeZoneNameProvider>) () ->
+                    new CLDRTimeZoneNameProviderImpl(
+                        getAdapterType(),
+                        getLanguageTagSet("TimeZoneNames")));
+
+            synchronized (this) {
+                if (timeZoneNameProvider == null) {
+                    timeZoneNameProvider = provider;
+                }
+            }
+        }
+        return timeZoneNameProvider;
     }
 
     @Override
@@ -118,8 +185,28 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
         return locs;
     }
 
+    private static Locale applyAliases(Locale loc) {
+        if (langAliasesMap.isEmpty()) {
+            langAliasesMap = baseMetaInfo.getLanguageAliasMap();
+        }
+        Locale locale = langAliasesCache.get(loc);
+        if (locale == null) {
+            String locTag = loc.toLanguageTag();
+            Locale aliasLocale = langAliasesMap.containsKey(locTag)
+                    ? Locale.forLanguageTag(langAliasesMap.get(locTag)) : loc;
+            langAliasesCache.putIfAbsent(loc, aliasLocale);
+            return aliasLocale;
+        } else {
+            return locale;
+        }
+    }
+
     @Override
     protected Set<String> createLanguageTagSet(String category) {
+        // Assume all categories support the same set as AvailableLocales
+        // in CLDR adapter.
+        category = "AvailableLocales";
+
         // Directly call Base tags, as we know it's in the base module.
         String supportedLocaleString = baseMetaInfo.availableLanguageTags(category);
         String nonBaseTags = null;
@@ -148,7 +235,7 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
     // Implementation of ResourceBundleBasedAdapter
     @Override
     public List<Locale> getCandidateLocales(String baseName, Locale locale) {
-        List<Locale> candidates = super.getCandidateLocales(baseName, locale);
+        List<Locale> candidates = super.getCandidateLocales(baseName, applyAliases(locale));
         return applyParentLocales(baseName, candidates);
     }
 
@@ -196,19 +283,18 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
     }
 
     /**
-     * This method returns equivalent CLDR supported locale for zh-HK,
-     * no, no-NO locales so that COMPAT locales do not precede
-     * those locales during ResourceBundle search path.
+     * This method returns equivalent CLDR supported locale
+     * for no, no-NO locales so that COMPAT locales do not precede
+     * those locales during ResourceBundle search path, also if an alias exists for a locale,
+     * it returns equivalent locale, e.g for zh_HK it returns zh_Hant-HK.
      */
     private static Locale getEquivalentLoc(Locale locale) {
         switch (locale.toString()) {
-            case "zh_HK":
-                return Locale.forLanguageTag("zh-Hant-HK");
             case "no":
             case "no_NO":
                 return Locale.forLanguageTag("nb");
         }
-        return locale;
+        return applyAliases(locale);
     }
 
     @Override
@@ -216,5 +302,12 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
         return Locale.ROOT.equals(locale)
                 || langtags.contains(locale.stripExtensions().toLanguageTag())
                 || langtags.contains(getEquivalentLoc(locale).toLanguageTag());
+    }
+
+    /**
+     * Returns the canonical ID for the given ID
+     */
+    public Optional<String> canonicalTZID(String id) {
+        return Optional.ofNullable(baseMetaInfo.tzCanonicalIDs().get(id));
     }
 }

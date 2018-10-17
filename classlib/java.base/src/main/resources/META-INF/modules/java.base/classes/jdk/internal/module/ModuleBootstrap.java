@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@ import java.lang.module.ModuleReference;
 import java.lang.module.ResolvedModule;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -66,7 +65,7 @@ import jdk.internal.perf.PerfCounter;
  * -m and --add-modules options. The modules are located on a module path that
  * is constructed from the upgrade module path, system modules, and application
  * module path. The Configuration is instantiated as the boot layer with each
- * module in the the configuration defined to a class loader.
+ * module in the configuration defined to a class loader.
  */
 
 public final class ModuleBootstrap {
@@ -137,7 +136,7 @@ public final class ModuleBootstrap {
     /**
      * Initialize the module system, returning the boot layer.
      *
-     * @see java.lang.System#initPhase2()
+     * @see java.lang.System#initPhase2(boolean, boolean)
      */
     public static ModuleLayer boot() throws Exception {
 
@@ -214,11 +213,13 @@ public final class ModuleBootstrap {
         Counters.add("jdk.module.boot.2.defineBaseTime", t2);
 
 
-        // Step 2a: If --validate-modules is specified then the VM needs to
-        // start with only system modules, all other options are ignored.
+        // Step 2a: Scan all modules when --validate-modules specified
 
         if (getAndRemoveProperty("jdk.module.validation") != null) {
-            return createBootLayerForValidation();
+            int errors = ModulePathValidator.scanAllModules(System.out);
+            if (errors > 0) {
+                fail("Validation of module path failed");
+            }
         }
 
 
@@ -279,11 +280,10 @@ public final class ModuleBootstrap {
 
             // If there is no initial module specified then assume that the initial
             // module is the unnamed module of the application class loader. This
-            // is implemented by resolving "java.se" and all (non-java.*) modules
-            // that export an API. If "java.se" is not observable then all java.*
-            // modules are resolved. Modules that have the DO_NOT_RESOLVE_BY_DEFAULT
-            // bit set in their ModuleResolution attribute flags are excluded from
-            // the default set of roots.
+            // is implemented by resolving all observable modules that export an
+            // API. Modules that have the DO_NOT_RESOLVE_BY_DEFAULT bit set in
+            // their ModuleResolution attribute flags are excluded from the
+            // default set of roots.
             if (mainModule == null || addAllDefaultModules) {
                 roots.addAll(DefaultRoots.compute(systemModuleFinder, finder));
             }
@@ -421,26 +421,6 @@ public final class ModuleBootstrap {
     }
 
     /**
-     * Create a boot module layer for validation that resolves all
-     * system modules.
-     */
-    private static ModuleLayer createBootLayerForValidation() {
-        Set<String> allSystem = ModuleFinder.ofSystem().findAll()
-            .stream()
-            .map(ModuleReference::descriptor)
-            .map(ModuleDescriptor::name)
-            .collect(Collectors.toSet());
-
-        Configuration cf = SharedSecrets.getJavaLangModuleAccess()
-            .resolveAndBind(ModuleFinder.ofSystem(),
-                            allSystem,
-                            null);
-
-        Function<String, ClassLoader> clf = ModuleLoaderMap.mappingFunction(cf);
-        return ModuleLayer.empty().defineModules(cf, clf);
-    }
-
-    /**
      * Load/register the modules to the built-in class loaders.
      */
     private static void loadModules(Configuration cf,
@@ -539,7 +519,7 @@ public final class ModuleBootstrap {
             Path[] paths = new Path[dirs.length];
             int i = 0;
             for (String dir: dirs) {
-                paths[i++] = Paths.get(dir);
+                paths[i++] = Path.of(dir);
             }
             return ModulePath.of(patcher, paths);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,22 +47,36 @@ public class IOUtil {
                      NativeDispatcher nd)
         throws IOException
     {
-        if (src instanceof DirectBuffer)
-            return writeFromNativeBuffer(fd, src, position, nd);
+        return write(fd, src, position, false, -1, nd);
+    }
+
+    static int write(FileDescriptor fd, ByteBuffer src, long position,
+                     boolean directIO, int alignment, NativeDispatcher nd)
+        throws IOException
+    {
+        if (src instanceof DirectBuffer) {
+            return writeFromNativeBuffer(fd, src, position, directIO, alignment, nd);
+        }
 
         // Substitute a native buffer
         int pos = src.position();
         int lim = src.limit();
         assert (pos <= lim);
         int rem = (pos <= lim ? lim - pos : 0);
-        ByteBuffer bb = Util.getTemporaryDirectBuffer(rem);
+        ByteBuffer bb;
+        if (directIO) {
+            Util.checkRemainingBufferSizeAligned(rem, alignment);
+            bb = Util.getTemporaryAlignedDirectBuffer(rem, alignment);
+        } else {
+            bb = Util.getTemporaryDirectBuffer(rem);
+        }
         try {
             bb.put(src);
             bb.flip();
             // Do not update src until we see how many bytes were written
             src.position(pos);
 
-            int n = writeFromNativeBuffer(fd, bb, position, nd);
+            int n = writeFromNativeBuffer(fd, bb, position, directIO, alignment, nd);
             if (n > 0) {
                 // now update src
                 src.position(pos + n);
@@ -74,13 +88,19 @@ public class IOUtil {
     }
 
     private static int writeFromNativeBuffer(FileDescriptor fd, ByteBuffer bb,
-                                             long position, NativeDispatcher nd)
+                                             long position, boolean directIO,
+                                             int alignment, NativeDispatcher nd)
         throws IOException
     {
         int pos = bb.position();
         int lim = bb.limit();
         assert (pos <= lim);
         int rem = (pos <= lim ? lim - pos : 0);
+
+        if (directIO) {
+            Util.checkBufferPositionAligned(bb, pos, alignment);
+            Util.checkRemainingBufferSizeAligned(rem, alignment);
+        }
 
         int written = 0;
         if (rem == 0)
@@ -100,11 +120,18 @@ public class IOUtil {
     static long write(FileDescriptor fd, ByteBuffer[] bufs, NativeDispatcher nd)
         throws IOException
     {
-        return write(fd, bufs, 0, bufs.length, nd);
+        return write(fd, bufs, 0, bufs.length, false, -1, nd);
     }
 
     static long write(FileDescriptor fd, ByteBuffer[] bufs, int offset, int length,
                       NativeDispatcher nd)
+        throws IOException
+    {
+        return write(fd, bufs, offset, length, false, -1, nd);
+    }
+
+    static long write(FileDescriptor fd, ByteBuffer[] bufs, int offset, int length,
+                      boolean directIO, int alignment, NativeDispatcher nd)
         throws IOException
     {
         IOVecWrapper vec = IOVecWrapper.get(length);
@@ -122,12 +149,19 @@ public class IOUtil {
                 int lim = buf.limit();
                 assert (pos <= lim);
                 int rem = (pos <= lim ? lim - pos : 0);
+                if (directIO)
+                    Util.checkRemainingBufferSizeAligned(rem, alignment);
+
                 if (rem > 0) {
                     vec.setBuffer(iov_len, buf, pos, rem);
 
                     // allocate shadow buffer to ensure I/O is done with direct buffer
                     if (!(buf instanceof DirectBuffer)) {
-                        ByteBuffer shadow = Util.getTemporaryDirectBuffer(rem);
+                        ByteBuffer shadow;
+                        if (directIO)
+                            shadow = Util.getTemporaryAlignedDirectBuffer(rem, alignment);
+                        else
+                            shadow = Util.getTemporaryDirectBuffer(rem);
                         shadow.put(buf);
                         shadow.flip();
                         vec.setShadow(iov_len, shadow);
@@ -186,15 +220,29 @@ public class IOUtil {
                     NativeDispatcher nd)
         throws IOException
     {
+        return read(fd, dst, position, false, -1, nd);
+    }
+
+    static int read(FileDescriptor fd, ByteBuffer dst, long position,
+                    boolean directIO, int alignment, NativeDispatcher nd)
+        throws IOException
+    {
         if (dst.isReadOnly())
             throw new IllegalArgumentException("Read-only buffer");
         if (dst instanceof DirectBuffer)
-            return readIntoNativeBuffer(fd, dst, position, nd);
+            return readIntoNativeBuffer(fd, dst, position, directIO, alignment, nd);
 
         // Substitute a native buffer
-        ByteBuffer bb = Util.getTemporaryDirectBuffer(dst.remaining());
+        ByteBuffer bb;
+        int rem = dst.remaining();
+        if (directIO) {
+            Util.checkRemainingBufferSizeAligned(rem, alignment);
+            bb = Util.getTemporaryAlignedDirectBuffer(rem, alignment);
+        } else {
+            bb = Util.getTemporaryDirectBuffer(rem);
+        }
         try {
-            int n = readIntoNativeBuffer(fd, bb, position, nd);
+            int n = readIntoNativeBuffer(fd, bb, position, directIO, alignment,nd);
             bb.flip();
             if (n > 0)
                 dst.put(bb);
@@ -205,7 +253,8 @@ public class IOUtil {
     }
 
     private static int readIntoNativeBuffer(FileDescriptor fd, ByteBuffer bb,
-                                            long position, NativeDispatcher nd)
+                                            long position, boolean directIO,
+                                            int alignment, NativeDispatcher nd)
         throws IOException
     {
         int pos = bb.position();
@@ -213,12 +262,16 @@ public class IOUtil {
         assert (pos <= lim);
         int rem = (pos <= lim ? lim - pos : 0);
 
+        if (directIO) {
+            Util.checkBufferPositionAligned(bb, pos, alignment);
+            Util.checkRemainingBufferSizeAligned(rem, alignment);
+        }
+
         if (rem == 0)
             return 0;
         int n = 0;
         if (position != -1) {
-            n = nd.pread(fd, ((DirectBuffer)bb).address() + pos,
-                         rem, position);
+            n = nd.pread(fd, ((DirectBuffer)bb).address() + pos, rem, position);
         } else {
             n = nd.read(fd, ((DirectBuffer)bb).address() + pos, rem);
         }
@@ -230,11 +283,18 @@ public class IOUtil {
     static long read(FileDescriptor fd, ByteBuffer[] bufs, NativeDispatcher nd)
         throws IOException
     {
-        return read(fd, bufs, 0, bufs.length, nd);
+        return read(fd, bufs, 0, bufs.length, false, -1, nd);
     }
 
     static long read(FileDescriptor fd, ByteBuffer[] bufs, int offset, int length,
                      NativeDispatcher nd)
+        throws IOException
+    {
+        return read(fd, bufs, offset, length, false, -1, nd);
+    }
+
+    static long read(FileDescriptor fd, ByteBuffer[] bufs, int offset, int length,
+                     boolean directIO, int alignment, NativeDispatcher nd)
         throws IOException
     {
         IOVecWrapper vec = IOVecWrapper.get(length);
@@ -255,12 +315,20 @@ public class IOUtil {
                 assert (pos <= lim);
                 int rem = (pos <= lim ? lim - pos : 0);
 
+                if (directIO)
+                    Util.checkRemainingBufferSizeAligned(rem, alignment);
+
                 if (rem > 0) {
                     vec.setBuffer(iov_len, buf, pos, rem);
 
                     // allocate shadow buffer to ensure I/O is done with direct buffer
                     if (!(buf instanceof DirectBuffer)) {
-                        ByteBuffer shadow = Util.getTemporaryDirectBuffer(rem);
+                        ByteBuffer shadow;
+                        if (directIO) {
+                            shadow = Util.getTemporaryAlignedDirectBuffer(rem, alignment);
+                        } else {
+                            shadow = Util.getTemporaryDirectBuffer(rem);
+                        }
                         vec.setShadow(iov_len, shadow);
                         buf = shadow;
                         pos = shadow.position();
@@ -329,9 +397,20 @@ public class IOUtil {
      * The read end of the pipe is returned in the high 32 bits,
      * while the write end is returned in the low 32 bits.
      */
-    static native long makePipe(boolean blocking);
+    static native long makePipe(boolean blocking) throws IOException;
 
+    static native int write1(int fd, byte b) throws IOException;
+
+    /**
+     * Read and discard all bytes.
+     */
     static native boolean drain(int fd) throws IOException;
+
+    /**
+     * Read and discard at most one byte
+     * @return the number of bytes read or IOS_INTERRUPTED
+     */
+    static native int drain1(int fd) throws IOException;
 
     public static native void configureBlocking(FileDescriptor fd,
                                                 boolean blocking)

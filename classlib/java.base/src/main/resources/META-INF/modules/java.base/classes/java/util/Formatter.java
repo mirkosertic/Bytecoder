@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +47,7 @@ import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.text.spi.NumberFormatProvider;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Objects;
@@ -62,6 +63,8 @@ import java.time.temporal.UnsupportedTemporalTypeException;
 
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FormattedFloatingDecimal;
+import sun.util.locale.provider.LocaleProviderAdapter;
+import sun.util.locale.provider.ResourceBundleBasedAdapter;
 
 /**
  * An interpreter for printf-style format strings.  This class provides support
@@ -284,11 +287,11 @@ import jdk.internal.math.FormattedFloatingDecimal;
  * {@code 'A'}, and {@code 'T'}) are the same as those for the corresponding
  * lower-case conversion characters except that the result is converted to
  * upper case according to the rules of the prevailing {@link java.util.Locale
- * Locale}.  The result is equivalent to the following invocation of {@link
- * String#toUpperCase(Locale)}
+ * Locale}. If there is no explicit locale specified, either at the
+ * construction of the instance or as a parameter to its method
+ * invocation, then the {@link java.util.Locale.Category#FORMAT default locale}
+ * is used.
  *
- * <pre>
- *    out.toUpperCase(Locale.getDefault(Locale.Category.FORMAT)) </pre>
  *
  * <table class="striped">
  * <caption style="display:none">genConv</caption>
@@ -709,11 +712,10 @@ import jdk.internal.math.FormattedFloatingDecimal;
  * {@code 'G'}, {@code 'A'}, and {@code 'T'}) are the same as those for the
  * corresponding lower-case conversion characters except that the result is
  * converted to upper case according to the rules of the prevailing {@link
- * java.util.Locale Locale}.  The result is equivalent to the following
- * invocation of {@link String#toUpperCase(Locale)}
- *
- * <pre>
- *    out.toUpperCase(Locale.getDefault(Locale.Category.FORMAT)) </pre>
+ * java.util.Locale Locale}. If there is no explicit locale specified,
+ * either at the construction of the instance or as a parameter to its method
+ * invocation, then the {@link java.util.Locale.Category#FORMAT default locale}
+ * is used.
  *
  * <h4><a id="dgen">General</a></h4>
  *
@@ -2137,6 +2139,39 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     /**
+     * Constructs a new formatter with the specified file name, charset, and
+     * locale.
+     *
+     * @param  fileName
+     *         The name of the file to use as the destination of this
+     *         formatter.  If the file exists then it will be truncated to
+     *         zero size; otherwise, a new file will be created.  The output
+     *         will be written to the file and is buffered.
+     *
+     * @param  charset
+     *         A {@linkplain java.nio.charset.Charset charset}
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.
+     *
+     * @throws  IOException
+     *          if an I/O error occurs while opening or creating the file
+     *
+     * @throws  SecurityException
+     *          If a security manager is present and {@link
+     *          SecurityManager#checkWrite checkWrite(fileName)} denies write
+     *          access to the file
+     *
+     * @throws NullPointerException
+     *         if {@code fileName} or {@code charset} is {@code null}.
+     */
+    public Formatter(String fileName, Charset charset, Locale l) throws IOException {
+        this(Objects.requireNonNull(charset, "charset"), l, new File(fileName));
+    }
+
+    /**
      * Constructs a new formatter with the specified file.
      *
      * <p> The charset used is the {@linkplain
@@ -2248,6 +2283,40 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     /**
+     * Constructs a new formatter with the specified file, charset, and
+     * locale.
+     *
+     * @param  file
+     *         The file to use as the destination of this formatter.  If the
+     *         file exists then it will be truncated to zero size; otherwise,
+     *         a new file will be created.  The output will be written to the
+     *         file and is buffered.
+     *
+     * @param  charset
+     *         A {@linkplain java.nio.charset.Charset charset}
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.
+     *
+     * @throws IOException
+     *         if an I/O error occurs while opening or creating the file
+     *
+     * @throws SecurityException
+     *         If a security manager is present and {@link
+     *         SecurityManager#checkWrite checkWrite(file.getPath())} denies
+     *         write access to the file
+     *
+     * @throws NullPointerException
+     *         if {@code file} or {@code charset} is {@code null}.
+     */
+    public Formatter(File file, Charset charset, Locale l) throws IOException {
+        this(Objects.requireNonNull(charset, "charset"), l, file);
+    }
+
+
+    /**
      * Constructs a new formatter with the specified print stream.
      *
      * <p> The locale used is the {@linkplain
@@ -2338,6 +2407,29 @@ public final class Formatter implements Closeable, Flushable {
         throws UnsupportedEncodingException
     {
         this(l, new BufferedWriter(new OutputStreamWriter(os, csn)));
+    }
+
+    /**
+     * Constructs a new formatter with the specified output stream, charset,
+     * and locale.
+     *
+     * @param  os
+     *         The output stream to use as the destination of this formatter.
+     *         The output will be buffered.
+     *
+     * @param  charset
+     *         A {@linkplain java.nio.charset.Charset charset}
+     *
+     * @param  l
+     *         The {@linkplain java.util.Locale locale} to apply during
+     *         formatting.  If {@code l} is {@code null} then no localization
+     *         is applied.
+     *
+     * @throws NullPointerException
+     *         if {@code os} or {@code charset} is {@code null}.
+     */
+    public Formatter(OutputStream os, Charset charset, Locale l) {
+        this(l, new BufferedWriter(new OutputStreamWriter(os, charset)));
     }
 
     private static char getZero(Locale l) {
@@ -2807,22 +2899,22 @@ public final class Formatter implements Closeable, Flushable {
                 break;
             case Conversion.CHARACTER:
             case Conversion.CHARACTER_UPPER:
-                printCharacter(arg);
+                printCharacter(arg, l);
                 break;
             case Conversion.BOOLEAN:
-                printBoolean(arg);
+                printBoolean(arg, l);
                 break;
             case Conversion.STRING:
                 printString(arg, l);
                 break;
             case Conversion.HASHCODE:
-                printHashCode(arg);
+                printHashCode(arg, l);
                 break;
             case Conversion.LINE_SEPARATOR:
                 a.append(System.lineSeparator());
                 break;
             case Conversion.PERCENT_SIGN:
-                a.append('%');
+                print("%", l);
                 break;
             default:
                 assert false;
@@ -2831,7 +2923,7 @@ public final class Formatter implements Closeable, Flushable {
 
         private void printInteger(Object arg, Locale l) throws IOException {
             if (arg == null)
-                print("null");
+                print("null", l);
             else if (arg instanceof Byte)
                 print(((Byte)arg).byteValue(), l);
             else if (arg instanceof Short)
@@ -2848,7 +2940,7 @@ public final class Formatter implements Closeable, Flushable {
 
         private void printFloat(Object arg, Locale l) throws IOException {
             if (arg == null)
-                print("null");
+                print("null", l);
             else if (arg instanceof Float)
                 print(((Float)arg).floatValue(), l);
             else if (arg instanceof Double)
@@ -2861,7 +2953,7 @@ public final class Formatter implements Closeable, Flushable {
 
         private void printDateTime(Object arg, Locale l) throws IOException {
             if (arg == null) {
-                print("null");
+                print("null", l);
                 return;
             }
             Calendar cal = null;
@@ -2892,9 +2984,9 @@ public final class Formatter implements Closeable, Flushable {
             print(cal, c, l);
         }
 
-        private void printCharacter(Object arg) throws IOException {
+        private void printCharacter(Object arg, Locale l) throws IOException {
             if (arg == null) {
-                print("null");
+                print("null", l);
                 return;
             }
             String s = null;
@@ -2921,7 +3013,7 @@ public final class Formatter implements Closeable, Flushable {
             } else {
                 failConversion(c, arg);
             }
-            print(s);
+            print(s, l);
         }
 
         private void printString(Object arg, Locale l) throws IOException {
@@ -2934,13 +3026,13 @@ public final class Formatter implements Closeable, Flushable {
                 if (f.contains(Flags.ALTERNATE))
                     failMismatch(Flags.ALTERNATE, 's');
                 if (arg == null)
-                    print("null");
+                    print("null", l);
                 else
-                    print(arg.toString());
+                    print(arg.toString(), l);
             }
         }
 
-        private void printBoolean(Object arg) throws IOException {
+        private void printBoolean(Object arg, Locale l) throws IOException {
             String s;
             if (arg != null)
                 s = ((arg instanceof Boolean)
@@ -2948,22 +3040,27 @@ public final class Formatter implements Closeable, Flushable {
                      : Boolean.toString(true));
             else
                 s = Boolean.toString(false);
-            print(s);
+            print(s, l);
         }
 
-        private void printHashCode(Object arg) throws IOException {
+        private void printHashCode(Object arg, Locale l) throws IOException {
             String s = (arg == null
                         ? "null"
                         : Integer.toHexString(arg.hashCode()));
-            print(s);
+            print(s, l);
         }
 
-        private void print(String s) throws IOException {
+        private void print(String s, Locale l) throws IOException {
             if (precision != -1 && precision < s.length())
                 s = s.substring(0, precision);
             if (f.contains(Flags.UPPERCASE))
-                s = s.toUpperCase(Locale.getDefault(Locale.Category.FORMAT));
+                s = toUpperCaseWithLocale(s, l);
             appendJustified(a, s);
+        }
+
+        private String toUpperCaseWithLocale(String s, Locale l) {
+            return s.toUpperCase(Objects.requireNonNullElse(l,
+                    Locale.getDefault(Locale.Category.FORMAT)));
         }
 
         private Appendable appendJustified(Appendable a, CharSequence cs) throws IOException {
@@ -3186,7 +3283,7 @@ public final class Formatter implements Closeable, Flushable {
                     trailingZeros(sb, width - len);
                 }
                 if (f.contains(Flags.UPPERCASE))
-                    s = s.toUpperCase(Locale.getDefault(Locale.Category.FORMAT));
+                    s = toUpperCaseWithLocale(s, l);
                 sb.append(s);
             }
 
@@ -3261,7 +3358,7 @@ public final class Formatter implements Closeable, Flushable {
                     trailingZeros(sb, width - len);
                 }
                 if (f.contains(Flags.UPPERCASE))
-                    s = s.toUpperCase(Locale.getDefault(Locale.Category.FORMAT));
+                    s = toUpperCaseWithLocale(s, l);
                 sb.append(s);
             }
 
@@ -3860,7 +3957,7 @@ public final class Formatter implements Closeable, Flushable {
 
             // justify based on width
             if (f.contains(Flags.UPPERCASE)) {
-                appendJustified(a, sb.toString().toUpperCase(Locale.getDefault(Locale.Category.FORMAT)));
+                appendJustified(a, toUpperCaseWithLocale(sb.toString(), l));
             } else {
                 appendJustified(a, sb);
             }
@@ -4042,8 +4139,7 @@ public final class Formatter implements Closeable, Flushable {
                 StringBuilder tsb = new StringBuilder();
                 print(tsb, t, DateTime.AM_PM, l);
 
-                sb.append(tsb.toString().toUpperCase(Objects.requireNonNullElse(l,
-                                               Locale.getDefault(Locale.Category.FORMAT))));
+                sb.append(toUpperCaseWithLocale(tsb.toString(), l));
                 break;
             }
             case DateTime.DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
@@ -4081,7 +4177,7 @@ public final class Formatter implements Closeable, Flushable {
             print(sb, t, c, l);
             // justify based on width
             if (f.contains(Flags.UPPERCASE)) {
-                appendJustified(a, sb.toString().toUpperCase(Locale.getDefault(Locale.Category.FORMAT)));
+                appendJustified(a, toUpperCaseWithLocale(sb.toString(), l));
             } else {
                 appendJustified(a, sb);
             }
@@ -4283,8 +4379,7 @@ public final class Formatter implements Closeable, Flushable {
                     // this may be in wrong place for some locales
                     StringBuilder tsb = new StringBuilder();
                     print(tsb, t, DateTime.AM_PM, l);
-                    sb.append(tsb.toString().toUpperCase(Objects.requireNonNullElse(l,
-                                        Locale.getDefault(Locale.Category.FORMAT))));
+                    sb.append(toUpperCaseWithLocale(tsb.toString(), l));
                     break;
                 }
                 case DateTime.DATE_TIME:    { // 'c' (Sat Nov 04 12:02:33 EST 1999)
@@ -4384,8 +4479,33 @@ public final class Formatter implements Closeable, Flushable {
                 } else {
                     DecimalFormatSymbols dfs = DecimalFormatSymbols.getInstance(l);
                     grpSep = dfs.getGroupingSeparator();
-                    DecimalFormat df = (DecimalFormat) NumberFormat.getIntegerInstance(l);
+                    DecimalFormat df = null;
+                    NumberFormat nf = NumberFormat.getNumberInstance(l);
+                    if (nf instanceof DecimalFormat) {
+                        df = (DecimalFormat) nf;
+                    } else {
+
+                        // Use DecimalFormat constructor to obtain the instance,
+                        // in case NumberFormat.getNumberInstance(l)
+                        // returns instance other than DecimalFormat
+                        LocaleProviderAdapter adapter = LocaleProviderAdapter
+                                .getAdapter(NumberFormatProvider.class, l);
+                        if (!(adapter instanceof ResourceBundleBasedAdapter)) {
+                            adapter = LocaleProviderAdapter.getResourceBundleBased();
+                        }
+                        String[] all = adapter.getLocaleResources(l)
+                                .getNumberPatterns();
+                        df = new DecimalFormat(all[0], dfs);
+                    }
                     grpSize = df.getGroupingSize();
+                    // Some locales do not use grouping (the number
+                    // pattern for these locales does not contain group, e.g.
+                    // ("#0.###")), but specify a grouping separator.
+                    // To avoid unnecessary identification of the position of
+                    // grouping separator, reset its value with null character
+                    if (!df.isGroupingUsed() || grpSize == 0) {
+                        grpSep = '\0';
+                    }
                 }
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -140,7 +140,7 @@ public final class DESedeWrapCipher extends CipherSpi {
         if (decrypting) {
             result = inputLen - 16; // CHECKSUM_LEN + IV_LEN;
         } else {
-            result = inputLen + 16;
+            result = Math.addExact(inputLen, 16);
         }
         return (result < 0? 0:result);
     }
@@ -449,11 +449,11 @@ public final class DESedeWrapCipher extends CipherSpi {
         }
 
         byte[] cks = getChecksum(keyVal);
-        byte[] in = new byte[keyVal.length + CHECKSUM_LEN];
+        byte[] in = new byte[Math.addExact(keyVal.length, CHECKSUM_LEN)];
         System.arraycopy(keyVal, 0, in, 0, keyVal.length);
         System.arraycopy(cks, 0, in, keyVal.length, CHECKSUM_LEN);
 
-        byte[] out = new byte[iv.length + in.length];
+        byte[] out = new byte[Math.addExact(iv.length, in.length)];
         System.arraycopy(iv, 0, out, 0, iv.length);
 
         cipher.encrypt(in, 0, in.length, out, iv.length);
@@ -470,6 +470,9 @@ public final class DESedeWrapCipher extends CipherSpi {
         } catch (InvalidKeyException ike) {
             // should never happen
             throw new RuntimeException("Internal cipher key is corrupted");
+        } catch (InvalidAlgorithmParameterException iape) {
+            // should never happen
+            throw new RuntimeException("Internal cipher IV is invalid");
         }
         byte[] out2 = new byte[out.length];
         cipher.encrypt(out, 0, out.length, out2, 0);
@@ -481,6 +484,9 @@ public final class DESedeWrapCipher extends CipherSpi {
         } catch (InvalidKeyException ike) {
             // should never happen
             throw new RuntimeException("Internal cipher key is corrupted");
+        } catch (InvalidAlgorithmParameterException iape) {
+            // should never happen
+            throw new RuntimeException("Internal cipher IV is invalid");
         }
         return out2;
     }
@@ -524,8 +530,12 @@ public final class DESedeWrapCipher extends CipherSpi {
         }
         iv = new byte[IV_LEN];
         System.arraycopy(buffer, 0, iv, 0, iv.length);
-        cipher.init(true, cipherKey.getAlgorithm(), cipherKey.getEncoded(),
+        try {
+            cipher.init(true, cipherKey.getAlgorithm(), cipherKey.getEncoded(),
                     iv);
+        } catch (InvalidAlgorithmParameterException iape) {
+            throw new InvalidKeyException("IV in wrapped key is invalid");
+        }
         byte[] buffer2 = new byte[buffer.length - iv.length];
         cipher.decrypt(buffer, iv.length, buffer2.length,
                        buffer2, 0);
@@ -538,8 +548,12 @@ public final class DESedeWrapCipher extends CipherSpi {
             }
         }
         // restore cipher state to prior to this call
-        cipher.init(decrypting, cipherKey.getAlgorithm(),
+        try {
+          cipher.init(decrypting, cipherKey.getAlgorithm(),
                     cipherKey.getEncoded(), IV2);
+        } catch (InvalidAlgorithmParameterException iape) {
+            throw new InvalidKeyException("IV in wrapped key is invalid");
+        }
         byte[] out = new byte[keyValLen];
         System.arraycopy(buffer2, 0, out, 0, keyValLen);
         return ConstructKeys.constructKey(out, wrappedKeyAlgorithm,

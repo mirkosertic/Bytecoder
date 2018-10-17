@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,9 @@
 
 package java.io;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * This class implements an output stream in which the data is
@@ -55,7 +57,7 @@ public class ByteArrayOutputStream extends OutputStream {
     protected int count;
 
     /**
-     * Creates a new byte array output stream. The buffer capacity is
+     * Creates a new {@code ByteArrayOutputStream}. The buffer capacity is
      * initially 32 bytes, though its size increases if necessary.
      */
     public ByteArrayOutputStream() {
@@ -63,11 +65,11 @@ public class ByteArrayOutputStream extends OutputStream {
     }
 
     /**
-     * Creates a new byte array output stream, with a buffer capacity of
+     * Creates a new {@code ByteArrayOutputStream}, with a buffer capacity of
      * the specified size, in bytes.
      *
-     * @param   size   the initial size.
-     * @exception  IllegalArgumentException if size is negative.
+     * @param  size   the initial size.
+     * @throws IllegalArgumentException if size is negative.
      */
     public ByteArrayOutputStream(int size) {
         if (size < 0) {
@@ -82,7 +84,7 @@ public class ByteArrayOutputStream extends OutputStream {
      * at least the number of elements specified by the minimum
      * capacity argument.
      *
-     * @param minCapacity the desired minimum capacity
+     * @param  minCapacity the desired minimum capacity
      * @throws OutOfMemoryError if {@code minCapacity < 0}.  This is
      * interpreted as a request for the unsatisfiably large capacity
      * {@code (long) Integer.MAX_VALUE + (minCapacity - Integer.MAX_VALUE)}.
@@ -127,7 +129,7 @@ public class ByteArrayOutputStream extends OutputStream {
     }
 
     /**
-     * Writes the specified byte to this byte array output stream.
+     * Writes the specified byte to this {@code ByteArrayOutputStream}.
      *
      * @param   b   the byte to be written.
      */
@@ -139,37 +141,55 @@ public class ByteArrayOutputStream extends OutputStream {
 
     /**
      * Writes {@code len} bytes from the specified byte array
-     * starting at offset {@code off} to this byte array output stream.
+     * starting at offset {@code off} to this {@code ByteArrayOutputStream}.
      *
      * @param   b     the data.
      * @param   off   the start offset in the data.
      * @param   len   the number of bytes to write.
+     * @throws  NullPointerException if {@code b} is {@code null}.
+     * @throws  IndexOutOfBoundsException if {@code off} is negative,
+     * {@code len} is negative, or {@code len} is greater than
+     * {@code b.length - off}
      */
     public synchronized void write(byte b[], int off, int len) {
-        if ((off < 0) || (off > b.length) || (len < 0) ||
-            ((off + len) - b.length > 0)) {
-            throw new IndexOutOfBoundsException();
-        }
+        Objects.checkFromIndexSize(off, len, b.length);
         ensureCapacity(count + len);
         System.arraycopy(b, off, buf, count, len);
         count += len;
     }
 
     /**
-     * Writes the complete contents of this byte array output stream to
+     * Writes the complete contents of the specified byte array
+     * to this {@code ByteArrayOutputStream}.
+     *
+     * @apiNote
+     * This method is equivalent to {@link #write(byte[],int,int)
+     * write(b, 0, b.length)}.
+     *
+     * @param   b     the data.
+     * @throws  NullPointerException if {@code b} is {@code null}.
+     * @since   11
+     */
+    public void writeBytes(byte b[]) {
+        write(b, 0, b.length);
+    }
+
+    /**
+     * Writes the complete contents of this {@code ByteArrayOutputStream} to
      * the specified output stream argument, as if by calling the output
      * stream's write method using {@code out.write(buf, 0, count)}.
      *
-     * @param      out   the output stream to which to write the data.
-     * @exception  IOException  if an I/O error occurs.
+     * @param   out   the output stream to which to write the data.
+     * @throws  NullPointerException if {@code out} is {@code null}.
+     * @throws  IOException if an I/O error occurs.
      */
     public synchronized void writeTo(OutputStream out) throws IOException {
         out.write(buf, 0, count);
     }
 
     /**
-     * Resets the {@code count} field of this byte array output
-     * stream to zero, so that all currently accumulated output in the
+     * Resets the {@code count} field of this {@code ByteArrayOutputStream}
+     * to zero, so that all currently accumulated output in the
      * output stream is discarded. The output stream can be used again,
      * reusing the already allocated buffer space.
      *
@@ -223,26 +243,59 @@ public class ByteArrayOutputStream extends OutputStream {
 
     /**
      * Converts the buffer's contents into a string by decoding the bytes using
-     * the named {@link java.nio.charset.Charset charset}. The length of the new
-     * {@code String} is a function of the charset, and hence may not be equal
-     * to the length of the byte array.
+     * the named {@link java.nio.charset.Charset charset}.
      *
-     * <p> This method always replaces malformed-input and unmappable-character
-     * sequences with this charset's default replacement string. The {@link
-     * java.nio.charset.CharsetDecoder} class should be used when more control
-     * over the decoding process is required.
+     * <p> This method is equivalent to {@code #toString(charset)} that takes a
+     * {@link java.nio.charset.Charset charset}.
      *
-     * @param      charsetName  the name of a supported
-     *             {@link java.nio.charset.Charset charset}
-     * @return     String decoded from the buffer's contents.
-     * @exception  UnsupportedEncodingException
-     *             If the named charset is not supported
-     * @since      1.1
+     * <p> An invocation of this method of the form
+     *
+     * <pre> {@code
+     *      ByteArrayOutputStream b = ...
+     *      b.toString("UTF-8")
+     *      }
+     * </pre>
+     *
+     * behaves in exactly the same way as the expression
+     *
+     * <pre> {@code
+     *      ByteArrayOutputStream b = ...
+     *      b.toString(StandardCharsets.UTF_8)
+     *      }
+     * </pre>
+     *
+     *
+     * @param  charsetName  the name of a supported
+     *         {@link java.nio.charset.Charset charset}
+     * @return String decoded from the buffer's contents.
+     * @throws UnsupportedEncodingException
+     *         If the named charset is not supported
+     * @since  1.1
      */
     public synchronized String toString(String charsetName)
         throws UnsupportedEncodingException
     {
         return new String(buf, 0, count, charsetName);
+    }
+
+    /**
+     * Converts the buffer's contents into a string by decoding the bytes using
+     * the specified {@link java.nio.charset.Charset charset}. The length of the new
+     * {@code String} is a function of the charset, and hence may not be equal
+     * to the length of the byte array.
+     *
+     * <p> This method always replaces malformed-input and unmappable-character
+     * sequences with the charset's default replacement string. The {@link
+     * java.nio.charset.CharsetDecoder} class should be used when more control
+     * over the decoding process is required.
+     *
+     * @param      charset  the {@linkplain java.nio.charset.Charset charset}
+     *             to be used to decode the {@code bytes}
+     * @return     String decoded from the buffer's contents.
+     * @since      10
+     */
+    public synchronized String toString(Charset charset) {
+        return new String(buf, 0, count, charset);
     }
 
     /**
@@ -257,9 +310,10 @@ public class ByteArrayOutputStream extends OutputStream {
      *
      * @deprecated This method does not properly convert bytes into characters.
      * As of JDK&nbsp;1.1, the preferred way to do this is via the
-     * {@code toString(String enc)} method, which takes an encoding-name
-     * argument, or the {@code toString()} method, which uses the
-     * platform's default character encoding.
+     * {@link #toString(String charsetName)} or {@link #toString(Charset charset)}
+     * method, which takes an encoding-name or charset argument,
+     * or the {@code toString()} method, which uses the platform's default
+     * character encoding.
      *
      * @param      hibyte    the high byte of each resulting Unicode character.
      * @return     the current contents of the output stream, as a string.

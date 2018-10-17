@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.File;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.AccessControlContext;
@@ -37,9 +38,13 @@ import java.security.CodeSource;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -47,7 +52,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.Stack;
 import java.util.Vector;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,12 +59,13 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.perf.PerfCounter;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.ClassLoaders;
-import jdk.internal.misc.SharedSecrets;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.misc.VM;
+import jdk.internal.ref.CleanerFactory;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import sun.reflect.misc.ReflectUtil;
@@ -69,7 +74,7 @@ import sun.security.util.SecurityConstants;
 /**
  * A class loader is an object that is responsible for loading classes. The
  * class {@code ClassLoader} is an abstract class.  Given the <a
- * href="#name">binary name</a> of a class, a class loader should attempt to
+ * href="#binary-name">binary name</a> of a class, a class loader should attempt to
  * locate or generate data that constitutes a definition for the class.  A
  * typical strategy is to transform the name into a file name and then read a
  * "class file" of that name from a file system.
@@ -198,7 +203,7 @@ import sun.security.util.SecurityConstants;
  *     }
  * </pre></blockquote>
  *
- * <h3> <a id="name">Binary names</a> </h3>
+ * <h3> <a id="binary-name">Binary names</a> </h3>
  *
  * <p> Any class name provided as a {@code String} parameter to methods in
  * {@code ClassLoader} must be a binary name as defined by
@@ -241,6 +246,9 @@ public abstract class ClassLoader {
 
     // the unnamed module for this ClassLoader
     private final Module unnamedModule;
+
+    // a string for exception message printing
+    private final String nameAndId;
 
     /**
      * Encapsulates the set of parallel capable loader types.
@@ -377,6 +385,24 @@ public abstract class ClassLoader {
             package2certs = new Hashtable<>();
             assertionLock = this;
         }
+        this.nameAndId = nameAndId(this);
+    }
+
+    /**
+     * If the defining loader has a name explicitly set then
+     *       '<loader-name>' @<id>
+     * If the defining loader has no name then
+     *       <qualified-class-name> @<id>
+     * If it's built-in loader then omit `@<id>` as there is only one instance.
+     */
+    private static String nameAndId(ClassLoader ld) {
+        String nid = ld.getName() != null ? "\'" + ld.getName() + "\'"
+                                          : ld.getClass().getName();
+        if (!(ld instanceof BuiltinClassLoader)) {
+            String id = Integer.toHexString(System.identityHashCode(ld));
+            nid = nid + " @" + id;
+        }
+        return nid;
     }
 
     /**
@@ -476,7 +502,7 @@ public abstract class ClassLoader {
     // -- Class --
 
     /**
-     * Loads the class with the specified <a href="#name">binary name</a>.
+     * Loads the class with the specified <a href="#binary-name">binary name</a>.
      * This method searches for classes in the same manner as the {@link
      * #loadClass(String, boolean)} method.  It is invoked by the Java virtual
      * machine to resolve class references.  Invoking this method is equivalent
@@ -484,7 +510,7 @@ public abstract class ClassLoader {
      * false)}.
      *
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @return  The resulting {@code Class} object
      *
@@ -496,7 +522,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Loads the class with the specified <a href="#name">binary name</a>.  The
+     * Loads the class with the specified <a href="#binary-name">binary name</a>.  The
      * default implementation of this method searches for classes in the
      * following order:
      *
@@ -526,7 +552,7 @@ public abstract class ClassLoader {
      * during the entire class loading process.
      *
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @param  resolve
      *         If {@code true} then resolve the class
@@ -575,7 +601,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Loads the class with the specified <a href="#name">binary name</a>
+     * Loads the class with the specified <a href="#binary-name">binary name</a>
      * in a module defined to this class loader.  This method returns {@code null}
      * if the class could not be found.
      *
@@ -594,7 +620,7 @@ public abstract class ClassLoader {
      * @param  module
      *         The module
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @return The resulting {@code Class} object in a module defined by
      *         this class loader, or {@code null} if the class could not be found.
@@ -646,21 +672,6 @@ public abstract class ClassLoader {
         return lock;
     }
 
-    // This method is invoked by the virtual machine to load a class.
-    private Class<?> loadClassInternal(String name)
-        throws ClassNotFoundException
-    {
-        // For backward compatibility, explicitly lock on 'this' when
-        // the current class loader is not parallel capable.
-        if (parallelLockMap == null) {
-            synchronized (this) {
-                 return loadClass(name);
-            }
-        } else {
-            return loadClass(name);
-        }
-    }
-
     // Invoked by the VM after loading class with this loader.
     private void checkPackageAccess(Class<?> cls, ProtectionDomain pd) {
         final SecurityManager sm = System.getSecurityManager();
@@ -672,12 +683,11 @@ public abstract class ClassLoader {
                 return;
             }
 
-            final String name = cls.getName();
-            final int i = name.lastIndexOf('.');
-            if (i != -1) {
+            final String packageName = cls.getPackageName();
+            if (!packageName.isEmpty()) {
                 AccessController.doPrivileged(new PrivilegedAction<>() {
                     public Void run() {
-                        sm.checkPackageAccess(name.substring(0, i));
+                        sm.checkPackageAccess(packageName);
                         return null;
                     }
                 }, new AccessControlContext(new ProtectionDomain[] {pd}));
@@ -686,7 +696,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Finds the class with the specified <a href="#name">binary name</a>.
+     * Finds the class with the specified <a href="#binary-name">binary name</a>.
      * This method should be overridden by class loader implementations that
      * follow the delegation model for loading classes, and will be invoked by
      * the {@link #loadClass loadClass} method after checking the
@@ -695,7 +705,7 @@ public abstract class ClassLoader {
      * @implSpec The default implementation throws {@code ClassNotFoundException}.
      *
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @return  The resulting {@code Class} object
      *
@@ -709,9 +719,9 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Finds the class with the given <a href="#name">binary name</a>
+     * Finds the class with the given <a href="#binary-name">binary name</a>
      * in a module defined to this class loader.
-     * Class loader implementations that support the loading from modules
+     * Class loader implementations that support loading from modules
      * should override this method.
      *
      * @apiNote This method returns {@code null} rather than throwing
@@ -727,7 +737,7 @@ public abstract class ClassLoader {
      *         class loader
 
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @return The resulting {@code Class} object, or {@code null}
      *         if the class could not be found.
@@ -749,7 +759,7 @@ public abstract class ClassLoader {
      * Converts an array of bytes into an instance of class {@code Class}.
      * Before the {@code Class} can be used it must be resolved.  This method
      * is deprecated in favor of the version that takes a <a
-     * href="#name">binary name</a> as its first argument, and is more secure.
+     * href="#binary-name">binary name</a> as its first argument, and is more secure.
      *
      * @param  b
      *         The bytes that make up the class data.  The bytes in positions
@@ -816,12 +826,12 @@ public abstract class ClassLoader {
      * This method defines a package in this class loader corresponding to the
      * package of the {@code Class} (if such a package has not already been defined
      * in this class loader). The name of the defined package is derived from
-     * the <a href="#name">binary name</a> of the class specified by
+     * the <a href="#binary-name">binary name</a> of the class specified by
      * the byte array {@code b}.
      * Other properties of the defined package are as specified by {@link Package}.
      *
      * @param  name
-     *         The expected <a href="#name">binary name</a> of the class, or
+     *         The expected <a href="#binary-name">binary name</a> of the class, or
      *         {@code null} if not known
      *
      * @param  b
@@ -935,7 +945,7 @@ public abstract class ClassLoader {
      * package must contain the same set of certificates or a
      * {@code SecurityException} will be thrown.  Note that if
      * {@code name} is {@code null}, this check is not performed.
-     * You should always pass in the <a href="#name">binary name</a> of the
+     * You should always pass in the <a href="#binary-name">binary name</a> of the
      * class you are defining as well as the bytes.  This ensures that the
      * class you are defining is indeed the class you think it is.
      *
@@ -943,19 +953,19 @@ public abstract class ClassLoader {
      * only be defined by the {@linkplain #getPlatformClassLoader()
      * platform class loader} or its ancestors; otherwise {@code SecurityException}
      * will be thrown.  If {@code name} is not {@code null}, it must be equal to
-     * the <a href="#name">binary name</a> of the class
+     * the <a href="#binary-name">binary name</a> of the class
      * specified by the byte array {@code b}, otherwise a {@link
      * NoClassDefFoundError NoClassDefFoundError} will be thrown.
      *
      * <p> This method defines a package in this class loader corresponding to the
      * package of the {@code Class} (if such a package has not already been defined
      * in this class loader). The name of the defined package is derived from
-     * the <a href="#name">binary name</a> of the class specified by
+     * the <a href="#binary-name">binary name</a> of the class specified by
      * the byte array {@code b}.
      * Other properties of the defined package are as specified by {@link Package}.
      *
      * @param  name
-     *         The expected <a href="#name">binary name</a> of the class, or
+     *         The expected <a href="#binary-name">binary name</a> of the class, or
      *         {@code null} if not known
      *
      * @param  b
@@ -981,7 +991,7 @@ public abstract class ClassLoader {
      *
      * @throws  NoClassDefFoundError
      *          If {@code name} is not {@code null} and not equal to the
-     *          <a href="#name">binary name</a> of the class specified by {@code b}
+     *          <a href="#binary-name">binary name</a> of the class specified by {@code b}
      *
      * @throws  IndexOutOfBoundsException
      *          If either {@code off} or {@code len} is negative, or if
@@ -1039,7 +1049,7 @@ public abstract class ClassLoader {
      * </code></p>
      *
      * @param  name
-     *         The expected <a href="#name">binary name</a>. of the class, or
+     *         The expected <a href="#binary-name">binary name</a>. of the class, or
      *         {@code null} if not known
      *
      * @param  b
@@ -1059,7 +1069,7 @@ public abstract class ClassLoader {
      *
      * @throws  NoClassDefFoundError
      *          If {@code name} is not {@code null} and not equal to the
-     *          <a href="#name">binary name</a> of the class specified by {@code b}
+     *          <a href="#binary-name">binary name</a> of the class specified by {@code b}
      *
      * @throws  SecurityException
      *          If an attempt is made to add this class to a package that
@@ -1210,7 +1220,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Finds a class with the specified <a href="#name">binary name</a>,
+     * Finds a class with the specified <a href="#binary-name">binary name</a>,
      * loading it if necessary.
      *
      * <p> This method loads the class through the system class loader (see
@@ -1221,7 +1231,7 @@ public abstract class ClassLoader {
      * #findClass(String)}.  </p>
      *
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @return  The {@code Class} object for the specified {@code name}
      *
@@ -1251,13 +1261,13 @@ public abstract class ClassLoader {
     private native Class<?> findBootstrapClass(String name);
 
     /**
-     * Returns the class with the given <a href="#name">binary name</a> if this
+     * Returns the class with the given <a href="#binary-name">binary name</a> if this
      * loader has been recorded by the Java virtual machine as an initiating
-     * loader of a class with that <a href="#name">binary name</a>.  Otherwise
+     * loader of a class with that <a href="#binary-name">binary name</a>.  Otherwise
      * {@code null} is returned.
      *
      * @param  name
-     *         The <a href="#name">binary name</a> of the class
+     *         The <a href="#binary-name">binary name</a> of the class
      *
      * @return  The {@code Class} object, or {@code null} if the class has
      *          not been loaded
@@ -1293,7 +1303,7 @@ public abstract class ClassLoader {
 
     /**
      * Returns a URL to a resource in a module defined to this class loader.
-     * Class loader implementations that support the loading from modules
+     * Class loader implementations that support loading from modules
      * should override this method.
      *
      * @apiNote This method is the basis for the {@link
@@ -1429,12 +1439,12 @@ public abstract class ClassLoader {
      * @param  name
      *         The resource name
      *
-     * @return  An enumeration of {@link java.net.URL URL} objects for
-     *          the resource. If no resources could  be found, the enumeration
-     *          will be empty. Resources for which a {@code URL} cannot be
-     *          constructed, are in package that is not opened unconditionally,
-     *          or access to the resource is denied by the security manager,
-     *          are not returned in the enumeration.
+     * @return  An enumeration of {@link java.net.URL URL} objects for the
+     *          resource. If no resources could be found, the enumeration will
+     *          be empty. Resources for which a {@code URL} cannot be
+     *          constructed, are in a package that is not opened
+     *          unconditionally, or access to the resource is denied by the
+     *          security manager, are not returned in the enumeration.
      *
      * @throws  IOException
      *          If I/O errors occur
@@ -1811,7 +1821,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns the platform class loader for delegation.  All
+     * Returns the platform class loader.  All
      * <a href="#builtinLoaders">platform classes</a> are visible to
      * the platform class loader.
      *
@@ -1841,7 +1851,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns the system class loader for delegation.  This is the default
+     * Returns the system class loader.  This is the default
      * delegation parent for new {@code ClassLoader} instances, and is
      * typically the class loader used to start the application.
      *
@@ -1865,7 +1875,7 @@ public abstract class ClassLoader {
      * to be the system class loader. During construction, the class loader
      * should take great care to avoid calling {@code getSystemClassLoader()}.
      * If circular initialization of the system class loader is detected then
-     * an unspecified error or exception is thrown.
+     * an {@code IllegalStateException} is thrown.
      *
      * @implNote The system property to override the system class loader is not
      * examined until the VM is almost fully initialized. Code that executes
@@ -1873,16 +1883,17 @@ public abstract class ClassLoader {
      * value until the system is fully initialized.
      *
      * <p> The name of the built-in system class loader is {@code "app"}.
-     * The class path used by the built-in system class loader is determined
-     * by the system property "{@code java.class.path}" during early
-     * initialization of the VM. If the system property is not defined,
-     * or its value is an empty string, then there is no class path
-     * when the initial module is a module on the application module path,
-     * i.e. <em>a named module</em>. If the initial module is not on
-     * the application module path then the class path defaults to
-     * the current working directory.
+     * The system property "{@code java.class.path}" is read during early
+     * initialization of the VM to determine the class path.
+     * An empty value of "{@code java.class.path}" property is interpreted
+     * differently depending on whether the initial module (the module
+     * containing the main class) is named or unnamed:
+     * If named, the built-in system class loader will have no class path and
+     * will search for classes and resources using the application module path;
+     * otherwise, if unnamed, it will set the class path to the current
+     * working directory.
      *
-     * @return  The system {@code ClassLoader} for delegation
+     * @return  The system {@code ClassLoader}
      *
      * @throws  SecurityException
      *          If a security manager is present, and the caller's class loader
@@ -1916,9 +1927,9 @@ public abstract class ClassLoader {
                 // the system class loader is the built-in app class loader during startup
                 return getBuiltinAppClassLoader();
             case 3:
-                String msg = "getSystemClassLoader should only be called after VM booted";
-                throw new InternalError(msg);
-            case 4:
+                String msg = "getSystemClassLoader cannot be called during the system class loader instantiation";
+                throw new IllegalStateException(msg);
+            default:
                 // system fully initialized
                 assert VM.isBooted() && scl != null;
                 SecurityManager sm = System.getSecurityManager();
@@ -1926,8 +1937,6 @@ public abstract class ClassLoader {
                     checkClassLoaderPermission(scl, Reflection.getCallerClass());
                 }
                 return scl;
-            default:
-                throw new InternalError("should not reach here");
         }
     }
 
@@ -1967,7 +1976,17 @@ public abstract class ClassLoader {
                                            .getDeclaredConstructor(ClassLoader.class);
                 scl = (ClassLoader) ctor.newInstance(builtinLoader);
             } catch (Exception e) {
-                throw new Error(e);
+                Throwable cause = e;
+                if (e instanceof InvocationTargetException) {
+                    cause = e.getCause();
+                    if (cause instanceof Error) {
+                        throw (Error) cause;
+                    }
+                }
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                }
+                throw new Error(cause.getMessage(), cause);
             }
         } else {
             scl = builtinLoader;
@@ -2090,9 +2109,9 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Defines a package by <a href="#name">name</a> in this {@code ClassLoader}.
+     * Defines a package by <a href="#binary-name">name</a> in this {@code ClassLoader}.
      * <p>
-     * <a href="#name">Package names</a> must be unique within a class loader and
+     * <a href="#binary-name">Package names</a> must be unique within a class loader and
      * cannot be redefined or changed once created.
      * <p>
      * If a class loader wishes to define a package with specific properties,
@@ -2126,7 +2145,7 @@ public abstract class ClassLoader {
      * in a named module may be for example sealed with different seal base.
      *
      * @param  name
-     *         The <a href="#name">package name</a>
+     *         The <a href="#binary-name">package name</a>
      *
      * @param  specTitle
      *         The specification title
@@ -2160,11 +2179,13 @@ public abstract class ClassLoader {
      *          if a package of the given {@code name} is already
      *          defined by this class loader
      *
+     *
      * @since  1.2
      * @revised 9
      * @spec JPMS
      *
-     * @see <a href="{@docRoot}/../specs/jar/jar.html#sealing">
+     * @jvms 5.3 Run-time package
+     * @see <a href="{@docRoot}/../specs/jar/jar.html#package-sealing">
      *      The JAR File Specification: Package Sealing</a>
      */
     protected Package definePackage(String name, String specTitle,
@@ -2186,16 +2207,18 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns a {@code Package} of the given <a href="#name">name</a> that has been
-     * defined by this class loader.
+     * Returns a {@code Package} of the given <a href="#binary-name">name</a> that
+     * has been defined by this class loader.
      *
-     * @param  name The <a href="#name">package name</a>
+     * @param  name The <a href="#binary-name">package name</a>
      *
-     * @return The {@code Package} of the given name defined by this class loader,
-     *         or {@code null} if not found
+     * @return The {@code Package} of the given name that has been defined
+     *         by this class loader, or {@code null} if not found
      *
      * @throws  NullPointerException
      *          if {@code name} is {@code null}.
+     *
+     * @jvms 5.3 Run-time package
      *
      * @since  9
      * @spec JPMS
@@ -2211,14 +2234,18 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns all of the {@code Package}s defined by this class loader.
-     * The returned array has no duplicated {@code Package}s of the same name.
+     * Returns all of the {@code Package}s that have been defined by
+     * this class loader.  The returned array has no duplicated {@code Package}s
+     * of the same name.
      *
      * @apiNote This method returns an array rather than a {@code Set} or {@code Stream}
      *          for consistency with the existing {@link #getPackages} method.
      *
-     * @return The array of {@code Package} objects defined by this class loader;
-     *         or an zero length array if no package has been defined by this class loader.
+     * @return The array of {@code Package} objects that have been defined by
+     *         this class loader; or an zero length array if no package has been
+     *         defined by this class loader.
+     *
+     * @jvms 5.3 Run-time package
      *
      * @since  9
      * @spec JPMS
@@ -2228,7 +2255,7 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Finds a package by <a href="#name">name</a> in this class loader and its ancestors.
+     * Finds a package by <a href="#binary-name">name</a> in this class loader and its ancestors.
      * <p>
      * If this class loader defines a {@code Package} of the given name,
      * the {@code Package} is returned. Otherwise, the ancestors of
@@ -2242,9 +2269,9 @@ public abstract class ClassLoader {
      * class loader.
      *
      * @param  name
-     *         The <a href="#name">package name</a>
+     *         The <a href="#binary-name">package name</a>
      *
-     * @return The {@code Package} corresponding to the given name defined by
+     * @return The {@code Package} of the given name that has been defined by
      *         this class loader or its ancestors, or {@code null} if not found.
      *
      * @throws  NullPointerException
@@ -2262,6 +2289,8 @@ public abstract class ClassLoader {
      * a child loader.  A more robust approach is to use the
      * {@link ClassLoader#getDefinedPackage} method which returns
      * a {@code Package} for the specified class loader.
+     *
+     * @see ClassLoader#getDefinedPackage(String)
      *
      * @since  1.2
      * @revised 9
@@ -2281,10 +2310,10 @@ public abstract class ClassLoader {
     }
 
     /**
-     * Returns all of the {@code Package}s defined by this class loader
-     * and its ancestors.  The returned array may contain more than one
-     * {@code Package} object of the same package name, each defined by
-     * a different class loader in the class loader hierarchy.
+     * Returns all of the {@code Package}s that have been defined by
+     * this class loader and its ancestors.  The returned array may contain
+     * more than one {@code Package} object of the same package name, each
+     * defined by a different class loader in the class loader hierarchy.
      *
      * @apiNote The {@link #getPlatformClassLoader() platform class loader}
      * may delegate to the application class loader. In other words,
@@ -2294,8 +2323,10 @@ public abstract class ClassLoader {
      * when invoked on the platform class loader, this method will not
      * return any packages defined to the application class loader.
      *
-     * @return  The array of {@code Package} objects defined by this
-     *          class loader and its ancestors
+     * @return  The array of {@code Package} objects that have been defined by
+     *          this class loader and its ancestors
+     *
+     * @see ClassLoader#getDefinedPackages()
      *
      * @since  1.2
      * @revised 9
@@ -2363,72 +2394,160 @@ public abstract class ClassLoader {
      * @since    1.2
      */
     static class NativeLibrary {
+        // the class from which the library is loaded, also indicates
+        // the loader this native library belongs.
+        final Class<?> fromClass;
+        // the canonicalized name of the native library.
+        // or static library name
+        final String name;
+        // Indicates if the native library is linked into the VM
+        final boolean isBuiltin;
+
         // opaque handle to native library, used in native code.
         long handle;
         // the version of JNI environment the native library requires.
-        private int jniVersion;
-        // the class from which the library is loaded, also indicates
-        // the loader this native library belongs.
-        private final Class<?> fromClass;
-        // the canonicalized name of the native library.
-        // or static library name
-        String name;
-        // Indicates if the native library is linked into the VM
-        boolean isBuiltin;
-        // Indicates if the native library is loaded
-        boolean loaded;
-        native void load(String name, boolean isBuiltin);
+        int jniVersion;
 
-        native long find(String name);
-        native void unload(String name, boolean isBuiltin);
+        native boolean load0(String name, boolean isBuiltin);
 
-        public NativeLibrary(Class<?> fromClass, String name, boolean isBuiltin) {
+        native long findEntry(String name);
+
+        NativeLibrary(Class<?> fromClass, String name, boolean isBuiltin) {
             this.name = name;
             this.fromClass = fromClass;
             this.isBuiltin = isBuiltin;
         }
 
-        @SuppressWarnings("deprecation")
-        protected void finalize() {
+        /*
+         * Loads the native library and registers for cleanup when its
+         * associated class loader is unloaded
+         */
+        boolean load() {
+            if (handle != 0) {
+                throw new InternalError("Native library " + name + " has been loaded");
+            }
+
+            if (!load0(name, isBuiltin)) return false;
+
+            // register the class loader for cleanup when unloaded
+            // built class loaders are never unloaded
+            ClassLoader loader = fromClass.getClassLoader();
+            if (loader != null &&
+                loader != getBuiltinPlatformClassLoader() &&
+                loader != getBuiltinAppClassLoader()) {
+                CleanerFactory.cleaner().register(loader,
+                        new Unloader(name, handle, isBuiltin));
+            }
+            return true;
+        }
+
+        static boolean loadLibrary(Class<?> fromClass, String name, boolean isBuiltin) {
+            ClassLoader loader =
+                fromClass == null ? null : fromClass.getClassLoader();
+
             synchronized (loadedLibraryNames) {
-                if (fromClass.getClassLoader() != null && loaded) {
-                    /* remove the native library name */
-                    int size = loadedLibraryNames.size();
-                    for (int i = 0; i < size; i++) {
-                        if (name.equals(loadedLibraryNames.elementAt(i))) {
-                            loadedLibraryNames.removeElementAt(i);
-                            break;
+                Map<String, NativeLibrary> libs =
+                    loader != null ? loader.nativeLibraries() : systemNativeLibraries();
+                if (libs.containsKey(name)) {
+                    return true;
+                }
+
+                if (loadedLibraryNames.contains(name)) {
+                    throw new UnsatisfiedLinkError("Native Library " + name +
+                        " already loaded in another classloader");
+                }
+
+                /*
+                 * When a library is being loaded, JNI_OnLoad function can cause
+                 * another loadLibrary invocation that should succeed.
+                 *
+                 * We use a static stack to hold the list of libraries we are
+                 * loading because this can happen only when called by the
+                 * same thread because Runtime.load and Runtime.loadLibrary
+                 * are synchronous.
+                 *
+                 * If there is a pending load operation for the library, we
+                 * immediately return success; otherwise, we raise
+                 * UnsatisfiedLinkError.
+                 */
+                for (NativeLibrary lib : nativeLibraryContext) {
+                    if (name.equals(lib.name)) {
+                        if (loader == lib.fromClass.getClassLoader()) {
+                            return true;
+                        } else {
+                            throw new UnsatisfiedLinkError("Native Library " +
+                                name + " is being loaded in another classloader");
                         }
                     }
-                    /* unload the library. */
-                    ClassLoader.nativeLibraryContext.push(this);
+                }
+                NativeLibrary lib = new NativeLibrary(fromClass, name, isBuiltin);
+                // load the native library
+                nativeLibraryContext.push(lib);
+                try {
+                    if (!lib.load()) return false;
+                } finally {
+                    nativeLibraryContext.pop();
+                }
+                // register the loaded native library
+                loadedLibraryNames.add(name);
+                libs.put(name, lib);
+            }
+            return true;
+        }
+
+        // Invoked in the VM to determine the context class in JNI_OnLoad
+        // and JNI_OnUnload
+        static Class<?> getFromClass() {
+            return nativeLibraryContext.peek().fromClass;
+        }
+
+        // native libraries being loaded
+        static Deque<NativeLibrary> nativeLibraryContext = new ArrayDeque<>(8);
+
+        /*
+         * The run() method will be invoked when this class loader becomes
+         * phantom reachable to unload the native library.
+         */
+        static class Unloader implements Runnable {
+            // This represents the context when a native library is unloaded
+            // and getFromClass() will return null,
+            static final NativeLibrary UNLOADER =
+                new NativeLibrary(null, "dummy", false);
+            final String name;
+            final long handle;
+            final boolean isBuiltin;
+
+            Unloader(String name, long handle, boolean isBuiltin) {
+                if (handle == 0) {
+                    throw new IllegalArgumentException(
+                        "Invalid handle for native library " + name);
+                }
+
+                this.name = name;
+                this.handle = handle;
+                this.isBuiltin = isBuiltin;
+            }
+
+            @Override
+            public void run() {
+                synchronized (loadedLibraryNames) {
+                    /* remove the native library name */
+                    loadedLibraryNames.remove(name);
+                    nativeLibraryContext.push(UNLOADER);
                     try {
-                        unload(name, isBuiltin);
+                        unload(name, isBuiltin, handle);
                     } finally {
-                        ClassLoader.nativeLibraryContext.pop();
+                        nativeLibraryContext.pop();
                     }
+
                 }
             }
         }
-        // Invoked in the VM to determine the context class in
-        // JNI_Load/JNI_Unload
-        static Class<?> getFromClass() {
-            return ClassLoader.nativeLibraryContext.peek().fromClass;
-        }
+
+        // JNI FindClass expects the caller class if invoked from JNI_OnLoad
+        // and JNI_OnUnload is NativeLibrary class
+        static native void unload(String name, boolean isBuiltin, long handle);
     }
-
-    // All native library names we've loaded.
-    private static Vector<String> loadedLibraryNames = new Vector<>();
-
-    // Native libraries belonging to system classes.
-    private static Vector<NativeLibrary> systemNativeLibraries
-        = new Vector<>();
-
-    // Native libraries associated with the class loader.
-    private Vector<NativeLibrary> nativeLibraries = new Vector<>();
-
-    // native libraries being loaded/unloaded.
-    private static Stack<NativeLibrary> nativeLibraryContext = new Stack<>();
 
     // The paths searched for libraries
     private static String usr_paths[];
@@ -2441,7 +2560,7 @@ public abstract class ClassLoader {
         int psCount = 0;
 
         if (ClassLoaderHelper.allowsQuotedPathElements &&
-                ldPath.indexOf('\"') >= 0) {
+            ldPath.indexOf('\"') >= 0) {
             // First, remove quotes put around quoted parts of paths.
             // Second, use a quotation mark as a new path separator.
             // This will preserve any quoted old path separators.
@@ -2451,7 +2570,7 @@ public abstract class ClassLoader {
                 char ch = ldPath.charAt(i);
                 if (ch == '\"') {
                     while (++i < ldLen &&
-                            (ch = ldPath.charAt(i)) != '\"') {
+                        (ch = ldPath.charAt(i)) != '\"') {
                         buf[bufLen++] = ch;
                     }
                 } else {
@@ -2467,7 +2586,7 @@ public abstract class ClassLoader {
             ps = '\"';
         } else {
             for (int i = ldPath.indexOf(ps); i >= 0;
-                    i = ldPath.indexOf(ps, i + 1)) {
+                 i = ldPath.indexOf(ps, i + 1)) {
                 psCount++;
             }
         }
@@ -2477,11 +2596,11 @@ public abstract class ClassLoader {
         for (int j = 0; j < psCount; ++j) {
             int pathEnd = ldPath.indexOf(ps, pathStart);
             paths[j] = (pathStart < pathEnd) ?
-                    ldPath.substring(pathStart, pathEnd) : ".";
+                ldPath.substring(pathStart, pathEnd) : ".";
             pathStart = pathEnd + 1;
         }
         paths[psCount] = (pathStart < ldLen) ?
-                ldPath.substring(pathStart, ldLen) : ".";
+            ldPath.substring(pathStart, ldLen) : ".";
         return paths;
     }
 
@@ -2506,7 +2625,7 @@ public abstract class ClassLoader {
                 File libfile = new File(libfilename);
                 if (!libfile.isAbsolute()) {
                     throw new UnsatisfiedLinkError(
-    "ClassLoader.findLibrary failed to return an absolute path: " + libfilename);
+                        "ClassLoader.findLibrary failed to return an absolute path: " + libfilename);
                 }
                 if (loadLibrary0(fromClass, libfile)) {
                     return;
@@ -2537,10 +2656,11 @@ public abstract class ClassLoader {
             }
         }
         // Oops, it failed
-        throw new UnsatisfiedLinkError("no " + name + " in java.library.path");
+        throw new UnsatisfiedLinkError("no " + name +
+            " in java.library.path: " + Arrays.toString(usr_paths));
     }
 
-    static native String findBuiltinLib(String name);
+    private static native String findBuiltinLib(String name);
 
     private static boolean loadLibrary0(Class<?> fromClass, final File file) {
         // Check to see if we're attempting to access a static library
@@ -2561,85 +2681,72 @@ public abstract class ClassLoader {
                 return false;
             }
         }
-        ClassLoader loader =
-            (fromClass == null) ? null : fromClass.getClassLoader();
-        Vector<NativeLibrary> libs =
-            loader != null ? loader.nativeLibraries : systemNativeLibraries;
-        synchronized (libs) {
-            int size = libs.size();
-            for (int i = 0; i < size; i++) {
-                NativeLibrary lib = libs.elementAt(i);
-                if (name.equals(lib.name)) {
-                    return true;
-                }
-            }
-
-            synchronized (loadedLibraryNames) {
-                if (loadedLibraryNames.contains(name)) {
-                    throw new UnsatisfiedLinkError
-                        ("Native Library " +
-                         name +
-                         " already loaded in another classloader");
-                }
-                /* If the library is being loaded (must be by the same thread,
-                 * because Runtime.load and Runtime.loadLibrary are
-                 * synchronous). The reason is can occur is that the JNI_OnLoad
-                 * function can cause another loadLibrary invocation.
-                 *
-                 * Thus we can use a static stack to hold the list of libraries
-                 * we are loading.
-                 *
-                 * If there is a pending load operation for the library, we
-                 * immediately return success; otherwise, we raise
-                 * UnsatisfiedLinkError.
-                 */
-                int n = nativeLibraryContext.size();
-                for (int i = 0; i < n; i++) {
-                    NativeLibrary lib = nativeLibraryContext.elementAt(i);
-                    if (name.equals(lib.name)) {
-                        if (loader == lib.fromClass.getClassLoader()) {
-                            return true;
-                        } else {
-                            throw new UnsatisfiedLinkError
-                                ("Native Library " +
-                                 name +
-                                 " is being loaded in another classloader");
-                        }
-                    }
-                }
-                NativeLibrary lib = new NativeLibrary(fromClass, name, isBuiltin);
-                nativeLibraryContext.push(lib);
-                try {
-                    lib.load(name, isBuiltin);
-                } finally {
-                    nativeLibraryContext.pop();
-                }
-                if (lib.loaded) {
-                    loadedLibraryNames.addElement(name);
-                    libs.addElement(lib);
-                    return true;
-                }
-                return false;
-            }
-        }
+        return NativeLibrary.loadLibrary(fromClass, name, isBuiltin);
     }
 
-    // Invoked in the VM class linking code.
-    static long findNative(ClassLoader loader, String name) {
-        Vector<NativeLibrary> libs =
-            loader != null ? loader.nativeLibraries : systemNativeLibraries;
-        synchronized (libs) {
-            int size = libs.size();
-            for (int i = 0; i < size; i++) {
-                NativeLibrary lib = libs.elementAt(i);
-                long entry = lib.find(name);
-                if (entry != 0)
-                    return entry;
-            }
+    /*
+     * Invoked in the VM class linking code.
+     */
+    private static long findNative(ClassLoader loader, String entryName) {
+        Map<String, NativeLibrary> libs =
+            loader != null ? loader.nativeLibraries() : systemNativeLibraries();
+        if (libs.isEmpty())
+            return 0;
+
+        // the native libraries map may be updated in another thread
+        // when a native library is being loaded.  No symbol will be
+        // searched from it yet.
+        for (NativeLibrary lib : libs.values()) {
+            long entry = lib.findEntry(entryName);
+            if (entry != 0) return entry;
         }
         return 0;
     }
 
+    // All native library names we've loaded.
+    // This also serves as the lock to obtain nativeLibraries
+    // and write to nativeLibraryContext.
+    private static final Set<String> loadedLibraryNames = new HashSet<>();
+
+    // Native libraries belonging to system classes.
+    private static volatile Map<String, NativeLibrary> systemNativeLibraries;
+
+    // Native libraries associated with the class loader.
+    private volatile Map<String, NativeLibrary> nativeLibraries;
+
+    /*
+     * Returns the native libraries map associated with bootstrap class loader
+     * This method will create the map at the first time when called.
+     */
+    private static Map<String, NativeLibrary> systemNativeLibraries() {
+        Map<String, NativeLibrary> libs = systemNativeLibraries;
+        if (libs == null) {
+            synchronized (loadedLibraryNames) {
+                libs = systemNativeLibraries;
+                if (libs == null) {
+                    libs = systemNativeLibraries = new ConcurrentHashMap<>();
+                }
+            }
+        }
+        return libs;
+    }
+
+    /*
+     * Returns the native libraries map associated with this class loader
+     * This method will create the map at the first time when called.
+     */
+    private Map<String, NativeLibrary> nativeLibraries() {
+        Map<String, NativeLibrary> libs = nativeLibraries;
+        if (libs == null) {
+            synchronized (loadedLibraryNames) {
+                libs = nativeLibraries;
+                if (libs == null) {
+                    libs = nativeLibraries = new ConcurrentHashMap<>();
+                }
+            }
+        }
+        return libs;
+    }
 
     // -- Assertion management --
 

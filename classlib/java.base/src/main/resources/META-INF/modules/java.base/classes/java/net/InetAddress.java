@@ -290,7 +290,10 @@ class InetAddress implements java.io.Serializable {
     /* Used to store the name service provider */
     private static transient NameService nameService = null;
 
-    /* Used to store the best available hostname */
+    /**
+     * Used to store the best available hostname.
+     * Lazily initialized via a data race; safe because Strings are immutable.
+     */
     private transient String canonicalHostName = null;
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */
@@ -622,11 +625,11 @@ class InetAddress implements java.io.Serializable {
      * @since 1.4
      */
     public String getCanonicalHostName() {
-        if (canonicalHostName == null) {
-            canonicalHostName =
+        String value = canonicalHostName;
+        if (value == null)
+            canonicalHostName = value =
                 InetAddress.getHostFromNameService(this, true);
-        }
-        return canonicalHostName;
+        return value;
     }
 
     /**
@@ -1133,7 +1136,7 @@ class InetAddress implements java.io.Serializable {
 
     /**
      * Create an instance of the NameService interface based on
-     * the setting of the {@codejdk.net.hosts.file} system property.
+     * the setting of the {@code jdk.net.hosts.file} system property.
      *
      * <p>The default NameService is the PlatformNameService, which typically
      * delegates name and address resolution calls to the underlying
@@ -1219,11 +1222,17 @@ class InetAddress implements java.io.Serializable {
      * supported. See <a href="Inet6Address.html#scoped">here</a> for a description of IPv6
      * scoped addresses.
      *
-     * <p> If the host is {@code null} then an {@code InetAddress}
-     * representing an address of the loopback interface is returned.
+     * <p> If the host is {@code null} or {@code host.length()} is equal
+     * to zero, then an {@code InetAddress} representing an address of the
+     * loopback interface is returned.
      * See <a href="http://www.ietf.org/rfc/rfc3330.txt">RFC&nbsp;3330</a>
      * section&nbsp;2 and <a href="http://www.ietf.org/rfc/rfc2373.txt">RFC&nbsp;2373</a>
-     * section&nbsp;2.5.3. </p>
+     * section&nbsp;2.5.3.
+     *
+     * <p> If there is a security manager, and {@code host} is not {@code null}
+     * or {@code host.length() } is not equal to zero, the security manager's
+     * {@code checkConnect} method is called with the hostname and {@code -1}
+     * as its arguments to determine if the operation is allowed.
      *
      * @param      host   the specified host, or {@code null}.
      * @return     an IP address for the given host name.
@@ -1259,18 +1268,18 @@ class InetAddress implements java.io.Serializable {
      * also be qualified by appending a scoped zone identifier or scope_id.
      * The syntax and usage of scope_ids is described
      * <a href="Inet6Address.html#scoped">here</a>.
-     * <p> If the host is {@code null} then an {@code InetAddress}
-     * representing an address of the loopback interface is returned.
+     *
+     * <p> If the host is {@code null} or {@code host.length()} is equal
+     * to zero, then an {@code InetAddress} representing an address of the
+     * loopback interface is returned.
      * See <a href="http://www.ietf.org/rfc/rfc3330.txt">RFC&nbsp;3330</a>
      * section&nbsp;2 and <a href="http://www.ietf.org/rfc/rfc2373.txt">RFC&nbsp;2373</a>
      * section&nbsp;2.5.3. </p>
      *
-     * <p> If there is a security manager and {@code host} is not
-     * null and {@code host.length() } is not equal to zero, the
-     * security manager's
-     * {@code checkConnect} method is called
-     * with the hostname and {@code -1}
-     * as its arguments to see if the operation is allowed.
+     * <p> If there is a security manager, and {@code host} is not {@code null}
+     * or {@code host.length() } is not equal to zero, the security manager's
+     * {@code checkConnect} method is called with the hostname and {@code -1}
+     * as its arguments to determine if the operation is allowed.
      *
      * @param      host   the name of the host, or {@code null}.
      * @return     an array of all the IP addresses for a given host name.
@@ -1700,7 +1709,7 @@ class InetAddress implements java.io.Serializable {
         return (InetAddressImpl) impl;
     }
 
-    private void readObjectNoData (ObjectInputStream s) throws
+    private void readObjectNoData () throws
                          IOException, ClassNotFoundException {
         if (getClass().getClassLoader() != null) {
             throw new SecurityException ("invalid address type");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,15 +25,22 @@
 
 package java.util.zip;
 
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.file.attribute.FileTime;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.zip.ZipConstants.ENDHDR;
+
+import jdk.internal.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 class ZipUtils {
 
@@ -42,6 +49,9 @@ class ZipUtils {
 
     // used to indicate the corresponding windows time is not available
     public static final long WINDOWS_TIME_NOT_AVAILABLE = Long.MIN_VALUE;
+
+    // static final ByteBuffer defaultBuf = ByteBuffer.allocateDirect(0);
+    static final ByteBuffer defaultBuf = ByteBuffer.allocate(0);
 
     /**
      * Converts Windows time (in microseconds, UTC/GMT) time to FileTime.
@@ -81,27 +91,34 @@ class ZipUtils {
      * Converts DOS time to Java time (number of milliseconds since epoch).
      */
     public static long dosToJavaTime(long dtime) {
-        int year;
-        int month;
-        int day;
+        int year = (int) (((dtime >> 25) & 0x7f) + 1980);
+        int month = (int) ((dtime >> 21) & 0x0f);
+        int day = (int) ((dtime >> 16) & 0x1f);
         int hour = (int) ((dtime >> 11) & 0x1f);
         int minute = (int) ((dtime >> 5) & 0x3f);
         int second = (int) ((dtime << 1) & 0x3e);
-        if ((dtime >> 16) == 0) {
-            // Interpret the 0 DOS date as 1979-11-30 for compatibility with
-            // other implementations.
-            year = 1979;
-            month = 11;
-            day = 30;
-        } else {
-            year = (int) (((dtime >> 25) & 0x7f) + 1980);
-            month = (int) ((dtime >> 21) & 0x0f);
-            day = (int) ((dtime >> 16) & 0x1f);
+
+        if (month > 0 && month < 13 && day > 0 && hour < 24 && minute < 60 && second < 60) {
+            try {
+                LocalDateTime ldt = LocalDateTime.of(year, month, day, hour, minute, second);
+                return TimeUnit.MILLISECONDS.convert(ldt.toEpochSecond(
+                        ZoneId.systemDefault().getRules().getOffset(ldt)), TimeUnit.SECONDS);
+            } catch (DateTimeException dte) {
+                // ignore
+            }
         }
-        LocalDateTime ldt = LocalDateTime.of(year, month, day, hour, minute, second);
-        return TimeUnit.MILLISECONDS.convert(ldt.toEpochSecond(
-                ZoneId.systemDefault().getRules().getOffset(ldt)), TimeUnit.SECONDS);
+        return overflowDosToJavaTime(year, month, day, hour, minute, second);
     }
+
+    /*
+     * Deal with corner cases where an arguably mal-formed DOS time is used
+     */
+    @SuppressWarnings("deprecation") // Use of Date constructor
+    private static long overflowDosToJavaTime(int year, int month, int day,
+                                              int hour, int minute, int second) {
+        return new Date(year - 1900, month - 1, day, hour, minute, second).getTime();
+    }
+
 
     /**
      * Converts extended DOS time to Java time, where up to 1999 milliseconds
@@ -270,5 +287,18 @@ class ZipUtils {
             PrivilegedAction<Void> pa = () -> { System.loadLibrary("zip"); return null; };
             AccessController.doPrivileged(pa);
         }
+    }
+
+    private static final Unsafe unsafe = Unsafe.getUnsafe();
+
+    private static final long byteBufferArrayOffset = unsafe.objectFieldOffset(ByteBuffer.class, "hb");
+    private static final long byteBufferOffsetOffset = unsafe.objectFieldOffset(ByteBuffer.class, "offset");
+
+    static byte[] getBufferArray(ByteBuffer byteBuffer) {
+        return (byte[]) unsafe.getObject(byteBuffer, byteBufferArrayOffset);
+    }
+
+    static int getBufferOffset(ByteBuffer byteBuffer) {
+        return unsafe.getInt(byteBuffer, byteBufferOffsetOffset);
     }
 }

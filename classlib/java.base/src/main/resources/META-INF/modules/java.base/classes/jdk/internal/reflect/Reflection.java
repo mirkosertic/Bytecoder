@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,14 +63,6 @@ public class Reflection {
     @CallerSensitive
     @HotSpotIntrinsicCandidate
     public static native Class<?> getCallerClass();
-
-    /**
-     * @deprecated This method will be removed.
-     * This method is a private JDK API and retained temporarily to
-     * simplify the implementation of sun.misc.Reflection.getCallerClass.
-     */
-    @Deprecated(forRemoval=true)
-    public static native Class<?> getCallerClass(int depth);
 
     /** Retrieves the access flags written to the class file. For
         inner classes these flags may differ from those returned by
@@ -149,6 +141,15 @@ public class Reflection {
 
         if (Modifier.isPublic(modifiers)) {
             return true;
+        }
+
+        // Check for nestmate access if member is private
+        if (Modifier.isPrivate(modifiers)) {
+            // Note: targetClass may be outside the nest, but that is okay
+            //       as long as memberClass is in the nest.
+            if (areNestMates(currentClass, memberClass)) {
+                return true;
+            }
         }
 
         boolean successSoFar = false;
@@ -359,4 +360,12 @@ public class Reflection {
 
         return new IllegalAccessException(msg);
     }
+
+    /**
+     * Returns true if {@code currentClass} and {@code memberClass}
+     * are nestmates - that is, if they have the same nesthost as
+     * determined by the VM.
+     */
+    public static native boolean areNestMates(Class<?> currentClass,
+                                              Class<?> memberClass);
 }

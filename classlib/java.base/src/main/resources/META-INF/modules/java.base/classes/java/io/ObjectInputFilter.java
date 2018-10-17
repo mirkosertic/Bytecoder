@@ -38,6 +38,15 @@ import jdk.internal.misc.SharedSecrets;
 
 /**
  * Filter classes, array lengths, and graph metrics during deserialization.
+ *
+ * <p><strong>Warning: Deserialization of untrusted data is inherently dangerous
+ * and should be avoided. Untrusted data should be carefully validated according to the
+ * "Serialization and Deserialization" section of the
+ * {@extLink secure_coding_guidelines_javase Secure Coding Guidelines for Java SE}.
+ * {@extLink serialization_filter_guide Serialization Filtering} describes best
+ * practices for defensive use of serial filters.
+ * </strong></p>
+ *
  * If set on an {@link ObjectInputStream}, the {@link #checkInput checkInput(FilterInfo)}
  * method is called to validate classes, the length of each array,
  * the number of objects being read from the stream, the depth of the graph,
@@ -495,8 +504,8 @@ public interface ObjectInputFilter {
                         // Wildcard cases
                         if (p.endsWith(".*")) {
                             // Pattern is a package name with a wildcard
-                            final String pkg = p.substring(poffset, nameLen - 1);
-                            if (pkg.length() < 2) {
+                            final String pkg = p.substring(poffset, nameLen - 2);
+                            if (pkg.isEmpty()) {
                                 throw new IllegalArgumentException("package missing in: \"" + pattern + "\"");
                             }
                             if (negate) {
@@ -651,13 +660,12 @@ public interface ObjectInputFilter {
              * Returns {@code true} if the class is in the package.
              *
              * @param c   a class
-             * @param pkg a package name (including the trailing ".")
+             * @param pkg a package name
              * @return {@code true} if the class is in the package,
              * otherwise {@code false}
              */
             private static boolean matchesPackage(Class<?> c, String pkg) {
-                String n = c.getName();
-                return n.startsWith(pkg) && n.lastIndexOf('.') == pkg.length() - 1;
+                return pkg.equals(c.getPackageName());
             }
 
             /**

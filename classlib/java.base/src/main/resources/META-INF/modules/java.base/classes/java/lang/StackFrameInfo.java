@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,16 +29,15 @@ import jdk.internal.misc.SharedSecrets;
 
 import static java.lang.StackWalker.Option.*;
 import java.lang.StackWalker.StackFrame;
+import java.lang.invoke.MethodType;
 
 class StackFrameInfo implements StackFrame {
+    private final byte RETAIN_CLASS_REF = 0x01;
+
     private final static JavaLangInvokeAccess JLIA =
         SharedSecrets.getJavaLangInvokeAccess();
 
-    // Footprint improvement: MemberName::clazz can replace
-    // StackFrameInfo::declaringClass.
-
-    private final StackWalker walker;
-    private final Class<?> declaringClass;
+    private final byte flags;
     private final Object memberName;
     private final short bci;
     private volatile StackTraceElement ste;
@@ -48,8 +47,7 @@ class StackFrameInfo implements StackFrame {
      * to use
      */
     StackFrameInfo(StackWalker walker) {
-        this.walker = walker;
-        this.declaringClass = null;
+        this.flags = walker.retainClassRef ? RETAIN_CLASS_REF : 0;
         this.bci = -1;
         this.memberName = JLIA.newMemberName();
     }
@@ -57,25 +55,36 @@ class StackFrameInfo implements StackFrame {
     // package-private called by StackStreamFactory to skip
     // the capability check
     Class<?> declaringClass() {
-        return declaringClass;
+        return JLIA.getDeclaringClass(memberName);
     }
 
     // ----- implementation of StackFrame methods
 
     @Override
     public String getClassName() {
-        return declaringClass.getName();
+        return declaringClass().getName();
     }
 
     @Override
     public Class<?> getDeclaringClass() {
-        walker.ensureAccessEnabled(RETAIN_CLASS_REFERENCE);
-        return declaringClass;
+        ensureRetainClassRefEnabled();
+        return declaringClass();
     }
 
     @Override
     public String getMethodName() {
         return JLIA.getName(memberName);
+    }
+
+    @Override
+    public MethodType getMethodType() {
+        ensureRetainClassRefEnabled();
+        return JLIA.getMethodType(memberName);
+    }
+
+    @Override
+    public String getDescriptor() {
+        return JLIA.getMethodDescriptor(memberName);
     }
 
     @Override
@@ -124,5 +133,11 @@ class StackFrameInfo implements StackFrame {
             }
         }
         return s;
+    }
+
+    private void ensureRetainClassRefEnabled() {
+        if ((flags & RETAIN_CLASS_REF) == 0) {
+            throw new UnsupportedOperationException("No access to RETAIN_CLASS_REFERENCE");
+        }
     }
 }

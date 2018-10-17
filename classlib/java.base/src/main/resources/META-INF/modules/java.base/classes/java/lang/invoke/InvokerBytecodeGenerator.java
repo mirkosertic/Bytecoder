@@ -93,6 +93,10 @@ class InvokerBytecodeGenerator {
     private ClassWriter cw;
     private MethodVisitor mv;
 
+    /** Single element internal class name lookup cache. */
+    private Class<?> lastClass;
+    private String lastInternalName;
+
     private static final MemberName.Factory MEMBERNAME_FACTORY = MemberName.getFactory();
     private static final Class<?> HOST_CLASS = LambdaForm.class;
 
@@ -183,8 +187,7 @@ class InvokerBytecodeGenerator {
             new java.security.PrivilegedAction<>() {
                 public Void run() {
                     try {
-                        String dumpName = className;
-                        //dumpName = dumpName.replace('/', '-');
+                        String dumpName = className.replace('.','/');
                         File dumpFile = new File(DUMP_CLASS_FILES_DIR, dumpName+".class");
                         System.out.println("dump: " + dumpFile);
                         dumpFile.getParentFile().mkdirs();
@@ -603,13 +606,18 @@ class InvokerBytecodeGenerator {
         mv.visitInsn(opcode);
     }
 
-    private static String getInternalName(Class<?> c) {
+    private String getInternalName(Class<?> c) {
         if (c == Object.class)             return OBJ;
         else if (c == Object[].class)      return OBJARY;
         else if (c == Class.class)         return CLS;
         else if (c == MethodHandle.class)  return MH;
         assert(VerifyAccess.isTypeVisible(c, Object.class)) : c.getName();
-        return c.getName().replace('.', '/');
+
+        if (c == lastClass) {
+            return lastInternalName;
+        }
+        lastClass = c;
+        return lastInternalName = c.getName().replace('.', '/');
     }
 
     private static MemberName resolveFrom(String name, MethodType type, Class<?> holder) {
@@ -630,7 +638,7 @@ class InvokerBytecodeGenerator {
         String name = form.kind.methodName;
         switch (form.kind) {
             case BOUND_REINVOKER: {
-                name = name + "_" + BoundMethodHandle.speciesData(form).fieldSignature();
+                name = name + "_" + BoundMethodHandle.speciesDataFor(form).key();
                 return resolveFrom(name, invokerType, DelegatingMethodHandle.Holder.class);
             }
             case DELEGATE:                  return resolveFrom(name, invokerType, DelegatingMethodHandle.Holder.class);
@@ -641,6 +649,8 @@ class InvokerBytecodeGenerator {
             }
             case EXACT_INVOKER:             // fall-through
             case EXACT_LINKER:              // fall-through
+            case LINK_TO_CALL_SITE:         // fall-through
+            case LINK_TO_TARGET_METHOD:     // fall-through
             case GENERIC_INVOKER:           // fall-through
             case GENERIC_LINKER:            return resolveFrom(name, invokerType.basicType(), Invokers.Holder.class);
             case GET_OBJECT:                // fall-through
@@ -661,8 +671,10 @@ class InvokerBytecodeGenerator {
             case PUT_LONG:                  // fall-through
             case PUT_FLOAT:                 // fall-through
             case PUT_DOUBLE:                // fall-through
+            case DIRECT_NEW_INVOKE_SPECIAL: // fall-through
             case DIRECT_INVOKE_INTERFACE:   // fall-through
             case DIRECT_INVOKE_SPECIAL:     // fall-through
+            case DIRECT_INVOKE_SPECIAL_IFC: // fall-through
             case DIRECT_INVOKE_STATIC:      // fall-through
             case DIRECT_INVOKE_STATIC_INIT: // fall-through
             case DIRECT_INVOKE_VIRTUAL:     return resolveFrom(name, invokerType, DirectMethodHandle.Holder.class);
@@ -929,6 +941,12 @@ class InvokerBytecodeGenerator {
         if (member == null)  return false;
         if (member.isConstructor())  return false;
         Class<?> cls = member.getDeclaringClass();
+        // Fast-path non-private members declared by MethodHandles, which is a common
+        // case
+        if (MethodHandle.class.isAssignableFrom(cls) && !member.isPrivate()) {
+            assert(isStaticallyInvocableType(member.getMethodOrFieldType()));
+            return true;
+        }
         if (cls.isArray() || cls.isPrimitive())
             return false;  // FIXME
         if (cls.isAnonymousClass() || cls.isLocalClass())
@@ -937,12 +955,8 @@ class InvokerBytecodeGenerator {
             return false;  // not on BCP
         if (ReflectUtil.isVMAnonymousClass(cls)) // FIXME: switch to supported API once it is added
             return false;
-        MethodType mtype = member.getMethodOrFieldType();
-        if (!isStaticallyNameable(mtype.returnType()))
+        if (!isStaticallyInvocableType(member.getMethodOrFieldType()))
             return false;
-        for (Class<?> ptype : mtype.parameterArray())
-            if (!isStaticallyNameable(ptype))
-                return false;
         if (!member.isPrivate() && VerifyAccess.isSamePackage(MethodHandle.class, cls))
             return true;   // in java.lang.invoke package
         if (member.isPublic() && isStaticallyNameable(cls))
@@ -950,9 +964,22 @@ class InvokerBytecodeGenerator {
         return false;
     }
 
+    private static boolean isStaticallyInvocableType(MethodType mtype) {
+        if (!isStaticallyNameable(mtype.returnType()))
+            return false;
+        for (Class<?> ptype : mtype.parameterArray())
+            if (!isStaticallyNameable(ptype))
+                return false;
+        return true;
+    }
+
     static boolean isStaticallyNameable(Class<?> cls) {
         if (cls == Object.class)
             return true;
+        if (MethodHandle.class.isAssignableFrom(cls)) {
+            assert(!ReflectUtil.isVMAnonymousClass(cls));
+            return true;
+        }
         while (cls.isArray())
             cls = cls.getComponentType();
         if (cls.isPrimitive())
@@ -1841,13 +1868,11 @@ class InvokerBytecodeGenerator {
      * Emit a bogus method that just loads some string constants. This is to get the constants into the constant pool
      * for debugging purposes.
      */
-    private void bogusMethod(Object... os) {
+    private void bogusMethod(Object os) {
         if (DUMP_CLASS_FILES) {
             mv = cw.visitMethod(Opcodes.ACC_STATIC, "dummy", "()V", null, null);
-            for (Object o : os) {
-                mv.visitLdcInsn(o.toString());
-                mv.visitInsn(Opcodes.POP);
-            }
+            mv.visitLdcInsn(os.toString());
+            mv.visitInsn(Opcodes.POP);
             mv.visitInsn(Opcodes.RETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

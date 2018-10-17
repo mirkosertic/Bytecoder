@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -143,11 +143,21 @@ class LambdaForm {
         D_TYPE('D', double.class, Wrapper.DOUBLE),  // all primitive types
         V_TYPE('V', void.class,   Wrapper.VOID);    // not valid in all contexts
 
-        static final BasicType[] ALL_TYPES = BasicType.values();
-        static final BasicType[] ARG_TYPES = Arrays.copyOf(ALL_TYPES, ALL_TYPES.length-1);
+        static final @Stable BasicType[] ALL_TYPES = BasicType.values();
+        static final @Stable BasicType[] ARG_TYPES = Arrays.copyOf(ALL_TYPES, ALL_TYPES.length-1);
 
         static final int ARG_TYPE_LIMIT = ARG_TYPES.length;
         static final int TYPE_LIMIT = ALL_TYPES.length;
+
+        // Derived int constants, which (unlike the enums) can be constant folded.
+        // We can remove them when JDK-8161245 is fixed.
+        static final byte
+                L_TYPE_NUM = (byte) L_TYPE.ordinal(),
+                I_TYPE_NUM = (byte) I_TYPE.ordinal(),
+                J_TYPE_NUM = (byte) J_TYPE.ordinal(),
+                F_TYPE_NUM = (byte) F_TYPE.ordinal(),
+                D_TYPE_NUM = (byte) D_TYPE.ordinal(),
+                V_TYPE_NUM = (byte) V_TYPE.ordinal();
 
         final char btChar;
         final Class<?> btClass;
@@ -281,6 +291,7 @@ class LambdaForm {
         LINK_TO_CALL_SITE("linkToCallSite"),
         DIRECT_INVOKE_VIRTUAL("DMH.invokeVirtual", "invokeVirtual"),
         DIRECT_INVOKE_SPECIAL("DMH.invokeSpecial", "invokeSpecial"),
+        DIRECT_INVOKE_SPECIAL_IFC("DMH.invokeSpecialIFC", "invokeSpecialIFC"),
         DIRECT_INVOKE_STATIC("DMH.invokeStatic", "invokeStatic"),
         DIRECT_NEW_INVOKE_SPECIAL("DMH.newInvokeSpecial", "newInvokeSpecial"),
         DIRECT_INVOKE_INTERFACE("DMH.invokeInterface", "invokeInterface"),
@@ -678,6 +689,9 @@ class LambdaForm {
             ptypes[i] = basicType(sig.charAt(i)).btClass;
         Class<?> rtype = signatureReturn(sig).btClass;
         return MethodType.makeImpl(rtype, ptypes, true);
+    }
+    static MethodType basicMethodType(MethodType mt) {
+        return signatureType(basicTypeSignature(mt));
     }
 
     /**
@@ -1291,14 +1305,28 @@ class LambdaForm {
         assert(sigp == sig.length);
         return String.valueOf(sig);
     }
+
+    /** Hack to make signatures more readable when they show up in method names.
+     * Signature should start with a sequence of uppercase ASCII letters.
+     * Runs of three or more are replaced by a single letter plus a decimal repeat count.
+     * A tail of anything other than uppercase ASCII is passed through unchanged.
+     * @param signature sequence of uppercase ASCII letters with possible repetitions
+     * @return same sequence, with repetitions counted by decimal numerals
+     */
     public static String shortenSignature(String signature) {
-        // Hack to make signatures more readable when they show up in method names.
         final int NO_CHAR = -1, MIN_RUN = 3;
         int c0, c1 = NO_CHAR, c1reps = 0;
         StringBuilder buf = null;
         int len = signature.length();
         if (len < MIN_RUN)  return signature;
         for (int i = 0; i <= len; i++) {
+            if (c1 != NO_CHAR && !('A' <= c1 && c1 <= 'Z')) {
+                // wrong kind of char; bail out here
+                if (buf != null) {
+                    buf.append(signature.substring(i - c1reps, len));
+                }
+                break;
+            }
             // shift in the next char:
             c0 = c1; c1 = (i == len ? NO_CHAR : signature.charAt(i));
             if (c1 == c0) { ++c1reps; continue; }
@@ -1342,7 +1370,7 @@ class LambdaForm {
             this.arguments = that.arguments;
             this.constraint = constraint;
             assert(constraint == null || isParam());  // only params have constraints
-            assert(constraint == null || constraint instanceof BoundMethodHandle.SpeciesData || constraint instanceof Class);
+            assert(constraint == null || constraint instanceof ClassSpecializer.SpeciesData || constraint instanceof Class);
         }
         Name(MethodHandle function, Object... arguments) {
             this(new NamedFunction(function), arguments);
@@ -1707,70 +1735,75 @@ class LambdaForm {
     private static final @Stable NamedFunction[] NF_identity = new NamedFunction[TYPE_LIMIT];
     private static final @Stable NamedFunction[] NF_zero = new NamedFunction[TYPE_LIMIT];
 
-    private static synchronized void createFormsFor(BasicType type) {
-        final int ord = type.ordinal();
-        LambdaForm idForm = LF_identity[ord];
-        if (idForm != null) {
-            return;
-        }
-        char btChar = type.basicTypeChar();
-        boolean isVoid = (type == V_TYPE);
-        Class<?> btClass = type.btClass;
-        MethodType zeType = MethodType.methodType(btClass);
-        MethodType idType = (isVoid) ? zeType : MethodType.methodType(btClass, btClass);
-
-        // Look up symbolic names.  It might not be necessary to have these,
-        // but if we need to emit direct references to bytecodes, it helps.
-        // Zero is built from a call to an identity function with a constant zero input.
-        MemberName idMem = new MemberName(LambdaForm.class, "identity_"+btChar, idType, REF_invokeStatic);
-        MemberName zeMem = null;
-        try {
-            idMem = IMPL_NAMES.resolveOrFail(REF_invokeStatic, idMem, null, NoSuchMethodException.class);
-            if (!isVoid) {
-                zeMem = new MemberName(LambdaForm.class, "zero_"+btChar, zeType, REF_invokeStatic);
-                zeMem = IMPL_NAMES.resolveOrFail(REF_invokeStatic, zeMem, null, NoSuchMethodException.class);
+    private static final Object createFormsLock = new Object();
+    private static void createFormsFor(BasicType type) {
+        // Avoid racy initialization during bootstrap
+        UNSAFE.ensureClassInitialized(BoundMethodHandle.class);
+        synchronized (createFormsLock) {
+            final int ord = type.ordinal();
+            LambdaForm idForm = LF_identity[ord];
+            if (idForm != null) {
+                return;
             }
-        } catch (IllegalAccessException|NoSuchMethodException ex) {
-            throw newInternalError(ex);
+            char btChar = type.basicTypeChar();
+            boolean isVoid = (type == V_TYPE);
+            Class<?> btClass = type.btClass;
+            MethodType zeType = MethodType.methodType(btClass);
+            MethodType idType = (isVoid) ? zeType : MethodType.methodType(btClass, btClass);
+
+            // Look up symbolic names.  It might not be necessary to have these,
+            // but if we need to emit direct references to bytecodes, it helps.
+            // Zero is built from a call to an identity function with a constant zero input.
+            MemberName idMem = new MemberName(LambdaForm.class, "identity_"+btChar, idType, REF_invokeStatic);
+            MemberName zeMem = null;
+            try {
+                idMem = IMPL_NAMES.resolveOrFail(REF_invokeStatic, idMem, null, NoSuchMethodException.class);
+                if (!isVoid) {
+                    zeMem = new MemberName(LambdaForm.class, "zero_"+btChar, zeType, REF_invokeStatic);
+                    zeMem = IMPL_NAMES.resolveOrFail(REF_invokeStatic, zeMem, null, NoSuchMethodException.class);
+                }
+            } catch (IllegalAccessException|NoSuchMethodException ex) {
+                throw newInternalError(ex);
+            }
+
+            NamedFunction idFun;
+            LambdaForm zeForm;
+            NamedFunction zeFun;
+
+            // Create the LFs and NamedFunctions. Precompiling LFs to byte code is needed to break circular
+            // bootstrap dependency on this method in case we're interpreting LFs
+            if (isVoid) {
+                Name[] idNames = new Name[] { argument(0, L_TYPE) };
+                idForm = new LambdaForm(1, idNames, VOID_RESULT, Kind.IDENTITY);
+                idForm.compileToBytecode();
+                idFun = new NamedFunction(idMem, SimpleMethodHandle.make(idMem.getInvocationType(), idForm));
+
+                zeForm = idForm;
+                zeFun = idFun;
+            } else {
+                Name[] idNames = new Name[] { argument(0, L_TYPE), argument(1, type) };
+                idForm = new LambdaForm(2, idNames, 1, Kind.IDENTITY);
+                idForm.compileToBytecode();
+                idFun = new NamedFunction(idMem, SimpleMethodHandle.make(idMem.getInvocationType(), idForm),
+                            MethodHandleImpl.Intrinsic.IDENTITY);
+
+                Object zeValue = Wrapper.forBasicType(btChar).zero();
+                Name[] zeNames = new Name[] { argument(0, L_TYPE), new Name(idFun, zeValue) };
+                zeForm = new LambdaForm(1, zeNames, 1, Kind.ZERO);
+                zeForm.compileToBytecode();
+                zeFun = new NamedFunction(zeMem, SimpleMethodHandle.make(zeMem.getInvocationType(), zeForm),
+                        MethodHandleImpl.Intrinsic.ZERO);
+            }
+
+            LF_zero[ord] = zeForm;
+            NF_zero[ord] = zeFun;
+            LF_identity[ord] = idForm;
+            NF_identity[ord] = idFun;
+
+            assert(idFun.isIdentity());
+            assert(zeFun.isConstantZero());
+            assert(new Name(zeFun).isConstantZero());
         }
-
-        NamedFunction idFun;
-        LambdaForm zeForm;
-        NamedFunction zeFun;
-
-        // Create the LFs and NamedFunctions. Precompiling LFs to byte code is needed to break circular
-        // bootstrap dependency on this method in case we're interpreting LFs
-        if (isVoid) {
-            Name[] idNames = new Name[] { argument(0, L_TYPE) };
-            idForm = new LambdaForm(1, idNames, VOID_RESULT, Kind.IDENTITY);
-            idForm.compileToBytecode();
-            idFun = new NamedFunction(idMem, SimpleMethodHandle.make(idMem.getInvocationType(), idForm));
-
-            zeForm = idForm;
-            zeFun = idFun;
-        } else {
-            Name[] idNames = new Name[] { argument(0, L_TYPE), argument(1, type) };
-            idForm = new LambdaForm(2, idNames, 1, Kind.IDENTITY);
-            idForm.compileToBytecode();
-            idFun = new NamedFunction(idMem, SimpleMethodHandle.make(idMem.getInvocationType(), idForm),
-                        MethodHandleImpl.Intrinsic.IDENTITY);
-
-            Object zeValue = Wrapper.forBasicType(btChar).zero();
-            Name[] zeNames = new Name[] { argument(0, L_TYPE), new Name(idFun, zeValue) };
-            zeForm = new LambdaForm(1, zeNames, 1, Kind.ZERO);
-            zeForm.compileToBytecode();
-            zeFun = new NamedFunction(zeMem, SimpleMethodHandle.make(zeMem.getInvocationType(), zeForm),
-                    MethodHandleImpl.Intrinsic.ZERO);
-        }
-
-        LF_zero[ord] = zeForm;
-        NF_zero[ord] = zeFun;
-        LF_identity[ord] = idForm;
-        NF_identity[ord] = idFun;
-
-        assert(idFun.isIdentity());
-        assert(zeFun.isConstantZero());
-        assert(new Name(zeFun).isConstantZero());
     }
 
     // Avoid appealing to ValueConversions at bootstrap time:

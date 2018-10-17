@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,12 +53,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.StringJoiner;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
@@ -83,9 +82,9 @@ import sun.reflect.annotation.*;
 import sun.reflect.misc.ReflectUtil;
 
 /**
- * Instances of the class {@code Class} represent classes and
- * interfaces in a running Java application.  An enum is a kind of
- * class and an annotation is a kind of interface.  Every array also
+ * Instances of the class {@code Class} represent classes and interfaces
+ * in a running Java application. An enum type is a kind of class and an
+ * annotation type is a kind of interface. Every array also
  * belongs to a class that is reflected as a {@code Class} object
  * that is shared by all arrays with the same element type and number
  * of dimensions.  The primitive Java types ({@code boolean},
@@ -94,10 +93,34 @@ import sun.reflect.misc.ReflectUtil;
  * {@code double}), and the keyword {@code void} are also
  * represented as {@code Class} objects.
  *
- * <p> {@code Class} has no public constructor. Instead {@code Class}
- * objects are constructed automatically by the Java Virtual Machine as classes
- * are loaded and by calls to the {@code defineClass} method in the class
- * loader.
+ * <p> {@code Class} has no public constructor. Instead a {@code Class}
+ * object is constructed automatically by the Java Virtual Machine
+ * when a class loader invokes one of the
+ * {@link ClassLoader#defineClass(String,byte[], int,int) defineClass} methods
+ * and passes the bytes of a {@code class} file.
+ *
+ * <p> The methods of class {@code Class} expose many characteristics of a
+ * class or interface. Most characteristics are derived from the {@code class}
+ * file that the class loader passed to the Java Virtual Machine. A few
+ * characteristics are determined by the class loading environment at run time,
+ * such as the module returned by {@link #getModule() getModule()}.
+ *
+ * <p> Some methods of class {@code Class} expose whether the declaration of
+ * a class or interface in Java source code was <em>enclosed</em> within
+ * another declaration. Other methods describe how a class or interface
+ * is situated in a <em>nest</em>. A <a id="nest">nest</a> is a set of
+ * classes and interfaces, in the same run-time package, that
+ * allow mutual access to their {@code private} members.
+ * The classes and interfaces are known as <em>nestmates</em>.
+ * One nestmate acts as the
+ * <em>nest host</em>, and enumerates the other nestmates which
+ * belong to the nest; each of them in turn records it as the nest host.
+ * The classes and interfaces which belong to a nest, including its host, are
+ * determined when
+ * {@code class} files are generated, for example, a Java compiler
+ * will typically record a top-level class as the host of a nest where the
+ * other members are the classes and interfaces whose declarations are
+ * enclosed within the top-level class declaration.
  *
  * <p> The following example uses a {@code Class} object to print the
  * class name of an object:
@@ -821,7 +844,7 @@ public final class Class<T> implements java.io.Serializable,
      * primitive type or void, then the {@code Module} object for the
      * {@code java.base} module is returned.
      *
-     * If this class is in an unnamed module then the {@link
+     * If this class is in an unnamed module then the {@linkplain
      * ClassLoader#getUnnamedModule() unnamed} {@code Module} of the class
      * loader for this class is returned.
      *
@@ -954,14 +977,14 @@ public final class Class<T> implements java.io.Serializable,
      * empty string if the class is in an unnamed package.
      *
      * <p> If this class is a member class, then this method is equivalent to
-     * invoking {@code getPackageName()} on the {@link #getEnclosingClass
+     * invoking {@code getPackageName()} on the {@linkplain #getEnclosingClass
      * enclosing class}.
      *
-     * <p> If this class is a {@link #isLocalClass local class} or an {@link
+     * <p> If this class is a {@linkplain #isLocalClass local class} or an {@linkplain
      * #isAnonymousClass() anonymous class}, then this method is equivalent to
-     * invoking {@code getPackageName()} on the {@link #getDeclaringClass
-     * declaring class} of the {@link #getEnclosingMethod enclosing method} or
-     * {@link #getEnclosingConstructor enclosing constructor}.
+     * invoking {@code getPackageName()} on the {@linkplain #getDeclaringClass
+     * declaring class} of the {@linkplain #getEnclosingMethod enclosing method} or
+     * {@linkplain #getEnclosingConstructor enclosing constructor}.
      *
      * <p> If this class represents an array type then this method returns the
      * package name of the element type. If this class represents a primitive
@@ -1525,13 +1548,22 @@ public final class Class<T> implements java.io.Serializable,
      * @since 1.5
      */
     public String getSimpleName() {
-        if (isArray())
-            return getComponentType().getSimpleName()+"[]";
+        ReflectionData<T> rd = reflectionData();
+        String simpleName = rd.simpleName;
+        if (simpleName == null) {
+            rd.simpleName = simpleName = getSimpleName0();
+        }
+        return simpleName;
+    }
 
+    private String getSimpleName0() {
+        if (isArray()) {
+            return getComponentType().getSimpleName() + "[]";
+        }
         String simpleName = getSimpleBinaryName();
         if (simpleName == null) { // top level class
             simpleName = getName();
-            return simpleName.substring(simpleName.lastIndexOf('.')+1); // strip the package name
+            simpleName = simpleName.substring(simpleName.lastIndexOf('.') + 1); // strip the package name
         }
         return simpleName;
     }
@@ -1547,10 +1579,10 @@ public final class Class<T> implements java.io.Serializable,
             try {
                 Class<?> cl = this;
                 int dimensions = 0;
-                while (cl.isArray()) {
+                do {
                     dimensions++;
                     cl = cl.getComponentType();
-                }
+                } while (cl.isArray());
                 StringBuilder sb = new StringBuilder();
                 sb.append(cl.getName());
                 for (int i = 0; i < dimensions; i++) {
@@ -1573,22 +1605,31 @@ public final class Class<T> implements java.io.Serializable,
      * @since 1.5
      */
     public String getCanonicalName() {
+        ReflectionData<T> rd = reflectionData();
+        String canonicalName = rd.canonicalName;
+        if (canonicalName == null) {
+            rd.canonicalName = canonicalName = getCanonicalName0();
+        }
+        return canonicalName == ReflectionData.NULL_SENTINEL? null : canonicalName;
+    }
+
+    private String getCanonicalName0() {
         if (isArray()) {
             String canonicalName = getComponentType().getCanonicalName();
             if (canonicalName != null)
                 return canonicalName + "[]";
             else
-                return null;
+                return ReflectionData.NULL_SENTINEL;
         }
         if (isLocalOrAnonymousClass())
-            return null;
+            return ReflectionData.NULL_SENTINEL;
         Class<?> enclosingClass = getEnclosingClass();
         if (enclosingClass == null) { // top level class
             return getName();
         } else {
             String enclosingName = enclosingClass.getCanonicalName();
             if (enclosingName == null)
-                return null;
+                return ReflectionData.NULL_SENTINEL;
             return enclosingName + "." + getSimpleName();
         }
     }
@@ -1771,7 +1812,7 @@ public final class Class<T> implements java.io.Serializable,
         if (sm != null) {
             checkMemberAccess(sm, Member.PUBLIC, Reflection.getCallerClass(), true);
         }
-        return copyFields(privateGetPublicFields(null));
+        return copyFields(privateGetPublicFields());
     }
 
 
@@ -2559,7 +2600,7 @@ public final class Class<T> implements java.io.Serializable,
      * @param  name name of the desired resource
      * @return  A {@link java.io.InputStream} object; {@code null} if no
      *          resource with this name is found, the resource is in a package
-     *          that is not {@link Module#isOpen(String, Module) open} to at
+     *          that is not {@linkplain Module#isOpen(String, Module) open} to at
      *          least the caller module, or access to the resource is denied
      *          by the security manager.
      * @throws  NullPointerException If {@code name} is {@code null}
@@ -2658,7 +2699,7 @@ public final class Class<T> implements java.io.Serializable,
      * @return A {@link java.net.URL} object; {@code null} if no resource with
      *         this name is found, the resource cannot be located by a URL, the
      *         resource is in a package that is not
-     *         {@link Module#isOpen(String, Module) open} to at least the caller
+     *         {@linkplain Module#isOpen(String, Module) open} to at least the caller
      *         module, or access to the resource is denied by the security
      *         manager.
      * @throws NullPointerException If {@code name} is {@code null}
@@ -2896,7 +2937,8 @@ public final class Class<T> implements java.io.Serializable,
      * Reflection support.
      */
 
-    // reflection data that might get invalidated when JVM TI RedefineClasses() is called
+    // Reflection data caches various derived names and reflective members. Cached
+    // values may be invalidated when JVM TI RedefineClasses() is called
     private static class ReflectionData<T> {
         volatile Field[] declaredFields;
         volatile Field[] publicFields;
@@ -2908,6 +2950,11 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
         volatile Class<?>[] interfaces;
+
+        // Cached names
+        String simpleName;
+        String canonicalName;
+        static final String NULL_SENTINEL = new String();
 
         // Value of classRedefinedCount when we created this ReflectionData instance
         final int redefinedCount;
@@ -3026,7 +3073,7 @@ public final class Class<T> implements java.io.Serializable,
     // Returns an array of "root" fields. These Field objects must NOT
     // be propagated to the outside world, but must instead be copied
     // via ReflectionFactory.copyField.
-    private Field[] privateGetPublicFields(Set<Class<?>> traversedInterfaces) {
+    private Field[] privateGetPublicFields() {
         Field[] res;
         ReflectionData<T> rd = reflectionData();
         if (rd != null) {
@@ -3034,35 +3081,25 @@ public final class Class<T> implements java.io.Serializable,
             if (res != null) return res;
         }
 
-        // No cached value available; compute value recursively.
-        // Traverse in correct order for getField().
-        List<Field> fields = new ArrayList<>();
-        if (traversedInterfaces == null) {
-            traversedInterfaces = new HashSet<>();
-        }
+        // Use a linked hash set to ensure order is preserved and
+        // fields from common super interfaces are not duplicated
+        LinkedHashSet<Field> fields = new LinkedHashSet<>();
 
         // Local fields
-        Field[] tmp = privateGetDeclaredFields(true);
-        addAll(fields, tmp);
+        addAll(fields, privateGetDeclaredFields(true));
 
         // Direct superinterfaces, recursively
-        for (Class<?> c : getInterfaces()) {
-            if (!traversedInterfaces.contains(c)) {
-                traversedInterfaces.add(c);
-                addAll(fields, c.privateGetPublicFields(traversedInterfaces));
-            }
+        for (Class<?> si : getInterfaces()) {
+            addAll(fields, si.privateGetPublicFields());
         }
 
         // Direct superclass, recursively
-        if (!isInterface()) {
-            Class<?> c = getSuperclass();
-            if (c != null) {
-                addAll(fields, c.privateGetPublicFields(traversedInterfaces));
-            }
+        Class<?> sc = getSuperclass();
+        if (sc != null) {
+            addAll(fields, sc.privateGetPublicFields());
         }
 
-        res = new Field[fields.size()];
-        fields.toArray(res);
+        res = fields.toArray(new Field[0]);
         if (rd != null) {
             rd.publicFields = res;
         }
@@ -3540,7 +3577,7 @@ public final class Class<T> implements java.io.Serializable,
             if (universe == null)
                 throw new IllegalArgumentException(
                     getName() + " is not an enum type");
-            directory = new HashMap<>(2 * universe.length);
+            directory = new HashMap<>((int)(universe.length / 0.75f) + 1);
             for (T constant : universe) {
                 directory.put(((Enum<?>)constant).name(), constant);
             }
@@ -3834,5 +3871,162 @@ public final class Class<T> implements java.io.Serializable,
      */
     public AnnotatedType[] getAnnotatedInterfaces() {
          return TypeAnnotationParser.buildAnnotatedInterfaces(getRawTypeAnnotations(), getConstantPool(), this);
+    }
+
+    private native Class<?> getNestHost0();
+
+    /**
+     * Returns the nest host of the <a href=#nest>nest</a> to which the class
+     * or interface represented by this {@code Class} object belongs.
+     * Every class and interface is a member of exactly one nest.
+     * A class or interface that is not recorded as belonging to a nest
+     * belongs to the nest consisting only of itself, and is the nest
+     * host.
+     *
+     * <p>Each of the {@code Class} objects representing array types,
+     * primitive types, and {@code void} returns {@code this} to indicate
+     * that the represented entity belongs to the nest consisting only of
+     * itself, and is the nest host.
+     *
+     * <p>If there is a {@linkplain LinkageError linkage error} accessing
+     * the nest host, or if this class or interface is not enumerated as
+     * a member of the nest by the nest host, then it is considered to belong
+     * to its own nest and {@code this} is returned as the host.
+     *
+     * @apiNote A {@code class} file of version 55.0 or greater may record the
+     * host of the nest to which it belongs by using the {@code NestHost}
+     * attribute (JVMS 4.7.28). Alternatively, a {@code class} file of
+     * version 55.0 or greater may act as a nest host by enumerating the nest's
+     * other members with the
+     * {@code NestMembers} attribute (JVMS 4.7.29).
+     * A {@code class} file of version 54.0 or lower does not use these
+     * attributes.
+     *
+     * @return the nest host of this class or interface
+     *
+     * @throws SecurityException
+     *         If the returned class is not the current class, and
+     *         if a security manager, <i>s</i>, is present and the caller's
+     *         class loader is not the same as or an ancestor of the class
+     *         loader for the returned class and invocation of {@link
+     *         SecurityManager#checkPackageAccess s.checkPackageAccess()}
+     *         denies access to the package of the returned class
+     * @since 11
+     * @jvms 4.7.28 and 4.7.29 NestHost and NestMembers attributes
+     * @jvms 5.4.4 Access Control
+     */
+    @CallerSensitive
+    public Class<?> getNestHost() {
+        if (isPrimitive() || isArray()) {
+            return this;
+        }
+        Class<?> host;
+        try {
+            host = getNestHost0();
+        } catch (LinkageError e) {
+            // if we couldn't load our nest-host then we
+            // act as-if we have no nest-host attribute
+            return this;
+        }
+        // if null then nest membership validation failed, so we
+        // act as-if we have no nest-host attribute
+        if (host == null || host == this) {
+            return this;
+        }
+        // returning a different class requires a security check
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            checkPackageAccess(sm,
+                               ClassLoader.getClassLoader(Reflection.getCallerClass()), true);
+        }
+        return host;
+    }
+
+    /**
+     * Determines if the given {@code Class} is a nestmate of the
+     * class or interface represented by this {@code Class} object.
+     * Two classes or interfaces are nestmates
+     * if they have the same {@linkplain #getNestHost() nest host}.
+     *
+     * @param c the class to check
+     * @return {@code true} if this class and {@code c} are members of
+     * the same nest; and {@code false} otherwise.
+     *
+     * @since 11
+     */
+    public boolean isNestmateOf(Class<?> c) {
+        if (this == c) {
+            return true;
+        }
+        if (isPrimitive() || isArray() ||
+            c.isPrimitive() || c.isArray()) {
+            return false;
+        }
+        try {
+            return getNestHost0() == c.getNestHost0();
+        } catch (LinkageError e) {
+            return false;
+        }
+    }
+
+    private native Class<?>[] getNestMembers0();
+
+    /**
+     * Returns an array containing {@code Class} objects representing all the
+     * classes and interfaces that are members of the nest to which the class
+     * or interface represented by this {@code Class} object belongs.
+     * The {@linkplain #getNestHost() nest host} of that nest is the zeroth
+     * element of the array. Subsequent elements represent any classes or
+     * interfaces that are recorded by the nest host as being members of
+     * the nest; the order of such elements is unspecified. Duplicates are
+     * permitted.
+     * If the nest host of that nest does not enumerate any members, then the
+     * array has a single element containing {@code this}.
+     *
+     * <p>Each of the {@code Class} objects representing array types,
+     * primitive types, and {@code void} returns an array containing only
+     * {@code this}.
+     *
+     * <p>This method validates that, for each class or interface which is
+     * recorded as a member of the nest by the nest host, that class or
+     * interface records itself as a member of that same nest. Any exceptions
+     * that occur during this validation are rethrown by this method.
+     *
+     * @return an array of all classes and interfaces in the same nest as
+     * this class
+     *
+     * @throws LinkageError
+     *         If there is any problem loading or validating a nest member or
+     *         its nest host
+     * @throws SecurityException
+     *         If any returned class is not the current class, and
+     *         if a security manager, <i>s</i>, is present and the caller's
+     *         class loader is not the same as or an ancestor of the class
+     *         loader for that returned class and invocation of {@link
+     *         SecurityManager#checkPackageAccess s.checkPackageAccess()}
+     *         denies access to the package of that returned class
+     *
+     * @since 11
+     * @see #getNestHost()
+     */
+    @CallerSensitive
+    public Class<?>[] getNestMembers() {
+        if (isPrimitive() || isArray()) {
+            return new Class<?>[] { this };
+        }
+        Class<?>[] members = getNestMembers0();
+        // Can't actually enable this due to bootstrapping issues
+        // assert(members.length != 1 || members[0] == this); // expected invariant from VM
+
+        if (members.length > 1) {
+            // If we return anything other than the current class we need
+            // a security check
+            SecurityManager sm = System.getSecurityManager();
+            if (sm != null) {
+                checkPackageAccess(sm,
+                                   ClassLoader.getClassLoader(Reflection.getCallerClass()), true);
+            }
+        }
+        return members;
     }
 }

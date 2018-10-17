@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,6 +42,7 @@ public class DriverResource extends ListResourceBundle {
     public static final String MORE_INFO = "MORE_INFO";
     public static final String DUPLICATE_OPTION = "DUPLICATE_OPTION";
     public static final String BAD_SPEC = "BAD_SPEC";
+    public static final String DEPRECATED = "DEPRECATED";
 
     /*
      * The following are the output of 'pack200' and 'unpack200' commands.
@@ -89,7 +90,7 @@ public class DriverResource extends ListResourceBundle {
                 "  -q, --quiet                     set verbosity to lowest level",
                 "  -l{F}, --log-file={F}           output to the given log file, ",
                 "                                  or '-' for System.out",
-                "  -?, -h, --help                  print this message",
+                "  -?, -h, --help                  print this help message",
                 "  -V, --version                   print program version",
                 "  -J{X}                           pass option X to underlying Java VM",
                 "",
@@ -118,7 +119,7 @@ public class DriverResource extends ListResourceBundle {
                 "  -q, --quiet                   set verbosity to lowest level",
                 "  -l{F}, --log-file={F}         output to the given log file, or",
                 "                                '-' for System.out",
-                "  -?, -h, --help                print this message",
+                "  -?, -h, --help                print this help message",
                 "  -V, --version                 print program version",
                 "  -J{X}                         pass option X to underlying Java VM"
             }
@@ -126,6 +127,7 @@ public class DriverResource extends ListResourceBundle {
         {MORE_INFO, "(For more information, run {0} --help .)"}, // parameter 0:command name
         {DUPLICATE_OPTION, "duplicate option: {0}"}, // parameter 0:option
         {BAD_SPEC, "bad spec for {0}: {1}"}, // parameter 0:option;parameter 1:specifier
+        {DEPRECATED, "\nWarning: The {0} tool is deprecated, and is planned for removal in a future JDK release.\n"} // parameter 0:command name
     };
 
     protected Object[][] getContents() {
