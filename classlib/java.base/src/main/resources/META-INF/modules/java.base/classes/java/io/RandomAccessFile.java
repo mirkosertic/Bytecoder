@@ -257,6 +257,7 @@ public class RandomAccessFile implements DataOutput, DataInput, Closeable {
         fd.attach(this);
         path = name;
         open(name, imode);
+        FileCleanable.register(fd);   // open sets the fd, register the cleanup
     }
 
     /**
@@ -298,7 +299,8 @@ public class RandomAccessFile implements DataOutput, DataInput, Closeable {
             synchronized (this) {
                 fc = this.channel;
                 if (fc == null) {
-                    this.channel = fc = FileChannelImpl.open(fd, path, true, rw, this);
+                    this.channel = fc = FileChannelImpl.open(fd, path, true,
+                        rw, false, this);
                     if (closed.get()) {
                         try {
                             fc.close();
@@ -648,7 +650,7 @@ public class RandomAccessFile implements DataOutput, DataInput, Closeable {
 
         fd.closeAll(new Closeable() {
             public void close() throws IOException {
-               close0();
+               fd.close();
            }
         });
     }
@@ -1176,8 +1178,6 @@ public class RandomAccessFile implements DataOutput, DataInput, Closeable {
     }
 
     private static native void initIDs();
-
-    private native void close0() throws IOException;
 
     static {
         initIDs();

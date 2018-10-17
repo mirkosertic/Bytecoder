@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,15 +86,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * attached via the {@link #attach attach} method and then later retrieved via
  * the {@link #attachment() attachment} method.
  *
- * <p> Selection keys are safe for use by multiple concurrent threads.  The
- * operations of reading and writing the interest set will, in general, be
- * synchronized with certain operations of the selector.  Exactly how this
- * synchronization is performed is implementation-dependent: In a naive
- * implementation, reading or writing the interest set may block indefinitely
- * if a selection operation is already in progress; in a high-performance
- * implementation, reading or writing the interest set may block briefly, if at
- * all.  In any case, a selection operation will always use the interest-set
- * value that was current at the moment that the operation began.  </p>
+ * <p> Selection keys are safe for use by multiple concurrent threads.  A
+ * selection operation will always use the interest-set value that was current
+ * at the moment that the operation began.  </p>
  *
  *
  * @author Mark Reinhold
@@ -164,10 +158,7 @@ public abstract class SelectionKey {
      * Retrieves this key's interest set.
      *
      * <p> It is guaranteed that the returned set will only contain operation
-     * bits that are valid for this key's channel.
-     *
-     * <p> This method may be invoked at any time.  Whether or not it blocks,
-     * and for how long, is implementation-dependent.  </p>
+     * bits that are valid for this key's channel. </p>
      *
      * @return  This key's interest set
      *
@@ -179,8 +170,10 @@ public abstract class SelectionKey {
     /**
      * Sets this key's interest set to the given value.
      *
-     * <p> This method may be invoked at any time.  Whether or not it blocks,
-     * and for how long, is implementation-dependent.  </p>
+     * <p> This method may be invoked at any time.  If this method is invoked
+     * while a selection operation is in progress then it has no effect upon
+     * that operation; the change to the key's interest set will be seen by the
+     * next selection operation.
      *
      * @param  ops  The new interest set
      *
@@ -195,6 +188,83 @@ public abstract class SelectionKey {
      *          If this key has been cancelled
      */
     public abstract SelectionKey interestOps(int ops);
+
+    /**
+     * Atomically sets this key's interest set to the bitwise union ("or") of
+     * the existing interest set and the given value. This method is guaranteed
+     * to be atomic with respect to other concurrent calls to this method or to
+     * {@link #interestOpsAnd(int)}.
+     *
+     * <p> This method may be invoked at any time.  If this method is invoked
+     * while a selection operation is in progress then it has no effect upon
+     * that operation; the change to the key's interest set will be seen by the
+     * next selection operation.
+     *
+     * @implSpec The default implementation synchronizes on this key and invokes
+     * {@code interestOps()} and {@code interestOps(int)} to retrieve and set
+     * this key's interest set.
+     *
+     * @param  ops  The interest set to apply
+     *
+     * @return  The previous interest set
+     *
+     * @throws  IllegalArgumentException
+     *          If a bit in the set does not correspond to an operation that
+     *          is supported by this key's channel, that is, if
+     *          {@code (ops & ~channel().validOps()) != 0}
+     *
+     * @throws  CancelledKeyException
+     *          If this key has been cancelled
+     *
+     * @since 11
+     */
+    public int interestOpsOr(int ops) {
+        synchronized (this) {
+            int oldVal = interestOps();
+            interestOps(oldVal | ops);
+            return oldVal;
+        }
+    }
+
+    /**
+     * Atomically sets this key's interest set to the bitwise intersection ("and")
+     * of the existing interest set and the given value. This method is guaranteed
+     * to be atomic with respect to other concurrent calls to this method or to
+     * {@link #interestOpsOr(int)}.
+     *
+     * <p> This method may be invoked at any time.  If this method is invoked
+     * while a selection operation is in progress then it has no effect upon
+     * that operation; the change to the key's interest set will be seen by the
+     * next selection operation.
+     *
+     * @apiNote Unlike the {@code interestOps(int)} and {@code interestOpsOr(int)}
+     * methods, this method does not throw {@code IllegalArgumentException} when
+     * invoked with bits in the interest set that do not correspond to an
+     * operation that is supported by this key's channel. This is to allow
+     * operation bits in the interest set to be cleared using bitwise complement
+     * values, e.g., {@code interestOpsAnd(~SelectionKey.OP_READ)} will remove
+     * the {@code OP_READ} from the interest set without affecting other bits.
+     *
+     * @implSpec The default implementation synchronizes on this key and invokes
+     * {@code interestOps()} and {@code interestOps(int)} to retrieve and set
+     * this key's interest set.
+     *
+     * @param  ops  The interest set to apply
+     *
+     * @return  The previous interest set
+     *
+     * @throws  CancelledKeyException
+     *          If this key has been cancelled
+     *
+     * @since 11
+     */
+    public int interestOpsAnd(int ops) {
+        synchronized (this) {
+            int oldVal = interestOps();
+            interestOps(oldVal & ops);
+            return oldVal;
+        }
+    }
 
     /**
      * Retrieves this key's ready-operation set.
@@ -221,7 +291,7 @@ public abstract class SelectionKey {
      * detects that the corresponding channel is ready for reading, has reached
      * end-of-stream, has been remotely shut down for further reading, or has
      * an error pending, then it will add {@code OP_READ} to the key's
-     * ready-operation set and add the key to its selected-key&nbsp;set.  </p>
+     * ready-operation set.  </p>
      */
     public static final int OP_READ = 1 << 0;
 
@@ -233,8 +303,7 @@ public abstract class SelectionKey {
      * href="Selector.html#selop">selection operation</a>.  If the selector
      * detects that the corresponding channel is ready for writing, has been
      * remotely shut down for further writing, or has an error pending, then it
-     * will add {@code OP_WRITE} to the key's ready set and add the key to its
-     * selected-key&nbsp;set.  </p>
+     * will add {@code OP_WRITE} to the key's ready set.  </p>
      */
     public static final int OP_WRITE = 1 << 2;
 
@@ -246,8 +315,7 @@ public abstract class SelectionKey {
      * href="Selector.html#selop">selection operation</a>.  If the selector
      * detects that the corresponding socket channel is ready to complete its
      * connection sequence, or has an error pending, then it will add
-     * {@code OP_CONNECT} to the key's ready set and add the key to its
-     * selected-key&nbsp;set.  </p>
+     * {@code OP_CONNECT} to the key's ready set.  </p>
      */
     public static final int OP_CONNECT = 1 << 3;
 
@@ -259,8 +327,7 @@ public abstract class SelectionKey {
      * href="Selector.html#selop">selection operation</a>.  If the selector
      * detects that the corresponding server-socket channel is ready to accept
      * another connection, or has an error pending, then it will add
-     * {@code OP_ACCEPT} to the key's ready set and add the key to its
-     * selected-key&nbsp;set.  </p>
+     * {@code OP_ACCEPT} to the key's ready set.  </p>
      */
     public static final int OP_ACCEPT = 1 << 4;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -499,7 +499,6 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
             super(type, target);
             this.target = target;
             this.arrayType = arrayType;
-            this.asCollectorCache = target.asCollector(arrayType, 0);
         }
 
         @Override
@@ -520,6 +519,12 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         @Override
         MethodHandle setVarargs(MemberName member) {
             if (member.isVarargs())  return this;
+            return asFixedArity();
+        }
+
+        @Override
+        public MethodHandle withVarargs(boolean makeVarargs) {
+            if (makeVarargs)  return this;
             return asFixedArity();
         }
 
@@ -560,6 +565,49 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
                             newType.lastParameterType().getComponentType()))
                     : Arrays.asList(this, newType);
             return true;
+        }
+
+        @Override
+        public Object invokeWithArguments(Object... arguments) throws Throwable {
+            MethodType type = this.type();
+            int argc;
+            final int MAX_SAFE = 127;  // 127 longs require 254 slots, which is safe to spread
+            if (arguments == null
+                    || (argc = arguments.length) <= MAX_SAFE
+                    || argc < type.parameterCount()) {
+                return super.invokeWithArguments(arguments);
+            }
+
+            // a jumbo invocation requires more explicit reboxing of the trailing arguments
+            int uncollected = type.parameterCount() - 1;
+            Class<?> elemType = arrayType.getComponentType();
+            int collected = argc - uncollected;
+            Object collArgs = (elemType == Object.class)
+                ? new Object[collected] : Array.newInstance(elemType, collected);
+            if (!elemType.isPrimitive()) {
+                // simple cast:  just do some casting
+                try {
+                    System.arraycopy(arguments, uncollected, collArgs, 0, collected);
+                } catch (ArrayStoreException ex) {
+                    return super.invokeWithArguments(arguments);
+                }
+            } else {
+                // corner case of flat array requires reflection (or specialized copy loop)
+                MethodHandle arraySetter = MethodHandles.arrayElementSetter(arrayType);
+                try {
+                    for (int i = 0; i < collected; i++) {
+                        arraySetter.invoke(collArgs, i, arguments[uncollected + i]);
+                    }
+                } catch (WrongMethodTypeException|ClassCastException ex) {
+                    return super.invokeWithArguments(arguments);
+                }
+            }
+
+            // chop the jumbo list down to size and call in non-varargs mode
+            Object[] newArgs = new Object[uncollected + 1];
+            System.arraycopy(arguments, 0, newArgs, 0, uncollected);
+            newArgs[uncollected] = collArgs;
+            return asFixedArity().invokeWithArguments(newArgs);
         }
     }
 
@@ -613,8 +661,10 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     }
 
     static void checkSpreadArgument(Object av, int n) {
-        if (av == null) {
-            if (n == 0)  return;
+        if (av == null && n == 0) {
+            return;
+        } else if (av == null) {
+            throw new NullPointerException("null array reference");
         } else if (av instanceof Object[]) {
             int len = ((Object[])av).length;
             if (len == n)  return;
@@ -727,11 +777,11 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
             if (PROFILE_GWT) {
                 int[] counts = new int[2];
                 mh = (BoundMethodHandle)
-                        BoundMethodHandle.speciesData_LLLL().constructor().invokeBasic(type, form,
+                        BoundMethodHandle.speciesData_LLLL().factory().invokeBasic(type, form,
                                 (Object) test, (Object) profile(target), (Object) profile(fallback), counts);
             } else {
                 mh = (BoundMethodHandle)
-                        BoundMethodHandle.speciesData_LLL().constructor().invokeBasic(type, form,
+                        BoundMethodHandle.speciesData_LLL().factory().invokeBasic(type, form,
                                 (Object) test, (Object) profile(target), (Object) profile(fallback));
             }
         } catch (Throwable ex) {
@@ -1040,7 +1090,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLLL();
         BoundMethodHandle mh;
         try {
-            mh = (BoundMethodHandle) data.constructor().invokeBasic(type, form, (Object) target, (Object) exType,
+            mh = (BoundMethodHandle) data.factory().invokeBasic(type, form, (Object) target, (Object) exType,
                     (Object) catcher, (Object) collectArgs, (Object) unboxResult);
         } catch (Throwable ex) {
             throw uncaughtException(ex);
@@ -1147,7 +1197,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
 
         static
         MethodHandle bindCaller(MethodHandle mh, Class<?> hostClass) {
-            // Code in the the boot layer should now be careful while creating method handles or
+            // Code in the boot layer should now be careful while creating method handles or
             // functional interface instances created from method references to @CallerSensitive  methods,
             // it needs to be ensured the handles or interface instances are kept safe and are not passed
             // from the boot layer to untrusted code.
@@ -1735,6 +1785,23 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
                 MemberName memberName = (MemberName)mname;
                 return memberName.getName();
             }
+            @Override
+            public Class<?> getDeclaringClass(Object mname) {
+                MemberName memberName = (MemberName)mname;
+                return memberName.getDeclaringClass();
+            }
+
+            @Override
+            public MethodType getMethodType(Object mname) {
+                MemberName memberName = (MemberName)mname;
+                return memberName.getMethodType();
+            }
+
+            @Override
+            public String getMethodDescriptor(Object mname) {
+                MemberName memberName = (MemberName)mname;
+                return memberName.getMethodDescriptor();
+            }
 
             @Override
             public boolean isNative(Object mname) {
@@ -1773,10 +1840,13 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
 
             @Override
             public byte[] generateInvokersHolderClassBytes(final String className,
-                    MethodType[] methodTypes) {
+                    MethodType[] invokerMethodTypes,
+                    MethodType[] callSiteMethodTypes) {
                 return GenerateJLIClassesHelper
-                        .generateInvokersHolderClassBytes(className, methodTypes);
+                        .generateInvokersHolderClassBytes(className,
+                                invokerMethodTypes, callSiteMethodTypes);
             }
+
         });
     }
 
@@ -1824,7 +1894,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLL();
         BoundMethodHandle mh;
         try {
-            mh = (BoundMethodHandle) data.constructor().invokeBasic(type, form, (Object) clauseData,
+            mh = (BoundMethodHandle) data.factory().invokeBasic(type, form, (Object) clauseData,
                     (Object) collectArgs, (Object) unboxResult);
         } catch (Throwable ex) {
             throw uncaughtException(ex);
@@ -2067,7 +2137,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         BoundMethodHandle.SpeciesData data = BoundMethodHandle.speciesData_LLLL();
         BoundMethodHandle mh;
         try {
-            mh = (BoundMethodHandle) data.constructor().invokeBasic(type, form, (Object) target, (Object) cleanup,
+            mh = (BoundMethodHandle) data.factory().invokeBasic(type, form, (Object) target, (Object) cleanup,
                     (Object) collectArgs, (Object) unboxResult);
         } catch (Throwable ex) {
             throw uncaughtException(ex);

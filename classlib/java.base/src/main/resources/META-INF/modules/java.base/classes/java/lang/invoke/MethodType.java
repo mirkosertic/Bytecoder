@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -105,23 +105,10 @@ class MethodType implements java.io.Serializable {
     private @Stable String methodDescriptor;  // cache for toMethodDescriptorString
 
     /**
-     * Check the given parameters for validity and store them into the final fields.
+     * Constructor that performs no copying or validation.
+     * Should only be called from the factory method makeImpl
      */
-    private MethodType(Class<?> rtype, Class<?>[] ptypes, boolean trusted) {
-        checkRtype(rtype);
-        checkPtypes(ptypes);
-        this.rtype = rtype;
-        // defensively copy the array passed in by the user
-        this.ptypes = trusted ? ptypes : Arrays.copyOf(ptypes, ptypes.length);
-    }
-
-    /**
-     * Construct a temporary unchecked instance of MethodType for use only as a key to the intern table.
-     * Does not check the given parameters for validity, and must discarded (if untrusted) or checked
-     * (if trusted) after it has been used as a searching key.
-     * The parameters are reversed for this constructor, so that it is not accidentally used.
-     */
-    private MethodType(Class<?>[] ptypes, Class<?> rtype) {
+    private MethodType(Class<?> rtype, Class<?>[] ptypes) {
         this.rtype = rtype;
         this.ptypes = ptypes;
     }
@@ -308,18 +295,21 @@ class MethodType implements java.io.Serializable {
         if (ptypes.length == 0) {
             ptypes = NO_PTYPES; trusted = true;
         }
-        MethodType primordialMT = new MethodType(ptypes, rtype);
+        MethodType primordialMT = new MethodType(rtype, ptypes);
         MethodType mt = internTable.get(primordialMT);
         if (mt != null)
             return mt;
 
         // promote the object to the Real Thing, and reprobe
+        MethodType.checkRtype(rtype);
         if (trusted) {
-            MethodType.checkRtype(rtype);
             MethodType.checkPtypes(ptypes);
             mt = primordialMT;
         } else {
-            mt = new MethodType(rtype, ptypes, false);
+            // Make defensive copy then validate
+            ptypes = Arrays.copyOf(ptypes, ptypes.length);
+            MethodType.checkPtypes(ptypes);
+            mt = new MethodType(rtype, ptypes);
         }
         mt.form = MethodTypeForm.findForm(mt);
         return internTable.add(mt);
@@ -759,7 +749,23 @@ class MethodType implements java.io.Serializable {
         return Collections.unmodifiableList(Arrays.asList(ptypes.clone()));
     }
 
-    /*non-public*/ Class<?> lastParameterType() {
+    /**
+     * Returns the last parameter type of this method type.
+     * If this type has no parameters, the sentinel value
+     * {@code void.class} is returned instead.
+     * @apiNote
+     * <p>
+     * The sentinel value is chosen so that reflective queries can be
+     * made directly against the result value.
+     * The sentinel value cannot be confused with a real parameter,
+     * since {@code void} is never acceptable as a parameter type.
+     * For variable arity invocation modes, the expression
+     * {@link Class#getComponentType lastParameterType().getComponentType()}
+     * is useful to query the type of the "varargs" parameter.
+     * @return the last parameter type if any, else {@code void.class}
+     * @since 10
+     */
+    public Class<?> lastParameterType() {
         int len = ptypes.length;
         return len == 0 ? void.class : ptypes[len-1];
     }
@@ -1200,33 +1206,24 @@ s.writeObject(this.parameterArray());
      * @param s the stream to read the object from
      * @throws java.io.IOException if there is a problem reading the object
      * @throws ClassNotFoundException if one of the component classes cannot be resolved
-     * @see #MethodType()
      * @see #readResolve
      * @see #writeObject
      */
     private void readObject(java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException {
+        // Assign temporary defaults in case this object escapes
+        MethodType_init(void.class, NO_PTYPES);
+
         s.defaultReadObject();  // requires serialPersistentFields to be an empty array
 
         Class<?>   returnType     = (Class<?>)   s.readObject();
         Class<?>[] parameterArray = (Class<?>[]) s.readObject();
-
-        // Probably this object will never escape, but let's check
-        // the field values now, just to be sure.
-        checkRtype(returnType);
-        checkPtypes(parameterArray);
-
         parameterArray = parameterArray.clone();  // make sure it is unshared
+
+        // Assign deserialized values
         MethodType_init(returnType, parameterArray);
     }
 
-    /**
-     * For serialization only.
-     * Sets the final fields to null, pending {@code Unsafe.putObject}.
-     */
-    private MethodType() {
-        this.rtype = null;
-        this.ptypes = null;
-    }
+    // Initialization of state for deserialization only
     private void MethodType_init(Class<?> rtype, Class<?>[] ptypes) {
         // In order to communicate these values to readResolve, we must
         // store them into the implementation-specific final fields.
@@ -1253,9 +1250,14 @@ s.writeObject(this.parameterArray());
      */
     private Object readResolve() {
         // Do not use a trusted path for deserialization:
-        //return makeImpl(rtype, ptypes, true);
+        //    return makeImpl(rtype, ptypes, true);
         // Verify all operands, and make sure ptypes is unshared:
-        return methodType(rtype, ptypes);
+        try {
+            return methodType(rtype, ptypes);
+        } finally {
+            // Re-assign defaults in case this object escapes
+            MethodType_init(void.class, NO_PTYPES);
+        }
     }
 
     /**

@@ -747,8 +747,10 @@ public final class ServiceLoader<S>
                 // invoke factory method with permissions restricted by acc
                 try {
                     result = AccessController.doPrivileged(pa, acc);
-                } catch (PrivilegedActionException pae) {
-                    exc = pae.getCause();
+                } catch (Throwable x) {
+                    if (x instanceof PrivilegedActionException)
+                        x = x.getCause();
+                    exc = x;
                 }
             }
             if (exc != null) {
@@ -788,8 +790,10 @@ public final class ServiceLoader<S>
                 // invoke constructor with permissions restricted by acc
                 try {
                     p = AccessController.doPrivileged(pa, acc);
-                } catch (PrivilegedActionException pae) {
-                    exc = pae.getCause();
+                } catch (Throwable x) {
+                    if (x instanceof PrivilegedActionException)
+                        x = x.getCause();
+                    exc = x;
                 }
             }
             if (exc != null) {
@@ -852,8 +856,9 @@ public final class ServiceLoader<S>
             PrivilegedExceptionAction<Class<?>> pa = () -> Class.forName(module, cn);
             try {
                 clazz = AccessController.doPrivileged(pa);
-            } catch (PrivilegedActionException pae) {
-                Throwable x = pae.getCause();
+            } catch (Throwable x) {
+                if (x instanceof PrivilegedActionException)
+                    x = x.getCause();
                 fail(service, "Unable to load " + cn, x);
                 return null;
             }
@@ -1404,7 +1409,7 @@ public final class ServiceLoader<S>
      *
      * <p> To achieve laziness the actual work of locating providers is done
      * when processing the stream. If a service provider cannot be loaded for any
-     * of the the reasons specified in the <a href="#errors">Errors</a> section
+     * of the reasons specified in the <a href="#errors">Errors</a> section
      * above then {@link ServiceConfigurationError} is thrown by whatever method
      * caused the service provider to be loaded. </p>
      *
@@ -1477,6 +1482,8 @@ public final class ServiceLoader<S>
                 next = (Provider<T>) loadedProviders.get(index++);
             } else if (iterator.hasNext()) {
                 next = iterator.next();
+                loadedProviders.add((Provider<S>)next);
+                index++;
             } else {
                 loadedAllProviders = true;
             }

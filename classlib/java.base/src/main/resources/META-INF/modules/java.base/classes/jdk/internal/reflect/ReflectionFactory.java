@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,7 +39,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.security.Permission;
 import java.security.PrivilegedAction;
 import java.util.Objects;
 import java.util.Properties;
@@ -47,6 +46,7 @@ import java.util.Properties;
 import jdk.internal.misc.VM;
 import sun.reflect.misc.ReflectUtil;
 import sun.security.action.GetPropertyAction;
+import sun.security.util.SecurityConstants;
 
 /** <P> The master factory for all reflective objects, both those in
     java.lang.reflect (Fields, Methods, Constructors) as well as their
@@ -63,8 +63,6 @@ import sun.security.action.GetPropertyAction;
 public class ReflectionFactory {
 
     private static boolean initted = false;
-    private static final Permission reflectionFactoryAccessPerm
-        = new RuntimePermission("reflectionFactoryAccess");
     private static final ReflectionFactory soleInstance = new ReflectionFactory();
     // Provides access to package-private mechanisms in java.lang.reflect
     private static volatile LangReflectAccess langReflectAccess;
@@ -88,6 +86,9 @@ public class ReflectionFactory {
     // and NativeConstructorAccessorImpl
     private static boolean noInflation        = false;
     private static int     inflationThreshold = 15;
+
+    // true if deserialization constructor checking is disabled
+    private static boolean disableSerialConstructorChecks = false;
 
     private ReflectionFactory() {
     }
@@ -129,8 +130,8 @@ public class ReflectionFactory {
     public static ReflectionFactory getReflectionFactory() {
         SecurityManager security = System.getSecurityManager();
         if (security != null) {
-            // TO DO: security.checkReflectionFactoryAccess();
-            security.checkPermission(reflectionFactoryAccessPerm);
+            security.checkPermission(
+                SecurityConstants.REFLECTION_FACTORY_ACCESS_PERMISSION);
         }
         return soleInstance;
     }
@@ -173,6 +174,15 @@ public class ReflectionFactory {
      */
     public FieldAccessor newFieldAccessor(Field field, boolean override) {
         checkInitted();
+
+        Field root = langReflectAccess.getRoot(field);
+        if (root != null) {
+            // FieldAccessor will use the root unless the modifiers have
+            // been overrridden
+            if (root.getModifiers() == field.getModifiers() || !override) {
+                field = root;
+            }
+        }
         return UnsafeFieldAccessorFactory.newFieldAccessor(field, override);
     }
 
@@ -184,6 +194,12 @@ public class ReflectionFactory {
             if (altMethod != null) {
                 method = altMethod;
             }
+        }
+
+        // use the root Method that will not cache caller class
+        Method root = langReflectAccess.getRoot(method);
+        if (root != null) {
+            method = root;
         }
 
         if (noInflation && !ReflectUtil.isVMAnonymousClass(method.getDeclaringClass())) {
@@ -215,6 +231,13 @@ public class ReflectionFactory {
             return new InstantiationExceptionConstructorAccessorImpl
                 ("Can not instantiate java.lang.Class");
         }
+
+        // use the root Constructor that will not cache caller class
+        Constructor<?> root = langReflectAccess.getRoot(c);
+        if (root != null) {
+            c = root;
+        }
+
         // Bootstrapping issue: since we use Class.newInstance() in
         // the ConstructorAccessor generation process, we have to
         // break the cycle here.
@@ -404,10 +427,67 @@ public class ReflectionFactory {
         return generateConstructor(cl, constructorToCall);
     }
 
+    /**
+     * Given a class, determines whether its superclass has
+     * any constructors that are accessible from the class.
+     * This is a special purpose method intended to do access
+     * checking for a serializable class and its superclasses
+     * up to, but not including, the first non-serializable
+     * superclass. This also implies that the superclass is
+     * always non-null, because a serializable class must be a
+     * class (not an interface) and Object is not serializable.
+     *
+     * @param cl the class from which access is checked
+     * @return whether the superclass has a constructor accessible from cl
+     */
+    private boolean superHasAccessibleConstructor(Class<?> cl) {
+        Class<?> superCl = cl.getSuperclass();
+        assert Serializable.class.isAssignableFrom(cl);
+        assert superCl != null;
+        if (packageEquals(cl, superCl)) {
+            // accessible if any non-private constructor is found
+            for (Constructor<?> ctor : superCl.getDeclaredConstructors()) {
+                if ((ctor.getModifiers() & Modifier.PRIVATE) == 0) {
+                    return true;
+                }
+            }
+            if (Reflection.areNestMates(cl, superCl)) {
+                return true;
+            }
+            return false;
+        } else {
+            // sanity check to ensure the parent is protected or public
+            if ((superCl.getModifiers() & (Modifier.PROTECTED | Modifier.PUBLIC)) == 0) {
+                return false;
+            }
+            // accessible if any constructor is protected or public
+            for (Constructor<?> ctor : superCl.getDeclaredConstructors()) {
+                if ((ctor.getModifiers() & (Modifier.PROTECTED | Modifier.PUBLIC)) != 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Returns a constructor that allocates an instance of cl and that then initializes
+     * the instance by calling the no-arg constructor of its first non-serializable
+     * superclass. This is specified in the Serialization Specification, section 3.1,
+     * in step 11 of the deserialization process. If cl is not serializable, returns
+     * cl's no-arg constructor. If no accessible constructor is found, or if the
+     * class hierarchy is somehow malformed (e.g., a serializable class has no
+     * superclass), null is returned.
+     *
+     * @param cl the class for which a constructor is to be found
+     * @return the generated constructor, or null if none is available
+     */
     public final Constructor<?> newConstructorForSerialization(Class<?> cl) {
         Class<?> initCl = cl;
         while (Serializable.class.isAssignableFrom(initCl)) {
-            if ((initCl = initCl.getSuperclass()) == null) {
+            Class<?> prev = initCl;
+            if ((initCl = initCl.getSuperclass()) == null ||
+                (!disableSerialConstructorChecks && !superHasAccessibleConstructor(prev))) {
                 return null;
             }
         }
@@ -633,6 +713,9 @@ public class ReflectionFactory {
             }
         }
 
+        disableSerialConstructorChecks =
+            "true".equals(props.getProperty("jdk.disableSerialConstructorChecks"));
+
         initted = true;
     }
 
@@ -655,8 +738,14 @@ public class ReflectionFactory {
      * @returns true if the two classes are in the same classloader and package
      */
     private static boolean packageEquals(Class<?> cl1, Class<?> cl2) {
+        assert !cl1.isArray() && !cl2.isArray();
+
+        if (cl1 == cl2) {
+            return true;
+        }
+
         return cl1.getClassLoader() == cl2.getClassLoader() &&
-                Objects.equals(cl1.getPackage(), cl2.getPackage());
+                Objects.equals(cl1.getPackageName(), cl2.getPackageName());
     }
 
 }

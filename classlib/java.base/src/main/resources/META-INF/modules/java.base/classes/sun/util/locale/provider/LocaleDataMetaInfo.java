@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 
 package sun.util.locale.provider;
 
+import java.util.Map;
+
 /**
  * LocaleData meta info SPI
  *
@@ -46,4 +48,23 @@ public interface LocaleDataMetaInfo {
      * @return concatenated language tags, separated by a space.
      */
     public String availableLanguageTags(String category);
+
+    /**
+     * Returns a map for time zone ids to their canonical ids.
+     * The map key is either an LDML's short id, or a valid
+     * TZDB zone id.
+     * @return map of ids to their canonical ids.
+     */
+    default public Map<String, String>  tzCanonicalIDs() {
+        return null;
+    }
+
+    /**
+     * Returns a map for  language aliases which specifies mapping from source language
+     * to from which it should be replaced.
+     * @return map of source language to replacement language, separated by a space.
+     */
+   default public Map<String, String> getLanguageAliasMap(){
+       return null;
+   }
 }

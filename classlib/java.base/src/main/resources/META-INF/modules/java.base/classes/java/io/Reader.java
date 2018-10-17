@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,9 @@
 package java.io;
 
 
+import java.nio.CharBuffer;
+import java.util.Objects;
+
 /**
  * Abstract class for reading character streams.  The only methods that a
  * subclass must implement are read(char[], int, int) and close().  Most
@@ -49,6 +52,92 @@ package java.io;
  */
 
 public abstract class Reader implements Readable, Closeable {
+
+    private static final int TRANSFER_BUFFER_SIZE = 8192;
+
+    /**
+     * Returns a new {@code Reader} that reads no characters. The returned
+     * stream is initially open.  The stream is closed by calling the
+     * {@code close()} method.  Subsequent calls to {@code close()} have no
+     * effect.
+     *
+     * <p> While the stream is open, the {@code read()}, {@code read(char[])},
+     * {@code read(char[], int, int)}, {@code read(Charbuffer)}, {@code
+     * ready()}, {@code skip(long)}, and {@code transferTo()} methods all
+     * behave as if end of stream has been reached. After the stream has been
+     * closed, these methods all throw {@code IOException}.
+     *
+     * <p> The {@code markSupported()} method returns {@code false}.  The
+     * {@code mark()} and {@code reset()} methods throw an {@code IOException}.
+     *
+     * <p> The {@link #lock object} used to synchronize operations on the
+     * returned {@code Reader} is not specified.
+     *
+     * @return a {@code Reader} which reads no characters
+     *
+     * @since 11
+     */
+    public static Reader nullReader() {
+        return new Reader() {
+            private volatile boolean closed;
+
+            private void ensureOpen() throws IOException {
+                if (closed) {
+                    throw new IOException("Stream closed");
+                }
+            }
+
+            @Override
+            public int read() throws IOException {
+                ensureOpen();
+                return -1;
+            }
+
+            @Override
+            public int read(char[] cbuf, int off, int len) throws IOException {
+                Objects.checkFromIndexSize(off, len, cbuf.length);
+                ensureOpen();
+                if (len == 0) {
+                    return 0;
+                }
+                return -1;
+            }
+
+            @Override
+            public int read(CharBuffer target) throws IOException {
+                Objects.requireNonNull(target);
+                ensureOpen();
+                if (target.hasRemaining()) {
+                    return -1;
+                }
+                return 0;
+            }
+
+            @Override
+            public boolean ready() throws IOException {
+                ensureOpen();
+                return false;
+            }
+
+            @Override
+            public long skip(long n) throws IOException {
+                ensureOpen();
+                return 0L;
+            }
+
+            @Override
+            public long transferTo(Writer out) throws IOException {
+                Objects.requireNonNull(out);
+                ensureOpen();
+                return 0L;
+            }
+
+            @Override
+            public void close() {
+                closed = true;
+            }
+        };
+    }
 
     /**
      * The object used to synchronize operations on this stream.  For
@@ -261,5 +350,42 @@ public abstract class Reader implements Readable, Closeable {
      * @exception  IOException  If an I/O error occurs
      */
      public abstract void close() throws IOException;
+
+    /**
+     * Reads all characters from this reader and writes the characters to the
+     * given writer in the order that they are read. On return, this reader
+     * will be at end of the stream. This method does not close either reader
+     * or writer.
+     * <p>
+     * This method may block indefinitely reading from the reader, or
+     * writing to the writer. The behavior for the case where the reader
+     * and/or writer is <i>asynchronously closed</i>, or the thread
+     * interrupted during the transfer, is highly reader and writer
+     * specific, and therefore not specified.
+     * <p>
+     * If an I/O error occurs reading from the reader or writing to the
+     * writer, then it may do so after some characters have been read or
+     * written. Consequently the reader may not be at end of the stream and
+     * one, or both, streams may be in an inconsistent state. It is strongly
+     * recommended that both streams be promptly closed if an I/O error occurs.
+     *
+     * @param  out the writer, non-null
+     * @return the number of characters transferred
+     * @throws IOException if an I/O error occurs when reading or writing
+     * @throws NullPointerException if {@code out} is {@code null}
+     *
+     * @since 10
+     */
+    public long transferTo(Writer out) throws IOException {
+        Objects.requireNonNull(out, "out");
+        long transferred = 0;
+        char[] buffer = new char[TRANSFER_BUFFER_SIZE];
+        int nRead;
+        while ((nRead = read(buffer, 0, TRANSFER_BUFFER_SIZE)) >= 0) {
+            out.write(buffer, 0, nRead);
+            transferred += nRead;
+        }
+        return transferred;
+    }
 
 }

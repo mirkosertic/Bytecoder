@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.SecureRandom;
 import java.security.interfaces.*;
+import java.security.spec.*;
 
 import sun.security.util.Debug;
 import sun.security.util.DerValue;
@@ -370,8 +371,21 @@ abstract class DSA extends SignatureSpi {
         throw new InvalidParameterException("No parameter accepted");
     }
 
+    @Override
+    protected void engineSetParameter(AlgorithmParameterSpec params)
+            throws InvalidAlgorithmParameterException {
+        if (params != null) {
+            throw new InvalidAlgorithmParameterException("No parameter accepted");
+        }
+    }
+
     @Deprecated
     protected Object engineGetParameter(String key) {
+        return null;
+    }
+
+    @Override
+    protected AlgorithmParameters engineGetParameters() {
         return null;
     }
 
@@ -490,18 +504,6 @@ abstract class DSA extends SignatureSpi {
         return printable;
     }
 
-    private static void debug(Exception e) {
-        if (debug) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void debug(String s) {
-        if (debug) {
-            System.err.println(s);
-        }
-    }
-
     /**
      * Standard SHA224withDSA implementation as defined in FIPS186-3.
      */
@@ -586,7 +588,7 @@ abstract class DSA extends SignatureSpi {
                 }
             }
             protected void engineUpdate(byte[] input, int offset, int len) {
-                if (ofs + len > digestBuffer.length) {
+                if (len > (digestBuffer.length - ofs)) {
                     ofs = Integer.MAX_VALUE;
                 } else {
                     System.arraycopy(input, offset, digestBuffer, ofs, len);
@@ -595,7 +597,7 @@ abstract class DSA extends SignatureSpi {
             }
             protected final void engineUpdate(ByteBuffer input) {
                 int inputLen = input.remaining();
-                if (ofs + inputLen > digestBuffer.length) {
+                if (inputLen > (digestBuffer.length - ofs)) {
                     ofs = Integer.MAX_VALUE;
                 } else {
                     input.get(digestBuffer, ofs, inputLen);

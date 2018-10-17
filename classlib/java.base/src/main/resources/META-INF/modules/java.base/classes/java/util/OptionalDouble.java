@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,9 +30,10 @@ import java.util.function.Supplier;
 import java.util.stream.DoubleStream;
 
 /**
- * A container object which may or may not contain a {@code double} value.  If a
- * value is present, {@code isPresent()} returns {@code true} and
- * {@code getAsDouble()} returns the value.
+ * A container object which may or may not contain a {@code double} value.
+ * If a value is present, {@code isPresent()} returns {@code true}. If no
+ * value is present, the object is considered <i>empty</i> and
+ * {@code isPresent()} returns {@code false}.
  *
  * <p>Additional methods that depend on the presence or absence of a contained
  * value are provided, such as {@link #orElse(double) orElse()}
@@ -117,14 +118,10 @@ public final class OptionalDouble {
      * {@code NoSuchElementException}.
      *
      * @apiNote
-     * The methods {@link #orElse(double) orElse} and
-     * {@link #orElseGet(DoubleSupplier) orElseGet}
-     * are generally preferable to this method, as they return a substitute
-     * value if the value is absent, instead of throwing an exception.
+     * The preferred alternative to this method is {@link #orElseThrow()}.
      *
      * @return the value described by this {@code OptionalDouble}
      * @throws NoSuchElementException if no value is present
-     * @see OptionalDouble#isPresent()
      */
     public double getAsDouble() {
         if (!isPresent) {
@@ -140,6 +137,17 @@ public final class OptionalDouble {
      */
     public boolean isPresent() {
         return isPresent;
+    }
+
+    /**
+     * If a value is not present, returns {@code true}, otherwise
+     * {@code false}.
+     *
+     * @return  {@code true} if a value is not present, otherwise {@code false}
+     * @since   11
+     */
+    public boolean isEmpty() {
+        return !isPresent;
     }
 
     /**
@@ -223,6 +231,21 @@ public final class OptionalDouble {
      */
     public double orElseGet(DoubleSupplier supplier) {
         return isPresent ? value : supplier.getAsDouble();
+    }
+
+    /**
+     * If a value is present, returns the value, otherwise throws
+     * {@code NoSuchElementException}.
+     *
+     * @return the value described by this {@code OptionalDouble}
+     * @throws NoSuchElementException if no value is present
+     * @since 10
+     */
+    public double orElseThrow() {
+        if (!isPresent) {
+            throw new NoSuchElementException("No value present");
+        }
+        return value;
     }
 
     /**

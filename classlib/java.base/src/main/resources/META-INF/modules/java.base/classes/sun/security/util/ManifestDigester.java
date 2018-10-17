@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2011, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,11 +26,17 @@
 package sun.security.util;
 
 import java.security.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.io.ByteArrayOutputStream;
+import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This class is used to compute digests on sections of the Manifest.
+ * Please note that multiple sections might have the same name, and they
+ * all belong to a single Entry.
  */
 public class ManifestDigester {
 
@@ -39,7 +45,7 @@ public class ManifestDigester {
     /** the raw bytes of the manifest */
     private byte[] rawBytes;
 
-    /** the offset/length pair for a section */
+    /** the entries grouped by names */
     private HashMap<String, Entry> entries; // key is a UTF-8 string
 
     /** state returned by findSection */
@@ -112,16 +118,14 @@ public class ManifestDigester {
         rawBytes = bytes;
         entries = new HashMap<>();
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
         Position pos = new Position();
 
         if (!findSection(0, pos))
             return; // XXX: exception?
 
         // create an entry for main attributes
-        entries.put(MF_MAIN_ATTRS,
-                new Entry(0, pos.endOfSection + 1, pos.startOfNext, rawBytes));
+        entries.put(MF_MAIN_ATTRS, new Entry().addSection(
+                new Section(0, pos.endOfSection + 1, pos.startOfNext, rawBytes)));
 
         int start = pos.startOfNext;
         while(findSection(start, pos)) {
@@ -131,50 +135,42 @@ public class ManifestDigester {
 
             if (len > 6) {
                 if (isNameAttr(bytes, start)) {
-                    StringBuilder nameBuf = new StringBuilder(sectionLen);
+                    ByteArrayOutputStream nameBuf = new ByteArrayOutputStream();
+                    nameBuf.write(bytes, start+6, len-6);
 
-                    try {
-                        nameBuf.append(
-                            new String(bytes, start+6, len-6, "UTF8"));
-
-                        int i = start + len;
-                        if ((i-start) < sectionLen) {
-                            if (bytes[i] == '\r') {
-                                i += 2;
-                            } else {
-                                i += 1;
-                            }
+                    int i = start + len;
+                    if ((i-start) < sectionLen) {
+                        if (bytes[i] == '\r') {
+                            i += 2;
+                        } else {
+                            i += 1;
                         }
-
-                        while ((i-start) < sectionLen) {
-                            if (bytes[i++] == ' ') {
-                                // name is wrapped
-                                int wrapStart = i;
-                                while (((i-start) < sectionLen)
-                                        && (bytes[i++] != '\n'));
-                                    if (bytes[i-1] != '\n')
-                                        return; // XXX: exception?
-                                    int wrapLen;
-                                    if (bytes[i-2] == '\r')
-                                        wrapLen = i-wrapStart-2;
-                                    else
-                                        wrapLen = i-wrapStart-1;
-
-                            nameBuf.append(new String(bytes, wrapStart,
-                                                      wrapLen, "UTF8"));
-                            } else {
-                                break;
-                            }
-                        }
-
-                        entries.put(nameBuf.toString(),
-                            new Entry(start, sectionLen, sectionLenWithBlank,
-                                rawBytes));
-
-                    } catch (java.io.UnsupportedEncodingException uee) {
-                        throw new IllegalStateException(
-                            "UTF8 not available on platform");
                     }
+
+                    while ((i-start) < sectionLen) {
+                        if (bytes[i++] == ' ') {
+                            // name is wrapped
+                            int wrapStart = i;
+                            while (((i-start) < sectionLen)
+                                    && (bytes[i++] != '\n'));
+                            if (bytes[i-1] != '\n')
+                                return; // XXX: exception?
+                            int wrapLen;
+                            if (bytes[i-2] == '\r')
+                                wrapLen = i-wrapStart-2;
+                            else
+                                wrapLen = i-wrapStart-1;
+
+                            nameBuf.write(bytes, wrapStart, wrapLen);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    entries.computeIfAbsent(new String(nameBuf.toByteArray(), UTF_8),
+                                            dummy -> new Entry())
+                            .addSection(new Section(start, sectionLen,
+                                    sectionLenWithBlank, rawBytes));
                 }
             }
             start = pos.startOfNext;
@@ -192,13 +188,52 @@ public class ManifestDigester {
     }
 
     public static class Entry {
+
+        // One Entry for one name, and one name can have multiple sections.
+        // According to the JAR File Specification: "If there are multiple
+        // individual sections for the same file entry, the attributes in
+        // these sections are merged."
+        private List<Section> sections = new ArrayList<>();
+        boolean oldStyle;
+
+        private Entry addSection(Section sec)
+        {
+            sections.add(sec);
+            return this;
+        }
+
+        public byte[] digest(MessageDigest md)
+        {
+            md.reset();
+            for (Section sec : sections) {
+                if (oldStyle) {
+                    Section.doOldStyle(md, sec.rawBytes, sec.offset, sec.lengthWithBlankLine);
+                } else {
+                    md.update(sec.rawBytes, sec.offset, sec.lengthWithBlankLine);
+                }
+            }
+            return md.digest();
+        }
+
+        /** Netscape doesn't include the new line. Intel and JavaSoft do */
+
+        public byte[] digestWorkaround(MessageDigest md)
+        {
+            md.reset();
+            for (Section sec : sections) {
+                md.update(sec.rawBytes, sec.offset, sec.length);
+            }
+            return md.digest();
+        }
+    }
+
+    private static class Section {
         int offset;
         int length;
         int lengthWithBlankLine;
         byte[] rawBytes;
-        boolean oldStyle;
 
-        public Entry(int offset, int length,
+        public Section(int offset, int length,
                      int lengthWithBlankLine, byte[] rawBytes)
         {
             this.offset = offset;
@@ -207,18 +242,7 @@ public class ManifestDigester {
             this.rawBytes = rawBytes;
         }
 
-        public byte[] digest(MessageDigest md)
-        {
-            md.reset();
-            if (oldStyle) {
-                doOldStyle(md,rawBytes, offset, lengthWithBlankLine);
-            } else {
-                md.update(rawBytes, offset, lengthWithBlankLine);
-            }
-            return md.digest();
-        }
-
-        private void doOldStyle(MessageDigest md,
+        private static void doOldStyle(MessageDigest md,
                                 byte[] bytes,
                                 int offset,
                                 int length)
@@ -241,16 +265,6 @@ public class ManifestDigester {
                 i++;
             }
             md.update(bytes, start, i-start);
-        }
-
-
-        /** Netscape doesn't include the new line. Intel and JavaSoft do */
-
-        public byte[] digestWorkaround(MessageDigest md)
-        {
-            md.reset();
-            md.update(rawBytes, offset, length);
-            return md.digest();
         }
     }
 

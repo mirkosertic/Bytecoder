@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,9 +56,12 @@ import java.util.zip.GZIPOutputStream;
 
 /** Command line interface for Pack200.
  */
+
+@SuppressWarnings({"removal"})
 class Driver {
-        private static final ResourceBundle RESOURCE =
-                ResourceBundle.getBundle("com.sun.java.util.jar.pack.DriverResource");
+    private static final ResourceBundle RESOURCE =
+        ResourceBundle.getBundle("com.sun.java.util.jar.pack.DriverResource");
+    private static boolean suppressDeprecateMsg = false;
 
     public static void main(String[] ava) throws IOException {
         List<String> av = new ArrayList<>(Arrays.asList(ava));
@@ -67,6 +70,7 @@ class Driver {
         boolean doUnpack = false;
         boolean doRepack = false;
         boolean doZip = true;
+        suppressDeprecateMsg = av.remove("-XDsuppress-tool-removal-message");
         String logFile = null;
         String verboseProp = Utils.DEBUG_VERBOSE;
 
@@ -83,6 +87,10 @@ class Driver {
                 doUnpack = true;
                     break;
             }
+        }
+
+        if (!suppressDeprecateMsg) {
+            printDeprecateWarning(doPack, System.out);
         }
 
         // Collect engine properties here:
@@ -162,11 +170,12 @@ class Driver {
                         engProps.put((String) me.getKey(), (String) me.getValue());
                     }
                 } else if ("--version".equals(state)) {
-                        System.out.println(MessageFormat.format(RESOURCE.getString(DriverResource.VERSION), Driver.class.getName(), "1.31, 07/05/05"));
+                        System.out.println(MessageFormat.format(RESOURCE.getString(DriverResource.VERSION),
+                                                                Driver.class.getName(), "1.31, 07/05/05"));
                     return;
                 } else if ("--help".equals(state)) {
                     printUsage(doPack, true, System.out);
-                    System.exit(1);
+                    System.exit(0);
                     return;
                 } else {
                     break;
@@ -394,6 +403,12 @@ class Driver {
     }
 
     private static
+    void printDeprecateWarning(boolean doPack, PrintStream out) {
+        String prog = doPack ? "pack200" : "unpack200";
+        out.println(MessageFormat.format(RESOURCE.getString(DriverResource.DEPRECATED), prog));
+    }
+
+    private static
     void printUsage(boolean doPack, boolean full, PrintStream out) {
         String prog = doPack ? "pack200" : "unpack200";
         String[] packUsage = (String[])RESOURCE.getObject(DriverResource.PACK_HELP);
@@ -405,6 +420,11 @@ class Driver {
             out.println(MessageFormat.format(RESOURCE.getString(DriverResource.MORE_INFO), prog));
                 break;
             }
+        }
+        // Print a warning at the end
+        // The full help page is long, the beginning warning could be out of sight
+        if (full && !suppressDeprecateMsg) {
+            printDeprecateWarning(doPack, out);
         }
     }
 

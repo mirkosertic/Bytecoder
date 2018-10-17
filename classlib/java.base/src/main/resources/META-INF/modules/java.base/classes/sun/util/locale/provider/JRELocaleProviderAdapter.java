@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,9 @@
 package sun.util.locale.provider;
 
 import java.security.AccessController;
+import java.security.AccessControlException;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.text.spi.BreakIteratorProvider;
 import java.text.spi.CollatorProvider;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.ServiceLoader;
+import java.util.ServiceConfigurationError;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -126,9 +129,9 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
 
     private volatile CurrencyNameProvider currencyNameProvider;
     private volatile LocaleNameProvider localeNameProvider;
-    private volatile TimeZoneNameProvider timeZoneNameProvider;
-    private volatile CalendarDataProvider calendarDataProvider;
-    private volatile CalendarNameProvider calendarNameProvider;
+    protected volatile TimeZoneNameProvider timeZoneNameProvider;
+    protected volatile CalendarDataProvider calendarDataProvider;
+    protected volatile CalendarNameProvider calendarNameProvider;
 
     private volatile CalendarProvider calendarProvider;
     private volatile JavaTimeDateTimePatternProvider javaTimeDateTimePatternProvider;
@@ -476,8 +479,8 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
             if (nonBaseTags != null) {
                 supportedLocaleString += " " + nonBaseTags;
             }
-        }  catch (Exception e) {
-            // catch any exception, and ignore them as if non-EN locales do not exist.
+        } catch (PrivilegedActionException pae) {
+            throw new InternalError(pae.getCause());
         }
 
         return supportedLocaleString;

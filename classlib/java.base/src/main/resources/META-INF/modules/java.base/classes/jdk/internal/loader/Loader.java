@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@ package jdk.internal.loader;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.module.Configuration;
 import java.lang.module.ModuleDescriptor;
 import java.lang.module.ModuleReader;
@@ -58,16 +57,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import jdk.internal.misc.SharedSecrets;
 import jdk.internal.module.Resources;
-
 
 /**
  * A class loader that loads classes and resources from a collection of
@@ -96,7 +90,7 @@ public final class Loader extends SecureClassLoader {
         ClassLoader.registerAsParallelCapable();
     }
 
-    // the loader pool is in a pool, can be null
+    // the pool this loader is a member of; can be null
     private final LoaderPool pool;
 
     // parent ClassLoader, can be null
@@ -116,7 +110,7 @@ public final class Loader extends SecureClassLoader {
     private final Map<ModuleReference, ModuleReader> moduleToReader
         = new ConcurrentHashMap<>();
 
-    // ACC used when loading classes and resources */
+    // ACC used when loading classes and resources
     private final AccessControlContext acc;
 
     /**
@@ -403,12 +397,15 @@ public final class Loader extends SecureClassLoader {
 
         // this loader
         URL url = findResource(name);
-        if (url != null) {
-            return url;
-        } else {
+        if (url == null) {
             // parent loader
-            return parent.getResource(name);
+            if (parent != null) {
+                url = parent.getResource(name);
+            } else {
+                url = BootLoader.findResource(name);
+            }
         }
+        return url;
     }
 
     @Override
@@ -419,7 +416,12 @@ public final class Loader extends SecureClassLoader {
         List<URL> urls = findResourcesAsList(name);
 
         // parent loader
-        Enumeration<URL> e = parent.getResources(name);
+        Enumeration<URL> e;
+        if (parent != null) {
+            e = parent.getResources(name);
+        } else {
+            e = BootLoader.findResources(name);
+        }
 
         // concat the URLs with the URLs returned by the parent
         return new Enumeration<>() {
@@ -437,25 +439,6 @@ public final class Loader extends SecureClassLoader {
                 }
             }
         };
-    }
-
-    @Override
-    public Stream<URL> resources(String name) {
-        Objects.requireNonNull(name);
-        // ordering not specified
-        int characteristics = (Spliterator.NONNULL | Spliterator.IMMUTABLE |
-                               Spliterator.SIZED | Spliterator.SUBSIZED);
-        Supplier<Spliterator<URL>> supplier = () -> {
-            try {
-                List<URL> urls = findResourcesAsList(name);
-                return Spliterators.spliterator(urls, characteristics);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        };
-        Stream<URL> s1 = StreamSupport.stream(supplier, characteristics, false);
-        Stream<URL> s2 = parent.resources(name);
-        return Stream.concat(s1, s2);
     }
 
     /**
@@ -504,7 +487,7 @@ public final class Loader extends SecureClassLoader {
     }
 
     /**
-     * Finds the class with the specified binary name in a given module.
+     * Finds the class with the specified binary name in the given module.
      * This method returns {@code null} if the class cannot be found.
      */
     @Override

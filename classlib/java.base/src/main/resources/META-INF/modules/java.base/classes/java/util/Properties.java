@@ -37,11 +37,17 @@ import java.io.BufferedWriter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import jdk.internal.misc.SharedSecrets;
+import jdk.internal.misc.Unsafe;
 import jdk.internal.util.xml.PropertiesDefaultHandler;
 
 /**
@@ -121,6 +127,10 @@ import jdk.internal.util.xml.PropertiesDefaultHandler;
  * <p>This class is thread-safe: multiple threads can share a single
  * {@code Properties} object without the need for external synchronization.
  *
+ * @apiNote
+ * The {@code Properties} class does not inherit the concept of a load factor
+ * from its superclass, {@code Hashtable}.
+ *
  * @author  Arthur van Hoff
  * @author  Michael McCloskey
  * @author  Xueming Shen
@@ -131,7 +141,9 @@ class Properties extends Hashtable<Object,Object> {
     /**
      * use serialVersionUID from JDK 1.1.X for interoperability
      */
-     private static final long serialVersionUID = 4112578634029874840L;
+    private static final long serialVersionUID = 4112578634029874840L;
+
+    private static final Unsafe UNSAFE = Unsafe.getUnsafe();
 
     /**
      * A property list that contains default values for any keys not
@@ -139,7 +151,7 @@ class Properties extends Hashtable<Object,Object> {
      *
      * @serial
      */
-    protected Properties defaults;
+    protected volatile Properties defaults;
 
     /**
      * Properties does not store values in its inherited Hashtable, but instead
@@ -147,26 +159,53 @@ class Properties extends Hashtable<Object,Object> {
      * simple read operations.  Writes and bulk operations remain synchronized,
      * as in Hashtable.
      */
-    private transient ConcurrentHashMap<Object, Object> map =
-            new ConcurrentHashMap<>(8);
+    private transient volatile ConcurrentHashMap<Object, Object> map;
 
     /**
      * Creates an empty property list with no default values.
+     *
+     * @implNote The initial capacity of a {@code Properties} object created
+     * with this constructor is unspecified.
      */
     public Properties() {
-        this(null);
+        this(null, 8);
+    }
+
+    /**
+     * Creates an empty property list with no default values, and with an
+     * initial size accommodating the specified number of elements without the
+     * need to dynamically resize.
+     *
+     * @param  initialCapacity the {@code Properties} will be sized to
+     *         accommodate this many elements
+     * @throws IllegalArgumentException if the initial capacity is less than
+     *         zero.
+     */
+    public Properties(int initialCapacity) {
+        this(null, initialCapacity);
     }
 
     /**
      * Creates an empty property list with the specified defaults.
      *
+     * @implNote The initial capacity of a {@code Properties} object created
+     * with this constructor is unspecified.
+     *
      * @param   defaults   the defaults.
      */
     public Properties(Properties defaults) {
+        this(defaults, 8);
+    }
+
+    private Properties(Properties defaults, int initialCapacity) {
         // use package-private constructor to
         // initialize unused fields with dummy values
         super((Void) null);
+        map = new ConcurrentHashMap<>(initialCapacity);
         this.defaults = defaults;
+
+        // Ensure writes can't be reordered
+        UNSAFE.storeFence();
     }
 
     /**
@@ -968,6 +1007,11 @@ class Properties extends Hashtable<Object,Object> {
      *
      * <p>The specified stream remains open after this method returns.
      *
+     * <p>This method behaves the same as
+     * {@linkplain #storeToXML(OutputStream os, String comment, Charset charset)}
+     * except that it will {@linkplain java.nio.charset.Charset#forName look up the charset}
+     * using the given encoding name.
+     *
      * @param os        the output stream on which to emit the XML document.
      * @param comment   a description of the property list, or {@code null}
      *                  if no comment is desired.
@@ -982,20 +1026,67 @@ class Properties extends Hashtable<Object,Object> {
      * @throws NullPointerException if {@code os} is {@code null},
      *         or if {@code encoding} is {@code null}.
      * @throws ClassCastException  if this {@code Properties} object
-     *         contains any keys or values that are not
-     *         {@code Strings}.
+     *         contains any keys or values that are not {@code Strings}.
      * @see    #loadFromXML(InputStream)
      * @see    <a href="http://www.w3.org/TR/REC-xml/#charencoding">Character
      *         Encoding in Entities</a>
      * @since 1.5
      */
     public void storeToXML(OutputStream os, String comment, String encoding)
-        throws IOException
-    {
+        throws IOException {
         Objects.requireNonNull(os);
         Objects.requireNonNull(encoding);
+
+        try {
+            Charset charset = Charset.forName(encoding);
+            storeToXML(os, comment, charset);
+        } catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+            throw new UnsupportedEncodingException(encoding);
+        }
+    }
+
+    /**
+     * Emits an XML document representing all of the properties contained
+     * in this table, using the specified encoding.
+     *
+     * <p>The XML document will have the following DOCTYPE declaration:
+     * <pre>
+     * &lt;!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd"&gt;
+     * </pre>
+     *
+     * <p>If the specified comment is {@code null} then no comment
+     * will be stored in the document.
+     *
+     * <p> An implementation is required to support writing of XML documents
+     * that use the "{@code UTF-8}" or "{@code UTF-16}" encoding. An
+     * implementation may support additional encodings.
+     *
+     * <p> Unmappable characters for the specified charset will be encoded as
+     * numeric character references.
+     *
+     * <p>The specified stream remains open after this method returns.
+     *
+     * @param os        the output stream on which to emit the XML document.
+     * @param comment   a description of the property list, or {@code null}
+     *                  if no comment is desired.
+     * @param charset   the charset
+     *
+     * @throws IOException if writing to the specified output stream
+     *         results in an {@code IOException}.
+     * @throws NullPointerException if {@code os} or {@code charset} is {@code null}.
+     * @throws ClassCastException  if this {@code Properties} object
+     *         contains any keys or values that are not {@code Strings}.
+     * @see    #loadFromXML(InputStream)
+     * @see    <a href="http://www.w3.org/TR/REC-xml/#charencoding">Character
+     *         Encoding in Entities</a>
+     * @since 10
+     */
+    public void storeToXML(OutputStream os, String comment, Charset charset)
+        throws IOException {
+        Objects.requireNonNull(os, "OutputStream");
+        Objects.requireNonNull(charset, "Charset");
         PropertiesDefaultHandler handler = new PropertiesDefaultHandler();
-        handler.store(this, os, comment, encoding);
+        handler.store(this, os, comment, charset);
     }
 
     /**
@@ -1012,7 +1103,8 @@ class Properties extends Hashtable<Object,Object> {
     public String getProperty(String key) {
         Object oval = map.get(key);
         String sval = (oval instanceof String) ? (String)oval : null;
-        return ((sval == null) && (defaults != null)) ? defaults.getProperty(key) : sval;
+        Properties defaults;
+        return ((sval == null) && ((defaults = this.defaults) != null)) ? defaults.getProperty(key) : sval;
     }
 
     /**
@@ -1398,6 +1490,7 @@ class Properties extends Hashtable<Object,Object> {
 
     @Override
     void writeHashtable(ObjectOutputStream s) throws IOException {
+        var map = this.map;
         List<Object> entryStack = new ArrayList<>(map.size() * 2); // an estimate
 
         for (Map.Entry<Object, Object> entry : map.entrySet()) {
@@ -1441,8 +1534,18 @@ class Properties extends Hashtable<Object,Object> {
             throw new StreamCorruptedException("Illegal # of Elements: " + elements);
         }
 
+        // Constructing the backing map will lazily create an array when the first element is
+        // added, so check it before construction. Note that CHM's constructor takes a size
+        // that is the number of elements to be stored -- not the table size -- so it must be
+        // inflated by the default load factor of 0.75, then inflated to the next power of two.
+        // (CHM uses the same power-of-two computation as HashMap, and HashMap.tableSizeFor is
+        // accessible here.) Check Map.Entry[].class since it's the nearest public type to
+        // what is actually created.
+        SharedSecrets.getJavaObjectInputStreamAccess()
+                     .checkArray(s, Map.Entry[].class, HashMap.tableSizeFor((int)(elements / 0.75)));
+
         // create CHM of appropriate capacity
-        map = new ConcurrentHashMap<>(elements);
+        var map = new ConcurrentHashMap<>(elements);
 
         // Read all the key/value objects
         for (; elements > 0; elements--) {
@@ -1450,5 +1553,6 @@ class Properties extends Hashtable<Object,Object> {
             Object value = s.readObject();
             map.put(key, value);
         }
+        this.map = map;
     }
 }

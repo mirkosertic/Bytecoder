@@ -26,6 +26,9 @@
 package java.nio;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.misc.JavaNioAccess;
+import jdk.internal.misc.SharedSecrets;
+import jdk.internal.misc.Unsafe;
 
 import java.util.Spliterator;
 
@@ -181,6 +184,8 @@ import java.util.Spliterator;
  */
 
 public abstract class Buffer {
+    // Cached unsafe-access object
+    static final Unsafe UNSAFE = Unsafe.getUnsafe();
 
     /**
      * The characteristics of Spliterators that traverse and split elements
@@ -617,6 +622,14 @@ public abstract class Buffer {
     // -- Package-private methods for bounds checking, etc. --
 
     /**
+     *
+     * @return the base reference, paired with the address
+     * field, which in combination can be used for unsafe access into a heap
+     * buffer or direct byte buffer (and views of).
+     */
+    abstract Object base();
+
+    /**
      * Checks the current position against the limit, throwing a {@link
      * BufferUnderflowException} if it is not smaller than the limit, and then
      * increments the position.
@@ -694,6 +707,25 @@ public abstract class Buffer {
     static void checkBounds(int off, int len, int size) { // package-private
         if ((off | len | (off + len) | (size - (off + len))) < 0)
             throw new IndexOutOfBoundsException();
+    }
+
+    static {
+        // setup access to this package in SharedSecrets
+        SharedSecrets.setJavaNioAccess(
+            new JavaNioAccess() {
+                @Override
+                public JavaNioAccess.BufferPool getDirectBufferPool() {
+                    return Bits.BUFFER_POOL;
+                }
+                @Override
+                public ByteBuffer newDirectByteBuffer(long addr, int cap, Object ob) {
+                    return new DirectByteBuffer(addr, cap, ob);
+                }
+                @Override
+                public void truncate(Buffer buf) {
+                    buf.truncate();
+                }
+            });
     }
 
 }

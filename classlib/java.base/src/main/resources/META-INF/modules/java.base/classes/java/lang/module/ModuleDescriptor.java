@@ -39,6 +39,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -1593,7 +1594,7 @@ public class ModuleDescriptor
         /**
          * Adds a dependence on a module with the given (and possibly empty)
          * set of modifiers. The dependence includes the version of the
-         * module that that was recorded at compile-time.
+         * module that was recorded at compile-time.
          *
          * @param  ms
          *         The set of modifiers
@@ -1741,7 +1742,7 @@ public class ModuleDescriptor
                 throw new IllegalArgumentException("Empty target set");
             if (strict) {
                 requirePackageName(e.source());
-                targets.stream().forEach(Checks::requireModuleName);
+                targets.forEach(Checks::requireModuleName);
             }
             return exports(e);
         }
@@ -1877,7 +1878,7 @@ public class ModuleDescriptor
                 throw new IllegalArgumentException("Empty target set");
             if (strict) {
                 requirePackageName(opens.source());
-                targets.stream().forEach(Checks::requireModuleName);
+                targets.forEach(Checks::requireModuleName);
             }
             return opens(opens);
         }
@@ -2520,7 +2521,7 @@ public class ModuleDescriptor
      * the {@code packageFinder} throws an {@link UncheckedIOException} then
      * {@link IOException} cause will be re-thrown. </p>
      *
-     * <p> The module descriptor is read from the buffer stating at index
+     * <p> The module descriptor is read from the buffer starting at index
      * {@code p}, where {@code p} is the buffer's {@link ByteBuffer#position()
      * position} when this method is invoked. Upon return the buffer's position
      * will be equal to {@code p + n} where {@code n} is the number of bytes
@@ -2603,7 +2604,8 @@ public class ModuleDescriptor
      * Returns a string containing the given set of modifiers and label.
      */
     private static <M> String toString(Set<M> mods, String what) {
-        return (Stream.concat(mods.stream().map(e -> e.toString().toLowerCase()),
+        return (Stream.concat(mods.stream().map(e -> e.toString()
+                                                      .toLowerCase(Locale.ROOT)),
                               Stream.of(what)))
                 .collect(Collectors.joining(" "));
     }

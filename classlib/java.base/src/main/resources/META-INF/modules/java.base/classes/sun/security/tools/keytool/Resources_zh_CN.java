@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,13 +42,15 @@ public class Resources_zh_CN extends java.util.ListResourceBundle {
         // keytool: Help part
         {".OPTION.", " [OPTION]..."},
         {"Options.", "\u9009\u9879:"},
+        {"option.1.set.twice", "\u591A\u6B21\u6307\u5B9A\u4E86 %s \u9009\u9879\u3002\u9664\u6700\u540E\u4E00\u4E2A\u4E4B\u5916, \u5176\u4F59\u7684\u5C06\u5168\u90E8\u5FFD\u7565\u3002"},
+        {"multiple.commands.1.2", "\u53EA\u5141\u8BB8\u4E00\u4E2A\u547D\u4EE4: \u540C\u65F6\u6307\u5B9A\u4E86 %1$s \u548C %2$s\u3002"},
         {"Use.keytool.help.for.all.available.commands",
-                 "\u4F7F\u7528 \"keytool -help\" \u83B7\u53D6\u6240\u6709\u53EF\u7528\u547D\u4EE4"},
+                 "\u4F7F\u7528 \"keytool -?, -h, or --help\" \u53EF\u8F93\u51FA\u6B64\u5E2E\u52A9\u6D88\u606F"},
         {"Key.and.Certificate.Management.Tool",
                  "\u5BC6\u94A5\u548C\u8BC1\u4E66\u7BA1\u7406\u5DE5\u5177"},
         {"Commands.", "\u547D\u4EE4:"},
         {"Use.keytool.command.name.help.for.usage.of.command.name",
-                "\u4F7F\u7528 \"keytool -command_name -help\" \u53EF\u83B7\u53D6 command_name \u7684\u7528\u6CD5\u3002\n\u4F7F\u7528 -conf <url> \u9009\u9879\u53EF\u6307\u5B9A\u9884\u914D\u7F6E\u7684\u9009\u9879\u6587\u4EF6\u3002"},
+                "\u4F7F\u7528 \"keytool -command_name --help\" \u53EF\u83B7\u53D6 command_name \u7684\u7528\u6CD5\u3002\n\u4F7F\u7528 -conf <url> \u9009\u9879\u53EF\u6307\u5B9A\u9884\u914D\u7F6E\u7684\u9009\u9879\u6587\u4EF6\u3002"},
         // keytool: help: commands
         {"Generates.a.certificate.request",
                 "\u751F\u6210\u8BC1\u4E66\u8BF7\u6C42"}, //-certreq
@@ -447,19 +449,24 @@ public class Resources_zh_CN extends java.util.ListResourceBundle {
         {"the.tsa.certificate", "TSA \u8BC1\u4E66"},
         {"the.input", "\u8F93\u5165"},
         {"reply", "\u56DE\u590D"},
-        {"one.in.many", "%s #%d/%d"},
+        {"one.in.many", "%1$s #%2$d/%3$d"},
         {"alias.in.cacerts", "cacerts \u4E2D\u7684\u53D1\u5E03\u8005 <%s>"},
         {"alias.in.keystore", "\u53D1\u5E03\u8005 <%s>"},
         {"with.weak", "%s (\u5F31)"},
-        {"key.bit", "%d \u4F4D %s \u5BC6\u94A5"},
-        {"key.bit.weak", "%d \u4F4D %s \u5BC6\u94A5 (\u5F31)"},
+        {"key.bit", "%1$d \u4F4D %2$s \u5BC6\u94A5"},
+        {"key.bit.weak", "%1$d \u4F4D %2$s \u5BC6\u94A5 (\u5F31)"},
+        {"unknown.size.1", "\u672A\u77E5\u5927\u5C0F\u7684 %s \u5BC6\u94A5"},
         {".PATTERN.printX509Cert.with.weak",
                 "\u6240\u6709\u8005: {0}\n\u53D1\u5E03\u8005: {1}\n\u5E8F\u5217\u53F7: {2}\n\u751F\u6548\u65F6\u95F4: {3}, \u5931\u6548\u65F6\u95F4: {4}\n\u8BC1\u4E66\u6307\u7EB9:\n\t SHA1: {5}\n\t SHA256: {6}\n\u7B7E\u540D\u7B97\u6CD5\u540D\u79F0: {7}\n\u4E3B\u4F53\u516C\u5171\u5BC6\u94A5\u7B97\u6CD5: {8}\n\u7248\u672C: {9}"},
         {"PKCS.10.with.weak",
-                "PKCS #10 \u8BC1\u4E66\u8BF7\u6C42 (\u7248\u672C 1.0)\n\u4E3B\u4F53: %s\n\u683C\u5F0F: %s\n\u516C\u5171\u5BC6\u94A5: %s\n\u7B7E\u540D\u7B97\u6CD5: %s\n"},
+                "PKCS #10 \u8BC1\u4E66\u8BF7\u6C42 (\u7248\u672C 1.0)\n\u4E3B\u4F53: %1$s\n\u683C\u5F0F: %2$s\n\u516C\u5171\u5BC6\u94A5: %3$s\n\u7B7E\u540D\u7B97\u6CD5: %4$s\n"},
         {"verified.by.s.in.s.weak", "\u7531 %2$s \u4E2D\u7684 %1$s \u4EE5 %3$s \u9A8C\u8BC1"},
-        {"whose.sigalg.risk", "%s \u4F7F\u7528\u7684 %s \u7B7E\u540D\u7B97\u6CD5\u5B58\u5728\u5B89\u5168\u98CE\u9669\u3002"},
-        {"whose.key.risk", "%s \u4F7F\u7528\u7684 %s \u5B58\u5728\u5B89\u5168\u98CE\u9669\u3002"},
+        {"whose.sigalg.risk", "%1$s \u4F7F\u7528\u7684 %2$s \u7B7E\u540D\u7B97\u6CD5\u5B58\u5728\u5B89\u5168\u98CE\u9669\u3002"},
+        {"whose.key.risk", "%1$s \u4F7F\u7528\u7684 %2$s \u5B58\u5728\u5B89\u5168\u98CE\u9669\u3002"},
+        {"jks.storetype.warning", "%1$s \u5BC6\u94A5\u5E93\u4F7F\u7528\u4E13\u7528\u683C\u5F0F\u3002\u5EFA\u8BAE\u4F7F\u7528 \"keytool -importkeystore -srckeystore %2$s -destkeystore %2$s -deststoretype pkcs12\" \u8FC1\u79FB\u5230\u884C\u4E1A\u6807\u51C6\u683C\u5F0F PKCS12\u3002"},
+        {"migrate.keystore.warning", "\u5DF2\u5C06 \"%1$s\" \u8FC1\u79FB\u5230 %4$s\u3002\u5C06 %2$s \u5BC6\u94A5\u5E93\u4F5C\u4E3A \"%3$s\" \u8FDB\u884C\u4E86\u5907\u4EFD\u3002"},
+        {"backup.keystore.warning", "\u5DF2\u5C06\u539F\u59CB\u5BC6\u94A5\u5E93 \"%1$s\" \u5907\u4EFD\u4E3A \"%3$s\"..."},
+        {"importing.keystore.status", "\u6B63\u5728\u5C06\u5BC6\u94A5\u5E93 %1$s \u5BFC\u5165\u5230 %2$s..."},
     };
 
 

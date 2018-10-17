@@ -152,7 +152,7 @@ public final class ModuleLayer {
     private static final ModuleLayer EMPTY_LAYER
         = new ModuleLayer(Configuration.empty(), List.of(), null);
 
-    // the configuration from which this ;ayer was created
+    // the configuration from which this layer was created
     private final Configuration cf;
 
     // parent layers, empty in the case of the empty layer
@@ -322,8 +322,8 @@ public final class ModuleLayer {
      * @return The newly created layer
      *
      * @throws IllegalArgumentException
-     *         If the parent of the given configuration is not the configuration
-     *         for this layer
+     *         If the given configuration has more than one parent or the parent
+     *         of the configuration is not the configuration for this layer
      * @throws LayerInstantiationException
      *         If the layer cannot be created for any of the reasons specified
      *         by the static {@code defineModulesWithOneLoader} method
@@ -364,8 +364,8 @@ public final class ModuleLayer {
      * @return The newly created layer
      *
      * @throws IllegalArgumentException
-     *         If the parent of the given configuration is not the configuration
-     *         for this layer
+     *         If the given configuration has more than one parent or the parent
+     *         of the configuration is not the configuration for this layer
      * @throws LayerInstantiationException
      *         If the layer cannot be created for any of the reasons specified
      *         by the static {@code defineModulesWithManyLoaders} method
@@ -403,8 +403,8 @@ public final class ModuleLayer {
      * @return The newly created layer
      *
      * @throws IllegalArgumentException
-     *         If the parent of the given configuration is not the configuration
-     *         for this layer
+     *         If the given configuration has more than one parent or the parent
+     *         of the configuration is not the configuration for this layer
      * @throws LayerInstantiationException
      *         If the layer cannot be created for any of the reasons specified
      *         by the static {@code defineModules} method
@@ -473,8 +473,8 @@ public final class ModuleLayer {
      * @return A controller that controls the newly created layer
      *
      * @throws IllegalArgumentException
-     *         If the parent configurations do not match the configuration of
-     *         the parent layers, including order
+     *         If the parent(s) of the given configuration do not match the
+     *         configuration of the parent layers, including order
      * @throws LayerInstantiationException
      *         If all modules cannot be defined to the same class loader for any
      *         of the reasons listed above
@@ -498,7 +498,7 @@ public final class ModuleLayer {
         try {
             Loader loader = new Loader(cf.modules(), parentLoader);
             loader.initRemotePackageMap(cf, parents);
-            ModuleLayer layer =  new ModuleLayer(cf, parents, mn -> loader);
+            ModuleLayer layer = new ModuleLayer(cf, parents, mn -> loader);
             return new Controller(layer);
         } catch (IllegalArgumentException | IllegalStateException e) {
             throw new LayerInstantiationException(e.getMessage());
@@ -546,8 +546,8 @@ public final class ModuleLayer {
      * @return A controller that controls the newly created layer
      *
      * @throws IllegalArgumentException
-     *         If the parent configurations do not match the configuration of
-     *         the parent layers, including order
+     *         If the parent(s) of the given configuration do not match the
+     *         configuration of the parent layers, including order
      * @throws LayerInstantiationException
      *         If the layer cannot be created because the configuration contains
      *         a module named "{@code java.base}" or a module contains a package
@@ -637,8 +637,8 @@ public final class ModuleLayer {
      * @return A controller that controls the newly created layer
      *
      * @throws IllegalArgumentException
-     *         If the parent configurations do not match the configuration of
-     *         the parent layers, including order
+     *         If the parent(s) of the given configuration do not match the
+     *         configuration of the parent layers, including order
      * @throws LayerInstantiationException
      *         If creating the layer fails for any of the reasons listed above
      * @throws SecurityException
@@ -766,7 +766,7 @@ public final class ModuleLayer {
 
 
     /**
-     * Returns an ordered stream of layers. The first element is is this layer,
+     * Returns an ordered stream of layers. The first element is this layer,
      * the remaining elements are the parent layers in DFS order.
      *
      * @implNote For now, the assumption is that the number of elements will
@@ -845,9 +845,8 @@ public final class ModuleLayer {
 
         return layers()
                 .skip(1)  // skip this layer
-                .map(l -> l.nameToModule)
-                .filter(map -> map.containsKey(name))
-                .map(map -> map.get(name))
+                .map(l -> l.nameToModule.get(name))
+                .filter(Objects::nonNull)
                 .findAny();
     }
 

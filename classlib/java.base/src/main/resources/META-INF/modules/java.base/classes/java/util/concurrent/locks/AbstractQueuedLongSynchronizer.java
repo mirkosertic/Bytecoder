@@ -67,11 +67,11 @@ public abstract class AbstractQueuedLongSynchronizer
     private static final long serialVersionUID = 7373984972572414692L;
 
     /*
-      To keep sources in sync, the remainder of this source file is
-      exactly cloned from AbstractQueuedSynchronizer, replacing class
-      name and changing ints related with sync state to longs. Please
-      keep it that way.
-    */
+     * To keep sources in sync, the remainder of this source file is
+     * exactly cloned from AbstractQueuedSynchronizer, replacing class
+     * name and changing ints related with sync state to longs. Please
+     * keep it that way.
+     */
 
     /**
      * Creates a new {@code AbstractQueuedLongSynchronizer} instance
@@ -320,7 +320,9 @@ public abstract class AbstractQueuedLongSynchronizer
 
         // predNext is the apparent node to unsplice. CASes below will
         // fail if not, in which case, we lost race vs another cancel
-        // or signal, so no further action is necessary.
+        // or signal, so no further action is necessary, although with
+        // a possibility that a cancelled node may transiently remain
+        // reachable.
         Node predNext = pred.next;
 
         // Can use unconditional write instead of CAS here.
@@ -422,8 +424,8 @@ public abstract class AbstractQueuedLongSynchronizer
      * @return {@code true} if interrupted while waiting
      */
     final boolean acquireQueued(final Node node, long arg) {
+        boolean interrupted = false;
         try {
-            boolean interrupted = false;
             for (;;) {
                 final Node p = node.predecessor();
                 if (p == head && tryAcquire(arg)) {
@@ -431,12 +433,13 @@ public abstract class AbstractQueuedLongSynchronizer
                     p.next = null; // help GC
                     return interrupted;
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
-                    interrupted = true;
+                if (shouldParkAfterFailedAcquire(p, node))
+                    interrupted |= parkAndCheckInterrupt();
             }
         } catch (Throwable t) {
             cancelAcquire(node);
+            if (interrupted)
+                selfInterrupt();
             throw t;
         }
     }
@@ -510,8 +513,8 @@ public abstract class AbstractQueuedLongSynchronizer
      */
     private void doAcquireShared(long arg) {
         final Node node = addWaiter(Node.SHARED);
+        boolean interrupted = false;
         try {
-            boolean interrupted = false;
             for (;;) {
                 final Node p = node.predecessor();
                 if (p == head) {
@@ -519,18 +522,18 @@ public abstract class AbstractQueuedLongSynchronizer
                     if (r >= 0) {
                         setHeadAndPropagate(node, r);
                         p.next = null; // help GC
-                        if (interrupted)
-                            selfInterrupt();
                         return;
                     }
                 }
-                if (shouldParkAfterFailedAcquire(p, node) &&
-                    parkAndCheckInterrupt())
-                    interrupted = true;
+                if (shouldParkAfterFailedAcquire(p, node))
+                    interrupted |= parkAndCheckInterrupt();
             }
         } catch (Throwable t) {
             cancelAcquire(node);
             throw t;
+        } finally {
+            if (interrupted)
+                selfInterrupt();
         }
     }
 
@@ -725,8 +728,7 @@ public abstract class AbstractQueuedLongSynchronizer
     /**
      * Returns {@code true} if synchronization is held exclusively with
      * respect to the current (calling) thread.  This method is invoked
-     * upon each call to a non-waiting {@link ConditionObject} method.
-     * (Waiting methods instead invoke {@link #release}.)
+     * upon each call to a {@link ConditionObject} method.
      *
      * <p>The default implementation throws {@link
      * UnsupportedOperationException}. This method is invoked
@@ -912,13 +914,13 @@ public abstract class AbstractQueuedLongSynchronizer
      * at any time, a {@code true} return does not guarantee that any
      * other thread will ever acquire.
      *
-     * <p>In this implementation, this operation returns in
-     * constant time.
-     *
      * @return {@code true} if there may be other threads waiting to acquire
      */
     public final boolean hasQueuedThreads() {
-        return head != tail;
+        for (Node p = tail, h = head; p != h && p != null; p = p.prev)
+            if (p.waitStatus <= 0)
+                return true;
+        return false;
     }
 
     /**
@@ -1067,16 +1069,20 @@ public abstract class AbstractQueuedLongSynchronizer
      * @since 1.7
      */
     public final boolean hasQueuedPredecessors() {
-        // The correctness of this depends on head being initialized
-        // before tail and on head.next being accurate if the current
-        // thread is first in queue.
-        Node t = tail; // Read fields in reverse initialization order
-        Node h = head;
-        Node s;
-        return h != t &&
-            ((s = h.next) == null || s.thread != Thread.currentThread());
+        Node h, s;
+        if ((h = head) != null) {
+            if ((s = h.next) == null || s.waitStatus > 0) {
+                s = null; // traverse in case of concurrent cancellation
+                for (Node p = tail; p != h && p != null; p = p.prev) {
+                    if (p.waitStatus <= 0)
+                        s = p;
+                }
+            }
+            if (s != null && s.thread != Thread.currentThread())
+                return true;
+        }
+        return false;
     }
-
 
     // Instrumentation and monitoring methods
 
@@ -1366,9 +1372,8 @@ public abstract class AbstractQueuedLongSynchronizer
     }
 
     /**
-     * Condition implementation for a {@link
-     * AbstractQueuedLongSynchronizer} serving as the basis of a {@link
-     * Lock} implementation.
+     * Condition implementation for a {@link AbstractQueuedLongSynchronizer}
+     * serving as the basis of a {@link Lock} implementation.
      *
      * <p>Method documentation for this class describes mechanics,
      * not behavioral specifications from the point of view of Lock
@@ -1401,6 +1406,8 @@ public abstract class AbstractQueuedLongSynchronizer
          * @return its new wait node
          */
         private Node addConditionWaiter() {
+            if (!isHeldExclusively())
+                throw new IllegalMonitorStateException();
             Node t = lastWaiter;
             // If lastWaiter is cancelled, clean out.
             if (t != null && t.waitStatus != Node.CONDITION) {
@@ -1823,7 +1830,7 @@ public abstract class AbstractQueuedLongSynchronizer
             HEAD = l.findVarHandle(AbstractQueuedLongSynchronizer.class, "head", Node.class);
             TAIL = l.findVarHandle(AbstractQueuedLongSynchronizer.class, "tail", Node.class);
         } catch (ReflectiveOperationException e) {
-            throw new Error(e);
+            throw new ExceptionInInitializerError(e);
         }
 
         // Reduce the risk of rare disastrous classloading in first call to

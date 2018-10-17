@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -110,17 +110,18 @@ import java.io.Serializable;
  * Implementations may optionally handle the self-referential scenario, however
  * most current implementations do not do so.
  *
- * <h2><a id="immutable">Immutable Map Static Factory Methods</a></h2>
- * <p>The {@link Map#of() Map.of()} and
- * {@link Map#ofEntries(Map.Entry...) Map.ofEntries()}
- * static factory methods provide a convenient way to create immutable maps.
+ * <h2><a id="unmodifiable">Unmodifiable Maps</a></h2>
+ * <p>The {@link Map#of() Map.of},
+ * {@link Map#ofEntries(Map.Entry...) Map.ofEntries}, and
+ * {@link Map#copyOf Map.copyOf}
+ * static factory methods provide a convenient way to create unmodifiable maps.
  * The {@code Map}
  * instances created by these methods have the following characteristics:
  *
  * <ul>
- * <li>They are <em>structurally immutable</em>. Keys and values cannot be added,
- * removed, or updated. Calling any mutator method will always cause
- * {@code UnsupportedOperationException} to be thrown.
+ * <li>They are <a href="Collection.html#unmodifiable"><i>unmodifiable</i></a>. Keys and values
+ * cannot be added, removed, or updated. Calling any mutator method on the Map
+ * will always cause {@code UnsupportedOperationException} to be thrown.
  * However, if the contained keys or values are themselves mutable, this may cause the
  * Map to behave inconsistently or its contents to appear to change.
  * <li>They disallow {@code null} keys and values. Attempts to create them with
@@ -140,7 +141,7 @@ import java.io.Serializable;
  * </ul>
  *
  * <p>This interface is a member of the
- * <a href="{@docRoot}/java/util/package-summary.html#CollectionsFramework">
+ * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
  *
  * @param <K> the type of keys maintained by this map
@@ -186,10 +187,10 @@ public interface Map<K, V> {
      *         key
      * @throws ClassCastException if the key is of an inappropriate type for
      *         this map
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key is null and this map
      *         does not permit null keys
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     boolean containsKey(Object key);
 
@@ -206,10 +207,10 @@ public interface Map<K, V> {
      *         specified value
      * @throws ClassCastException if the value is of an inappropriate type for
      *         this map
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified value is null and this
      *         map does not permit null values
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     boolean containsValue(Object value);
 
@@ -234,10 +235,10 @@ public interface Map<K, V> {
      *         {@code null} if this map contains no mapping for the key
      * @throws ClassCastException if the key is of an inappropriate type for
      *         this map
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key is null and this map
      *         does not permit null keys
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     V get(Object key);
 
@@ -294,10 +295,10 @@ public interface Map<K, V> {
      *         is not supported by this map
      * @throws ClassCastException if the key is of an inappropriate type for
      *         this map
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key is null and this
      *         map does not permit null keys
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      */
     V remove(Object key);
 
@@ -607,10 +608,10 @@ public interface Map<K, V> {
      * {@code defaultValue} if this map contains no mapping for the key
      * @throws ClassCastException if the key is of an inappropriate type for
      * this map
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key is null and this map
      * does not permit null keys
-     * (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     * (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
     default V getOrDefault(Object key, V defaultValue) {
@@ -689,13 +690,13 @@ public interface Map<K, V> {
      * values
      * @throws ClassCastException if a replacement value is of an inappropriate
      *         type for this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if function or a replacement value is null,
      *         and this map does not permit null keys or values
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of a replacement value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ConcurrentModificationException if an entry is found to be
      * removed during iteration
      * @since 1.8
@@ -756,16 +757,16 @@ public interface Map<K, V> {
      *         if the implementation supports null values.)
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the key or value is of an inappropriate
      *         type for this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key or value is null,
      *         and this map does not permit null keys or values
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
     default V putIfAbsent(K key, V value) {
@@ -802,13 +803,13 @@ public interface Map<K, V> {
      * @return {@code true} if the value was removed
      * @throws UnsupportedOperationException if the {@code remove} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the key or value is of an inappropriate
      *         type for this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key or value is null,
      *         and this map does not permit null keys or values
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
     default boolean remove(Object key, Object value) {
@@ -851,14 +852,14 @@ public interface Map<K, V> {
      * @return {@code true} if the value was replaced
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the class of a specified key or value
      *         prevents it from being stored in this map
      * @throws NullPointerException if a specified key or newValue is null,
      *         and this map does not permit null keys or values
      * @throws NullPointerException if oldValue is null and this map does not
      *         permit null values
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of a specified key
      *         or value prevents it from being stored in this map
      * @since 1.8
@@ -901,10 +902,10 @@ public interface Map<K, V> {
      *         if the implementation supports null values.)
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key or value is null,
      *         and this map does not permit null keys or values
      * @throws IllegalArgumentException if some property of the specified key
@@ -984,13 +985,13 @@ public interface Map<K, V> {
      *         is null
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
     default V computeIfAbsent(K key,
@@ -1061,13 +1062,13 @@ public interface Map<K, V> {
      *         remappingFunction is null
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
     default V computeIfPresent(K key,
@@ -1153,13 +1154,13 @@ public interface Map<K, V> {
      *         remappingFunction is null
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @since 1.8
      */
     default V compute(K key,
@@ -1248,13 +1249,13 @@ public interface Map<K, V> {
      *         value is associated with the key
      * @throws UnsupportedOperationException if the {@code put} operation
      *         is not supported by this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws ClassCastException if the class of the specified key or value
      *         prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws IllegalArgumentException if some property of the specified key
      *         or value prevents it from being stored in this map
-     *         (<a href="{@docRoot}/java/util/Collection.html#optional-restrictions">optional</a>)
+     *         (<a href="{@docRoot}/java.base/java/util/Collection.html#optional-restrictions">optional</a>)
      * @throws NullPointerException if the specified key is null and this map
      *         does not support null keys or the value or remappingFunction is
      *         null
@@ -1276,8 +1277,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing zero mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing zero mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1286,12 +1287,12 @@ public interface Map<K, V> {
      * @since 9
      */
     static <K, V> Map<K, V> of() {
-        return ImmutableCollections.Map0.instance();
+        return ImmutableCollections.emptyMap();
     }
 
     /**
-     * Returns an immutable map containing a single mapping.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing a single mapping.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1307,8 +1308,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing two mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing two mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1327,8 +1328,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing three mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing three mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1349,8 +1350,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing four mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing four mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1373,8 +1374,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing five mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing five mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1399,8 +1400,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing six mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing six mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1429,8 +1430,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing seven mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing seven mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1461,8 +1462,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing eight mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing eight mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1495,8 +1496,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing nine mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing nine mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1531,8 +1532,8 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing ten mappings.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * Returns an unmodifiable map containing ten mappings.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @param <K> the {@code Map}'s key type
      * @param <V> the {@code Map}'s value type
@@ -1569,9 +1570,9 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable map containing keys and values extracted from the given entries.
+     * Returns an unmodifiable map containing keys and values extracted from the given entries.
      * The entries themselves are not stored in the map.
-     * See <a href="#immutable">Immutable Map Static Factory Methods</a> for details.
+     * See <a href="#unmodifiable">Unmodifiable Maps</a> for details.
      *
      * @apiNote
      * It is convenient to create the map entries using the {@link Map#entry Map.entry()} method.
@@ -1602,15 +1603,17 @@ public interface Map<K, V> {
     @SafeVarargs
     @SuppressWarnings("varargs")
     static <K, V> Map<K, V> ofEntries(Entry<? extends K, ? extends V>... entries) {
-        if (entries.length == 0) { // implicit null check of entries
-            return ImmutableCollections.Map0.instance();
+        if (entries.length == 0) { // implicit null check of entries array
+            return ImmutableCollections.emptyMap();
         } else if (entries.length == 1) {
+            // implicit null check of the array slot
             return new ImmutableCollections.Map1<>(entries[0].getKey(),
-                                                   entries[0].getValue());
+                    entries[0].getValue());
         } else {
             Object[] kva = new Object[entries.length << 1];
             int a = 0;
             for (Entry<? extends K, ? extends V> entry : entries) {
+                // implicit null checks of each array slot
                 kva[a++] = entry.getKey();
                 kva[a++] = entry.getValue();
             }
@@ -1619,7 +1622,7 @@ public interface Map<K, V> {
     }
 
     /**
-     * Returns an immutable {@link Entry} containing the given key and value.
+     * Returns an unmodifiable {@link Entry} containing the given key and value.
      * These entries are suitable for populating {@code Map} instances using the
      * {@link Map#ofEntries Map.ofEntries()} method.
      * The {@code Entry} instances created by this method have the following characteristics:
@@ -1627,7 +1630,7 @@ public interface Map<K, V> {
      * <ul>
      * <li>They disallow {@code null} keys and values. Attempts to create them using a {@code null}
      * key or value result in {@code NullPointerException}.
-     * <li>They are immutable. Calls to {@link Entry#setValue Entry.setValue()}
+     * <li>They are unmodifiable. Calls to {@link Entry#setValue Entry.setValue()}
      * on a returned {@code Entry} result in {@code UnsupportedOperationException}.
      * <li>They are not serializable.
      * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
@@ -1654,5 +1657,31 @@ public interface Map<K, V> {
     static <K, V> Entry<K, V> entry(K k, V v) {
         // KeyValueHolder checks for nulls
         return new KeyValueHolder<>(k, v);
+    }
+
+    /**
+     * Returns an <a href="#unmodifiable">unmodifiable Map</a> containing the entries
+     * of the given Map. The given Map must not be null, and it must not contain any
+     * null keys or values. If the given Map is subsequently modified, the returned
+     * Map will not reflect such modifications.
+     *
+     * @implNote
+     * If the given Map is an <a href="#unmodifiable">unmodifiable Map</a>,
+     * calling copyOf will generally not create a copy.
+     *
+     * @param <K> the {@code Map}'s key type
+     * @param <V> the {@code Map}'s value type
+     * @param map a {@code Map} from which entries are drawn, must be non-null
+     * @return a {@code Map} containing the entries of the given {@code Map}
+     * @throws NullPointerException if map is null, or if it contains any null keys or values
+     * @since 10
+     */
+    @SuppressWarnings({"rawtypes","unchecked"})
+    static <K, V> Map<K, V> copyOf(Map<? extends K, ? extends V> map) {
+        if (map instanceof ImmutableCollections.AbstractImmutableMap) {
+            return (Map<K,V>)map;
+        } else {
+            return (Map<K,V>)Map.ofEntries(map.entrySet().toArray(new Entry[0]));
+        }
     }
 }

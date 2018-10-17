@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -49,6 +49,7 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import sun.util.locale.provider.CalendarDataUtility;
 import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.LocaleServiceProviderPool;
 import sun.util.locale.provider.ResourceBundleBasedAdapter;
@@ -81,6 +82,10 @@ import sun.util.locale.provider.TimeZoneNameUtility;
  * new SimpleDateFormat(aPattern, DateFormatSymbols.getInstance(aLocale)).
  * </pre>
  * </blockquote>
+ *
+ * <p>If the locale contains "rg" (region override)
+ * <a href="../util/Locale.html#def_locale_extension">Unicode extension</a>,
+ * the symbols are overridden for the designated region.
  *
  * <p>
  * <code>DateFormatSymbols</code> objects are cloneable. When you obtain
@@ -389,6 +394,12 @@ public class DateFormatSymbols implements Serializable, Cloneable {
 
     /**
      * Gets month strings. For example: "January", "February", etc.
+     * An array with either 12 or 13 elements will be returned depending
+     * on whether or not {@link java.util.Calendar#UNDECIMBER Calendar.UNDECIMBER}
+     * is supported. Use
+     * {@link java.util.Calendar#JANUARY Calendar.JANUARY},
+     * {@link java.util.Calendar#FEBRUARY Calendar.FEBRUARY},
+     * etc. to index the result array.
      *
      * <p>If the language requires different forms for formatting and
      * stand-alone usages, this method returns month names in the
@@ -400,10 +411,9 @@ public class DateFormatSymbols implements Serializable, Cloneable {
      * Calendar Elements in the Unicode Locale Data Markup Language
      * (LDML) specification</a> for more details.
      *
-     * @return the month strings. Use
-     * {@link java.util.Calendar#JANUARY Calendar.JANUARY},
-     * {@link java.util.Calendar#FEBRUARY Calendar.FEBRUARY},
-     * etc. to index the result array.
+     * @implSpec This method returns 13 elements since
+     * {@link java.util.Calendar#UNDECIMBER Calendar.UNDECIMBER} is supported.
+     * @return the month strings.
      */
     public String[] getMonths() {
         return Arrays.copyOf(months, months.length);
@@ -422,6 +432,12 @@ public class DateFormatSymbols implements Serializable, Cloneable {
 
     /**
      * Gets short month strings. For example: "Jan", "Feb", etc.
+     * An array with either 12 or 13 elements will be returned depending
+     * on whether or not {@link java.util.Calendar#UNDECIMBER Calendar.UNDECIMBER}
+     * is supported. Use
+     * {@link java.util.Calendar#JANUARY Calendar.JANUARY},
+     * {@link java.util.Calendar#FEBRUARY Calendar.FEBRUARY},
+     * etc. to index the result array.
      *
      * <p>If the language requires different forms for formatting and
      * stand-alone usages, this method returns short month names in
@@ -433,10 +449,9 @@ public class DateFormatSymbols implements Serializable, Cloneable {
      * Calendar Elements in the Unicode Locale Data Markup Language
      * (LDML) specification</a> for more details.
      *
-     * @return the short month strings. Use
-     * {@link java.util.Calendar#JANUARY Calendar.JANUARY},
-     * {@link java.util.Calendar#FEBRUARY Calendar.FEBRUARY},
-     * etc. to index the result array.
+     * @implSpec This method returns 13 elements since
+     * {@link java.util.Calendar#UNDECIMBER Calendar.UNDECIMBER} is supported.
+     * @return the short month strings.
      */
     public String[] getShortMonths() {
         return Arrays.copyOf(shortMonths, shortMonths.length);
@@ -716,15 +731,18 @@ public class DateFormatSymbols implements Serializable, Cloneable {
             }
             dfs = new DateFormatSymbols(false);
 
+            // check for region override
+            Locale override = CalendarDataUtility.findRegionOverride(locale);
+
             // Initialize the fields from the ResourceBundle for locale.
             LocaleProviderAdapter adapter
-                = LocaleProviderAdapter.getAdapter(DateFormatSymbolsProvider.class, locale);
+                = LocaleProviderAdapter.getAdapter(DateFormatSymbolsProvider.class, override);
             // Avoid any potential recursions
             if (!(adapter instanceof ResourceBundleBasedAdapter)) {
                 adapter = LocaleProviderAdapter.getResourceBundleBased();
             }
             ResourceBundle resource
-                = ((ResourceBundleBasedAdapter)adapter).getLocaleData().getDateFormatData(locale);
+                = ((ResourceBundleBasedAdapter)adapter).getLocaleData().getDateFormatData(override);
 
             dfs.locale = locale;
             // JRE and CLDR use different keys

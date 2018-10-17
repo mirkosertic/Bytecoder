@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package java.util;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.util.ArraysSupport;
 
 import java.lang.reflect.Array;
 import java.util.concurrent.ForkJoinPool;
@@ -62,7 +63,7 @@ import java.util.stream.StreamSupport;
  * a MergeSort, but it does have to be <i>stable</i>.)
  *
  * <p>This class is a member of the
- * <a href="{@docRoot}/java/util/package-summary.html#CollectionsFramework">
+ * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
  * Java Collections Framework</a>.
  *
  * @author Josh Bloch
@@ -4722,32 +4723,35 @@ public class Arrays {
         int result = 1;
 
         for (Object element : a) {
-            int elementHash = 0;
-            if (element instanceof Object[])
-                elementHash = deepHashCode((Object[]) element);
-            else if (element instanceof byte[])
-                elementHash = hashCode((byte[]) element);
-            else if (element instanceof short[])
-                elementHash = hashCode((short[]) element);
-            else if (element instanceof int[])
-                elementHash = hashCode((int[]) element);
-            else if (element instanceof long[])
-                elementHash = hashCode((long[]) element);
-            else if (element instanceof char[])
-                elementHash = hashCode((char[]) element);
-            else if (element instanceof float[])
-                elementHash = hashCode((float[]) element);
-            else if (element instanceof double[])
-                elementHash = hashCode((double[]) element);
-            else if (element instanceof boolean[])
-                elementHash = hashCode((boolean[]) element);
-            else if (element != null)
+            final int elementHash;
+            final Class<?> cl;
+            if (element == null)
+                elementHash = 0;
+            else if ((cl = element.getClass().getComponentType()) == null)
                 elementHash = element.hashCode();
+            else if (element instanceof Object[])
+                elementHash = deepHashCode((Object[]) element);
+            else
+                elementHash = primitiveArrayHashCode(element, cl);
 
             result = 31 * result + elementHash;
         }
 
         return result;
+    }
+
+    private static int primitiveArrayHashCode(Object a, Class<?> cl) {
+        return
+            (cl == byte.class)    ? hashCode((byte[]) a)    :
+            (cl == int.class)     ? hashCode((int[]) a)     :
+            (cl == long.class)    ? hashCode((long[]) a)    :
+            (cl == char.class)    ? hashCode((char[]) a)    :
+            (cl == short.class)   ? hashCode((short[]) a)   :
+            (cl == boolean.class) ? hashCode((boolean[]) a) :
+            (cl == double.class)  ? hashCode((double[]) a)  :
+            // If new primitive types are ever added, this method must be
+            // expanded or we will fail here with ClassCastException.
+            hashCode((float[]) a);
     }
 
     /**

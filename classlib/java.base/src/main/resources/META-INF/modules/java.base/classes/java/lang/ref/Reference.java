@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,7 @@
 
 package java.lang.ref;
 
-import jdk.internal.vm.annotation.DontInline;
+import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.misc.JavaLangRefAccess;
 import jdk.internal.misc.SharedSecrets;
@@ -43,71 +43,146 @@ import jdk.internal.ref.Cleaner;
 
 public abstract class Reference<T> {
 
-    /* A Reference instance is in one of four possible internal states:
+    /* The state of a Reference object is characterized by two attributes.  It
+     * may be either "active", "pending", or "inactive".  It may also be
+     * either "registered", "enqueued", "dequeued", or "unregistered".
      *
-     *     Active: Subject to special treatment by the garbage collector.  Some
-     *     time after the collector detects that the reachability of the
-     *     referent has changed to the appropriate state, it changes the
-     *     instance's state to either Pending or Inactive, depending upon
-     *     whether or not the instance was registered with a queue when it was
-     *     created.  In the former case it also adds the instance to the
-     *     pending-Reference list.  Newly-created instances are Active.
+     *   Active: Subject to special treatment by the garbage collector.  Some
+     *   time after the collector detects that the reachability of the
+     *   referent has changed to the appropriate state, the collector
+     *   "notifies" the reference, changing the state to either "pending" or
+     *   "inactive".
+     *   referent != null; discovered = null, or in GC discovered list.
      *
-     *     Pending: An element of the pending-Reference list, waiting to be
-     *     enqueued by the Reference-handler thread.  Unregistered instances
-     *     are never in this state.
+     *   Pending: An element of the pending-Reference list, waiting to be
+     *   processed by the ReferenceHandler thread.  The pending-Reference
+     *   list is linked through the discovered fields of references in the
+     *   list.
+     *   referent = null; discovered = next element in pending-Reference list.
      *
-     *     Enqueued: An element of the queue with which the instance was
-     *     registered when it was created.  When an instance is removed from
-     *     its ReferenceQueue, it is made Inactive.  Unregistered instances are
-     *     never in this state.
+     *   Inactive: Neither Active nor Pending.
+     *   referent = null.
      *
-     *     Inactive: Nothing more to do.  Once an instance becomes Inactive its
-     *     state will never change again.
+     *   Registered: Associated with a queue when created, and not yet added
+     *   to the queue.
+     *   queue = the associated queue.
      *
-     * The state is encoded in the queue and next fields as follows:
+     *   Enqueued: Added to the associated queue, and not yet removed.
+     *   queue = ReferenceQueue.ENQUEUE; next = next entry in list, or this to
+     *   indicate end of list.
      *
-     *     Active: queue = ReferenceQueue with which instance is registered, or
-     *     ReferenceQueue.NULL if it was not registered with a queue; next =
-     *     null.
+     *   Dequeued: Added to the associated queue and then removed.
+     *   queue = ReferenceQueue.NULL; next = this.
      *
-     *     Pending: queue = ReferenceQueue with which instance is registered;
-     *     next = this
+     *   Unregistered: Not associated with a queue when created.
+     *   queue = ReferenceQueue.NULL.
      *
-     *     Enqueued: queue = ReferenceQueue.ENQUEUED; next = Following instance
-     *     in queue, or this if at end of list.
+     * The collector only needs to examine the referent field and the
+     * discovered field to determine whether a (non-FinalReference) Reference
+     * object needs special treatment.  If the referent is non-null and not
+     * known to be live, then it may need to be discovered for possible later
+     * notification.  But if the discovered field is non-null, then it has
+     * already been discovered.
      *
-     *     Inactive: queue = ReferenceQueue.NULL; next = this.
+     * FinalReference (which exists to support finalization) differs from
+     * other references, because a FinalReference is not cleared when
+     * notified.  The referent being null or not cannot be used to distinguish
+     * between the active state and pending or inactive states.  However,
+     * FinalReferences do not support enqueue().  Instead, the next field of a
+     * FinalReference object is set to "this" when it is added to the
+     * pending-Reference list.  The use of "this" as the value of next in the
+     * enqueued and dequeued states maintains the non-active state.  An
+     * additional check that the next field is null is required to determine
+     * that a FinalReference object is active.
      *
-     * With this scheme the collector need only examine the next field in order
-     * to determine whether a Reference instance requires special treatment: If
-     * the next field is null then the instance is active; if it is non-null,
-     * then the collector should treat the instance normally.
+     * Initial states:
+     *   [active/registered]
+     *   [active/unregistered] [1]
      *
-     * To ensure that a concurrent collector can discover active Reference
-     * objects without interfering with application threads that may apply
-     * the enqueue() method to those objects, collectors should link
-     * discovered objects through the discovered field. The discovered
-     * field is also used for linking Reference objects in the pending list.
+     * Transitions:
+     *                            clear
+     *   [active/registered]     ------->   [inactive/registered]
+     *          |                                 |
+     *          |                                 | enqueue [2]
+     *          | GC              enqueue [2]     |
+     *          |                -----------------|
+     *          |                                 |
+     *          v                                 |
+     *   [pending/registered]    ---              v
+     *          |                   | ReferenceHandler
+     *          | enqueue [2]       |--->   [inactive/enqueued]
+     *          v                   |             |
+     *   [pending/enqueued]      ---              |
+     *          |                                 | poll/remove
+     *          | poll/remove                     |
+     *          |                                 |
+     *          v            ReferenceHandler     v
+     *   [pending/dequeued]      ------>    [inactive/dequeued]
+     *
+     *
+     *                           clear/enqueue/GC [3]
+     *   [active/unregistered]   ------
+     *          |                      |
+     *          | GC                   |
+     *          |                      |--> [inactive/unregistered]
+     *          v                      |
+     *   [pending/unregistered]  ------
+     *                           ReferenceHandler
+     *
+     * Terminal states:
+     *   [inactive/dequeued]
+     *   [inactive/unregistered]
+     *
+     * Unreachable states (because enqueue also clears):
+     *   [active/enqeued]
+     *   [active/dequeued]
+     *
+     * [1] Unregistered is not permitted for FinalReferences.
+     *
+     * [2] These transitions are not possible for FinalReferences, making
+     * [pending/enqueued] and [pending/dequeued] unreachable, and
+     * [inactive/registered] terminal.
+     *
+     * [3] The garbage collector may directly transition a Reference
+     * from [active/unregistered] to [inactive/unregistered],
+     * bypassing the pending-Reference list.
      */
 
     private T referent;         /* Treated specially by GC */
 
+    /* The queue this reference gets enqueued to by GC notification or by
+     * calling enqueue().
+     *
+     * When registered: the queue with which this reference is registered.
+     *        enqueued: ReferenceQueue.ENQUEUE
+     *        dequeued: ReferenceQueue.NULL
+     *    unregistered: ReferenceQueue.NULL
+     */
     volatile ReferenceQueue<? super T> queue;
 
-    /* When active:   NULL
-     *     pending:   this
-     *    Enqueued:   next reference in queue (or this if last)
-     *    Inactive:   this
+    /* The link in a ReferenceQueue's list of Reference objects.
+     *
+     * When registered: null
+     *        enqueued: next element in queue (or this if last)
+     *        dequeued: this (marking FinalReferences as inactive)
+     *    unregistered: null
      */
     @SuppressWarnings("rawtypes")
     volatile Reference next;
 
-    /* When active:   next element in a discovered reference list maintained by GC (or this if last)
-     *     pending:   next element in the pending list (or null if last)
-     *   otherwise:   NULL
+    /* Used by the garbage collector to accumulate Reference objects that need
+     * to be revisited in order to decide whether they should be notified.
+     * Also used as the link in the pending-Reference list.  The discovered
+     * field and the next field are distinct to allow the enqueue() method to
+     * be applied to a Reference object while it is either in the
+     * pending-Reference list or in the garbage collector's discovered set.
+     *
+     * When active: null or next element in a discovered reference list
+     *              maintained by the GC (or this if last)
+     *     pending: next element in the pending-Reference list (null if last)
+     *    inactive: null
      */
-    private transient Reference<T> discovered;  /* used by VM */
+    private transient Reference<T> discovered;
 
 
     /* High-priority thread to enqueue pending References
@@ -141,25 +216,17 @@ public abstract class Reference<T> {
     }
 
     /*
-     * system property to disable clearing before enqueuing.
-     */
-    private static final class ClearBeforeEnqueue {
-        static final boolean DISABLE =
-            Boolean.getBoolean("jdk.lang.ref.disableClearBeforeEnqueue");
-    }
-
-    /*
-     * Atomically get and clear (set to null) the VM's pending list.
+     * Atomically get and clear (set to null) the VM's pending-Reference list.
      */
     private static native Reference<Object> getAndClearReferencePendingList();
 
     /*
-     * Test whether the VM's pending list contains any entries.
+     * Test whether the VM's pending-Reference list contains any entries.
      */
     private static native boolean hasReferencePendingList();
 
     /*
-     * Wait until the VM's pending list may be non-null.
+     * Wait until the VM's pending-Reference list may be non-null.
      */
     private static native void waitForReferencePendingList();
 
@@ -243,6 +310,11 @@ public abstract class Reference<T> {
             {
                 return Reference.waitForReferenceProcessing();
             }
+
+            @Override
+            public void runFinalization() {
+                Finalizer.runFinalization();
+            }
         });
     }
 
@@ -299,9 +371,22 @@ public abstract class Reference<T> {
      *           it was not registered with a queue when it was created
      */
     public boolean enqueue() {
-        if (!ClearBeforeEnqueue.DISABLE)
-            this.referent = null;
+        this.referent = null;
         return this.queue.enqueue(this);
+    }
+
+    /**
+     * Throws {@link CloneNotSupportedException}. A {@code Reference} cannot be
+     * meaningfully cloned. Construct a new {@code Reference} instead.
+     *
+     * @returns never returns normally
+     * @throws  CloneNotSupportedException always
+     *
+     * @since 11
+     */
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        throw new CloneNotSupportedException();
     }
 
     /* -- Constructors -- */
@@ -424,10 +509,12 @@ public abstract class Reference<T> {
      * @param ref the reference. If {@code null}, this method has no effect.
      * @since 9
      */
-    @DontInline
+    @ForceInline
     public static void reachabilityFence(Object ref) {
-        // Does nothing, because this method is annotated with @DontInline
-        // HotSpot needs to retain the ref and not GC it before a call to this
-        // method
+        // Does nothing. This method is annotated with @ForceInline to eliminate
+        // most of the overhead that using @DontInline would cause with the
+        // HotSpot JVM, when this fence is used in a wide variety of situations.
+        // HotSpot JVM retains the ref and does not GC it before a call to
+        // this method, because the JIT-compilers do not have GC-only safepoints.
     }
 }
