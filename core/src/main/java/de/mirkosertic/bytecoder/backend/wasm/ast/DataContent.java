@@ -15,13 +15,5 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SModule extends SExpression {
-
-    public SModule() {
-        super("module");
-    }
-
-    public void addChild(final SMemory memory) {
-        addChildInternal(memory);
-    }
+public class DataContent implements ModuleContent {
 }

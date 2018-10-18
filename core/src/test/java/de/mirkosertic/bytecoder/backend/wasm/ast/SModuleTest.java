@@ -29,11 +29,12 @@ public class SModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final SModule module = new SModule();
+        final Module module = new Module();
         final STextExporter exporter = new STextExporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module)", strWriter.toString());
+        Assert.assertEquals("(module \n"
+                + "    )", strWriter.toString());
     }
 
     @Test
@@ -42,16 +43,17 @@ public class SModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final SModule module = new SModule();
+        final Module module = new Module();
 
         final SMemory memory = new SMemory(10, 20);
-        module.addChild(memory);
+        module.getMems().addChild(memory);
 
         final STextExporter exporter = new STextExporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module\n"
-                + "    (memory 10 20))", strWriter.toString());
+        Assert.assertEquals("(module \n"
+                + "    (memory 10 20)\n"
+                + "    )", strWriter.toString());
     }
 
     @Test
@@ -60,15 +62,16 @@ public class SModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final SModule module = new SModule();
+        final Module module = new Module();
 
         final SMemory memory = new SMemory(new SExport("exported"), 10, 20);
-        module.addChild(memory);
+        module.getMems().addChild(memory);
 
         final STextExporter exporter = new STextExporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module\n"
-                + "    (memory (export \"exported\") 10 20))", strWriter.toString());
+        Assert.assertEquals("(module \n"
+                + "    (memory (export \"exported\") 10 20)\n"
+                + "    )", strWriter.toString());
     }
 }
