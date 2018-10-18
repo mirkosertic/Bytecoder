@@ -16,16 +16,25 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
-public class STextExporter {
+public class MemoryContent implements ModuleContent {
 
-    public STextExporter() {
+    private final List<SMemory> memories;
+
+    public MemoryContent() {
+        memories = new ArrayList<>();
     }
 
-    public void export(final Module module, final PrintWriter pw) throws IOException {
-        try (final STextWriter writer = new STextWriter(pw)) {
-            module.writeTo(writer);
+    public void addChild(final SMemory memory) {
+        memories.add(memory);
+    }
+
+    public void writeTo(final STextWriter writer) throws IOException {
+        for (final SMemory memory : memories) {
+            memory.writeTo(writer);
+            writer.newLine();
         }
     }
 }
