@@ -15,9 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SInteger implements SValue {
 
-public interface SValue {
+    private final int value;
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public SInteger(final int value) {
+        this.value = value;
+    }
+
+    @Override
+    public void writeTo(final STextWriter textWriter) {
+        textWriter.writeInteger(value);
+    }
 }

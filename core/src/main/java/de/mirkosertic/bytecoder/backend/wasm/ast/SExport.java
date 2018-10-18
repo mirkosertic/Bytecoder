@@ -15,9 +15,20 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SExport implements SValue {
 
-public interface SValue {
+    private final String exportName;
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public SExport(final String exportName) {
+        this.exportName = exportName;
+    }
+
+    @Override
+    public void writeTo(final STextWriter textWriter) {
+        textWriter.opening();
+        textWriter.write("export");
+        textWriter.space();
+        textWriter.writeText(exportName);
+        textWriter.closing();
+    }
 }

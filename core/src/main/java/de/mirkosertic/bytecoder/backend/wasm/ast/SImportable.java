@@ -15,15 +15,5 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SIntegerValue extends SValue {
-
-    private final int value;
-
-    public SIntegerValue(int aValue) {
-        value = aValue;
-    }
-
-    public int getValue() {
-        return value;
-    }
+public interface SImportable extends SValue {
 }

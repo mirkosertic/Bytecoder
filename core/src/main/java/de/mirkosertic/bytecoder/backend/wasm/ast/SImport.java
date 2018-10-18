@@ -15,20 +15,30 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SI32Const implements I32 {
+import java.io.IOException;
 
-    private final int value;
+public class SImport implements SValue {
 
-    public SI32Const(final int value) {
-        this.value = value;
+    private final String moduleName;
+    private final String objectName;
+    private final SImportable importable;
+
+    public SImport(final String moduleName, final String objectName, final SImportable importable) {
+        this.moduleName = moduleName;
+        this.objectName = objectName;
+        this.importable = importable;
     }
 
     @Override
-    public void writeTo(final STextWriter textWriter) {
+    public void writeTo(final STextWriter textWriter) throws IOException {
         textWriter.opening();
-        textWriter.write("i32.const");
+        textWriter.write("import");
         textWriter.space();
-        textWriter.writeInteger(value);
+        textWriter.writeText(moduleName);
+        textWriter.space();
+        textWriter.writeText(objectName);
+        textWriter.space();
+        importable.writeTo(textWriter);
         textWriter.closing();
     }
 }

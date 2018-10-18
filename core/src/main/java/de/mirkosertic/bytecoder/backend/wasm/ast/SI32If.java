@@ -15,9 +15,24 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SI32If extends SExpression implements I32 {
 
-public interface SValue {
+    public enum Condition {
+        eq
+    }
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public static SI32If eq(I32 leftValue, I32 rightValue) {
+        return new SI32If(Condition.eq, leftValue, rightValue);
+    }
+
+    private SI32If(final Condition condition, final I32 singleValue) {
+        super("i32." + condition);
+        addChildInternal(singleValue);
+    }
+
+    private SI32If(final Condition condition, final I32 leftValue, final I32 rightValue) {
+        super("i32." + condition);
+        addChildInternal(leftValue);
+        addChildInternal(rightValue);
+    }
 }

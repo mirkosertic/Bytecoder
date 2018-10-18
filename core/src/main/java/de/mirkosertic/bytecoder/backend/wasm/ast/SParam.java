@@ -17,7 +17,24 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public interface SValue {
+public class SParam implements SValue {
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    private final SLabel label;
+    private final SType type;
+
+    public SParam(final SLabel label, final SType type) {
+        this.label = label;
+        this.type = type;
+    }
+
+    @Override
+    public void writeTo(final STextWriter textWriter) throws IOException {
+        textWriter.opening();
+        textWriter.write("param");
+        textWriter.space();
+        label.writeTo(textWriter);
+        textWriter.space();
+        type.writeTo(textWriter);
+        textWriter.closing();
+    }
 }

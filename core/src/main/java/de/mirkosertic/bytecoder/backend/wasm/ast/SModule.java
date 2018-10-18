@@ -15,9 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SModule extends SExpression {
 
-public interface SValue {
+    public SModule() {
+        super("module");
+    }
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public void addChild(final SMemory memory) {
+        addChildInternal(memory);
+    }
 }
