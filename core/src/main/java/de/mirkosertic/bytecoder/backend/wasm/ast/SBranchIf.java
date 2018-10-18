@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SI32Add extends SExpression {
+public class SBranchIf extends SExpression {
 
-    public SI32Add() {
-        super("i32.add");
+    public SBranchIf(final SBlock surroundingBlock, final I32 condition) {
+        super("br_if");
+        addChildInternal(surroundingBlock.getLabel());
+        addChildInternal(condition);
     }
 }

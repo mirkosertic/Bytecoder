@@ -15,9 +15,5 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-
-public interface SValue {
-
-    void writeTo(STextWriter textWriter) throws IOException;
+public interface I32 extends SValue {
 }

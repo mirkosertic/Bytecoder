@@ -15,9 +15,21 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SBlock extends SExpression {
 
-public interface SValue {
+    private final SLabel label;
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public SBlock(final SLabel label) {
+        super("block");
+        this.label = label;
+        addChildInternal(label);
+    }
+
+    public SLabel getLabel() {
+        return label;
+    }
+
+    public void addChild(final SExpression child) {
+        addChildInternal(child);
+    }
 }

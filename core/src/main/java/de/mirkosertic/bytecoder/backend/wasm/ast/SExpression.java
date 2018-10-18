@@ -15,38 +15,48 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class SExpression extends SValue {
+public class SExpression implements SValue {
 
     private final String name;
-    private final List<SValue> values;
-    private final boolean flat;
+    private final List<SValue> children;
 
-    public SExpression(String aName) {
-        this(aName, false);
+    protected SExpression(final String name) {
+        this.children = new ArrayList<>();
+        this.name = name;
     }
 
-    public SExpression(String aName, boolean aFlat) {
-        name = aName;
-        values = new ArrayList<>();
-        flat = aFlat;
+    @Override
+    public void writeTo(final STextWriter textWriter) throws IOException {
+        textWriter.opening();
+        textWriter.write(name);
+        if (hasChildren()) {
+            for (final SValue child : children()) {
+                if (child instanceof SExpression) {
+                    textWriter.newLine();
+                } else {
+                    textWriter.space();
+                }
+                child.writeTo(textWriter);
+            }
+            textWriter.closing();
+        } else {
+            textWriter.closing();
+        }
     }
 
-    public boolean isFlat() {
-        return flat;
+    protected final void addChildInternal(final SValue child) {
+        children.add(child);
     }
 
-    public void addValue(SValue aValue) {
-        values.add(aValue);
+    protected List<SValue> children() {
+        return children;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public List<SValue> getValues() {
-        return values;
+    public boolean hasChildren() {
+        return !children.isEmpty();
     }
 }

@@ -15,9 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public enum SType implements SValue {
 
-public interface SValue {
+    i32("i32"), f32("f32");
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    private final String name;
+
+    SType(final String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void writeTo(final STextWriter textWriter) {
+        textWriter.write(name);
+    }
 }

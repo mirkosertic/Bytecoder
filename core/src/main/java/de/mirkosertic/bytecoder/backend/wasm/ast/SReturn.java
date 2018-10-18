@@ -15,9 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SReturn extends SExpression {
 
-public interface SValue {
+    public SReturn() {
+        super("return");
+    }
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public SReturn(final SValue value) {
+        this();
+        addChildInternal(value);
+    }
 }

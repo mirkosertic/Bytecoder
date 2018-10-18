@@ -15,9 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class SMemory extends SExpression {
 
-public interface SValue {
+    public SMemory(final int initialPages, final int maximumPages) {
+        super("memory");
+        addChildInternal(new SInteger(initialPages));
+        addChildInternal(new SInteger(maximumPages));
+    }
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    public SMemory(final SExport export, final int initialPages, final int maximumPages) {
+        super("memory");
+        addChildInternal(export);
+        addChildInternal(new SInteger(initialPages));
+        addChildInternal(new SInteger(maximumPages));
+    }
 }

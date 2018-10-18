@@ -15,26 +15,22 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.IOException;
 
-import org.junit.Test;
+public class SResult implements SValue {
 
-public class TextWriterTest {
+    private final SType type;
 
-    @Test
-    public void testAdd() {
-        StringWriter theWriter = new StringWriter();
-        PrintWriter thePW = new PrintWriter(theWriter);
+    public SResult(final SType type) {
+        this.type = type;
+    }
 
-        SI32Add theAdd = new SI32Add();
-
-        theAdd.addValue(new SI32Const(10));
-        theAdd.addValue(new SI32Const(40));
-
-        TextWriter theSWriter = new TextWriter(thePW);
-        theSWriter.write(theAdd);
-
-        System.out.println(theWriter.toString());
+    @Override
+    public void writeTo(final STextWriter textWriter) throws IOException {
+        textWriter.opening();
+        textWriter.write("result");
+        textWriter.space();
+        type.writeTo(textWriter);
+        textWriter.closing();
     }
 }
