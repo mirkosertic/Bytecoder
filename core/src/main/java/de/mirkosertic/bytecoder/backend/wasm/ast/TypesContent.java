@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +48,6 @@ public class TypesContent implements ModuleContent {
         types.add(type);
         return type;
     }
-
     public FunctionType typeFor(final PrimitiveType resultType) {
         for (final FunctionType known : types) {
             if (known.matches(null, resultType)) {
@@ -64,19 +64,20 @@ public class TypesContent implements ModuleContent {
     }
 
     @Override
-    public void writeTo(final TextWriter writer) {
+    public void writeTo(final TextWriter textWriter) {
         for (final FunctionType type : types) {
-            type.writeTo(writer);
-            writer.newLine();
+            type.writeTo(textWriter);
+            textWriter.newLine();
         }
     }
 
     @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.typeSection()) {
-            for (final FunctionType type : types) {
-                type.writeTo(writer);
-            }
+            writer.writeUnsignedLeb128(0);
+//            for (final FunctionType type : types) {
+//                type.writeTo(writer);
+//            }
         }
     }
 }

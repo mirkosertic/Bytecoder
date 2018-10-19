@@ -16,16 +16,23 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 
-public class TextExporter {
+public class Exporter {
 
-    public TextExporter() {
+    public Exporter() {
     }
 
     public void export(final Module module, final PrintWriter pw) throws IOException {
         try (final TextWriter writer = new TextWriter(pw)) {
             module.writeTo(writer);
+        }
+    }
+
+    public void export(final Module module, final OutputStream os) throws IOException {
+        try (final BinaryWriter binaryWriter = new BinaryWriter(os)) {
+            module.writeTo(binaryWriter);
         }
     }
 }

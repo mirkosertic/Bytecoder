@@ -57,7 +57,7 @@ public class Module {
         writer.closing();
     }
 
-    public void writeTo(final BinaryWriter writer) throws Exception {
+    public void writeTo(final BinaryWriter writer) throws IOException {
         writer.header();
         types.writeTo(writer);
         functions.writeTo(writer);

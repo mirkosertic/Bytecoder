@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.control;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.i32;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -34,11 +35,19 @@ public class ModuleTest {
         final PrintWriter pw = new PrintWriter(strWriter);
 
         final Module module = new Module();
-        final TextExporter exporter = new TextExporter();
+        final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
         Assert.assertEquals("(module \n"
                 + "    )", strWriter.toString());
+    }
+
+    @Test
+    public void testSimpleCaseBinary() throws IOException {
+        final Module module = new Module();
+        final FileOutputStream fos = new FileOutputStream("/tmp/wasm.wasm");
+        final Exporter exporter = new Exporter();
+        exporter.export(module, fos);
     }
 
     @Test
@@ -51,7 +60,7 @@ public class ModuleTest {
 
         final Memory memory = module.getMems().newMemory(10, 20);
 
-        final TextExporter exporter = new TextExporter();
+        final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
         Assert.assertEquals("(module \n"
@@ -70,7 +79,7 @@ public class ModuleTest {
         final Memory memory = module.getMems().newMemory(10, 20);
         memory.exportAs("exported");
 
-        final TextExporter exporter = new TextExporter();
+        final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
         Assert.assertEquals("(module \n"
