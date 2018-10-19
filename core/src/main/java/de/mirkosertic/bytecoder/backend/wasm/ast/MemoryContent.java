@@ -15,26 +15,47 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MemoryContent implements ModuleContent {
 
-    private final List<SMemory> memories;
+    private final ExportsContent exports;
+    private final List<Memory> memories;
 
-    public MemoryContent() {
-        memories = new ArrayList<>();
+    public MemoryContent(final ExportsContent exportsContent) {
+        this.exports = exportsContent;
+        this.memories = new ArrayList<>();
     }
 
-    public void addChild(final SMemory memory) {
+    public Memory newMemory(final int initialPages, final int maximumPages) {
+        final Memory memory = new Memory(this, initialPages, maximumPages);
         memories.add(memory);
+        return memory;
     }
 
-    public void writeTo(final STextWriter writer) throws IOException {
-        for (final SMemory memory : memories) {
+    int indexOf(final Memory memory) {
+        return memories.indexOf(memory);
+    }
+
+    void export(final Memory memory, final String objectName) {
+        exports.export(memory, objectName);
+    }
+
+    @Override
+    public void writeTo(final TextWriter writer) {
+        for (final Memory memory : memories) {
             memory.writeTo(writer);
             writer.newLine();
+        }
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+        try (final BinaryWriter.SectionWriter writer = binaryWriter.memorySection()) {
+            for (final Memory memory : memories) {
+                memory.writeTo(writer);
+            }
         }
     }
 }

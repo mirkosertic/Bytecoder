@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.control;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.i32;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -22,56 +25,51 @@ import java.io.StringWriter;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SModuleTest {
+public class BlockTest {
 
     @Test
     public void testSimpleCase() throws IOException {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
-        final STextExporter exporter = new STextExporter();
-        exporter.export(module, pw);
+        final Block block = control.block("label");
+        try (final TextWriter writer = new TextWriter(pw)) {
+            block.writeTo(writer);
+        }
 
-        Assert.assertEquals("(module \n"
+        Assert.assertEquals("(block $label)", strWriter.toString());
+    }
+
+    @Test
+    public void testConditionalBranchOut() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Block block = control.block("label");
+        block.addChild(control.branchOutIf(block, i32.eq(i32.c(42), i32.c(12))));
+        try (final TextWriter writer = new TextWriter(pw)) {
+            block.writeTo(writer);
+        }
+
+        Assert.assertEquals("(block $label\n"
+                + "    (br_if $label \n"
+                + "        (i32.eq (i32.const 42) (i32.const 12)))\n"
                 + "    )", strWriter.toString());
     }
 
     @Test
-    public void testWithMemory() throws IOException {
-
+    public void testBranchOut() throws IOException {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Block block = control.block("label");
+        block.addChild(control.branchOutOf(block));
+        try (final TextWriter writer = new TextWriter(pw)) {
+            block.writeTo(writer);
+        }
 
-        final SMemory memory = new SMemory(10, 20);
-        module.getMems().addChild(memory);
-
-        final STextExporter exporter = new STextExporter();
-        exporter.export(module, pw);
-
-        Assert.assertEquals("(module \n"
-                + "    (memory 10 20)\n"
-                + "    )", strWriter.toString());
-    }
-
-    @Test
-    public void testWithExportedMemory() throws IOException {
-
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
-        final Module module = new Module();
-
-        final SMemory memory = new SMemory(new SExport("exported"), 10, 20);
-        module.getMems().addChild(memory);
-
-        final STextExporter exporter = new STextExporter();
-        exporter.export(module, pw);
-
-        Assert.assertEquals("(module \n"
-                + "    (memory (export \"exported\") 10 20)\n"
+        Assert.assertEquals("(block $label\n"
+                + "    (br $label)\n"
                 + "    )", strWriter.toString());
     }
 }

@@ -15,20 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SExport implements SValue {
+public class Return extends Expression {
 
-    private final String exportName;
-
-    public SExport(final String exportName) {
-        this.exportName = exportName;
+    Return() {
+        super("return");
     }
 
-    @Override
-    public void writeTo(final STextWriter textWriter) {
-        textWriter.opening();
-        textWriter.write("export");
-        textWriter.space();
-        textWriter.writeText(exportName);
-        textWriter.closing();
+    Return(final Value value) {
+        this();
+        addChildInternal(value);
     }
 }

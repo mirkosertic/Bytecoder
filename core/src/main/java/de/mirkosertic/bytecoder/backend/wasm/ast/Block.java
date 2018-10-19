@@ -16,47 +16,51 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-public class SExpression implements SValue {
+public class Block extends Expression {
 
-    private final String name;
-    private final List<SValue> children;
+    private final Block parent;
+    private final String label;
 
-    protected SExpression(final String name) {
-        this.children = new ArrayList<>();
-        this.name = name;
+    Block(final String label, final Block parent) {
+        super("block");
+        this.label = label;
+        this.parent = parent;
+    }
+
+    Block(final String label) {
+        this(label, null);
+    }
+
+    public Block nestedBlock(final String label) {
+        final Block nested = new Block(label, this);
+        addChildInternal(nested);
+        return nested;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void addChild(final Expression child) {
+        addChildInternal(child);
     }
 
     @Override
-    public void writeTo(final STextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter) throws IOException {
         textWriter.opening();
-        textWriter.write(name);
+        textWriter.write("block");
+        textWriter.space();
+        textWriter.writeLabel(label);
         if (hasChildren()) {
-            for (final SValue child : children()) {
-                if (child instanceof SExpression) {
-                    textWriter.newLine();
-                } else {
-                    textWriter.space();
-                }
+            textWriter.newLine();
+            for (final Value child : children()) {
                 child.writeTo(textWriter);
+                textWriter.newLine();
             }
             textWriter.closing();
         } else {
             textWriter.closing();
         }
-    }
-
-    protected final void addChildInternal(final SValue child) {
-        children.add(child);
-    }
-
-    protected List<SValue> children() {
-        return children;
-    }
-
-    public boolean hasChildren() {
-        return !children.isEmpty();
     }
 }

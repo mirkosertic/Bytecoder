@@ -17,24 +17,28 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class SParam implements SValue {
+public class BranchIf extends Expression {
 
-    private final SLabel label;
-    private final SType type;
+    private final Block outerBlock;
+    private final I32 condition;
 
-    public SParam(final SLabel label, final SType type) {
-        this.label = label;
-        this.type = type;
+    BranchIf(final Block surroundingBlock, final I32 condition) {
+        super("br_if");
+        this.outerBlock = surroundingBlock;
+        this.condition = condition;
     }
 
     @Override
-    public void writeTo(final STextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter) throws IOException {
         textWriter.opening();
-        textWriter.write("param");
+        textWriter.write("br_if");
         textWriter.space();
-        label.writeTo(textWriter);
+        textWriter.writeLabel(outerBlock.getLabel());
         textWriter.space();
-        type.writeTo(textWriter);
+
+        textWriter.newLine();
+        condition.writeTo(textWriter);
+
         textWriter.closing();
     }
 }

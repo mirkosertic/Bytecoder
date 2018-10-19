@@ -15,16 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SLabel implements SValue {
+import java.io.IOException;
 
-    private final String label;
-
-    public SLabel(final String label) {
-        this.label = label;
-    }
-
-    @Override
-    public void writeTo(final STextWriter textWriter) {
-        textWriter.writeLabel(label);
-    }
+public interface Importable {
+    void writeTo(TextWriter textWriter) throws IOException;
 }

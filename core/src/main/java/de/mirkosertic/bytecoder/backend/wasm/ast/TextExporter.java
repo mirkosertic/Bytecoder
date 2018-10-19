@@ -15,27 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 
-public class SImportTest {
+public class TextExporter {
 
-    @Test
-    public void testSimpleCase() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
+    public TextExporter() {
+    }
 
-        final SFunction function = new SFunction(new SLabel("label"), new SResult(SType.i32));
-
-        final SImport imp = new SImport("mod", "obj", function);
-        try (final STextWriter writer = new STextWriter(pw)) {
-            imp.writeTo(writer);
+    public void export(final Module module, final PrintWriter pw) throws IOException {
+        try (final TextWriter writer = new TextWriter(pw)) {
+            module.writeTo(writer);
         }
-
-        Assert.assertEquals("(import \"mod\" \"obj\" (func $label (result i32)))", strWriter.toString());
     }
 }

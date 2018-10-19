@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public interface I32 extends SValue {
+public interface I32 extends Value {
 }

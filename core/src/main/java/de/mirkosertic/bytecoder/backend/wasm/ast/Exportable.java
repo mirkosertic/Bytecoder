@@ -15,17 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-
-public class STextExporter {
-
-    public STextExporter() {
-    }
-
-    public void export(final Module module, final PrintWriter pw) throws IOException {
-        try (final STextWriter writer = new STextWriter(pw)) {
-            module.writeTo(writer);
-        }
-    }
+public interface Exportable {
+    void writeRefTo(TextWriter writer);
 }

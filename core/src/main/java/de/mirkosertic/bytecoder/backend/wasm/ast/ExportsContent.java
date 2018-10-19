@@ -15,5 +15,38 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class ExportsContent implements ModuleContent {
+
+    private final Map<String, Exportable> exports;
+
+    public ExportsContent() {
+        exports = new HashMap<>();
+    }
+
+    public void export(final Exportable exportable, final String name) {
+        exports.put(name, exportable);
+    }
+
+    @Override
+    public void writeTo(final TextWriter writer) {
+        for (final Map.Entry<String, Exportable> entry : exports.entrySet()) {
+            writer.opening();
+            writer.write("export");
+            writer.space();
+            writer.writeText(entry.getKey());
+            writer.space();
+            entry.getValue().writeRefTo(writer);
+            writer.closing();
+            writer.newLine();
+        }
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+        try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
+        }
+    }
 }

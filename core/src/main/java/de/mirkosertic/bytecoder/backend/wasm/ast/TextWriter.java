@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.PrintWriter;
 
-public class STextWriter implements AutoCloseable {
+public class TextWriter implements AutoCloseable {
 
     private final PrintWriter pw;
     private int indent;
 
-    public STextWriter(final PrintWriter pw) {
+    public TextWriter(final PrintWriter pw) {
         this.pw = pw;
         this.indent = 0;
     }

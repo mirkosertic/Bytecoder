@@ -15,9 +15,21 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class Branch extends Expression {
 
-public interface SValue {
+    private final Block outerBlock;
 
-    void writeTo(STextWriter textWriter) throws IOException;
+    Branch(final Block surroundingBlock) {
+        super("br");
+        this.outerBlock = surroundingBlock;
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter) {
+        textWriter.opening();
+        textWriter.write("br");
+        textWriter.space();
+        textWriter.writeLabel(outerBlock.getLabel());
+        textWriter.closing();
+    }
 }
