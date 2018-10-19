@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 
 public class BinaryWriter implements AutoCloseable {
@@ -30,8 +31,42 @@ public class BinaryWriter implements AutoCloseable {
             this.bos = new ByteArrayOutputStream();
         }
 
+        public void writeUnsignedLeb128(int value) {
+            int remaining = value >>> 7;
+
+            while (0 != remaining) {
+                bos.write((byte) ((value & 0x7f) | 0x80));
+                value = remaining;
+                remaining >>>= 7;
+            }
+
+            bos.write((byte) (value & 0x7f));
+        }
+
+        public void writeSignedLeb128(int value) {
+            int remaining = value >> 7;
+            boolean hasMore = true;
+            final int end = (0 == (value & Integer.MIN_VALUE)) ? 0 : -1;
+
+            while (hasMore) {
+                hasMore = (remaining != end)
+                        || ((remaining & 1) != ((value >> 6) & 1));
+
+                bos.write((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
+                value = remaining;
+                remaining >>= 7;
+            }
+        }
+
         @Override
-        public void close() throws Exception {
+        public void close() throws IOException {
+            bos.flush();
+            final byte[] data = bos.toByteArray();
+
+
+            BinaryWriter.this.writeByte(sectionCode);
+            BinaryWriter.this.writeUnsignedLeb128(data.length);
+            BinaryWriter.this.writeBytes(data);
         }
     }
 
@@ -42,11 +77,47 @@ public class BinaryWriter implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         os.close();
     }
 
-    public void header() {
+    public void writeByte(final int value) throws IOException {
+        os.write(value);
+    }
+
+    public void writeBytes(final byte... data) throws IOException {
+        os.write(data);
+    }
+
+    public void writeUnsignedLeb128(int value) throws IOException {
+        int remaining = value >>> 7;
+
+        while (0 != remaining) {
+            os.write((byte) ((value & 0x7f) | 0x80));
+            value = remaining;
+            remaining >>>= 7;
+        }
+
+        os.write((byte) (value & 0x7f));
+    }
+
+    public void writeSignedLeb128(int value) throws IOException {
+        int remaining = value >> 7;
+        boolean hasMore = true;
+        final int end = (0 == (value & Integer.MIN_VALUE)) ? 0 : -1;
+
+        while (hasMore) {
+            hasMore = (remaining != end)
+                    || ((remaining & 1) != ((value >> 6) & 1));
+
+            os.write((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
+            value = remaining;
+            remaining >>= 7;
+        }
+    }
+
+    public void header() throws IOException {
+        os.write(new byte[] {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00});
     }
 
     public SectionWriter typeSection() {

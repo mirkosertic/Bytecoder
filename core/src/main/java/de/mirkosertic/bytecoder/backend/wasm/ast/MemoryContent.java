@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,19 +44,20 @@ public class MemoryContent implements ModuleContent {
     }
 
     @Override
-    public void writeTo(final TextWriter writer) {
+    public void writeTo(final TextWriter textWriter) {
         for (final Memory memory : memories) {
-            memory.writeTo(writer);
-            writer.newLine();
+            memory.writeTo(textWriter);
+            textWriter.newLine();
         }
     }
 
     @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.memorySection()) {
-            for (final Memory memory : memories) {
-                memory.writeTo(writer);
-            }
+            writer.writeUnsignedLeb128(0);
+            //for (final Memory memory : memories) {
+            //    memory.writeTo(writer);
+            //}
         }
     }
 }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,22 +32,23 @@ public class ExportsContent implements ModuleContent {
     }
 
     @Override
-    public void writeTo(final TextWriter writer) {
+    public void writeTo(final TextWriter textWriter) {
         for (final Map.Entry<String, Exportable> entry : exports.entrySet()) {
-            writer.opening();
-            writer.write("export");
-            writer.space();
-            writer.writeText(entry.getKey());
-            writer.space();
-            entry.getValue().writeRefTo(writer);
-            writer.closing();
-            writer.newLine();
+            textWriter.opening();
+            textWriter.write("export");
+            textWriter.space();
+            textWriter.writeText(entry.getKey());
+            textWriter.space();
+            entry.getValue().writeRefTo(textWriter);
+            textWriter.closing();
+            textWriter.newLine();
         }
     }
 
     @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
+            exportWriter.writeUnsignedLeb128(0);
         }
     }
 }

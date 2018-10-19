@@ -54,27 +54,29 @@ public class FunctionsContent implements ModuleContent {
     }
 
     @Override
-    public void writeTo(final TextWriter writer) throws IOException {
+    public void writeTo(final TextWriter textWriter) throws IOException {
         for (final Function function : functions) {
-            function.writeTo(writer);
-            writer.newLine();
+            function.writeTo(textWriter);
+            textWriter.newLine();
         }
     }
 
     @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.functionSection()) {
-            for (final Function function : functions) {
-                function.writeTo(sectionWriter);
-            }
+            sectionWriter.writeUnsignedLeb128(0);
+            //for (final Function function : functions) {
+            //    function.writeTo(sectionWriter);
+            //}
         }
     }
 
-    public void writeCodeTo(final BinaryWriter binaryWriter) throws Exception {
+    public void writeCodeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.codeSection()) {
-            for (final Function function : functions) {
-                function.writeCodeTo(sectionWriter);
-            }
+            sectionWriter.writeUnsignedLeb128(0);
+            //for (final Function function : functions) {
+//                function.writeCodeTo(sectionWriter);
+//            }
         }
     }
 }
