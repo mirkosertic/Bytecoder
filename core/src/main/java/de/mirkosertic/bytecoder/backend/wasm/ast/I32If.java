@@ -15,22 +15,24 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class I32If extends Expression implements I32 {
 
-public class SResult implements SValue {
-
-    private final SType type;
-
-    public SResult(final SType type) {
-        this.type = type;
+    public enum Condition {
+        eq
     }
 
-    @Override
-    public void writeTo(final STextWriter textWriter) throws IOException {
-        textWriter.opening();
-        textWriter.write("result");
-        textWriter.space();
-        type.writeTo(textWriter);
-        textWriter.closing();
+    static I32If eq(final I32 leftValue, final I32 rightValue) {
+        return new I32If(Condition.eq, leftValue, rightValue);
+    }
+
+    private I32If(final Condition condition, final I32 singleValue) {
+        super("i32." + condition);
+        addChildInternal(singleValue);
+    }
+
+    private I32If(final Condition condition, final I32 leftValue, final I32 rightValue) {
+        super("i32." + condition);
+        addChildInternal(leftValue);
+        addChildInternal(rightValue);
     }
 }

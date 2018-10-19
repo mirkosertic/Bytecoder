@@ -15,20 +15,23 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SI32Const implements I32 {
+public enum PrimitiveType implements Value {
+    i32("i32"),
+    f32("f32"),
+    i64("i64"),
+    f64("f64"),
+    anyfunc("anyfunc"),
+    func("func"),
+    empty_pseudo_block("pseudo");
 
-    private final int value;
+    private final String text;
 
-    public SI32Const(final int value) {
-        this.value = value;
+    PrimitiveType(final String text) {
+        this.text = text;
     }
 
     @Override
-    public void writeTo(final STextWriter textWriter) {
-        textWriter.opening();
-        textWriter.write("i32.const");
-        textWriter.space();
-        textWriter.writeInteger(value);
-        textWriter.closing();
+    public void writeTo(final TextWriter textWriter) {
+        textWriter.write(text);
     }
 }

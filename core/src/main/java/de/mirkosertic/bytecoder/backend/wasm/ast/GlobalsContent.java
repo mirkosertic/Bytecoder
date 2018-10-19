@@ -15,5 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class GlobalsContent implements ModuleContent {
+
+    @Override
+    public void writeTo(final TextWriter textWriter) throws IOException {
+
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    }
 }

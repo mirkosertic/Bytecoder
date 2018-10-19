@@ -15,11 +15,32 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SBranchIf extends SExpression {
+public class Param implements Value {
 
-    public SBranchIf(final SBlock surroundingBlock, final I32 condition) {
-        super("br_if");
-        addChildInternal(surroundingBlock.getLabel());
-        addChildInternal(condition);
+    private final String label;
+    private final PrimitiveType type;
+
+    public Param(final String label, final PrimitiveType type) {
+        this.label = label;
+        this.type = type;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public PrimitiveType getType() {
+        return type;
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter) {
+        textWriter.opening();
+        textWriter.write("param");
+        textWriter.space();
+        textWriter.writeLabel(label);
+        textWriter.space();
+        type.writeTo(textWriter);
+        textWriter.closing();
     }
 }

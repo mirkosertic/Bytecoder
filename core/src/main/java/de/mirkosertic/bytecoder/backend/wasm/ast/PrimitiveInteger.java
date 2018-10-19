@@ -15,10 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SBranch extends SExpression {
+public class PrimitiveInteger implements Value {
 
-    public SBranch(final SBlock surroundingBlock) {
-        super("br");
-        addChildInternal(surroundingBlock.getLabel());
+    private final int value;
+
+    public PrimitiveInteger(final int value) {
+        this.value = value;
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter) {
+        textWriter.writeInteger(value);
     }
 }

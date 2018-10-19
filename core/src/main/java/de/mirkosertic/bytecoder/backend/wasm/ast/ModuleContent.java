@@ -15,5 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public interface ModuleContent {
+
+    void writeTo(final TextWriter textWriter) throws IOException;
+
+    void writeTo(final BinaryWriter binaryWriter) throws Exception;
 }

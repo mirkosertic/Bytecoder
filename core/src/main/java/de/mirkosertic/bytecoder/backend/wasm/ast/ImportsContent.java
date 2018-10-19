@@ -15,5 +15,60 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class ImportsContent implements ModuleContent {
+
+    private final TypesContent types;
+    private final Map<ImportReference, Importable> imports;
+
+    public ImportsContent(final TypesContent types) {
+        this.types = types;
+        this.imports = new HashMap<>();
+    }
+
+    public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
+        final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+        final Function function = new Function(type, label, parameter, result);
+        imports.put(importReference, function);
+        return function;
+    }
+
+    public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
+        final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+        final Function function = new Function(type, label, parameter);
+        imports.put(importReference, function);
+        return function;
+    }
+
+    public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
+        final FunctionType type = types.typeFor(result);
+        final Function function = new Function(type, label, result);
+        imports.put(importReference, function);
+        return function;
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter) throws IOException {
+        for (final Map.Entry<ImportReference, Importable> entry : imports.entrySet()) {
+            textWriter.opening();
+            textWriter.writeLabel("import");
+            textWriter.space();
+            textWriter.writeText(entry.getKey().getModuleName());
+            textWriter.space();
+            textWriter.writeText(entry.getKey().getObjectName());
+            textWriter.space();
+            entry.getValue().writeTo(textWriter);
+            textWriter.closing();
+            textWriter.newLine();
+        }
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+    }
 }

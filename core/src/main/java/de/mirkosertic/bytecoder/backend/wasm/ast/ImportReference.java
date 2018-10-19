@@ -15,30 +15,41 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+import java.util.Objects;
 
-public class SImport implements SValue {
+public class ImportReference {
 
     private final String moduleName;
     private final String objectName;
-    private final SImportable importable;
 
-    public SImport(final String moduleName, final String objectName, final SImportable importable) {
+    public ImportReference(final String moduleName, final String objectName) {
         this.moduleName = moduleName;
         this.objectName = objectName;
-        this.importable = importable;
     }
 
     @Override
-    public void writeTo(final STextWriter textWriter) throws IOException {
-        textWriter.opening();
-        textWriter.write("import");
-        textWriter.space();
-        textWriter.writeText(moduleName);
-        textWriter.space();
-        textWriter.writeText(objectName);
-        textWriter.space();
-        importable.writeTo(textWriter);
-        textWriter.closing();
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (null == o || getClass() != o.getClass()) {
+            return false;
+        }
+        final ImportReference that = (ImportReference) o;
+        return Objects.equals(moduleName, that.moduleName) &&
+                Objects.equals(objectName, that.objectName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(moduleName, objectName);
+    }
+
+    public String getModuleName() {
+        return moduleName;
+    }
+
+    public String getObjectName() {
+        return objectName;
     }
 }

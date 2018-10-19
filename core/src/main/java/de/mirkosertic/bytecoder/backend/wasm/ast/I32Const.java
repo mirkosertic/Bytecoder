@@ -15,14 +15,20 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class SReturn extends SExpression {
+public class I32Const implements I32 {
 
-    public SReturn() {
-        super("return");
+    private final int value;
+
+    I32Const(final int value) {
+        this.value = value;
     }
 
-    public SReturn(final SValue value) {
-        this();
-        addChildInternal(value);
+    @Override
+    public void writeTo(final TextWriter textWriter) {
+        textWriter.opening();
+        textWriter.write("i32.const");
+        textWriter.space();
+        textWriter.writeInteger(value);
+        textWriter.closing();
     }
 }

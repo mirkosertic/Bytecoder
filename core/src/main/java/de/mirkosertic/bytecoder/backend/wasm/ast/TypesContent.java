@@ -15,5 +15,68 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TypesContent implements ModuleContent {
+
+    private final List<FunctionType> types;
+
+    public TypesContent() {
+        this.types = new ArrayList<>();
+    }
+
+    public FunctionType typeFor(final List<PrimitiveType> parameter, final PrimitiveType resultType) {
+        for (final FunctionType known : types) {
+            if (known.matches(parameter, resultType)) {
+                return known;
+            }
+        }
+        final FunctionType type = new FunctionType(this, parameter, resultType);
+        types.add(type);
+        return type;
+    }
+
+    public FunctionType typeFor(final List<PrimitiveType> parameter) {
+        for (final FunctionType known : types) {
+            if (known.matches(parameter, null)) {
+                return known;
+            }
+        }
+        final FunctionType type = new FunctionType(this, parameter);
+        types.add(type);
+        return type;
+    }
+
+    public FunctionType typeFor(final PrimitiveType resultType) {
+        for (final FunctionType known : types) {
+            if (known.matches(null, resultType)) {
+                return known;
+            }
+        }
+        final FunctionType type = new FunctionType(this, resultType);
+        types.add(type);
+        return type;
+    }
+
+    int indexOf(final FunctionType functionType) {
+        return types.indexOf(functionType);
+    }
+
+    @Override
+    public void writeTo(final TextWriter writer) {
+        for (final FunctionType type : types) {
+            type.writeTo(writer);
+            writer.newLine();
+        }
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+        try (final BinaryWriter.SectionWriter writer = binaryWriter.typeSection()) {
+            for (final FunctionType type : types) {
+                type.writeTo(writer);
+            }
+        }
+    }
 }

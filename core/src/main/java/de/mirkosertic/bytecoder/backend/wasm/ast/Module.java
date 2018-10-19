@@ -32,29 +32,49 @@ public class Module {
 
     public Module() {
         types = new TypesContent();
-        functions = new FunctionsContent();
+        exports = new ExportsContent();
+        functions = new FunctionsContent(types, exports);
         tables = new TablesContent();
-        mems = new MemoryContent();
+        mems = new MemoryContent(exports);
         globals = new GlobalsContent();
         elements = new ElementContent();
         data = new DataContent();
         start = new StartContent();
-        imports = new ImportsContent();
-        exports = new ExportsContent();
+        imports = new ImportsContent(types);
     }
 
-    public void writeTo(final STextWriter writer) throws IOException {
+    public void writeTo(final TextWriter writer) throws IOException {
         writer.opening();
         writer.write("module");
         writer.space();
         writer.newLine();
 
         mems.writeTo(writer);
-
+        functions.writeTo(writer);
+        types.writeTo(writer);
+        exports.writeTo(writer);
+        imports.writeTo(writer);
         writer.closing();
+    }
+
+    public void writeTo(final BinaryWriter writer) throws Exception {
+        writer.header();
+        types.writeTo(writer);
+        functions.writeTo(writer);
+        mems.writeTo(writer);
+        exports.writeTo(writer);
+        functions.writeCodeTo(writer);
     }
 
     public MemoryContent getMems() {
         return mems;
+    }
+
+    public FunctionsContent getFunctions() {
+        return functions;
+    }
+
+    public ImportsContent getImports() {
+        return imports;
     }
 }
