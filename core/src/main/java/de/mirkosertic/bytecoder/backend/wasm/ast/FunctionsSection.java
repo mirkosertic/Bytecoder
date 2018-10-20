@@ -20,13 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FunctionsContent implements ModuleContent {
+public class FunctionsSection implements ModuleSection {
 
-    private final ExportsContent exports;
-    private final TypesContent types;
+    private final ExportsSection exports;
+    private final TypesSection types;
     private final List<ExportableFunction> functions;
 
-    public FunctionsContent(final TypesContent types, final ExportsContent exports) {
+    public FunctionsSection(final TypesSection types, final ExportsSection exports) {
         this.types = types;
         this.exports = exports;
         this.functions = new ArrayList<>();
@@ -61,22 +61,30 @@ public class FunctionsContent implements ModuleContent {
         }
     }
 
-    @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.functionSection()) {
-            sectionWriter.writeUnsignedLeb128(0);
-            //for (final Function function : functions) {
-            //    function.writeTo(sectionWriter);
-            //}
+            List<Function> functions = functionIndex.getFunctions();
+            sectionWriter.writeUnsignedLeb128(functions.size());
+            for (final Function function : functions) {
+                sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
+            }
         }
     }
 
-    public void writeCodeTo(final BinaryWriter binaryWriter) throws IOException {
+    public void writeCodeTo(final BinaryWriter binaryWriter, FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.codeSection()) {
-            sectionWriter.writeUnsignedLeb128(0);
-            //for (final Function function : functions) {
-//                function.writeCodeTo(sectionWriter);
-//            }
+            List<Function> functions = functionIndex.getFunctions().stream().filter(t -> t instanceof ExportableFunction).collect(Collectors.toList());
+            sectionWriter.writeUnsignedLeb128(functions.size());
+            for (final Function function : functions) {
+                ExportableFunction ef = (ExportableFunction) function;
+                ef.writeCodeTo(sectionWriter);
+            }
+        }
+    }
+
+    public void addFunctionsToIndex(FunctionIndex functionIndex) {
+        for (Function f : functions) {
+            functionIndex.add(f);
         }
     }
 }

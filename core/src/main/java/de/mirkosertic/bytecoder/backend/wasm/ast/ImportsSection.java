@@ -16,19 +16,19 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public class ImportsContent implements ModuleContent {
+public class ImportsSection implements ModuleSection {
 
-    private final TypesContent types;
+    private final TypesSection types;
     private final Map<ImportReference, Importable> imports;
 
-    public ImportsContent(final TypesContent types) {
+    public ImportsSection(final TypesSection types) {
         this.types = types;
-        this.imports = new HashMap<>();
+        this.imports = new TreeMap<>();
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
@@ -68,7 +68,14 @@ public class ImportsContent implements ModuleContent {
         }
     }
 
-    @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws Exception {
+    public void writeTo(final BinaryWriter binaryWriter) {
+    }
+
+    public void addFunctionsToIndex(FunctionIndex functionIndex) {
+        for (Importable value : imports.values()) {
+            if (value instanceof Function) {
+                functionIndex.add((Function) value);
+            }
+        }
     }
 }

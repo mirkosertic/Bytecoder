@@ -34,7 +34,7 @@ public class FunctionTest {
         final PrintWriter pw = new PrintWriter(strWriter);
 
         final Module module = new Module();
-        final FunctionsContent functionsContent = module.getFunctions();
+        final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Arrays.asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
         function.addChild(control.ret(i32.c(42)));
         try (final TextWriter writer = new TextWriter(pw)) {
@@ -51,7 +51,7 @@ public class FunctionTest {
         final PrintWriter pw = new PrintWriter(strWriter);
 
         final Module module = new Module();
-        final FunctionsContent functionsContent = module.getFunctions();
+        final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Arrays.asList(new Param("p1", PrimitiveType.i32)));
         function.addChild(control.ret());
         try (final TextWriter writer = new TextWriter(pw)) {

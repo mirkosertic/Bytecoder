@@ -19,11 +19,16 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ExportsContent implements ModuleContent {
+public class ExportsSection implements ModuleSection {
+
+    private static final byte EXTERNAL_KIND_FUNCTION = (byte) 0;
+    private static final byte EXTERNAL_KIND_TABLE = (byte) 1;
+    private static final byte EXTERNAL_KIND_MEMORY = (byte) 2;
+    private static final byte EXTERNAL_KIND_GLOBAL = (byte) 3;
 
     private final Map<String, Exportable> exports;
 
-    public ExportsContent() {
+    public ExportsSection() {
         exports = new HashMap<>();
     }
 
@@ -45,10 +50,19 @@ public class ExportsContent implements ModuleContent {
         }
     }
 
-    @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
-            exportWriter.writeUnsignedLeb128(0);
+            exportWriter.writeUnsignedLeb128(exports.size());
+            for (Map.Entry<String, Exportable> entry : exports.entrySet()) {
+                exportWriter.writeUTF8(entry.getKey());
+                Exportable value = entry.getValue();
+                if (value instanceof ExportableFunction) {
+                    exportWriter.writeByte(EXTERNAL_KIND_FUNCTION);
+                    exportWriter.writeUnsignedLeb128(functionIndex.indexOf(value));
+                } else {
+                    throw new IllegalStateException("Not Implemented yet for " + value);
+                }
+            }
         }
     }
 }

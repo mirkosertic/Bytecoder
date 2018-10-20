@@ -15,15 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-
 public class Memory implements Value, Exportable {
 
-    private final MemoryContent memory;
+    private final MemorySection memory;
     private final int initialPages;
     private final int maximumPages;
 
-    Memory(final MemoryContent content, final int initialPages, final int maximumPages) {
+    Memory(final MemorySection content, final int initialPages, final int maximumPages) {
         this.memory = content;
         this.initialPages = initialPages;
         this.maximumPages = maximumPages;
@@ -55,6 +53,6 @@ public class Memory implements Value, Exportable {
         textWriter.closing();
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter writer) throws IOException {
+    public void writeTo(final BinaryWriter.SectionWriter writer) {
     }
 }

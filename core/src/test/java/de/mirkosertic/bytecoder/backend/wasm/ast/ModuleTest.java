@@ -45,7 +45,22 @@ public class ModuleTest {
     @Test
     public void testSimpleCaseBinary() throws IOException {
         final Module module = new Module();
-        final FileOutputStream fos = new FileOutputStream("/tmp/wasm.wasm");
+        final FileOutputStream fos = new FileOutputStream("D:\\Temp\\wasm.wasm");
+        final Exporter exporter = new Exporter();
+        exporter.export(module, fos);
+    }
+
+    @Test
+    public void testSimpleBinaryFunction() throws IOException {
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
+        function.addChild(control.ret(i32.c(42)));
+        function.exportAs("expfunction");
+
+        final FileOutputStream fos = new FileOutputStream("D:\\Temp\\wasm.wasm");
         final Exporter exporter = new Exporter();
         exporter.export(module, fos);
     }
@@ -95,7 +110,7 @@ public class ModuleTest {
         final PrintWriter pw = new PrintWriter(strWriter);
 
         final Module module = new Module();
-        final FunctionsContent functionsContent = module.getFunctions();
+        final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
         function.addChild(control.ret(i32.c(42)));

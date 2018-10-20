@@ -21,34 +21,34 @@ import java.util.List;
 
 public class ExportableFunction extends Function implements Exportable {
 
-    private final ExportsContent exportsContent;
+    private final ExportsSection exportsSection;
     private final List<Expression> expressions;
 
-    public ExportableFunction(final ExportsContent exportsContent,
+    public ExportableFunction(final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params, final PrimitiveType result) {
         super(functionType, label, params, result);
-        this.exportsContent = exportsContent;
+        this.exportsSection = exportsSection;
         this.expressions = new ArrayList<>();
     }
 
-    public ExportableFunction(final ExportsContent exportsContent,
+    public ExportableFunction(final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params) {
         super(functionType, label, params);
-        this.exportsContent = exportsContent;
+        this.exportsSection = exportsSection;
         this.expressions = new ArrayList<>();
     }
 
-    public ExportableFunction(final ExportsContent exportsContent,
+    public ExportableFunction(final ExportsSection exportsSection,
             final FunctionType functionType, final String label, final PrimitiveType result) {
         super(functionType, label, result);
-        this.exportsContent = exportsContent;
+        this.exportsSection = exportsSection;
         this.expressions = new ArrayList<>();
     }
 
     public void exportAs(final String functionName) {
-        exportsContent.export(this, functionName);
+        exportsSection.export(this, functionName);
     }
 
     public void addChild(final Expression expression) {
@@ -60,19 +60,19 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
-        textWriter.writeLabel(label);
-        if (null != params) {
-            for (final Param param : params) {
+        textWriter.writeLabel(getLabel());
+        if (null != getParams()) {
+            for (final Param param : getParams()) {
                 textWriter.space();
                 param.writeTo(textWriter);
             }
         }
-        if (null != resultType) {
+        if (null != getResultType()) {
             textWriter.space();
             textWriter.opening();
             textWriter.write("result");
             textWriter.space();
-            resultType.writeTo(textWriter);
+            getResultType().writeTo(textWriter);
             textWriter.closing();
         }
         textWriter.newLine();
@@ -87,7 +87,20 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
-        textWriter.writeLabel(label);
+        textWriter.writeLabel(getLabel());
         textWriter.closing();
+    }
+
+    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
+        try (BinaryWriter.BlockWriter codeWriter = sectionWriter.blockWriter()) {
+            // We assume zero locals here
+            codeWriter.writeUnsignedLeb128(0);
+
+            // Just an unreachable
+            codeWriter.writeByte((byte) 0x00);
+
+            // Finish
+            codeWriter.writeByte((byte) 0x0b);
+        }
     }
 }
