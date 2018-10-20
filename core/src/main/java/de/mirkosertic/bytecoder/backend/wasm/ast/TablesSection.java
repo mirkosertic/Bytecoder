@@ -15,15 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-
-public class CustomContent implements ModuleContent {
+public class TablesSection implements ModuleSection {
 
     @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter) {
     }
 
-    @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter) {
     }
 }

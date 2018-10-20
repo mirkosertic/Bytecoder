@@ -15,23 +15,35 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public enum PrimitiveType implements Value {
-    i32("i32"),
-    f32("f32"),
-    i64("i64"),
-    f64("f64"),
-    anyfunc("anyfunc"),
-    func("func"),
-    empty_pseudo_block("pseudo");
+    i32("i32", (byte) 0x7f),
+    f32("f32", (byte) 0x7d),
+    i64("i64", (byte) 0x7e),
+    f64("f64", (byte) 0x76c),
+    anyfunc("anyfunc", (byte) 0x70),
+    func("func", (byte) 0x60),
+    empty_pseudo_block("pseudo", (byte) 0x40);
 
     private final String text;
+    private final byte binaryType;
 
-    PrimitiveType(final String text) {
+    PrimitiveType(final String text,final byte binaryType) {
         this.text = text;
+        this.binaryType = binaryType;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter) {
         textWriter.write(text);
+    }
+
+    public void writeTo(BinaryWriter.SectionWriter sectionWriter) throws IOException {
+        sectionWriter.writeByte(binaryType);
+    }
+
+    public byte getBinaryType() {
+        return binaryType;
     }
 }

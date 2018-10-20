@@ -20,10 +20,10 @@ import java.util.List;
 
 public class Function implements Importable {
 
-    protected final FunctionType functionType;
-    protected final String label;
-    protected final List<Param> params;
-    protected final PrimitiveType resultType;
+    private final FunctionType functionType;
+    private final String label;
+    private final List<Param> params;
+    private final PrimitiveType resultType;
 
     Function(final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
         this.functionType = functionType;
@@ -69,9 +69,19 @@ public class Function implements Importable {
         textWriter.closing();
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
+    public FunctionType getFunctionType() {
+        return functionType;
     }
 
-    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
+    public String getLabel() {
+        return label;
+    }
+
+    public List<Param> getParams() {
+        return params;
+    }
+
+    public PrimitiveType getResultType() {
+        return resultType;
     }
 }

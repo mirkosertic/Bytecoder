@@ -18,78 +18,11 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class BinaryWriter implements AutoCloseable {
 
-    public class SectionWriter implements AutoCloseable {
-
-        private final byte sectionCode;
-        private final ByteArrayOutputStream bos;
-
-        public SectionWriter(final byte sectionCode) {
-            this.sectionCode = sectionCode;
-            this.bos = new ByteArrayOutputStream();
-        }
-
-        public void writeUnsignedLeb128(int value) {
-            int remaining = value >>> 7;
-
-            while (0 != remaining) {
-                bos.write((byte) ((value & 0x7f) | 0x80));
-                value = remaining;
-                remaining >>>= 7;
-            }
-
-            bos.write((byte) (value & 0x7f));
-        }
-
-        public void writeSignedLeb128(int value) {
-            int remaining = value >> 7;
-            boolean hasMore = true;
-            final int end = (0 == (value & Integer.MIN_VALUE)) ? 0 : -1;
-
-            while (hasMore) {
-                hasMore = (remaining != end)
-                        || ((remaining & 1) != ((value >> 6) & 1));
-
-                bos.write((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
-                value = remaining;
-                remaining >>= 7;
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            bos.flush();
-            final byte[] data = bos.toByteArray();
-
-
-            BinaryWriter.this.writeByte(sectionCode);
-            BinaryWriter.this.writeUnsignedLeb128(data.length);
-            BinaryWriter.this.writeBytes(data);
-        }
-    }
-
-    private final OutputStream os;
-
-    public BinaryWriter(final OutputStream os) {
-        this.os = os;
-    }
-
-    @Override
-    public void close() throws IOException {
-        os.close();
-    }
-
-    public void writeByte(final int value) throws IOException {
-        os.write(value);
-    }
-
-    public void writeBytes(final byte... data) throws IOException {
-        os.write(data);
-    }
-
-    public void writeUnsignedLeb128(int value) throws IOException {
+    private static void writeUnsignedLeb128(int value, OutputStream os) throws IOException {
         int remaining = value >>> 7;
 
         while (0 != remaining) {
@@ -101,7 +34,7 @@ public class BinaryWriter implements AutoCloseable {
         os.write((byte) (value & 0x7f));
     }
 
-    public void writeSignedLeb128(int value) throws IOException {
+    private static void writeSignedLeb128(int value, OutputStream os) throws IOException {
         int remaining = value >> 7;
         boolean hasMore = true;
         final int end = (0 == (value & Integer.MIN_VALUE)) ? 0 : -1;
@@ -116,27 +49,108 @@ public class BinaryWriter implements AutoCloseable {
         }
     }
 
+
+    public abstract static class Writer implements AutoCloseable {
+
+        protected final OutputStream flushTarget;
+        protected final ByteArrayOutputStream bos;
+
+        protected Writer(OutputStream flushTarget) {
+            this.flushTarget = flushTarget;
+            this.bos = new ByteArrayOutputStream();
+        }
+
+        public BlockWriter blockWriter() {
+            return new BlockWriter(bos);
+        }
+
+        public void writeByte(byte value) {
+            bos.write(value);
+        }
+
+        public void writeUnsignedLeb128(int value) throws IOException {
+            BinaryWriter.writeUnsignedLeb128(value, bos);
+        }
+
+        public void writeSignedLeb128(int value) throws IOException {
+            BinaryWriter.writeSignedLeb128(value, bos);
+        }
+
+        public void writeUTF8(String value) throws IOException {
+            byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+            writeUnsignedLeb128(bytes.length);
+            bos.write(bytes);
+        }
+    }
+
+    public static class BlockWriter extends Writer {
+
+        public BlockWriter(OutputStream flushTarget) {
+            super(flushTarget);
+        }
+
+        @Override
+        public void close() throws IOException {
+            bos.flush();
+
+            byte[] data = bos.toByteArray();
+            BinaryWriter.writeUnsignedLeb128(data.length, flushTarget);
+            flushTarget.write(data);
+        }
+    }
+
+    public static class SectionWriter extends Writer implements AutoCloseable {
+
+        private final byte sectionCode;
+
+        public SectionWriter(final byte sectionCode, final OutputStream flushTarget) {
+            super(flushTarget);
+            this.sectionCode = sectionCode;
+        }
+
+        @Override
+        public void close() throws IOException {
+            bos.flush();
+            final byte[] data = bos.toByteArray();
+
+            flushTarget.write(sectionCode);
+            BinaryWriter.writeUnsignedLeb128(data.length, flushTarget);
+            flushTarget.write(data);
+        }
+    }
+
+    private final OutputStream os;
+
+    public BinaryWriter(final OutputStream os) {
+        this.os = os;
+    }
+
+    @Override
+    public void close() throws IOException {
+        os.close();
+    }
+
     public void header() throws IOException {
         os.write(new byte[] {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00});
     }
 
     public SectionWriter typeSection() {
-        return new SectionWriter((byte) 1);
+        return new SectionWriter((byte) 1, os);
     }
 
     public SectionWriter functionSection() {
-        return new SectionWriter((byte) 3);
+        return new SectionWriter((byte) 3, os);
     }
 
     public SectionWriter memorySection() {
-        return new SectionWriter((byte) 5);
+        return new SectionWriter((byte) 5, os);
     }
 
     public SectionWriter exportsSection() {
-        return new SectionWriter((byte) 7);
+        return new SectionWriter((byte) 7, os);
     }
 
     public SectionWriter codeSection() {
-        return new SectionWriter((byte) 10);
+        return new SectionWriter((byte) 10, os);
     }
 }

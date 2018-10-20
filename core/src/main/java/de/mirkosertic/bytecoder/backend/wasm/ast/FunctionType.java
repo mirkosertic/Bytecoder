@@ -15,29 +15,30 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
 public class FunctionType {
 
-    private final TypesContent functionsContent;
+    private final TypesSection functionsSection;
     private final List<PrimitiveType> parameter;
     private final PrimitiveType resultType;
 
-    FunctionType(final TypesContent content, final List<PrimitiveType> parameter, final PrimitiveType resultType) {
-        this.functionsContent = content;
+    FunctionType(final TypesSection section, final List<PrimitiveType> parameter, final PrimitiveType resultType) {
+        this.functionsSection = section;
         this.parameter = parameter;
         this.resultType = resultType;
     }
 
-    FunctionType(final TypesContent content, final List<PrimitiveType> parameter) {
-        this.functionsContent = content;
+    FunctionType(final TypesSection section, final List<PrimitiveType> parameter) {
+        this.functionsSection = section;
         this.parameter = parameter;
         this.resultType = null;
     }
 
-    FunctionType(final TypesContent content, final PrimitiveType resultType) {
-        this.functionsContent = content;
+    FunctionType(final TypesSection section, final PrimitiveType resultType) {
+        this.functionsSection = section;
         this.parameter = null;
         this.resultType = resultType;
     }
@@ -57,7 +58,7 @@ public class FunctionType {
         writer.write("type");
         writer.space();
         writer.write("$t");
-        writer.write(Integer.toString(functionsContent.indexOf(this)));
+        writer.write(Integer.toString(functionsSection.indexOf(this)));
         writer.space();
         writer.opening();
         writer.write("func");
@@ -83,6 +84,25 @@ public class FunctionType {
         writer.closing();
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) {
+    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
+        sectionWriter.writeByte(PrimitiveType.func.getBinaryType());
+        if (parameter != null) {
+            sectionWriter.writeUnsignedLeb128(parameter.size());
+            for (PrimitiveType type : parameter) {
+                type.writeTo(sectionWriter);
+            }
+        } else {
+            sectionWriter.writeUnsignedLeb128(0);
+        }
+        if (resultType != null) {
+            sectionWriter.writeUnsignedLeb128(1);
+            resultType.writeTo(sectionWriter);
+        } else {
+            sectionWriter.writeUnsignedLeb128(0);
+        }
+    }
+
+    public int index() {
+        return functionsSection.indexOf(this);
     }
 }

@@ -15,15 +15,26 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ElementContent implements ModuleContent {
+public class FunctionIndex {
 
-    @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    private final List<Function> functions;
+
+    public FunctionIndex() {
+        functions = new ArrayList<>();
     }
 
-    @Override
-    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    public void add(Function function) {
+        functions.add(function);
+    }
+
+    public List<Function> getFunctions() {
+        return functions;
+    }
+
+    public int indexOf(Exportable value) {
+        return functions.indexOf(value);
     }
 }

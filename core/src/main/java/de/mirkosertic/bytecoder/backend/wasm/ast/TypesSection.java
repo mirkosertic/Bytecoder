@@ -19,11 +19,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TypesContent implements ModuleContent {
+public class TypesSection implements ModuleSection {
 
     private final List<FunctionType> types;
 
-    public TypesContent() {
+    public TypesSection() {
         this.types = new ArrayList<>();
     }
 
@@ -71,13 +71,12 @@ public class TypesContent implements ModuleContent {
         }
     }
 
-    @Override
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.typeSection()) {
-            writer.writeUnsignedLeb128(0);
-//            for (final FunctionType type : types) {
-//                type.writeTo(writer);
-//            }
+            writer.writeUnsignedLeb128(types.size());
+            for (final FunctionType type : types) {
+                type.writeTo(writer);
+            }
         }
     }
 }

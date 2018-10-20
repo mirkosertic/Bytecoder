@@ -19,12 +19,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MemoryContent implements ModuleContent {
+public class MemorySection implements ModuleSection {
 
-    private final ExportsContent exports;
+    private final ExportsSection exports;
     private final List<Memory> memories;
 
-    public MemoryContent(final ExportsContent exportsContent) {
+    public MemorySection(final ExportsSection exportsContent) {
         this.exports = exportsContent;
         this.memories = new ArrayList<>();
     }
@@ -51,7 +51,6 @@ public class MemoryContent implements ModuleContent {
         }
     }
 
-    @Override
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.memorySection()) {
             writer.writeUnsignedLeb128(0);

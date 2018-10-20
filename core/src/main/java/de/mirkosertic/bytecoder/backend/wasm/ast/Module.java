@@ -19,28 +19,23 @@ import java.io.IOException;
 
 public class Module {
 
-    private final TypesContent types;
-    private final FunctionsContent functions;
-    private final TablesContent tables;
-    private final MemoryContent mems;
-    private final GlobalsContent globals;
-    private final ElementContent elements;
-    private final DataContent data;
-    private final StartContent start;
-    private final ImportsContent imports;
-    private final ExportsContent exports;
+    private final TypesSection types;
+    private final FunctionsSection functions;
+    private final MemorySection mems;
+    private final ImportsSection imports;
+    private final ExportsSection exports;
 
     public Module() {
-        types = new TypesContent();
-        exports = new ExportsContent();
-        functions = new FunctionsContent(types, exports);
-        tables = new TablesContent();
-        mems = new MemoryContent(exports);
-        globals = new GlobalsContent();
-        elements = new ElementContent();
-        data = new DataContent();
-        start = new StartContent();
-        imports = new ImportsContent(types);
+        types = new TypesSection();
+        exports = new ExportsSection();
+        functions = new FunctionsSection(types, exports);
+        TablesSection tables = new TablesSection();
+        mems = new MemorySection(exports);
+        GlobalsSection globals = new GlobalsSection();
+        ElementSection elements = new ElementSection();
+        DataSection data = new DataSection();
+        StartSection start = new StartSection();
+        imports = new ImportsSection(types);
     }
 
     public void writeTo(final TextWriter writer) throws IOException {
@@ -58,23 +53,28 @@ public class Module {
     }
 
     public void writeTo(final BinaryWriter writer) throws IOException {
+
+        FunctionIndex functionIndex = new FunctionIndex();
+        imports.addFunctionsToIndex(functionIndex);
+        functions.addFunctionsToIndex(functionIndex);
+
         writer.header();
         types.writeTo(writer);
-        functions.writeTo(writer);
+        functions.writeTo(writer, functionIndex);
         mems.writeTo(writer);
-        exports.writeTo(writer);
-        functions.writeCodeTo(writer);
+        exports.writeTo(writer, functionIndex);
+        functions.writeCodeTo(writer, functionIndex);
     }
 
-    public MemoryContent getMems() {
+    public MemorySection getMems() {
         return mems;
     }
 
-    public FunctionsContent getFunctions() {
+    public FunctionsSection getFunctions() {
         return functions;
     }
 
-    public ImportsContent getImports() {
+    public ImportsSection getImports() {
         return imports;
     }
 }
