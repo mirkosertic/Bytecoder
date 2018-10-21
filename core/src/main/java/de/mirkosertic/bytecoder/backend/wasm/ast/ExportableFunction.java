@@ -23,6 +23,7 @@ public class ExportableFunction extends Function implements Exportable {
 
     private final ExportsSection exportsSection;
     private final List<Expression> expressions;
+    private final LocalIndex localIndex;
 
     public ExportableFunction(final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
@@ -30,6 +31,7 @@ public class ExportableFunction extends Function implements Exportable {
         super(functionType, label, params, result);
         this.exportsSection = exportsSection;
         this.expressions = new ArrayList<>();
+        this.localIndex = new LocalIndex(params);
     }
 
     public ExportableFunction(final ExportsSection exportsSection,
@@ -38,6 +40,7 @@ public class ExportableFunction extends Function implements Exportable {
         super(functionType, label, params);
         this.exportsSection = exportsSection;
         this.expressions = new ArrayList<>();
+        this.localIndex = new LocalIndex(params);
     }
 
     public ExportableFunction(final ExportsSection exportsSection,
@@ -45,6 +48,7 @@ public class ExportableFunction extends Function implements Exportable {
         super(functionType, label, result);
         this.exportsSection = exportsSection;
         this.expressions = new ArrayList<>();
+        this.localIndex = new LocalIndex();
     }
 
     public void exportAs(final String functionName) {

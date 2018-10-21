@@ -15,14 +15,28 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class Param extends Local {
+import java.io.IOException;
 
-    public Param(final String label, final PrimitiveType type) {
-        super(label, type);
+public class Local implements Value {
+
+    private final String label;
+    private final PrimitiveType type;
+
+    public Local(String label, PrimitiveType type) {
+        this.label = label;
+        this.type = type;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public PrimitiveType getType() {
+        return type;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) {
+    public void writeTo(TextWriter textWriter) throws IOException {
         textWriter.opening();
         textWriter.write("param");
         textWriter.space();
