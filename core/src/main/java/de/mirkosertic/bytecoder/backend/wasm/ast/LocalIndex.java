@@ -15,20 +15,22 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class Param extends Local {
+import java.util.ArrayList;
+import java.util.List;
 
-    public Param(final String label, final PrimitiveType type) {
-        super(label, type);
+public class LocalIndex {
+
+    private final List<Local> locals;
+
+    public LocalIndex() {
+        locals = new ArrayList<>();
     }
 
-    @Override
-    public void writeTo(final TextWriter textWriter) {
-        textWriter.opening();
-        textWriter.write("param");
-        textWriter.space();
-        textWriter.writeLabel(getLabel());
-        textWriter.space();
-        getType().writeTo(textWriter);
-        textWriter.closing();
+    public LocalIndex(List<Param> params) {
+        locals = new ArrayList<>(params);
+    }
+
+    public void add(Local local) {
+        locals.add(local);
     }
 }
