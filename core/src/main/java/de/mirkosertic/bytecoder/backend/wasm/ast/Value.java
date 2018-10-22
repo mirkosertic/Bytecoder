@@ -20,4 +20,6 @@ import java.io.IOException;
 public interface Value {
 
     void writeTo(TextWriter textWriter) throws IOException;
+
+    void writeTo(BinaryWriter.Writer codeWriter) throws IOException;
 }

@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Local implements Value {
+public class Local {
 
     private final String label;
     private final PrimitiveType type;
 
-    public Local(String label, PrimitiveType type) {
+    public Local(final String label, final PrimitiveType type) {
         this.label = label;
         this.type = type;
     }
@@ -35,10 +35,9 @@ public class Local implements Value {
         return type;
     }
 
-    @Override
-    public void writeTo(TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter) throws IOException {
         textWriter.opening();
-        textWriter.write("param");
+        textWriter.write("local");
         textWriter.space();
         textWriter.writeLabel(getLabel());
         textWriter.space();

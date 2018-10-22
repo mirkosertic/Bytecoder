@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 
 public class BinaryWriter implements AutoCloseable {
 
-    private static void writeUnsignedLeb128(int value, OutputStream os) throws IOException {
+    private static void writeUnsignedLeb128(int value, final OutputStream os) throws IOException {
         int remaining = value >>> 7;
 
         while (0 != remaining) {
@@ -34,7 +34,7 @@ public class BinaryWriter implements AutoCloseable {
         os.write((byte) (value & 0x7f));
     }
 
-    private static void writeSignedLeb128(int value, OutputStream os) throws IOException {
+    private static void writeSignedLeb128(int value, final OutputStream os) throws IOException {
         int remaining = value >> 7;
         boolean hasMore = true;
         final int end = (0 == (value & Integer.MIN_VALUE)) ? 0 : -1;
@@ -55,7 +55,7 @@ public class BinaryWriter implements AutoCloseable {
         protected final OutputStream flushTarget;
         protected final ByteArrayOutputStream bos;
 
-        protected Writer(OutputStream flushTarget) {
+        protected Writer(final OutputStream flushTarget) {
             this.flushTarget = flushTarget;
             this.bos = new ByteArrayOutputStream();
         }
@@ -64,20 +64,20 @@ public class BinaryWriter implements AutoCloseable {
             return new BlockWriter(bos);
         }
 
-        public void writeByte(byte value) {
+        public void writeByte(final byte value) {
             bos.write(value);
         }
 
-        public void writeUnsignedLeb128(int value) throws IOException {
+        public void writeUnsignedLeb128(final int value) throws IOException {
             BinaryWriter.writeUnsignedLeb128(value, bos);
         }
 
-        public void writeSignedLeb128(int value) throws IOException {
+        public void writeSignedLeb128(final int value) throws IOException {
             BinaryWriter.writeSignedLeb128(value, bos);
         }
 
-        public void writeUTF8(String value) throws IOException {
-            byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        public void writeUTF8(final String value) throws IOException {
+            final byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
             writeUnsignedLeb128(bytes.length);
             bos.write(bytes);
         }
@@ -85,7 +85,7 @@ public class BinaryWriter implements AutoCloseable {
 
     public static class BlockWriter extends Writer {
 
-        public BlockWriter(OutputStream flushTarget) {
+        public BlockWriter(final OutputStream flushTarget) {
             super(flushTarget);
         }
 
@@ -93,7 +93,7 @@ public class BinaryWriter implements AutoCloseable {
         public void close() throws IOException {
             bos.flush();
 
-            byte[] data = bos.toByteArray();
+            final byte[] data = bos.toByteArray();
             BinaryWriter.writeUnsignedLeb128(data.length, flushTarget);
             flushTarget.write(data);
         }
@@ -138,16 +138,32 @@ public class BinaryWriter implements AutoCloseable {
         return new SectionWriter((byte) 1, os);
     }
 
+    public SectionWriter importsSection() {
+        return new SectionWriter((byte) 2, os);
+    }
+
     public SectionWriter functionSection() {
         return new SectionWriter((byte) 3, os);
+    }
+
+    public SectionWriter tablesSection() {
+        return new SectionWriter((byte) 4, os);
     }
 
     public SectionWriter memorySection() {
         return new SectionWriter((byte) 5, os);
     }
 
+    public SectionWriter globalsSection() {
+        return new SectionWriter((byte) 6, os);
+    }
+
     public SectionWriter exportsSection() {
         return new SectionWriter((byte) 7, os);
+    }
+
+    public SectionWriter elementsSection() {
+        return new SectionWriter((byte) 9, os);
     }
 
     public SectionWriter codeSection() {

@@ -15,26 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
 
-public class FunctionIndex {
+public class Unreachable extends Expression {
 
-    private final List<Function> functions;
-
-    public FunctionIndex() {
-        functions = new ArrayList<>();
+    Unreachable() {
+        super("unreachable");
     }
 
-    public void add(Function function) {
-        functions.add(function);
-    }
-
-    public List<Function> getFunctions() {
-        return functions;
-    }
-
-    public int indexOf(Exportable value) {
-        return functions.indexOf(value);
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        codeWriter.writeByte((byte) 0x00);
     }
 }

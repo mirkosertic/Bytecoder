@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Expression implements Value {
+public abstract class Expression implements Value {
 
     private final String name;
     private final List<Value> children;

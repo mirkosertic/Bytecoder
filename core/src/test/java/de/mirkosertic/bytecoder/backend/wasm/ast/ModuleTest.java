@@ -15,15 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.control;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.i32;
-
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,31 +36,79 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module \n"
-                + "    )", strWriter.toString());
+        final String expected = "(module \n"
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
     }
 
     @Test
     public void testSimpleCaseBinary() throws IOException {
         final Module module = new Module();
-        final FileOutputStream fos = new FileOutputStream("D:\\Temp\\wasm.wasm");
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
         final Exporter exporter = new Exporter();
-        exporter.export(module, fos);
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleCase.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleCase.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+
     }
 
     @Test
-    public void testSimpleBinaryFunction() throws IOException {
+    public void testSimpleFunction() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
-        function.addChild(control.ret(i32.c(42)));
+
+        final Expressions exp = function.expressions();
+
+        function.addChild(exp.control.ret(exp.i32.c(42)));
         function.exportAs("expfunction");
 
-        final FileOutputStream fos = new FileOutputStream("D:\\Temp\\wasm.wasm");
         final Exporter exporter = new Exporter();
-        exporter.export(module, fos);
+        exporter.export(module, pw);
+
+        final String expected = "(module \n"
+                + "    (type $t0 (func (param i32) (result i32)))\n"
+                + "    (func $label (type $t0) (param $p1 i32) (result i32)\n"
+                + "        (return (i32.const 42)))\n"
+                + "    (export \"expfunction\" (func $label))\n"
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testSimpleFunctionBinary() throws IOException {
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
+
+        final Expressions exp = function.expressions();
+
+        function.addChild(exp.control.ret(exp.i32.c(42)));
+        function.exportAs("expfunction");
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleFunction.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleFunction.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 
     @Test
@@ -81,6 +127,26 @@ public class ModuleTest {
         Assert.assertEquals("(module \n"
                 + "    (memory $mem0 10 20)\n"
                 + "    )", strWriter.toString());
+    }
+
+    @Test
+    public void testWithMemoryBinary() throws IOException {
+
+        final Module module = new Module();
+
+        final Memory memory = module.getMems().newMemory(10, 20);
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithMemory.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testWithMemory.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 
     @Test
@@ -104,29 +170,23 @@ public class ModuleTest {
     }
 
     @Test
-    public void testModuleWithSimpleFunction() throws IOException {
-
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
+    public void testWithExportedMemoryBinary() throws IOException {
 
         final Module module = new Module();
-        final FunctionsSection functionsContent = module.getFunctions();
-        final ExportableFunction function = functionsContent.newFunction("label", Arrays
-                .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
-        function.addChild(control.ret(i32.c(42)));
-        function.exportAs("expfunction");
 
-        try (final TextWriter writer = new TextWriter(pw)) {
-            module.writeTo(writer);
-        }
+        final Memory memory = module.getMems().newMemory(10, 20);
+        memory.exportAs("exported");
 
-        Assert.assertEquals("(module \n"
-                + "    (func $label (param $p1 i32) (result i32)\n"
-                + "        (return (i32.const 42)))\n"
-                + "    (type $t0 (func (param i32) (result i32)))\n"
-                + "    (export \"expfunction\" (func $label))\n"
-                + "    )", strWriter.toString());
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
 
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithExportedMemory.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testWithExportedMemory.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 
     @Test
@@ -146,4 +206,204 @@ public class ModuleTest {
                 + "    ($import \"mod\" \"obj\" (func $label (result i32)))\n"
                 + "    )", strWriter.toString());
     }
+
+    @Test
+    public void testFunctionImportBinary() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final Function function = module.getImports().importFunction(new ImportReference("mod","obj"),"label", PrimitiveType.i32);
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFunctionImport.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testFunctionImport.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testLocalAccess() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Expressions exp = function.expressions();
+
+        function.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        function.exportAs("expfunction");
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module \n"
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))\n"
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)\n"
+                + "        (local $loc i32)\n"
+                + "        (return (get_local $loc)))\n"
+                + "    (export \"expfunction\" (func $label))\n"
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testLocalAccessBinary() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Expressions exp = function.expressions();
+        function.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        function.exportAs("expfunction");
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testLocalAccess.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testLocalAccess.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testBlock() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Expressions exp = function.expressions();
+
+        final Block block = exp.control.block("outer");
+        function.addChild(block);
+        function.addChild(exp.control.unreachable());
+
+        block.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        function.exportAs("expfunction");
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module \n"
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))\n"
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)\n"
+                + "        (local $loc i32)\n"
+                + "        (block $outer\n"
+                + "            (return (get_local $loc))\n"
+                + "            )\n"
+                + "        (unreachable))\n"
+                + "    (export \"expfunction\" (func $label))\n"
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testBlockBinary() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Expressions exp = function.expressions();
+
+        final Block block = exp.control.block("outer");
+        function.addChild(block);
+        function.addChild(exp.control.unreachable());
+
+        block.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        function.exportAs("expfunction");
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBinary.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBinary.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testIf() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Expressions exp = function.expressions();
+
+        final Block block = exp.control.block("outer");
+        function.addChild(block);
+        function.addChild(exp.control.unreachable());
+
+        final Expression ret = exp.control.ret(exp.var.getLocal(tempLocal));
+        final I32IF ifExp = exp.control.i32ifeq(exp.i32.c(10), exp.i32.c(20));
+        ifExp.addChild(ret);
+
+        block.addChild(ifExp);
+        function.exportAs("expfunction");
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module \n"
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))\n"
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)\n"
+                + "        (local $loc i32)\n"
+                + "        (block $outer\n"
+                + "            (if\n"
+                + "                (i32.eq (i32.const 10) (i32.const 20))\n"
+                + "                (return (get_local $loc)))\n"
+                + "            )\n"
+                + "        (unreachable))\n"
+                + "    (export \"expfunction\" (func $label))\n"
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
 }

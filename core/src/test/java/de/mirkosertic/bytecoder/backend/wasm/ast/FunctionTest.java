@@ -15,13 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.control;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.i32;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Arrays;
+import java.util.Collections;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,13 +32,15 @@ public class FunctionTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final ExportableFunction function = functionsContent.newFunction("label", Arrays.asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
-        function.addChild(control.ret(i32.c(42)));
+        final ExportableFunction function = functionsContent.newFunction("label",
+                Collections.singletonList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
+        final Expressions exp = function.expressions();
+        function.addChild(exp.control.ret(exp.i32.c(42)));
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer);
         }
 
-        Assert.assertEquals("(func $label (param $p1 i32) (result i32)\n"
+        Assert.assertEquals("(func $label (type $t0) (param $p1 i32) (result i32)\n"
                 + "    (return (i32.const 42)))", strWriter.toString());
     }
 
@@ -52,13 +51,15 @@ public class FunctionTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final ExportableFunction function = functionsContent.newFunction("label", Arrays.asList(new Param("p1", PrimitiveType.i32)));
-        function.addChild(control.ret());
+        final ExportableFunction function = functionsContent.newFunction("label",
+                Collections.singletonList(new Param("p1", PrimitiveType.i32)));
+        final Expressions exp = function.expressions();
+        function.addChild(exp.control.ret());
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer);
         }
 
-        Assert.assertEquals("(func $label (param $p1 i32)\n"
+        Assert.assertEquals("(func $label (type $t0) (param $p1 i32)\n"
                 + "    (return))", strWriter.toString());
     }
 }

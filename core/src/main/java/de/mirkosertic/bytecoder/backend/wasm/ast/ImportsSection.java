@@ -16,65 +16,108 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class ImportsSection implements ModuleSection {
 
+    private static class ImportEntry {
+
+        private final ImportReference reference;
+        private final Importable importable;
+
+        public ImportEntry(final ImportReference reference, final Importable importable) {
+            this.reference = reference;
+            this.importable = importable;
+        }
+
+        public ImportReference getReference() {
+            return reference;
+        }
+
+        public Importable getImportable() {
+            return importable;
+        }
+    }
+
     private final TypesSection types;
-    private final Map<ImportReference, Importable> imports;
+    private final List<ImportEntry> imports;
 
     public ImportsSection(final TypesSection types) {
         this.types = types;
-        this.imports = new TreeMap<>();
+        this.imports = new ArrayList<>();
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
         final Function function = new Function(type, label, parameter, result);
-        imports.put(importReference, function);
+        imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
         final Function function = new Function(type, label, parameter);
-        imports.put(importReference, function);
+        imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
         final FunctionType type = types.typeFor(result);
         final Function function = new Function(type, label, result);
-        imports.put(importReference, function);
+        imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter) throws IOException {
-        for (final Map.Entry<ImportReference, Importable> entry : imports.entrySet()) {
+        for (final ImportEntry entry : imports) {
+
+            final ImportReference ref = entry.getReference();
+
             textWriter.opening();
             textWriter.writeLabel("import");
             textWriter.space();
-            textWriter.writeText(entry.getKey().getModuleName());
+            textWriter.writeText(ref.getModuleName());
             textWriter.space();
-            textWriter.writeText(entry.getKey().getObjectName());
+            textWriter.writeText(ref.getObjectName());
             textWriter.space();
-            entry.getValue().writeTo(textWriter);
+            entry.getImportable().writeTo(textWriter);
             textWriter.closing();
             textWriter.newLine();
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter) {
+    public void addFunctionsToIndex(final List<Function> functionIndex) {
+        for (final ImportEntry value : imports) {
+            if (value.getImportable() instanceof Function) {
+                functionIndex.add((Function) value.getImportable());
+            }
+        }
     }
 
-    public void addFunctionsToIndex(FunctionIndex functionIndex) {
-        for (Importable value : imports.values()) {
-            if (value instanceof Function) {
-                functionIndex.add((Function) value);
+    public void writeTo(final BinaryWriter binaryWriter,
+            final List<Function> functionIndex,
+            final List<Memory> memoryIndex) throws IOException {
+        try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.importsSection()) {
+            sectionWriter.writeUnsignedLeb128(imports.size());
+            for (final ImportEntry entry : imports) {
+                final Importable value = entry.getImportable();
+                final ImportReference ref = entry.getReference();
+
+                sectionWriter.writeUTF8(ref.getModuleName());
+                sectionWriter.writeUTF8(ref.getObjectName());
+
+                if (value instanceof Function) {
+                    sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
+                    sectionWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
+                } else if (value instanceof Memory) {
+                    sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
+                    sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
+                } else {
+                    throw new IllegalStateException("Not Implemented yet for " + value);
+                }
             }
         }
     }

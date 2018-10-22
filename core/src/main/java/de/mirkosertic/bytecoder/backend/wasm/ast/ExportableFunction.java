@@ -59,12 +59,27 @@ public class ExportableFunction extends Function implements Exportable {
         expressions.add(expression);
     }
 
+    public Local localByLabel(final String label, final PrimitiveType type) {
+        Local local = localIndex.localByLabel(label);
+        if (local == null) {
+            local = new Local(label, type);
+            localIndex.add(local);
+        }
+        return local;
+    }
+
+    public Expressions expressions() {
+        return new Expressions(this);
+    }
+
     @Override
     public void writeTo(final TextWriter textWriter) throws IOException {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
         textWriter.writeLabel(getLabel());
+        textWriter.space();
+        getFunctionType().writeRefTo(textWriter);
         if (null != getParams()) {
             for (final Param param : getParams()) {
                 textWriter.space();
@@ -80,6 +95,10 @@ public class ExportableFunction extends Function implements Exportable {
             textWriter.closing();
         }
         textWriter.newLine();
+        for (final Local local : localIndex.localsExcludingParams()) {
+            local.writeTo(textWriter);
+            textWriter.newLine();
+        }
         for (final Expression expression : expressions) {
             expression.writeTo(textWriter);
         }
@@ -96,15 +115,26 @@ public class ExportableFunction extends Function implements Exportable {
     }
 
     public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
-        try (BinaryWriter.BlockWriter codeWriter = sectionWriter.blockWriter()) {
-            // We assume zero locals here
-            codeWriter.writeUnsignedLeb128(0);
+        try (final BinaryWriter.BlockWriter codeWriter = sectionWriter.blockWriter()) {
 
-            // Just an unreachable
-            codeWriter.writeByte((byte) 0x00);
+            // Local data
+            final List<Local> locals = localIndex.localsExcludingParams();
+            codeWriter.writeUnsignedLeb128(locals.size());
+            for (final Local local : locals) {
+                codeWriter.writeUnsignedLeb128(1);
+                local.getType().writeTo(codeWriter);
+            }
 
-            // Finish
+            for (final Expression expression : expressions) {
+                expression.writeTo(codeWriter);
+            }
+
+            // Finish with an end Instruction
             codeWriter.writeByte((byte) 0x0b);
         }
+    }
+
+    public LocalIndex localIndex() {
+        return localIndex;
     }
 }

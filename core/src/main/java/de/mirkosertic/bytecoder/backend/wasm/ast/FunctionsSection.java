@@ -61,30 +61,28 @@ public class FunctionsSection implements ModuleSection {
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter, FunctionIndex functionIndex) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.functionSection()) {
-            List<Function> functions = functionIndex.getFunctions();
-            sectionWriter.writeUnsignedLeb128(functions.size());
-            for (final Function function : functions) {
-                sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
+            final List<Object> exportableFunction = functionIndex.stream().filter(t -> t instanceof ExportableFunction).collect(Collectors.toList());
+            sectionWriter.writeUnsignedLeb128(exportableFunction.size());
+            for (final Object function : exportableFunction) {
+                sectionWriter.writeUnsignedLeb128(((ExportableFunction) function).getFunctionType().index());
             }
         }
     }
 
-    public void writeCodeTo(final BinaryWriter binaryWriter, FunctionIndex functionIndex) throws IOException {
+    public void writeCodeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.codeSection()) {
-            List<Function> functions = functionIndex.getFunctions().stream().filter(t -> t instanceof ExportableFunction).collect(Collectors.toList());
+            final List<Function> functions = functionIndex.stream().filter(t -> t instanceof ExportableFunction).collect(Collectors.toList());
             sectionWriter.writeUnsignedLeb128(functions.size());
             for (final Function function : functions) {
-                ExportableFunction ef = (ExportableFunction) function;
+                final ExportableFunction ef = (ExportableFunction) function;
                 ef.writeCodeTo(sectionWriter);
             }
         }
     }
 
-    public void addFunctionsToIndex(FunctionIndex functionIndex) {
-        for (Function f : functions) {
-            functionIndex.add(f);
-        }
+    public void addFunctionsToIndex(final List<Function> functionIndex) {
+        functionIndex.addAll(functions);
     }
 }

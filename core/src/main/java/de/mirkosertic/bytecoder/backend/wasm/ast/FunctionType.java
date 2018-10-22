@@ -84,11 +84,20 @@ public class FunctionType {
         writer.closing();
     }
 
+    public void writeRefTo(final TextWriter writer) {
+        writer.opening();
+        writer.write("type");
+        writer.space();
+        writer.write("$t");
+        writer.write(Integer.toString(functionsSection.indexOf(this)));
+        writer.closing();
+    }
+
     public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
         sectionWriter.writeByte(PrimitiveType.func.getBinaryType());
         if (parameter != null) {
             sectionWriter.writeUnsignedLeb128(parameter.size());
-            for (PrimitiveType type : parameter) {
+            for (final PrimitiveType type : parameter) {
                 type.writeTo(sectionWriter);
             }
         } else {

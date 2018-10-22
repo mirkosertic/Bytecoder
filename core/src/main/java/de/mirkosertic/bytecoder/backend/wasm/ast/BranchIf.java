@@ -20,9 +20,9 @@ import java.io.IOException;
 public class BranchIf extends Expression {
 
     private final Block outerBlock;
-    private final I32 condition;
+    private final Value condition;
 
-    BranchIf(final Block surroundingBlock, final I32 condition) {
+    BranchIf(final Block surroundingBlock, final Value condition) {
         super("br_if");
         this.outerBlock = surroundingBlock;
         this.condition = condition;
@@ -40,5 +40,10 @@ public class BranchIf extends Expression {
         condition.writeTo(textWriter);
 
         textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        throw new RuntimeException("Not implemented!");
     }
 }
