@@ -36,7 +36,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module \n"
+        final String expected = "(module " + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -77,11 +77,11 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module \n"
-                + "    (type $t0 (func (param i32) (result i32)))\n"
-                + "    (func $label (type $t0) (param $p1 i32) (result i32)\n"
-                + "        (return (i32.const 42)))\n"
-                + "    (export \"expfunction\" (func $label))\n"
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param i32) (result i32)))" + System.lineSeparator()
+                + "    (func $label (type $t0) (param $p1 i32) (result i32)" + System.lineSeparator()
+                + "        (return (i32.const 42)))" + System.lineSeparator()
+                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -124,8 +124,8 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module \n"
-                + "    (memory $mem0 10 20)\n"
+        Assert.assertEquals("(module " + System.lineSeparator()
+                + "    (memory $mem0 10 20)" + System.lineSeparator()
                 + "    )", strWriter.toString());
     }
 
@@ -163,9 +163,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module \n"
-                + "    (memory $mem0 10 20)\n"
-                + "    (export \"exported\" (memory $mem0))\n"
+        Assert.assertEquals("(module " + System.lineSeparator()
+                + "    (memory $mem0 10 20)" + System.lineSeparator()
+                + "    (export \"exported\" (memory $mem0))" + System.lineSeparator()
                 + "    )", strWriter.toString());
     }
 
@@ -201,9 +201,9 @@ public class ModuleTest {
             module.writeTo(writer);
         }
 
-        Assert.assertEquals("(module \n"
-                + "    (type $t0 (func (result i32)))\n"
-                + "    ($import \"mod\" \"obj\" (func $label (result i32)))\n"
+        Assert.assertEquals("(module " + System.lineSeparator()
+                + "    (type $t0 (func (result i32)))" + System.lineSeparator()
+                + "    ($import \"mod\" \"obj\" (func $label (result i32)))" + System.lineSeparator()
                 + "    )", strWriter.toString());
     }
 
@@ -249,12 +249,12 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module \n"
-                + "    (type $t0 (func (param i32) (param i32) (result i32)))\n"
-                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)\n"
-                + "        (local $loc i32)\n"
-                + "        (return (get_local $loc)))\n"
-                + "    (export \"expfunction\" (func $label))\n"
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
+                + "        (local $loc i32)" + System.lineSeparator()
+                + "        (return (get_local $loc)))" + System.lineSeparator()
+                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -314,15 +314,15 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module \n"
-                + "    (type $t0 (func (param i32) (param i32) (result i32)))\n"
-                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)\n"
-                + "        (local $loc i32)\n"
-                + "        (block $outer\n"
-                + "            (return (get_local $loc))\n"
-                + "            )\n"
-                + "        (unreachable))\n"
-                + "    (export \"expfunction\" (func $label))\n"
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
+                + "        (local $loc i32)" + System.lineSeparator()
+                + "        (block $outer" + System.lineSeparator()
+                + "            (return (get_local $loc))" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
+                + "        (unreachable))" + System.lineSeparator()
+                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -391,17 +391,17 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module \n"
-                + "    (type $t0 (func (param i32) (param i32) (result i32)))\n"
-                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)\n"
-                + "        (local $loc i32)\n"
-                + "        (block $outer\n"
-                + "            (if\n"
-                + "                (i32.eq (i32.const 10) (i32.const 20))\n"
-                + "                (return (get_local $loc)))\n"
-                + "            )\n"
-                + "        (unreachable))\n"
-                + "    (export \"expfunction\" (func $label))\n"
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
+                + "        (local $loc i32)" + System.lineSeparator()
+                + "        (block $outer" + System.lineSeparator()
+                + "            (if" + System.lineSeparator()
+                + "                (i32.eq (i32.const 10) (i32.const 20))" + System.lineSeparator()
+                + "                (return (get_local $loc)))" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
+                + "        (unreachable))" + System.lineSeparator()
+                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
