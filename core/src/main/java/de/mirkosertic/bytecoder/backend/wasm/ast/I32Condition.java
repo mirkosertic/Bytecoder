@@ -15,24 +15,35 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class I32If extends Expression implements I32 {
+import java.io.IOException;
+
+public class I32Condition extends Expression implements Value {
 
     public enum Condition {
         eq
     }
 
-    static I32If eq(final I32 leftValue, final I32 rightValue) {
-        return new I32If(Condition.eq, leftValue, rightValue);
+    static I32Condition eq(final Value leftValue, final Value rightValue) {
+        return new I32Condition(Condition.eq, leftValue, rightValue);
     }
 
-    private I32If(final Condition condition, final I32 singleValue) {
+    private I32Condition(final Condition condition, final Value singleValue) {
         super("i32." + condition);
         addChildInternal(singleValue);
     }
 
-    private I32If(final Condition condition, final I32 leftValue, final I32 rightValue) {
+    private I32Condition(final Condition condition, final Value leftValue, final Value rightValue) {
         super("i32." + condition);
         addChildInternal(leftValue);
         addChildInternal(rightValue);
+    }
+
+    public void addChild(final Expression expression) {
+        addChildInternal(expression);
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        throw new RuntimeException("Not implemented!");
     }
 }

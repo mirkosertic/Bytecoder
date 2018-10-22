@@ -39,8 +39,9 @@ public enum PrimitiveType implements Value {
         textWriter.write(text);
     }
 
-    public void writeTo(BinaryWriter.SectionWriter sectionWriter) throws IOException {
-        sectionWriter.writeByte(binaryType);
+    @Override
+    public void writeTo(final BinaryWriter.Writer binaryWriter) throws IOException {
+        binaryWriter.writeByte(binaryType);
     }
 
     public byte getBinaryType() {

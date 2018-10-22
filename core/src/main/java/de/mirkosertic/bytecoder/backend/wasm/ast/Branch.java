@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class Branch extends Expression {
 
     private final Block outerBlock;
@@ -31,5 +33,10 @@ public class Branch extends Expression {
         textWriter.space();
         textWriter.writeLabel(outerBlock.getLabel());
         textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        throw new RuntimeException("Not implemented!");
     }
 }

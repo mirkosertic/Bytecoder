@@ -62,5 +62,16 @@ public class Block extends Expression {
         } else {
             textWriter.closing();
         }
+        textWriter.newLine();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        codeWriter.writeByte((byte) 0x02);
+        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        for (final Value e : children()) {
+            e.writeTo(codeWriter);
+        }
+        codeWriter.writeByte((byte) 0x0b);
     }
 }

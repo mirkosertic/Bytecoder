@@ -17,14 +17,10 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ExportsSection implements ModuleSection {
-
-    private static final byte EXTERNAL_KIND_FUNCTION = (byte) 0;
-    private static final byte EXTERNAL_KIND_TABLE = (byte) 1;
-    private static final byte EXTERNAL_KIND_MEMORY = (byte) 2;
-    private static final byte EXTERNAL_KIND_GLOBAL = (byte) 3;
 
     private final Map<String, Exportable> exports;
 
@@ -50,15 +46,18 @@ public class ExportsSection implements ModuleSection {
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter, FunctionIndex functionIndex) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex, final List<Memory> memoryIndex) throws IOException {
         try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
             exportWriter.writeUnsignedLeb128(exports.size());
-            for (Map.Entry<String, Exportable> entry : exports.entrySet()) {
+            for (final Map.Entry<String, Exportable> entry : exports.entrySet()) {
                 exportWriter.writeUTF8(entry.getKey());
-                Exportable value = entry.getValue();
+                final Exportable value = entry.getValue();
                 if (value instanceof ExportableFunction) {
-                    exportWriter.writeByte(EXTERNAL_KIND_FUNCTION);
-                    exportWriter.writeUnsignedLeb128(functionIndex.indexOf(value));
+                    exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
+                    exportWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
+                } else if (value instanceof Memory) {
+                    exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
+                    exportWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

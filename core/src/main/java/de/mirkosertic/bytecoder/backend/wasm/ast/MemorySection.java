@@ -53,10 +53,14 @@ public class MemorySection implements ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.memorySection()) {
-            writer.writeUnsignedLeb128(0);
-            //for (final Memory memory : memories) {
-            //    memory.writeTo(writer);
-            //}
+            writer.writeUnsignedLeb128(memories.size());
+            for (final Memory memory : memories) {
+                memory.writeTo(writer);
+            }
         }
+    }
+
+    public void addMemoriesToIndex(final List<Memory> memoryIndex) {
+        memoryIndex.addAll(memories);
     }
 }

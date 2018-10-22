@@ -15,12 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class TablesSection implements ModuleSection {
 
     @Override
     public void writeTo(final TextWriter textWriter) {
     }
 
-    public void writeTo(final BinaryWriter binaryWriter) {
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+        try (final BinaryWriter.SectionWriter writer = binaryWriter.tablesSection()) {
+            writer.writeUnsignedLeb128(0);
+        }
     }
 }

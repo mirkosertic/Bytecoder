@@ -16,12 +16,17 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Module {
 
     private final TypesSection types;
     private final FunctionsSection functions;
+    private final TablesSection tables;
     private final MemorySection mems;
+    private final GlobalsSection globals;
+    private final ElementSection elements;
     private final ImportsSection imports;
     private final ExportsSection exports;
 
@@ -29,12 +34,12 @@ public class Module {
         types = new TypesSection();
         exports = new ExportsSection();
         functions = new FunctionsSection(types, exports);
-        TablesSection tables = new TablesSection();
+        tables = new TablesSection();
         mems = new MemorySection(exports);
-        GlobalsSection globals = new GlobalsSection();
-        ElementSection elements = new ElementSection();
-        DataSection data = new DataSection();
-        StartSection start = new StartSection();
+        globals = new GlobalsSection();
+        elements = new ElementSection();
+        final DataSection data = new DataSection();
+        final StartSection start = new StartSection();
         imports = new ImportsSection(types);
     }
 
@@ -44,9 +49,9 @@ public class Module {
         writer.space();
         writer.newLine();
 
+        types.writeTo(writer);
         mems.writeTo(writer);
         functions.writeTo(writer);
-        types.writeTo(writer);
         exports.writeTo(writer);
         imports.writeTo(writer);
         writer.closing();
@@ -54,15 +59,22 @@ public class Module {
 
     public void writeTo(final BinaryWriter writer) throws IOException {
 
-        FunctionIndex functionIndex = new FunctionIndex();
+        final List<Function> functionIndex = new ArrayList<>();
         imports.addFunctionsToIndex(functionIndex);
         functions.addFunctionsToIndex(functionIndex);
 
+        final List<Memory> memoryIndex = new ArrayList<>();
+        mems.addMemoriesToIndex(memoryIndex);
+
         writer.header();
         types.writeTo(writer);
+        imports.writeTo(writer, functionIndex, memoryIndex);
         functions.writeTo(writer, functionIndex);
+        tables.writeTo(writer);
         mems.writeTo(writer);
-        exports.writeTo(writer, functionIndex);
+        globals.writeTo(writer);
+        exports.writeTo(writer, functionIndex, memoryIndex);
+        elements.writeTo(writer);
         functions.writeCodeTo(writer, functionIndex);
     }
 

@@ -15,5 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public interface I32 extends Value {
+public interface ExternalKind {
+
+    byte EXTERNAL_KIND_FUNCTION = (byte) 0;
+    byte EXTERNAL_KIND_TABLE = (byte) 1;
+    byte EXTERNAL_KIND_MEMORY = (byte) 2;
+    byte EXTERNAL_KIND_GLOBAL = (byte) 3;
+
 }

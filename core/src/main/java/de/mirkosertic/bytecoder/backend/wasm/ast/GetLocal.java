@@ -15,16 +15,30 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class PrimitiveInteger implements Value {
+import java.io.IOException;
 
-    private final int value;
+public class GetLocal implements Value {
 
-    public PrimitiveInteger(final int value) {
-        this.value = value;
+    private final Local local;
+    private final ExportableFunction function;
+
+    GetLocal(final Local local, final ExportableFunction function) {
+        this.local = local;
+        this.function = function;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter) {
-        textWriter.writeInteger(value);
+        textWriter.opening();
+        textWriter.write("get_local");
+        textWriter.space();
+        textWriter.writeLabel(local.getLabel());
+        textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        codeWriter.writeByte((byte) 0x20);
+        codeWriter.writeUnsignedLeb128(function.localIndex().indexOf(local));
     }
 }

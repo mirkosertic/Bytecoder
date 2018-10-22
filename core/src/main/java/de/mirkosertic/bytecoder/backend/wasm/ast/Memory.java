@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class Memory implements Value, Exportable {
+import java.io.IOException;
+
+public class Memory implements Exportable {
 
     private final MemorySection memory;
     private final int initialPages;
@@ -31,7 +33,6 @@ public class Memory implements Value, Exportable {
         memory.export(this, objectName);
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
         textWriter.opening();
         textWriter.write("memory");
@@ -53,6 +54,9 @@ public class Memory implements Value, Exportable {
         textWriter.closing();
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter writer) {
+    public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        writer.writeByte((byte) 1);
+        writer.writeUnsignedLeb128(initialPages);
+        writer.writeUnsignedLeb128(maximumPages);
     }
 }

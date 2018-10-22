@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class I32Const implements I32 {
+import java.io.IOException;
+
+public class I32Const implements Value {
 
     private final int value;
 
@@ -30,5 +32,11 @@ public class I32Const implements I32 {
         textWriter.space();
         textWriter.writeInteger(value);
         textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+        codeWriter.writeByte((byte) 0x42);
+        codeWriter.writeSignedLeb128(value);
     }
 }

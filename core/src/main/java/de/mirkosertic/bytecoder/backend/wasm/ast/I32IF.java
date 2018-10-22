@@ -17,22 +17,19 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Return extends Expression {
+public class I32IF extends Expression {
 
-    Return() {
-        super("return");
+    I32IF(final I32Condition condition) {
+        super("if");
+        addChildInternal(condition);
     }
 
-    Return(final Value value) {
-        this();
-        addChildInternal(value);
+    public void addChild(final Expression expression) {
+        addChildInternal(expression);
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        for (final Value e : children()) {
-            e.writeTo(codeWriter);
-        }
-        codeWriter.writeByte((byte) 0x0f);
+        throw new RuntimeException("Not implemented!");
     }
 }

@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class GlobalsSection implements ModuleSection {
 
     @Override
@@ -22,6 +24,9 @@ public class GlobalsSection implements ModuleSection {
 
     }
 
-    public void writeTo(final BinaryWriter binaryWriter) {
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+        try (final BinaryWriter.SectionWriter writer = binaryWriter.globalsSection()) {
+            writer.writeUnsignedLeb128(0);
+        }
     }
 }

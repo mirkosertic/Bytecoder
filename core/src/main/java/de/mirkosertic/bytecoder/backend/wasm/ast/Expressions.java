@@ -15,42 +15,71 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public enum Expressions {
-    ;
+public class Expressions {
 
-    public enum i32 {
-        ;
+    public class I32Expressions {
 
-        public static I32Const c(final int aValue) {
+        public I32Const c(final int aValue) {
             return new I32Const(aValue);
         }
 
-        public static I32If eq(final I32 leftValue, final I32 rightValue) {
-            return I32If.eq(leftValue, rightValue);
+        public I32Condition i32eq(final Value leftValue, final Value rightValue) {
+            return I32Condition.eq(leftValue, rightValue);
         }
     }
 
-    public enum control {
-        ;
+    public class ControlExpressions {
 
-        public static Block block(final String label) {
+        public Block block(final String label) {
             return new Block(label);
         }
 
-        public static Branch branchOutOf(final Block block) {
+        public Branch branchOutOf(final Block block) {
             return new Branch(block);
         }
 
-        public static BranchIf branchOutIf(final Block block, final I32 condition) {
+        public BranchIf branchOutIf(final Block block, final Value condition) {
             return new BranchIf(block, condition);
         }
 
-        public static Return ret(final Value value) {
+        public Return ret(final Value value) {
             return new Return(value);
         }
 
-        public static Return ret() {
+        public Return ret() {
             return new Return();
         }
+
+        public I32IF i32if(final I32Condition condition) {
+            return new I32IF(condition);
+        }
+
+        public I32IF i32ifeq(final Value leftValue, final Value rightValue) {
+            final I32Condition condition = Expressions.this.i32.i32eq(leftValue, rightValue);
+            return i32if(condition);
+        }
+
+        public Unreachable unreachable() {
+            return new Unreachable();
+        }
+    }
+
+    public class VariableExpressions {
+
+        public GetLocal getLocal(final Local local) {
+            return new GetLocal(local, function);
+        }
+    }
+
+    private final ExportableFunction function;
+    public final I32Expressions i32;
+    public final ControlExpressions control;
+    public final VariableExpressions var;
+
+    Expressions(final ExportableFunction function) {
+        this.function = function;
+        this.i32 = new I32Expressions();
+        this.control = new ControlExpressions();
+        this.var = new VariableExpressions();
     }
 }

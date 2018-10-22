@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class LocalIndex {
 
@@ -26,11 +28,28 @@ public class LocalIndex {
         locals = new ArrayList<>();
     }
 
-    public LocalIndex(List<Param> params) {
+    public LocalIndex(final List<Param> params) {
         locals = new ArrayList<>(params);
     }
 
-    public void add(Local local) {
+    public void add(final Local local) {
         locals.add(local);
+    }
+
+    public List<Local> localsExcludingParams() {
+        return locals.stream().filter(t -> !(t instanceof Param)).collect(Collectors.toList());
+    }
+
+    public Local localByLabel(final String name) {
+        for (final Local local : locals) {
+            if (Objects.equals(name, local.getLabel())) {
+                return local;
+            }
+        }
+        return null;
+    }
+
+    public int indexOf(final Local local) {
+        return locals.indexOf(local);
     }
 }
