@@ -24,26 +24,30 @@ public class Function extends Container implements Importable {
     private final String label;
     private final List<Param> params;
     private final PrimitiveType resultType;
+    private final TablesSection tablesSection;
 
-    Function(final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    Function(final TablesSection tablesSection, final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
         this.functionType = functionType;
         this.label = label;
         this.params = params;
         this.resultType = result;
+        this.tablesSection = tablesSection;
     }
 
-    Function(final FunctionType functionType, final String label, final List<Param> params) {
+    Function(final TablesSection tablesSection, final FunctionType functionType, final String label, final List<Param> params) {
         this.functionType = functionType;
         this.label = label;
         this.params = params;
         this.resultType = null;
+        this.tablesSection = tablesSection;
     }
 
-    Function(final FunctionType functionType, final String label, final PrimitiveType result) {
+    Function(final TablesSection tablesSection, final FunctionType functionType, final String label, final PrimitiveType result) {
         this.functionType = functionType;
         this.label = label;
         this.params = null;
         this.resultType = result;
+        this.tablesSection = tablesSection;
     }
 
     @Override
@@ -83,5 +87,9 @@ public class Function extends Container implements Importable {
 
     public PrimitiveType getResultType() {
         return resultType;
+    }
+
+    public void toTable() {
+        tablesSection.funcTable().addToTable(this);
     }
 }

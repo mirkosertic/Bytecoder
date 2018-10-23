@@ -16,16 +16,59 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ElementSection implements ModuleSection {
 
-    @Override
-    public void writeTo(final TextWriter textWriter) {
+    private final TablesSection tablesSection;
+
+    ElementSection(TablesSection tablesSection) {
+        this.tablesSection = tablesSection;
     }
 
-    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    @Override
+    public void writeTo(final TextWriter textWriter) {
+        if (tablesSection.hasFuncTable()) {
+            TablesSection.AnyFuncTable any = tablesSection.funcTable();
+            List<Function> functions = any.functions();
+            for (int i=0;i<functions.size();i++) {
+                textWriter.opening();
+                textWriter.write("elem");
+                textWriter.space();
+
+                textWriter.opening();
+                textWriter.write("i32.const");
+                textWriter.space();
+                textWriter.writeInteger(i);
+                textWriter.closing();
+
+                textWriter.space();
+                textWriter.writeLabel(functions.get(i).getLabel());
+                textWriter.closing();
+
+                textWriter.newLine();
+            }
+        }
+    }
+
+    public void writeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.elementsSection()) {
-            writer.writeUnsignedLeb128(0);
+            if (tablesSection.hasFuncTable()) {
+                TablesSection.AnyFuncTable any = tablesSection.funcTable();
+                List<Function> functions = any.functions();
+
+                writer.writeUnsignedLeb128(functions.size());
+                for (int i=0;i<functions.size();i++) {
+                    writer.writeUnsignedLeb128(any.index());
+                    writer.writeByte((byte) 0x41);
+                    writer.writeSignedLeb128(i);
+                    writer.writeByte((byte) 0x0b);
+                    writer.writeUnsignedLeb128(1);
+                    writer.writeUnsignedLeb128(functionIndex.indexOf(functions.get(i)));
+                }
+            } else {
+                writer.writeUnsignedLeb128(0);
+            }
         }
     }
 }

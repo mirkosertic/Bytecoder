@@ -28,6 +28,7 @@ public class Exporter {
         try (final TextWriter writer = new TextWriter(pw)) {
             module.writeTo(writer);
         }
+        pw.flush();
     }
 
     public void export(final Module module, final OutputStream os) throws IOException {

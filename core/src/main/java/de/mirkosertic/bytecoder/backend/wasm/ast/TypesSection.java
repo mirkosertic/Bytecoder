@@ -23,7 +23,7 @@ public class TypesSection implements ModuleSection {
 
     private final List<FunctionType> types;
 
-    public TypesSection() {
+    TypesSection() {
         this.types = new ArrayList<>();
     }
 

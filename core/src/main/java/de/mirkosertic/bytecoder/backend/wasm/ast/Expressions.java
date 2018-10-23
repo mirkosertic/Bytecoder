@@ -17,6 +17,10 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class Expressions {
 
+    public static Param param(final String label, final PrimitiveType type) {
+        return new Param(label, type);
+    }
+
     public static I32Const c(final int aValue) {
         return new I32Const(aValue);
     }

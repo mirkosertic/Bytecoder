@@ -43,29 +43,31 @@ public class ImportsSection implements ModuleSection {
 
     private final TypesSection types;
     private final List<ImportEntry> imports;
+    private final TablesSection tablesSection;
 
-    public ImportsSection(final TypesSection types) {
+    ImportsSection(final TypesSection types, final TablesSection tablesSection) {
         this.types = types;
         this.imports = new ArrayList<>();
+        this.tablesSection = tablesSection;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
-        final Function function = new Function(type, label, parameter, result);
+        final Function function = new Function(tablesSection, type, label, parameter, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
-        final Function function = new Function(type, label, parameter);
+        final Function function = new Function(tablesSection, type, label, parameter);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
         final FunctionType type = types.typeFor(result);
-        final Function function = new Function(type, label, result);
+        final Function function = new Function(tablesSection, type, label, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
@@ -111,10 +113,10 @@ public class ImportsSection implements ModuleSection {
 
                 if (value instanceof Function) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
-                    sectionWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
+                    sectionWriter.writeUnsignedLeb128(functionIndex.indexOf(value));
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
-                    sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
+                    sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

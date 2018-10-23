@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class Param extends Local {
 
-    public Param(final String label, final PrimitiveType type) {
+    Param(final String label, final PrimitiveType type) {
         super(label, type);
     }
 
