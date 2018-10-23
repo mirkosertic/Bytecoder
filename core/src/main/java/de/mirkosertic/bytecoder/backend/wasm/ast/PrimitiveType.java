@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public enum PrimitiveType implements Value {
+public enum PrimitiveType {
     i32("i32", (byte) 0x7f),
     f32("f32", (byte) 0x7d),
     i64("i64", (byte) 0x7e),
@@ -34,12 +34,10 @@ public enum PrimitiveType implements Value {
         this.binaryType = binaryType;
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
         textWriter.write(text);
     }
 
-    @Override
     public void writeTo(final BinaryWriter.Writer binaryWriter) throws IOException {
         binaryWriter.writeByte(binaryType);
     }

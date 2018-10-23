@@ -17,19 +17,41 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class I32IF extends Expression {
+public class I32IF extends Container implements Expression {
 
-    I32IF(final I32Condition condition) {
-        super("if");
-        addChildInternal(condition);
-    }
+    private final I32Condition condition;
 
-    public void addChild(final Expression expression) {
-        addChildInternal(expression);
+    I32IF(final Container parent, final I32Condition condition) {
+        super(parent);
+        this.condition = condition;
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        throw new RuntimeException("Not implemented!");
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+        textWriter.opening();
+        textWriter.write("if");
+        textWriter.newLine();
+        condition.writeTo(textWriter, exportableFunction);
+        if (hasChildren()) {
+            for (final Value child : getChildren()) {
+                textWriter.newLine();
+                child.writeTo(textWriter, exportableFunction);
+            }
+            textWriter.closing();
+        } else {
+            textWriter.closing();
+        }
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+        condition.writeTo(codeWriter, owningContainer, exportableFunction);
+        codeWriter.writeByte((byte) 0x04);
+        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        for (final Expression e : getChildren()) {
+            e.writeTo(codeWriter, this, exportableFunction);
+        }
+        codeWriter.writeByte((byte) 0x0b);
+
     }
 }

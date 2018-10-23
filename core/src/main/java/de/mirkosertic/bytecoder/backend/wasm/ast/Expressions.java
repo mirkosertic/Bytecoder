@@ -17,69 +17,60 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class Expressions {
 
-    public class I32Expressions {
-
-        public I32Const c(final int aValue) {
-            return new I32Const(aValue);
-        }
-
-        public I32Condition i32eq(final Value leftValue, final Value rightValue) {
-            return I32Condition.eq(leftValue, rightValue);
-        }
+    public static I32Const c(final int aValue) {
+        return new I32Const(aValue);
     }
 
-    public class ControlExpressions {
-
-        public Block block(final String label) {
-            return new Block(label);
-        }
-
-        public Branch branchOutOf(final Block block) {
-            return new Branch(block);
-        }
-
-        public BranchIf branchOutIf(final Block block, final Value condition) {
-            return new BranchIf(block, condition);
-        }
-
-        public Return ret(final Value value) {
-            return new Return(value);
-        }
-
-        public Return ret() {
-            return new Return();
-        }
-
-        public I32IF i32if(final I32Condition condition) {
-            return new I32IF(condition);
-        }
-
-        public I32IF i32ifeq(final Value leftValue, final Value rightValue) {
-            final I32Condition condition = Expressions.this.i32.i32eq(leftValue, rightValue);
-            return i32if(condition);
-        }
-
-        public Unreachable unreachable() {
-            return new Unreachable();
-        }
+    public static I32Condition i32eq(final Value leftValue, final Value rightValue) {
+        return I32Condition.eq(leftValue, rightValue);
     }
 
-    public class VariableExpressions {
-
-        public GetLocal getLocal(final Local local) {
-            return new GetLocal(local, function);
-        }
+    public static GetLocal getLocal(final Local local) {
+        return new GetLocal(local);
     }
 
-    private final ExportableFunction function;
-    public final I32Expressions i32;
-    public final ControlExpressions control;
-    public final VariableExpressions var;
+    private final Container parent;
 
-    Expressions(final ExportableFunction function) {
-        this.function = function;
-        this.i32 = new I32Expressions();
-        this.control = new ControlExpressions();
-        this.var = new VariableExpressions();
+    Expressions(final Container parent) {
+        this.parent = parent;
+    }
+
+    public Block block(final String label) {
+        final Block block = new Block(label, parent);
+        parent.addChild(block);
+        return block;
+    }
+
+    public void branchOutOf(final Block surroundingBlock) {
+        final Branch branch = new Branch(surroundingBlock);
+        parent.addChild(branch);
+    }
+
+    public void branchOutIf(final Block block, final Value condition) {
+        final BranchIf branch = new BranchIf(block, condition);
+        parent.addChild(branch);
+    }
+
+    public void ret(final Value value) {
+        parent.addChild(new Return(value));
+    }
+
+    public void ret() {
+        parent.addChild(new Return());
+    }
+
+    public I32IF i32if(final I32Condition condition) {
+        final I32IF elem = new I32IF(parent, condition);
+        parent.addChild(elem);
+        return elem;
+    }
+
+    public I32IF i32ifeq(final Value leftValue, final Value rightValue) {
+        final I32Condition condition = i32eq(leftValue, rightValue);
+        return i32if(condition);
+    }
+
+    public void unreachable() {
+        parent.addChild(new Unreachable());
     }
 }

@@ -16,13 +16,11 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ExportableFunction extends Function implements Exportable {
 
     private final ExportsSection exportsSection;
-    private final List<Expression> expressions;
     private final LocalIndex localIndex;
 
     public ExportableFunction(final ExportsSection exportsSection,
@@ -30,7 +28,6 @@ public class ExportableFunction extends Function implements Exportable {
             final List<Param> params, final PrimitiveType result) {
         super(functionType, label, params, result);
         this.exportsSection = exportsSection;
-        this.expressions = new ArrayList<>();
         this.localIndex = new LocalIndex(params);
     }
 
@@ -39,7 +36,6 @@ public class ExportableFunction extends Function implements Exportable {
             final List<Param> params) {
         super(functionType, label, params);
         this.exportsSection = exportsSection;
-        this.expressions = new ArrayList<>();
         this.localIndex = new LocalIndex(params);
     }
 
@@ -47,16 +43,11 @@ public class ExportableFunction extends Function implements Exportable {
             final FunctionType functionType, final String label, final PrimitiveType result) {
         super(functionType, label, result);
         this.exportsSection = exportsSection;
-        this.expressions = new ArrayList<>();
         this.localIndex = new LocalIndex();
     }
 
     public void exportAs(final String functionName) {
         exportsSection.export(this, functionName);
-    }
-
-    public void addChild(final Expression expression) {
-        expressions.add(expression);
     }
 
     public Local localByLabel(final String label, final PrimitiveType type) {
@@ -66,10 +57,6 @@ public class ExportableFunction extends Function implements Exportable {
             localIndex.add(local);
         }
         return local;
-    }
-
-    public Expressions expressions() {
-        return new Expressions(this);
     }
 
     @Override
@@ -99,8 +86,8 @@ public class ExportableFunction extends Function implements Exportable {
             local.writeTo(textWriter);
             textWriter.newLine();
         }
-        for (final Expression expression : expressions) {
-            expression.writeTo(textWriter);
+        for (final Expression expression : getChildren()) {
+            expression.writeTo(textWriter, this);
         }
         textWriter.closing();
     }
@@ -125,8 +112,8 @@ public class ExportableFunction extends Function implements Exportable {
                 local.getType().writeTo(codeWriter);
             }
 
-            for (final Expression expression : expressions) {
-                expression.writeTo(codeWriter);
+            for (final Expression expression : getChildren()) {
+                expression.writeTo(codeWriter, this, this);
             }
 
             // Finish with an end Instruction

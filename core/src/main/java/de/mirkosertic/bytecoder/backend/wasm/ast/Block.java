@@ -17,45 +17,29 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Block extends Expression {
+public class Block extends Container implements Expression {
 
-    private final Block parent;
     private final String label;
 
-    Block(final String label, final Block parent) {
-        super("block");
+    Block(final String label, final Container parent) {
+        super(parent);
         this.label = label;
-        this.parent = parent;
-    }
-
-    Block(final String label) {
-        this(label, null);
-    }
-
-    public Block nestedBlock(final String label) {
-        final Block nested = new Block(label, this);
-        addChildInternal(nested);
-        return nested;
     }
 
     public String getLabel() {
         return label;
     }
 
-    public void addChild(final Expression child) {
-        addChildInternal(child);
-    }
-
     @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
         textWriter.opening();
         textWriter.write("block");
         textWriter.space();
         textWriter.writeLabel(label);
         if (hasChildren()) {
             textWriter.newLine();
-            for (final Value child : children()) {
-                child.writeTo(textWriter);
+            for (final Value child : getChildren()) {
+                child.writeTo(textWriter, exportableFunction);
                 textWriter.newLine();
             }
             textWriter.closing();
@@ -66,11 +50,11 @@ public class Block extends Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
         codeWriter.writeByte((byte) 0x02);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
-        for (final Value e : children()) {
-            e.writeTo(codeWriter);
+        for (final Expression e : getChildren()) {
+            e.writeTo(codeWriter, this, exportableFunction);
         }
         codeWriter.writeByte((byte) 0x0b);
     }

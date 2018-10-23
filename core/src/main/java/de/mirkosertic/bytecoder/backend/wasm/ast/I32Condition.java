@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class I32Condition extends Expression implements Value {
+public class I32Condition implements Expression {
 
     public enum Condition {
         eq
@@ -27,23 +27,53 @@ public class I32Condition extends Expression implements Value {
         return new I32Condition(Condition.eq, leftValue, rightValue);
     }
 
+    private final Condition condition;
+    private final Value leftValue;
+    private final Value rightValue;
+
     private I32Condition(final Condition condition, final Value singleValue) {
-        super("i32." + condition);
-        addChildInternal(singleValue);
+        this.condition = condition;
+        this.leftValue = singleValue;
+        this.rightValue = null;
     }
 
     private I32Condition(final Condition condition, final Value leftValue, final Value rightValue) {
-        super("i32." + condition);
-        addChildInternal(leftValue);
-        addChildInternal(rightValue);
-    }
-
-    public void addChild(final Expression expression) {
-        addChildInternal(expression);
+        this.condition = condition;
+        this.leftValue = leftValue;
+        this.rightValue = rightValue;
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        throw new RuntimeException("Not implemented!");
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+        textWriter.opening();
+        textWriter.write("i32." + condition);
+        if (leftValue != null) {
+            textWriter.space();
+            leftValue.writeTo(textWriter, exportableFunction);
+        }
+        if (rightValue != null) {
+            textWriter.space();
+            rightValue.writeTo(textWriter, exportableFunction);
+        }
+        textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+        if (leftValue != null) {
+            leftValue.writeTo(codeWriter, owningContainer, exportableFunction);
+        }
+        if (rightValue != null) {
+            rightValue.writeTo(codeWriter, owningContainer, exportableFunction);
+        }
+        switch (condition) {
+            case eq: {
+                codeWriter.writeByte((byte) 0x46);
+                break;
+            }
+            default: {
+                throw new RuntimeException("Not implemented : " + condition);
+            }
+        }
     }
 }

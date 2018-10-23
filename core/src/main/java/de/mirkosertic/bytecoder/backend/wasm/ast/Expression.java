@@ -15,48 +15,5 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public abstract class Expression implements Value {
-
-    private final String name;
-    private final List<Value> children;
-
-    protected Expression(final String name) {
-        this.children = new ArrayList<>();
-        this.name = name;
-    }
-
-    @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
-        textWriter.opening();
-        textWriter.write(name);
-        if (hasChildren()) {
-            for (final Value child : children()) {
-                if (child instanceof Expression) {
-                    textWriter.newLine();
-                } else {
-                    textWriter.space();
-                }
-                child.writeTo(textWriter);
-            }
-            textWriter.closing();
-        } else {
-            textWriter.closing();
-        }
-    }
-
-    protected final void addChildInternal(final Value child) {
-        children.add(child);
-    }
-
-    protected List<Value> children() {
-        return children;
-    }
-
-    public boolean hasChildren() {
-        return !children.isEmpty();
-    }
+public interface Expression extends Value {
 }

@@ -17,19 +17,18 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class BranchIf extends Expression {
+public class BranchIf implements Expression {
 
     private final Block outerBlock;
     private final Value condition;
 
     BranchIf(final Block surroundingBlock, final Value condition) {
-        super("br_if");
         this.outerBlock = surroundingBlock;
         this.condition = condition;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
         textWriter.opening();
         textWriter.write("br_if");
         textWriter.space();
@@ -37,13 +36,16 @@ public class BranchIf extends Expression {
         textWriter.space();
 
         textWriter.newLine();
-        condition.writeTo(textWriter);
+        condition.writeTo(textWriter, exportableFunction);
 
         textWriter.closing();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        throw new RuntimeException("Not implemented!");
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+        condition.writeTo(codeWriter, owningContainer, exportableFunction);
+        final int relativeDepth = owningContainer.relativeDepthTo(outerBlock);
+        codeWriter.writeByte((byte) 0x0d);
+        codeWriter.writeUnsignedLeb128(relativeDepth);
     }
 }

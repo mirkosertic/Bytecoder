@@ -34,8 +34,7 @@ public class FunctionTest {
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
-        final Expressions exp = function.expressions();
-        function.addChild(exp.control.ret(exp.i32.c(42)));
+        function.flow.ret(Expressions.c(42));
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer);
         }
@@ -53,8 +52,7 @@ public class FunctionTest {
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(new Param("p1", PrimitiveType.i32)));
-        final Expressions exp = function.expressions();
-        function.addChild(exp.control.ret());
+        function.flow.ret();
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer);
         }

@@ -17,14 +17,20 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Unreachable extends Expression {
+public class Unreachable implements Expression {
 
     Unreachable() {
-        super("unreachable");
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+        textWriter.opening();
+        textWriter.write("unreachable");
+        textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
         codeWriter.writeByte((byte) 0x00);
     }
 }
