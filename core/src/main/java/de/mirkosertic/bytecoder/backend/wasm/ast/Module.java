@@ -91,8 +91,4 @@ public class Module {
     public ImportsSection getImports() {
         return imports;
     }
-
-    public TablesSection getTables() {
-        return tables;
-    }
 }
