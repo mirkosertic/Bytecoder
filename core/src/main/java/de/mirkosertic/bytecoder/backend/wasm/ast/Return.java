@@ -17,21 +17,34 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Return extends Expression {
+public class Return implements Expression {
+
+    private final Value value;
 
     Return() {
-        super("return");
+        this.value = null;
     }
 
     Return(final Value value) {
-        this();
-        addChildInternal(value);
+        this.value = value;
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        for (final Value e : children()) {
-            e.writeTo(codeWriter);
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+        textWriter.opening();
+        textWriter.write("return");
+        if (value != null) {
+            textWriter.space();
+            value.writeTo(textWriter, exportableFunction);
+        }
+        textWriter.closing();
+    }
+
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+        if (value != null) {
+            value.writeTo(codeWriter, owningContainer, exportableFunction);
         }
         codeWriter.writeByte((byte) 0x0f);
     }

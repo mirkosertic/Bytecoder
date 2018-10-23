@@ -26,7 +26,7 @@ public class I32Const implements Value {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) {
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) {
         textWriter.opening();
         textWriter.write("i32.const");
         textWriter.space();
@@ -35,8 +35,8 @@ public class I32Const implements Value {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        codeWriter.writeByte((byte) 0x42);
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+        codeWriter.writeByte((byte) 0x41);
         codeWriter.writeSignedLeb128(value);
     }
 }

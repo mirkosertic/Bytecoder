@@ -20,15 +20,13 @@ import java.io.IOException;
 public class GetLocal implements Value {
 
     private final Local local;
-    private final ExportableFunction function;
 
-    GetLocal(final Local local, final ExportableFunction function) {
+    GetLocal(final Local local) {
         this.local = local;
-        this.function = function;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) {
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) {
         textWriter.opening();
         textWriter.write("get_local");
         textWriter.space();
@@ -37,8 +35,8 @@ public class GetLocal implements Value {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
         codeWriter.writeByte((byte) 0x20);
-        codeWriter.writeUnsignedLeb128(function.localIndex().indexOf(local));
+        codeWriter.writeUnsignedLeb128(exportableFunction.localIndex().indexOf(local));
     }
 }

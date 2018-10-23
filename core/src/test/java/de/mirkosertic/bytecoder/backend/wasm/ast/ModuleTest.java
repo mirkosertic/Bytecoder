@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -69,9 +70,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
-        final Expressions exp = function.expressions();
-
-        function.addChild(exp.control.ret(exp.i32.c(42)));
+        function.flow.ret(Expressions.c(42));
         function.exportAs("expfunction");
 
         final Exporter exporter = new Exporter();
@@ -94,9 +93,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
-        final Expressions exp = function.expressions();
-
-        function.addChild(exp.control.ret(exp.i32.c(42)));
+        function.flow.ret(Expressions.c(42));
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -241,9 +238,8 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
-        final Expressions exp = function.expressions();
 
-        function.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        function.flow.ret(Expressions.getLocal(tempLocal));
         function.exportAs("expfunction");
 
         final Exporter exporter = new Exporter();
@@ -272,8 +268,7 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
-        final Expressions exp = function.expressions();
-        function.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        function.flow.ret(Expressions.getLocal(tempLocal));
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -302,13 +297,10 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
-        final Expressions exp = function.expressions();
 
-        final Block block = exp.control.block("outer");
-        function.addChild(block);
-        function.addChild(exp.control.unreachable());
-
-        block.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        final Block block = function.flow.block("outer");
+        block.flow.ret(Expressions.getLocal(tempLocal));
+        function.flow.unreachable();
         function.exportAs("expfunction");
 
         final Exporter exporter = new Exporter();
@@ -340,13 +332,10 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
-        final Expressions exp = function.expressions();
 
-        final Block block = exp.control.block("outer");
-        function.addChild(block);
-        function.addChild(exp.control.unreachable());
-
-        block.addChild(exp.control.ret(exp.var.getLocal(tempLocal)));
+        final Block block = function.flow.block("outer");
+        block.flow.ret(Expressions.getLocal(tempLocal));
+        function.flow.unreachable();
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -375,17 +364,13 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
-        final Expressions exp = function.expressions();
 
-        final Block block = exp.control.block("outer");
-        function.addChild(block);
-        function.addChild(exp.control.unreachable());
+        final Block block = function.flow.block("outer");
+        function.flow.unreachable();
 
-        final Expression ret = exp.control.ret(exp.var.getLocal(tempLocal));
-        final I32IF ifExp = exp.control.i32ifeq(exp.i32.c(10), exp.i32.c(20));
-        ifExp.addChild(ret);
+        final I32IF ifExp = block.flow.i32ifeq(Expressions.c(10), Expressions.c(20));
+        ifExp.flow.ret(Expressions.getLocal(tempLocal));
 
-        block.addChild(ifExp);
         function.exportAs("expfunction");
 
         final Exporter exporter = new Exporter();
@@ -406,4 +391,171 @@ public class ModuleTest {
         Assert.assertEquals(expected, strWriter.toString());
     }
 
+    @Test
+    public void testIfBinary() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+
+        final Block block = function.flow.block("outer");
+        function.flow.unreachable();
+
+        final I32IF ifExp = block.flow.i32ifeq(Expressions.c(10), Expressions.c(20));
+        ifExp.flow.branchOutOf(block);
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIf.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIf.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+
+    @Test
+    public void testBlockBranch() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+
+        final Block block = function.flow.block("outer");
+        block.flow.branchOutOf(block);
+        function.flow.unreachable();
+        function.exportAs("expfunction");
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
+                + "        (local $loc i32)" + System.lineSeparator()
+                + "        (block $outer" + System.lineSeparator()
+                + "            (br $outer)" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
+                + "        (unreachable))" + System.lineSeparator()
+                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testBlockBranchBinary() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+
+        final Block block = function.flow.block("outer");
+        block.flow.branchOutOf(block);
+        function.flow.unreachable();
+        function.exportAs("expfunction");
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranch.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranch.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testBlockBranchIf() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+
+        final Block block = function.flow.block("outer");
+        block.flow.branchOutIf(block, Expressions.c(42));
+        function.flow.unreachable();
+        function.exportAs("expfunction");
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
+                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
+                + "        (local $loc i32)" + System.lineSeparator()
+                + "        (block $outer" + System.lineSeparator()
+                + "            (br_if $outer " + System.lineSeparator()
+                + "                (i32.const 42))" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
+                + "        (unreachable))" + System.lineSeparator()
+                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testBlockBranchIfBinary() throws IOException {
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = new Param("p1", PrimitiveType.i32);
+        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+
+        final Block block = function.flow.block("outer");
+        block.flow.branchOutIf(block, Expressions.c(42));
+        function.flow.unreachable();
+        function.exportAs("expfunction");
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranchIf.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranchIf.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
 }

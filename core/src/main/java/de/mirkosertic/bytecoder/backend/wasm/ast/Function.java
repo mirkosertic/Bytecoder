@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class Function implements Importable {
+public class Function extends Container implements Importable {
 
     private final FunctionType functionType;
     private final String label;

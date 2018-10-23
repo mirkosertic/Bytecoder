@@ -19,7 +19,7 @@ import java.io.IOException;
 
 public interface Value {
 
-    void writeTo(TextWriter textWriter) throws IOException;
+    void writeTo(TextWriter textWriter, ExportableFunction exportableFunction) throws IOException;
 
-    void writeTo(BinaryWriter.Writer codeWriter) throws IOException;
+    void writeTo(BinaryWriter.Writer codeWriter, Container owningContainer, ExportableFunction exportableFunction) throws IOException;
 }

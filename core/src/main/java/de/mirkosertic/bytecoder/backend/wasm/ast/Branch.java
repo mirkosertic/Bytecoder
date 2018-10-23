@@ -17,17 +17,16 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Branch extends Expression {
+public class Branch implements Expression {
 
     private final Block outerBlock;
 
     Branch(final Block surroundingBlock) {
-        super("br");
         this.outerBlock = surroundingBlock;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) {
+    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) {
         textWriter.opening();
         textWriter.write("br");
         textWriter.space();
@@ -36,7 +35,9 @@ public class Branch extends Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter) throws IOException {
-        throw new RuntimeException("Not implemented!");
+    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+        final int relativeDepth = owningContainer.relativeDepthTo(outerBlock);
+        codeWriter.writeByte((byte) 0x0c);
+        codeWriter.writeUnsignedLeb128(relativeDepth);
     }
 }
