@@ -33,14 +33,14 @@ public class Module {
     public Module() {
         types = new TypesSection();
         exports = new ExportsSection();
-        functions = new FunctionsSection(types, exports);
         tables = new TablesSection();
+        functions = new FunctionsSection(types, exports, tables);
         mems = new MemorySection(exports);
         globals = new GlobalsSection();
-        elements = new ElementSection();
+        elements = new ElementSection(tables);
         final DataSection data = new DataSection();
         final StartSection start = new StartSection();
-        imports = new ImportsSection(types);
+        imports = new ImportsSection(types, tables);
     }
 
     public void writeTo(final TextWriter writer) throws IOException {
@@ -51,6 +51,8 @@ public class Module {
 
         types.writeTo(writer);
         mems.writeTo(writer);
+        tables.writeTo(writer);
+        elements.writeTo(writer);
         functions.writeTo(writer);
         exports.writeTo(writer);
         imports.writeTo(writer);
@@ -74,7 +76,7 @@ public class Module {
         mems.writeTo(writer);
         globals.writeTo(writer);
         exports.writeTo(writer, functionIndex, memoryIndex);
-        elements.writeTo(writer);
+        elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
     }
 
@@ -88,5 +90,9 @@ public class Module {
 
     public ImportsSection getImports() {
         return imports;
+    }
+
+    public TablesSection getTables() {
+        return tables;
     }
 }

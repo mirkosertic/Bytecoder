@@ -24,7 +24,7 @@ public class MemorySection implements ModuleSection {
     private final ExportsSection exports;
     private final List<Memory> memories;
 
-    public MemorySection(final ExportsSection exportsContent) {
+    MemorySection(final ExportsSection exportsContent) {
         this.exports = exportsContent;
         this.memories = new ArrayList<>();
     }

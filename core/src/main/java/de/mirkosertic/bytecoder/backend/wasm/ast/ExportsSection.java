@@ -24,7 +24,7 @@ public class ExportsSection implements ModuleSection {
 
     private final Map<String, Exportable> exports;
 
-    public ExportsSection() {
+    ExportsSection() {
         exports = new HashMap<>();
     }
 
@@ -54,10 +54,10 @@ public class ExportsSection implements ModuleSection {
                 final Exportable value = entry.getValue();
                 if (value instanceof ExportableFunction) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
-                    exportWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
+                    exportWriter.writeUnsignedLeb128(functionIndex.indexOf(value));
                 } else if (value instanceof Memory) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
-                    exportWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
+                    exportWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

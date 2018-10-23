@@ -23,25 +23,25 @@ public class ExportableFunction extends Function implements Exportable {
     private final ExportsSection exportsSection;
     private final LocalIndex localIndex;
 
-    public ExportableFunction(final ExportsSection exportsSection,
+    ExportableFunction(final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params, final PrimitiveType result) {
-        super(functionType, label, params, result);
+        super(tablesSection, functionType, label, params, result);
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex(params);
     }
 
-    public ExportableFunction(final ExportsSection exportsSection,
+    ExportableFunction(final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params) {
-        super(functionType, label, params);
+        super(tablesSection, functionType, label, params);
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex(params);
     }
 
-    public ExportableFunction(final ExportsSection exportsSection,
+    ExportableFunction(final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label, final PrimitiveType result) {
-        super(functionType, label, result);
+        super(tablesSection, functionType, label, result);
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex();
     }

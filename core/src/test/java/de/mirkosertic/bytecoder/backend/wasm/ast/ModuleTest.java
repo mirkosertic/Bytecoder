@@ -15,16 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
-
-import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import java.util.Collections;
 
 public class ModuleTest {
 
@@ -67,8 +67,7 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final ExportableFunction function = functionsContent.newFunction("label", Arrays
-                .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(Expressions.param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
         function.flow.ret(Expressions.c(42));
         function.exportAs("expfunction");
@@ -90,8 +89,7 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final ExportableFunction function = functionsContent.newFunction("label", Arrays
-                .asList(new Param("p1", PrimitiveType.i32)), PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(Expressions.param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
         function.flow.ret(Expressions.c(42));
         function.exportAs("expfunction");
@@ -232,8 +230,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -262,8 +260,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -291,8 +289,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -326,8 +324,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -358,8 +356,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -398,8 +396,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -432,8 +430,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -467,8 +465,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -499,8 +497,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -535,8 +533,8 @@ public class ModuleTest {
 
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
-        final Param p1 = new Param("p1", PrimitiveType.i32);
-        final Param p2 = new Param("p2", PrimitiveType.i32);
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
@@ -556,6 +554,60 @@ public class ModuleTest {
         //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranchIf.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testTableWithFunction() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        function.flow.unreachable();
+        function.toTable();
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator() +
+                "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator() +
+                "    (table 1 anyfunc)" + System.lineSeparator() +
+                "    (elem (i32.const 0) $label)" + System.lineSeparator() +
+                "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator() +
+                "        (unreachable))" + System.lineSeparator() +
+                "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testTableWithFunctionBinary() throws IOException {
+
+        final Module module = new Module();
+        final FunctionsSection functionsContent = module.getFunctions();
+        final Param p1 = Expressions.param("p1", PrimitiveType.i32);
+        final Param p2 = Expressions.param("p2", PrimitiveType.i32);
+        final ExportableFunction function = functionsContent.newFunction("label", Arrays
+                .asList(p1, p2), PrimitiveType.i32);
+
+        function.flow.unreachable();
+        function.toTable();
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (final FileOutputStream fos = new FileOutputStream("D:\\source\\idea_projects\\Bytecoder\\core\\src\\test\\resources\\de\\mirkosertic\\bytecoder\\backend\\wasm\\ast\\testTableWithFunction.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testTableWithFunction.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 }

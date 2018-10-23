@@ -25,30 +25,32 @@ public class FunctionsSection implements ModuleSection {
     private final ExportsSection exports;
     private final TypesSection types;
     private final List<ExportableFunction> functions;
+    private final TablesSection tablesSection;
 
-    public FunctionsSection(final TypesSection types, final ExportsSection exports) {
+    FunctionsSection(final TypesSection types, final ExportsSection exports, final TablesSection tablesSection) {
         this.types = types;
         this.exports = exports;
         this.functions = new ArrayList<>();
+        this.tablesSection = tablesSection;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter, final PrimitiveType result) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
-        final ExportableFunction function = new ExportableFunction(exports, type, label, parameter, result);
+        final ExportableFunction function = new ExportableFunction(tablesSection, exports, type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
-        final ExportableFunction function = new ExportableFunction(exports, type, label, parameter);
+        final ExportableFunction function = new ExportableFunction(tablesSection, exports, type, label, parameter);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final PrimitiveType result) {
         final FunctionType type = types.typeFor(result);
-        final ExportableFunction function = new ExportableFunction(exports, type, label, result);
+        final ExportableFunction function = new ExportableFunction(tablesSection, exports, type, label, result);
         functions.add(function);
         return function;
     }

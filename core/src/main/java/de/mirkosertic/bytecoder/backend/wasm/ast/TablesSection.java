@@ -16,16 +16,80 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TablesSection implements ModuleSection {
 
+    public static class AnyFuncTable {
+
+        private final List<Function> functions;
+
+        AnyFuncTable() {
+            this.functions = new ArrayList<>();
+        }
+
+        public int index() {
+            return 0;
+        }
+
+        List<Function> functions() {
+            return functions;
+        }
+
+        void addToTable(Function function) {
+            functions.add(function);
+        }
+
+        public void writeTo(BinaryWriter.SectionWriter writer) throws IOException {
+            PrimitiveType.anyfunc.writeTo(writer);
+            writer.writeByte((byte) 0);
+            writer.writeUnsignedLeb128(functions.size());
+        }
+
+        public void writeTo(TextWriter textWriter) {
+            textWriter.opening();
+            textWriter.write("table");
+            textWriter.space();
+            textWriter.writeInteger(functions.size());
+            textWriter.space();
+            textWriter.write("anyfunc");
+            textWriter.closing();
+            textWriter.newLine();
+        }
+    }
+
+    private AnyFuncTable funcTable;
+
+    TablesSection(){
+    }
+
     @Override
     public void writeTo(final TextWriter textWriter) {
+        if (funcTable != null) {
+            funcTable.writeTo(textWriter);
+        }
     }
 
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.tablesSection()) {
-            writer.writeUnsignedLeb128(0);
+            if (funcTable == null) {
+                writer.writeUnsignedLeb128(0);
+            } else {
+                writer.writeUnsignedLeb128(1);
+                funcTable.writeTo(writer);
+            }
         }
+    }
+
+    public boolean hasFuncTable() {
+        return funcTable != null;
+    }
+
+    public AnyFuncTable funcTable() {
+        if (funcTable == null) {
+            funcTable = new AnyFuncTable();
+        }
+        return funcTable;
     }
 }
