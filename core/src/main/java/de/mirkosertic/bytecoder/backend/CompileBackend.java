@@ -21,6 +21,4 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 public interface CompileBackend<T extends CompileResult> {
 
     T generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignatue);
-
-    String generatedFileName();
 }

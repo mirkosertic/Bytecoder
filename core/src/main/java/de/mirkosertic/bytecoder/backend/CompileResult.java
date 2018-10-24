@@ -17,6 +17,12 @@ package de.mirkosertic.bytecoder.backend;
 
 public interface CompileResult<T> {
 
-    T getData();
+    interface Content<T> {
+        String getFileName();
+
+        T getData();
+    }
+
+    Content<T>[] getContent();
 }
 

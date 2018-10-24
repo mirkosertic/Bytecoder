@@ -117,67 +117,72 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        File theBaseDirectory = new File(buldDirectory);
-        File theBytecoderDirectory = new File(theBaseDirectory, "bytecoder");
+    public void execute() throws MojoExecutionException {
+        final File theBaseDirectory = new File(buldDirectory);
+        final File theBytecoderDirectory = new File(theBaseDirectory, "bytecoder");
         theBytecoderDirectory.mkdirs();
 
         try {
-            ClassLoader theLoader = prepareClassLoader();
-            Class theTargetClass = theLoader.loadClass(mainClass);
+            final ClassLoader theLoader = prepareClassLoader();
+            final Class theTargetClass = theLoader.loadClass(mainClass);
 
-            CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(backend));
-            File theBytecoderFileName = new File(theBytecoderDirectory, theCompileTarget.generatedFileName());
+            final CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(backend));
 
-            BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+            final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.ALL);
-            CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
-            try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
-                theWriter.println(theCode.getData());
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.ALL);
+            final CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
+            for (final CompileResult.Content content : theCode.getContent()) {
+                final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
+                try (final PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
+                    theWriter.println(content.getData());
+                }
             }
 
             if (optimizeWithGoogleClosure) {
-                Compiler theCompiler = new Compiler();
-                CompilerOptions theClosureOptions = new CompilerOptions();
+                final Compiler theCompiler = new Compiler();
+                final CompilerOptions theClosureOptions = new CompilerOptions();
                 theClosureOptions.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
                 theClosureOptions.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5_STRICT);
 
                 CompilationLevel.valueOf(closureOptimizationLevel).setOptionsForCompilationLevel(theClosureOptions);
 
-                List<SourceFile> theSourceFiles = CommandLineRunner.getBuiltinExterns(CompilerOptions.Environment.BROWSER);
-                theSourceFiles.add(SourceFile.fromCode("bytecoder.js", (String) theCode.getData()));
+                final List<SourceFile> theSourceFiles = CommandLineRunner.getBuiltinExterns(CompilerOptions.Environment.BROWSER);
+
+                final CompileResult.Content content = theCode.getContent()[0];
+
+                theSourceFiles.add(SourceFile.fromCode(content.getFileName(), (String) content.getData()));
                 theCompiler.compile(new ArrayList<>(), theSourceFiles, theClosureOptions);
-                String theClosureCode = theCompiler.toSource();
+                final String theClosureCode = theCompiler.toSource();
 
-                File theBytecoderClosureFileName = new File(theBytecoderDirectory, "bytecoder-closure.js");
+                final File theBytecoderClosureFileName = new File(theBytecoderDirectory, "bytecoder-closure.js");
 
-                try (PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderClosureFileName))) {
+                try (final PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderClosureFileName))) {
                     theWriter.println(theClosureCode);
                 }
             }
 
             if (theCode instanceof WASMCompileResult) {
-                WASMCompileResult theWASMCompileResult = (WASMCompileResult) theCode;
-                int[] theWASM = wat2wasm(theWASMCompileResult);
-                File theBytecoderWASMFileName = new File(theBytecoderDirectory, "bytecoder.wasm");
-                try (FileOutputStream theFos = new FileOutputStream(theBytecoderWASMFileName)) {
-                    for (int aTheWASM : theWASM) {
+                final WASMCompileResult theWASMCompileResult = (WASMCompileResult) theCode;
+                final int[] theWASM = wat2wasm(theWASMCompileResult);
+                final File theBytecoderWASMFileName = new File(theBytecoderDirectory, "bytecoder.wasm");
+                try (final FileOutputStream theFos = new FileOutputStream(theBytecoderWASMFileName)) {
+                    for (final int aTheWASM : theWASM) {
                         theFos.write(aTheWASM);
                     }
                 }
 
             }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new MojoExecutionException("Error running bytecoder", e);
         }
     }
 
-    private int[] wat2wasm(WASMCompileResult aResult) throws IOException {
-        String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
-        if (theChromeDriverBinary == null || theChromeDriverBinary.isEmpty()) {
+    private int[] wat2wasm(final WASMCompileResult aResult) throws IOException {
+        final String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
+        if (null == theChromeDriverBinary || theChromeDriverBinary.isEmpty()) {
             throw new RuntimeException("No chromedriver binary found! Please set CHROMEDRIVER_BINARY environment variable!");
         }
 
@@ -185,24 +190,26 @@ public class BytecoderMavenMojo extends AbstractMojo {
         theDriverServiceBuilder = theDriverServiceBuilder.withVerbose(false);
         theDriverServiceBuilder = theDriverServiceBuilder.usingDriverExecutable(new File(theChromeDriverBinary));
 
-        ChromeDriverService theDriverService = theDriverServiceBuilder.build();
+        final ChromeDriverService theDriverService = theDriverServiceBuilder.build();
         theDriverService.start();
 
-        File theTempDirectory = Files.createTempDir();
-        File theGeneratedFile = new File(theTempDirectory, "compile.html");
+        final File theTempDirectory = Files.createTempDir();
+        final File theGeneratedFile = new File(theTempDirectory, "compile.html");
 
         // Copy WABT Tools
-        File theWABTFile = new File(theTempDirectory, "libwabt.js");
-        try (FileOutputStream theOS = new FileOutputStream(theWABTFile)) {
+        final File theWABTFile = new File(theTempDirectory, "libwabt.js");
+        try (final FileOutputStream theOS = new FileOutputStream(theWABTFile)) {
             IOUtils.copy(getClass().getResourceAsStream("/libwabt.js"), theOS);
         }
 
-        PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+        final WASMCompileResult.WASMCompileContent content = aResult.getContent()[0];
+
+        final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
         theWriter.println("<html>");
         theWriter.println("    <body>");
         theWriter.println("        <h1>Module code</h1>");
         theWriter.println("        <pre id=\"modulecode\">");
-        theWriter.println(aResult.getData());
+        theWriter.println(content.getData());
         theWriter.println("        </pre>");
         theWriter.println("        <h1>Compilation result</h1>");
         theWriter.println("        <pre id=\"compileresult\">");
@@ -232,29 +239,29 @@ public class BytecoderMavenMojo extends AbstractMojo {
         theWriter.flush();
         theWriter.close();
 
-        ChromeOptions theOptions = new ChromeOptions();
+        final ChromeOptions theOptions = new ChromeOptions();
         theOptions.addArguments("headless");
         theOptions.addArguments("disable-gpu");
 
-        LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+        final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
 
-        DesiredCapabilities theCapabilities = DesiredCapabilities.chrome();
+        final DesiredCapabilities theCapabilities = DesiredCapabilities.chrome();
         theCapabilities.setCapability(ChromeOptions.CAPABILITY, theOptions);
 
-        RemoteWebDriver theDriver = new RemoteWebDriver(theDriverService.getUrl(), theCapabilities);
+        final RemoteWebDriver theDriver = new RemoteWebDriver(theDriverService.getUrl(), theCapabilities);
 
         theDriver.get(theGeneratedFile.toURI().toURL().toString());
 
-        ArrayList<Long> theResult = (ArrayList<Long>) theDriver.executeScript("return compile();");
-        int[] theBinaryDara = new int[theResult.size()];
+        final ArrayList<Long> theResult = (ArrayList<Long>) theDriver.executeScript("return compile();");
+        final int[] theBinaryDara = new int[theResult.size()];
         for (int i=0;i<theResult.size();i++) {
-            long theLongValue = theResult.get(i);
+            final long theLongValue = theResult.get(i);
             theBinaryDara[i] = (int) (theLongValue);
         }
-        List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
-        for (LogEntry theEntry : theAll) {
+        final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+        for (final LogEntry theEntry : theAll) {
             System.out.println(theEntry.getMessage());
         }
 
@@ -264,7 +271,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
         return theBinaryDara;
     }
 
-    protected boolean isSupportedScope(String scope) {
+    protected boolean isSupportedScope(final String scope) {
         switch (scope) {
         case Artifact.SCOPE_COMPILE:
         case Artifact.SCOPE_PROVIDED:
@@ -277,20 +284,20 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
     protected final ClassLoader prepareClassLoader() throws MojoExecutionException {
         try {
-            List<URL> theURLs = new ArrayList<>();
-            StringBuilder theClassPath = new StringBuilder();
-            for (Artifact artifact : project.getArtifacts()) {
+            final List<URL> theURLs = new ArrayList<>();
+            final StringBuilder theClassPath = new StringBuilder();
+            for (final Artifact artifact : project.getArtifacts()) {
                 if (!isSupportedScope(artifact.getScope())) {
                     continue;
                 }
-                File file = artifact.getFile();
-                if (theClassPath.length() > 0) {
+                final File file = artifact.getFile();
+                if (0 < theClassPath.length()) {
                     theClassPath.append(':');
                 }
                 theClassPath.append(file.getPath());
                 theURLs.add(file.toURI().toURL());
             }
-            if (theClassPath.length() > 0) {
+            if (0 < theClassPath.length()) {
                 theClassPath.append(':');
             }
             theClassPath.append(classFiles.getPath());
@@ -298,7 +305,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
             return new URLClassLoader(theURLs.toArray(new URL[theURLs.size()]),
                     getClass().getClassLoader());
-        } catch (MalformedURLException e) {
+        } catch (final MalformedURLException e) {
             throw new MojoExecutionException("Cannot create classloader", e);
         }
     }

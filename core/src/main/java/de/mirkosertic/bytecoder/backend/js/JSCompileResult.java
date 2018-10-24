@@ -19,14 +19,35 @@ import de.mirkosertic.bytecoder.backend.CompileResult;
 
 public class JSCompileResult implements CompileResult<String> {
 
-    private final String data;
+    public static class JSContent implements Content<String> {
 
-    public JSCompileResult(String aData) {
-        data = aData;
+        private final String fileName;
+        private final String data;
+
+        public JSContent(final String fileName, final String data) {
+            this.fileName = fileName;
+            this.data = data;
+        }
+
+        @Override
+        public String getFileName() {
+            return fileName;
+        }
+
+        @Override
+        public String getData() {
+            return data;
+        }
+    }
+
+    private final JSContent[] content;
+
+    public JSCompileResult(final JSContent... content) {
+        this.content = content;
     }
 
     @Override
-    public String getData() {
-        return data;
+    public JSContent[] getContent() {
+        return content;
     }
 }
