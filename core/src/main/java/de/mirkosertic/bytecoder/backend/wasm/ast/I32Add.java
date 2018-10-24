@@ -17,26 +17,31 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class GetLocal implements Expression {
+public class I32Add implements Expression {
 
-    private final Local local;
+    private final Value left;
+    private final Value right;
 
-    GetLocal(final Local local) {
-        this.local = local;
+    I32Add(final Value left, final Value right) {
+        this.left = left;
+        this.right = right;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("get_local");
+        textWriter.write("i32.add");
         textWriter.space();
-        textWriter.writeLabel(local.getLabel());
+        left.writeTo(textWriter, context);
+        textWriter.space();
+        right.writeTo(textWriter, context);
         textWriter.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.writeByte((byte) 0x20);
-        codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));
+        left.writeTo(codeWriter, context);
+        right.writeTo(codeWriter, context);
+        codeWriter.writeByte((byte) 0x6a);
     }
 }

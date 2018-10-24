@@ -34,9 +34,9 @@ public class Module {
         types = new TypesSection();
         exports = new ExportsSection();
         tables = new TablesSection();
-        functions = new FunctionsSection(types, exports, tables);
+        globals = new GlobalsSection(exports);
+        functions = new FunctionsSection(types, exports, tables, globals);
         mems = new MemorySection(exports);
-        globals = new GlobalsSection();
         elements = new ElementSection(tables);
         final DataSection data = new DataSection();
         final StartSection start = new StartSection();
@@ -51,6 +51,7 @@ public class Module {
 
         types.writeTo(writer);
         mems.writeTo(writer);
+        globals.writeTo(writer);
         tables.writeTo(writer);
         elements.writeTo(writer);
         functions.writeTo(writer);
@@ -90,5 +91,9 @@ public class Module {
 
     public ImportsSection getImports() {
         return imports;
+    }
+
+    public GlobalsSection getGlobals() {
+        return globals;
     }
 }

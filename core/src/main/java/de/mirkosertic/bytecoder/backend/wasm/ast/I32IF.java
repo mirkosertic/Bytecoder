@@ -27,15 +27,15 @@ public class I32IF extends Container implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("if");
         textWriter.newLine();
-        condition.writeTo(textWriter, exportableFunction);
+        condition.writeTo(textWriter, context);
         if (hasChildren()) {
             for (final Value child : getChildren()) {
                 textWriter.newLine();
-                child.writeTo(textWriter, exportableFunction);
+                child.writeTo(textWriter, context);
             }
             textWriter.closing();
         } else {
@@ -44,12 +44,12 @@ public class I32IF extends Container implements Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
-        condition.writeTo(codeWriter, owningContainer, exportableFunction);
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        condition.writeTo(codeWriter, context);
         codeWriter.writeByte((byte) 0x04);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
         for (final Expression e : getChildren()) {
-            e.writeTo(codeWriter, this, exportableFunction);
+            e.writeTo(codeWriter, context.subWith(this));
         }
         codeWriter.writeByte((byte) 0x0b);
 

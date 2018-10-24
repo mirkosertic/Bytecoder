@@ -44,27 +44,27 @@ public class I32Condition implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("i32." + condition);
         if (leftValue != null) {
             textWriter.space();
-            leftValue.writeTo(textWriter, exportableFunction);
+            leftValue.writeTo(textWriter, context);
         }
         if (rightValue != null) {
             textWriter.space();
-            rightValue.writeTo(textWriter, exportableFunction);
+            rightValue.writeTo(textWriter, context);
         }
         textWriter.closing();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         if (leftValue != null) {
-            leftValue.writeTo(codeWriter, owningContainer, exportableFunction);
+            leftValue.writeTo(codeWriter, context);
         }
         if (rightValue != null) {
-            rightValue.writeTo(codeWriter, owningContainer, exportableFunction);
+            rightValue.writeTo(codeWriter, context);
         }
         switch (condition) {
             case eq: {

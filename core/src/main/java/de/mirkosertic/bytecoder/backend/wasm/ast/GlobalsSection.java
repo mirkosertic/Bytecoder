@@ -16,17 +16,48 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GlobalsSection implements ModuleSection {
 
-    @Override
-    public void writeTo(final TextWriter textWriter) {
+    private final List<Global> globals;
+    private final ExportsSection exports;
 
+    GlobalsSection(final ExportsSection exportsSection) {
+        this.globals = new ArrayList<>();
+        this.exports = exportsSection;
+    }
+
+    public Global newMutableGlobal(final String name, final PrimitiveType type, final Value initializer) {
+        final Global global = new Global(exports, name, type, true, initializer);
+        globals.add(global);
+        return global;
+    }
+
+    public Global newConstantGlobal(final String name, final PrimitiveType type, final Value initializer) {
+        final Global global = new Global(exports, name, type, false, initializer);
+        globals.add(global);
+        return global;
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter) throws IOException {
+        for (final Global global : globals) {
+            global.writeTo(textWriter);
+        }
     }
 
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.globalsSection()) {
-            writer.writeUnsignedLeb128(0);
+            writer.writeUnsignedLeb128(globals.size());
+            for (final Global global : globals) {
+                global.writeTo(writer, globals);
+            }
         }
+    }
+
+    public List<Global> globalsIndex() {
+        return globals;
     }
 }

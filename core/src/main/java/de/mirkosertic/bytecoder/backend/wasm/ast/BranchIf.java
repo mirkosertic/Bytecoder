@@ -28,7 +28,7 @@ public class BranchIf implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("br_if");
         textWriter.space();
@@ -36,15 +36,15 @@ public class BranchIf implements Expression {
         textWriter.space();
 
         textWriter.newLine();
-        condition.writeTo(textWriter, exportableFunction);
+        condition.writeTo(textWriter, context);
 
         textWriter.closing();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
-        condition.writeTo(codeWriter, owningContainer, exportableFunction);
-        final int relativeDepth = owningContainer.relativeDepthTo(outerBlock);
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        condition.writeTo(codeWriter, context);
+        final int relativeDepth = context.owningContainer().relativeDepthTo(outerBlock);
         codeWriter.writeByte((byte) 0x0d);
         codeWriter.writeUnsignedLeb128(relativeDepth);
     }
