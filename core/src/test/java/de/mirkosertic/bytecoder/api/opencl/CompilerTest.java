@@ -33,40 +33,40 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 public class CompilerTest {
 
     private Kernel createKernel() {
-        float[] theA = {10f, 20f, 30f, 40f};
-        float[] theB = {100f, 200f, 300f, 400f};
-        float[] theResult = new float[4];
+        final float[] theA = {10f, 20f, 30f, 40f};
+        final float[] theB = {100f, 200f, 300f, 400f};
+        final float[] theResult = new float[4];
 
         return new Kernel() {
-            public void processWorkItem() {
-                int id = get_global_id(0);
-                float a = theA[id];
-                float b = theB[id];
+            @Override public void processWorkItem() {
+                final int id = get_global_id(0);
+                final float a = theA[id];
+                final float b = theB[id];
 
-                byte b1 = (byte) 1;
-                short s2 = (short) 2;
-                int s3 = 3;
-                long s4 = 4;
-                float s5 = 5f;
-                double s6 = 6d;
+                final byte b1 = (byte) 1;
+                final short s2 = (short) 2;
+                final int s3 = 3;
+                final long s4 = 4;
+                final float s5 = 5f;
+                final double s6 = 6d;
 
-                int d;
+                final int d;
                 if (a<b) {
                     d = 100;
-                    int j = 100;
-                    int k = 2300;
-                    int c = 300;
-                    int dsd = 10010101;
+                    final int j = 100;
+                    final int k = 2300;
+                    final int c = 300;
+                    final int dsd = 10010101;
                 } else {
                     d = 200;
-                    int j = d * d * d * d;
-                    int k = 2300;
-                    int c = 300;
-                    int dsd = 10010101;
+                    final int j = d * d * d * d;
+                    final int k = 2300;
+                    final int c = 300;
+                    final int dsd = 10010101;
                 }
 
-                for (int lala = 100; lala < 200; lala++) {
-                    int k = 100;
+                for (int lala = 100; 200 > lala; lala++) {
+                    final int k = 100;
                 }
 
                 theResult[id] = a + b + d;
@@ -77,62 +77,64 @@ public class CompilerTest {
     @Test
     public void testSimpleKernel() {
 
-        OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
+        final OpenCLCompileBackend backend = new OpenCLCompileBackend();
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
 
-        Kernel theKernel = createKernel();
-        Class theKernelClass = theKernel.getClass();
+        final Kernel theKernel = createKernel();
+        final Class theKernelClass = theKernel.getClass();
         System.out.println(theKernelClass);
 
-        Method[] theMethods = theKernelClass.getDeclaredMethods();
-        if (theMethods.length != 1) {
+        final Method[] theMethods = theKernelClass.getDeclaredMethods();
+        if (1 != theMethods.length) {
             throw new IllegalArgumentException("A kernel must have exactly one declared method!");
         }
 
-        Method theMethod = theMethods[0];
+        final Method theMethod = theMethods[0];
 
-        BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
+        final BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-        OpenCLCompileResult theCompiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
+        final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        final OpenCLCompileResult.OpenCLContent content = compiledKernel.getContent()[0];
 
-        System.out.println(theCompiledKernel.getData());
+        System.out.println(content.getData());
     }
 
     @Test
     public void testKernelWithComplexType() {
 
-        OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
+        final OpenCLCompileBackend backend = new OpenCLCompileBackend();
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
 
-        Float2[] theIn = new Float2[10];
-        Float2[] theOut = new Float2[10];
-        Kernel theKernel = new Kernel() {
-            public void processWorkItem() {
-                int theIndex = get_global_id(0);
-                Float2 a = theIn[theIndex];
-                Float2 b = theOut[theIndex];
+        final Float2[] theIn = new Float2[10];
+        final Float2[] theOut = new Float2[10];
+        final Kernel theKernel = new Kernel() {
+            @Override public void processWorkItem() {
+                final int theIndex = get_global_id(0);
+                final Float2 a = theIn[theIndex];
+                final Float2 b = theOut[theIndex];
                 b.s0 = a.s0;
                 b.s1 = a.s1;
             }
         };
-        Class theKernelClass = theKernel.getClass();
+        final Class theKernelClass = theKernel.getClass();
         System.out.println(theKernelClass);
 
-        Method[] theMethods = theKernelClass.getDeclaredMethods();
-        if (theMethods.length != 1) {
+        final Method[] theMethods = theKernelClass.getDeclaredMethods();
+        if (1 != theMethods.length) {
             throw new IllegalArgumentException("A kernel must have exactly one declared method!");
         }
 
-        Method theMethod = theMethods[0];
+        final Method theMethod = theMethods[0];
 
-        BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
+        final BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-        OpenCLCompileResult theCompiedKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
+        final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        final OpenCLCompileResult.OpenCLContent content = compiledKernel.getContent()[0];
 
-        System.out.println(theCompiedKernel.getData());
+        System.out.println(content.getData());
     }
 }

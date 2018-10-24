@@ -15,44 +15,64 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.util.List;
+
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-import java.util.List;
-
 public class WASMCompileResult implements CompileResult<String> {
 
-    private final WASMMemoryLayouter memoryLayouter;
-    private final BytecodeLinkerContext linkerContext;
-    private final List<String> generatedFunctions;
-    private final String data;
+    public static class WASMCompileContent implements Content<String> {
 
-    public WASMCompileResult(BytecodeLinkerContext aLinkerContext, List<String> aGeneratedFunctions, String aData, WASMMemoryLayouter aMemoryLayout) {
-        linkerContext = aLinkerContext;
-        generatedFunctions = aGeneratedFunctions;
-        data = aData;
-        memoryLayouter = aMemoryLayout;
+        private final WASMMemoryLayouter memoryLayouter;
+        private final BytecodeLinkerContext linkerContext;
+        private final List<String> generatedFunctions;
+        private final String data;
+
+        public WASMCompileContent(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
+                final List<String> generatedFunctions, final String data) {
+            this.memoryLayouter = memoryLayouter;
+            this.linkerContext = linkerContext;
+            this.generatedFunctions = generatedFunctions;
+            this.data = data;
+        }
+
+        @Override
+        public String getFileName() {
+            return "bytecoder.wat";
+        }
+
+        @Override
+        public String getData() {
+            return data;
+        }
+
+        public int getTypeIDFor(final BytecodeObjectTypeRef aObjecType) {
+            return linkerContext.resolveClass(aObjecType).getUniqueId();
+        }
+
+        public int getSizeOf(final BytecodeObjectTypeRef aObjectType) {
+            final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(aObjectType);
+            return theLayout.instanceSize();
+        }
+
+        public int getVTableIndexOf(final BytecodeObjectTypeRef aObjectType) {
+            final String theClassName = WASMWriterUtils.toClassName(aObjectType);
+
+            final String theMethodName = theClassName + "__resolvevtableindex";
+            return generatedFunctions.indexOf(theMethodName);
+        }
     }
 
-    public int getTypeIDFor(BytecodeObjectTypeRef aObjecType) {
-        return linkerContext.resolveClass(aObjecType).getUniqueId();
-    }
+    private final WASMCompileContent[] content;
 
-    public int getSizeOf(BytecodeObjectTypeRef aObjectType) {
-        WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(aObjectType);
-        return theLayout.instanceSize();
-    }
-
-    public int getVTableIndexOf(BytecodeObjectTypeRef aObjectType) {
-        String theClassName = WASMWriterUtils.toClassName(aObjectType);
-
-        String theMethodName = theClassName + "__resolvevtableindex";
-        return generatedFunctions.indexOf(theMethodName);
+    public WASMCompileResult(final WASMCompileContent... content) {
+        this.content = content;
     }
 
     @Override
-    public String getData() {
-        return data;
+    public WASMCompileContent[] getContent() {
+        return content;
     }
 }
