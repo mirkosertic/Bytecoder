@@ -16,10 +16,24 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface Value {
 
-    void writeTo(TextWriter textWriter, ExportableFunction exportableFunction) throws IOException;
+    interface ExportContext {
 
-    void writeTo(BinaryWriter.Writer codeWriter, Container owningContainer, ExportableFunction exportableFunction) throws IOException;
+        Container owningContainer();
+
+        List<Function> functionIndex();
+
+        List<Global> globalsIndex();
+
+        LocalIndex localIndex();
+
+        ExportContext subWith(Container container);
+    }
+
+    void writeTo(TextWriter textWriter, ExportContext context) throws IOException;
+
+    void writeTo(BinaryWriter.Writer codeWriter, ExportContext context) throws IOException;
 }

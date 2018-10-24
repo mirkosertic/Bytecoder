@@ -31,7 +31,7 @@ public class Block extends Container implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("block");
         textWriter.space();
@@ -39,7 +39,7 @@ public class Block extends Container implements Expression {
         if (hasChildren()) {
             textWriter.newLine();
             for (final Value child : getChildren()) {
-                child.writeTo(textWriter, exportableFunction);
+                child.writeTo(textWriter, context);
                 textWriter.newLine();
             }
             textWriter.closing();
@@ -50,11 +50,11 @@ public class Block extends Container implements Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x02);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
         for (final Expression e : getChildren()) {
-            e.writeTo(codeWriter, this, exportableFunction);
+            e.writeTo(codeWriter, context.subWith(this));
         }
         codeWriter.writeByte((byte) 0x0b);
     }

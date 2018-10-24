@@ -23,14 +23,14 @@ public class Unreachable implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("unreachable");
         textWriter.closing();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x00);
     }
 }

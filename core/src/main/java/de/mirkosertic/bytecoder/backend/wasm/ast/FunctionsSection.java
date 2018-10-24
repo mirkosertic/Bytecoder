@@ -26,31 +26,33 @@ public class FunctionsSection implements ModuleSection {
     private final TypesSection types;
     private final List<ExportableFunction> functions;
     private final TablesSection tablesSection;
+    private final GlobalsSection globalsSection;
 
-    FunctionsSection(final TypesSection types, final ExportsSection exports, final TablesSection tablesSection) {
+    FunctionsSection(final TypesSection types, final ExportsSection exports, final TablesSection tablesSection, final GlobalsSection globalsSection) {
         this.types = types;
         this.exports = exports;
         this.functions = new ArrayList<>();
         this.tablesSection = tablesSection;
+        this.globalsSection = globalsSection;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter, final PrimitiveType result) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
-        final ExportableFunction function = new ExportableFunction(tablesSection, exports, type, label, parameter, result);
+        final ExportableFunction function = new ExportableFunction(globalsSection, tablesSection, exports, type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
-        final ExportableFunction function = new ExportableFunction(tablesSection, exports, type, label, parameter);
+        final ExportableFunction function = new ExportableFunction(globalsSection, tablesSection, exports, type, label, parameter);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final PrimitiveType result) {
         final FunctionType type = types.typeFor(result);
-        final ExportableFunction function = new ExportableFunction(tablesSection, exports, type, label, result);
+        final ExportableFunction function = new ExportableFunction(globalsSection, tablesSection, exports, type, label, result);
         functions.add(function);
         return function;
     }
@@ -79,7 +81,7 @@ public class FunctionsSection implements ModuleSection {
             sectionWriter.writeUnsignedLeb128(functions.size());
             for (final Function function : functions) {
                 final ExportableFunction ef = (ExportableFunction) function;
-                ef.writeCodeTo(sectionWriter);
+                ef.writeCodeTo(sectionWriter, functionIndex);
             }
         }
     }

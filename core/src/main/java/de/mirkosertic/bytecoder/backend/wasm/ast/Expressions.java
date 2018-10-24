@@ -29,14 +29,31 @@ public class Expressions {
         return I32Condition.eq(leftValue, rightValue);
     }
 
+    public static Call call(final Function function, final Value... arguments) {
+        return new Call(function, arguments);
+    }
+
+    public static I32Add i32Add(final Value leftValue, final Value rightValue) {
+        return new I32Add(leftValue, rightValue);
+    }
+
     public static GetLocal getLocal(final Local local) {
         return new GetLocal(local);
+    }
+
+    public static GetGlobal getGlobal(final Global global) {
+        return new GetGlobal(global);
     }
 
     private final Container parent;
 
     Expressions(final Container parent) {
         this.parent = parent;
+    }
+
+    public void voidCall(final Function function, final Value... arguments) {
+        final Call call = new Call(function, arguments);
+        parent.addChild(call);
     }
 
     public Block block(final String label) {
@@ -76,5 +93,10 @@ public class Expressions {
 
     public void unreachable() {
         parent.addChild(new Unreachable());
+    }
+
+    public void setLocal(final Local local, final Value value) {
+        final SetLocal setLocal = new SetLocal(local, value);
+        parent.addChild(setLocal);
     }
 }

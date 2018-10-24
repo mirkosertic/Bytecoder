@@ -20,30 +20,70 @@ import java.util.List;
 
 public class ExportableFunction extends Function implements Exportable {
 
+    private class DefaultExportContext implements Value.ExportContext {
+
+        private final Container owningContainer;
+        private final List<Function> functionIndex;
+
+        public DefaultExportContext(final Container owningContainer, final List<Function> functionIndex) {
+            this.owningContainer = owningContainer;
+            this.functionIndex = functionIndex;
+        }
+
+        @Override
+        public Container owningContainer() {
+            return owningContainer;
+        }
+
+        @Override
+        public List<Function> functionIndex() {
+            return functionIndex;
+        }
+
+        @Override
+        public List<Global> globalsIndex() {
+            return globalsSection.globalsIndex();
+        }
+
+        @Override
+        public LocalIndex localIndex() {
+            return localIndex;
+        }
+
+        @Override
+        public Value.ExportContext subWith(final Container container) {
+            return new DefaultExportContext(container, functionIndex);
+        }
+    }
+
     private final ExportsSection exportsSection;
     private final LocalIndex localIndex;
+    private final GlobalsSection globalsSection;
 
-    ExportableFunction(final TablesSection tablesSection, final ExportsSection exportsSection,
+    ExportableFunction(final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params, final PrimitiveType result) {
         super(tablesSection, functionType, label, params, result);
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex(params);
+        this.globalsSection = globalsSection;
     }
 
-    ExportableFunction(final TablesSection tablesSection, final ExportsSection exportsSection,
+    ExportableFunction(final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params) {
         super(tablesSection, functionType, label, params);
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex(params);
+        this.globalsSection = globalsSection;
     }
 
-    ExportableFunction(final TablesSection tablesSection, final ExportsSection exportsSection,
+    ExportableFunction(final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label, final PrimitiveType result) {
         super(tablesSection, functionType, label, result);
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex();
+        this.globalsSection = globalsSection;
     }
 
     public void exportAs(final String functionName) {
@@ -52,7 +92,7 @@ public class ExportableFunction extends Function implements Exportable {
 
     public Local localByLabel(final String label, final PrimitiveType type) {
         Local local = localIndex.localByLabel(label);
-        if (local == null) {
+        if (null == local) {
             local = new Local(label, type);
             localIndex.add(local);
         }
@@ -67,13 +107,13 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.writeLabel(getLabel());
         textWriter.space();
         getFunctionType().writeRefTo(textWriter);
-        if (null != getParams()) {
+        if (getParams() != null) {
             for (final Param param : getParams()) {
                 textWriter.space();
                 param.writeTo(textWriter);
             }
         }
-        if (null != getResultType()) {
+        if (getResultType() != null) {
             textWriter.space();
             textWriter.opening();
             textWriter.write("result");
@@ -86,8 +126,9 @@ public class ExportableFunction extends Function implements Exportable {
             local.writeTo(textWriter);
             textWriter.newLine();
         }
+        final DefaultExportContext context = new DefaultExportContext(this, null);
         for (final Expression expression : getChildren()) {
-            expression.writeTo(textWriter, this);
+            expression.writeTo(textWriter, context);
         }
         textWriter.closing();
     }
@@ -101,7 +142,7 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.closing();
     }
 
-    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
+    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter, final List<Function> functionIndex) throws IOException {
         try (final BinaryWriter.BlockWriter codeWriter = sectionWriter.blockWriter()) {
 
             // Local data
@@ -112,8 +153,10 @@ public class ExportableFunction extends Function implements Exportable {
                 local.getType().writeTo(codeWriter);
             }
 
+            final DefaultExportContext context = new DefaultExportContext(this, functionIndex);
+
             for (final Expression expression : getChildren()) {
-                expression.writeTo(codeWriter, this, this);
+                expression.writeTo(codeWriter, context);
             }
 
             // Finish with an end Instruction
@@ -121,7 +164,7 @@ public class ExportableFunction extends Function implements Exportable {
         }
     }
 
-    public LocalIndex localIndex() {
-        return localIndex;
+    public List<Global> globalsIndex() {
+        return globalsSection.globalsIndex();
     }
 }

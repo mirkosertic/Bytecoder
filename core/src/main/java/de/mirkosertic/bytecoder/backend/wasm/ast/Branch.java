@@ -26,7 +26,7 @@ public class Branch implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportableFunction exportableFunction) {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
         textWriter.write("br");
         textWriter.space();
@@ -35,8 +35,8 @@ public class Branch implements Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final Container owningContainer, final ExportableFunction exportableFunction) throws IOException {
-        final int relativeDepth = owningContainer.relativeDepthTo(outerBlock);
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        final int relativeDepth = context.owningContainer().relativeDepthTo(outerBlock);
         codeWriter.writeByte((byte) 0x0c);
         codeWriter.writeUnsignedLeb128(relativeDepth);
     }
