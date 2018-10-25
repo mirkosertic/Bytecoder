@@ -205,7 +205,7 @@ public class ModuleTest {
 
         Assert.assertEquals("(module " + System.lineSeparator()
                 + "    (type $t0 (func (result i32)))" + System.lineSeparator()
-                + "    ($import \"mod\" \"obj\" (func $label (result i32)))" + System.lineSeparator()
+                + "    (import \"mod\" \"obj\" (func $label (type $t0)))" + System.lineSeparator()
                 + "    )", strWriter.toString());
     }
 

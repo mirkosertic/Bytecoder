@@ -109,7 +109,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         return Description.createTestDescription(testClass.getJavaClass(), frameworkMethod.getName());
     }
 
-    private void testJSJVMBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
+    private void testJVMBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JVM Target");
         aRunNotifier.fireTestStarted(theDescription);
         try {
@@ -599,14 +599,278 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
+    private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
+        final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " WASM AST Backend ");
+        aRunNotifier.fireTestStarted(theDescription);
+
+        WebDriver theDriver = null;
+
+        try {
+            final CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.wasm_ast);
+
+            final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
+            final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
+
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
+            final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            final WASMCompileResult.WASMCompileContent content = theResult.getContent()[0];
+
+            final String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.html";
+
+            final File theWorkingDirectory = new File(".");
+
+            initializeSeleniumDriver();
+
+            final File theMavenTargetDir = new File(theWorkingDirectory, "target");
+            final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
+            theGeneratedFilesDir.mkdirs();
+            final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
+
+            // Copy WABT Tools
+            final File theWABTFile = new File(theGeneratedFilesDir, "libwabt.js");
+            try (final FileOutputStream theOS = new FileOutputStream(theWABTFile)) {
+                IOUtils.copy(getClass().getResourceAsStream("/libwabt.js"), theOS);
+            }
+
+            final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+            theWriter.println("<html>");
+            theWriter.println("    <body>");
+            theWriter.println("        <h1>Module code</h1>");
+            theWriter.println("        <pre id=\"modulecode\">");
+            theWriter.println(content.getData());
+            theWriter.println("        </pre>");
+            theWriter.println("        <h1>Compilation result</h1>");
+            theWriter.println("        <pre id=\"compileresult\">");
+            theWriter.println("        </pre>");
+            theWriter.println("        <script src=\"libwabt.js\">");
+            theWriter.println("        </script>");
+            theWriter.println("        <script>");
+            theWriter.println("            var runningInstance;");
+            theWriter.println("            var runningInstanceMemory;");
+            theWriter.println();
+
+            theWriter.println("            function bytecoder_IntInMemory(value) {");
+            theWriter.println("             return runningInstanceMemory[value]");
+            theWriter.println("                 + (runningInstanceMemory[value + 1] * 256)");
+            theWriter.println("                 + (runningInstanceMemory[value + 2] * 256 * 256)");
+            theWriter.println("                 + (runningInstanceMemory[value + 3] * 256 * 256 * 256);");
+            theWriter.println("            }");
+            theWriter.println();
+
+            theWriter.println("            function bytecoder_logByteArrayAsString(acaller, value) {");
+            theWriter.println("                 var theLength = bytecoder_IntInMemory(value + 16);");
+            theWriter.println("                 var theData = '';");
+            theWriter.println("                 value = value + 20;");
+            theWriter.println("                 for (var i=0;i<theLength;i++) {");
+            theWriter.println("                     var theCharCode = bytecoder_IntInMemory(value);");
+            theWriter.println("                     value = value + 4;");
+            theWriter.println("                     theData+= String.fromCharCode(theCharCode);");
+            theWriter.println("                 }");
+            theWriter.println("                 console.log(theData);");
+            theWriter.println("            }");
+            theWriter.println();
+
+            theWriter.println("            function bytecoder_logDebug(caller,value) {");
+            theWriter.println("                 console.log(value);");
+            theWriter.println("            }");
+            theWriter.println();
+
+            theWriter.println("            function compile() {");
+            theWriter.println("                console.log('Test started');");
+            theWriter.println("                try {");
+            theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
+            theWriter.println("                    module.resolveNames();");
+            theWriter.println("                    module.validate();");
+            theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
+            theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
+            theWriter.println("                    var binaryBuffer = binaryOutput.buffer;");
+            theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
+            theWriter.println();
+            theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
+            theWriter.println("                         system: {");
+            theWriter.println("                             currentTimeMillis: function() {return Date.now();},");
+            theWriter.println("                             nanoTime: function() {return Date.now() * 1000000;},");
+            theWriter.println("                             logDebug: bytecoder_logDebug,");
+            theWriter.println("                             writeByteArrayToConsole: bytecoder_logByteArrayAsString,");
+            theWriter.println("                         },");
+            theWriter.println("                         printstream: {");
+            theWriter.println("                             logDebug: bytecoder_logDebug,");
+            theWriter.println("                         },");
+            theWriter.println("                         math: {");
+            theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
+            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
+            theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
+            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
+            theWriter.println("                             max: function(p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("                             min: function(p1, p2) { return Math.min(p1, p2);},");
+            theWriter.println("                         },");
+            theWriter.println("                         strictmath: {");
+            theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
+            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
+            theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
+            theWriter.println("                         },");
+            theWriter.println("                         profiler: {");
+            theWriter.println("                             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");
+            theWriter.println("                                 if (aUsed == 1) return;");
+            theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
+            theWriter.println("                                 console.log('      Block size is ' + bytecoder_IntInMemory(aStart));");
+            theWriter.println("                                 console.log('      Object type ' + bytecoder_IntInMemory(aStart + 12));");
+            theWriter.println("                             }");
+            theWriter.println("                         }");
+            theWriter.println("                    });");
+            theWriter.println("                    theInstantiatePromise.then(");
+            theWriter.println("                         function (resolved) {");
+            theWriter.println("                             var wasmModule = resolved.module;");
+            theWriter.println("                             runningInstance = resolved.instance;");
+            theWriter.println("                             runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);");
+            theWriter.println("                             runningInstance.exports.initMemory(0);");
+            theWriter.println("                             console.log(\"Memory initialized\")");
+            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                             console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
+            theWriter.println("                             console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
+            theWriter.println("                             runningInstance.exports.bootstrap(0);");
+            theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + runningInstance.exports.usedMem());");
+            theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + runningInstance.exports.freeMem());");
+            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                             console.log(\"Creating test instance\")");
+
+            theWriter.print("                             var theTest = runningInstance.exports.newObject(0,");
+            theWriter.print(content.getSizeOf(theTypeRef));
+            theWriter.print(",");
+            theWriter.print(content.getTypeIDFor(theTypeRef));
+            theWriter.print(",");
+            theWriter.print(content.getVTableIndexOf(theTypeRef));
+            theWriter.println(", 0);");
+            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                             console.log(\"Bootstrapped\")");
+            theWriter.println("                             try {");
+            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 console.log(\"Starting main method\")");
+            theWriter.println("                                 runningInstance.exports.main(theTest);");
+            theWriter.println("                                 console.log(\"Main finished\")");
+            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                                 console.log(\"Test finished OK\")");
+            theWriter.println("                             } catch (e) {");
+            theWriter.println("                                 console.log(\"Test threw error\")");
+            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                                 throw e;");
+            theWriter.println("                             }");
+            theWriter.println("                         },");
+            theWriter.println("                         function (rejected) {");
+            theWriter.println("                             console.log(\"Error instantiating webassembly\");");
+            theWriter.println("                             console.log(rejected);");
+            theWriter.println("                         }");
+            theWriter.println("                    );");
+            theWriter.println("                } catch (e) {");
+            theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
+            theWriter.println("                    console.log(e.toString());");
+            theWriter.println("                    console.log(e.stack);");
+            theWriter.println("                    if (runningInstance) {");
+            theWriter.println("                         runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                         wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                    }");
+            theWriter.println("                }");
+            theWriter.println("            }");
+            theWriter.println();
+
+            theWriter.println("            function wasmHexDump(memory) {");
+            theWriter.println("                var theStart = 0;");
+            theWriter.println("                console.log('HEX DUMP');");
+            theWriter.println("                console.log('=================================================================================');");
+            theWriter.println("                for (var i=0;i<200;i++) {");
+            theWriter.println("                    var theLine = '' + theStart;");
+            theWriter.println("                    while(theLine.length < 15) {");
+            theWriter.println("                        theLine+= ' ';");
+            theWriter.println("                    }");
+            theWriter.println("                    theLine+= ' : ';");
+            theWriter.println("                    for (var j=0;j<32;j++) {");
+            theWriter.println("                        var theByte = memory[theStart++];");
+            theWriter.println("                        var theData = '' + theByte;");
+            theWriter.println("                        while(theData.length < 3) {");
+            theWriter.println("                            theData = ' ' + theData;");
+            theWriter.println("                        }");
+            theWriter.println("                        theLine += theData;");
+            theWriter.println("                        theLine += ' ';");
+            theWriter.println("                    }");
+            theWriter.println("                    console.log(theLine);");
+            theWriter.println("                }");
+            theWriter.println("                console.log('DONE');");
+            theWriter.println("            }");
+            theWriter.println();
+            theWriter.println("            compile();");
+            theWriter.println("        </script>");
+            theWriter.println("    </body>");
+            theWriter.println("</html>");
+
+            theWriter.flush();
+            theWriter.close();
+
+            try  (final PrintWriter theWATWriter = new PrintWriter(new FileWriter(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wat")))) {
+                theWATWriter.println(content.getData());
+            }
+
+            // Invoke test in browser
+            theDriver = newDriverForTest();
+            theDriver.get(theGeneratedFile.toURI().toURL().toString());
+
+            final long theStart = System.currentTimeMillis();
+            boolean theTestSuccedded = false;
+
+            while (!theTestSuccedded && 10 * 1000 > System.currentTimeMillis() - theStart) {
+                final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+                for (final LogEntry theEntry : theAll) {
+                    final String theMessage = theEntry.getMessage();
+                    System.out.println(theMessage);
+
+                    if (theMessage.contains("Test finished OK")) {
+                        theTestSuccedded = true;
+                    }
+                }
+
+                if (!theTestSuccedded) {
+                    Thread.sleep(100);
+                }
+            }
+
+            if (!theTestSuccedded) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
+            }
+
+        } catch (final ControlFlowProcessingException e) {
+            System.out.println(e.getGraph().toDOT());
+            aRunNotifier.fireTestFailure(new Failure(theDescription, e));
+        } catch (final Exception e) {
+            aRunNotifier.fireTestFailure(new Failure(theDescription, e));
+        } finally {
+            if (null != theDriver) {
+                theDriver.close();
+            }
+            aRunNotifier.fireTestFinished(theDescription);
+        }
+    }
+
+
     @Override
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
             testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
-            testJSJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }
 }

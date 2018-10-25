@@ -79,7 +79,7 @@ public class ImportsSection implements ModuleSection {
             final ImportReference ref = entry.getReference();
 
             textWriter.opening();
-            textWriter.writeLabel("import");
+            textWriter.write("import");
             textWriter.space();
             textWriter.writeText(ref.getModuleName());
             textWriter.space();

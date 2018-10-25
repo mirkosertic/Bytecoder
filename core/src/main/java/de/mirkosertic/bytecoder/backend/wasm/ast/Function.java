@@ -56,20 +56,8 @@ public class Function extends Container implements Importable {
         textWriter.write("func");
         textWriter.space();
         textWriter.writeLabel(label);
-        if (null != params) {
-            for (final Param param : params) {
-                textWriter.space();
-                param.writeTo(textWriter);
-            }
-        }
-        if (null != resultType) {
-            textWriter.space();
-            textWriter.opening();
-            textWriter.write("result");
-            textWriter.space();
-            resultType.writeTo(textWriter);
-            textWriter.closing();
-        }
+        textWriter.space();
+        functionType.writeRefTo(textWriter);;
         textWriter.closing();
     }
 
