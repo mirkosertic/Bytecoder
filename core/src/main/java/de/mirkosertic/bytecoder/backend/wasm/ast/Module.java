@@ -50,13 +50,13 @@ public class Module {
         writer.newLine();
 
         types.writeTo(writer);
+        imports.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
         tables.writeTo(writer);
         elements.writeTo(writer);
         functions.writeTo(writer);
         exports.writeTo(writer);
-        imports.writeTo(writer);
         writer.closing();
     }
 
