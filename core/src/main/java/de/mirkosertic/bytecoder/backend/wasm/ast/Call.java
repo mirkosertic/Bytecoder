@@ -16,13 +16,14 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Call implements Expression {
 
     private final Function function;
-    private final Value[] arguments;
+    private final List<Value> arguments;
 
-    Call(final Function function, final Value... arguments) {
+    Call(final Function function, final List<Value> arguments) {
         this.function = function;
         this.arguments = arguments;
     }

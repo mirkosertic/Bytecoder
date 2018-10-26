@@ -15,43 +15,34 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.util.List;
+
 public class Expressions {
 
-    public static Param param(final String label, final PrimitiveType type) {
-        return new Param(label, type);
-    }
+    public class I32 {
 
-    public static I32Const c(final int aValue) {
-        return new I32Const(aValue);
-    }
+        public I32IF iff(final I32Condition condition) {
+            final I32IF elem = new I32IF(parent, condition);
+            parent.addChild(elem);
+            return elem;
+        }
 
-    public static I32Condition i32eq(final Value leftValue, final Value rightValue) {
-        return I32Condition.eq(leftValue, rightValue);
-    }
+        public I32IF iffeq(final Value leftValue, final Value rightValue) {
+            final I32Condition condition = ConstExpressions.i32.eq(leftValue, rightValue);
+            return iff(condition);
+        }
 
-    public static Call call(final Function function, final Value... arguments) {
-        return new Call(function, arguments);
-    }
-
-    public static I32Add i32Add(final Value leftValue, final Value rightValue) {
-        return new I32Add(leftValue, rightValue);
-    }
-
-    public static GetLocal getLocal(final Local local) {
-        return new GetLocal(local);
-    }
-
-    public static GetGlobal getGlobal(final Global global) {
-        return new GetGlobal(global);
     }
 
     private final Container parent;
+    public final I32 i32;
 
     Expressions(final Container parent) {
         this.parent = parent;
+        this.i32 = new I32();
     }
 
-    public void voidCall(final Function function, final Value... arguments) {
+    public void voidCall(final Function function, final List<Value> arguments) {
         final Call call = new Call(function, arguments);
         parent.addChild(call);
     }
@@ -67,7 +58,7 @@ public class Expressions {
         parent.addChild(branch);
     }
 
-    public void branchOutIf(final Block block, final Value condition) {
+    public void branchOutIff(final Block block, final Value condition) {
         final BranchIf branch = new BranchIf(block, condition);
         parent.addChild(branch);
     }
@@ -80,17 +71,6 @@ public class Expressions {
         parent.addChild(new Return());
     }
 
-    public I32IF i32if(final I32Condition condition) {
-        final I32IF elem = new I32IF(parent, condition);
-        parent.addChild(elem);
-        return elem;
-    }
-
-    public I32IF i32ifeq(final Value leftValue, final Value rightValue) {
-        final I32Condition condition = i32eq(leftValue, rightValue);
-        return i32if(condition);
-    }
-
     public void unreachable() {
         parent.addChild(new Unreachable());
     }
@@ -98,5 +78,10 @@ public class Expressions {
     public void setLocal(final Local local, final Value value) {
         final SetLocal setLocal = new SetLocal(local, value);
         parent.addChild(setLocal);
+    }
+
+    public void setGlobal(final Global global, final Value value) {
+        final SetGlobal setGlobal = new SetGlobal(global, value);
+        parent.addChild(setGlobal);
     }
 }

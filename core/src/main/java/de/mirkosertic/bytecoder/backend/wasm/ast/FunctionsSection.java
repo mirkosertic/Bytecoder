@@ -89,4 +89,13 @@ public class FunctionsSection implements ModuleSection {
     public void addFunctionsToIndex(final List<Function> functionIndex) {
         functionIndex.addAll(functions);
     }
+
+    public ExportableFunction firstByLabel(String label) {
+        for (ExportableFunction function : functions) {
+            if (label.equalsIgnoreCase(function.getLabel())) {
+                return function;
+            }
+        }
+        return null;
+    }
 }

@@ -17,26 +17,31 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class GetGlobal implements Expression {
+public class I32Mul implements Expression {
 
-    private final Global global;
+    private final Value left;
+    private final Value right;
 
-    GetGlobal(final Global global) {
-        this.global = global;
+    I32Mul(final Value left, final Value right) {
+        this.left = left;
+        this.right = right;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("get_global");
+        textWriter.write("i32.mul");
         textWriter.space();
-        textWriter.writeLabel(global.getLabel());
+        left.writeTo(textWriter, context);
+        textWriter.space();
+        right.writeTo(textWriter, context);
         textWriter.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.writeByte((byte) 0x23);
-        codeWriter.writeUnsignedLeb128(context.globalsIndex().indexOf(global));
+        left.writeTo(codeWriter, context);
+        right.writeTo(codeWriter, context);
+        codeWriter.writeByte((byte) 0x6c);
     }
 }

@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.c;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.i32Add;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -76,7 +76,7 @@ public class ModuleTest {
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
-        function.flow.ret(c(42));
+        function.flow.ret(i32.c(42));
         function.exportAs("expfunction");
 
         final Exporter exporter = new Exporter();
@@ -98,7 +98,7 @@ public class ModuleTest {
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
-        function.flow.ret(c(42));
+        function.flow.ret(i32.c(42));
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -373,7 +373,7 @@ public class ModuleTest {
         final Block block = function.flow.block("outer");
         function.flow.unreachable();
 
-        final I32IF ifExp = block.flow.i32ifeq(c(10), c(20));
+        final I32IF ifExp = block.flow.i32.iffeq(i32.c(10), i32.c(20));
         ifExp.flow.ret(getLocal(tempLocal));
 
         function.exportAs("expfunction");
@@ -413,7 +413,7 @@ public class ModuleTest {
         final Block block = function.flow.block("outer");
         function.flow.unreachable();
 
-        final I32IF ifExp = block.flow.i32ifeq(c(10), c(20));
+        final I32IF ifExp = block.flow.i32.iffeq(i32.c(10), i32.c(20));
         ifExp.flow.branchOutOf(block);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -512,7 +512,7 @@ public class ModuleTest {
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
-        block.flow.branchOutIf(block, c(42));
+        block.flow.branchOutIff(block, i32.c(42));
         function.flow.unreachable();
         function.exportAs("expfunction");
 
@@ -548,7 +548,7 @@ public class ModuleTest {
         final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
-        block.flow.branchOutIf(block, c(42));
+        block.flow.branchOutIff(block, i32.c(42));
         function.flow.unreachable();
         function.exportAs("expfunction");
 
@@ -626,8 +626,8 @@ public class ModuleTest {
 
         final Module module = new Module();
 
-        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, c(42));
-        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, c(21));
+        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42));
+        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21));
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -655,8 +655,8 @@ public class ModuleTest {
 
         final Module module = new Module();
 
-        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, c(42));
-        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, c(21));
+        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42));
+        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21));
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -693,8 +693,8 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
-        function.flow.setLocal(loc1, c(100));
-        function.flow.ret(i32Add(getLocal(loc1), c(200)));
+        function.flow.setLocal(loc1, i32.c(100));
+        function.flow.ret(i32.add(getLocal(loc1), i32.c(200)));
 
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
@@ -721,8 +721,8 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
-        function.flow.setLocal(loc1, c(100));
-        function.flow.ret(i32Add(getLocal(loc1), c(200)));
+        function.flow.setLocal(loc1, i32.c(100));
+        function.flow.ret(i32.add(getLocal(loc1), i32.c(200)));
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final Exporter exporter = new Exporter();
@@ -751,7 +751,7 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
-        function.flow.ret(call(function, getLocal(p1), getLocal(p2)));
+        function.flow.ret(call(function, Arrays.asList(getLocal(p1), getLocal(p2))));
 
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
@@ -777,7 +777,7 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
-        function.flow.ret(call(function, getLocal(p1), getLocal(p2)));
+        function.flow.ret(call(function, Arrays.asList(getLocal(p1), getLocal(p2))));
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final Exporter exporter = new Exporter();
@@ -790,4 +790,51 @@ public class ModuleTest {
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testCall.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
     }
+
+    @Test
+    public void testMemoryInit() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+
+        Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
+        ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
+        bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(), i32.c(65536)), i32.c(1)));
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func))" + System.lineSeparator()
+                + "    (global $STACKTOP (mut i32) (i32.const -1))" + System.lineSeparator()
+                + "    (func $bootstrap (type $t0)" + System.lineSeparator()
+                + "        (set_global $STACKTOP (i32.sub (i32.mul (current_memory) (i32.const 65536)) (i32.const 1)))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testMemoryInitBinary() throws IOException {
+
+        final Module module = new Module();
+
+        Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
+        ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
+        bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(), i32.c(65536)), i32.c(1)));
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryInit.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryInit.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
 }
