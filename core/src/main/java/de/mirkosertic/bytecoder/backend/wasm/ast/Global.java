@@ -21,21 +21,21 @@ import java.util.List;
 public class Global {
 
     private final ExportsSection exportsSection;
-    private final String name;
+    private final String label;
     private final PrimitiveType type;
     private final boolean mutable;
     private final Value initializer;
 
     Global(final ExportsSection exportsSection, final String name, final PrimitiveType type, final boolean mutable, final Value initializer) {
         this.exportsSection = exportsSection;
-        this.name = name;
+        this.label = name;
         this.type = type;
         this.mutable = mutable;
         this.initializer = initializer;
     }
 
-    public String getName() {
-        return name;
+    public String getLabel() {
+        return label;
     }
 
     public PrimitiveType getType() {
@@ -46,7 +46,7 @@ public class Global {
         textWriter.opening();
         textWriter.write("global");
         textWriter.space();
-        textWriter.writeLabel(name);
+        textWriter.writeLabel(label);
         textWriter.space();
         if (mutable) {
             textWriter.opening();

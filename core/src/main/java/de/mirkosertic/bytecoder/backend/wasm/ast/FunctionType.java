@@ -44,13 +44,8 @@ public class FunctionType {
     }
 
     public boolean matches(final List<PrimitiveType> otherParameter, final PrimitiveType otherResultType) {
-        if (null != parameter && null != resultType) {
-            return parameter.equals(otherParameter) == resultType.equals(otherResultType);
-        }
-        if (null == parameter) {
-            return null == otherParameter && Objects.equals(resultType, otherResultType);
-        }
-        return null == resultType && Objects.equals(parameter, otherParameter);
+        return Objects.equals(parameter, otherParameter)
+                && Objects.equals(resultType, otherResultType);
     }
 
     public void writeTo(final TextWriter writer) {
@@ -95,7 +90,7 @@ public class FunctionType {
 
     public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
         sectionWriter.writeByte(PrimitiveType.func.getBinaryType());
-        if (parameter != null) {
+        if (null != parameter) {
             sectionWriter.writeUnsignedLeb128(parameter.size());
             for (final PrimitiveType type : parameter) {
                 type.writeTo(sectionWriter);
@@ -103,7 +98,7 @@ public class FunctionType {
         } else {
             sectionWriter.writeUnsignedLeb128(0);
         }
-        if (resultType != null) {
+        if (null != resultType) {
             sectionWriter.writeUnsignedLeb128(1);
             resultType.writeTo(sectionWriter);
         } else {

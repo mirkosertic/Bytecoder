@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.c;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.Expressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,7 +37,7 @@ public class FunctionTest {
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
-        function.flow.ret(c(42));
+        function.flow.ret(i32.c(42));
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer);
         }
