@@ -15,12 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,9 +26,12 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 
 public class ModuleTest {
 
@@ -834,6 +834,74 @@ public class ModuleTest {
         //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryInit.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testSimpleF32() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+
+        Param p1 = param("p1", PrimitiveType.f32);
+        Param p2 = param("p2", PrimitiveType.f32);
+        ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(p1, p2), PrimitiveType.i32);
+        Block b1 = compareValueF32.flow.block("b1");
+        b1.flow.branchOutIff(b1, ConstExpressions.f32.ne(getLocal(p1), getLocal(p2)));
+        b1.flow.ret(i32.c(0));
+        Block b2 = compareValueF32.flow.block("b2");
+        b2.flow.branchOutIff(b2, ConstExpressions.f32.ge(getLocal(p1), getLocal(p2)));
+        b2.flow.ret(i32.c(-1));
+        compareValueF32.flow.ret(i32.c(1));
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator() +
+                "    (type $t0 (func (param f32) (param f32) (result i32)))" + System.lineSeparator() +
+                "    (func $compareValueF32 (type $t0) (param $p1 f32) (param $p2 f32) (result i32)" + System.lineSeparator() +
+                "        (block $b1" + System.lineSeparator() +
+                "            (br_if $b1 " + System.lineSeparator() +
+                "                (f32.ne (get_local $p1) (get_local $p2)))" + System.lineSeparator() +
+                "            (return (i32.const 0))" + System.lineSeparator() +
+                "            )" + System.lineSeparator() +
+                "        (block $b2" + System.lineSeparator() +
+                "            (br_if $b2 " + System.lineSeparator() +
+                "                (f32.ge (get_local $p1) (get_local $p2)))" + System.lineSeparator() +
+                "            (return (i32.const -1))" + System.lineSeparator() +
+                "            )" + System.lineSeparator() +
+                "        (return (i32.const 1)))" + System.lineSeparator() +
+                "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testSimpleF32Binary() throws IOException {
+
+        final Module module = new Module();
+
+        Param p1 = param("p1", PrimitiveType.f32);
+        Param p2 = param("p2", PrimitiveType.f32);
+        ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(p1, p2), PrimitiveType.i32);
+        Block b1 = compareValueF32.flow.block("b1");
+        b1.flow.branchOutIff(b1, ConstExpressions.f32.ne(getLocal(p1), getLocal(p2)));
+        b1.flow.ret(i32.c(0));
+        Block b2 = compareValueF32.flow.block("b2");
+        b2.flow.branchOutIff(b2, ConstExpressions.f32.ge(getLocal(p1), getLocal(p2)));
+        b2.flow.ret(i32.c(-1));
+        compareValueF32.flow.ret(i32.c(1));
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (final FileOutputStream fos = new FileOutputStream("D:\\source\\idea_projects\\Bytecoder\\core\\src\\test\\resources\\de\\mirkosertic\\bytecoder\\backend\\wasm\\ast\\testSimpleF32.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleF32.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 
