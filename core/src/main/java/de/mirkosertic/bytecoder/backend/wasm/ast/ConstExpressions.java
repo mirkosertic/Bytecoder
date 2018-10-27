@@ -32,8 +32,8 @@ public class ConstExpressions {
             return new I32Const(aValue);
         }
 
-        public static I32Condition eq(final Value leftValue, final Value rightValue) {
-            return I32Condition.eq(leftValue, rightValue);
+        public static I32EQ eq(final Value leftValue, final Value rightValue) {
+            return new I32EQ(leftValue, rightValue);
         }
 
         public static I32Add add(final Value leftValue, final Value rightValue) {

@@ -15,33 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-
-public class I32Sub implements Expression {
-
-    private final Value left;
-    private final Value right;
+public class I32Sub extends BinaryExpression {
 
     I32Sub(final Value left, final Value right) {
-        this.left = left;
-        this.right = right;
-    }
-
-    @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
-        textWriter.opening();
-        textWriter.write("i32.sub");
-        textWriter.space();
-        left.writeTo(textWriter, context);
-        textWriter.space();
-        right.writeTo(textWriter, context);
-        textWriter.closing();
-    }
-
-    @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        left.writeTo(codeWriter, context);
-        right.writeTo(codeWriter, context);
-        codeWriter.writeByte((byte) 0x6b);
+        super(left, right,"i32.sub", (byte) 0x6b);
     }
 }

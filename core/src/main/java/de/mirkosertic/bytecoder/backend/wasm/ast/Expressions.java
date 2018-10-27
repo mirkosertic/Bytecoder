@@ -19,32 +19,21 @@ import java.util.List;
 
 public class Expressions {
 
-    public class I32 {
-
-        public I32IF iff(final I32Condition condition) {
-            final I32IF elem = new I32IF(parent, condition);
-            parent.addChild(elem);
-            return elem;
-        }
-
-        public I32IF iffeq(final Value leftValue, final Value rightValue) {
-            final I32Condition condition = ConstExpressions.i32.eq(leftValue, rightValue);
-            return iff(condition);
-        }
-
-    }
-
     private final Container parent;
-    public final I32 i32;
 
     Expressions(final Container parent) {
         this.parent = parent;
-        this.i32 = new I32();
     }
 
     public void voidCall(final Function function, final List<Value> arguments) {
         final Call call = new Call(function, arguments);
         parent.addChild(call);
+    }
+
+    public Iff iff(final Value condition) {
+        final Iff elem = new Iff(parent, condition);
+        parent.addChild(elem);
+        return elem;
     }
 
     public Block block(final String label) {
@@ -59,7 +48,7 @@ public class Expressions {
     }
 
     public void branchOutIff(final Block block, final Value condition) {
-        final BranchIf branch = new BranchIf(block, condition);
+        final BranchIff branch = new BranchIff(block, condition);
         parent.addChild(branch);
     }
 

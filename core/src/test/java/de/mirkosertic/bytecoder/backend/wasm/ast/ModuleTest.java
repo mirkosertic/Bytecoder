@@ -133,7 +133,6 @@ public class ModuleTest {
 
     @Test
     public void testWithMemoryBinary() throws IOException {
-
         final Module module = new Module();
 
         final Memory memory = module.getMems().newMemory(10, 20);
@@ -211,9 +210,6 @@ public class ModuleTest {
 
     @Test
     public void testFunctionImportBinary() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
         final Module module = new Module();
         final Function function = module.getImports().importFunction(new ImportReference("mod","obj"),"label", PrimitiveType.i32);
 
@@ -262,9 +258,6 @@ public class ModuleTest {
 
     @Test
     public void testLocalAccessBinary() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -326,9 +319,6 @@ public class ModuleTest {
 
     @Test
     public void testBlockBinary() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -373,7 +363,7 @@ public class ModuleTest {
         final Block block = function.flow.block("outer");
         function.flow.unreachable();
 
-        final I32IF ifExp = block.flow.i32.iffeq(i32.c(10), i32.c(20));
+        final Iff ifExp = block.flow.iff(i32.eq(i32.c(10), i32.c(20)));
         ifExp.flow.ret(getLocal(tempLocal));
 
         function.exportAs("expfunction");
@@ -398,9 +388,6 @@ public class ModuleTest {
 
     @Test
     public void testIfBinary() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -413,7 +400,7 @@ public class ModuleTest {
         final Block block = function.flow.block("outer");
         function.flow.unreachable();
 
-        final I32IF ifExp = block.flow.i32.iffeq(i32.c(10), i32.c(20));
+        final Iff ifExp = block.flow.iff(i32.eq(i32.c(10), i32.c(20)));
         ifExp.flow.branchOutOf(block);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -467,9 +454,6 @@ public class ModuleTest {
 
     @Test
     public void testBlockBranchBinary() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -535,9 +519,6 @@ public class ModuleTest {
 
     @Test
     public void testBlockBranchIfBinary() throws IOException {
-        final StringWriter strWriter = new StringWriter();
-        final PrintWriter pw = new PrintWriter(strWriter);
-
         final Module module = new Module();
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
