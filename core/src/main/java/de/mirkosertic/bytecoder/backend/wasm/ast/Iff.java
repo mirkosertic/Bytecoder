@@ -17,35 +17,41 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class BranchIf implements Expression {
+public class Iff extends Container implements Expression {
 
-    private final Block outerBlock;
     private final Value condition;
 
-    BranchIf(final Block surroundingBlock, final Value condition) {
-        this.outerBlock = surroundingBlock;
+    Iff(final Container parent, final Value condition) {
+        super(parent);
         this.condition = condition;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("br_if");
-        textWriter.space();
-        textWriter.writeLabel(outerBlock.getLabel());
-        textWriter.space();
-
+        textWriter.write("if");
         textWriter.newLine();
         condition.writeTo(textWriter, context);
-
-        textWriter.closing();
+        if (hasChildren()) {
+            for (final Value child : getChildren()) {
+                textWriter.newLine();
+                child.writeTo(textWriter, context);
+            }
+            textWriter.closing();
+        } else {
+            textWriter.closing();
+        }
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         condition.writeTo(codeWriter, context);
-        final int relativeDepth = context.owningContainer().relativeDepthTo(outerBlock);
-        codeWriter.writeByte((byte) 0x0d);
-        codeWriter.writeUnsignedLeb128(relativeDepth);
+        codeWriter.writeByte((byte) 0x04);
+        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        for (final Expression e : getChildren()) {
+            e.writeTo(codeWriter, context.subWith(this));
+        }
+        codeWriter.writeByte((byte) 0x0b);
+
     }
 }

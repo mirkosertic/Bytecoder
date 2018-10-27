@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class I32Add extends BinaryExpression {
+public class I32EQ extends BinaryExpression {
 
-    I32Add(final Value left, final Value right) {
-        super(left, right, "i32.add", (byte) 0x6a);
+    I32EQ(Value leftValue, Value rightValue) {
+        super(leftValue, rightValue, "i32.eq", (byte) 0x46);
     }
 }

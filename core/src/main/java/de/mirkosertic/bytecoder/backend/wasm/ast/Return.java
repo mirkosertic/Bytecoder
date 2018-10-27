@@ -15,37 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+import java.util.Optional;
 
-public class Return implements Expression {
-
-    private final Value value;
+public class Return extends UnaryExpression {
 
     Return() {
-        this.value = null;
+        super(Optional.empty(), "return", (byte) 0x0f);
     }
 
     Return(final Value value) {
-        this.value = value;
-    }
-
-    @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
-        textWriter.opening();
-        textWriter.write("return");
-        if (value != null) {
-            textWriter.space();
-            value.writeTo(textWriter, context);
-        }
-        textWriter.closing();
-    }
-
-
-    @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        if (value != null) {
-            value.writeTo(codeWriter, context);
-        }
-        codeWriter.writeByte((byte) 0x0f);
+        super(Optional.of(value), "return", (byte) 0x0f);
     }
 }
