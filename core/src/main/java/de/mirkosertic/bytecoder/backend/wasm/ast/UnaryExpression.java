@@ -31,7 +31,7 @@ public abstract class UnaryExpression implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public final void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write(textCode);
         if (value.isPresent()) {
@@ -42,7 +42,7 @@ public abstract class UnaryExpression implements Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+    public final void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         if (value.isPresent()) {
             value.get().writeTo(codeWriter, context);
         }
