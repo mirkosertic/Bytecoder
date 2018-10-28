@@ -32,7 +32,7 @@ public abstract class BinaryExpression implements Expression {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public final void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write(textCode);
         textWriter.space();
@@ -43,7 +43,7 @@ public abstract class BinaryExpression implements Expression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+    public final void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         leftValue.writeTo(codeWriter, context);
         rightValue.writeTo(codeWriter, context);
         codeWriter.writeByte(binaryCode);

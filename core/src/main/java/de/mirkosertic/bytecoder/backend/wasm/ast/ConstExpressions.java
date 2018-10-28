@@ -51,12 +51,12 @@ public class ConstExpressions {
 
     public static class f32 {
 
-        public static F32Condition ne(final Value leftValue, final Value rightValue) {
-            return F32Condition.ne(leftValue, rightValue);
+        public static F32NE ne(final Value leftValue, final Value rightValue) {
+            return new F32NE(leftValue, rightValue);
         }
 
-        public static F32Condition ge(final Value leftValue, final Value rightValue) {
-            return F32Condition.ge(leftValue, rightValue);
+        public static F32GE ge(final Value leftValue, final Value rightValue) {
+            return new F32GE(leftValue, rightValue);
         }
     }
 
