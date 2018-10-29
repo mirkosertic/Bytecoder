@@ -335,25 +335,25 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             // TODO: Write class init check and class initializer logic here
         });
 
-        Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
+        final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
 
         // TODO: Write general functions and bootstrap code here
         {
-            ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
+            final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
             bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(), i32.c(65536)), i32.c(1)));
 
             bootstrap.exportAs("bootstrap");
 
             // Comparison of two f32
             {
-                Param p1 = param("p1", PrimitiveType.f32);
-                Param p2 = param("p2", PrimitiveType.f32);
-                ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(p1, p2), PrimitiveType.i32);
-                Block b1 = compareValueF32.flow.block("b1");
-                b1.flow.branchOutIff(b1, f32.ne(getLocal(p1), getLocal(p2)));
+                final Param p1 = param("p1", PrimitiveType.f32);
+                final Param p2 = param("p2", PrimitiveType.f32);
+                final ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(p1, p2), PrimitiveType.i32);
+                final Block b1 = compareValueF32.flow.block("b1");
+                b1.flow.branchIff(b1, f32.ne(getLocal(p1), getLocal(p2)));
                 b1.flow.ret(i32.c(0));
-                Block b2 = compareValueF32.flow.block("b2");
-                b2.flow.branchOutIff(b2, f32.ge(getLocal(p1), getLocal(p2)));
+                final Block b2 = compareValueF32.flow.block("b2");
+                b2.flow.branchIff(b2, f32.ge(getLocal(p1), getLocal(p2)));
                 b2.flow.ret(i32.c(-1));
                 compareValueF32.flow.ret(i32.c(1));
             }
@@ -361,7 +361,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         // Main function must be exported
         {
-            ExportableFunction mainFunction = module.getFunctions().firstByLabel(WASMWriterUtils
+            final ExportableFunction mainFunction = module.getFunctions().firstByLabel(WASMWriterUtils
                     .toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), aEntryPointMethodName,
                             aEntryPointSignatue));
             mainFunction.exportAs("main");

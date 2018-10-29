@@ -38,21 +38,21 @@ public class FunctionsSection implements ModuleSection {
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter, final PrimitiveType result) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
-        final ExportableFunction function = new ExportableFunction(globalsSection, tablesSection, exports, type, label, parameter, result);
+        final ExportableFunction function = new ExportableFunction(types, globalsSection, tablesSection, exports, type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter) {
         final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
-        final ExportableFunction function = new ExportableFunction(globalsSection, tablesSection, exports, type, label, parameter);
+        final ExportableFunction function = new ExportableFunction(types, globalsSection, tablesSection, exports, type, label, parameter);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final PrimitiveType result) {
         final FunctionType type = types.typeFor(result);
-        final ExportableFunction function = new ExportableFunction(globalsSection, tablesSection, exports, type, label, result);
+        final ExportableFunction function = new ExportableFunction(types, globalsSection, tablesSection, exports, type, label, result);
         functions.add(function);
         return function;
     }
@@ -90,8 +90,8 @@ public class FunctionsSection implements ModuleSection {
         functionIndex.addAll(functions);
     }
 
-    public ExportableFunction firstByLabel(String label) {
-        for (ExportableFunction function : functions) {
+    public ExportableFunction firstByLabel(final String label) {
+        for (final ExportableFunction function : functions) {
             if (label.equalsIgnoreCase(function.getLabel())) {
                 return function;
             }

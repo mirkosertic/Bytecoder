@@ -22,15 +22,15 @@ public class ElementSection implements ModuleSection {
 
     private final TablesSection tablesSection;
 
-    ElementSection(TablesSection tablesSection) {
+    ElementSection(final TablesSection tablesSection) {
         this.tablesSection = tablesSection;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter) {
         if (tablesSection.hasFuncTable()) {
-            TablesSection.AnyFuncTable any = tablesSection.funcTable();
-            List<Function> functions = any.functions();
+            final TablesSection.AnyFuncTable any = tablesSection.funcTable();
+            final List<Function> functions = any.functions();
             for (int i=0;i<functions.size();i++) {
                 textWriter.opening();
                 textWriter.write("elem");
@@ -54,8 +54,8 @@ public class ElementSection implements ModuleSection {
     public void writeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.elementsSection()) {
             if (tablesSection.hasFuncTable()) {
-                TablesSection.AnyFuncTable any = tablesSection.funcTable();
-                List<Function> functions = any.functions();
+                final TablesSection.AnyFuncTable any = tablesSection.funcTable();
+                final List<Function> functions = any.functions();
 
                 writer.writeUnsignedLeb128(functions.size());
                 for (int i=0;i<functions.size();i++) {

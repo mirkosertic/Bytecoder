@@ -15,15 +15,20 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.util.Optional;
-
-public class Return extends UnaryExpression {
+public class Return implements Expression {
 
     Return() {
-        super(Optional.empty(), "return", (byte) 0x0f);
     }
 
-    Return(final Value value) {
-        super(Optional.of(value), "return", (byte) 0x0f);
+    @Override
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
+        textWriter.opening();
+        textWriter.write("return");
+        textWriter.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
+        codeWriter.writeByte((byte) 0x0f);
     }
 }

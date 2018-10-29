@@ -67,6 +67,10 @@ public class TextWriter implements AutoCloseable {
         pw.print(label);
     }
 
+    public void writeFloat(final float value) {
+        pw.print(value);
+    }
+
     @Override
     public void close() {
         pw.close();

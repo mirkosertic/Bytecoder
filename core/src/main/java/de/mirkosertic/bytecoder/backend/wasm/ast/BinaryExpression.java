@@ -24,7 +24,7 @@ public abstract class BinaryExpression implements Expression {
     private final String textCode;
     private final byte binaryCode;
 
-    protected BinaryExpression(Value leftValue, Value rightValue, String textCode, byte binaryCode) {
+    protected BinaryExpression(final Value leftValue, final Value rightValue, final String textCode, final byte binaryCode) {
         this.leftValue = leftValue;
         this.rightValue = rightValue;
         this.textCode = textCode;

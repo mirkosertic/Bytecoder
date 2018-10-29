@@ -17,17 +17,10 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Block extends Container implements Expression {
-
-    private final String label;
+public class Block extends LabeledContainer implements Expression {
 
     Block(final String label, final Container parent) {
-        super(parent);
-        this.label = label;
-    }
-
-    public String getLabel() {
-        return label;
+        super(parent, label);
     }
 
     @Override
@@ -35,7 +28,7 @@ public class Block extends Container implements Expression {
         textWriter.opening();
         textWriter.write("block");
         textWriter.space();
-        textWriter.writeLabel(label);
+        textWriter.writeLabel(getLabel());
         if (hasChildren()) {
             textWriter.newLine();
             for (final Value child : getChildren()) {

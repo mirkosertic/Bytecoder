@@ -24,6 +24,8 @@ public interface Value {
 
         Container owningContainer();
 
+        List<FunctionType> typeIndex();
+
         List<Function> functionIndex();
 
         List<Global> globalsIndex();

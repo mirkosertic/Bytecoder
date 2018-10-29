@@ -79,4 +79,8 @@ public class TypesSection implements ModuleSection {
             }
         }
     }
+
+    public List<FunctionType> typesIndex() {
+        return types;
+    }
 }

@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Iff extends Container implements Expression {
+public class Iff extends LabeledContainer implements Expression {
 
     private final Value condition;
 
-    Iff(final Container parent, final Value condition) {
-        super(parent);
+    Iff(final Container parent, final String label, final Value condition) {
+        super(parent, label);
         this.condition = condition;
     }
 
@@ -30,6 +30,8 @@ public class Iff extends Container implements Expression {
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("if");
+        textWriter.space();
+        textWriter.writeLabel(getLabel());
         textWriter.newLine();
         condition.writeTo(textWriter, context);
         if (hasChildren()) {

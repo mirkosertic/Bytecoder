@@ -30,8 +30,8 @@ public class Expressions {
         parent.addChild(call);
     }
 
-    public Iff iff(final Value condition) {
-        final Iff elem = new Iff(parent, condition);
+    public Iff iff(final String label, final Value condition) {
+        final Iff elem = new Iff(parent, label, condition);
         parent.addChild(elem);
         return elem;
     }
@@ -42,22 +42,36 @@ public class Expressions {
         return block;
     }
 
-    public void branchOutOf(final Block surroundingBlock) {
+    public Loop loop(final String label) {
+        final Loop loop = new Loop(label, parent);
+        parent.addChild(loop);
+        return loop;
+    }
+
+    public void branch(final LabeledContainer surroundingBlock) {
         final Branch branch = new Branch(surroundingBlock);
         parent.addChild(branch);
     }
 
-    public void branchOutIff(final Block block, final Value condition) {
+    public void branchIff(final LabeledContainer block, final Value condition) {
         final BranchIff branch = new BranchIff(block, condition);
         parent.addChild(branch);
     }
 
     public void ret(final Value value) {
-        parent.addChild(new Return(value));
+        parent.addChild(new ReturnValue(value));
     }
 
     public void ret() {
         parent.addChild(new Return());
+    }
+
+    public void nop() {
+        parent.addChild(new Nop());
+    }
+
+    public void drop(final Value value) {
+        parent.addChild(new Drop(value));
     }
 
     public void unreachable() {
