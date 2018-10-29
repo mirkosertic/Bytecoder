@@ -1025,5 +1025,4 @@ public class ModuleTest {
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIntegerMathComplete.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
     }
-
 }
