@@ -19,9 +19,9 @@ import java.io.IOException;
 
 public class Branch implements Expression {
 
-    private final Block outerBlock;
+    private final LabeledContainer outerBlock;
 
-    Branch(final Block surroundingBlock) {
+    Branch(final LabeledContainer surroundingBlock) {
         this.outerBlock = surroundingBlock;
     }
 

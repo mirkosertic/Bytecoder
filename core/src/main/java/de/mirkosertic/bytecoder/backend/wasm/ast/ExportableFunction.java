@@ -54,33 +54,42 @@ public class ExportableFunction extends Function implements Exportable {
         public Value.ExportContext subWith(final Container container) {
             return new DefaultExportContext(container, functionIndex);
         }
+
+        @Override
+        public List<FunctionType> typeIndex() {
+            return typesSection.typesIndex();
+        }
     }
 
+    private final TypesSection typesSection;
     private final ExportsSection exportsSection;
     private final LocalIndex localIndex;
     private final GlobalsSection globalsSection;
 
-    ExportableFunction(final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
+    ExportableFunction(final TypesSection typesSection, final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params, final PrimitiveType result) {
         super(tablesSection, functionType, label, params, result);
+        this.typesSection = typesSection;
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex(params);
         this.globalsSection = globalsSection;
     }
 
-    ExportableFunction(final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
+    ExportableFunction(final TypesSection typesSection, final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label,
             final List<Param> params) {
         super(tablesSection, functionType, label, params);
+        this.typesSection = typesSection;
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex(params);
         this.globalsSection = globalsSection;
     }
 
-    ExportableFunction(final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
+    ExportableFunction(final TypesSection typesSection, final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
             final FunctionType functionType, final String label, final PrimitiveType result) {
         super(tablesSection, functionType, label, result);
+        this.typesSection = typesSection;
         this.exportsSection = exportsSection;
         this.localIndex = new LocalIndex();
         this.globalsSection = globalsSection;

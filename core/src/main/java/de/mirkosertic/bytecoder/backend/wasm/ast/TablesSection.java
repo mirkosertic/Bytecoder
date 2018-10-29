@@ -37,17 +37,17 @@ public class TablesSection implements ModuleSection {
             return functions;
         }
 
-        void addToTable(Function function) {
+        void addToTable(final Function function) {
             functions.add(function);
         }
 
-        public void writeTo(BinaryWriter.SectionWriter writer) throws IOException {
+        public void writeTo(final BinaryWriter.SectionWriter writer) throws IOException {
             PrimitiveType.anyfunc.writeTo(writer);
             writer.writeByte((byte) 0);
             writer.writeUnsignedLeb128(functions.size());
         }
 
-        public void writeTo(TextWriter textWriter) {
+        public void writeTo(final TextWriter textWriter) {
             textWriter.opening();
             textWriter.write("table");
             textWriter.space();

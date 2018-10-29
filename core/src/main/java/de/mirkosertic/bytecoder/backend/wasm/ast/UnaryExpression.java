@@ -16,15 +16,14 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.Optional;
 
 public abstract class UnaryExpression implements Expression {
 
-    private final Optional<Value> value;
+    private final Value value;
     private final String textCode;
     private final byte binaryCode;
 
-    protected UnaryExpression(Optional<Value> value, String textCode, byte binaryCode) {
+    protected UnaryExpression(final Value value, final String textCode, final byte binaryCode) {
         this.value = value;
         this.textCode = textCode;
         this.binaryCode = binaryCode;
@@ -34,18 +33,14 @@ public abstract class UnaryExpression implements Expression {
     public final void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write(textCode);
-        if (value.isPresent()) {
-            textWriter.space();
-            value.get().writeTo(textWriter, context);
-        }
+        textWriter.space();
+        value.writeTo(textWriter, context);
         textWriter.closing();
     }
 
     @Override
     public final void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        if (value.isPresent()) {
-            value.get().writeTo(codeWriter, context);
-        }
+        value.writeTo(codeWriter, context);
         codeWriter.writeByte(binaryCode);
     }
 }

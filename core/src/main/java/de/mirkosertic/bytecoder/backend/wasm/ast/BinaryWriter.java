@@ -81,6 +81,17 @@ public class BinaryWriter implements AutoCloseable {
             writeUnsignedLeb128(bytes.length);
             bos.write(bytes);
         }
+
+        public void writeFloat32(final float value) {
+            writeInteger32(Float.floatToRawIntBits(value));
+        }
+
+        public void writeInteger32(final int value) {
+            writeByte((byte) value);
+            writeByte((byte) (value >> 8));
+            writeByte((byte) (value >> 16));
+            writeByte((byte) (value >> 24));
+        }
     }
 
     public static class BlockWriter extends Writer {
@@ -99,7 +110,7 @@ public class BinaryWriter implements AutoCloseable {
         }
     }
 
-    public static class SectionWriter extends Writer implements AutoCloseable {
+    public static class SectionWriter extends Writer {
 
         private final byte sectionCode;
 

@@ -57,7 +57,7 @@ public class Function extends Container implements Importable {
         textWriter.space();
         textWriter.writeLabel(label);
         textWriter.space();
-        functionType.writeRefTo(textWriter);;
+        functionType.writeRefTo(textWriter);
         textWriter.closing();
     }
 

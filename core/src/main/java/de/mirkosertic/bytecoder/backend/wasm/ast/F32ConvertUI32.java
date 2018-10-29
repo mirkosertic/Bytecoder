@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class F32GE extends BinaryExpression {
+public class F32ConvertUI32 extends UnaryExpression {
 
-    F32GE(final Value leftValue, final Value rightValue) {
-        super(leftValue, rightValue, "f32.ge", (byte) 0x60);
+    F32ConvertUI32(final Value value) {
+        super(value, "f32.convert_u/i32", (byte) 0xb3);
     }
 }

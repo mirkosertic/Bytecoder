@@ -21,7 +21,7 @@ public enum PrimitiveType {
     i32("i32", (byte) 0x7f),
     f32("f32", (byte) 0x7d),
     i64("i64", (byte) 0x7e),
-    f64("f64", (byte) 0x76c),
+    f64("f64", (byte) 0x7c),
     anyfunc("anyfunc", (byte) 0x70),
     func("func", (byte) 0x60),
     empty_pseudo_block("pseudo", (byte) 0x40);

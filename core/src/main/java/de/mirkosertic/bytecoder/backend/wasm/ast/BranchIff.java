@@ -19,10 +19,10 @@ import java.io.IOException;
 
 public class BranchIff implements Expression {
 
-    private final Block outerBlock;
+    private final LabeledContainer outerBlock;
     private final Value condition;
 
-    BranchIff(final Block surroundingBlock, final Value condition) {
+    BranchIff(final LabeledContainer surroundingBlock, final Value condition) {
         this.outerBlock = surroundingBlock;
         this.condition = condition;
     }

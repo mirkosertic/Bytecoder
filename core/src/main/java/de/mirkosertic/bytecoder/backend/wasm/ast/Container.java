@@ -49,11 +49,11 @@ public abstract class Container {
         children.add(e);
     }
 
-    public int relativeDepthTo(final Block outerBlock) {
+    public int relativeDepthTo(final LabeledContainer outerBlock) {
         return relativeDepthTo(outerBlock, 0);
     }
 
-    public int relativeDepthTo(final Block outerBlock, final int offset) {
+    public int relativeDepthTo(final LabeledContainer outerBlock, final int offset) {
         if (this == outerBlock) {
             return offset;
         }

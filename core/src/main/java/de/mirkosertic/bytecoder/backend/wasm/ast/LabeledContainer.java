@@ -15,9 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class I32EQ extends BinaryExpression {
+public class LabeledContainer extends Container {
 
-    I32EQ(Value leftValue, Value rightValue) {
-        super(leftValue, rightValue, "i32.eq", (byte) 0x46);
+    private final String label;
+
+    public LabeledContainer(final Container parent, final String label) {
+        super(parent);
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return label;
     }
 }
