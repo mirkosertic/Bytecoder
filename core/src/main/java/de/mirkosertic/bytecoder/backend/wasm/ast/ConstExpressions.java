@@ -171,6 +171,10 @@ public class ConstExpressions {
             return new F32Const(aValue);
         }
 
+        public static F32Eq eq(final Value leftValue, final Value rightValue) {
+            return new F32Eq(leftValue, rightValue);
+        }
+
         public static F32Ne ne(final Value leftValue, final Value rightValue) {
             return new F32Ne(leftValue, rightValue);
         }
