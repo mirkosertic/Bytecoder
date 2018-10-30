@@ -96,4 +96,8 @@ public class Module {
     public GlobalsSection getGlobals() {
         return globals;
     }
+
+    public TablesSection getTables() {
+        return tables;
+    }
 }

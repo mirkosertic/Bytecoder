@@ -57,6 +57,10 @@ public class TablesSection implements ModuleSection {
             textWriter.closing();
             textWriter.newLine();
         }
+
+        public int indexOf(final Function function) {
+            return functions.indexOf(function);
+        }
     }
 
     private AnyFuncTable funcTable;

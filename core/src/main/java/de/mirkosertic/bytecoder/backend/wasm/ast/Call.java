@@ -39,6 +39,9 @@ public class Call implements Expression {
             argument.writeTo(textWriter, context);
         }
         textWriter.closing();
+        if (function.getResultType() == null) {
+            textWriter.newLine();
+        }
     }
 
     @Override

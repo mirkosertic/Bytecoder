@@ -77,7 +77,8 @@ public class Function extends Container implements Importable {
         return resultType;
     }
 
-    public void toTable() {
+    public Function toTable() {
         tablesSection.funcTable().addToTable(this);
+        return this;
     }
 }
