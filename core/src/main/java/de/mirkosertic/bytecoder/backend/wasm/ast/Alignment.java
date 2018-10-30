@@ -15,29 +15,25 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public class Alignment {
 
-public class Drop implements Expression {
+    public static final Alignment ONE = new Alignment(1);
 
-    private final Value value;
+    public static final Alignment TWO = new Alignment(2);
 
-    Drop(final Value value) {
+    public static final Alignment FOUR = new Alignment(4);
+
+    public final int value;
+
+    Alignment(final int value) {
         this.value = value;
     }
 
-    @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
-        textWriter.opening();
-        textWriter.write("drop");
-        textWriter.space();
-        value.writeTo(textWriter, context);
-        textWriter.closing();
-        textWriter.newLine();
+    public int value() {
+        return value;
     }
 
-    @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        value.writeTo(codeWriter, context);
-        codeWriter.writeByte((byte) 0x1a);
+    public int log2Value() {
+        return (int) (Math.log(value) / Math.log(2));
     }
 }

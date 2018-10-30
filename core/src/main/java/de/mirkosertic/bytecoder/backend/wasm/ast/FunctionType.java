@@ -48,6 +48,10 @@ public class FunctionType {
                 && Objects.equals(resultType, otherResultType);
     }
 
+    public boolean isVoid() {
+        return resultType == null;
+    }
+
     public void writeTo(final TextWriter writer) {
         writer.opening();
         writer.write("type");

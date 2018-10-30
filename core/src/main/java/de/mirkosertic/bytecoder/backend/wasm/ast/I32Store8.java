@@ -17,18 +17,34 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Drop implements Expression {
+public class I32Store8 implements Expression {
 
+    private final Alignment alignment;
+    private final int offset;
+    private final Value ptr;
     private final Value value;
 
-    Drop(final Value value) {
+    I32Store8(final int offset, final Value ptr, final Value value) {
+        this(Alignment.ONE, offset, ptr, value);
+    }
+
+    I32Store8(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+        this.alignment = alignment;
+        this.offset = offset;
+        this.ptr = ptr;
         this.value = value;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("drop");
+        textWriter.write("i32.store8");
+        textWriter.space();
+        textWriter.writeAttribute("offset", offset);
+        textWriter.space();
+        textWriter.writeAttribute("align", alignment.value());
+        textWriter.space();
+        ptr.writeTo(textWriter, context);
         textWriter.space();
         value.writeTo(textWriter, context);
         textWriter.closing();
@@ -37,7 +53,10 @@ public class Drop implements Expression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        ptr.writeTo(codeWriter, context);
         value.writeTo(codeWriter, context);
-        codeWriter.writeByte((byte) 0x1a);
+        codeWriter.writeByte((byte) 0x3a);
+        codeWriter.writeUnsignedLeb128(alignment.log2Value());
+        codeWriter.writeUnsignedLeb128(offset);
     }
 }

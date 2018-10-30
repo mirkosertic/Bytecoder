@@ -22,8 +22,11 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlob
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -310,8 +313,7 @@ public class ModuleTest {
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
                 + "        (block $outer" + System.lineSeparator()
-                + "            (return (get_local $loc))" + System.lineSeparator()
-                + "            )" + System.lineSeparator()
+                + "            (return (get_local $loc)))" + System.lineSeparator()
                 + "        (unreachable))" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
@@ -379,8 +381,7 @@ public class ModuleTest {
                 + "        (block $outer" + System.lineSeparator()
                 + "            (if $label" + System.lineSeparator()
                 + "                (i32.eq (i32.const 10) (i32.const 20))" + System.lineSeparator()
-                + "                (return (get_local $loc)))" + System.lineSeparator()
-                + "            )" + System.lineSeparator()
+                + "                (return (get_local $loc))))" + System.lineSeparator()
                 + "        (unreachable))" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
@@ -445,8 +446,7 @@ public class ModuleTest {
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
                 + "        (block $outer" + System.lineSeparator()
-                + "            (br $outer)" + System.lineSeparator()
-                + "            )" + System.lineSeparator()
+                + "            (br $outer))" + System.lineSeparator()
                 + "        (unreachable))" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
@@ -510,8 +510,7 @@ public class ModuleTest {
                 + "        (local $loc i32)" + System.lineSeparator()
                 + "        (block $outer" + System.lineSeparator()
                 + "            (br_if $outer " + System.lineSeparator()
-                + "                (i32.const 42))" + System.lineSeparator()
-                + "            )" + System.lineSeparator()
+                + "                (i32.const 42)))" + System.lineSeparator()
                 + "        (unreachable))" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
@@ -841,21 +840,17 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator() +
-                "    (type $t0 (func (param f32) (param f32) (result i32)))" + System.lineSeparator() +
-                "    (func $compareValueF32 (type $t0) (param $p1 f32) (param $p2 f32) (result i32)" + System.lineSeparator() +
-                "        (block $b1" + System.lineSeparator() +
-                "            (br_if $b1 " + System.lineSeparator() +
-                "                (f32.ne (get_local $p1) (get_local $p2)))" + System.lineSeparator() +
-                "            (return (i32.const 0))" + System.lineSeparator() +
-                "            )" + System.lineSeparator() +
-                "        (block $b2" + System.lineSeparator() +
-                "            (br_if $b2 " + System.lineSeparator() +
-                "                (f32.ge (get_local $p1) (get_local $p2)))" + System.lineSeparator() +
-                "            (return (i32.const -1))" + System.lineSeparator() +
-                "            )" + System.lineSeparator() +
-                "        (return (i32.const 1)))" + System.lineSeparator() +
-                "    )";
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func (param f32) (param f32) (result i32)))" + System.lineSeparator()
+                + "    (func $compareValueF32 (type $t0) (param $p1 f32) (param $p2 f32) (result i32)" + System.lineSeparator()
+                + "        (block $b1" + System.lineSeparator()
+                + "            (br_if $b1 " + System.lineSeparator()
+                + "                (f32.ne (get_local $p1) (get_local $p2)))(return (i32.const 0)))" + System.lineSeparator()
+                + "        (block $b2" + System.lineSeparator()
+                + "            (br_if $b2 " + System.lineSeparator()
+                + "                (f32.ge (get_local $p1) (get_local $p2)))(return (i32.const -1)))" + System.lineSeparator()
+                + "        (return (i32.const 1)))" + System.lineSeparator()
+                + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
 
@@ -896,7 +891,7 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        Local local = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local local = testFunction.localByLabel("loc1", PrimitiveType.i32);
         testFunction.flow.setLocal(local, i32.add(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.and(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.clz(i32.c(10)));
@@ -980,7 +975,7 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        Local local = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local local = testFunction.localByLabel("loc1", PrimitiveType.i32);
         testFunction.flow.setLocal(local, i32.add(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.and(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.clz(i32.c(10)));
@@ -1023,6 +1018,301 @@ public class ModuleTest {
         //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIntegerMathComplete.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testFloatMathComplete() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
+        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.add(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.convert_sI32(i32.c(10)));
+        testFunction.flow.setLocal(localf32, f32.convert_uI32(i32.c(10)));
+        testFunction.flow.setLocal(localf32, f32.copysign(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.div(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.eq(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.floor(f32.c(-10.4f)));
+        testFunction.flow.setLocal(locali32, f32.gt(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.le(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.lt(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.max(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.min(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.mul(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.ne(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.nearest(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.neg(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.sqrt(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.sub(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.trunc(f32.c(-10.4f)));
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func))" + System.lineSeparator()
+                + "    (func $testFunction (type $t0)" + System.lineSeparator()
+                + "        (local $loc1 i32)" + System.lineSeparator()
+                + "        (local $loc2 f32)" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.abs (f32.const -10.4)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.add (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.ceil (f32.const -10.4)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.convert_s/i32 (i32.const 10)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.convert_u/i32 (i32.const 10)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.copysign (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.div (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc1 (f32.eq (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.floor (f32.const -10.4)))" + System.lineSeparator()
+                + "        (set_local $loc1 (f32.gt (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc1 (f32.le (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc1 (f32.lt (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.max (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.min (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.mul (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc1 (f32.ne (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.nearest (f32.const -10.4)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.neg (f32.const -10.4)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.sqrt (f32.const -10.4)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.sub (f32.const 10.0) (f32.const 20.0)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.trunc (f32.const -10.4)))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testFloatMathCompleteBinary() throws IOException {
+
+        final Module module = new Module();
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
+        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.add(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.convert_sI32(i32.c(10)));
+        testFunction.flow.setLocal(localf32, f32.convert_uI32(i32.c(10)));
+        testFunction.flow.setLocal(localf32, f32.copysign(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.div(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.eq(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.floor(f32.c(-10.4f)));
+        testFunction.flow.setLocal(locali32, f32.gt(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.le(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.lt(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.max(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.min(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.mul(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(locali32, f32.ne(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.nearest(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.neg(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.sqrt(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.sub(f32.c(10f), f32.c(20f)));
+        testFunction.flow.setLocal(localf32, f32.trunc(f32.c(-10.4f)));
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        // try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFloatMathComplete.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testFloatMathComplete.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testTeeNopDropSelect() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
+        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Loop loop = testFunction.flow.loop("lp1");
+        loop.flow.nop();
+        final Block block = loop.flow.block("bl1");
+        block.flow.nop();
+        block.flow.setLocal(locali32, select(i32.c(10), i32.c(20), i32.eq(i32.c(30), i32.c(40))));
+        block.flow.drop(teeLocal(locali32, i32.c(100)));
+        block.flow.voidCallIndirect(testFunction.getFunctionType(), Collections.emptyList(), i32.c(0));
+        block.flow.branch(block);
+        loop.flow.branch(loop);
+
+        testFunction.toTable();
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func))" + System.lineSeparator()
+                + "    (table 1 anyfunc)" + System.lineSeparator()
+                + "    (elem (i32.const 0) $testFunction)" + System.lineSeparator()
+                + "    (func $testFunction (type $t0)" + System.lineSeparator()
+                + "        (local $loc1 i32)" + System.lineSeparator()
+                + "        (loop $lp1" + System.lineSeparator()
+                + "            (nop)" + System.lineSeparator()
+                + "            (block $bl1" + System.lineSeparator()
+                + "                (nop)" + System.lineSeparator()
+                + "                (set_local $loc1 (select (i32.const 10) (i32.const 20) (i32.eq (i32.const 30) (i32.const 40))))" + System.lineSeparator()
+                + "                (drop (tee_local $loc1 (i32.const 100)))" + System.lineSeparator()
+                + "                (call_indirect (type $t0) (i32.const 0))" + System.lineSeparator()
+                + "                (br $bl1))" + System.lineSeparator()
+                + "            (br $lp1))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testTeeNopDropSelectBinary() throws IOException {
+
+        final Module module = new Module();
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
+        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Loop loop = testFunction.flow.loop("lp1");
+        loop.flow.nop();
+        final Block block = loop.flow.block("bl1");
+        block.flow.nop();
+        block.flow.setLocal(locali32, select(i32.c(10), i32.c(20), i32.eq(i32.c(30), i32.c(40))));
+        block.flow.drop(teeLocal(locali32, i32.c(100)));
+        block.flow.voidCallIndirect(testFunction.getFunctionType(), Collections.emptyList(), i32.c(0));
+        block.flow.branch(block);
+        loop.flow.branch(loop);
+
+        testFunction.toTable();
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTeeNopDropSelect.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testTeeNopDropSelect.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testMemoryAccess() throws IOException {
+
+        final StringWriter strWriter = new StringWriter();
+        final PrintWriter pw = new PrintWriter(strWriter);
+
+        final Module module = new Module();
+        module.getMems().newMemory(512, 512);
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
+        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_s(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_u(Alignment.ONE, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_u(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_s(Alignment.TWO, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_s(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_u(Alignment.TWO, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_u(24, i32.c(500)));
+        testFunction.flow.setLocal(localf32, f32.load(Alignment.FOUR, 24, i32.c(500)));
+        testFunction.flow.setLocal(localf32, f32.load(24, i32.c(500)));
+        testFunction.flow.i32.store(Alignment.FOUR, 24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store(24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store8(Alignment.ONE, 24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store8(24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store16(Alignment.TWO, 24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store16(24, i32.c(500), i32.c(100));
+        testFunction.flow.f32.store(Alignment.FOUR, 24, i32.c(500), f32.c(100f));
+        testFunction.flow.f32.store(24, i32.c(500), f32.c(100f));
+
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, pw);
+
+        final String expected = "(module " + System.lineSeparator()
+                + "    (type $t0 (func))" + System.lineSeparator()
+                + "    (memory $mem0 512 512)" + System.lineSeparator()
+                + "    (func $testFunction (type $t0)" + System.lineSeparator()
+                + "        (local $loc1 i32)" + System.lineSeparator()
+                + "        (local $loc2 f32)" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load offset=24 align=4 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load offset=24 align=4 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load8_s offset=24 align=1 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load8_s offset=24 align=1 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load8_u offset=24 align=1 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load8_u offset=24 align=1 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load16_s offset=24 align=2 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load16_s offset=24 align=2 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load16_u offset=24 align=2 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc1 (i32.load16_u offset=24 align=2 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.load offset=24 align=4 (i32.const 500)))" + System.lineSeparator()
+                + "        (set_local $loc2 (f32.load offset=24 align=4 (i32.const 500)))" + System.lineSeparator()
+                + "        (i32.store offset=24 align=4 (i32.const 500) (i32.const 100))" + System.lineSeparator()
+                + "        (i32.store offset=24 align=4 (i32.const 500) (i32.const 100))" + System.lineSeparator()
+                + "        (i32.store8 offset=24 align=1 (i32.const 500) (i32.const 100))" + System.lineSeparator()
+                + "        (i32.store8 offset=24 align=1 (i32.const 500) (i32.const 100))" + System.lineSeparator()
+                + "        (i32.store16 offset=24 align=2 (i32.const 500) (i32.const 100))" + System.lineSeparator()
+                + "        (i32.store16 offset=24 align=2 (i32.const 500) (i32.const 100))" + System.lineSeparator()
+                + "        (f32.store offset=24 align=4 (i32.const 500) (f32.const 100.0))" + System.lineSeparator()
+                + "        (f32.store offset=24 align=4 (i32.const 500) (f32.const 100.0))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
+                + "    )";
+        Assert.assertEquals(expected, strWriter.toString());
+    }
+
+    @Test
+    public void testMemoryAccessBinary() throws IOException {
+
+        final Module module = new Module();
+        module.getMems().newMemory(512, 512);
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
+        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_s(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_u(Alignment.ONE, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load8_u(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_s(Alignment.TWO, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_s(24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_u(Alignment.TWO, 24, i32.c(500)));
+        testFunction.flow.setLocal(locali32, i32.load16_u(24, i32.c(500)));
+        testFunction.flow.setLocal(localf32, f32.load(Alignment.FOUR, 24, i32.c(500)));
+        testFunction.flow.setLocal(localf32, f32.load(24, i32.c(500)));
+        testFunction.flow.i32.store(Alignment.FOUR, 24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store(24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store8(Alignment.ONE, 24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store8(24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store16(Alignment.TWO, 24, i32.c(500), i32.c(100));
+        testFunction.flow.i32.store16(24, i32.c(500), i32.c(100));
+        testFunction.flow.f32.store(Alignment.FOUR, 24, i32.c(500), f32.c(100f));
+        testFunction.flow.f32.store(24, i32.c(500), f32.c(100f));
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
+            exporter.export(module, fos);
+        }
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
     }
 }
