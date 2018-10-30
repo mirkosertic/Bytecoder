@@ -33,12 +33,12 @@ public class BranchIff implements Expression {
         textWriter.write("br_if");
         textWriter.space();
         textWriter.writeLabel(outerBlock.getLabel());
-        textWriter.space();
 
         textWriter.newLine();
         condition.writeTo(textWriter, context);
 
         textWriter.closing();
+        textWriter.newLine();
     }
 
     @Override

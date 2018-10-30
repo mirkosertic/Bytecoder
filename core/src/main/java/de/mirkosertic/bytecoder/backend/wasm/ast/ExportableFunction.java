@@ -99,6 +99,14 @@ public class ExportableFunction extends Function implements Exportable {
         exportsSection.export(this, functionName);
     }
 
+    public Local localByLabel(final String label) {
+        final Local local = localIndex.localByLabel(label);
+        if (local != null) {
+            return local;
+        }
+        throw new IllegalArgumentException("No such local : " + label);
+    }
+
     public Local localByLabel(final String label, final PrimitiveType type) {
         Local local = localIndex.localByLabel(label);
         if (null == local) {
@@ -175,5 +183,10 @@ public class ExportableFunction extends Function implements Exportable {
 
     public List<Global> globalsIndex() {
         return globalsSection.globalsIndex();
+    }
+
+    @Override
+    public ExportableFunction toTable() {
+        return (ExportableFunction) super.toTable();
     }
 }
