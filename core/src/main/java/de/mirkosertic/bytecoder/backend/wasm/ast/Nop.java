@@ -25,6 +25,7 @@ public class Nop implements Expression {
         textWriter.opening();
         textWriter.write("nop");
         textWriter.closing();
+        textWriter.newLine();
     }
 
     @Override

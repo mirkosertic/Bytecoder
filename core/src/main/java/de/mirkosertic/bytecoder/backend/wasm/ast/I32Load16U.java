@@ -17,37 +17,40 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Loop extends LabeledContainer implements Expression {
+public class I32Load16U implements Expression {
 
-    Loop(final String label, final Container parent) {
-        super(parent, label);
+    private final Alignment alignment;
+    private final int offset;
+    private final Value ptr;
+
+    I32Load16U(final int offset, final Value ptr) {
+        this(Alignment.TWO, offset, ptr);
+    }
+
+    I32Load16U(final Alignment alignment, final int offset, final Value ptr) {
+        this.alignment = alignment;
+        this.offset = offset;
+        this.ptr = ptr;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("loop");
+        textWriter.write("i32.load16_u");
         textWriter.space();
-        textWriter.writeLabel(getLabel());
-        if (hasChildren()) {
-            textWriter.newLine();
-            for (final Value child : getChildren()) {
-                child.writeTo(textWriter, context);
-            }
-            textWriter.closing();
-        } else {
-            textWriter.closing();
-        }
-        textWriter.newLine();
+        textWriter.writeAttribute("offset", offset);
+        textWriter.space();
+        textWriter.writeAttribute("align", alignment.value());
+        textWriter.space();
+        ptr.writeTo(textWriter, context);
+        textWriter.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.writeByte((byte) 0x03);
-        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
-        for (final Expression e : getChildren()) {
-            e.writeTo(codeWriter, context.subWith(this));
-        }
-        codeWriter.writeByte((byte) 0x0b);
+        ptr.writeTo(codeWriter, context);
+        codeWriter.writeByte((byte) 0x2f);
+        codeWriter.writeUnsignedLeb128(alignment.log2Value());
+        codeWriter.writeUnsignedLeb128(offset);
     }
 }

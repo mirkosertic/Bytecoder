@@ -19,14 +19,67 @@ import java.util.List;
 
 public class Expressions {
 
+    public class I32 {
+        void store(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+            final I32Store store = new I32Store(alignment, offset, ptr, value);
+            parent.addChild(store);
+        }
+
+        void store(final int offset, final Value ptr, final Value value) {
+            final I32Store store = new I32Store(offset, ptr, value);
+            parent.addChild(store);
+        }
+
+        void store8(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+            final I32Store8 store = new I32Store8(alignment, offset, ptr, value);
+            parent.addChild(store);
+        }
+
+        void store8(final int offset, final Value ptr, final Value value) {
+            final I32Store8 store = new I32Store8(offset, ptr, value);
+            parent.addChild(store);
+        }
+
+        void store16(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+            final I32Store16 store = new I32Store16(alignment, offset, ptr, value);
+            parent.addChild(store);
+        }
+
+        void store16(final int offset, final Value ptr, final Value value) {
+            final I32Store16 store = new I32Store16(offset, ptr, value);
+            parent.addChild(store);
+        }
+    }
+
+    public class F32 {
+        void store(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+            final F32Store store = new F32Store(alignment, offset, ptr, value);
+            parent.addChild(store);
+        }
+
+        void store(final int offset, final Value ptr, final Value value) {
+            final F32Store store = new F32Store(offset, ptr, value);
+            parent.addChild(store);
+        }
+    }
+
     private final Container parent;
+    public final I32 i32;
+    public final F32 f32;
 
     Expressions(final Container parent) {
         this.parent = parent;
+        this.i32 = new I32();
+        this.f32 = new F32();
     }
 
     public void voidCall(final Function function, final List<Value> arguments) {
         final Call call = new Call(function, arguments);
+        parent.addChild(call);
+    }
+
+    public void voidCallIndirect(final FunctionType functionType, final List<Value> arguments, final Value tableIndex) {
+        final CallIndirect call = new CallIndirect(functionType, arguments, tableIndex);
         parent.addChild(call);
     }
 

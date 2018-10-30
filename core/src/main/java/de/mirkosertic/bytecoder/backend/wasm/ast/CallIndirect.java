@@ -43,6 +43,9 @@ public class CallIndirect implements Expression {
         textWriter.space();
         functionIndex.writeTo(textWriter, context);
         textWriter.closing();
+        if (functionType.isVoid()) {
+            textWriter.newLine();
+        }
     }
 
     @Override

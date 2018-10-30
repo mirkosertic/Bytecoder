@@ -33,7 +33,6 @@ public class Block extends LabeledContainer implements Expression {
             textWriter.newLine();
             for (final Value child : getChildren()) {
                 child.writeTo(textWriter, context);
-                textWriter.newLine();
             }
             textWriter.closing();
         } else {

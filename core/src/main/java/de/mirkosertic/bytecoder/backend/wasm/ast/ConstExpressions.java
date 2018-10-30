@@ -163,6 +163,47 @@ public class ConstExpressions {
         public static I32TruncUF32 trunc_uF32(final Value value) {
             return new I32TruncUF32(value);
         }
+
+        public static I32Load load(final Alignment alignment, final int offset, final Value ptr) {
+            return new I32Load(alignment, offset, ptr);
+        }
+
+        public static I32Load load(final int offset, final Value ptr) {
+            return new I32Load(offset, ptr);
+        }
+
+        public static I32Load8S load8_s(final Alignment alignment, final int offset, final Value ptr) {
+            return new I32Load8S(alignment, offset, ptr);
+        }
+
+        public static I32Load8S load8_s(final int offset, final Value ptr) {
+            return new I32Load8S(offset, ptr);
+        }
+
+        public static I32Load16S load16_s(final Alignment alignment, final int offset, final Value ptr) {
+            return new I32Load16S(alignment, offset, ptr);
+        }
+
+        public static I32Load16S load16_s(final int offset, final Value ptr) {
+            return new I32Load16S(offset, ptr);
+        }
+
+        public static I32Load8U load8_u(final Alignment alignment, final int offset, final Value ptr) {
+            return new I32Load8U(alignment, offset, ptr);
+        }
+
+        public static I32Load8U load8_u(final int offset, final Value ptr) {
+            return new I32Load8U(offset, ptr);
+        }
+
+        public static I32Load16U load16_u(final Alignment alignment, final int offset, final Value ptr) {
+            return new I32Load16U(alignment, offset, ptr);
+        }
+
+        public static I32Load16U load16_u(final int offset, final Value ptr) {
+            return new I32Load16U(offset, ptr);
+        }
+
     }
 
     public static class f32 {
@@ -257,6 +298,14 @@ public class ConstExpressions {
 
         public static F32ConvertUI32 convert_uI32(final Value value) {
             return new F32ConvertUI32(value);
+        }
+
+        public static F32Load load(final Alignment alignment, final int offset, final Value ptr) {
+            return new F32Load(alignment, offset, ptr);
+        }
+
+        public static F32Load load(final int offset, final Value ptr) {
+            return new F32Load(offset, ptr);
         }
     }
 
