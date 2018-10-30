@@ -15,6 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
@@ -24,18 +35,6 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-
-import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class ModuleTest {
 
@@ -1311,9 +1310,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
-            exporter.export(module, fos);
-        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
+        //    exporter.export(module, fos);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
