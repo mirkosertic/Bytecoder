@@ -23,9 +23,9 @@ public class ExportableFunction extends Function implements Exportable {
     private class DefaultExportContext implements Value.ExportContext {
 
         private final Container owningContainer;
-        private final List<Function> functionIndex;
+        private final FunctionIndex functionIndex;
 
-        public DefaultExportContext(final Container owningContainer, final List<Function> functionIndex) {
+        DefaultExportContext(final Container owningContainer, final FunctionIndex functionIndex) {
             this.owningContainer = owningContainer;
             this.functionIndex = functionIndex;
         }
@@ -36,12 +36,12 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public List<Function> functionIndex() {
+        public FunctionIndex functionIndex() {
             return functionIndex;
         }
 
         @Override
-        public List<Global> globalsIndex() {
+        public GlobalsIndex globalsIndex() {
             return globalsSection.globalsIndex();
         }
 
@@ -56,7 +56,7 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public List<FunctionType> typeIndex() {
+        public FunctionTypeIndex typeIndex() {
             return typesSection.typesIndex();
         }
     }
@@ -107,12 +107,12 @@ public class ExportableFunction extends Function implements Exportable {
         throw new IllegalArgumentException("No such local : " + label);
     }
 
-    public Local localByLabel(final String label, final PrimitiveType type) {
-        Local local = localIndex.localByLabel(label);
-        if (null == local) {
-            local = new Local(label, type);
-            localIndex.add(local);
+    public Local newLocal(final String label, final PrimitiveType type) {
+        if (localIndex.localByLabel(label) != null) {
+            throw new IllegalStateException("Local " + label + " already defined!");
         }
+        final Local local = new Local(label, type);
+        localIndex.add(local);
         return local;
     }
 
@@ -159,7 +159,7 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.closing();
     }
 
-    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter, final List<Function> functionIndex) throws IOException {
+    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter, final FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.BlockWriter codeWriter = sectionWriter.blockWriter()) {
 
             // Local data
@@ -179,10 +179,6 @@ public class ExportableFunction extends Function implements Exportable {
             // Finish with an end Instruction
             codeWriter.writeByte((byte) 0x0b);
         }
-    }
-
-    public List<Global> globalsIndex() {
-        return globalsSection.globalsIndex();
     }
 
     @Override
