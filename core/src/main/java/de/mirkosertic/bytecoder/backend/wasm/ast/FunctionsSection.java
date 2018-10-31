@@ -65,37 +65,29 @@ public class FunctionsSection implements ModuleSection {
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, final FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.functionSection()) {
-            final List<Object> exportableFunction = functionIndex.stream().filter(t -> t instanceof ExportableFunction).collect(Collectors.toList());
+            final List<ExportableFunction> exportableFunction = functionIndex.exportableFunctions();
             sectionWriter.writeUnsignedLeb128(exportableFunction.size());
-            for (final Object function : exportableFunction) {
-                sectionWriter.writeUnsignedLeb128(((ExportableFunction) function).getFunctionType().index());
+            for (final ExportableFunction function : exportableFunction) {
+                sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
             }
         }
     }
 
-    public void writeCodeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
+    public void writeCodeTo(final BinaryWriter binaryWriter, final FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.codeSection()) {
-            final List<Function> functions = functionIndex.stream().filter(t -> t instanceof ExportableFunction).collect(Collectors.toList());
+            final List<ExportableFunction> functions = functionIndex.exportableFunctions();
             sectionWriter.writeUnsignedLeb128(functions.size());
-            for (final Function function : functions) {
-                final ExportableFunction ef = (ExportableFunction) function;
-                ef.writeCodeTo(sectionWriter, functionIndex);
+            for (final ExportableFunction function : functions) {
+                function.writeCodeTo(sectionWriter, functionIndex);
             }
         }
     }
 
-    public void addFunctionsToIndex(final List<Function> functionIndex) {
-        functionIndex.addAll(functions);
-    }
-
-    public ExportableFunction firstByLabel(final String label) {
-        for (final ExportableFunction function : functions) {
-            if (label.equalsIgnoreCase(function.getLabel())) {
-                return function;
-            }
+    public void addFunctionsToIndex(final FunctionIndex functionIndex) {
+        for (final Function f : functions) {
+            functionIndex.add(f);
         }
-        return null;
     }
 }

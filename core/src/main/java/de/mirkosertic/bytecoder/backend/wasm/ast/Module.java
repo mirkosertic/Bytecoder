@@ -60,11 +60,20 @@ public class Module {
         writer.closing();
     }
 
-    public void writeTo(final BinaryWriter writer) throws IOException {
+    public GlobalsIndex globalsIndex() {
+        return globals.globalsIndex();
+    }
 
-        final List<Function> functionIndex = new ArrayList<>();
+    public FunctionIndex functionIndex() {
+        final FunctionIndex functionIndex = new FunctionIndex();
         imports.addFunctionsToIndex(functionIndex);
         functions.addFunctionsToIndex(functionIndex);
+        return functionIndex;
+    }
+
+    public void writeTo(final BinaryWriter writer) throws IOException {
+
+        final FunctionIndex functionIndex = functionIndex();
 
         final List<Memory> memoryIndex = new ArrayList<>();
         mems.addMemoriesToIndex(memoryIndex);

@@ -51,7 +51,7 @@ public class ElementSection implements ModuleSection {
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter, final List<Function> functionIndex) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, final FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.elementsSection()) {
             if (tablesSection.hasFuncTable()) {
                 final TablesSection.AnyFuncTable any = tablesSection.funcTable();

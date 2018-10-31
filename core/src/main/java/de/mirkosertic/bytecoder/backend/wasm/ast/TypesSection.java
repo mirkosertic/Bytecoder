@@ -80,7 +80,11 @@ public class TypesSection implements ModuleSection {
         }
     }
 
-    public List<FunctionType> typesIndex() {
-        return types;
+    public FunctionTypeIndex typesIndex() {
+        final FunctionTypeIndex result = new FunctionTypeIndex();
+        for (final FunctionType t : types) {
+            result.add(t);
+        }
+        return result;
     }
 }

@@ -15,26 +15,22 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface Value {
+public class FunctionTypeIndex {
 
-    interface ExportContext {
+    private final List<FunctionType> types;
 
-        Container owningContainer();
-
-        FunctionTypeIndex typeIndex();
-
-        FunctionIndex functionIndex();
-
-        GlobalsIndex globalsIndex();
-
-        LocalIndex localIndex();
-
-        ExportContext subWith(Container container);
+    FunctionTypeIndex() {
+        types = new ArrayList<>();
     }
 
-    void writeTo(TextWriter textWriter, ExportContext context) throws IOException;
+    public void add(final FunctionType type) {
+        types.add(type);
+    }
 
-    void writeTo(BinaryWriter.Writer codeWriter, ExportContext context) throws IOException;
+    public int indexOf(final FunctionType functionType) {
+        return types.indexOf(functionType);
+    }
 }

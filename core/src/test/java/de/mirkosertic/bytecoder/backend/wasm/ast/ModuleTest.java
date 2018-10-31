@@ -15,17 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
@@ -35,6 +24,17 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ModuleTest {
 
@@ -241,7 +241,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         function.flow.ret(getLocal(tempLocal));
         function.exportAs("expfunction");
@@ -268,7 +268,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
         function.flow.ret(getLocal(tempLocal));
         function.exportAs("expfunction");
 
@@ -297,7 +297,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         block.flow.ret(getLocal(tempLocal));
@@ -328,7 +328,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         block.flow.ret(getLocal(tempLocal));
@@ -360,7 +360,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         function.flow.unreachable();
@@ -396,7 +396,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         function.flow.unreachable();
@@ -430,7 +430,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         block.flow.branch(block);
@@ -461,7 +461,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         block.flow.branch(block);
@@ -493,7 +493,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         block.flow.branchIff(block, i32.c(42));
@@ -526,7 +526,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local tempLocal = function.localByLabel("loc", PrimitiveType.i32);
+        final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
         final Block block = function.flow.block("outer");
         block.flow.branchIff(block, i32.c(42));
@@ -673,7 +673,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
+        final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
         function.flow.setLocal(loc1, i32.c(100));
         function.flow.ret(i32.add(getLocal(loc1), i32.c(200)));
 
@@ -701,7 +701,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
+        final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
         function.flow.setLocal(loc1, i32.c(100));
         function.flow.ret(i32.add(getLocal(loc1), i32.c(200)));
 
@@ -731,7 +731,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
+        final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
         function.flow.ret(call(function, Arrays.asList(getLocal(p1), getLocal(p2))));
 
         final Exporter exporter = new Exporter();
@@ -757,7 +757,7 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        final Local loc1 = function.localByLabel("local1", PrimitiveType.i32);
+        final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
         function.flow.ret(call(function, Arrays.asList(getLocal(p1), getLocal(p2))));
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -893,7 +893,7 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local local = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local local = testFunction.newLocal("loc1", PrimitiveType.i32);
         testFunction.flow.setLocal(local, i32.add(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.and(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.clz(i32.c(10)));
@@ -977,7 +977,7 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local local = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local local = testFunction.newLocal("loc1", PrimitiveType.i32);
         testFunction.flow.setLocal(local, i32.add(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.and(i32.c(10), i32.c(20)));
         testFunction.flow.setLocal(local, i32.clz(i32.c(10)));
@@ -1032,8 +1032,8 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
-        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
         testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f)));
         testFunction.flow.setLocal(localf32, f32.add(f32.c(10f), f32.c(20f)));
         testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f)));
@@ -1096,8 +1096,8 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
-        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
         testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f)));
         testFunction.flow.setLocal(localf32, f32.add(f32.c(10f), f32.c(20f)));
         testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f)));
@@ -1141,7 +1141,7 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
         final Loop loop = testFunction.flow.loop("lp1");
         loop.flow.nop();
         final Block block = loop.flow.block("bl1");
@@ -1183,7 +1183,7 @@ public class ModuleTest {
         final Module module = new Module();
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
+        final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
         final Loop loop = testFunction.flow.loop("lp1");
         loop.flow.nop();
         final Block block = loop.flow.block("bl1");
@@ -1218,8 +1218,8 @@ public class ModuleTest {
         module.getMems().newMemory(512, 512);
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
-        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
         testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500)));
         testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500)));
         testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500)));
@@ -1283,8 +1283,8 @@ public class ModuleTest {
         module.getMems().newMemory(512, 512);
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
-        final Local locali32 = testFunction.localByLabel("loc1", PrimitiveType.i32);
-        final Local localf32 = testFunction.localByLabel("loc2", PrimitiveType.f32);
+        final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
+        final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
         testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500)));
         testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500)));
         testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500)));

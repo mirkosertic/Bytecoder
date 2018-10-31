@@ -57,7 +57,11 @@ public class GlobalsSection implements ModuleSection {
         }
     }
 
-    public List<Global> globalsIndex() {
-        return globals;
+    public GlobalsIndex globalsIndex() {
+        final GlobalsIndex index = new GlobalsIndex();
+        for (final Global g : globals) {
+            index.add(g);
+        }
+        return index;
     }
 }

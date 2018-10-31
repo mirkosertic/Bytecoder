@@ -27,16 +27,16 @@ public class ImportsSection implements ModuleSection {
         private final ImportReference reference;
         private final Importable importable;
 
-        public ImportEntry(final ImportReference reference, final Importable importable) {
+        ImportEntry(final ImportReference reference, final Importable importable) {
             this.reference = reference;
             this.importable = importable;
         }
 
-        public ImportReference getReference() {
+        ImportReference getReference() {
             return reference;
         }
 
-        public Importable getImportable() {
+        Importable getImportable() {
             return importable;
         }
     }
@@ -91,7 +91,7 @@ public class ImportsSection implements ModuleSection {
         }
     }
 
-    public void addFunctionsToIndex(final List<Function> functionIndex) {
+    public void addFunctionsToIndex(final FunctionIndex functionIndex) {
         for (final ImportEntry value : imports) {
             if (value.getImportable() instanceof Function) {
                 functionIndex.add((Function) value.getImportable());
@@ -100,7 +100,7 @@ public class ImportsSection implements ModuleSection {
     }
 
     public void writeTo(final BinaryWriter binaryWriter,
-            final List<Function> functionIndex,
+            final FunctionIndex functionIndex,
             final List<Memory> memoryIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.importsSection()) {
             sectionWriter.writeUnsignedLeb128(imports.size());
@@ -113,7 +113,7 @@ public class ImportsSection implements ModuleSection {
 
                 if (value instanceof Function) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
-                    sectionWriter.writeUnsignedLeb128(functionIndex.indexOf(value));
+                    sectionWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
                     sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
