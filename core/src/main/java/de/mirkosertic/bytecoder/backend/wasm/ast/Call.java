@@ -18,12 +18,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class Call implements Expression {
+public class Call implements WASMExpression {
 
     private final Function function;
-    private final List<Value> arguments;
+    private final List<WASMValue> arguments;
 
-    Call(final Function function, final List<Value> arguments) {
+    Call(final Function function, final List<WASMValue> arguments) {
         this.function = function;
         this.arguments = arguments;
     }
@@ -34,7 +34,7 @@ public class Call implements Expression {
         textWriter.write("call");
         textWriter.space();
         textWriter.writeLabel(function.getLabel());
-        for (final Value argument : arguments) {
+        for (final WASMValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);
         }
@@ -46,7 +46,7 @@ public class Call implements Expression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        for (final Value argument : arguments) {
+        for (final WASMValue argument : arguments) {
             argument.writeTo(codeWriter, context);
         }
         codeWriter.writeByte((byte) 0x10);

@@ -17,18 +17,18 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class I32Store16 implements Expression {
+public class I32Store16 implements WASMExpression {
 
     private final Alignment alignment;
     private final int offset;
-    private final Value ptr;
-    private final Value value;
+    private final WASMValue ptr;
+    private final WASMValue value;
 
-    I32Store16(final int offset, final Value ptr, final Value value) {
+    I32Store16(final int offset, final WASMValue ptr, final WASMValue value) {
         this(Alignment.TWO, offset, ptr, value);
     }
 
-    I32Store16(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+    I32Store16(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
         this.alignment = alignment;
         this.offset = offset;
         this.ptr = ptr;

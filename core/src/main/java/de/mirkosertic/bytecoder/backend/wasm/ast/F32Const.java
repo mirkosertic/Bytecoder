@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class F32Const implements Value {
+public class F32Const implements WASMValue {
 
     private final float value;
 

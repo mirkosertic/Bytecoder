@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class BranchIff implements Expression {
+public class BranchIff implements WASMExpression {
 
     private final LabeledContainer outerBlock;
-    private final Value condition;
+    private final WASMValue condition;
 
-    BranchIff(final LabeledContainer surroundingBlock, final Value condition) {
+    BranchIff(final LabeledContainer surroundingBlock, final WASMValue condition) {
         this.outerBlock = surroundingBlock;
         this.condition = condition;
     }

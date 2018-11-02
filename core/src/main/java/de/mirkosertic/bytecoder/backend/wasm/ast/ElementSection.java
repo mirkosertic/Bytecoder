@@ -18,18 +18,15 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class ElementSection implements ModuleSection {
+public class ElementSection extends ModuleSection {
 
-    private final TablesSection tablesSection;
-
-    ElementSection(final TablesSection tablesSection) {
-        this.tablesSection = tablesSection;
+    ElementSection(final Module aModule) {
+        super(aModule);
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
-        if (tablesSection.hasFuncTable()) {
-            final TablesSection.AnyFuncTable any = tablesSection.funcTable();
+        if (getModule().getTables().hasFuncTable()) {
+            final TablesSection.AnyFuncTable any = getModule().getTables().funcTable();
             final List<Function> functions = any.functions();
             for (int i=0;i<functions.size();i++) {
                 textWriter.opening();
@@ -53,8 +50,8 @@ public class ElementSection implements ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter, final FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.elementsSection()) {
-            if (tablesSection.hasFuncTable()) {
-                final TablesSection.AnyFuncTable any = tablesSection.funcTable();
+            if (getModule().getTables().hasFuncTable()) {
+                final TablesSection.AnyFuncTable any = getModule().getTables().funcTable();
                 final List<Function> functions = any.functions();
 
                 writer.writeUnsignedLeb128(functions.size());

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32CopySign extends BinaryExpression {
 
-    F32CopySign(final Value left, final Value right) {
+    F32CopySign(final WASMValue left, final WASMValue right) {
         super(left, right, "f32.copysign", (byte) 0x98);
     }
 }

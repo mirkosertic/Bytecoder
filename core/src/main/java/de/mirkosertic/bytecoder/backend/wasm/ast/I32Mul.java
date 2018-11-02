@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Mul extends BinaryExpression {
 
-    I32Mul(final Value left, final Value right) {
+    I32Mul(final WASMValue left, final WASMValue right) {
         super(left, right, "i32.mul", (byte) 0x6c);
     }
 }

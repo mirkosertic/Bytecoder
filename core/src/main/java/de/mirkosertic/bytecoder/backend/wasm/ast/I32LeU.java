@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32LeU extends BinaryExpression {
 
-    I32LeU(final Value leftValue, final Value rightValue) {
+    I32LeU(final WASMValue leftValue, final WASMValue rightValue) {
         super(leftValue, rightValue, "i32.le_u", (byte) 0x4d);
     }
 }

@@ -20,47 +20,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FunctionsSection implements ModuleSection {
+public class FunctionsSection extends ModuleSection {
 
-    private final ExportsSection exports;
-    private final TypesSection types;
     private final List<ExportableFunction> functions;
-    private final TablesSection tablesSection;
-    private final GlobalsSection globalsSection;
 
-    FunctionsSection(final TypesSection types, final ExportsSection exports, final TablesSection tablesSection, final GlobalsSection globalsSection) {
-        this.types = types;
-        this.exports = exports;
+    FunctionsSection(final Module aModule) {
+        super(aModule);
         this.functions = new ArrayList<>();
-        this.tablesSection = tablesSection;
-        this.globalsSection = globalsSection;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter, final PrimitiveType result) {
-        final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
-        final ExportableFunction function = new ExportableFunction(types, globalsSection, tablesSection, exports, type, label, parameter, result);
+        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+        final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter) {
-        final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
-        final ExportableFunction function = new ExportableFunction(types, globalsSection, tablesSection, exports, type, label, parameter);
+        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+        final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final PrimitiveType result) {
-        final FunctionType type = types.typeFor(result);
-        final ExportableFunction function = new ExportableFunction(types, globalsSection, tablesSection, exports, type, label, result);
+        final FunctionType type = getModule().getTypes().typeFor(result);
+        final ExportableFunction function = new ExportableFunction(getModule(), type, label, result);
         functions.add(function);
         return function;
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) throws IOException {
         for (final Function function : functions) {
-            function.writeTo(textWriter);
+            function.writeTo(textWriter, getModule());
             textWriter.newLine();
         }
     }

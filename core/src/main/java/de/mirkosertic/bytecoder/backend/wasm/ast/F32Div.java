@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Div extends BinaryExpression {
 
-    F32Div(final Value left, final Value right) {
+    F32Div(final WASMValue left, final WASMValue right) {
         super(left, right, "f32.div", (byte) 0x95);
     }
 }

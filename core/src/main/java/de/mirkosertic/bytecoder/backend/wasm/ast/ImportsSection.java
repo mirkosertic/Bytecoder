@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ImportsSection implements ModuleSection {
+public class ImportsSection extends ModuleSection {
 
     private static class ImportEntry {
 
@@ -41,38 +41,34 @@ public class ImportsSection implements ModuleSection {
         }
     }
 
-    private final TypesSection types;
     private final List<ImportEntry> imports;
-    private final TablesSection tablesSection;
 
-    ImportsSection(final TypesSection types, final TablesSection tablesSection) {
-        this.types = types;
+    ImportsSection(final Module aModule) {
+        super(aModule);
         this.imports = new ArrayList<>();
-        this.tablesSection = tablesSection;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
-        final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
-        final Function function = new Function(tablesSection, type, label, parameter, result);
+        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+        final Function function = new Function(getModule(), type, label, parameter, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
-        final FunctionType type = types.typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
-        final Function function = new Function(tablesSection, type, label, parameter);
+        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+        final Function function = new Function(getModule(), type, label, parameter);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
-        final FunctionType type = types.typeFor(result);
-        final Function function = new Function(tablesSection, type, label, result);
+        final FunctionType type = getModule().getTypes().typeFor(result);
+        final Function function = new Function(getModule(), type, label, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) throws IOException {
         for (final ImportEntry entry : imports) {
 
@@ -85,7 +81,7 @@ public class ImportsSection implements ModuleSection {
             textWriter.space();
             textWriter.writeText(ref.getObjectName());
             textWriter.space();
-            entry.getImportable().writeTo(textWriter);
+            entry.getImportable().writeTo(textWriter, getModule());
             textWriter.closing();
             textWriter.newLine();
         }

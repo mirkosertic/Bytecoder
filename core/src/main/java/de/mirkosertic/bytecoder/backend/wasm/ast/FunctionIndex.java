@@ -45,6 +45,15 @@ public class FunctionIndex {
                 return (T) function;
             }
         }
-        return null;
+        throw new IllegalArgumentException("No such method : " + label);
+    }
+
+    public boolean hasFunction(final String label) {
+        for (final Function function : functions) {
+            if (label.equalsIgnoreCase(function.getLabel())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

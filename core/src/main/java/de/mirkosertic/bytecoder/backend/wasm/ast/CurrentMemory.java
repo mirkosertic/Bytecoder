@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class CurrentMemory implements Value {
+public class CurrentMemory implements WASMValue {
 
     CurrentMemory() {
     }

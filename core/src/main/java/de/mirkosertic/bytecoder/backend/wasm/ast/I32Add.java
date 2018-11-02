@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Add extends BinaryExpression {
 
-    I32Add(final Value left, final Value right) {
+    I32Add(final WASMValue left, final WASMValue right) {
         super(left, right, "i32.add", (byte) 0x6a);
     }
 }

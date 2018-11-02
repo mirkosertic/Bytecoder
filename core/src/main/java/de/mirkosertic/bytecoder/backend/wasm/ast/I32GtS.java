@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32GtS extends BinaryExpression {
 
-    I32GtS(final Value leftValue, final Value rightValue) {
+    I32GtS(final WASMValue leftValue, final WASMValue rightValue) {
         super(leftValue, rightValue, "i32.gt_s", (byte) 0x4a);
     }
 }

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Ceil extends UnaryExpression {
 
-    F32Ceil(final Value value) {
+    F32Ceil(final WASMValue value) {
         super(value, "f32.ceil", (byte) 0x8d);
     }
 }

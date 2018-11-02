@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class Return implements Expression {
+public class Return implements WASMExpression {
 
     Return() {
     }

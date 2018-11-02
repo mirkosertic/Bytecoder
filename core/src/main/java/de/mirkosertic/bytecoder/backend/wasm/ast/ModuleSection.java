@@ -15,9 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
+public abstract class ModuleSection {
 
-public interface ModuleSection {
+    private final Module module;
 
-    void writeTo(final TextWriter textWriter) throws IOException;
+    public ModuleSection(final Module module) {
+        this.module = module;
+    }
+
+    public Module getModule() {
+        return module;
+    }
 }

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Le extends BinaryExpression {
 
-    F32Le(final Value leftValue, final Value rightValue) {
+    F32Le(final WASMValue leftValue, final WASMValue rightValue) {
         super(leftValue, rightValue, "f32.le", (byte) 0x5f);
     }
 }

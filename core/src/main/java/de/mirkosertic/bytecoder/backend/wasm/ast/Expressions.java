@@ -20,44 +20,44 @@ import java.util.List;
 public class Expressions {
 
     public class I32 {
-        public void store(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+        public void store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
             final I32Store store = new I32Store(alignment, offset, ptr, value);
             parent.addChild(store);
         }
 
-        public void store(final int offset, final Value ptr, final Value value) {
+        public void store(final int offset, final WASMValue ptr, final WASMValue value) {
             final I32Store store = new I32Store(offset, ptr, value);
             parent.addChild(store);
         }
 
-        public void store8(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+        public void store8(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
             final I32Store8 store = new I32Store8(alignment, offset, ptr, value);
             parent.addChild(store);
         }
 
-        public void store8(final int offset, final Value ptr, final Value value) {
+        public void store8(final int offset, final WASMValue ptr, final WASMValue value) {
             final I32Store8 store = new I32Store8(offset, ptr, value);
             parent.addChild(store);
         }
 
-        public void store16(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+        public void store16(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
             final I32Store16 store = new I32Store16(alignment, offset, ptr, value);
             parent.addChild(store);
         }
 
-        public void store16(final int offset, final Value ptr, final Value value) {
+        public void store16(final int offset, final WASMValue ptr, final WASMValue value) {
             final I32Store16 store = new I32Store16(offset, ptr, value);
             parent.addChild(store);
         }
     }
 
     public class F32 {
-        public void store(final Alignment alignment, final int offset, final Value ptr, final Value value) {
+        public void store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
             final F32Store store = new F32Store(alignment, offset, ptr, value);
             parent.addChild(store);
         }
 
-        public void store(final int offset, final Value ptr, final Value value) {
+        public void store(final int offset, final WASMValue ptr, final WASMValue value) {
             final F32Store store = new F32Store(offset, ptr, value);
             parent.addChild(store);
         }
@@ -73,17 +73,17 @@ public class Expressions {
         this.f32 = new F32();
     }
 
-    public void voidCall(final Function function, final List<Value> arguments) {
+    public void voidCall(final Function function, final List<WASMValue> arguments) {
         final Call call = new Call(function, arguments);
         parent.addChild(call);
     }
 
-    public void voidCallIndirect(final FunctionType functionType, final List<Value> arguments, final Value tableIndex) {
+    public void voidCallIndirect(final FunctionType functionType, final List<WASMValue> arguments, final WASMValue tableIndex) {
         final CallIndirect call = new CallIndirect(functionType, arguments, tableIndex);
         parent.addChild(call);
     }
 
-    public Iff iff(final String label, final Value condition) {
+    public Iff iff(final String label, final WASMValue condition) {
         final Iff elem = new Iff(parent, label, condition);
         parent.addChild(elem);
         return elem;
@@ -106,12 +106,12 @@ public class Expressions {
         parent.addChild(branch);
     }
 
-    public void branchIff(final LabeledContainer block, final Value condition) {
+    public void branchIff(final LabeledContainer block, final WASMValue condition) {
         final BranchIff branch = new BranchIff(block, condition);
         parent.addChild(branch);
     }
 
-    public void ret(final Value value) {
+    public void ret(final WASMValue value) {
         parent.addChild(new ReturnValue(value));
     }
 
@@ -123,7 +123,7 @@ public class Expressions {
         parent.addChild(new Nop());
     }
 
-    public void drop(final Value value) {
+    public void drop(final WASMValue value) {
         parent.addChild(new Drop(value));
     }
 
@@ -131,12 +131,12 @@ public class Expressions {
         parent.addChild(new Unreachable());
     }
 
-    public void setLocal(final Local local, final Value value) {
+    public void setLocal(final Local local, final WASMValue value) {
         final SetLocal setLocal = new SetLocal(local, value);
         parent.addChild(setLocal);
     }
 
-    public void setGlobal(final Global global, final Value value) {
+    public void setGlobal(final Global global, final WASMValue value) {
         final SetGlobal setGlobal = new SetGlobal(global, value);
         parent.addChild(setGlobal);
     }

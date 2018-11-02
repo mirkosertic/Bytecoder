@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32GeU extends BinaryExpression {
 
-    I32GeU(final Value leftValue, final Value rightValue) {
+    I32GeU(final WASMValue leftValue, final WASMValue rightValue) {
         super(leftValue, rightValue, "i32.ge_u", (byte) 0x4f);
     }
 }

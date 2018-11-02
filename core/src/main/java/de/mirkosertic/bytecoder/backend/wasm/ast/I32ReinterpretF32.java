@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32ReinterpretF32 extends UnaryExpression {
 
-    I32ReinterpretF32(final Value value) {
+    I32ReinterpretF32(final WASMValue value) {
         super(value, "i32.reinterpret/f32", (byte) 0xbc);
     }
 }

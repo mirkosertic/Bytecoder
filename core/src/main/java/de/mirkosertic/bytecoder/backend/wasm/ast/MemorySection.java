@@ -19,13 +19,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MemorySection implements ModuleSection {
+public class MemorySection extends ModuleSection {
 
-    private final ExportsSection exports;
     private final List<Memory> memories;
 
-    MemorySection(final ExportsSection exportsContent) {
-        this.exports = exportsContent;
+    MemorySection(final Module aModule) {
+        super(aModule);
         this.memories = new ArrayList<>();
     }
 
@@ -40,10 +39,9 @@ public class MemorySection implements ModuleSection {
     }
 
     void export(final Memory memory, final String objectName) {
-        exports.export(memory, objectName);
+        getModule().getExports().export(memory, objectName);
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
         for (final Memory memory : memories) {
             memory.writeTo(textWriter);

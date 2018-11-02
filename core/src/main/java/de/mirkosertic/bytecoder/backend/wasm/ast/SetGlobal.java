@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class SetGlobal implements Expression {
+public class SetGlobal implements WASMExpression {
 
     private final Global global;
-    private final Value value;
+    private final WASMValue value;
 
-    SetGlobal(final Global global, final Value value) {
+    SetGlobal(final Global global, final WASMValue value) {
         this.global = global;
         this.value = value;
     }

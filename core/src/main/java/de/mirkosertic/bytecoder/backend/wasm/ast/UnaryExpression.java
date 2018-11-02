@@ -17,13 +17,13 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public abstract class UnaryExpression implements Expression {
+public abstract class UnaryExpression implements WASMExpression {
 
-    private final Value value;
+    private final WASMValue value;
     private final String textCode;
     private final byte binaryCode;
 
-    protected UnaryExpression(final Value value, final String textCode, final byte binaryCode) {
+    protected UnaryExpression(final WASMValue value, final String textCode, final byte binaryCode) {
         this.value = value;
         this.textCode = textCode;
         this.binaryCode = binaryCode;

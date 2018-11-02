@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Abs extends UnaryExpression {
 
-    F32Abs(final Value value) {
+    F32Abs(final WASMValue value) {
         super(value, "f32.abs", (byte) 0x8b);
     }
 }

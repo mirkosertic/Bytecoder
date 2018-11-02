@@ -17,36 +17,28 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Select implements WASMExpression {
+public class WeakFunctionTableReference implements WASMValue {
 
-    private final WASMValue leftValue;
-    private final WASMValue rightValue;
-    private final WASMValue condition;
+    private final String functionName;
 
-    Select(final WASMValue leftValue, final WASMValue rightValue, final WASMValue condition) {
-        this.leftValue = leftValue;
-        this.rightValue = rightValue;
-        this.condition = condition;
+    WeakFunctionTableReference(final String functionName) {
+        this.functionName = functionName;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+        final Function f = context.functionIndex().firstByLabel(functionName);
         textWriter.opening();
-        textWriter.write("select");
+        textWriter.write("i32.const");
         textWriter.space();
-        leftValue.writeTo(textWriter, context);
-        textWriter.space();
-        rightValue.writeTo(textWriter, context);
-        textWriter.space();
-        condition.writeTo(textWriter, context);
+        textWriter.writeInteger(context.anyFuncTable().indexOf(f));
         textWriter.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        leftValue.writeTo(codeWriter, context);
-        rightValue.writeTo(codeWriter, context);
-        condition.writeTo(codeWriter, context);
-        codeWriter.writeByte((byte) 0x1b);
+        final Function f = context.functionIndex().firstByLabel(functionName);
+        final I32Const c = new I32Const(context.anyFuncTable().indexOf(f));
+        c.writeTo(codeWriter, context);
     }
 }

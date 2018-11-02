@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Max extends BinaryExpression {
 
-    F32Max(final Value left, final Value right) {
+    F32Max(final WASMValue left, final WASMValue right) {
         super(left, right, "f32.max", (byte) 0x97);
     }
 }

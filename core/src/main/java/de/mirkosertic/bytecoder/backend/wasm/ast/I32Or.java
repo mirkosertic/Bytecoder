@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Or extends BinaryExpression {
 
-    I32Or(final Value left, final Value right) {
+    I32Or(final WASMValue left, final WASMValue right) {
         super(left, right,"i32.or", (byte) 0x72);
     }
 }

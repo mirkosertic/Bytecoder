@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class GetLocal implements Expression {
+public class GetLocal implements WASMExpression {
 
     private final Local local;
 

@@ -19,29 +19,27 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GlobalsSection implements ModuleSection {
+public class GlobalsSection extends ModuleSection {
 
     private final List<Global> globals;
-    private final ExportsSection exports;
 
-    GlobalsSection(final ExportsSection exportsSection) {
+    GlobalsSection(final Module aModule) {
+        super(aModule);
         this.globals = new ArrayList<>();
-        this.exports = exportsSection;
     }
 
-    public Global newMutableGlobal(final String name, final PrimitiveType type, final Value initializer) {
-        final Global global = new Global(exports, name, type, true, initializer);
+    public Global newMutableGlobal(final String name, final PrimitiveType type, final WASMValue initializer) {
+        final Global global = new Global(getModule().getExports(), name, type, true, initializer);
         globals.add(global);
         return global;
     }
 
-    public Global newConstantGlobal(final String name, final PrimitiveType type, final Value initializer) {
-        final Global global = new Global(exports, name, type, false, initializer);
+    public Global newConstantGlobal(final String name, final PrimitiveType type, final WASMValue initializer) {
+        final Global global = new Global(getModule().getExports(), name, type, false, initializer);
         globals.add(global);
         return global;
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) throws IOException {
         for (final Global global : globals) {
             global.writeTo(textWriter);

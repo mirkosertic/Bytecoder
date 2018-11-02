@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Clz extends UnaryExpression {
 
-    I32Clz(final Value value) {
+    I32Clz(final WASMValue value) {
         super(value, "i32.clz", (byte) 0x67);
     }
 }

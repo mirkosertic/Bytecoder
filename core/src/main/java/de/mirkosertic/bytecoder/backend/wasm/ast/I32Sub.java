@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Sub extends BinaryExpression {
 
-    I32Sub(final Value left, final Value right) {
+    I32Sub(final WASMValue left, final WASMValue right) {
         super(left, right,"i32.sub", (byte) 0x6b);
     }
 }
