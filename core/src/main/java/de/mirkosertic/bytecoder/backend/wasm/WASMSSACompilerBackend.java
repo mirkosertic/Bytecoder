@@ -745,10 +745,10 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.println("         )");
         theWriter.println("         (return (i32.const 0))");
         theWriter.println("     )");
-        theWriter.println("     (call_indirect $t_INSTANCEOF");
+        theWriter.println("     (call_indirect (type $t_INSTANCEOF)");
         theWriter.println("         (get_local $thisRef)");
         theWriter.println("         (get_local $type)");
-        theWriter.println("         (call_indirect $t_RESOLVEMETHOD");
+        theWriter.println("         (call_indirect (type $t_RESOLVEMETHOD)");
         theWriter.println("             (get_local $thisRef)");
         theWriter.print("             (i32.const ");
         theWriter.print(WASMSSAWriter.GENERATED_INSTANCEOF_METHOD_ID);

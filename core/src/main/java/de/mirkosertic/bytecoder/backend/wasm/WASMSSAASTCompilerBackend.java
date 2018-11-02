@@ -365,7 +365,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     }
 
                     // Only non-private methods needs to be callable by function table
-                    if (!t.isConstructor() && t.getAccessFlags().isPrivate()) {
+                    if (!t.isConstructor() && !t.getAccessFlags().isPrivate()) {
                         theFunction.toTable();
                     }
                 }
