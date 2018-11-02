@@ -346,7 +346,7 @@ public class WASMSSAASTWriter {
         final Value theValue = aExpression.incomingDataFlows().get(0);
         final WASMSSAASTWriter theTableSwitch = block("tableswitch");
         final WASMSSAASTWriter theLabel0 = theTableSwitch.block("label0");
-        final WASMSSAASTWriter theLabel1 = theTableSwitch.block("label1");
+        final WASMSSAASTWriter theLabel1 = theLabel0.block("label1");
         theLabel1.flow.branchIff((LabeledContainer) theLabel1.container, i32.lt_s(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue())));
         theLabel1.flow.branchIff((LabeledContainer) theLabel0.container, i32.le_s(toValue(theValue), i32.c(((Number) aExpression.getHighValue()).intValue())));
         theLabel1.writeExpressionList(aExpression.getDefaultExpressions());
@@ -677,7 +677,7 @@ public class WASMSSAASTWriter {
         }
 
         final String theClassName = WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + "__runtimeClass)");
+        final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
         final List<WASMValue> theArguments = new ArrayList<>();
