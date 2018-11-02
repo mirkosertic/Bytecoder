@@ -28,7 +28,13 @@ public class F32Const implements WASMValue {
         textWriter.opening();
         textWriter.write("f32.const");
         textWriter.space();
-        textWriter.writeFloat(value);
+        if (Float.isNaN(value)) {
+            textWriter.write("nan");
+        } else if (Float.isInfinite(value)) {
+            textWriter.write("inf");
+        } else {
+            textWriter.writeFloat(value);
+        }
         textWriter.closing();
     }
 
