@@ -27,4 +27,12 @@ public class LabeledContainer extends Container {
     public String getLabel() {
         return label;
     }
+
+    @Override
+    public LabeledContainer findByLabelInHierarchy(final String aLabel) {
+        if (label.equalsIgnoreCase(aLabel)) {
+            return this;
+        }
+        return super.findByLabelInHierarchy(aLabel);
+    }
 }

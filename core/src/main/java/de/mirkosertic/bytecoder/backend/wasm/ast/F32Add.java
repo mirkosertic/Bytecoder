@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Add extends BinaryExpression {
 
-    F32Add(final Value left, final Value right) {
+    F32Add(final WASMValue left, final WASMValue right) {
         super(left, right, "f32.add", (byte) 0x92);
     }
 }

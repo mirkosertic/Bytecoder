@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class SetLocal implements Expression {
+public class SetLocal implements WASMExpression {
 
     private final Local local;
-    private final Value value;
+    private final WASMValue value;
 
-    SetLocal(final Local local, final Value value) {
+    SetLocal(final Local local, final WASMValue value) {
         this.local = local;
         this.value = value;
     }

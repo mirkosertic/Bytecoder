@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32RemU extends BinaryExpression {
 
-    I32RemU(final Value left, final Value right) {
+    I32RemU(final WASMValue left, final WASMValue right) {
         super(left, right,"i32.rem_u", (byte) 0x70);
     }
 }

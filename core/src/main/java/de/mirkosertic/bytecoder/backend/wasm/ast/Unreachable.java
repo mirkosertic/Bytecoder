@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Unreachable implements Expression {
+public class Unreachable implements WASMExpression {
 
     Unreachable() {
     }

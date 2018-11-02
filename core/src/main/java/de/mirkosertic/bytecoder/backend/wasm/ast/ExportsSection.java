@@ -20,11 +20,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ExportsSection implements ModuleSection {
+public class ExportsSection extends ModuleSection {
 
     private final Map<String, Exportable> exports;
 
-    ExportsSection() {
+    ExportsSection(final Module aModule) {
+        super(aModule);
         exports = new HashMap<>();
     }
 
@@ -32,7 +33,6 @@ public class ExportsSection implements ModuleSection {
         exports.put(name, exportable);
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
         for (final Map.Entry<String, Exportable> entry : exports.entrySet()) {
             textWriter.opening();

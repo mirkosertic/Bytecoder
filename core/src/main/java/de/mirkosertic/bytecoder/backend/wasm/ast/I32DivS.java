@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32DivS extends BinaryExpression {
 
-    I32DivS(final Value left, final Value right) {
+    I32DivS(final WASMValue left, final WASMValue right) {
         super(left, right,"i32.div_s", (byte) 0x6d);
     }
 }

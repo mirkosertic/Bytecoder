@@ -18,13 +18,13 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class CallIndirect implements Expression {
+public class CallIndirect implements WASMExpression {
 
     private final FunctionType functionType;
-    private final List<Value> arguments;
-    private final Value functionIndex;
+    private final List<WASMValue> arguments;
+    private final WASMValue functionIndex;
 
-    CallIndirect(final FunctionType functionType, final List<Value> arguments, final Value functionIndex) {
+    CallIndirect(final FunctionType functionType, final List<WASMValue> arguments, final WASMValue functionIndex) {
         this.functionType = functionType;
         this.arguments = arguments;
         this.functionIndex = functionIndex;
@@ -36,7 +36,7 @@ public class CallIndirect implements Expression {
         textWriter.write("call_indirect");
         textWriter.space();
         functionType.writeRefTo(textWriter);
-        for (final Value argument : arguments) {
+        for (final WASMValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);
         }
@@ -50,7 +50,7 @@ public class CallIndirect implements Expression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        for (final Value argument : arguments) {
+        for (final WASMValue argument : arguments) {
             argument.writeTo(codeWriter, context);
         }
         functionIndex.writeTo(codeWriter, context);

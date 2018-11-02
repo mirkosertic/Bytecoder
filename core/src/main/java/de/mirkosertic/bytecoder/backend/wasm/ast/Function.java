@@ -20,38 +20,38 @@ import java.util.List;
 
 public class Function extends Container implements Importable {
 
+    private final Module module;
     private final FunctionType functionType;
     private final String label;
     private final List<Param> params;
     private final PrimitiveType resultType;
-    private final TablesSection tablesSection;
 
-    Function(final TablesSection tablesSection, final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    Function(final Module aModule, final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+        this.module = aModule;
         this.functionType = functionType;
         this.label = label;
         this.params = params;
         this.resultType = result;
-        this.tablesSection = tablesSection;
     }
 
-    Function(final TablesSection tablesSection, final FunctionType functionType, final String label, final List<Param> params) {
+    Function(final Module aModule, final FunctionType functionType, final String label, final List<Param> params) {
+        this.module = aModule;
         this.functionType = functionType;
         this.label = label;
         this.params = params;
         this.resultType = null;
-        this.tablesSection = tablesSection;
     }
 
-    Function(final TablesSection tablesSection, final FunctionType functionType, final String label, final PrimitiveType result) {
+    Function(final Module aModule, final FunctionType functionType, final String label, final PrimitiveType result) {
+        this.module = aModule;
         this.functionType = functionType;
         this.label = label;
         this.params = null;
         this.resultType = result;
-        this.tablesSection = tablesSection;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final Module aModule) throws IOException {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
@@ -59,6 +59,10 @@ public class Function extends Container implements Importable {
         textWriter.space();
         functionType.writeRefTo(textWriter);
         textWriter.closing();
+    }
+
+    protected Module getModule() {
+        return module;
     }
 
     public FunctionType getFunctionType() {
@@ -78,7 +82,7 @@ public class Function extends Container implements Importable {
     }
 
     public Function toTable() {
-        tablesSection.funcTable().addToTable(this);
+        module.getTables().funcTable().addToTable(this);
         return this;
     }
 }

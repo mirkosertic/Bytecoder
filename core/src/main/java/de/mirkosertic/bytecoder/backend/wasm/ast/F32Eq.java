@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Eq extends BinaryExpression {
 
-    F32Eq(final Value leftValue, final Value rightValue) {
+    F32Eq(final WASMValue leftValue, final WASMValue rightValue) {
         super(leftValue, rightValue, "f32.eq", (byte) 0x5b);
     }
 }

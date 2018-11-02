@@ -19,11 +19,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TypesSection implements ModuleSection {
+public class TypesSection extends ModuleSection {
 
     private final List<FunctionType> types;
 
-    TypesSection() {
+    TypesSection(final Module aModule) {
+        super(aModule);
         this.types = new ArrayList<>();
     }
 
@@ -48,6 +49,7 @@ public class TypesSection implements ModuleSection {
         types.add(type);
         return type;
     }
+
     public FunctionType typeFor(final PrimitiveType resultType) {
         for (final FunctionType known : types) {
             if (known.matches(null, resultType)) {
@@ -63,7 +65,6 @@ public class TypesSection implements ModuleSection {
         return types.indexOf(functionType);
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
         for (final FunctionType type : types) {
             type.writeTo(textWriter);

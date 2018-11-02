@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class Nop implements Expression {
+public class Nop implements WASMExpression {
 
     Nop() {
     }

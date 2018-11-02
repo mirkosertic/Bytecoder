@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TablesSection implements ModuleSection {
+public class TablesSection extends ModuleSection {
 
     public static class AnyFuncTable {
 
@@ -65,10 +65,10 @@ public class TablesSection implements ModuleSection {
 
     private AnyFuncTable funcTable;
 
-    TablesSection(){
+    TablesSection(final Module aModule) {
+        super(aModule);
     }
 
-    @Override
     public void writeTo(final TextWriter textWriter) {
         if (funcTable != null) {
             funcTable.writeTo(textWriter);

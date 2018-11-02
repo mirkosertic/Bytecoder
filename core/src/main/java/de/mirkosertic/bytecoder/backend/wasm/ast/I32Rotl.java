@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Rotl extends BinaryExpression {
 
-    I32Rotl(final Value left, final Value right) {
+    I32Rotl(final WASMValue left, final WASMValue right) {
         super(left, right, "i32.rotl", (byte) 0x77);
     }
 }

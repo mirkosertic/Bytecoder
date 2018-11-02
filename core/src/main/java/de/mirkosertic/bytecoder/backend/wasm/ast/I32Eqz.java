@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32Eqz extends UnaryExpression {
 
-    I32Eqz(final Value value) {
+    I32Eqz(final WASMValue value) {
         super(value, "i32.eqz", (byte) 0x45);
     }
 }

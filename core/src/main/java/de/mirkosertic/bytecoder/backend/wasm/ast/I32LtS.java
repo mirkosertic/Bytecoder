@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32LtS extends BinaryExpression {
 
-    I32LtS(final Value leftValue, final Value rightValue) {
+    I32LtS(final WASMValue leftValue, final WASMValue rightValue) {
         super(leftValue, rightValue, "i32.lt_s", (byte) 0x48);
     }
 }

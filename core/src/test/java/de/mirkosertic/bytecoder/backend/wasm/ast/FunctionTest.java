@@ -39,7 +39,7 @@ public class FunctionTest {
                 Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
         function.flow.ret(i32.c(42));
         try (final TextWriter writer = new TextWriter(pw)) {
-            function.writeTo(writer);
+            function.writeTo(writer, module);
         }
 
         Assert.assertEquals("(func $label (type $t0) (param $p1 i32) (result i32)" + System.lineSeparator()
@@ -57,7 +57,7 @@ public class FunctionTest {
                 Collections.singletonList(param("p1", PrimitiveType.i32)));
         function.flow.ret();
         try (final TextWriter writer = new TextWriter(pw)) {
-            function.writeTo(writer);
+            function.writeTo(writer, module);
         }
 
         Assert.assertEquals("(func $label (type $t0) (param $p1 i32)" + System.lineSeparator()

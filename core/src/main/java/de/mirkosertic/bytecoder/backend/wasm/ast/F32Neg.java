@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Neg extends UnaryExpression {
 
-    F32Neg(final Value value) {
+    F32Neg(final WASMValue value) {
         super(value, "f32.neg", (byte) 0x8c);
     }
 }

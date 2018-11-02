@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class StartSection implements ModuleSection {
+public class StartSection extends ModuleSection {
 
-    @Override
+    StartSection(final Module module) {
+        super(module);
+    }
+
     public void writeTo(final TextWriter textWriter) {
     }
 

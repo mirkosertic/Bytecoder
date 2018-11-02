@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class I32Const implements Value {
+public class I32Const implements WASMValue {
 
     private final int value;
 

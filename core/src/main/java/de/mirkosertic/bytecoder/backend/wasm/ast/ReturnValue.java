@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class ReturnValue extends UnaryExpression {
 
-    ReturnValue(final Value value) {
+    ReturnValue(final WASMValue value) {
         super(value, "return", (byte) 0x0f);
     }
 }

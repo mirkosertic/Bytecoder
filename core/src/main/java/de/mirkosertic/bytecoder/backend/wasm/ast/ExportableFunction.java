@@ -20,7 +20,7 @@ import java.util.List;
 
 public class ExportableFunction extends Function implements Exportable {
 
-    private class DefaultExportContext implements Value.ExportContext {
+    private class DefaultExportContext implements WASMValue.ExportContext {
 
         private final Container owningContainer;
         private final FunctionIndex functionIndex;
@@ -42,7 +42,7 @@ public class ExportableFunction extends Function implements Exportable {
 
         @Override
         public GlobalsIndex globalsIndex() {
-            return globalsSection.globalsIndex();
+            return getModule().getGlobals().globalsIndex();
         }
 
         @Override
@@ -51,52 +51,40 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public Value.ExportContext subWith(final Container container) {
+        public WASMValue.ExportContext subWith(final Container container) {
             return new DefaultExportContext(container, functionIndex);
         }
 
         @Override
         public FunctionTypeIndex typeIndex() {
-            return typesSection.typesIndex();
+            return getModule().getTypes().typesIndex();
+        }
+
+        @Override
+        public TablesSection.AnyFuncTable anyFuncTable() {
+            return getModule().getTables().funcTable();
         }
     }
 
-    private final TypesSection typesSection;
-    private final ExportsSection exportsSection;
     private final LocalIndex localIndex;
-    private final GlobalsSection globalsSection;
 
-    ExportableFunction(final TypesSection typesSection, final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
-            final FunctionType functionType, final String label,
-            final List<Param> params, final PrimitiveType result) {
-        super(tablesSection, functionType, label, params, result);
-        this.typesSection = typesSection;
-        this.exportsSection = exportsSection;
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+        super(aModule, functionType, label, params, result);
         this.localIndex = new LocalIndex(params);
-        this.globalsSection = globalsSection;
     }
 
-    ExportableFunction(final TypesSection typesSection, final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
-            final FunctionType functionType, final String label,
-            final List<Param> params) {
-        super(tablesSection, functionType, label, params);
-        this.typesSection = typesSection;
-        this.exportsSection = exportsSection;
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final List<Param> params) {
+        super(aModule, functionType, label, params);
         this.localIndex = new LocalIndex(params);
-        this.globalsSection = globalsSection;
     }
 
-    ExportableFunction(final TypesSection typesSection, final GlobalsSection globalsSection, final TablesSection tablesSection, final ExportsSection exportsSection,
-            final FunctionType functionType, final String label, final PrimitiveType result) {
-        super(tablesSection, functionType, label, result);
-        this.typesSection = typesSection;
-        this.exportsSection = exportsSection;
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final PrimitiveType result) {
+        super(aModule, functionType, label, result);
         this.localIndex = new LocalIndex();
-        this.globalsSection = globalsSection;
     }
 
     public void exportAs(final String functionName) {
-        exportsSection.export(this, functionName);
+        getModule().getExports().export(this, functionName);
     }
 
     public Local localByLabel(final String label) {
@@ -117,7 +105,7 @@ public class ExportableFunction extends Function implements Exportable {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final Module aModule) throws IOException {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
@@ -143,8 +131,8 @@ public class ExportableFunction extends Function implements Exportable {
             local.writeTo(textWriter);
             textWriter.newLine();
         }
-        final DefaultExportContext context = new DefaultExportContext(this, null);
-        for (final Expression expression : getChildren()) {
+        final DefaultExportContext context = new DefaultExportContext(this, getModule().functionIndex());
+        for (final WASMExpression expression : getChildren()) {
             expression.writeTo(textWriter, context);
         }
         textWriter.closing();
@@ -172,7 +160,7 @@ public class ExportableFunction extends Function implements Exportable {
 
             final DefaultExportContext context = new DefaultExportContext(this, functionIndex);
 
-            for (final Expression expression : getChildren()) {
+            for (final WASMExpression expression : getChildren()) {
                 expression.writeTo(codeWriter, context);
             }
 

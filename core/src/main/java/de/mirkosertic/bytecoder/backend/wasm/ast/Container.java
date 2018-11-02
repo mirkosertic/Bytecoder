@@ -23,7 +23,7 @@ public abstract class Container {
     public final Expressions flow;
 
     private final Container parent;
-    private final List<Expression> children;
+    private final List<WASMExpression> children;
 
     protected Container(final Container parent) {
         this.parent = parent;
@@ -41,11 +41,11 @@ public abstract class Container {
         return !children.isEmpty();
     }
 
-    public List<Expression> getChildren() {
+    public List<WASMExpression> getChildren() {
         return children;
     }
 
-    public void addChild(final Expression e) {
+    public void addChild(final WASMExpression e) {
         children.add(e);
     }
 
@@ -61,5 +61,16 @@ public abstract class Container {
             return parent.relativeDepthTo(outerBlock, offset + 1);
         }
         throw new IllegalArgumentException("Cannot find block " + outerBlock.getLabel());
+    }
+
+    public LabeledContainer findByLabelInHierarchy(final String aLabel) {
+        if (parent != null) {
+            return parent.findByLabelInHierarchy(aLabel);
+        }
+        throw new IllegalArgumentException("No such parent container : " + aLabel);
+    }
+
+    public Container end() {
+        return parent;
     }
 }

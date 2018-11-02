@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class CustomSection implements ModuleSection {
+public class CustomSection extends ModuleSection {
 
-    @Override
+    CustomSection(final Module module) {
+        super(module);
+    }
+
     public void writeTo(final TextWriter textWriter) {
     }
 

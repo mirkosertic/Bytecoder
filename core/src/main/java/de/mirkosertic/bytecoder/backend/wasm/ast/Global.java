@@ -24,9 +24,9 @@ public class Global {
     private final String label;
     private final PrimitiveType type;
     private final boolean mutable;
-    private final Value initializer;
+    private final WASMValue initializer;
 
-    Global(final ExportsSection exportsSection, final String name, final PrimitiveType type, final boolean mutable, final Value initializer) {
+    Global(final ExportsSection exportsSection, final String name, final PrimitiveType type, final boolean mutable, final WASMValue initializer) {
         this.exportsSection = exportsSection;
         this.label = name;
         this.type = type;

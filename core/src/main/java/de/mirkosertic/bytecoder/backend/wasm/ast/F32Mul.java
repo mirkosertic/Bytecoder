@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Mul extends BinaryExpression {
 
-    F32Mul(final Value left, final Value right) {
+    F32Mul(final WASMValue left, final WASMValue right) {
         super(left, right, "f32.mul", (byte) 0x94);
     }
 }

@@ -17,11 +17,11 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Drop implements Expression {
+public class Drop implements WASMExpression {
 
-    private final Value value;
+    private final WASMValue value;
 
-    Drop(final Value value) {
+    Drop(final WASMValue value) {
         this.value = value;
     }
 

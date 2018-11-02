@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class I32TruncSF32 extends UnaryExpression {
 
-    I32TruncSF32(final Value value) {
+    I32TruncSF32(final WASMValue value) {
         super(value, "i32.trunc_s/f32", (byte) 0xa8);
     }
 }

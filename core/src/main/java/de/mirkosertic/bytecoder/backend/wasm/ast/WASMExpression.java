@@ -15,26 +15,5 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.io.IOException;
-
-public interface Value {
-
-    interface ExportContext {
-
-        Container owningContainer();
-
-        FunctionTypeIndex typeIndex();
-
-        FunctionIndex functionIndex();
-
-        GlobalsIndex globalsIndex();
-
-        LocalIndex localIndex();
-
-        ExportContext subWith(Container container);
-    }
-
-    void writeTo(TextWriter textWriter, ExportContext context) throws IOException;
-
-    void writeTo(BinaryWriter.Writer codeWriter, ExportContext context) throws IOException;
+public interface WASMExpression extends WASMValue {
 }

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Branch implements Expression {
+public class Branch implements WASMExpression {
 
     private final LabeledContainer outerBlock;
 

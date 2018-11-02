@@ -31,16 +31,16 @@ public class Module {
     private final ExportsSection exports;
 
     public Module() {
-        types = new TypesSection();
-        exports = new ExportsSection();
-        tables = new TablesSection();
-        globals = new GlobalsSection(exports);
-        functions = new FunctionsSection(types, exports, tables, globals);
-        mems = new MemorySection(exports);
-        elements = new ElementSection(tables);
-        final DataSection data = new DataSection();
-        final StartSection start = new StartSection();
-        imports = new ImportsSection(types, tables);
+        types = new TypesSection(this);
+        exports = new ExportsSection(this);
+        tables = new TablesSection(this);
+        globals = new GlobalsSection(this);
+        functions = new FunctionsSection(this);
+        mems = new MemorySection(this);
+        elements = new ElementSection(this);
+        final DataSection data = new DataSection(this);
+        final StartSection start = new StartSection(this);
+        imports = new ImportsSection(this);
     }
 
     public void writeTo(final TextWriter writer) throws IOException {
@@ -58,6 +58,10 @@ public class Module {
         functions.writeTo(writer);
         exports.writeTo(writer);
         writer.closing();
+    }
+
+    public TypesSection getTypes() {
+        return types;
     }
 
     public GlobalsIndex globalsIndex() {
@@ -104,6 +108,10 @@ public class Module {
 
     public GlobalsSection getGlobals() {
         return globals;
+    }
+
+    public ExportsSection getExports() {
+        return exports;
     }
 
     public TablesSection getTables() {

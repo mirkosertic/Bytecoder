@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class TeeLocal implements Expression {
+public class TeeLocal implements WASMExpression {
 
     private final Local local;
-    private final Value value;
+    private final WASMValue value;
 
-    TeeLocal(final Local local, final Value value) {
+    TeeLocal(final Local local, final WASMValue value) {
         this.local = local;
         this.value = value;
     }

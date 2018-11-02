@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class GetGlobal implements Expression {
+public class GetGlobal implements WASMExpression {
 
     private final Global global;
 

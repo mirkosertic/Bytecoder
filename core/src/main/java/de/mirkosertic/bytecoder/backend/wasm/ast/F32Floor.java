@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 public class F32Floor extends UnaryExpression {
 
-    F32Floor(final Value value) {
+    F32Floor(final WASMValue value) {
         super(value, "f32.floor", (byte) 0x8e);
     }
 }

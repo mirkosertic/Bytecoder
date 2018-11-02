@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Loop extends LabeledContainer implements Expression {
+public class Loop extends LabeledContainer implements WASMExpression {
 
     Loop(final String label, final Container parent) {
         super(parent, label);
@@ -31,7 +31,7 @@ public class Loop extends LabeledContainer implements Expression {
         textWriter.writeLabel(getLabel());
         if (hasChildren()) {
             textWriter.newLine();
-            for (final Value child : getChildren()) {
+            for (final WASMValue child : getChildren()) {
                 child.writeTo(textWriter, context);
             }
             textWriter.closing();
@@ -45,7 +45,7 @@ public class Loop extends LabeledContainer implements Expression {
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x03);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
-        for (final Expression e : getChildren()) {
+        for (final WASMExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }
         codeWriter.writeByte((byte) 0x0b);
