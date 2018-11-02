@@ -217,20 +217,26 @@ public class BytecoderMavenMojo extends AbstractMojo {
         theWriter.println("        <script src=\"libwabt.js\">");
         theWriter.println("        </script>");
         theWriter.println("        <script>");
-        theWriter.println("            function compile() {");
-        theWriter.println("                console.log('Compilation started');");
-        theWriter.println("                try {");
-        theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
-        theWriter.println("                    module.resolveNames();");
-        theWriter.println("                    module.validate();");
-        theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
-        theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
-        theWriter.println("                    return binaryOutput.buffer;");
-        theWriter.println("                } catch (e) {");
-        theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
-        theWriter.println("                    console.log(e.toString());");
-        theWriter.println("                    console.log(e.stack);");
-        theWriter.println("                }");
+        theWriter.println("            async function compile() {");
+        theWriter.println("                return await new Promise(function(resolve, reject) {");
+        theWriter.println("                    WabtModule().then(function(wabt) {");
+        theWriter.println("                         console.log('Compilation started');");
+        theWriter.println("                         try {");
+        theWriter.println("                             var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
+        theWriter.println("                             module.resolveNames();");
+        theWriter.println("                             module.validate();");
+        theWriter.println("                             var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
+        theWriter.println("                             document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
+        theWriter.println("                             compileResilt = binaryOutput.buffer;");
+        theWriter.println("                             resolve(binaryOutput.buffer);");
+        theWriter.println("                         } catch (e) {");
+        theWriter.println("                             document.getElementById(\"compileresult\").innerText = e.toString();");
+        theWriter.println("                             console.log(e.toString());");
+        theWriter.println("                             console.log(e.stack);");
+        theWriter.println("                             reject(e.stack);");
+        theWriter.println("                         }");
+        theWriter.println("                    });");
+        theWriter.println("                });");
         theWriter.println("            }");
         theWriter.println("        </script>");
         theWriter.println("    </body>");
@@ -254,7 +260,8 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
         theDriver.get(theGeneratedFile.toURI().toURL().toString());
 
-        final ArrayList<Long> theResult = (ArrayList<Long>) theDriver.executeScript("return compile();");
+        final Object data = theDriver.executeScript("return compile();");
+        final ArrayList<Long> theResult = (ArrayList<Long>) data;
         final int[] theBinaryDara = new int[theResult.size()];
         for (int i=0;i<theResult.size();i++) {
             final long theLongValue = theResult.get(i);

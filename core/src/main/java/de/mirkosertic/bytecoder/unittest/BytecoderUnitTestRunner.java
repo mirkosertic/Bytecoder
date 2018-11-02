@@ -413,7 +413,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("            }");
             theWriter.println();
 
-            theWriter.println("            function compile() {");
+            theWriter.println("            function compile(wabt) {");
             theWriter.println("                console.log('Test started');");
             theWriter.println("                try {");
             theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
@@ -547,7 +547,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                console.log('DONE');");
             theWriter.println("            }");
             theWriter.println();
-            theWriter.println("            compile();");
+            theWriter.println("            WabtModule().then(function(wabt) {");
+            theWriter.println("                 compile(wabt);");
+            theWriter.println("            });");
             theWriter.println("        </script>");
             theWriter.println("    </body>");
             theWriter.println("</html>");
@@ -675,7 +677,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("            }");
             theWriter.println();
 
-            theWriter.println("            function compile() {");
+            theWriter.println("            function compile(wabt) {");
             theWriter.println("                console.log('Test started');");
             theWriter.println("                try {");
             theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
@@ -809,7 +811,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                console.log('DONE');");
             theWriter.println("            }");
             theWriter.println();
-            theWriter.println("            compile();");
+            theWriter.println("            WabtModule().then(function(wabt) {");
+            theWriter.println("                 compile(wabt);");
+            theWriter.println("            });");
             theWriter.println("        </script>");
             theWriter.println("    </body>");
             theWriter.println("</html>");

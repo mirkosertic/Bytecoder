@@ -28,17 +28,25 @@ public class WeakFunctionTableReference implements WASMValue {
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         final Function f = context.functionIndex().firstByLabel(functionName);
+        final int theIndex = context.anyFuncTable().indexOf(f);
+        if (theIndex < 0) {
+            throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
+        }
         textWriter.opening();
         textWriter.write("i32.const");
         textWriter.space();
-        textWriter.writeInteger(context.anyFuncTable().indexOf(f));
+        textWriter.writeInteger(theIndex);
         textWriter.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         final Function f = context.functionIndex().firstByLabel(functionName);
-        final I32Const c = new I32Const(context.anyFuncTable().indexOf(f));
+        final int theIndex = context.anyFuncTable().indexOf(f);
+        if (theIndex < 0) {
+            throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
+        }
+        final I32Const c = new I32Const(theIndex);
         c.writeTo(codeWriter, context);
     }
 }
