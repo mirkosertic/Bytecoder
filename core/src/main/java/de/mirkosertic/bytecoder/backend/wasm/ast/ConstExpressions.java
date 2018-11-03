@@ -23,7 +23,7 @@ public class ConstExpressions {
         return new Param(label, type);
     }
 
-    public static Call call(final Function function, final List<WASMValue> arguments) {
+    public static Call call(final Callable function, final List<WASMValue> arguments) {
         return new Call(function, arguments);
     }
 
@@ -331,5 +331,9 @@ public class ConstExpressions {
 
     public static WeakFunctionTableReference weakFunctionTableReference(final String aFunctionName) {
         return new WeakFunctionTableReference(aFunctionName);
+    }
+
+    public static WeakFunctionReferenceCallable weakFunctionReference(final String aFunctionName) {
+        return new WeakFunctionReferenceCallable(aFunctionName);
     }
 }

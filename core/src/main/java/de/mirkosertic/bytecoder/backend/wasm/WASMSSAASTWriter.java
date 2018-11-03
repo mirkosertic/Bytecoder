@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
@@ -1068,7 +1069,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression invokeStaticValue(final InvokeStaticMethodExpression aValue) {
 
-        final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
         final List<WASMValue> arguments = new ArrayList<>();
         arguments.add(i32.c(0));
 
@@ -1118,6 +1119,9 @@ public class WASMSSAASTWriter {
         }
         case REMAINDER: {
             if (aValue1.resolveType().resolve() == TypeRef.Native.INT) {
+                return i32.rem_s(toValue(aValue1), toValue(aValue2));
+            }
+            if (aValue1.resolveType().resolve() == TypeRef.Native.LONG) {
                 return i32.rem_s(toValue(aValue1), toValue(aValue2));
             }
             final Function f = module.functionIndex().firstByLabel("float_remainder");

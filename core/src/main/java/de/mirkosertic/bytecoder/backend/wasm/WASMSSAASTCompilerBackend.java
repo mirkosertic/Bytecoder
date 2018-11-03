@@ -22,6 +22,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlob
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 import java.io.IOException;
@@ -45,6 +46,7 @@ import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
@@ -236,10 +238,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ExportableFunction lambdaResolvevtableindex = module.getFunctions().newFunction("LAMBDA" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         lambdaResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaResolvevtableindex.localByLabel("thisRef"))));
 
-        final ExportableFunction classGetEnumConstants = module.getFunctions().newFunction("jlClass_A1jlObjectgetEnumConstants", Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        final ExportableFunction classGetEnumConstants = module.getFunctions().newFunction("jlClass_A1jlObjectgetEnumConstants", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         classGetEnumConstants.flow.ret(i32.load(0, i32.load(12, getLocal(classGetEnumConstants.localByLabel("thisRef")))));
 
-        final ExportableFunction classDesiredAssertionStatus = module.getFunctions().newFunction("jlClass_BOOLEANdesiredAssertionStatus", Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        final ExportableFunction classDesiredAssertionStatus = module.getFunctions().newFunction("jlClass_BOOLEANdesiredAssertionStatus", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         classDesiredAssertionStatus.flow.ret(i32.c(0));
 
         final ConstantPool theConstantPool = new ConstantPool();
@@ -493,11 +495,15 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         returnType
                                 );
 
+                                final Callable theImplementation = weakFunctionReference(WASMWriterUtils
+                                        .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(),
+                                                theSignature));
+
                                 final List<WASMValue> callValues = new ArrayList<>();
                                 for (final Param p : params) {
                                     callValues.add(getLocal(p));
                                 }
-                                function.flow.ret(call(function, callValues));
+                                function.flow.ret(call(theImplementation, callValues));
                             } else {
 
                                 final ExportableFunction function = module.getFunctions().newFunction(
@@ -506,11 +512,15 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         params
                                 );
 
+                                final Callable theImplementation = weakFunctionReference(WASMWriterUtils
+                                        .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(),
+                                                theSignature));
+
                                 final List<WASMValue> callValues = new ArrayList<>();
                                 for (final Param p : params) {
                                     callValues.add(getLocal(p));
                                 }
-                                function.flow.voidCall(function, callValues);
+                                function.flow.voidCall(theImplementation, callValues);
                             }
                         }
                     }

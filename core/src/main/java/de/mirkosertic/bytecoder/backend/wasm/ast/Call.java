@@ -20,10 +20,10 @@ import java.util.List;
 
 public class Call implements WASMExpression {
 
-    private final Function function;
+    private final Callable function;
     private final List<WASMValue> arguments;
 
-    Call(final Function function, final List<WASMValue> arguments) {
+    Call(final Callable function, final List<WASMValue> arguments) {
         this.function = function;
         this.arguments = arguments;
     }
@@ -39,7 +39,7 @@ public class Call implements WASMExpression {
             argument.writeTo(textWriter, context);
         }
         textWriter.closing();
-        if (function.getResultType() == null) {
+        if (function.resolveResultType(context) == null) {
             textWriter.newLine();
         }
     }
@@ -50,6 +50,6 @@ public class Call implements WASMExpression {
             argument.writeTo(codeWriter, context);
         }
         codeWriter.writeByte((byte) 0x10);
-        codeWriter.writeUnsignedLeb128(context.functionIndex().indexOf(function));
+        codeWriter.writeUnsignedLeb128(function.resolveIndex(context));
     }
 }

@@ -73,7 +73,7 @@ public class Expressions {
         this.f32 = new F32();
     }
 
-    public void voidCall(final Function function, final List<WASMValue> arguments) {
+    public void voidCall(final Callable function, final List<WASMValue> arguments) {
         final Call call = new Call(function, arguments);
         parent.addChild(call);
     }
