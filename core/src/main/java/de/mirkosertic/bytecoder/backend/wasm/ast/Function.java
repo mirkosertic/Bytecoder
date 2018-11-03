@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class Function extends Container implements Importable {
+public class Function extends Container implements Importable, Callable {
 
     private final Module module;
     private final FunctionType functionType;
@@ -84,5 +84,15 @@ public class Function extends Container implements Importable {
     public Function toTable() {
         module.getTables().funcTable().addToTable(this);
         return this;
+    }
+
+    @Override
+    public PrimitiveType resolveResultType(final WASMValue.ExportContext context) {
+        return resultType;
+    }
+
+    @Override
+    public int resolveIndex(final WASMValue.ExportContext context) {
+        return context.functionIndex().indexOf(this);
     }
 }
