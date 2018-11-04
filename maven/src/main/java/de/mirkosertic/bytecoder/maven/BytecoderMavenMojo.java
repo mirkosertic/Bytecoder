@@ -15,23 +15,27 @@
  */
 package de.mirkosertic.bytecoder.maven;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-
+import com.google.common.io.Files;
+import com.google.javascript.jscomp.CommandLineRunner;
+import com.google.javascript.jscomp.CompilationLevel;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.SourceFile;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -47,24 +51,17 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import com.google.common.io.Files;
-import com.google.javascript.jscomp.CommandLineRunner;
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.SourceFile;
-
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
 /**
  * Plugin to run Bytecoder using Maven.
@@ -135,8 +132,8 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
-                try (final PrintWriter theWriter = new PrintWriter(new FileWriter(theBytecoderFileName))) {
-                    theWriter.println(content.getData());
+                try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
+                    content.writeTo(theFos);
                 }
             }
 
@@ -152,7 +149,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
                 final CompileResult.Content content = theCode.getContent()[0];
 
-                theSourceFiles.add(SourceFile.fromCode(content.getFileName(), (String) content.getData()));
+                theSourceFiles.add(SourceFile.fromCode(content.getFileName(), content.asString()));
                 theCompiler.compile(new ArrayList<>(), theSourceFiles, theClosureOptions);
                 final String theClosureCode = theCompiler.toSource();
 
@@ -209,7 +206,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
         theWriter.println("    <body>");
         theWriter.println("        <h1>Module code</h1>");
         theWriter.println("        <pre id=\"modulecode\">");
-        theWriter.println(content.getData());
+        theWriter.println(content.asString());
         theWriter.println("        </pre>");
         theWriter.println("        <h1>Compilation result</h1>");
         theWriter.println("        <pre id=\"compileresult\">");

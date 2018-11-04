@@ -17,9 +17,12 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import de.mirkosertic.bytecoder.backend.CompileResult;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+
 public class JSCompileResult implements CompileResult<String> {
 
-    public static class JSContent implements Content<String> {
+    public static class JSContent implements Content {
 
         private final String fileName;
         private final String data;
@@ -35,8 +38,10 @@ public class JSCompileResult implements CompileResult<String> {
         }
 
         @Override
-        public String getData() {
-            return data;
+        public void writeTo(final OutputStream stream) {
+            try (final PrintStream ps = new PrintStream(stream)) {
+                ps.print(data);
+            }
         }
     }
 

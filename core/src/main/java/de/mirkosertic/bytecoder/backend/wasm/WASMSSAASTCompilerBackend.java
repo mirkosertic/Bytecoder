@@ -25,6 +25,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -777,16 +778,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         final StringWriter theStringWriter = new StringWriter();
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             final PrintWriter theWriter = new PrintWriter(theStringWriter);
 
             final Exporter exporter = new Exporter();
             exporter.export(module, theWriter);
+            exporter.export(module, bos);
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 
         return new WASMCompileResult(
-                new WASMCompileResult.WASMCompileContent(theMemoryLayout, aLinkerContext, new ArrayList<>(), theStringWriter.toString()));
+                new WASMCompileResult.WASMTextualCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theStringWriter.toString()),
+                new WASMCompileResult.WASMBinaryCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), bos.toByteArray()));
     }
 }

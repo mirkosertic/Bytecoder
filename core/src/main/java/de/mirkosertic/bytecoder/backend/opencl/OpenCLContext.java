@@ -15,6 +15,35 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.api.Logger;
+import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
+import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.jocl.Pointer;
+import org.jocl.Sizeof;
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_context_properties;
+import org.jocl.cl_kernel;
+import org.jocl.cl_mem;
+import org.jocl.cl_program;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_DEVICE_TYPE_ALL;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
@@ -35,35 +64,6 @@ import static org.jocl.CL.clReleaseKernel;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
 import static org.jocl.CL.clSetKernelArg;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.FloatBuffer;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.jocl.Pointer;
-import org.jocl.Sizeof;
-import org.jocl.cl_command_queue;
-import org.jocl.cl_context;
-import org.jocl.cl_context_properties;
-import org.jocl.cl_kernel;
-import org.jocl.cl_mem;
-import org.jocl.cl_program;
-
-import de.mirkosertic.bytecoder.api.Logger;
-import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
-import de.mirkosertic.bytecoder.api.opencl.Kernel;
-import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 class OpenCLContext implements Context {
 
@@ -126,7 +126,7 @@ class OpenCLContext implements Context {
                 clCreateCommandQueue(context, aPlatform.selectedDevice.id, 0, null);
     }
 
-    private CachedKernel kernelFor(final Kernel aKernel) {
+    private CachedKernel kernelFor(final Kernel aKernel) throws IOException {
 
         final Class theKernelClass = aKernel.getClass();
 
@@ -153,7 +153,7 @@ class OpenCLContext implements Context {
 
             content = theResult.getContent()[0];
 
-            logger.debug("Generated Kernel code : {}", content.getData());
+            logger.debug("Generated Kernel code : {}", content.asString());
 
             ALREADY_COMPILED.put(theKernelClass, theResult);
         } else {
@@ -162,7 +162,7 @@ class OpenCLContext implements Context {
 
         // Construct the program
         final cl_program theCLProgram = clCreateProgramWithSource(context,
-                1, new String[]{ content.getData() }, null, null);
+                1, new String[]{ content.asString() }, null, null);
 
         clBuildProgram(theCLProgram, 0, null, null, null, null);
 
@@ -173,7 +173,8 @@ class OpenCLContext implements Context {
         return theCached;
     }
 
-    @Override public void compute(final int aNumberOfStreams, final Kernel aKernel) {
+    @Override
+    public void compute(final int aNumberOfStreams, final Kernel aKernel) throws IOException {
 
         final Class theKernelClass = aKernel.getClass();
         final CachedKernel theCachedKernel = kernelFor(aKernel);

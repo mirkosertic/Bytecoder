@@ -15,12 +15,6 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
-
-import java.lang.reflect.Method;
-
-import org.junit.Test;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileBackend;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileResult;
@@ -29,6 +23,12 @@ import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 
 public class CompilerTest {
 
@@ -75,7 +75,7 @@ public class CompilerTest {
     }
 
     @Test
-    public void testSimpleKernel() {
+    public void testSimpleKernel() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
         final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
@@ -98,11 +98,11 @@ public class CompilerTest {
         final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
         final OpenCLCompileResult.OpenCLContent content = compiledKernel.getContent()[0];
 
-        System.out.println(content.getData());
+        System.out.println(content.asString());
     }
 
     @Test
-    public void testKernelWithComplexType() {
+    public void testKernelWithComplexType() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
         final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL);
@@ -135,6 +135,6 @@ public class CompilerTest {
         final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
         final OpenCLCompileResult.OpenCLContent content = compiledKernel.getContent()[0];
 
-        System.out.println(content.getData());
+        System.out.println(content.asString());
     }
 }

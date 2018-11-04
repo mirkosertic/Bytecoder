@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import java.io.IOException;
+
 public interface Context extends AutoCloseable {
 
-    void compute(int aNumberOfStreams, Kernel aKernel);
+    void compute(int aNumberOfStreams, Kernel aKernel) throws IOException;
 }

@@ -17,9 +17,12 @@ package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.backend.CompileResult;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+
 public class OpenCLCompileResult implements CompileResult<String> {
 
-    public static class OpenCLContent implements Content<String> {
+    public static class OpenCLContent implements Content {
         private final OpenCLInputOutputs inputOutputs;
         private final String kernelSource;
 
@@ -38,8 +41,10 @@ public class OpenCLCompileResult implements CompileResult<String> {
         }
 
         @Override
-        public String getData() {
-            return kernelSource;
+        public void writeTo(final OutputStream stream) {
+            try (final PrintStream ps = new PrintStream(stream)) {
+                ps.print(kernelSource);
+            }
         }
     }
 

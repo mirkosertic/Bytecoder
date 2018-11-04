@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.List;
 
 import de.mirkosertic.bytecoder.backend.CompileResult;
@@ -23,29 +26,17 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class WASMCompileResult implements CompileResult<String> {
 
-    public static class WASMCompileContent implements Content<String> {
+    public abstract static class WASMCompileContent implements Content {
 
         private final WASMMemoryLayouter memoryLayouter;
         private final BytecodeLinkerContext linkerContext;
         private final List<String> generatedFunctions;
-        private final String data;
 
         public WASMCompileContent(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                final List<String> generatedFunctions, final String data) {
+                                  final List<String> generatedFunctions) {
             this.memoryLayouter = memoryLayouter;
             this.linkerContext = linkerContext;
             this.generatedFunctions = generatedFunctions;
-            this.data = data;
-        }
-
-        @Override
-        public String getFileName() {
-            return "bytecoder.wat";
-        }
-
-        @Override
-        public String getData() {
-            return data;
         }
 
         public int getTypeIDFor(final BytecodeObjectTypeRef aObjecType) {
@@ -62,6 +53,50 @@ public class WASMCompileResult implements CompileResult<String> {
 
             final String theMethodName = theClassName + "__resolvevtableindex";
             return generatedFunctions.indexOf(theMethodName);
+        }
+    }
+
+    public static class WASMTextualCompileResult extends WASMCompileContent {
+
+        private final String data;
+
+        public WASMTextualCompileResult(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
+                                        final List<String> generatedFunctions, final String data) {
+            super(memoryLayouter, linkerContext, generatedFunctions);
+            this.data = data;
+        }
+
+        @Override
+        public String getFileName() {
+            return "bytecoder.wat";
+        }
+
+        @Override
+        public void writeTo(final OutputStream stream) {
+            try (final PrintStream ps = new PrintStream(stream)) {
+                ps.print(data);
+            }
+        }
+    }
+
+    public static class WASMBinaryCompileResult extends WASMCompileContent {
+
+        private final byte[] data;
+
+        public WASMBinaryCompileResult(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
+                                        final List<String> generatedFunctions, final byte[] data) {
+            super(memoryLayouter, linkerContext, generatedFunctions);
+            this.data = data;
+        }
+
+        @Override
+        public String getFileName() {
+            return "bytecoder.wasm";
+        }
+
+        @Override
+        public void writeTo(final OutputStream stream) throws IOException {
+            stream.write(data);
         }
     }
 
