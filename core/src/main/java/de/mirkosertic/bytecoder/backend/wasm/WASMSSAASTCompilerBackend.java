@@ -366,8 +366,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theFunction = module.getFunctions().newFunction(theMethodName, params);
                     }
 
-                    // Only non-private methods needs to be callable by function table
-                    if (!t.isConstructor() && !t.getAccessFlags().isPrivate()) {
+                    // Only real functions inclusive static ones need to be callable by function table
+                    // Note: synthetic lambda functions are static AND called by method reference, and they are also private!!!!
+                    // So they must also be part of the function reference table
+                    if (!t.isConstructor()) {
                         theFunction.toTable();
                     }
                 }
