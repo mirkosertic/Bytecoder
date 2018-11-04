@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -684,9 +685,26 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
             theWriter.println("                    module.resolveNames();");
             theWriter.println("                    module.validate();");
+
             theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
-            theWriter.println("                    var binaryBuffer = binaryOutput.buffer;");
+
+            theWriter.println();
+            theWriter.print("                    var binaryBuffer = new Uint8Array([");
+            try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+                binaryContent.writeTo(bos);
+                bos.flush();
+                byte[] theData = bos.toByteArray();
+                for (int i=0;i<theData.length;i++) {
+                    if (i>0) {
+                        theWriter.print(",");
+                    }
+                    theWriter.print(theData[i] & 0xFF);
+                }
+            }
+
+            theWriter.println("]);");
+
             theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
             theWriter.println();
             theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
