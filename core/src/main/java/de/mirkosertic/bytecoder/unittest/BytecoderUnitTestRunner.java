@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.unittest;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -179,7 +178,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
             final JSCompileResult result = (JSCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final JSCompileResult.JSContent content = result.getContent()[0];
-            theCodeWriter.println(content.getData());
+
+            theCodeWriter.println(content.asString());
 
             final String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
@@ -375,7 +375,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("    <body>");
             theWriter.println("        <h1>Module code</h1>");
             theWriter.println("        <pre id=\"modulecode\">");
-            theWriter.println(content.getData());
+            theWriter.println(content.asString());
             theWriter.println("        </pre>");
             theWriter.println("        <h1>Compilation result</h1>");
             theWriter.println("        <pre id=\"compileresult\">");
@@ -557,8 +557,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.flush();
             theWriter.close();
 
-            try  (final PrintWriter theWATWriter = new PrintWriter(new FileWriter(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".wat")))) {
-                theWATWriter.println(content.getData());
+            try  (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + ".wat"))) {
+                content.writeTo(fos);
             }
 
             // Invoke test in browser
@@ -615,7 +615,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
             final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
-            final WASMCompileResult.WASMCompileContent content = theResult.getContent()[0];
+            final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
+            final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
 
             final String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.html";
 
@@ -639,7 +640,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("    <body>");
             theWriter.println("        <h1>Module code</h1>");
             theWriter.println("        <pre id=\"modulecode\">");
-            theWriter.println(content.getData());
+            theWriter.println(textualContent.asString());
             theWriter.println("        </pre>");
             theWriter.println("        <h1>Compilation result</h1>");
             theWriter.println("        <pre id=\"compileresult\">");
@@ -747,11 +748,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             console.log(\"Creating test instance\")");
 
             theWriter.print("                             var theTest = runningInstance.exports.newObject(0,");
-            theWriter.print(content.getSizeOf(theTypeRef));
+            theWriter.print(textualContent.getSizeOf(theTypeRef));
             theWriter.print(",");
-            theWriter.print(content.getTypeIDFor(theTypeRef));
+            theWriter.print(textualContent.getTypeIDFor(theTypeRef));
             theWriter.print(",");
-            theWriter.print(content.getVTableIndexOf(theTypeRef));
+            theWriter.print(textualContent.getVTableIndexOf(theTypeRef));
             theWriter.println(", 0);");
             theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
             theWriter.println("                             console.log(\"Bootstrapped\")");
@@ -821,8 +822,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.flush();
             theWriter.close();
 
-            try  (final PrintWriter theWATWriter = new PrintWriter(new FileWriter(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wat")))) {
-                theWATWriter.println(content.getData());
+            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wat"))) {
+                textualContent.writeTo(fos);
+            }
+
+            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wasm"))) {
+                binaryContent.writeTo(fos);
             }
 
             // Invoke test in browser

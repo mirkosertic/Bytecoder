@@ -1044,6 +1044,6 @@ public class WASMSSACompilerBackend implements CompileBackend<WASMCompileResult>
         theWriter.flush();
 
         return new WASMCompileResult(
-                new WASMCompileResult.WASMCompileContent(theMemoryLayout, aLinkerContext, theGeneratedFunctions, theStringWriter.toString()));
+                new WASMCompileResult.WASMTextualCompileResult(theMemoryLayout, aLinkerContext, theGeneratedFunctions, theStringWriter.toString()));
     }
 }
