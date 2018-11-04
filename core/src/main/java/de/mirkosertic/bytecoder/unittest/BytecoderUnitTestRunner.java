@@ -691,10 +691,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theWriter.println();
             theWriter.print("                    var binaryBuffer = new Uint8Array([");
-            try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
                 binaryContent.writeTo(bos);
                 bos.flush();
-                byte[] theData = bos.toByteArray();
+                final byte[] theData = bos.toByteArray();
                 for (int i=0;i<theData.length;i++) {
                     if (i>0) {
                         theWriter.print(",");
@@ -896,7 +896,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } else {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            // testWASMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }
