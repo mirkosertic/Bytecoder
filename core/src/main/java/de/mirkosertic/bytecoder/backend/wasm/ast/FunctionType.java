@@ -21,24 +21,24 @@ import java.util.Objects;
 
 public class FunctionType {
 
-    private final TypesSection functionsSection;
+    private final TypesSection typesSection;
     private final List<PrimitiveType> parameter;
     private final PrimitiveType resultType;
 
     FunctionType(final TypesSection section, final List<PrimitiveType> parameter, final PrimitiveType resultType) {
-        this.functionsSection = section;
+        this.typesSection = section;
         this.parameter = parameter;
         this.resultType = resultType;
     }
 
     FunctionType(final TypesSection section, final List<PrimitiveType> parameter) {
-        this.functionsSection = section;
+        this.typesSection = section;
         this.parameter = parameter;
         this.resultType = null;
     }
 
     FunctionType(final TypesSection section, final PrimitiveType resultType) {
-        this.functionsSection = section;
+        this.typesSection = section;
         this.parameter = null;
         this.resultType = resultType;
     }
@@ -57,7 +57,7 @@ public class FunctionType {
         writer.write("type");
         writer.space();
         writer.write("$t");
-        writer.write(Integer.toString(functionsSection.indexOf(this)));
+        writer.write(Integer.toString(typesSection.indexOf(this)));
         writer.space();
         writer.opening();
         writer.write("func");
@@ -88,7 +88,7 @@ public class FunctionType {
         writer.write("type");
         writer.space();
         writer.write("$t");
-        writer.write(Integer.toString(functionsSection.indexOf(this)));
+        writer.write(Integer.toString(typesSection.indexOf(this)));
         writer.closing();
     }
 
@@ -111,6 +111,6 @@ public class FunctionType {
     }
 
     public int index() {
-        return functionsSection.indexOf(this);
+        return typesSection.indexOf(this);
     }
 }

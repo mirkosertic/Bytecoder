@@ -96,7 +96,6 @@ public class ImportsSection extends ModuleSection {
     }
 
     public void writeTo(final BinaryWriter binaryWriter,
-            final FunctionIndex functionIndex,
             final List<Memory> memoryIndex) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.importsSection()) {
             sectionWriter.writeUnsignedLeb128(imports.size());
@@ -109,9 +108,10 @@ public class ImportsSection extends ModuleSection {
 
                 if (value instanceof Function) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
-                    sectionWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
+                    final Function f = (Function) value;
+                    sectionWriter.writeUnsignedLeb128(getModule().getTypes().indexOf(f.getFunctionType()));
                 } else if (value instanceof Memory) {
-                    sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
+                    sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
