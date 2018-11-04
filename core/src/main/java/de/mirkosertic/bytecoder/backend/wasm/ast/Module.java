@@ -29,7 +29,8 @@ public class Module {
     private final ElementSection elements;
     private final ImportsSection imports;
     private final ExportsSection exports;
-
+    private final NameSection names;
+    private final EventsSection events;
     public Module() {
         types = new TypesSection(this);
         exports = new ExportsSection(this);
@@ -41,6 +42,8 @@ public class Module {
         final DataSection data = new DataSection(this);
         final StartSection start = new StartSection(this);
         imports = new ImportsSection(this);
+        names = new NameSection(this);
+        events = new EventsSection(this);
     }
 
     public void writeTo(final TextWriter writer) throws IOException {
@@ -92,6 +95,8 @@ public class Module {
         exports.writeTo(writer, functionIndex, memoryIndex);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
+        names.writeCodeTo(writer);
+        events.writeCodeTo(writer);
     }
 
     public MemorySection getMems() {
