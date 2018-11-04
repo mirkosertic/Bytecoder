@@ -697,8 +697,7 @@ public class WASMSSAASTWriter {
                 BytecodeObjectTypeRef.fromUtf8Constant(aValue.getMethodRef().getClassIndex().getClassConstant().getConstant()),
                 aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                 aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
-        final Function theMethod = module.functionIndex().firstByLabel(theMethodName);
-        return i32.c(module.getTables().funcTable().indexOf(theMethod));
+        return weakFunctionTableReference(theMethodName);
     }
 
     private WASMExpression runtimeGeneratedTypeValue(final RuntimeGeneratedTypeExpression aValue) {
