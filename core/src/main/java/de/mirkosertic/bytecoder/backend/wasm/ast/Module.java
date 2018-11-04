@@ -84,7 +84,7 @@ public class Module {
 
         writer.header();
         types.writeTo(writer);
-        imports.writeTo(writer, functionIndex, memoryIndex);
+        imports.writeTo(writer, memoryIndex);
         functions.writeTo(writer, functionIndex);
         tables.writeTo(writer);
         mems.writeTo(writer);

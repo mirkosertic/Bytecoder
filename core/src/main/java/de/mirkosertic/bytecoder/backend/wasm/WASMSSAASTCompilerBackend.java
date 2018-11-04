@@ -220,14 +220,15 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         params.add(param("p" + (i + 1), WASMSSAASTWriter.toType(TypeRef.toType(theParamType))));
                     }
 
+                    final Function imported;
                     if (!theSignature.getReturnType().isVoid()) {
-                        final Function imported = module.getImports().importFunction(
+                        imported = module.getImports().importFunction(
                                 importReference,
                                 methodName,
                                 params,
                                 WASMSSAASTWriter.toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
                     } else {
-                        final Function imported = module.getImports().importFunction(
+                        imported = module.getImports().importFunction(
                                 importReference,
                                 methodName,
                                 params).toTable();

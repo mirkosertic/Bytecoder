@@ -160,7 +160,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 }
             }
 
-            if (theCode instanceof WASMCompileResult) {
+/*            if (theCode instanceof WASMCompileResult) {
                 final WASMCompileResult theWASMCompileResult = (WASMCompileResult) theCode;
                 final int[] theWASM = wat2wasm(theWASMCompileResult);
                 final File theBytecoderWASMFileName = new File(theBytecoderDirectory, "bytecoder.wasm");
@@ -170,7 +170,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
                     }
                 }
 
-            }
+            }*/
 
         } catch (final Exception e) {
             throw new MojoExecutionException("Error running bytecoder", e);

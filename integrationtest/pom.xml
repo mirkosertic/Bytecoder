@@ -61,7 +61,7 @@
                         </goals>
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                            <backend>wasm</backend>
+                            <backend>wasm_ast</backend>
                         </configuration>
                     </execution>
                 </executions>
