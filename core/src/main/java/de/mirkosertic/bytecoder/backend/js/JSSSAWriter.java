@@ -64,11 +64,13 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
@@ -103,8 +105,8 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private final ConstantPool constantPool;
 
-    public JSSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext,
-            ConstantPool aConstantPool) {
+    public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
+            final ConstantPool aConstantPool) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         constantPool = aConstantPool;
     }
@@ -113,7 +115,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool);
     }
 
-    private void print(Value aValue) {
+    private void print(final Value aValue) {
         if (aValue instanceof Variable) {
             printVariableName((Variable) aValue);
         } else if (aValue instanceof GetStaticExpression) {
@@ -198,31 +200,51 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((TypeOfExpression) aValue);
         } else if (aValue instanceof SqrtExpression) {
             print((SqrtExpression) aValue);
+        } else if (aValue instanceof MaxExpression) {
+            print((MaxExpression) aValue);
+        } else if (aValue instanceof MinExpression) {
+            print((MinExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
-    private void print(SqrtExpression aValue) {
+    private void print(final MaxExpression aValue) {
+        print("Math.max(");
+        print((Value) aValue.incomingDataFlows().get(0));
+        print(",");
+        print((Value) aValue.incomingDataFlows().get(1));
+        print(")");
+    }
+
+    private void print(final MinExpression aValue) {
+        print("Math.min(");
+        print((Value) aValue.incomingDataFlows().get(0));
+        print(",");
+        print((Value) aValue.incomingDataFlows().get(1));
+        print(")");
+    }
+
+    private void print(final SqrtExpression aValue) {
         print("Math.sqrt(");
         print((Value) aValue.incomingDataFlows().get(0));
         print(")");
     }
 
-    private void print(TypeOfExpression aValue) {
+    private void print(final TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
         print(".ClassgetClass()");
     }
 
-    private void print(StackTopExpression aValue) {
+    private void print(final StackTopExpression aValue) {
         print("0");
     }
 
-    private void print(MemorySizeExpression aValue) {
+    private void print(final MemorySizeExpression aValue) {
         print("0");
     }
 
-    private void print(ResolveCallsiteObjectExpression aValue) {
+    private void print(final ResolveCallsiteObjectExpression aValue) {
 
 
         print("bytecoder.resolveStaticCallSiteObject(");
@@ -231,12 +253,12 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aValue.getCallsiteId());
         println("', function() {");
 
-        Program theProgram = aValue.getProgram();
-        RegionNode theBootstrapCode = aValue.getBootstrapMethod();
+        final Program theProgram = aValue.getProgram();
+        final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        JSSSAWriter theNested = withDeeperIndent();
+        final JSSSAWriter theNested = withDeeperIndent();
 
-        for (Variable theVariable : theProgram.globalVariables()) {
+        for (final Variable theVariable : theProgram.globalVariables()) {
             theNested.print("var ");
             theNested.print(theVariable.getName());
             theNested.println(" = null;");
@@ -247,34 +269,34 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("})");
     }
 
-    private void print(RuntimeGeneratedTypeExpression aValue) {
+    private void print(final RuntimeGeneratedTypeExpression aValue) {
         print("bytecoder.dynamicType(");
         print(aValue.getMethodRef());
         print(")");
     }
 
-    private void print(MethodTypeExpression aValue) {
+    private void print(final MethodTypeExpression aValue) {
         print("'");
         print(aValue.getSignature().toString());
         print("'");
     }
 
-    private void print(MethodHandlesGeneratedLookupExpression aValue) {
+    private void print(final MethodHandlesGeneratedLookupExpression aValue) {
         print("null");
     }
 
-    private void print(ComputedMemoryLocationWriteExpression aValue) {
+    private void print(final ComputedMemoryLocationWriteExpression aValue) {
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
         print(theIncomingData.get(0));
         print(" + ");
         print(theIncomingData.get(1));
     }
 
-    private void print(ComputedMemoryLocationReadExpression aValue) {
+    private void print(final ComputedMemoryLocationReadExpression aValue) {
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
         print("bytecoderGlobalMemory[");
         print(theIncomingData.get(0));
@@ -283,44 +305,44 @@ public class JSSSAWriter extends IndentSSAWriter {
         print("]");
     }
 
-    private void print(MethodRefExpression aValue) {
-        String theMethodName = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        BytecodeMethodSignature theSignature = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+    private void print(final MethodRefExpression aValue) {
+        final String theMethodName = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        final BytecodeMethodSignature theSignature = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         print(JSWriterUtils.toClassName(aValue.getMethodRef().getClassIndex().getClassConstant()));
         print(".");
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
     }
 
-    private void print(FloorExpression aValue) {
+    private void print(final FloorExpression aValue) {
         print("Math.floor(");
         print(aValue.incomingDataFlows().get(0));
         print(")");
     }
 
-    private void print(UnknownExpression aValue) {
+    private void print(final UnknownExpression aValue) {
         print("undefined");
     }
 
-    private void print(CurrentExceptionExpression aValue) {
+    private void print(final CurrentExceptionExpression aValue) {
         //TODO: Fix this
         print("'current exception'");
     }
 
-    private void print(MethodParameterValue aValue) {
+    private void print(final MethodParameterValue aValue) {
         print("p" + (aValue.getParameterIndex() + 1));
     }
 
-    private void print(SelfReferenceParameterValue aValue) {
+    private void print(final SelfReferenceParameterValue aValue) {
         print("thisRef");
     }
 
-    private void print(NewMultiArrayExpression aValue) {
-        BytecodeTypeRef theType = aValue.getType();
-        Object theDefaultValue = theType.defaultValue();
-        String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
+    private void print(final NewMultiArrayExpression aValue) {
+        final BytecodeTypeRef theType = aValue.getType();
+        final Object theDefaultValue = theType.defaultValue();
+        final String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
         print("bytecoder.newMultiArray(");
         print("[");
-        List<Value> theDimensions = aValue.incomingDataFlows();
+        final List<Value> theDimensions = aValue.incomingDataFlows();
         for (int i=0;i<theDimensions.size();i++) {
             if (i>0) {
                 print(",");
@@ -333,24 +355,24 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(ClassReferenceValue aValue) {
+    private void print(final ClassReferenceValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
     }
 
-    private void print(InstanceOfExpression aValue) {
-        Value theValue = aValue.incomingDataFlows().get(0);
+    private void print(final InstanceOfExpression aValue) {
+        final Value theValue = aValue.incomingDataFlows().get(0);
         print("(");
         print(theValue);
         print(" == null ? false : ");
         print(theValue);
         print(".instanceOf(");
 
-        BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
+        final BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
         if (!theConstant.stringValue().startsWith("[")) {
-            BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
+            final BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
             print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
         } else {
-            BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
             print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
         }
 
@@ -358,27 +380,27 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(LongValue aValue) {
+    private void print(final LongValue aValue) {
         print(aValue.getLongValue());
     }
 
-    private void print(ShortValue aValue) {
+    private void print(final ShortValue aValue) {
         print(aValue.getShortValue());
     }
 
-    private void print(NegatedExpression aValue) {
-        Value theValue = aValue.incomingDataFlows().get(0);
+    private void print(final NegatedExpression aValue) {
+        final Value theValue = aValue.incomingDataFlows().get(0);
         print("(-");
         print(theValue);
         print(")");
     }
 
-    private void print(CompareExpression aValue) {
+    private void print(final CompareExpression aValue) {
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        Value theVariable1 = theIncomingData.get(0);
-        Value theVariable2 = theIncomingData.get(1);
+        final Value theVariable1 = theIncomingData.get(0);
+        final Value theVariable2 = theIncomingData.get(1);
         print("(");
         print(theVariable1);
         print(" > ");
@@ -391,11 +413,11 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(" ? -1 : 0))");
     }
 
-    private void print(NewArrayExpression aValue) {
-        BytecodeTypeRef theType = aValue.getType();
-        Value theLength =aValue.incomingDataFlows().get(0);
-        Object theDefaultValue = theType.defaultValue();
-        String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
+    private void print(final NewArrayExpression aValue) {
+        final BytecodeTypeRef theType = aValue.getType();
+        final Value theLength =aValue.incomingDataFlows().get(0);
+        final Object theDefaultValue = theType.defaultValue();
+        final String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
         print("bytecoder.newArray(");
         print(theLength);
         print(",");
@@ -403,49 +425,49 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(IntegerValue aValue) {
+    private void print(final IntegerValue aValue) {
         print(aValue.getIntValue());
     }
 
-    private void print(FloatValue aValue) {
+    private void print(final FloatValue aValue) {
         print(aValue.getFloatValue());
     }
 
-    private void print(DoubleValue aValue) {
+    private void print(final DoubleValue aValue) {
         print(aValue.getDoubleValue());
     }
 
-    private void print(StringValue aValue) {
-        int theIndex = constantPool.register(aValue);
+    private void print(final StringValue aValue) {
+        final int theIndex = constantPool.register(aValue);
         print("bytecoder.stringpool[");
         print(theIndex);
         print("]");
     }
 
-    private void print(ArrayLengthExpression aValue) {
+    private void print(final ArrayLengthExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
         print(".data.length");
     }
 
-    private void printArrayIndexReference(Value aValue) {
+    private void printArrayIndexReference(final Value aValue) {
         print(".data[");
         print(aValue);
         print("]");
     }
 
-    private void print(ArrayEntryExpression aValue) {
+    private void print(final ArrayEntryExpression aValue) {
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        Value theArray = theIncomingData.get(0);
-        Value theIndex = theIncomingData.get(1);
+        final Value theArray = theIncomingData.get(0);
+        final Value theIndex = theIncomingData.get(1);
         print(theArray);
         printArrayIndexReference(theIndex);
     }
 
-    private void print(TypeConversionExpression aValue) {
-        TypeRef theTargetType = aValue.resolveType();
-        Value theValue = aValue.incomingDataFlows().get(0);
+    private void print(final TypeConversionExpression aValue) {
+        final TypeRef theTargetType = aValue.resolveType();
+        final Value theValue = aValue.incomingDataFlows().get(0);
         switch (theTargetType.resolve()) {
             case FLOAT:
                 print(theValue);
@@ -461,16 +483,16 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void print(GetFieldExpression aValue) {
-        Value theTarget = aValue.incomingDataFlows().get(0);
-        BytecodeFieldRefConstant theField = aValue.getField();
+    private void print(final GetFieldExpression aValue) {
+        final Value theTarget = aValue.incomingDataFlows().get(0);
+        final BytecodeFieldRefConstant theField = aValue.getField();
         print(theTarget);
         printInstanceFieldReference(theField);
     }
 
-    private void print(BinaryExpression aValue) {
+    private void print(final BinaryExpression aValue) {
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
         print("(");
         print(theIncomingData.get(0));
@@ -533,8 +555,8 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(FixedBinaryExpression aValue) {
-        Value theValue1 = aValue.incomingDataFlows().get(0);
+    private void print(final FixedBinaryExpression aValue) {
+        final Value theValue1 = aValue.incomingDataFlows().get(0);
         print(theValue1);
         switch (aValue.getOperator()) {
             case ISNONNULL:
@@ -551,21 +573,21 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    private void print(ByteValue aValue) {
+    private void print(final ByteValue aValue) {
         print(aValue.getByteValue());
     }
 
-    private void print(NewObjectExpression aValue) {
+    private void print(final NewObjectExpression aValue) {
         print("new ");
         print(JSWriterUtils.toClassName(aValue.getType()));
         print(".Create()");
     }
 
-    private void print(InvokeStaticMethodExpression aValue) {
-        String theMethodName = aValue.getMethodName();
-        BytecodeMethodSignature theSignature = aValue.getSignature();
+    private void print(final InvokeStaticMethodExpression aValue) {
+        final String theMethodName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        List<Value> theVariables = aValue.incomingDataFlows();
+        final List<Value> theVariables = aValue.incomingDataFlows();
 
         print(JSWriterUtils.toClassName(aValue.getClassName()));
         print(".");
@@ -581,15 +603,15 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(")");
     }
 
-    private void print(DirectInvokeMethodExpression aValue) {
+    private void print(final DirectInvokeMethodExpression aValue) {
 
-        String theMethodName = aValue.getMethodName();
-        BytecodeMethodSignature theSignature = aValue.getSignature();
+        final String theMethodName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        Value theTarget = theIncomingData.get(0);
-        List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
+        final Value theTarget = theIncomingData.get(0);
+        final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
         if (!"<init>".equals(theMethodName)) {
             print(theTarget);
@@ -604,23 +626,23 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         print(theTarget);
 
-        for (Value theArgument : theArguments) {
+        for (final Value theArgument : theArguments) {
             print(",");
             print(theArgument);
         }
         print(")");
     }
 
-    private void print(InvokeVirtualMethodExpression aValue) {
-        String theMethodName = aValue.getMethodName();
-        BytecodeMethodSignature theSignature = aValue.getSignature();
+    private void print(final InvokeVirtualMethodExpression aValue) {
+        final String theMethodName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        List<Value> theIncomingData = aValue.incomingDataFlows();
+        final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        Value theTarget = theIncomingData.get(0);
-        List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
+        final Value theTarget = theIncomingData.get(0);
+        final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
-        BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
 
         if (Objects.equals(aValue.getMethodName(), "invokeWithMagicBehindTheScenes")) {
             print("(");
@@ -632,58 +654,58 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
 
         print(theTarget);
-        for (Value theArgument : theArguments) {
+        for (final Value theArgument : theArguments) {
             print(",");
             print(theArgument);
         }
         print(")");
     }
 
-    private void print(NullValue aValue) {
+    private void print(final NullValue aValue) {
         print("null");
     }
 
-    private void print(GetStaticExpression aValue) {
+    private void print(final GetStaticExpression aValue) {
         printStaticFieldReference(aValue.getField());
     }
 
-    private void printVariableName(Variable aVariable) {
+    private void printVariableName(final Variable aVariable) {
         print(aVariable.getName());
     }
 
-    private void printStaticFieldReference(BytecodeFieldRefConstant aField) {
+    private void printStaticFieldReference(final BytecodeFieldRefConstant aField) {
         print(JSWriterUtils.toClassName(aField.getClassIndex().getClassConstant()));
         print(".");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
-    private void printInstanceFieldReference(BytecodeFieldRefConstant aField) {
+    private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
         print(".");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
-    private String generateJumpCodeFor(BytecodeOpcodeAddress aTarget) {
+    private String generateJumpCodeFor(final BytecodeOpcodeAddress aTarget) {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
-    private void writeExpressions(ExpressionList aExpressions) {
-        for (Expression theExpression : aExpressions.toList()) {
+    private void writeExpressions(final ExpressionList aExpressions) {
+        for (final Expression theExpression : aExpressions.toList()) {
             if (options.isDebugOutput()) {
-                String theComment = theExpression.getComment();
+                final String theComment = theExpression.getComment();
                 if (theComment != null && !theComment.isEmpty()) {
                     print("// ");
                     println(theComment);
                 }
             }
             if (theExpression instanceof ReturnExpression) {
-                ReturnExpression theE = (ReturnExpression) theExpression;
+                final ReturnExpression theE = (ReturnExpression) theExpression;
                 print("return");
                 println(";");
             } else if (theExpression instanceof VariableAssignmentExpression) {
-                VariableAssignmentExpression theE = (VariableAssignmentExpression) theExpression;
+                final VariableAssignmentExpression theE = (VariableAssignmentExpression) theExpression;
 
-                Variable theVariable = theE.getVariable();
-                Value theValue = theE.getValue();
+                final Variable theVariable = theE.getVariable();
+                final Value theValue = theE.getValue();
 
                 if (theValue instanceof ComputedMemoryLocationWriteExpression) {
                     continue;
@@ -698,46 +720,46 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print("; // type is ");
                 println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());
             } else if (theExpression instanceof PutStaticExpression) {
-                PutStaticExpression theE = (PutStaticExpression) theExpression;
-                BytecodeFieldRefConstant theField = theE.getField();
-                Value theValue = theE.incomingDataFlows().get(0);
+                final PutStaticExpression theE = (PutStaticExpression) theExpression;
+                final BytecodeFieldRefConstant theField = theE.getField();
+                final Value theValue = theE.incomingDataFlows().get(0);
                 printStaticFieldReference(theField);
                 print(" = ");
                 print(theValue);
                 println(";");
             } else if (theExpression instanceof ReturnValueExpression) {
-                ReturnValueExpression theE = (ReturnValueExpression) theExpression;
-                Value theValue = theE.incomingDataFlows().get(0);
+                final ReturnValueExpression theE = (ReturnValueExpression) theExpression;
+                final Value theValue = theE.incomingDataFlows().get(0);
                 print("return ");
                 print(theValue);
                 println(";");
             } else if (theExpression instanceof ThrowExpression) {
-                ThrowExpression theE = (ThrowExpression) theExpression;
-                Value theValue = theE.incomingDataFlows().get(0);
+                final ThrowExpression theE = (ThrowExpression) theExpression;
+                final Value theValue = theE.incomingDataFlows().get(0);
                 print("throw ");
                 print(theValue);
                 println(";");
             } else if (theExpression instanceof InvokeVirtualMethodExpression) {
-                InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
+                final InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
                 print(theE);
                 println(";");
             } else if (theExpression instanceof DirectInvokeMethodExpression) {
-                DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
+                final DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
                 print(theE);
                 println(";");
             } else if (theExpression instanceof InvokeStaticMethodExpression) {
-                InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
+                final InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
                 print(theE);
                 println(";");
             } else if (theExpression instanceof PutFieldExpression) {
-                PutFieldExpression theE = (PutFieldExpression) theExpression;
+                final PutFieldExpression theE = (PutFieldExpression) theExpression;
 
-                List<Value> theIncomingData = theE.incomingDataFlows();
+                final List<Value> theIncomingData = theE.incomingDataFlows();
 
-                Value theTarget = theIncomingData.get(0);
-                BytecodeFieldRefConstant theField = theE.getField();
+                final Value theTarget = theIncomingData.get(0);
+                final BytecodeFieldRefConstant theField = theE.getField();
 
-                Value thevalue = theIncomingData.get(1);
+                final Value thevalue = theIncomingData.get(1);
                 print(theTarget);
 
                 printInstanceFieldReference(theField);
@@ -745,7 +767,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print(thevalue);
                 println(";");
             } else if (theExpression instanceof IFExpression) {
-                IFExpression theE = (IFExpression) theExpression;
+                final IFExpression theE = (IFExpression) theExpression;
                 print("if (");
                 print(theE.incomingDataFlows().get(0));
                 println(") {");
@@ -755,27 +777,27 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println("}");
 
             } else if (theExpression instanceof GotoExpression) {
-                GotoExpression theE = (GotoExpression) theExpression;
+                final GotoExpression theE = (GotoExpression) theExpression;
                 println(generateJumpCodeFor(theE.getJumpTarget()));
             } else if (theExpression instanceof ArrayStoreExpression) {
-                ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
+                final ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
 
-                List<Value> theIncomingData = theE.incomingDataFlows();
+                final List<Value> theIncomingData = theE.incomingDataFlows();
 
-                Value theArray = theIncomingData.get(0);
-                Value theIndex = theIncomingData.get(1);
-                Value theValue = theIncomingData.get(2);
+                final Value theArray = theIncomingData.get(0);
+                final Value theIndex = theIncomingData.get(1);
+                final Value theValue = theIncomingData.get(2);
                 print(theArray);
                 printArrayIndexReference(theIndex);
                 print(" = ");
                 print(theValue);
                 println(";");
             } else if (theExpression instanceof CheckCastExpression) {
-                CheckCastExpression theE = (CheckCastExpression) theExpression;
+                final CheckCastExpression theE = (CheckCastExpression) theExpression;
                 // Completely ignored
             } else if (theExpression instanceof TableSwitchExpression) {
-                TableSwitchExpression theE = (TableSwitchExpression) theExpression;
-                Value theValue = theE.incomingDataFlows().get(0);
+                final TableSwitchExpression theE = (TableSwitchExpression) theExpression;
+                final Value theValue = theE.incomingDataFlows().get(0);
 
                 print("if (");
                 print(theValue);
@@ -797,7 +819,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print(theE.getLowValue());
                 println(") {");
 
-                for (Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
+                for (final Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
                     print(" case ");
                     print(theEntry.getKey());
                     println(":");
@@ -808,12 +830,12 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println("}");
                 println("throw 'Illegal jump target!';");
             } else if (theExpression instanceof LookupSwitchExpression) {
-                LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
+                final LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
                 print("switch(");
                 print(theE.incomingDataFlows().get(0));
                 println(") {");
 
-                for (Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
+                for (final Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
                     print(" case ");
                     print(theEntry.getKey());
                     println(":");
@@ -826,13 +848,13 @@ public class JSSSAWriter extends IndentSSAWriter {
 
                 writeExpressions(theE.getDefaultExpressions());
             } else if (theExpression instanceof SetMemoryLocationExpression) {
-                SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
+                final SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
 
-                List<Value> theIncomingData = theE.incomingDataFlows();
+                final List<Value> theIncomingData = theE.incomingDataFlows();
 
                 print("bytecoderGlobalMemory[");
 
-                ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
+                final ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
 
                 print(theValue);
 
@@ -843,7 +865,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof UnreachableExpression) {
                 println("throw 'Unreachable';");
             } else if (theExpression instanceof BreakExpression) {
-                BreakExpression theBreak = (BreakExpression) theExpression;
+                final BreakExpression theBreak = (BreakExpression) theExpression;
                 if (theBreak.isSetLabelRequired()) {
                     print("__label__ = ");
                     print(theBreak.jumpTarget().getAddress());
@@ -855,7 +877,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                     println(";");
                 }
             } else if (theExpression instanceof ContinueExpression) {
-                ContinueExpression theContinue = (ContinueExpression) theExpression;
+                final ContinueExpression theContinue = (ContinueExpression) theExpression;
                 print("__label__ = ");
                 print(theContinue.jumpTarget().getAddress());
                 println(";");
@@ -868,12 +890,12 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
     }
 
-    public void printRelooped(Relooper.Block aBlock) {
+    public void printRelooped(final Relooper.Block aBlock) {
         println("var __label__ = null;");
         print(aBlock);
     }
 
-    private void print(Relooper.Block aBlock) {
+    private void print(final Relooper.Block aBlock) {
         if (aBlock == null) {
             return;
         }
@@ -892,7 +914,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         throw new IllegalStateException("Not implemented : " + aBlock);
     }
 
-    private void print(Relooper.SimpleBlock aSimpleBlock) {
+    private void print(final Relooper.SimpleBlock aSimpleBlock) {
         JSSSAWriter theWriter = this;
         if (aSimpleBlock.isLabelRequired()) {
             print("$");
@@ -910,7 +932,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aSimpleBlock.next());
     }
 
-    private void print(Relooper.LoopBlock aLoopBlock) {
+    private void print(final Relooper.LoopBlock aLoopBlock) {
         if (aLoopBlock.isLabelRequired()) {
             print("$");
             print(aLoopBlock.label().name());
@@ -918,7 +940,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
         println("for (;;) {");
 
-        JSSSAWriter theDeeper = withDeeperIndent();
+        final JSSSAWriter theDeeper = withDeeperIndent();
         theDeeper.print(aLoopBlock.inner());
 
         println("}");
@@ -926,7 +948,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(aLoopBlock.next());
     }
 
-    private void print(Relooper.MultipleBlock aMultiple) {
+    private void print(final Relooper.MultipleBlock aMultiple) {
 
         if (aMultiple.isLabelRequired()) {
             print("$");
@@ -935,15 +957,15 @@ public class JSSSAWriter extends IndentSSAWriter {
         }
         println("for(;;) switch (__label__) {");
 
-        JSSSAWriter theDeeper = withDeeperIndent();
-        for (Relooper.Block theHandler : aMultiple.handlers()) {
-            for (RegionNode theEntry : theHandler.entries()) {
+        final JSSSAWriter theDeeper = withDeeperIndent();
+        for (final Relooper.Block theHandler : aMultiple.handlers()) {
+            for (final RegionNode theEntry : theHandler.entries()) {
                 theDeeper.print("case ");
                 theDeeper.print(theEntry.getStartAddress().getAddress());
                 theDeeper.println(" : ");
             }
 
-            JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
+            final JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
             theHandlerWriter.print(theHandler);
         }
 
