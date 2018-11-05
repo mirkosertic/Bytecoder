@@ -15,7 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -73,6 +81,8 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
+import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
 import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
@@ -654,7 +664,23 @@ public class WASMSSAASTWriter {
         if (aValue instanceof MinExpression) {
             return minValue((MinExpression) aValue);
         }
+        if (aValue instanceof FloatingPointFloorExpression) {
+            return floatingPointFloor((FloatingPointFloorExpression) aValue);
+        }
+        if (aValue instanceof FloatingPointCeilExpression) {
+            return floatingPointCeil((FloatingPointCeilExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue floatingPointCeil(final FloatingPointCeilExpression aValue) {
+        final List<Value> theArguments = aValue.incomingDataFlows();
+        return f32.ceil(toValue(theArguments.get(0)));
+    }
+
+    private WASMValue floatingPointFloor(final FloatingPointFloorExpression aValue) {
+        final List<Value> theArguments = aValue.incomingDataFlows();
+        return f32.floor(toValue(theArguments.get(0)));
     }
 
     private WASMValue minValue(final MinExpression aValue) {
