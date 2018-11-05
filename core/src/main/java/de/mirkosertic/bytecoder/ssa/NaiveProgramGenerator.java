@@ -1521,6 +1521,30 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final Variable theNewVariable = aTargetBlock
                                 .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
                         aHelper.push(theNewVariable);
+                    } else if ("floor".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.Math".equals(theClassToInvoke.name())) {
+                        final Value theValue = new FloatingPointFloorExpression(theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("floor".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
+                        final Value theValue = new FloatingPointFloorExpression(theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("ceil".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.Math".equals(theClassToInvoke.name())) {
+                        final Value theValue = new FloatingPointCeilExpression(theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("ceil".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
+                        final Value theValue = new FloatingPointCeilExpression(theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
                     } else if ("min".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
                             && "java.lang.Math".equals(theClassToInvoke.name())) {
                         final Value theValue = new MinExpression(TypeRef.toType(theCalledSignature.getReturnType()),

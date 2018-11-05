@@ -53,6 +53,8 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
+import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
 import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
@@ -204,6 +206,10 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((MaxExpression) aValue);
         } else if (aValue instanceof MinExpression) {
             print((MinExpression) aValue);
+        } else if (aValue instanceof FloatingPointFloorExpression) {
+            print((FloatingPointFloorExpression) aValue);
+        } else if (aValue instanceof FloatingPointCeilExpression) {
+            print((FloatingPointCeilExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
@@ -315,6 +321,18 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final FloorExpression aValue) {
         print("Math.floor(");
+        print(aValue.incomingDataFlows().get(0));
+        print(")");
+    }
+
+    private void print(final FloatingPointFloorExpression aValue) {
+        print("Math.floor(");
+        print(aValue.incomingDataFlows().get(0));
+        print(")");
+    }
+
+    private void print(final FloatingPointCeilExpression aValue) {
+        print("Math.ceil(");
         print(aValue.incomingDataFlows().get(0));
         print(")");
     }
