@@ -20,7 +20,6 @@ import java.lang.reflect.Method;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
-import de.mirkosertic.bytecoder.backend.wasm.WASMSSACompilerBackend;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -43,12 +42,6 @@ public class CompileTarget {
             }
         },
         wasm {
-            @Override
-            public CompileBackend createBackend() {
-                return new WASMSSACompilerBackend(NaiveProgramGenerator.FACTORY);
-            }
-        },
-        wasm_ast {
             @Override
             public CompileBackend createBackend() {
                 return new WASMSSAASTCompilerBackend(NaiveProgramGenerator.FACTORY);

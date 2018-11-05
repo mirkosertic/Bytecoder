@@ -29,7 +29,7 @@ public class IndentSSAWriter {
     private boolean newLine;
     protected final CompileOptions options;
 
-    public IndentSSAWriter(CompileOptions aOptions, Program aProgram, String aIndent, PrintWriter aWriter, BytecodeLinkerContext aLinkerContext) {
+    public IndentSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext) {
         writer = aWriter;
         indent = aIndent;
         program = aProgram;
@@ -45,7 +45,7 @@ public class IndentSSAWriter {
         }
     }
 
-    public void print(String s) {
+    public void print(final String s) {
         checkNewLine();
         writer.print(s);
     }
@@ -56,44 +56,44 @@ public class IndentSSAWriter {
         newLine = true;
     }
 
-    public void printlnComment(String aComment) {
+    public void printlnComment(final String aComment) {
         checkNewLine();
         writer.print("// ");
         println(aComment);
     }
 
-    public void println(String s) {
+    public void println(final String s) {
         checkNewLine();
         writer.println(s);
         newLine = true;
     }
 
-    public void print(byte b) {
+    public void print(final byte b) {
         checkNewLine();
         writer.print(b);
     }
 
-    public void print(short s) {
+    public void print(final short s) {
         checkNewLine();
         writer.print(s);
     }
 
-    public void print(int i) {
+    public void print(final int i) {
         checkNewLine();
         writer.print(i);
     }
 
-    public void print(long l) {
+    public void print(final long l) {
         checkNewLine();
         writer.print(l);
     }
 
-    public void print(float f) {
+    public void print(final float f) {
         checkNewLine();
         writer.print(f);
     }
 
-    public void print(double d) {
+    public void print(final double d) {
         checkNewLine();
         writer.print(d);
     }

@@ -41,6 +41,7 @@
                 <artifactId>bytecoder-mavenplugin</artifactId>
                 <version>${project.version}</version>
                 <configuration>
+                    <debugOutput>false</debugOutput>
                 </configuration>
                 <executions>
                     <execution>
@@ -61,7 +62,7 @@
                         </goals>
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                            <backend>wasm_ast</backend>
+                            <backend>wasm</backend>
                         </configuration>
                     </execution>
                 </executions>
