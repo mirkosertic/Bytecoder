@@ -30,7 +30,7 @@ public abstract class UnaryExpression implements WASMExpression {
     }
 
     @Override
-    public final void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write(textCode);
         textWriter.space();
@@ -39,7 +39,7 @@ public abstract class UnaryExpression implements WASMExpression {
     }
 
     @Override
-    public final void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         value.writeTo(codeWriter, context);
         codeWriter.writeByte(binaryCode);
     }

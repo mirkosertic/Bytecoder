@@ -25,6 +25,7 @@ public class Return implements WASMExpression {
         textWriter.opening();
         textWriter.write("return");
         textWriter.closing();
+        textWriter.newLine();
     }
 
     @Override

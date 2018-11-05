@@ -43,7 +43,8 @@ public class FunctionTest {
         }
 
         Assert.assertEquals("(func $label (type $t0) (param $p1 i32) (result i32)" + System.lineSeparator()
-                + "    (return (i32.const 42)))", strWriter.toString());
+                + "    (return (i32.const 42))" + System.lineSeparator()
+                + "    )", strWriter.toString());
     }
 
     @Test
@@ -61,6 +62,7 @@ public class FunctionTest {
         }
 
         Assert.assertEquals("(func $label (type $t0) (param $p1 i32)" + System.lineSeparator()
-                + "    (return))", strWriter.toString());
+                + "    (return)" + System.lineSeparator()
+                + "    )", strWriter.toString());
     }
 }

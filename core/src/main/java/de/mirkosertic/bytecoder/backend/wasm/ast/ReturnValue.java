@@ -15,9 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class ReturnValue extends UnaryExpression {
 
     ReturnValue(final WASMValue value) {
         super(value, "return", (byte) 0x0f);
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+        super.writeTo(textWriter, context);
+        textWriter.newLine();
     }
 }
