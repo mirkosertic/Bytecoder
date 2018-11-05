@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend.wasm;
 
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
@@ -134,30 +133,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final Module module = new Module("bytecoder");
 
         final Global stackTop = module.getGlobals().newMutableGlobal(WASMSSAASTWriter.STACKTOP, PrimitiveType.i32, i32.c(-1));
-
-        // Comparison of two f32
-        {
-            final ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(param("p1", PrimitiveType.f32), param("p2", PrimitiveType.f32)), PrimitiveType.i32);
-            final Block b1 = compareValueF32.flow.block("b1");
-            b1.flow.branchIff(b1, f32.ne(getLocal(compareValueF32.localByLabel("p1")), getLocal(compareValueF32.localByLabel("p2"))));
-            b1.flow.ret(i32.c(0));
-            final Block b2 = compareValueF32.flow.block("b2");
-            b2.flow.branchIff(b2, f32.ge(getLocal(compareValueF32.localByLabel("p1")), getLocal(compareValueF32.localByLabel("p2"))));
-            b2.flow.ret(i32.c(-1));
-            compareValueF32.flow.ret(i32.c(1));
-        }
-
-        // Comparison of two i32
-        {
-            final ExportableFunction compareValueI32 = module.getFunctions().newFunction("compareValueI32", Arrays.asList(param("p1", PrimitiveType.i32), param("p2", PrimitiveType.i32)), PrimitiveType.i32);
-            final Block b1 = compareValueI32.flow.block("b1");
-            b1.flow.branchIff(b1, i32.ne(getLocal(compareValueI32.localByLabel("p1")), getLocal(compareValueI32.localByLabel("p2"))));
-            b1.flow.ret(i32.c(0));
-            final Block b2 = compareValueI32.flow.block("b2");
-            b2.flow.branchIff(b2, i32.ge_s(getLocal(compareValueI32.localByLabel("p1")), getLocal(compareValueI32.localByLabel("p2"))));
-            b2.flow.ret(i32.c(-1));
-            compareValueI32.flow.ret(i32.c(1));
-        }
 
         // Instanceof check
         {

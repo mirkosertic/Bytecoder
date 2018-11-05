@@ -763,9 +763,13 @@ public class WASMSSAASTWriter {
     }
 
     private WASMExpression compareValue(final CompareExpression aValue) {
+
         final List<Value> theIncomingFlows = aValue.incomingDataFlows();
         final Value theValue1 = theIncomingFlows.get(0);
         final Value theValue2 = theIncomingFlows.get(1);
+
+        final WASMValue left = toValue(theValue1);
+        final WASMValue right = toValue(theValue2);
 
         final TypeRef.Native theValue1Type = theValue1.resolveType().resolve();
         final TypeRef.Native theValue2Type = theValue2.resolveType().resolve();
@@ -773,19 +777,13 @@ public class WASMSSAASTWriter {
             throw new IllegalStateException("Does not support mixed types : " + theValue1Type + " -> " + theValue2Type);
         }
 
-        final Function theCompareFunction;
-
         switch (theValue1Type) {
             case DOUBLE:
             case FLOAT:
-                theCompareFunction = module.functionIndex().firstByLabel("compareValueF32");
-                break;
+                return select(i32.c(1), select(i32.c(-1), i32.c(0), f32.lt(left, right)), f32.gt(left, right));
             default:
-                theCompareFunction = module.functionIndex().firstByLabel("compareValueI32");
-                break;
+                return select(i32.c(1), select(i32.c(-1), i32.c(0), i32.lt_s(left, right)), i32.gt_s(left, right));
         }
-
-        return call(theCompareFunction, Arrays.asList(toValue(theValue1), toValue(theValue2)));
     }
 
     private WASMValue arrayEntryValue(final ArrayEntryExpression aValue) {
