@@ -84,10 +84,12 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
@@ -646,7 +648,43 @@ public class WASMSSAASTWriter {
         if (aValue instanceof SqrtExpression) {
             return sqrtValue((SqrtExpression) aValue);
         }
+        if (aValue instanceof MaxExpression) {
+            return maxValue((MaxExpression) aValue);
+        }
+        if (aValue instanceof MinExpression) {
+            return minValue((MinExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue minValue(final MinExpression aValue) {
+        final List<Value> theArguments = aValue.incomingDataFlows();
+        switch (aValue.resolveType().resolve()) {
+        case DOUBLE:
+        case FLOAT: {
+            return f32.min(toValue(theArguments.get(0)), toValue(theArguments.get(1)));
+        }
+        default: {
+            final WASMValue left = toValue(theArguments.get(0));
+            final WASMValue right = toValue(theArguments.get(1));
+            return select(left, right, i32.lt_s(left, right));
+        }
+        }
+    }
+
+    private WASMValue maxValue(final MaxExpression aValue) {
+        final List<Value> theArguments = aValue.incomingDataFlows();
+        switch (aValue.resolveType().resolve()) {
+        case DOUBLE:
+        case FLOAT: {
+            return f32.max(toValue(theArguments.get(0)), toValue(theArguments.get(1)));
+        }
+        default: {
+            final WASMValue left = toValue(theArguments.get(0));
+            final WASMValue right = toValue(theArguments.get(1));
+            return select(left, right, i32.gt_s(left, right));
+        }
+        }
     }
 
     private WASMValue sqrtValue(final SqrtExpression aValue) {

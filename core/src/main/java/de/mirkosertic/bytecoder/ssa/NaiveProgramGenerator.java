@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1517,11 +1516,39 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         aHelper.push(theNewVariable);
                     } else if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
                                 && "java.lang.Math".equals(theClassToInvoke.name())) {
-                            final Value theValue = new SqrtExpression(TypeRef.toType(theCalledSignature.getReturnType()),
-                                    theArguments.get(0));
-                            final Variable theNewVariable = aTargetBlock
-                                    .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
-                            aHelper.push(theNewVariable);
+                        final Value theValue = new SqrtExpression(TypeRef.toType(theCalledSignature.getReturnType()),
+                                theArguments.get(0));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("min".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.Math".equals(theClassToInvoke.name())) {
+                        final Value theValue = new MinExpression(TypeRef.toType(theCalledSignature.getReturnType()),
+                                theArguments.get(0), theArguments.get(1));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("min".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
+                        final Value theValue = new MinExpression(TypeRef.toType(theCalledSignature.getReturnType()),
+                                theArguments.get(0), theArguments.get(1));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("max".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.Math".equals(theClassToInvoke.name())) {
+                        final Value theValue = new MaxExpression(TypeRef.toType(theCalledSignature.getReturnType()),
+                                theArguments.get(0), theArguments.get(1));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
+                    } else if ("max".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
+                        final Value theValue = new MaxExpression(TypeRef.toType(theCalledSignature.getReturnType()),
+                                theArguments.get(0), theArguments.get(1));
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
+                        aHelper.push(theNewVariable);
                     } else if ("newInstance".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
                                 && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
 
