@@ -85,6 +85,11 @@ public class SimpleMathTest {
 
 Is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This test runner also supports comparison of original Java code and its cross compiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
+Bytecoder relies for WebAssembly unit testing on the WABT toolchain. Compilation is done by invoking the JS version of 
+the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
+environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
+of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
+
 ## Maven Plugin
 
 There is Bytecoder Maven Plugin available.
@@ -146,11 +151,6 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
 You have to set a main class with a valid `public static void main(String[] args)` method as an entry point. 
 The plugin will invoke the WebAssembly compiler which will do all the heavy lifting. The generated
 WebAssembly text file and compiled binaries will be placed in the Maven `target/bytecoder` directory. 
-
-Bytecoder relies for WebAssembly compilation on the WABT toolchain. Compilation is done by invoking the JS version of 
-the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
-environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
-of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
 
 ## Internals
 
