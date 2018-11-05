@@ -667,19 +667,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             });
 
-            aLinkerContext.linkedClasses().forEach(aEntry -> {
-
-                if (null != aEntry.targetNode().getBytecodeClass().getAttributes()
-                        .getAnnotationByType(EmulatedByRuntime.class.getName())) {
-                    return;
-                }
-
-                if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                    final Function classInitCheckFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()) + "__classinitcheck");
-                    bootstrap.flow.voidCall(classInitCheckFunction, Collections.emptyList());
-                }
-            });
-
             final WASMMemoryLayouter.MemoryLayout theStringMemoryLayout = theMemoryLayout.layoutFor(theStringClass.getClassName());
             final List<StringValue> thePoolValues = theConstantPool.stringValues();
             for (int i=0;i<thePoolValues.size();i++) {
@@ -722,6 +709,18 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool), getGlobal(theStringPoolData)));
             }
 
+            aLinkerContext.linkedClasses().forEach(aEntry -> {
+
+                if (null != aEntry.targetNode().getBytecodeClass().getAttributes()
+                        .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                    return;
+                }
+
+                if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                    final Function classInitCheckFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()) + "__classinitcheck");
+                    bootstrap.flow.voidCall(classInitCheckFunction, Collections.emptyList());
+                }
+            });
 
             // After the Bootstrap, we need to all the static stuff on the stack, so it is not garbage collected
             final GlobalsIndex globalIndex = module.globalsIndex();
