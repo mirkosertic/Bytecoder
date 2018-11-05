@@ -19,8 +19,7 @@ optimizer stages and sent to a backend implementation for target code generation
 
 The *JavaScript* backend transforms the intermediate representation into JavaScript.
 
-The *WebAssembly* backend transforms the intermediate representation into WebAssembly text format code, which can easily compiled 
-into WebAssembly binary code using the WABT toolchain.
+The *WebAssembly* backend transforms the intermediate representation into WebAssembly text and binary code.
 
 The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
 existing programs running on the JVM to utilize the vast power of modern GPUs.
