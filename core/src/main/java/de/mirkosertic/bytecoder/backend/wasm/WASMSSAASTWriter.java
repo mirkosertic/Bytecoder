@@ -358,12 +358,15 @@ public class WASMSSAASTWriter {
 
         final Value theValue = aExpression.incomingDataFlows().get(0);
         final WASMSSAASTWriter theTableSwitch = block("tableswitch");
-        final WASMSSAASTWriter theLabel0 = theTableSwitch.block("label0");
-        final WASMSSAASTWriter theLabel1 = theLabel0.block("label1");
-        theLabel1.flow.branchIff((LabeledContainer) theLabel1.container, i32.lt_s(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue())));
-        theLabel1.flow.branchIff((LabeledContainer) theLabel0.container, i32.le_s(toValue(theValue), i32.c(((Number) aExpression.getHighValue()).intValue())));
-        theLabel1.writeExpressionList(aExpression.getDefaultExpressions());
-        theLabel0.flow.branch((LabeledContainer) theTableSwitch.container);
+        final WASMSSAASTWriter theMinCheck = theTableSwitch.block("label0");
+        theMinCheck.flow.branchIff((LabeledContainer) theMinCheck.container, i32.ge_s(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue())));
+        theMinCheck.writeExpressionList(aExpression.getDefaultExpressions());
+        theMinCheck.flow.branch((LabeledContainer) theTableSwitch.container);
+
+        final WASMSSAASTWriter theMaxCheck = theTableSwitch.block("label0");
+        theMaxCheck.flow.branchIff((LabeledContainer) theMaxCheck.container, i32.le_s(toValue(theValue), i32.c(((Number) aExpression.getHighValue()).intValue())));
+        theMaxCheck.writeExpressionList(aExpression.getDefaultExpressions());
+        theMaxCheck.flow.branch((LabeledContainer) theTableSwitch.container);
 
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getOffsets().entrySet()) {
@@ -371,6 +374,7 @@ public class WASMSSAASTWriter {
             final WASMSSAASTWriter theSwitch = theTableSwitch.block("switch_" + theEntry.getKey());
             theSwitch.flow.branchIff((LabeledContainer) theSwitch.container, i32.ne(i32.c(((Number) theEntry.getKey()).intValue()), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue()))));
             theSwitch.writeExpressionList(theEntry.getValue());
+            theSwitch.flow.branch((LabeledContainer) theTableSwitch.container);
         }
         theTableSwitch.flow.unreachable();
     }

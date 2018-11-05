@@ -88,7 +88,8 @@ public class ModuleTest {
         final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (result i32)" + System.lineSeparator()
-                + "        (return (i32.const 42)))" + System.lineSeparator()
+                + "        (return (i32.const 42))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
@@ -253,7 +254,8 @@ public class ModuleTest {
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
-                + "        (return (get_local $loc)))" + System.lineSeparator()
+                + "        (return (get_local $loc))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
@@ -312,7 +314,8 @@ public class ModuleTest {
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
                 + "        (block $outer" + System.lineSeparator()
-                + "            (return (get_local $loc)))" + System.lineSeparator()
+                + "            (return (get_local $loc))" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
                 + "        (unreachable))" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
@@ -380,7 +383,8 @@ public class ModuleTest {
                 + "        (block $outer" + System.lineSeparator()
                 + "            (if $label" + System.lineSeparator()
                 + "                (i32.eq (i32.const 10) (i32.const 20))" + System.lineSeparator()
-                + "                (return (get_local $loc))))" + System.lineSeparator()
+                + "                (return (get_local $loc))" + System.lineSeparator()
+                + "                ))" + System.lineSeparator()
                 + "        (unreachable))" + System.lineSeparator()
                 + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
                 + "    )";
@@ -626,7 +630,8 @@ public class ModuleTest {
                 + "    (global $constant i32 (i32.const 42))" + System.lineSeparator()
                 + "    (global $mutable (mut i32) (i32.const 21))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
-                + "        (return (get_global $constant)))" + System.lineSeparator()
+                + "        (return (get_global $constant))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -685,7 +690,8 @@ public class ModuleTest {
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $local1 i32)" + System.lineSeparator()
                 + "        (set_local $local1 (i32.const 100))" + System.lineSeparator()
-                + "        (return (i32.add (get_local $local1) (i32.const 200))))" + System.lineSeparator()
+                + "        (return (i32.add (get_local $local1) (i32.const 200)))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -741,7 +747,8 @@ public class ModuleTest {
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $local1 i32)" + System.lineSeparator()
-                + "        (return (call $label (get_local $p1) (get_local $p2))))" + System.lineSeparator()
+                + "        (return (call $label (get_local $p1) (get_local $p2)))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
@@ -846,12 +853,15 @@ public class ModuleTest {
                 + "        (block $b1" + System.lineSeparator()
                 + "            (br_if $b1" + System.lineSeparator()
                 + "                (f32.ne (get_local $p1) (get_local $p2)))" + System.lineSeparator()
-                + "            (return (i32.const 0)))" + System.lineSeparator()
+                + "            (return (i32.const 0))" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
                 + "        (block $b2" + System.lineSeparator()
                 + "            (br_if $b2" + System.lineSeparator()
                 + "                (f32.ge (get_local $p1) (get_local $p2)))" + System.lineSeparator()
-                + "            (return (i32.const -1)))" + System.lineSeparator()
-                + "        (return (i32.const 1)))" + System.lineSeparator()
+                + "            (return (i32.const -1))" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
+                + "        (return (i32.const 1))" + System.lineSeparator()
+                + "        )" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
