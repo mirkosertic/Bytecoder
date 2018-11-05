@@ -22,21 +22,22 @@ import de.mirkosertic.bytecoder.classlib.VM;
 @SubstitutesInClass(completeReplace = true)
 public class TShort extends Number {
 
-    private short shortValue;
+    private final short shortValue;
 
     @NoExceptionCheck
-    public TShort(short aShortValue) {
+    public TShort(final short aShortValue) {
         shortValue = aShortValue;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
-        if (o == null || getClass() != o.getClass())
+        if (!(o instanceof Short)) {
             return false;
+        }
 
-        Short tShort = (Short) o;
+        final Short tShort = (Short) o;
 
         if (shortValue != tShort.shortValue())
             return false;
@@ -74,20 +75,20 @@ public class TShort extends Number {
         return toString(shortValue);
     }
 
-    public static TShort valueOf(short aValue) {
+    public static TShort valueOf(final short aValue) {
         return new TShort(aValue);
     }
 
-    public static TShort valueOf(String aValue) {
+    public static TShort valueOf(final String aValue) {
         return new TShort((short) VM.stringToLong(aValue));
     }
 
-    public static short parseShort(String aString) {
+    public static short parseShort(final String aString) {
         return (short) VM.stringToLong(aString);
     }
 
-    public static String toString(short aValue) {
-        StringBuilder theBuffer = new StringBuilder();
+    public static String toString(final short aValue) {
+        final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
