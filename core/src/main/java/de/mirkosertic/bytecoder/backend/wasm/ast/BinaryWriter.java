@@ -119,6 +119,10 @@ public class BinaryWriter implements AutoCloseable {
             this.sectionCode = sectionCode;
         }
 
+        public SectionWriter subSection(final byte subSectionCode) {
+            return new SectionWriter(subSectionCode, bos);
+        }
+
         @Override
         public void close() throws IOException {
             bos.flush();
@@ -179,5 +183,9 @@ public class BinaryWriter implements AutoCloseable {
 
     public SectionWriter codeSection() {
         return new SectionWriter((byte) 10, os);
+    }
+
+    public SectionWriter customSection() {
+        return new SectionWriter((byte) 0, os);
     }
 }

@@ -15,25 +15,34 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
 public class Exporter {
 
+    private final boolean enableDebug;
+
     public Exporter() {
+        this(true);
+    }
+
+    public Exporter(final boolean enableDebug) {
+        this.enableDebug = enableDebug;
     }
 
     public void export(final Module module, final PrintWriter pw) throws IOException {
         try (final TextWriter writer = new TextWriter(pw)) {
-            module.writeTo(writer);
+            module.writeTo(writer, enableDebug);
         }
         pw.flush();
     }
 
     public void export(final Module module, final OutputStream os) throws IOException {
         try (final BinaryWriter binaryWriter = new BinaryWriter(os)) {
-            module.writeTo(binaryWriter);
+            module.writeTo(binaryWriter, enableDebug);
         }
     }
 }

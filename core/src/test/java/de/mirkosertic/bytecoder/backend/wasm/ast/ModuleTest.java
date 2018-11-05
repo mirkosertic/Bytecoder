@@ -43,26 +43,26 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
 
     @Test
     public void testSimpleCaseBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleCase.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleCase.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleCase.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -75,7 +75,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
@@ -85,7 +85,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (result i32)" + System.lineSeparator()
                 + "        (return (i32.const 42)))" + System.lineSeparator()
@@ -97,7 +97,7 @@ public class ModuleTest {
     @Test
     public void testSimpleFunctionBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
@@ -108,9 +108,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleFunction.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleFunction.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleFunction.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -122,21 +122,21 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Memory memory = module.getMems().newMemory(10, 20);
 
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module " + System.lineSeparator()
+        Assert.assertEquals("(module $mod" + System.lineSeparator()
                 + "    (memory $mem0 10 20)" + System.lineSeparator()
                 + "    )", strWriter.toString());
     }
 
     @Test
     public void testWithMemoryBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Memory memory = module.getMems().newMemory(10, 20);
 
@@ -145,9 +145,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithMemory.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithMemory.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testWithMemory.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -159,7 +159,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Memory memory = module.getMems().newMemory(10, 20);
         memory.exportAs("exported");
@@ -167,7 +167,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        Assert.assertEquals("(module " + System.lineSeparator()
+        Assert.assertEquals("(module $mod" + System.lineSeparator()
                 + "    (memory $mem0 10 20)" + System.lineSeparator()
                 + "    (export \"exported\" (memory $mem0))" + System.lineSeparator()
                 + "    )", strWriter.toString());
@@ -176,7 +176,7 @@ public class ModuleTest {
     @Test
     public void testWithExportedMemoryBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Memory memory = module.getMems().newMemory(10, 20);
         memory.exportAs("exported");
@@ -185,9 +185,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithExportedMemory.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithExportedMemory.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testWithExportedMemory.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -198,14 +198,14 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final Function function = module.getImports().importFunction(new ImportReference("mod","obj"),"label", PrimitiveType.i32);
 
         try (final TextWriter writer = new TextWriter(pw)) {
-            module.writeTo(writer);
+            module.writeTo(writer, true);
         }
 
-        Assert.assertEquals("(module " + System.lineSeparator()
+        Assert.assertEquals("(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (result i32)))" + System.lineSeparator()
                 + "    (import \"mod\" \"obj\" (func $label (type $t0)))" + System.lineSeparator()
                 + "    )", strWriter.toString());
@@ -213,16 +213,16 @@ public class ModuleTest {
 
     @Test
     public void testFunctionImportBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final Function function = module.getImports().importFunction(new ImportReference("mod","obj"),"label", PrimitiveType.i32);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFunctionImport.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFunctionImport.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testFunctionImport.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -234,7 +234,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -249,7 +249,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
@@ -261,7 +261,7 @@ public class ModuleTest {
 
     @Test
     public void testLocalAccessBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -276,9 +276,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testLocalAccess.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testLocalAccess.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testLocalAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -290,7 +290,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -307,7 +307,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
@@ -321,7 +321,7 @@ public class ModuleTest {
 
     @Test
     public void testBlockBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -339,9 +339,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBinary.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBinary.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBinary.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -353,7 +353,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -373,7 +373,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
@@ -389,7 +389,7 @@ public class ModuleTest {
 
     @Test
     public void testIfBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -408,9 +408,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIf.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIf.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIf.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -423,7 +423,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -440,7 +440,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
@@ -454,7 +454,7 @@ public class ModuleTest {
 
     @Test
     public void testBlockBranchBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -472,9 +472,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranch.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranch.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranch.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -486,7 +486,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -503,7 +503,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $loc i32)" + System.lineSeparator()
@@ -519,7 +519,7 @@ public class ModuleTest {
 
     @Test
     public void testBlockBranchIfBinary() throws IOException {
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -537,9 +537,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranchIf.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranchIf.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranchIf.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -551,7 +551,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -564,7 +564,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator() +
+        final String expected = "(module $mod" + System.lineSeparator() +
                 "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator() +
                 "    (table 1 anyfunc)" + System.lineSeparator() +
                 "    (elem (i32.const 0) $label)" + System.lineSeparator() +
@@ -577,7 +577,7 @@ public class ModuleTest {
     @Test
     public void testTableWithFunctionBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -591,9 +591,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("D:\\source\\idea_projects\\Bytecoder\\core\\src\\test\\resources\\de\\mirkosertic\\bytecoder\\backend\\wasm\\ast\\testTableWithFunction.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTableWithFunction.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testTableWithFunction.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -605,7 +605,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42));
         final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21));
@@ -621,7 +621,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (global $constant i32 (i32.const 42))" + System.lineSeparator()
                 + "    (global $mutable (mut i32) (i32.const 21))" + System.lineSeparator()
@@ -634,7 +634,7 @@ public class ModuleTest {
     @Test
     public void testGlobalsBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42));
         final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21));
@@ -651,9 +651,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testGlobalsBinary.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testGlobalsBinary.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testGlobalsBinary.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -665,7 +665,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -680,7 +680,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $local1 i32)" + System.lineSeparator()
@@ -693,7 +693,7 @@ public class ModuleTest {
     @Test
     public void testIntegerMathBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -709,9 +709,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIntegerMath.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIntegerMath.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIntegerMath.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -723,7 +723,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -737,7 +737,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
                 + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
                 + "        (local $local1 i32)" + System.lineSeparator()
@@ -749,7 +749,7 @@ public class ModuleTest {
     @Test
     public void testCallBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -764,9 +764,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testCall.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testCall.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testCall.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -778,7 +778,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
         final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
@@ -787,7 +787,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func))" + System.lineSeparator()
                 + "    (global $STACKTOP (mut i32) (i32.const -1))" + System.lineSeparator()
                 + "    (func $bootstrap (type $t0)" + System.lineSeparator()
@@ -800,7 +800,7 @@ public class ModuleTest {
     @Test
     public void testMemoryInitBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
         final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
@@ -810,9 +810,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryInit.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryInit.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryInit.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -824,7 +824,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Param p1 = param("p1", PrimitiveType.f32);
         final Param p2 = param("p2", PrimitiveType.f32);
@@ -840,7 +840,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func (param f32) (param f32) (result i32)))" + System.lineSeparator()
                 + "    (func $compareValueF32 (type $t0) (param $p1 f32) (param $p2 f32) (result i32)" + System.lineSeparator()
                 + "        (block $b1" + System.lineSeparator()
@@ -859,7 +859,7 @@ public class ModuleTest {
     @Test
     public void testSimpleF32Binary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final Param p1 = param("p1", PrimitiveType.f32);
         final Param p2 = param("p2", PrimitiveType.f32);
@@ -876,9 +876,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("D:\\source\\idea_projects\\Bytecoder\\core\\src\\test\\resources\\de\\mirkosertic\\bytecoder\\backend\\wasm\\ast\\testSimpleF32.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleF32.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleF32.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -890,7 +890,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local local = testFunction.newLocal("loc1", PrimitiveType.i32);
@@ -930,7 +930,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func))" + System.lineSeparator()
                 + "    (func $testFunction (type $t0)" + System.lineSeparator()
                 + "        (local $loc1 i32)" + System.lineSeparator()
@@ -974,7 +974,7 @@ public class ModuleTest {
     @Test
     public void testIntegerMathCompleteBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local local = testFunction.newLocal("loc1", PrimitiveType.i32);
@@ -1015,9 +1015,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIntegerMathComplete.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIntegerMathComplete.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIntegerMathComplete.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -1029,7 +1029,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
@@ -1059,7 +1059,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func))" + System.lineSeparator()
                 + "    (func $testFunction (type $t0)" + System.lineSeparator()
                 + "        (local $loc1 i32)" + System.lineSeparator()
@@ -1093,7 +1093,7 @@ public class ModuleTest {
     @Test
     public void testFloatMathCompleteBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
@@ -1124,9 +1124,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        // try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFloatMathComplete.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFloatMathComplete.wasm")) {
+//           exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testFloatMathComplete.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -1138,7 +1138,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
@@ -1157,7 +1157,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func))" + System.lineSeparator()
                 + "    (table 1 anyfunc)" + System.lineSeparator()
                 + "    (elem (i32.const 0) $testFunction)" + System.lineSeparator()
@@ -1180,7 +1180,7 @@ public class ModuleTest {
     @Test
     public void testTeeNopDropSelectBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
@@ -1200,9 +1200,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTeeNopDropSelect.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTeeNopDropSelect.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testTeeNopDropSelect.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
@@ -1214,7 +1214,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         module.getMems().newMemory(512, 512);
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
@@ -1245,7 +1245,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module " + System.lineSeparator()
+        final String expected = "(module $mod" + System.lineSeparator()
                 + "    (type $t0 (func))" + System.lineSeparator()
                 + "    (memory $mem0 512 512)" + System.lineSeparator()
                 + "    (func $testFunction (type $t0)" + System.lineSeparator()
@@ -1279,7 +1279,7 @@ public class ModuleTest {
     @Test
     public void testMemoryAccessBinary() throws IOException {
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         module.getMems().newMemory(512, 512);
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
@@ -1310,9 +1310,9 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, bos);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
-        //    exporter.export(module, fos);
-        //}
+//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
+//            exporter.export(module, fos);
+//        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());

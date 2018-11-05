@@ -21,6 +21,7 @@ import java.util.List;
 
 public class Module {
 
+    private final String label;
     private final TypesSection types;
     private final FunctionsSection functions;
     private final TablesSection tables;
@@ -31,7 +32,9 @@ public class Module {
     private final ExportsSection exports;
     private final NameSection names;
     private final EventsSection events;
-    public Module() {
+
+    public Module(final String label) {
+        this.label = label;
         types = new TypesSection(this);
         exports = new ExportsSection(this);
         tables = new TablesSection(this);
@@ -46,10 +49,11 @@ public class Module {
         events = new EventsSection(this);
     }
 
-    public void writeTo(final TextWriter writer) throws IOException {
+    public void writeTo(final TextWriter writer, final boolean enableDebug) throws IOException {
         writer.opening();
         writer.write("module");
         writer.space();
+        writer.writeLabel(label);
         writer.newLine();
 
         types.writeTo(writer);
@@ -78,7 +82,7 @@ public class Module {
         return functionIndex;
     }
 
-    public void writeTo(final BinaryWriter writer) throws IOException {
+    public void writeTo(final BinaryWriter writer, final boolean enableDebug) throws IOException {
 
         final FunctionIndex functionIndex = functionIndex();
 
@@ -95,8 +99,14 @@ public class Module {
         exports.writeTo(writer, functionIndex, memoryIndex);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
-        names.writeCodeTo(writer);
+        if (enableDebug) {
+            names.writeCodeTo(writer);
+        }
         events.writeCodeTo(writer);
+    }
+
+    public String getLabel() {
+        return label;
     }
 
     public MemorySection getMems() {

@@ -27,6 +27,14 @@ public class FunctionIndex {
         functions = new ArrayList<>();
     }
 
+    public int size() {
+        return functions.size();
+    }
+
+    public Function get(final int aIndex) {
+        return functions.get(aIndex);
+    }
+
     public void add(final Function function) {
         functions.add(function);
     }

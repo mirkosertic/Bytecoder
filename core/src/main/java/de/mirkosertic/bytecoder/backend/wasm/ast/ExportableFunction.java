@@ -95,6 +95,10 @@ public class ExportableFunction extends Function implements Exportable {
         throw new IllegalArgumentException("No such local : " + label);
     }
 
+    public LocalIndex localIndex() {
+        return localIndex;
+    }
+
     public Local newLocal(final String label, final PrimitiveType type) {
         if (localIndex.localByLabel(label) != null) {
             throw new IllegalStateException("Local " + label + " already defined!");

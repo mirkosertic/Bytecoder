@@ -33,7 +33,7 @@ public class FunctionTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
@@ -51,7 +51,7 @@ public class FunctionTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module();
+        final Module module = new Module("mod");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(param("p1", PrimitiveType.i32)));

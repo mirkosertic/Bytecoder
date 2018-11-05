@@ -131,7 +131,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             throw new IllegalStateException("No matching constructor!");
         }
 
-        final Module module = new Module();
+        final Module module = new Module("bytecoder");
 
         final Global stackTop = module.getGlobals().newMutableGlobal(WASMSSAASTWriter.STACKTOP, PrimitiveType.i32, i32.c(-1));
 
@@ -782,8 +782,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
             final PrintWriter theWriter = new PrintWriter(theStringWriter);
-
-            final Exporter exporter = new Exporter();
+            final Exporter exporter = new Exporter(aOptions.isDebugOutput());
             exporter.export(module, theWriter);
             exporter.export(module, bos);
         } catch (final IOException e) {
