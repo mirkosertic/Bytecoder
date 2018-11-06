@@ -26,10 +26,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
@@ -160,7 +162,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     },");
         theWriter.println();
 
-        theWriter.println("     imports : [],");
+        theWriter.println("     imports : {},");
+        theWriter.println();
+
+        theWriter.println("     exports : {},");
         theWriter.println();
 
         theWriter.println("     stringpool : [],");
@@ -518,6 +523,25 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.print(JSWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()));
                 theWriter.println(".classInitCheck();");
             }
+            final BytecodeResolvedMethods theMethods = aEntry.targetNode().resolvedMethods();
+            theMethods.stream().forEach(eMethod -> {
+                final BytecodeMethod theMethod = eMethod.getValue();
+                final BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
+
+                // If the method is provided by the runtime, we do not need to generate the implementation
+                final BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
+                if (theAnnotation != null) {
+                    theWriter.print("    bytecoder.exports.");
+                    theWriter.print(theAnnotation.getElementValueByName("value").stringValue());
+                    theWriter.print(" = ");
+
+                    theWriter.print(JSWriterUtils.toClassName(aEntry.targetNode().getClassName()));
+                    theWriter.print(".");
+                    theWriter.print(JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature));
+                    theWriter.println(";");
+
+                }
+            });
         });
 
         theWriter.println("}");
