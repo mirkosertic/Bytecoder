@@ -1183,14 +1183,9 @@ public class WASMSSAASTWriter {
             return f32.div(toFloatValue(aValue1), toFloatValue(aValue2));
         }
         case REMAINDER: {
-            if (aValue1.resolveType().resolve() == TypeRef.Native.INT) {
-                return i32.rem_s(toValue(aValue1), toValue(aValue2));
-            }
-            if (aValue1.resolveType().resolve() == TypeRef.Native.LONG) {
-                return i32.rem_s(toValue(aValue1), toValue(aValue2));
-            }
-            final Function f = module.functionIndex().firstByLabel("float_remainder");
-            return call(f, Arrays.asList(toValue(aValue1), toValue(aValue2)));
+            final WASMValue a = toValue(aValue1);
+            final WASMValue b = toValue(aValue2);
+            return i32.rem_s(a, b);
         }
         case SUB: {
             return i32.sub(toValue(aValue1), toValue(aValue2));
@@ -1248,11 +1243,9 @@ public class WASMSSAASTWriter {
             return f32.div(toValue(aValue1), toValue(aValue2));
         }
         case REMAINDER: {
-            if (aValue1.resolveType().resolve() == TypeRef.Native.INT) {
-                return i32.rem_s(toValue(aValue1), toValue(aValue2));
-            }
-            final Function f = module.functionIndex().firstByLabel("float_remainder");
-            return call(f, Arrays.asList(toValue(aValue1), toValue(aValue2)));
+            final WASMValue a = toValue(aValue1);
+            final WASMValue b = toValue(aValue2);
+            return f32.sub(a, f32.mul(b, f32.trunc(f32.div(a, b))));
         }
         case SUB: {
             return f32.sub(toValue(aValue1), toValue(aValue2));

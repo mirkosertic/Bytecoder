@@ -30,7 +30,7 @@ public class TStringBuilder {
         byteData = new byte[0];
     }
 
-    public TStringBuilder(byte[] aData) {
+    public TStringBuilder(final byte[] aData) {
         byteData = aData;
     }
 
@@ -38,12 +38,12 @@ public class TStringBuilder {
         return byteData.length;
     }
 
-    public char charAt(int aIndex) {
+    public char charAt(final int aIndex) {
         return (char) byteData[aIndex];
     }
 
-    public void internalAdd(byte[] aOtherData) {
-        byte[] theNewData = new byte[byteData.length + aOtherData.length];
+    public void internalAdd(final byte[] aOtherData) {
+        final byte[] theNewData = new byte[byteData.length + aOtherData.length];
         int offset = 0;
         for (int i = 0; i< byteData.length; i++) {
             theNewData[offset++] = byteData[i];
@@ -55,7 +55,7 @@ public class TStringBuilder {
     }
 
     public TStringBuilder reverse() {
-        byte[] theReversed = new byte[byteData.length];
+        final byte[] theReversed = new byte[byteData.length];
         for (int i=0;i<byteData.length;i++) {
             theReversed[byteData.length -1 -i] = byteData[i];
         }
@@ -63,36 +63,36 @@ public class TStringBuilder {
         return this;
     }
 
-    public TStringBuilder append(CharSequence aCharSequence) {
-        byte[] theOtherData = ((TString) aCharSequence).getBytes();
+    public TStringBuilder append(final CharSequence aCharSequence) {
+        final byte[] theOtherData = ((TString) aCharSequence).getBytes();
         internalAdd(theOtherData);
         return this;
     }
 
-    public TStringBuilder append(String aString) {
-        byte[] theOtherData = aString.getBytes();
+    public TStringBuilder append(final String aString) {
+        final byte[] theOtherData = aString.getBytes();
         internalAdd(theOtherData);
         return this;
     }
 
-    public TStringBuilder append(char aValue) {
+    public TStringBuilder append(final char aValue) {
         internalAdd(new byte[] {(byte) aValue});
         return this;
     }
 
-    public TStringBuilder append(float aValue) {
+    public TStringBuilder append(final float aValue) {
         appendInternal(aValue, 1000000000);
         return this;
     }
 
-    public TStringBuilder append(double aValue) {
+    public TStringBuilder append(final double aValue) {
         appendInternal(aValue, 1000000000);
         return this;
     }
 
-    public void appendInternal(double aValue, long aMultiplier) {
-        long theA;
-        long theB;
+    public void appendInternal(final double aValue, final long aMultiplier) {
+        final long theA;
+        final long theB;
         if (aValue < 0) {
             theA = (long) Math.ceil(aValue);
             theB = - (long) Math.ceil((aValue % 1) * 10000);
@@ -102,11 +102,11 @@ public class TStringBuilder {
         }
         append(theA);
 
-        StringBuilder theTemp = new StringBuilder();
+        final StringBuilder theTemp = new StringBuilder();
         theTemp.append(theB);
 
         for (int i=theTemp.length()-1;i>=0;i--) {
-            char theChar = theTemp.charAt(i);
+            final char theChar = theTemp.charAt(i);
             if (theChar != '0') {
                 append(FORMAT_SYMBOLS.getDecimalSeparator());
                 for (int j=0;j<=i;j++) {
@@ -126,16 +126,16 @@ public class TStringBuilder {
             isNegative = true;
             aValue=-aValue;
         }
-        byte[] theBytes = new byte[20];
+        final byte[] theBytes = new byte[20];
         int theOffset = 0;
         do {
-            int theRemainder = (int) aValue % 10;
+            final int theRemainder = (int) aValue % 10;
             theBytes[theOffset++] = (byte) theRemainder;
             aValue = aValue / 10;
         } while (aValue > 0);
 
-        byte[] theNewData;
-        int theStart;
+        final byte[] theNewData;
+        final int theStart;
         if (isNegative) {
             theNewData = new byte[theOffset + 1];
             theNewData[0] = '-';
@@ -152,11 +152,11 @@ public class TStringBuilder {
         return this;
     }
 
-    public TStringBuilder append(int aValue) {
+    public TStringBuilder append(final int aValue) {
         return append((long) aValue);
     }
 
-    public TStringBuilder append(Object aObject) {
+    public TStringBuilder append(final Object aObject) {
         if (aObject == null) {
             internalAdd("null".getBytes());
             return this;
@@ -182,7 +182,7 @@ public class TStringBuilder {
             return this;
         }
 
-        byte[] theOtherData = aObject.toString().getBytes();
+        final byte[] theOtherData = aObject.toString().getBytes();
         internalAdd(theOtherData);
         return this;
     }

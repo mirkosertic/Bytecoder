@@ -459,10 +459,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
             theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
             theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
-            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
-            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                             max: function(p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("                             min: function(p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("                         },");
@@ -472,7 +470,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
             theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
             theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
-            theWriter.println("                             float_rem: function(a, b) {return a % b;},");
             theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
             theWriter.println("                         },");

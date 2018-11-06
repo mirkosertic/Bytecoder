@@ -22,10 +22,6 @@ export namespace runtime {
             return Math.round(p1);
         }
 
-        function float_rem(a, b) {
-            return a % b;
-        }
-
         function sqrt(thisref, p1) {
             return Math.sqrt(p1);
         }
