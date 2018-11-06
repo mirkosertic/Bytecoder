@@ -35,9 +35,9 @@ public class FloatTest {
 
     @Test
     public void testEquals() throws Exception {
-        Float theFloat = new Float(10f);
+        final Float theFloat = 10f;
         assertEquals(theFloat,theFloat);
-        assertNotEquals(theFloat, new Float((int) 11));
+        assertNotEquals(theFloat, (float) (int) 11);
         assertNotEquals(theFloat, null);
         assertNotEquals(theFloat, "");
     }
@@ -79,7 +79,7 @@ public class FloatTest {
 
     @Test
     public void testToString() {
-        assertEquals("123.45", new Float(123.45).toString());
+        assertEquals("123.5", new Float(123.5).toString());
     }
 
     @Test

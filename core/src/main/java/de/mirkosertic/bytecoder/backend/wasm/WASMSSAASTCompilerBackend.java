@@ -149,10 +149,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             instanceOfCheck.flow.ret(call(instanceOfType, Arrays.asList(getLocal(instanceOfCheck.localByLabel("thisRef")), getLocal(instanceOfCheck.localByLabel("type"))), theIndex));
         }
 
-        // We need some Runtime Imports
-        final Function floatRemainder = module.getImports().importFunction(new ImportReference("math", "float_rem"),
-                "float_remainder", Arrays.asList(param("p1", PrimitiveType.f32), param("p2", PrimitiveType.f32)), PrimitiveType.f32);
-
         // We need a memory
         module.getMems().newMemory(512, 512).exportAs("memory");
 

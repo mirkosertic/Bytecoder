@@ -35,16 +35,16 @@ public class DoubleTest {
 
     @Test
     public void testEquals() throws Exception {
-        Double theDouble = new Double(10d);
+        final Double theDouble = 10d;
         assertEquals(theDouble,theDouble);
-        assertNotEquals(theDouble, new Double(11d));
+        assertNotEquals(theDouble, 11d);
         assertNotEquals(theDouble, null);
         assertNotEquals(theDouble, "");
     }
 
     @Test
     public void testHashCode() throws Exception {
-        assertEquals(new Double(10d), new Double(10d), 0);
+        assertEquals(10d, 10d, 0);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class DoubleTest {
 
     @Test
     public void testToStringPositive() {
-        assertEquals("123.45", new Double(123.45d).toString());
+        assertEquals("123.5", new Double(123.5d).toString());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class DoubleTest {
 
     @Test
     public void testToStringNegative() {
-        assertEquals("-123.45", new Double(-123.45d).toString());
+        assertEquals("-123.5", new Double(-123.5d).toString());
     }
 
 
@@ -122,5 +122,4 @@ public class DoubleTest {
     public void testParseDouble() {
         assertEquals(-123, Double.parseDouble("-123"), 0);
     }
-
 }
