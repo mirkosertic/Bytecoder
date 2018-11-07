@@ -26,6 +26,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -1326,5 +1327,74 @@ public class ModuleTest {
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+    }
+
+    @Test
+    public void testExceptionModule() throws IOException {
+        final Module module = new Module("mod");
+
+        module.getMems().newMemory(512, 512);
+
+        final WASMException exception = module.getExceptions().newException("except", Collections.singletonList(PrimitiveType.i32));
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
+        final Try t = testFunction.flow.Try("tr");
+        t.flow.throwException(exception, Collections.singletonList(i32.c(42)));
+        t.flow.ret(i32.c(1));
+
+        t.catchBlock.flow.ret(i32.c(3));;
+
+        testFunction.flow.unreachable();
+
+        final StringWriter sw = new StringWriter();
+
+        final Exporter exporter = new Exporter();
+        exporter.export(module, new PrintWriter(sw));
+
+        Assert.assertEquals("(module $mod" + System.lineSeparator()
+                + "    (type $t0 (func (result i32)))" + System.lineSeparator()
+                + "    (memory $mem0 512 512)" + System.lineSeparator()
+                + "    (except $except i32)" + System.lineSeparator()
+                + "    (func $testFunction (type $t0) (result i32)" + System.lineSeparator()
+                + "        (try $tr" + System.lineSeparator()
+                + "            (throw $except (i32.const 42))" + System.lineSeparator()
+                + "            (return (i32.const 1))" + System.lineSeparator()
+                + "            (catch" + System.lineSeparator()
+                + "                (return (i32.const 3))" + System.lineSeparator()
+                + "                )" + System.lineSeparator()
+                + "            )" + System.lineSeparator()
+                + "        (unreachable))" + System.lineSeparator()
+                + "    )", sw.toString());
+    }
+
+    @Test
+    public void testExceptionModuleBinary() throws IOException {
+        final Module module = new Module("mod");
+
+        module.getMems().newMemory(512, 512);
+
+        final WASMType singleArgumentType = module.getTypes().typeFor(Collections.singletonList(PrimitiveType.i32));
+        final WASMException exception = module.getExceptions().newException("except", Collections.singletonList(PrimitiveType.i32));
+
+        final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
+        final Try t = testFunction.flow.Try("tr");
+        t.flow.throwException(exception, Collections.singletonList(i32.c(42)));
+        t.flow.ret(i32.c(1));
+
+        t.catchBlock.flow.ret(i32.c(3));;
+
+        testFunction.flow.unreachable();
+
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final Exporter exporter = new Exporter();
+        exporter.export(module, bos);
+
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testExceptionModule.wasm")) {
+        //    exporter.export(module, fos);
+        //}
+
+        final byte[] expected = IOUtils.toByteArray(getClass().getResource("testExceptionModule.wasm"));
+        Assert.assertArrayEquals(expected, bos.toByteArray());
+
     }
 }

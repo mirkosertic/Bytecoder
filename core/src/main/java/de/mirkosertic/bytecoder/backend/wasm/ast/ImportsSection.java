@@ -49,21 +49,21 @@ public class ImportsSection extends ModuleSection {
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
-        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+        final WASMType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
         final Function function = new Function(getModule(), type, label, parameter, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
-        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+        final WASMType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
         final Function function = new Function(getModule(), type, label, parameter);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
-        final FunctionType type = getModule().getTypes().typeFor(result);
+        final WASMType type = getModule().getTypes().typeFor(result);
         final Function function = new Function(getModule(), type, label, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
@@ -97,6 +97,7 @@ public class ImportsSection extends ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter,
             final List<Memory> memoryIndex) throws IOException {
+        final ExceptionIndex exceptionIndex = getModule().exceptionIndex();
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.importsSection()) {
             sectionWriter.writeUnsignedLeb128(imports.size());
             for (final ImportEntry entry : imports) {
@@ -113,6 +114,9 @@ public class ImportsSection extends ModuleSection {
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
+                } else if (value instanceof WASMException) {
+                    sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
+                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WASMException) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

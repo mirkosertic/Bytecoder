@@ -38,7 +38,7 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.3" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.4.6" level="project" />
     <orderEntry type="library" name="Maven: commons-io:commons-io:2.6" level="project" />
-    <orderEntry type="library" name="Maven: org.jocl:jocl:2.0.0" level="project" />
+    <orderEntry type="library" name="Maven: org.jocl:jocl:2.0.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.jbox2d:jbox2d-library:2.2.1.1" level="project" />
   </component>
   <component name="sonarModuleSettings">

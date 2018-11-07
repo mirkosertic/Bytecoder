@@ -21,12 +21,12 @@ import java.util.List;
 public class Function extends Container implements Importable, Callable {
 
     private final Module module;
-    private final FunctionType functionType;
+    private final WASMType functionType;
     private final String label;
     private final List<Param> params;
     private final PrimitiveType resultType;
 
-    Function(final Module aModule, final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    Function(final Module aModule, final WASMType functionType, final String label, final List<Param> params, final PrimitiveType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -34,7 +34,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = result;
     }
 
-    Function(final Module aModule, final FunctionType functionType, final String label, final List<Param> params) {
+    Function(final Module aModule, final WASMType functionType, final String label, final List<Param> params) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -42,7 +42,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = null;
     }
 
-    Function(final Module aModule, final FunctionType functionType, final String label, final PrimitiveType result) {
+    Function(final Module aModule, final WASMType functionType, final String label, final PrimitiveType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -65,7 +65,7 @@ public class Function extends Container implements Importable, Callable {
         return module;
     }
 
-    public FunctionType getFunctionType() {
+    public WASMType getFunctionType() {
         return functionType;
     }
 

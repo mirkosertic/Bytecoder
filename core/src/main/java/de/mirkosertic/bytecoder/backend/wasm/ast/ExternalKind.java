@@ -21,5 +21,6 @@ public interface ExternalKind {
     byte EXTERNAL_KIND_TABLE = (byte) 1;
     byte EXTERNAL_KIND_MEMORY = (byte) 2;
     byte EXTERNAL_KIND_GLOBAL = (byte) 3;
+    byte EXTERNAL_KIND_EXCEPTION = (byte) 4;
 
 }

@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import java.io.IOException;
+
 public interface Exportable {
-    void writeRefTo(TextWriter writer);
+
+    void writeRefTo(TextWriter writer) throws IOException;
 }

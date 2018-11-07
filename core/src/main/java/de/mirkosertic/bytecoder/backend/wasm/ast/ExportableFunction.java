@@ -56,7 +56,7 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public FunctionTypeIndex typeIndex() {
+        public TypeIndex typeIndex() {
             return getModule().getTypes().typesIndex();
         }
 
@@ -64,21 +64,26 @@ public class ExportableFunction extends Function implements Exportable {
         public TablesSection.AnyFuncTable anyFuncTable() {
             return getModule().getTables().funcTable();
         }
+
+        @Override
+        public ExceptionIndex eventIndex() {
+            return getModule().exceptionIndex();
+        }
     }
 
     private final LocalIndex localIndex;
 
-    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    ExportableFunction(final Module aModule, final WASMType functionType, final String label, final List<Param> params, final PrimitiveType result) {
         super(aModule, functionType, label, params, result);
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final List<Param> params) {
+    ExportableFunction(final Module aModule, final WASMType functionType, final String label, final List<Param> params) {
         super(aModule, functionType, label, params);
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final PrimitiveType result) {
+    ExportableFunction(final Module aModule, final WASMType functionType, final String label, final PrimitiveType result) {
         super(aModule, functionType, label, result);
         this.localIndex = new LocalIndex();
     }

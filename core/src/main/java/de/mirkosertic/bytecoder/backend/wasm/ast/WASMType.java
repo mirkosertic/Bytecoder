@@ -19,25 +19,25 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-public class FunctionType {
+public class WASMType {
 
     private final TypesSection typesSection;
     private final List<PrimitiveType> parameter;
     private final PrimitiveType resultType;
 
-    FunctionType(final TypesSection section, final List<PrimitiveType> parameter, final PrimitiveType resultType) {
+    WASMType(final TypesSection section, final List<PrimitiveType> parameter, final PrimitiveType resultType) {
         this.typesSection = section;
         this.parameter = parameter;
         this.resultType = resultType;
     }
 
-    FunctionType(final TypesSection section, final List<PrimitiveType> parameter) {
+    WASMType(final TypesSection section, final List<PrimitiveType> parameter) {
         this.typesSection = section;
         this.parameter = parameter;
         this.resultType = null;
     }
 
-    FunctionType(final TypesSection section, final PrimitiveType resultType) {
+    WASMType(final TypesSection section, final PrimitiveType resultType) {
         this.typesSection = section;
         this.parameter = null;
         this.resultType = resultType;

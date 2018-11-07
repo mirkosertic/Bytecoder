@@ -15,12 +15,22 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-public class EventsSection extends ModuleSection {
+import java.util.ArrayList;
+import java.util.List;
 
-    public EventsSection(final Module module) {
-        super(module);
+public class TypeIndex {
+
+    private final List<WASMType> types;
+
+    TypeIndex() {
+        types = new ArrayList<>();
     }
 
-    public void writeCodeTo(final BinaryWriter writer) {
+    public void add(final WASMType type) {
+        types.add(type);
+    }
+
+    public int indexOf(final WASMType type) {
+        return types.indexOf(type);
     }
 }

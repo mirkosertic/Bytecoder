@@ -31,7 +31,7 @@ public class Module {
     private final ImportsSection imports;
     private final ExportsSection exports;
     private final NameSection names;
-    private final EventsSection events;
+    private final ExceptionsSection exceptions;
 
     public Module(final String label) {
         this.label = label;
@@ -46,7 +46,7 @@ public class Module {
         final StartSection start = new StartSection(this);
         imports = new ImportsSection(this);
         names = new NameSection(this);
-        events = new EventsSection(this);
+        exceptions = new ExceptionsSection(this);
     }
 
     public void writeTo(final TextWriter writer, final boolean enableDebug) throws IOException {
@@ -60,6 +60,7 @@ public class Module {
         imports.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
+        exceptions.writeCodeTo(writer);
         tables.writeTo(writer);
         elements.writeTo(writer);
         functions.writeTo(writer);
@@ -73,6 +74,10 @@ public class Module {
 
     public GlobalsIndex globalsIndex() {
         return globals.globalsIndex();
+    }
+
+    public ExceptionIndex exceptionIndex() {
+        return exceptions.eventIndex();
     }
 
     public FunctionIndex functionIndex() {
@@ -96,13 +101,13 @@ public class Module {
         tables.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
-        exports.writeTo(writer, functionIndex, memoryIndex);
+        exceptions.writeCodeTo(writer);
+        exports.writeTo(writer, memoryIndex);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
         if (enableDebug) {
             names.writeCodeTo(writer);
         }
-        events.writeCodeTo(writer);
     }
 
     public String getLabel() {
@@ -131,5 +136,9 @@ public class Module {
 
     public TablesSection getTables() {
         return tables;
+    }
+
+    public ExceptionsSection getExceptions() {
+        return exceptions;
     }
 }
