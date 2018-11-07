@@ -41,11 +41,11 @@ public class RegionNode extends Node {
 
         private EdgeType type;
 
-        public Edge(EdgeType aType) {
+        public Edge(final EdgeType aType) {
             type = aType;
         }
 
-        public void changeTo(EdgeType aType) {
+        public void changeTo(final EdgeType aType) {
             type = aType;
         }
 
@@ -64,7 +64,8 @@ public class RegionNode extends Node {
     private final ControlFlowGraph owningGraph;
     private final ExpressionList expressions;
 
-    protected RegionNode(ControlFlowGraph aOwningGraph, BlockType aType, Program aProgram, BytecodeOpcodeAddress aStartAddress) {
+    protected RegionNode(
+            final ControlFlowGraph aOwningGraph, final BlockType aType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
         type = aType;
         owningGraph = aOwningGraph;
         startAddress = aStartAddress;
@@ -80,7 +81,7 @@ public class RegionNode extends Node {
          return expressions;
     }
 
-    public void addReachablePath(GraphNodePath aPath) {
+    public void addReachablePath(final GraphNodePath aPath) {
         reachableBy.add(aPath);
     }
 
@@ -93,8 +94,8 @@ public class RegionNode extends Node {
     }
 
     public List<RegionNode> getPredecessors() {
-        List<RegionNode> theResult = new ArrayList<>();
-        for (GraphNodePath thePath : reachableBy) {
+        final List<RegionNode> theResult = new ArrayList<>();
+        for (final GraphNodePath thePath : reachableBy) {
             if (!thePath.isEmpty()) {
                 theResult.add(thePath.lastElement());
             }
@@ -102,8 +103,8 @@ public class RegionNode extends Node {
         return theResult;
     }
 
-    public boolean hasBackEdgeTo(RegionNode aNode) {
-        for (Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
+    public boolean hasBackEdgeTo(final RegionNode aNode) {
+        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
             if (theEntry.getKey().getType() == EdgeType.BACK) {
                 if (theEntry.getValue() == aNode) {
                     return true;
@@ -114,10 +115,10 @@ public class RegionNode extends Node {
     }
 
     public Set<RegionNode> getPredecessorsIgnoringBackEdges() {
-        Set<RegionNode> theResult = new HashSet<>();
-        for (GraphNodePath thePath : reachableBy) {
+        final Set<RegionNode> theResult = new HashSet<>();
+        for (final GraphNodePath thePath : reachableBy) {
             if (!thePath.isEmpty()) {
-                RegionNode theLastElement = thePath.lastElement();
+                final RegionNode theLastElement = thePath.lastElement();
                 if (!theLastElement.hasBackEdgeTo(this)) {
                     theResult.add(theLastElement);
                 }
@@ -126,7 +127,7 @@ public class RegionNode extends Node {
         return theResult;
     }
 
-    public void addSuccessor(RegionNode aBlock) {
+    public void addSuccessor(final RegionNode aBlock) {
         if (!successors.values().contains(aBlock)) {
             successors.put(new Edge(EdgeType.NORMAL), aBlock);
         }
@@ -140,13 +141,13 @@ public class RegionNode extends Node {
         return startAddress;
     }
 
-    public Variable newVariable(TypeRef aType) {
+    public Variable newVariable(final TypeRef aType) {
         return program.createVariable(aType);
     }
 
-    public Variable newVariable(TypeRef aType, Value aValue)  {
+    public Variable newVariable(final TypeRef aType, final Value aValue)  {
         if (aValue instanceof Variable) {
-            Variable theVar = (Variable) aValue;
+            final Variable theVar = (Variable) aValue;
             if (theVar.isSynthetic()) {
                 return theVar;
             }
@@ -155,8 +156,8 @@ public class RegionNode extends Node {
         return newVariable(aType, aValue, false);
     }
 
-    public Variable newVariable(TypeRef aType, Value aValue, boolean aIsImport)  {
-        Variable theNewVariable = newVariable(aType);
+    public Variable newVariable(final TypeRef aType, final Value aValue, final boolean aIsImport)  {
+        final Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue);
         if (!aIsImport) {
             expressions.add(new VariableAssignmentExpression(theNewVariable, aValue));
@@ -164,57 +165,66 @@ public class RegionNode extends Node {
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(TypeRef aType, VariableDescription aDescription) {
-        Variable theVariable = newVariable(aType);
+    public Variable newImportedVariable(final TypeRef aType, final VariableDescription aDescription) {
+        final Variable theVariable = newVariable(aType);
         imported.put(aDescription, theVariable);
         return theVariable;
     }
 
-    public void addToExportedList(Value aValue, VariableDescription aDescription) {
+    public boolean canThrowException() {
+        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
+            if (theEntry.getValue().getType() == BlockType.EXCEPTION_HANDLER) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void addToExportedList(final Value aValue, final VariableDescription aDescription) {
         exported.put(aDescription, aValue);
     }
 
-    public void addToImportedList(Value aValue, VariableDescription aDescription) {
+    public void addToImportedList(final Value aValue, final VariableDescription aDescription) {
         imported.put(aDescription, aValue);
     }
 
     public BlockState toFinalState() {
-        BlockState theState = new BlockState();
-        for (Map.Entry<VariableDescription, Value> theEntry : exported.entrySet()) {
+        final BlockState theState = new BlockState();
+        for (final Map.Entry<VariableDescription, Value> theEntry : exported.entrySet()) {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;
     }
 
     public BlockState toStartState() {
-        BlockState theState = new BlockState();
-        for (Map.Entry<VariableDescription, Value> theEntry : imported.entrySet()) {
+        final BlockState theState = new BlockState();
+        for (final Map.Entry<VariableDescription, Value> theEntry : imported.entrySet()) {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;
     }
 
 
-    public boolean isStrictlyDominatedBy(RegionNode aNode) {
-        List<RegionNode> thePredecessors = new ArrayList<>(getPredecessors());
+    public boolean isStrictlyDominatedBy(final RegionNode aNode) {
+        final List<RegionNode> thePredecessors = new ArrayList<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
 
-    public void deleteVariable(Variable aVariable) {
+    public void deleteVariable(final Variable aVariable) {
         deleteVariable(aVariable, expressions);
     }
 
-    private void deleteVariable(Variable aVariable, ExpressionList aList) {
-        for (Expression theExpression : aList.toList()) {
+    private void deleteVariable(final Variable aVariable, final ExpressionList aList) {
+        for (final Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (final ExpressionList theList : theContainer.getExpressionLists()) {
                     deleteVariable(aVariable, theList);
                 }
             }
             if (theExpression instanceof VariableAssignmentExpression) {
-                VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                List<Value> theIncomingDataFlows = theInit.incomingDataFlows();
+                final VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
+                final List<Value> theIncomingDataFlows = theInit.incomingDataFlows();
                 if (theIncomingDataFlows.get(0) == aVariable) {
                     aList.remove(theExpression);
                 }
@@ -222,13 +232,13 @@ public class RegionNode extends Node {
         }
     }
 
-    public boolean isOnlyReachableThru(RegionNode aOtherNode) {
+    public boolean isOnlyReachableThru(final RegionNode aOtherNode) {
         // Start nodes are not reachable by anything
         if (reachableBy.isEmpty()) {
             return false;
         }
         // All paths to this node must go thru aOtherNode
-        for (GraphNodePath thePath : reachableBy) {
+        for (final GraphNodePath thePath : reachableBy) {
             if (!thePath.contains(aOtherNode)) {
                 return false;
             }
@@ -237,7 +247,7 @@ public class RegionNode extends Node {
     }
 
     public Set<RegionNode> forwardReachableNodes() {
-        Set<RegionNode> theNodes = new HashSet<>();
+        final Set<RegionNode> theNodes = new HashSet<>();
         forwardReachableNodes(theNodes, this);
         return theNodes;
     }
@@ -246,9 +256,9 @@ public class RegionNode extends Node {
         return owningGraph.dominatedNodesOf(this);
     }
 
-    private static void forwardReachableNodes(Set<RegionNode> aResult, RegionNode aNode) {
+    private static void forwardReachableNodes(final Set<RegionNode> aResult, final RegionNode aNode) {
         if (aResult.add(aNode)) {
-            for (Map.Entry<Edge,RegionNode> theSuc : aNode.successors.entrySet()) {
+            for (final Map.Entry<Edge,RegionNode> theSuc : aNode.successors.entrySet()) {
                 if (theSuc.getKey().type == EdgeType.NORMAL) {
                     forwardReachableNodes(aResult, theSuc.getValue());
                 }
@@ -256,9 +266,9 @@ public class RegionNode extends Node {
         }
     }
 
-    public void removeEdgesTo(RegionNode aNode) {
-        Map<Edge, RegionNode> theNewSucc = new HashMap<>();
-        for (Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
+    public void removeEdgesTo(final RegionNode aNode) {
+        final Map<Edge, RegionNode> theNewSucc = new HashMap<>();
+        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
             if (!(theEntry.getValue() == aNode)) {
                 theNewSucc.put(theEntry.getKey(), theEntry.getValue());
             }
@@ -267,14 +277,14 @@ public class RegionNode extends Node {
         successors.putAll(theNewSucc);
     }
 
-    public void removeFromPaths(RegionNode aNode) {
-        for (GraphNodePath thePath : reachableBy) {
+    public void removeFromPaths(final RegionNode aNode) {
+        for (final GraphNodePath thePath : reachableBy) {
             thePath.remove(aNode);
         }
     }
 
-    public void inheritSuccessorsOf(RegionNode aNode) {
-        for (Map.Entry<Edge, RegionNode> theEntry : aNode.successors.entrySet()) {
+    public void inheritSuccessorsOf(final RegionNode aNode) {
+        for (final Map.Entry<Edge, RegionNode> theEntry : aNode.successors.entrySet()) {
             successors.put(theEntry.getKey(), theEntry.getValue());
         }
     }

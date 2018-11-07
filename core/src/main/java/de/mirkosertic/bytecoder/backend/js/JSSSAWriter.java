@@ -934,10 +934,16 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final Relooper.SimpleBlock aSimpleBlock) {
         JSSSAWriter theWriter = this;
+        final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException();
+        if (canThrowExeption) {
+            println("try {");
+            theWriter = theWriter.withDeeperIndent();
+        }
         if (aSimpleBlock.isLabelRequired()) {
-            print("$");
-            print(aSimpleBlock.label().name());
-            println(" : {");
+            theWriter.print("$");
+            theWriter.print(aSimpleBlock.label().name());
+            theWriter.println(" : {");
+            theWriter.printlnComment(aSimpleBlock.internalLabel().getType().toString());
 
             theWriter = theWriter.withDeeperIndent();
         }
@@ -945,8 +951,15 @@ public class JSSSAWriter extends IndentSSAWriter {
         theWriter.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
 
         if (aSimpleBlock.isLabelRequired()) {
+            theWriter.println("}");
+        }
+
+        if (canThrowExeption) {
+            println("} catch (e) {");
+            println("   throw e;");
             println("}");
         }
+
         print(aSimpleBlock.next());
     }
 
@@ -980,7 +993,8 @@ public class JSSSAWriter extends IndentSSAWriter {
             for (final RegionNode theEntry : theHandler.entries()) {
                 theDeeper.print("case ");
                 theDeeper.print(theEntry.getStartAddress().getAddress());
-                theDeeper.println(" : ");
+                theDeeper.println(" :");
+                theDeeper.printlnComment(theEntry.getType().toString());
             }
 
             final JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
