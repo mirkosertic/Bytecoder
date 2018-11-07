@@ -12,6 +12,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Maven: org.jocl:jocl:2.0.1" level="project" />
     <orderEntry type="module" module-name="bytecoder.api" />
     <orderEntry type="module" module-name="bytecoder.opencl" />
     <orderEntry type="module" module-name="java.base" />

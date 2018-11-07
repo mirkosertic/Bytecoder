@@ -600,11 +600,15 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
         }
 
-        // And add dependencies for exception handlers and finally blocks
+        // And add dependencies for exception handlers
         for (final BytecodeExceptionTableEntry theHandler : theBytecode.getExceptionHandlers()) {
-            final RegionNode theStart = theProgram.getControlFlowGraph().nodeStartingAt(theHandler.getStartPC());
             final RegionNode theHandlerNode = theProgram.getControlFlowGraph().nodeStartingAt(theHandler.getHandlerPc());
-            theStart.addSuccessor(theHandlerNode);
+            for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+                if (theNode.getStartAddress().getAddress() >= theHandler.getStartPC().getAddress() &&
+                        theNode.getStartAddress().getAddress() < theHandler.getEndPc().getAddress()) {
+                    theNode.addSuccessor(theHandlerNode);
+                }
+            }
         }
 
         // Now we can add the SSA instructions to the graph nodes
