@@ -23,13 +23,15 @@ public interface WASMValue {
 
         Container owningContainer();
 
-        FunctionTypeIndex typeIndex();
+        TypeIndex typeIndex();
 
         FunctionIndex functionIndex();
 
         GlobalsIndex globalsIndex();
 
         LocalIndex localIndex();
+
+        ExceptionIndex eventIndex();
 
         ExportContext subWith(Container container);
 

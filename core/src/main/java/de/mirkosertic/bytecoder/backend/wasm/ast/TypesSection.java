@@ -21,52 +21,52 @@ import java.util.List;
 
 public class TypesSection extends ModuleSection {
 
-    private final List<FunctionType> types;
+    private final List<WASMType> types;
 
     TypesSection(final Module aModule) {
         super(aModule);
         this.types = new ArrayList<>();
     }
 
-    public FunctionType typeFor(final List<PrimitiveType> parameter, final PrimitiveType resultType) {
-        for (final FunctionType known : types) {
+    public WASMType typeFor(final List<PrimitiveType> parameter, final PrimitiveType resultType) {
+        for (final WASMType known : types) {
             if (known.matches(parameter, resultType)) {
                 return known;
             }
         }
-        final FunctionType type = new FunctionType(this, parameter, resultType);
+        final WASMType type = new WASMType(this, parameter, resultType);
         types.add(type);
         return type;
     }
 
-    public FunctionType typeFor(final List<PrimitiveType> parameter) {
-        for (final FunctionType known : types) {
+    public WASMType typeFor(final List<PrimitiveType> parameter) {
+        for (final WASMType known : types) {
             if (known.matches(parameter, null)) {
                 return known;
             }
         }
-        final FunctionType type = new FunctionType(this, parameter);
+        final WASMType type = new WASMType(this, parameter);
         types.add(type);
         return type;
     }
 
-    public FunctionType typeFor(final PrimitiveType resultType) {
-        for (final FunctionType known : types) {
+    public WASMType typeFor(final PrimitiveType resultType) {
+        for (final WASMType known : types) {
             if (known.matches(null, resultType)) {
                 return known;
             }
         }
-        final FunctionType type = new FunctionType(this, resultType);
+        final WASMType type = new WASMType(this, resultType);
         types.add(type);
         return type;
     }
 
-    int indexOf(final FunctionType functionType) {
-        return types.indexOf(functionType);
+    int indexOf(final WASMType type) {
+        return types.indexOf(type);
     }
 
     public void writeTo(final TextWriter textWriter) {
-        for (final FunctionType type : types) {
+        for (final WASMType type : types) {
             type.writeTo(textWriter);
             textWriter.newLine();
         }
@@ -75,15 +75,15 @@ public class TypesSection extends ModuleSection {
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.typeSection()) {
             writer.writeUnsignedLeb128(types.size());
-            for (final FunctionType type : types) {
+            for (final WASMType type : types) {
                 type.writeTo(writer);
             }
         }
     }
 
-    public FunctionTypeIndex typesIndex() {
-        final FunctionTypeIndex result = new FunctionTypeIndex();
-        for (final FunctionType t : types) {
+    public TypeIndex typesIndex() {
+        final TypeIndex result = new TypeIndex();
+        for (final WASMType t : types) {
             result.add(t);
         }
         return result;

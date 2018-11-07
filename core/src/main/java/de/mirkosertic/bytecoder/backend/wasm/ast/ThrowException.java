@@ -18,44 +18,36 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class CallIndirect implements WASMExpression {
+public class ThrowException implements WASMExpression {
 
-    private final WASMType functionType;
+    private final WASMException exception;
     private final List<WASMValue> arguments;
-    private final WASMValue functionIndex;
 
-    CallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue functionIndex) {
-        this.functionType = functionType;
+    public ThrowException(final WASMException exception, final List<WASMValue> arguments) {
+        this.exception = exception;
         this.arguments = arguments;
-        this.functionIndex = functionIndex;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("call_indirect");
+        textWriter.write("throw");
         textWriter.space();
-        functionType.writeRefTo(textWriter);
+        textWriter.writeLabel(exception.getLabel());
         for (final WASMValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);
         }
-        textWriter.space();
-        functionIndex.writeTo(textWriter, context);
         textWriter.closing();
-        if (functionType.isVoid()) {
-            textWriter.newLine();
-        }
+        textWriter.newLine();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        for (final WASMValue argument : arguments) {
-            argument.writeTo(codeWriter, context);
+        for (final WASMValue value : arguments) {
+            value.writeTo(codeWriter, context);
         }
-        functionIndex.writeTo(codeWriter, context);
-        codeWriter.writeByte((byte) 0x11);
-        codeWriter.writeUnsignedLeb128(context.typeIndex().indexOf(functionType));
-        codeWriter.writeByte((byte) 0);
+        codeWriter.writeByte((byte) 0x08);
+        codeWriter.writeSignedLeb128(context.eventIndex().indexOf(exception));
     }
 }

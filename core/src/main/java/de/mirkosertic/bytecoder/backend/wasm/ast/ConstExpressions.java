@@ -27,7 +27,7 @@ public class ConstExpressions {
         return new Call(function, arguments);
     }
 
-    public static CallIndirect call(final FunctionType type, final List<WASMValue> arguments, final WASMValue functionIndex) {
+    public static CallIndirect call(final WASMType type, final List<WASMValue> arguments, final WASMValue functionIndex) {
         return new CallIndirect(type, arguments, functionIndex);
     }
 

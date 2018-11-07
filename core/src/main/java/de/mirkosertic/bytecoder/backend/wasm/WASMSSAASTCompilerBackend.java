@@ -50,7 +50,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
-import de.mirkosertic.bytecoder.backend.wasm.ast.FunctionType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ImportReference;
@@ -141,8 +141,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             nullCheck.flow.branchIff(nullCheck, i32.ne(getLocal(instanceOfCheck.localByLabel("thisRef")), i32.c(0)));
             nullCheck.flow.ret(i32.c(0));
 
-            final FunctionType instanceOfType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
-            final FunctionType resolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+            final WASMType instanceOfType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+            final WASMType resolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
             final WASMValue theIndex = call(resolveType, Arrays.asList(getLocal(instanceOfCheck.localByLabel("thisRef")),
                     i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID)), i32.load(4, getLocal(instanceOfCheck.localByLabel("thisRef"))));
 

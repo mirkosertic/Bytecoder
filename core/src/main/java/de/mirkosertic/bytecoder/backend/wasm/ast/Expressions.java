@@ -78,7 +78,7 @@ public class Expressions {
         parent.addChild(call);
     }
 
-    public void voidCallIndirect(final FunctionType functionType, final List<WASMValue> arguments, final WASMValue tableIndex) {
+    public void voidCallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue tableIndex) {
         final CallIndirect call = new CallIndirect(functionType, arguments, tableIndex);
         parent.addChild(call);
     }
@@ -139,5 +139,16 @@ public class Expressions {
     public void setGlobal(final Global global, final WASMValue value) {
         final SetGlobal setGlobal = new SetGlobal(global, value);
         parent.addChild(setGlobal);
+    }
+
+    public Try Try(final String label) {
+        final Try t = new Try(parent, label);
+        parent.addChild(t);
+        return t;
+    }
+
+    public void throwException(final WASMException exception, final List<WASMValue> arguments) {
+        final ThrowException t = new ThrowException(exception, arguments);
+        parent.addChild(t);
     }
 }

@@ -24,7 +24,8 @@ public enum PrimitiveType {
     f64("f64", (byte) 0x7c),
     anyfunc("anyfunc", (byte) 0x70),
     func("func", (byte) 0x60),
-    empty_pseudo_block("pseudo", (byte) 0x40);
+    empty_pseudo_block("pseudo", (byte) 0x40),
+    except_ref("except_ref", (byte) -0x18);
 
     private final String text;
     private final byte binaryType;

@@ -40,7 +40,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
-import de.mirkosertic.bytecoder.backend.wasm.ast.FunctionType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.I32Const;
 import de.mirkosertic.bytecoder.backend.wasm.ast.LabeledContainer;
@@ -914,7 +914,7 @@ public class WASMSSAASTWriter {
             theSignatureParams.add(toType(TypeRef.toType(theParamType)));
         }
 
-        final FunctionType theCalledFunction;
+        final WASMType theCalledFunction;
         if (!aValue.getSignature().getReturnType().isVoid()) {
             theCalledFunction = module.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(aValue.getSignature().getReturnType())));
         } else {
@@ -929,7 +929,7 @@ public class WASMSSAASTWriter {
 
         final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
 
-        final FunctionType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+        final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();
         theResolveArgument.add(toValue(theTarget));
         theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));

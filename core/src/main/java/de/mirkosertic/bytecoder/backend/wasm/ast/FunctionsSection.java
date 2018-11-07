@@ -30,21 +30,21 @@ public class FunctionsSection extends ModuleSection {
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter, final PrimitiveType result) {
-        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+        final WASMType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final List<Param> parameter) {
-        final FunctionType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+        final WASMType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter);
         functions.add(function);
         return function;
     }
 
     public ExportableFunction newFunction(final String label, final PrimitiveType result) {
-        final FunctionType type = getModule().getTypes().typeFor(result);
+        final WASMType type = getModule().getTypes().typeFor(result);
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, result);
         functions.add(function);
         return function;
