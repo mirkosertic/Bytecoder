@@ -344,7 +344,7 @@ public class BytecodeLinkedClass extends Node {
                 }
             } else {
                 BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
-                BytecodeProgram theProgram = theCode.getProgramm();
+                BytecodeProgram theProgram = theCode.getProgram();
                 for (BytecodeInstruction theInstruction : theProgram.getInstructions()) {
                     theInstruction.performLinking(bytecodeClass, linkerContext);
                 }

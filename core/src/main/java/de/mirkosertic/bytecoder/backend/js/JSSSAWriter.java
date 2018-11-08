@@ -217,23 +217,23 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final MaxExpression aValue) {
         print("Math.max(");
-        print((Value) aValue.incomingDataFlows().get(0));
+        print(aValue.incomingDataFlows().get(0));
         print(",");
-        print((Value) aValue.incomingDataFlows().get(1));
+        print(aValue.incomingDataFlows().get(1));
         print(")");
     }
 
     private void print(final MinExpression aValue) {
         print("Math.min(");
-        print((Value) aValue.incomingDataFlows().get(0));
+        print(aValue.incomingDataFlows().get(0));
         print(",");
-        print((Value) aValue.incomingDataFlows().get(1));
+        print(aValue.incomingDataFlows().get(1));
         print(")");
     }
 
     private void print(final SqrtExpression aValue) {
         print("Math.sqrt(");
-        print((Value) aValue.incomingDataFlows().get(0));
+        print(aValue.incomingDataFlows().get(0));
         print(")");
     }
 
@@ -956,7 +956,36 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         if (canThrowExeption) {
             println("} catch (e) {");
-            println("   throw e;");
+
+            JSSSAWriter theDeeper = withDeeperIndent();
+
+            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : aSimpleBlock.internalLabel().getSuccessors().entrySet()) {
+                if (theEntry.getValue().getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
+                    Relooper.SimpleBlock.Jump jump = aSimpleBlock.jumpTo(theEntry.getValue().getStartAddress());
+                    if (jump != null) {
+                        theDeeper.print("__label__ = ");
+                        theDeeper.print(theEntry.getValue().getStartAddress().getAddress());
+                        theDeeper.println(";");
+                        switch (jump.getType()) {
+                            case CONTINUE:
+                                theDeeper.print("continue $");
+                                break;
+                            case BREAK:
+                                theDeeper.print("break $");
+                                break;
+                            default:
+                                throw new IllegalArgumentException("Not implemented!");
+                        }
+                        theDeeper.print(jump.getLabel().name());
+                        theDeeper.println(";");
+                    } else {
+                        theDeeper.print("__label__ = ");
+                        theDeeper.print(theEntry.getValue().getStartAddress().getAddress());
+                        theDeeper.println(";");
+                    }
+                }
+            }
+
             println("}");
         }
 

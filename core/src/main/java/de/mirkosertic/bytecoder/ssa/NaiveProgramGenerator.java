@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.ssa;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Stack;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -145,290 +143,10 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
     public final static ProgramGeneratorFactory FACTORY = NaiveProgramGenerator::new;
 
-    private static final class ParsingHelper {
-
-        @FunctionalInterface interface ValueProvider {
-            Value resolveValueFor(VariableDescription aDescription);
-        }
-
-        private final RegionNode block;
-        private final Stack<Value> stack;
-        private final Map<Integer, Variable> localVariables;
-        private final ValueProvider valueProvider;
-        private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
-
-        private ParsingHelper(
-                final BytecodeLocalVariableTableAttributeInfo aDebugInfo, final RegionNode aBlock, final ValueProvider aValueProvider) {
-            stack = new Stack<>();
-            block = aBlock;
-            localVariables = new HashMap<>();
-            valueProvider = aValueProvider;
-            localVariableTableAttributeInfo = aDebugInfo;
-        }
-
-        public int numberOfLocalVariables() {
-            return localVariables.size();
-        }
-
-        public Value pop() {
-            if (stack.isEmpty()) {
-                throw new IllegalStateException("Stack is empty!!!");
-            }
-            return stack.pop();
-        }
-
-        public Value peek() {
-            return stack.peek();
-        }
-
-        public void push(final Value aValue) {
-            if (aValue == null) {
-                throw new IllegalStateException("Trying to push null in " + this);
-            }
-            stack.push(aValue);
-        }
-
-        public Value getLocalVariable(final int aIndex) {
-            Variable theValue = localVariables.get(aIndex);
-            if (theValue == null) {
-                final VariableDescription theDesc = new LocalVariableDescription(aIndex);
-                theValue = (Variable) valueProvider.resolveValueFor(theDesc);
-                if (theValue == null) {
-                    throw new IllegalStateException("Value must not be null from provider for " + theDesc);
-                }
-                block.addToImportedList(theValue, theDesc);
-                block.addToExportedList(theValue, theDesc);
-                localVariables.put(aIndex, theValue);
-            }
-            return theValue;
-        }
-
-        public Value requestValue(final VariableDescription aDescription) {
-            if (aDescription instanceof LocalVariableDescription) {
-                final LocalVariableDescription theDesc = (LocalVariableDescription) aDescription;
-                return getLocalVariable(theDesc.getIndex());
-            }
-            final StackVariableDescription theStack = (StackVariableDescription) aDescription;
-            if (theStack.getPos() < stack.size()) {
-                return stack.get(stack.size() - theStack.getPos() - 1);
-            }
-            throw new IllegalStateException("Invalid stack index : " + theStack.getPos() + " with total size of " + stack.size());
-        }
-
-        public void setLocalVariable(final BytecodeOpcodeAddress aInstruction, final int aIndex, Value aValue) {
-            if (aValue == null) {
-                throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
-            }
-            if (localVariableTableAttributeInfo != null) {
-                final BytecodeLocalVariableTableEntry theEntry = localVariableTableAttributeInfo.matchingEntryFor(aInstruction, aIndex);
-                if (theEntry != null) {
-                    /*String theVariableName = localVariableTableAttributeInfo.resolveVariableName(theEntry);
-                    Variable theGlobal = program.getOrCreateTrulyGlobal(theVariableName, aValue.resolveType());
-                    theGlobal.initializeWith(aValue);
-                    block.addExpression(new VariableAssignmentExpression(theGlobal, aValue));
-                    localVariables.put(aIndex, theGlobal);
-                    block.addToExportedList(theGlobal, new LocalVariableDescription(aIndex));
-                    return;*/
-                }
-            }
-            // Try to find global variables
-            if (!(aValue instanceof Variable)) {
-                // Promote value to variable
-                aValue = block.newVariable(aValue.resolveType(), aValue);
-            }
-            localVariables.put(aIndex, (Variable) aValue);
-            block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
-        }
-
-        public void setStackValue(final int aStackPos, final Value aValue) {
-            final List<Value> theValues = new ArrayList<>(stack);
-            while (theValues.size() <= aStackPos) {
-                theValues.add(null);
-            }
-            theValues.set(aStackPos, aValue);
-            stack.clear();
-            stack.addAll(theValues);
-        }
-
-        public void finalizeExportState() {
-            for (final Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
-                block.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey()));
-            }
-            for (int i=stack.size() - 1 ; i>= 0; i--) {
-                // Numbering must be consistent here!!
-                block.addToExportedList(stack.get(i), new StackVariableDescription(stack.size() - 1 - i));
-            }
-        }
-    }
-
     private final BytecodeLinkerContext linkerContext;
 
     private NaiveProgramGenerator(final BytecodeLinkerContext aLinkerContext) {
         linkerContext = aLinkerContext;
-    }
-
-    public static class ParsingHelperCache {
-
-        private final BytecodeMethod method;
-        private final RegionNode startNode;
-        private final Map<RegionNode, ParsingHelper> finalStatesForNodes;
-        private final Program program;
-        private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
-
-        public ParsingHelperCache(
-                final Program aProgram, final BytecodeMethod aMethod, final RegionNode aStartNode, final BytecodeLocalVariableTableAttributeInfo aLocalVariablesInfo) {
-            startNode = aStartNode;
-            method = aMethod;
-            localVariableTableAttributeInfo = aLocalVariablesInfo;
-            finalStatesForNodes = new HashMap<>();
-            program = aProgram;
-        }
-
-        public void registerFinalStateForNode(final RegionNode aNode, final ParsingHelper aState) {
-            finalStatesForNodes.put(aNode, aState);
-        }
-
-        public ParsingHelper resolveFinalStateForNode(final RegionNode aGraphNode) {
-            if (aGraphNode == null) {
-                // No node, so we create the initial state of the whole program
-                final Map<VariableDescription, Value> theValues = new HashMap<>();
-
-                // At this point, local variables are initialized based on the method signature
-                // The stack is empty
-                int theCurrentIndex = 0;
-                if (!method.getAccessFlags().isStatic()) {
-                    final LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
-                    theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
-                    theCurrentIndex++;
-                }
-
-                final BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
-                for (final BytecodeTypeRef theRef : theTypes) {
-                    final LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
-                    theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
-                    theCurrentIndex++;
-                    if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
-                        theCurrentIndex++;
-                    }
-                }
-
-                final ParsingHelper.ValueProvider theProvider = aDescription -> {
-                    final Value theValue = theValues.get(aDescription);
-                    if (theValue == null) {
-                        throw new IllegalStateException("No value on cfg enter : " + aDescription);
-                    }
-                    return theValue;
-                };
-
-                return new ParsingHelper(localVariableTableAttributeInfo, startNode, theProvider);
-            }
-            return finalStatesForNodes.get(aGraphNode);
-        }
-
-        private TypeRef widestTypeOf(final Collection<Value> aValue) {
-            if (aValue.size() == 1) {
-                return aValue.iterator().next().resolveType();
-            }
-            TypeRef.Native theCurrent = null;
-            for (final Value theValue : aValue) {
-                final TypeRef.Native theValueType = theValue.resolveType().resolve();
-                if (theCurrent == null) {
-                    theCurrent = theValueType;
-                } else {
-                    theCurrent = theCurrent.eventuallyPromoteTo(theValueType);
-                }
-            }
-            return theCurrent;
-        }
-
-        public ParsingHelper resolveInitialPHIStateForNode(final RegionNode aBlock) {
-            final ParsingHelper.ValueProvider theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
-
-            // We collect the stacks from all predecessor nodes
-            final Map<StackVariableDescription, Set<Value>> theStackToImport = new HashMap<>();
-            int theRequestedStack = -1;
-            for (final RegionNode thePredecessor : aBlock.getPredecessorsIgnoringBackEdges()) {
-                final ParsingHelper theHelper = finalStatesForNodes.get(thePredecessor);
-                if (!theHelper.stack.isEmpty()) {
-                    if (theRequestedStack == -1) {
-                        theRequestedStack = theHelper.stack.size();
-                    } else {
-                        if (theRequestedStack != theHelper.stack.size()) {
-                            throw new IllegalStateException("Wrong number of exported stack in " + thePredecessor.getStartAddress().getAddress() + " expected " + theRequestedStack + " got " + theHelper.stack.size());
-                        }
-                    }
-                    for (int i=0;i<theHelper.stack.size();i++) {
-                        final StackVariableDescription theStackPos = new StackVariableDescription(theHelper.stack.size() - i - 1);
-                        final Value theStackValue = theHelper.stack.get(i);
-
-                        final Set<Value> theKnownValues = theStackToImport.computeIfAbsent(theStackPos, k -> new HashSet<>());
-                        theKnownValues.add(theStackValue);
-                    }
-                }
-            }
-
-            final ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
-
-            // Now we import the stack and check if we need to insert phi values
-            for (final Map.Entry<StackVariableDescription, Set<Value>> theEntry : theStackToImport.entrySet()) {
-                final Set<Value> theValues = theEntry.getValue();
-                if (theValues.size() == 1) {
-                    // Only one value, we do not need to insert a phi value
-                    final Value theSingleValue = theValues.iterator().next();
-                    theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, theSingleValue);
-                    aBlock.addToImportedList(theSingleValue, theEntry.getKey());
-                } else {
-                    // We have a PHI value here
-                    final TypeRef theType = widestTypeOf(theValues);
-                    final Variable thePHI = aBlock.newImportedVariable(theType, theEntry.getKey());
-                    for (final Value theValue : theValues) {
-                        thePHI.initializeWith(theValue);
-                    }
-                    theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, thePHI);
-                }
-            }
-
-            return theHelper;
-        }
-
-        private Value newPHIFor(final Set<RegionNode> aNodes, final VariableDescription aDescription, final RegionNode aImportingBlock) {
-            final Set<Value> theValues = new HashSet<>();
-            for (final RegionNode thePredecessor : aNodes) {
-                final ParsingHelper theHelper = finalStatesForNodes.get(thePredecessor);
-                if (theHelper == null) {
-                    throw new IllegalStateException("No helper for " + thePredecessor.getStartAddress().getAddress());
-                }
-                theValues.add(theHelper.requestValue(aDescription));
-            }
-            if (theValues.isEmpty()) {
-                throw new IllegalStateException("No values for " + aDescription + " in block " + aImportingBlock.getStartAddress().getAddress());
-            }
-            if (theValues.size() == 1) {
-                final Value theValue = theValues.iterator().next();
-                aImportingBlock.addToImportedList(theValue, aDescription);
-                return theValue;
-            }
-            final TypeRef theType = widestTypeOf(theValues);
-            final Variable thePHI = aImportingBlock.newImportedVariable(theType, aDescription);
-            for (final Value theValue : theValues) {
-                thePHI.initializeWith(theValue);
-            }
-            return thePHI;
-        }
-
-        public ParsingHelper resolveInitialStateFromPredecessorFor(final RegionNode aNode, final ParsingHelper aPredecessor) {
-            // The node will import the full stack from its predecessor
-            final ParsingHelper.ValueProvider theProvider = aPredecessor::requestValue;
-            final ParsingHelper theNew = new ParsingHelper(localVariableTableAttributeInfo, aNode, theProvider);
-            final Stack<Value> theStackToImport = aPredecessor.stack;
-            for (int i=0;i<theStackToImport.size();i++) {
-                final StackVariableDescription theStackDesc = new StackVariableDescription(theStackToImport.size() - i - 1);
-                final Value theImportedValue = theStackToImport.get(i);
-                theNew.stack.push(theImportedValue);
-                aNode.addToImportedList(theImportedValue, theStackDesc);
-            }
-            return theNew;
-        }
     }
 
     @Override
@@ -483,7 +201,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             return theProgram;
         }
 
-        final BytecodeProgram theBytecode = theCode.getProgramm();
+        final BytecodeProgram theBytecode = theCode.getProgram();
         final Set<BytecodeOpcodeAddress> theJumpTarget = theBytecode.getJumpTargets();
         BytecodeBasicBlock currentBlock = null;
         for (final BytecodeInstruction theInstruction : theBytecode.getInstructions()) {

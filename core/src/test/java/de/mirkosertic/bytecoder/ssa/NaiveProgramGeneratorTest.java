@@ -54,7 +54,7 @@ public class NaiveProgramGeneratorTest {
         when(theMethod.getSignature()).thenReturn(aSignature);
 
         BytecodeCodeAttributeInfo theCodeAttribute = mock(BytecodeCodeAttributeInfo.class);
-        when(theCodeAttribute.getProgramm()).thenReturn(aProgram);
+        when(theCodeAttribute.getProgram()).thenReturn(aProgram);
         when(theMethod.getCode(any())).thenReturn(theCodeAttribute);
 
         return theGenerator.generateFrom(theClass, theMethod);

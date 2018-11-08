@@ -17,10 +17,10 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
 
-    private int maxStack;
-    private int maxLocals;
-    private BytecodeProgram programm;
-    private BytecodeAttributeInfo[] attributes;
+    private final int maxStack;
+    private final int maxLocals;
+    private final BytecodeProgram programm;
+    private final BytecodeAttributeInfo[] attributes;
 
     public BytecodeCodeAttributeInfo(int aMaxStack, int aMaxLocals, BytecodeProgram aProgramm, BytecodeAttributeInfo[] aAttributes) {
         maxStack = aMaxStack;
@@ -37,7 +37,7 @@ public class BytecodeCodeAttributeInfo implements BytecodeAttributeInfo {
         return maxLocals;
     }
 
-    public BytecodeProgram getProgramm() {
+    public BytecodeProgram getProgram() {
         return programm;
     }
 

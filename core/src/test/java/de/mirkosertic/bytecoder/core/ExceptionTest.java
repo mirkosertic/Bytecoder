@@ -30,23 +30,39 @@ public class ExceptionTest {
     @Test
     public void testControlFlow() {
         int i = 10;
-        for (int j = 0; j < 10;j++) {
+        System.out.println("A");
+        for (int j = 0; j < 2;j++) {
+            System.out.println("B");
             try {
+                System.out.println("C");
                 final int k = 12;
+                System.out.println("D");
                 throwException(j);
+                System.out.println("E");
                 for (int z=0; z<100; z++) {
+                    System.out.println("F");
                 }
+                System.out.println("G");
                 throwException(j);
+                System.out.println("H");
                 throwException(j);
+                System.out.println("I");
             } catch (final Exception e) {
-                for (int k = 0; k<10;k++) {
+                System.out.println("J");
+                for (int k = 0; k<3;k++) {
+                    System.out.println("K");
                     i++;
                 }
-                break;
+                System.out.println("L");
+                System.out.println(i);
             } finally {
-                i = i + 2;
+                System.out.println("M");
+                System.out.println(i);
             }
+            System.out.println(i);
+            System.out.println("N");
         }
-        Assert.assertEquals(22, i, 0);
+        System.out.println(i);
+        Assert.assertEquals(16, i, 0);
     }
 }
