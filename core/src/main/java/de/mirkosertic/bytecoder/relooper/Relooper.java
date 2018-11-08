@@ -15,6 +15,18 @@
  */
 package de.mirkosertic.bytecoder.relooper;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.Label;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,17 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-
-import de.mirkosertic.bytecoder.ssa.BreakExpression;
-import de.mirkosertic.bytecoder.ssa.ContinueExpression;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.Label;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 
 /**
  * Implementation of the Relooper Algorithm as described in Alon Zakai's Emscripten Paper.
@@ -86,13 +87,46 @@ public class Relooper {
      * that label, and the Next block appears right after it.
      */
     public static class SimpleBlock extends Block {
+
+        public enum JumpType {
+            BREAK, CONTINUE
+        }
+
+        public static class Jump {
+            private final JumpType type;
+            private final Label label;
+
+            public Jump(JumpType type, Label label) {
+                this.type = type;
+                this.label = label;
+            }
+
+            public JumpType getType() {
+                return type;
+            }
+
+            public Label getLabel() {
+                return label;
+            }
+        }
+
         private final RegionNode internalLabel;
         private final Block next;
+        private final Map<BytecodeOpcodeAddress, Jump> knownJumps;
 
         public SimpleBlock(Set<RegionNode> aEntries, RegionNode aInternalLabel, Block aNext) {
             super(aEntries, "S_");
             internalLabel = aInternalLabel;
             next = aNext;
+            knownJumps = new HashMap<>();
+        }
+
+        public void registerJump(BytecodeOpcodeAddress target, Jump jump) {
+            knownJumps.put(target, jump);
+        }
+
+        public Jump jumpTo(BytecodeOpcodeAddress target) {
+            return knownJumps.get(target);
         }
 
         public RegionNode internalLabel() {
@@ -218,6 +252,43 @@ public class Relooper {
                 BreakExpression theBreak = (BreakExpression) theLastExpression;
                 if (Objects.equals(theBreak.blockToBreak().name(), theSimple.label().name())) {
                     theBreak.silent();
+                }
+            }
+
+            // At this place, we check the goto labels for the blocks successors to make them available during rendering
+            // We search the successor edge
+            for (Map.Entry<RegionNode.Edge, RegionNode> theSuc : theInternalLabel.getSuccessors().entrySet()) {
+                RegionNode theTarget = theSuc.getValue();
+                // We found the matching edge
+                if (theSuc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                    // We can only branch to the next block
+                    // We search the whole hiararchy to find the right block to break out
+                    for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
+                        Block theNestingBlock = aTraversalStack.get(i);
+                        if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
+
+                            theNestingBlock.requireLabel();
+                            theSimple.registerJump(theTarget.getStartAddress(), new SimpleBlock.Jump(SimpleBlock.JumpType.BREAK, theNestingBlock.label()));
+                            break;
+                        } else if (theNestingBlock.entries().contains(theTarget)) {
+                            theNestingBlock.requireLabel();
+
+                            theSimple.registerJump(theTarget.getStartAddress(), new SimpleBlock.Jump(SimpleBlock.JumpType.CONTINUE, theNestingBlock.label()));
+                            break;
+                        }
+                    }
+
+                } else {
+                    // We can only branch back into the known stack of nested blocks
+                    for (Block theNestingBlock : aTraversalStack) {
+                        if (theNestingBlock.entries().contains(theTarget)) {
+
+                            // We can return to the target in the hierarchy
+                            theNestingBlock.requireLabel();
+                            theSimple.registerJump(theTarget.getStartAddress(), new SimpleBlock.Jump(SimpleBlock.JumpType.CONTINUE, theNestingBlock.label()));
+                            break;
+                        }
+                    }
                 }
             }
 
