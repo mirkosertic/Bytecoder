@@ -41,6 +41,15 @@ public class ExceptionTest {
         }
         Assert.assertEquals(15, i, 0);
     }
+
+    @Test
+    public void testForLoop() {
+        int i = 10;
+        for (int j = 0; j<20;j++) {
+            i = i + 3;
+        }
+        Assert.assertEquals(70, i, 0);
+    }
 }
 
 /*
@@ -81,5 +90,28 @@ public class ExceptionTest {
            3    13    19   Class java/lang/Exception
            3    13    29   any
           19    23    29   any
+
+
+  public void testForLoop();
+    Code:
+       0: bipush        10
+       2: istore_1
+       3: iconst_0
+       4: istore_2
+       5: iload_2
+       6: bipush        20
+       8: if_icmpge     21
+      11: iload_1
+      12: iconst_3
+      13: iadd
+      14: istore_1
+      15: iinc          2, 1
+      18: goto          5
+      21: ldc           #8                  // float 70.0f
+      23: iload_1
+      24: i2f
+      25: fconst_0
+      26: invokestatic  #7                  // Method org/junit/Assert.assertEquals:(FFF)V
+      29: return
 
  */
