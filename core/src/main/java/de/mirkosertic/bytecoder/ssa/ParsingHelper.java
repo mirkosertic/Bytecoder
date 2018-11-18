@@ -100,7 +100,7 @@ public class ParsingHelper {
         throw new IllegalStateException("Invalid stack index : " + theStack.getPos() + " with total size of " + stack.size());
     }
 
-    public void setLocalVariable(final BytecodeOpcodeAddress aInstruction, final int aIndex, Value aValue) {
+    public void setLocalVariable(final BytecodeOpcodeAddress aInstruction, final int aIndex, final Value aValue) {
         if (aValue == null) {
             throw new IllegalStateException("local variable " + aIndex + " must not be null in " + this);
         }
@@ -116,13 +116,17 @@ public class ParsingHelper {
                     return;*/
             }
         }
+
         // Try to find global variables
-        if (!(aValue instanceof Variable)) {
+        /*if (!(aValue instanceof Variable)) {
             // Promote value to variable
             aValue = block.newVariable(aValue.resolveType(), aValue);
         }
         localVariables.put(aIndex, (Variable) aValue);
-        block.addToExportedList(aValue, new LocalVariableDescription(aIndex));
+        block.addToExportedList(aValue, new LocalVariableDescription(aIndex));*/
+        final Variable v = block.setLocalVariable(aIndex, aValue);
+        localVariables.put(aIndex, v);
+        block.addToExportedList(v, new LocalVariableDescription(aIndex));
     }
 
     public void setStackValue(final int aStackPos, final Value aValue) {

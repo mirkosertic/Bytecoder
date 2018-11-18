@@ -32,7 +32,7 @@ public class Program {
         private final LocalVariableDescription variableDescription;
         private final Variable variable;
 
-        public Argument(LocalVariableDescription aVariableDescription, Variable aVariable) {
+        public Argument(final LocalVariableDescription aVariableDescription, final Variable aVariable) {
             variableDescription = aVariableDescription;
             variable = aVariable;
         }
@@ -54,7 +54,7 @@ public class Program {
         arguments = new ArrayList<>();
     }
 
-    public void addArgument(LocalVariableDescription aVariableDescription, Variable aVariable) {
+    public void addArgument(final LocalVariableDescription aVariableDescription, final Variable aVariable) {
         arguments.add(new Argument(aVariableDescription, aVariable));
         globals.add(aVariable);
     }
@@ -63,8 +63,8 @@ public class Program {
         return arguments;
     }
 
-    public Argument matchingArgumentOf(LocalVariableDescription aVariableDescription) {
-        for (Argument theArgument : arguments) {
+    public Argument matchingArgumentOf(final LocalVariableDescription aVariableDescription) {
+        for (final Argument theArgument : arguments) {
             if (Objects.equals(theArgument.variableDescription, aVariableDescription)) {
                 return theArgument;
             }
@@ -77,10 +77,10 @@ public class Program {
     }
 
     public Set<Variable> globalVariables() {
-        Set<Variable> theVariables = new HashSet<>();
-        for (RegionNode theNode : controlFlowGraph.getKnownNodes()) {
-            BlockState theStartState = theNode.toStartState();
-            for (Value theValue : theStartState.getPorts().values()) {
+        final Set<Variable> theVariables = new HashSet<>();
+        for (final RegionNode theNode : controlFlowGraph.getKnownNodes()) {
+            final BlockState theStartState = theNode.toStartState();
+            for (final Value theValue : theStartState.getPorts().values()) {
                 if (theValue instanceof Variable) {
                     theVariables.add((Variable) theValue);
                 }
@@ -89,8 +89,8 @@ public class Program {
         return theVariables;
     }
 
-    public boolean isGlobalVariable(Variable aVariable) {
-        for (Variable theVar : globalVariables()) {
+    public boolean isGlobalVariable(final Variable aVariable) {
+        for (final Variable theVar : globalVariables()) {
             if (Objects.equals(theVar.getName(), aVariable.getName())) {
                 return true;
             }
@@ -99,63 +99,67 @@ public class Program {
     }
 
     public List<Variable> getVariables() {
-        List<Variable> theVariables = new ArrayList<>();
+        final List<Variable> theVariables = new ArrayList<>();
         theVariables.addAll(variables);
         theVariables.sort(Comparator.comparing(Variable::getName));
         return theVariables;
     }
 
-    public Variable createVariable(TypeRef aType) {
-        int theIndex = variables.size();
-        Variable theNewVariable = new Variable(aType, "var" + theIndex);
+    public Variable createVariable(final TypeRef aType) {
+        final int theIndex = variables.size();
+        return createVariable("var" + theIndex, aType);
+    }
+
+    public Variable createVariable(final String aName, final TypeRef aType) {
+        final Variable theNewVariable = new Variable(aType, aName);
         variables.add(theNewVariable);
         return theNewVariable;
     }
 
     public Set<BytecodeObjectTypeRef> getStaticReferences() {
-        Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
-        for (RegionNode theNode : controlFlowGraph.getKnownNodes()) {
-            for (Expression theExpression : theNode.getExpressions().toList()) {
+        final Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
+        for (final RegionNode theNode : controlFlowGraph.getKnownNodes()) {
+            for (final Expression theExpression : theNode.getExpressions().toList()) {
                 if (theExpression instanceof PutStaticExpression) {
-                    PutStaticExpression theE = (PutStaticExpression) theExpression;
+                    final PutStaticExpression theE = (PutStaticExpression) theExpression;
                     theResult.add(BytecodeObjectTypeRef
                             .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
                 }
             }
         }
 
-        for (Variable theVariable : variables) {
-            for (Value theValue : theVariable.incomingDataFlows()) {
+        for (final Variable theVariable : variables) {
+            for (final Value theValue : theVariable.incomingDataFlows()) {
                 if (theValue instanceof InvokeStaticMethodExpression) {
-                    InvokeStaticMethodExpression theInvokeStatic = (InvokeStaticMethodExpression) theValue;
+                    final InvokeStaticMethodExpression theInvokeStatic = (InvokeStaticMethodExpression) theValue;
                     theResult.add(theInvokeStatic.getClassName());
                 }
                 if (theValue instanceof GetStaticExpression) {
-                    GetStaticExpression theStaticValue = (GetStaticExpression) theValue;
+                    final GetStaticExpression theStaticValue = (GetStaticExpression) theValue;
                     theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
                 }
                 if (theValue instanceof StringValue) {
                     theResult.add(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
                 }
                 if (theValue instanceof ClassReferenceValue) {
-                    ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;
+                    final ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;
                     theResult.add(theClassRef.getType());
                 }
                 if (theValue instanceof NewArrayExpression) {
-                    NewArrayExpression theNewArray = (NewArrayExpression) theValue;
+                    final NewArrayExpression theNewArray = (NewArrayExpression) theValue;
                     if (theNewArray.getType() instanceof BytecodeObjectTypeRef) {
                         theResult.add((BytecodeObjectTypeRef) theNewArray.getType());
                     }
                 }
                 if (theValue instanceof NewMultiArrayExpression) {
-                    NewMultiArrayExpression theNewArray = (NewMultiArrayExpression) theValue;
-                    BytecodeTypeRef theTypeRef = theNewArray.getType();
+                    final NewMultiArrayExpression theNewArray = (NewMultiArrayExpression) theValue;
+                    final BytecodeTypeRef theTypeRef = theNewArray.getType();
                     if (theTypeRef instanceof BytecodeObjectTypeRef) {
                         theResult.add((BytecodeObjectTypeRef) theTypeRef);
                     }
                 }
                 if (theValue instanceof NewObjectExpression) {
-                    NewObjectExpression theNewObjectValue = (NewObjectExpression) theValue;
+                    final NewObjectExpression theNewObjectValue = (NewObjectExpression) theValue;
                     theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
                 }
             }
@@ -163,7 +167,7 @@ public class Program {
         return theResult;
     }
 
-    public void deleteVariable(Variable aVariable) {
+    public void deleteVariable(final Variable aVariable) {
         variables.remove(aVariable);
         globals.remove(aVariable);
     }
