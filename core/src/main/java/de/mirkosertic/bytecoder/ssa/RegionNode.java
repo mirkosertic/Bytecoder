@@ -141,6 +141,22 @@ public class RegionNode extends Node {
         return startAddress;
     }
 
+    public Variable setLocalVariable(final int aIndex, final Value aValue) {
+        final TypeRef theType = aValue.resolveType();
+        final String theName = "local_" + aIndex + "_" + theType.resolve().name();
+        for (final Variable v : program.getVariables()) {
+            if (v.getName().equals(theName)) {
+                expressions.add(new VariableAssignmentExpression(v, aValue));
+                v.receivesDataFrom(aValue);
+                return v;
+            }
+        }
+        final Variable v = program.createVariable(theName, theType);
+        expressions.add(new VariableAssignmentExpression(v, aValue));
+        v.initializeWith(aValue);
+        return v;
+    }
+
     public Variable newVariable(final TypeRef aType) {
         return program.createVariable(aType);
     }

@@ -784,11 +784,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                 final BytecodeInstructionGenericLOAD theINS = (BytecodeInstructionGenericLOAD) theInstruction;
                 final Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex());
-                aHelper.push(theValue);
+                final Variable theSnapshot = aTargetBlock.newVariable(theValue.resolveType(), theValue);
+                aHelper.push(theSnapshot);
             } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                 final BytecodeInstructionALOAD theINS = (BytecodeInstructionALOAD) theInstruction;
                 final Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex());
-                aHelper.push(theValue);
+                final Variable theSnapshot = aTargetBlock.newVariable(theValue.resolveType(), theValue);
+                aHelper.push(theSnapshot);
             } else if (theInstruction instanceof BytecodeInstructionGenericCMP) {
                 final BytecodeInstructionGenericCMP theINS = (BytecodeInstructionGenericCMP) theInstruction;
                 final Value theValue2 = aHelper.pop();
