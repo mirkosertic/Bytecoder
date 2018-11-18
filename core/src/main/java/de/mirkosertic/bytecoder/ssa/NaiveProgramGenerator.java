@@ -517,13 +517,17 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 // We only have the thrown exception on the stack!
                 // Everything else is at the same state as on control flow enter
                 // In case of synchronized blocks there is an additional reference with the semaphore to release
-                if (thePredecessors.size() == 1) {
-                    final RegionNode thePredecessor = thePredecessors.iterator().next();
-                    theParsingState = aCache.resolveFinalStateForNode(thePredecessor);
-                } else {
-                    theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
+                //if (thePredecessors.size() == 1) {
+                //    final RegionNode thePredecessor = thePredecessors.iterator().next();
+                //    theParsingState = aCache.resolveFinalStateForNode(thePredecessor);
+                //} else {
+
+                // TODO: SHouldn't this be the initial state of the first block of the beginning of the exception table?
+                theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
+                //}
+                if (!aMethod.getAccessFlags().isStatic()) {
+                    theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
                 }
-                theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
                 theParsingState.push(aCurrentBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)), new CurrentExceptionExpression()));
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
