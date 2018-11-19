@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.graph.Node;
 
@@ -63,6 +64,7 @@ public class RegionNode extends Node {
     private final List<GraphNodePath> reachableBy;
     private final ControlFlowGraph owningGraph;
     private final ExpressionList expressions;
+    private final BytecodeLinkedClass catchType;
 
     protected RegionNode(
             final ControlFlowGraph aOwningGraph, final BlockType aType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
@@ -75,6 +77,25 @@ public class RegionNode extends Node {
         exported = new HashMap<>();
         reachableBy = new ArrayList<>();
         expressions = new ExpressionList();
+        catchType = null;
+    }
+
+    protected RegionNode(
+            final ControlFlowGraph aOwningGraph, final BytecodeLinkedClass aCatchType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
+        type = BlockType.EXCEPTION_HANDLER;
+        owningGraph = aOwningGraph;
+        startAddress = aStartAddress;
+        program = aProgram;
+        successors = new HashMap<>();
+        imported = new HashMap<>();
+        exported = new HashMap<>();
+        reachableBy = new ArrayList<>();
+        expressions = new ExpressionList();
+        catchType = aCatchType;
+    }
+
+    public BytecodeLinkedClass getCatchType() {
+        return catchType;
     }
 
     public ExpressionList getExpressions() {
@@ -172,7 +193,7 @@ public class RegionNode extends Node {
         return newVariable(aType, aValue, false);
     }
 
-    public Variable newVariable(final TypeRef aType, final Value aValue, final boolean aIsImport)  {
+    private Variable newVariable(final TypeRef aType, final Value aValue, final boolean aIsImport)  {
         final Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue);
         if (!aIsImport) {

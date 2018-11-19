@@ -29,14 +29,26 @@ public class BytecodeBasicBlock {
     private final List<BytecodeInstruction> instructions;
     private final List<BytecodeBasicBlock> successors;
     private final Type type;
+    private final BytecodeClassinfoConstant catchType;
 
-    public BytecodeBasicBlock(Type aType) {
+    public BytecodeBasicBlock(final Type aType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
         type = aType;
+        catchType = null;
+    }
+    public BytecodeBasicBlock(final BytecodeClassinfoConstant aCatchType) {
+        instructions = new ArrayList<>();
+        successors = new ArrayList<>();
+        type = Type.EXCEPTION_HANDLER;
+        catchType = aCatchType;
     }
 
-    public void addSuccessor(BytecodeBasicBlock aBasicBlock) {
+    public BytecodeClassinfoConstant getCatchType() {
+        return catchType;
+    }
+
+    public void addSuccessor(final BytecodeBasicBlock aBasicBlock) {
         successors.add(aBasicBlock);
     }
 
@@ -52,7 +64,7 @@ public class BytecodeBasicBlock {
         return instructions.get(0).getOpcodeAddress();
     }
 
-    public void addInstruction(BytecodeInstruction aInstruction) {
+    public void addInstruction(final BytecodeInstruction aInstruction) {
         instructions.add(aInstruction);
     }
 
@@ -65,7 +77,7 @@ public class BytecodeBasicBlock {
     }
 
     public boolean endsWithConditionalJump() {
-        BytecodeInstruction theInstruction = instructions.get(instructions.size() - 1);
+        final BytecodeInstruction theInstruction = instructions.get(instructions.size() - 1);
         return theInstruction instanceof BytecodeInstructionIFICMP ||
                 theInstruction instanceof BytecodeInstructionIFNULL ||
                 theInstruction instanceof BytecodeInstructionIFCOND ||
@@ -74,19 +86,19 @@ public class BytecodeBasicBlock {
     }
 
     public boolean endsWithReturn() {
-        BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
+        final BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionRETURN ||
                 theLastInstruction instanceof BytecodeInstructionGenericRETURN ||
                 theLastInstruction instanceof BytecodeInstructionObjectRETURN;
     }
 
     public boolean endsWithGoto() {
-        BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
+        final BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionGOTO;
     }
 
     public boolean endsWithThrow() {
-        BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
+        final BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionATHROW;
     }
 }

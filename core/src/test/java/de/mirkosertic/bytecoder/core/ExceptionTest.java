@@ -34,12 +34,14 @@ public class ExceptionTest {
             i++;
             throwException(i);
             i++;
-        } catch (Exception e) {
-            i++;
+        } catch (final Exception e) {
+            for (int j=0; j< 5;j++) {
+                i++;
+            }
         } finally {
             i+=3;
         }
-        Assert.assertEquals(15, i, 0);
+        Assert.assertEquals(19, i, 0);
     }
 
     @Test

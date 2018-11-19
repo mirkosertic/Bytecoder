@@ -214,6 +214,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 currentBlock = null;
             }
             if (currentBlock == null) {
+                BytecodeClassinfoConstant theCatchType = null;
                 BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
                 for (final BytecodeExceptionTableEntry theHandler : theBytecode.getExceptionHandlers()) {
                     if (Objects.equals(theHandler.getHandlerPc(), theInstruction.getOpcodeAddress())) {
@@ -221,11 +222,16 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             theType = BytecodeBasicBlock.Type.FINALLY;
                         } else {
                             theType = BytecodeBasicBlock.Type.EXCEPTION_HANDLER;
+                            theCatchType = theHandler.getCatchType();
                         }
                     }
                 }
                 final BytecodeBasicBlock theCurrentTemp = currentBlock;
-                currentBlock = new BytecodeBasicBlock(theType);
+                if (theCatchType != null) {
+                    currentBlock = new BytecodeBasicBlock(theCatchType);
+                } else {
+                    currentBlock = new BytecodeBasicBlock(theType);
+                }
                 if (theCurrentTemp != null && !theCurrentTemp.endsWithReturn() && !theCurrentTemp.endsWithThrow() && theCurrentTemp.endsWithGoto() && !theCurrentTemp.endsWithConditionalJump()) {
                     theCurrentTemp.addSuccessor(currentBlock);
                 }
@@ -296,7 +302,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.NORMAL);
                 break;
             case EXCEPTION_HANDLER:
-                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
+                theSingleAssignmentBlock = theGraph.createExceptionHandler(theBlock.getStartAddress(), linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theBlock.getCatchType().getConstant())));
                 break;
             case FINALLY:
                 theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.FINALLY);

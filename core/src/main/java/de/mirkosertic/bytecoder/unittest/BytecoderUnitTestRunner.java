@@ -51,7 +51,7 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
-import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -280,7 +280,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCodeWriter.println("var theTestInstance = new " + theCompileTarget.toClassName(theTypeRef) + ".Create();");
             theCodeWriter.println("theTestInstance." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
             theCodeWriter.println("var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
-                    ExceptionRethrower.class)) + "." + theCompileTarget.toMethodName("getLastOutcomeOrNullAndReset", theGetLastExceptionSignature) + "();");
+                    ExceptionManager.class)) + "." + theCompileTarget.toMethodName("laszExceptionOrNull", theGetLastExceptionSignature) + "();");
             theCodeWriter.println("if (theLastException) {");
             theCodeWriter.println("var theStringData = theLastException.message.data.data;");
             theCodeWriter.println("   var theMessage = \"\";");

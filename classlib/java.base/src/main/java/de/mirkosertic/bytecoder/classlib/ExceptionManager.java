@@ -15,19 +15,28 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
-public class ExceptionRethrower {
+import java.util.Stack;
 
-    private static Throwable lastMethodOutcome;
+public class ExceptionManager {
 
-    public static void registerExceptionOutcome(Throwable aThrowable) {
-        lastMethodOutcome = aThrowable;
+    private static final Stack<Throwable> exceptions = new Stack<>();
+
+    public static boolean isEmpty() {
+        return exceptions.isEmpty();
     }
 
-    public static Throwable getLastOutcomeOrNullAndReset() {
-        try {
-            return lastMethodOutcome;
-        } finally {
-            lastMethodOutcome = null;
+    public static Throwable laszExceptionOrNull() {
+        if (exceptions.isEmpty()) {
+            return null;
         }
+        return exceptions.pop();
+    }
+
+    public static void push(final Throwable t) {
+        exceptions.push(t);
+    }
+
+    public static Throwable pop() {
+        return exceptions.pop();
     }
 }

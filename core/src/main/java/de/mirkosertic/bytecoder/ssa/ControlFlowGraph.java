@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ControlFlowGraph {
@@ -33,7 +34,7 @@ public class ControlFlowGraph {
     private final List<RegionNode> knownNodes;
     private final Program program;
 
-    public ControlFlowGraph(Program aProgram) {
+    public ControlFlowGraph(final Program aProgram) {
         program = aProgram;
         dominatedNodes = new ArrayList<>();
         knownNodes = new ArrayList<>();
@@ -44,10 +45,10 @@ public class ControlFlowGraph {
     }
 
     public Set<RegionNode> finalNodes() {
-        Set<RegionNode> theNodes = new HashSet<>();
-        for (RegionNode theNode : knownNodes) {
-            Set<RegionNode> theSuccessors = new HashSet<>();
-            for (Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
+        final Set<RegionNode> theNodes = new HashSet<>();
+        for (final RegionNode theNode : knownNodes) {
+            final Set<RegionNode> theSuccessors = new HashSet<>();
+            for (final Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
                 if (theSuccessor.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                     theSuccessors.add(theSuccessor.getValue());
                 }
@@ -63,10 +64,10 @@ public class ControlFlowGraph {
         calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
     }
 
-    private void calculateReachabilityAndMarkBackEdges(GraphNodePath aPath, RegionNode aNode) {
+    private void calculateReachabilityAndMarkBackEdges(final GraphNodePath aPath, final RegionNode aNode) {
         aNode.addReachablePath(aPath);
-        for (Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
-            GraphNodePath theChildPath = new GraphNodePath(aPath);
+        for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
+            final GraphNodePath theChildPath = new GraphNodePath(aPath);
             theChildPath.addToPath(aNode);
             if (aPath.contains(theEdge.getValue())) {
                 // This is a back edge
@@ -82,13 +83,19 @@ public class ControlFlowGraph {
         }
     }
 
-    public RegionNode createAt(BytecodeOpcodeAddress aAddress, RegionNode.BlockType aType) {
-        RegionNode theNewBlock = new RegionNode(this, aType, program, aAddress);
+    public RegionNode createAt(final BytecodeOpcodeAddress aAddress, final RegionNode.BlockType aType) {
+        final RegionNode theNewBlock = new RegionNode(this, aType, program, aAddress);
         addDominatedNode(theNewBlock);
         return theNewBlock;
     }
 
-    public void addDominatedNode(RegionNode aGraphNode) {
+    public RegionNode createExceptionHandler(final BytecodeOpcodeAddress aAddress, final BytecodeLinkedClass aCatchType) {
+        final RegionNode theNewBlock = new RegionNode(this, aCatchType, program, aAddress);
+        addDominatedNode(theNewBlock);
+        return theNewBlock;
+    }
+
+    public void addDominatedNode(final RegionNode aGraphNode) {
         dominatedNodes.add(aGraphNode);
         knownNodes.add(aGraphNode);
     }
@@ -97,8 +104,8 @@ public class ControlFlowGraph {
         return nodeStartingAt(BytecodeOpcodeAddress.START_AT_ZERO);
     }
 
-    public RegionNode nodeStartingAt(BytecodeOpcodeAddress aAddress) {
-        for (RegionNode theBlock : knownNodes) {
+    public RegionNode nodeStartingAt(final BytecodeOpcodeAddress aAddress) {
+        for (final RegionNode theBlock : knownNodes) {
             if (Objects.equals(aAddress, theBlock.getStartAddress())) {
                 return theBlock;
             }
@@ -123,7 +130,7 @@ public class ControlFlowGraph {
             objects = new ArrayList<>();
         }
 
-        public String idFor(Object aObject) {
+        public String idFor(final Object aObject) {
             if (!objects.contains(aObject)) {
                 objects.add(aObject);
             }
@@ -136,7 +143,7 @@ public class ControlFlowGraph {
         final ExpressionList expressionList;
         final String owningNodeName;
 
-        public DotContext(RegionNode aRegionNode, ExpressionList aExpressionList, String aOwningNodeName) {
+        public DotContext(final RegionNode aRegionNode, final ExpressionList aExpressionList, final String aOwningNodeName) {
             regionNode = aRegionNode;
             expressionList = aExpressionList;
             owningNodeName = aOwningNodeName;
@@ -148,7 +155,7 @@ public class ControlFlowGraph {
         final String target;
         final boolean backEdge;
 
-        public DotJump(String aSource, String aTarget, boolean aBackEdge) {
+        public DotJump(final String aSource, final String aTarget, final boolean aBackEdge) {
             source = aSource;
             target = aTarget;
             backEdge = aBackEdge;
@@ -157,26 +164,26 @@ public class ControlFlowGraph {
 
     public String toDOT() {
 
-        IDRegister theRegister = new IDRegister();
-        List<DotJump> theJumps = new ArrayList<>();
+        final IDRegister theRegister = new IDRegister();
+        final List<DotJump> theJumps = new ArrayList<>();
 
-        StringWriter theStr = new StringWriter();
-        try (PrintWriter thePW = new PrintWriter(theStr)) {
+        final StringWriter theStr = new StringWriter();
+        try (final PrintWriter thePW = new PrintWriter(theStr)) {
 
-            Set<Value> theAllValues = new HashSet<>();
+            final Set<Value> theAllValues = new HashSet<>();
 
             thePW.println("digraph CFG {");
 
-            Consumer<DotContext> theExpressionConsumer = new Consumer<DotContext>() {
+            final Consumer<DotContext> theExpressionConsumer = new Consumer<DotContext>() {
 
                 @Override
-                public void accept(DotContext aContext) {
-                    List<Expression> theExpressios = aContext.expressionList.toList();
-                    for (Expression theExpression : theExpressios) {
+                public void accept(final DotContext aContext) {
+                    final List<Expression> theExpressios = aContext.expressionList.toList();
+                    for (final Expression theExpression : theExpressios) {
 
                         theAllValues.add(theExpression);
 
-                        String theNodeName = theRegister.idFor(theExpression);
+                        final String theNodeName = theRegister.idFor(theExpression);
 
                         thePW.print("       ");
                         thePW.print(aContext.owningNodeName);
@@ -189,10 +196,10 @@ public class ControlFlowGraph {
                         printIncomingValues(theExpression, "E_" + theNodeName);
 
                         if (theExpression instanceof GotoExpression) {
-                            GotoExpression theGoto = (GotoExpression) theExpression;
-                            RegionNode theJumpTarget = nodeStartingAt(theGoto.getJumpTarget());
+                            final GotoExpression theGoto = (GotoExpression) theExpression;
+                            final RegionNode theJumpTarget = nodeStartingAt(theGoto.getJumpTarget());
 
-                            String theJumpTargetRegion = theRegister.idFor(theJumpTarget);
+                            final String theJumpTargetRegion = theRegister.idFor(theJumpTarget);
 
                             theJumps.add(new DotJump("E_" + theNodeName,
                                     "C_" + theJumpTargetRegion + "_control",
@@ -200,19 +207,19 @@ public class ControlFlowGraph {
                         }
 
                         if (theExpression instanceof ExpressionListContainer) {
-                            ExpressionListContainer theList = (ExpressionListContainer) theExpression;
-                            for (ExpressionList theCont : theList.getExpressionLists()) {
-                                DotContext theContext = new DotContext(aContext.regionNode, theCont, "E_" + theNodeName);
+                            final ExpressionListContainer theList = (ExpressionListContainer) theExpression;
+                            for (final ExpressionList theCont : theList.getExpressionLists()) {
+                                final DotContext theContext = new DotContext(aContext.regionNode, theCont, "E_" + theNodeName);
                                 accept(theContext);
                             }
                         }
                     }
                 }
 
-                private void printIncomingValues(Value aValue, String aReceivingNodeID) {
+                private void printIncomingValues(final Value aValue, final String aReceivingNodeID) {
                     if (aValue instanceof VariableAssignmentExpression) {
-                        VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aValue;
-                        Variable theTarget = theAssignment.getVariable();
+                        final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aValue;
+                        final Variable theTarget = theAssignment.getVariable();
                         theAllValues.add(theTarget);
 
                         thePW.print("       ");
@@ -221,7 +228,7 @@ public class ControlFlowGraph {
                         thePW.print(theRegister.idFor(theTarget));
                         thePW.println(";");
 
-                        Value theValue = theAssignment.getValue();
+                        final Value theValue = theAssignment.getValue();
                         theAllValues.add(theValue);
 
                         String theValueID = null;
@@ -246,8 +253,8 @@ public class ControlFlowGraph {
                         }
 
                     } else {
-                        List<Value> theIncomingDataFlows = aValue.incomingDataFlows();
-                        for (Value theValue : theIncomingDataFlows) {
+                        final List<Value> theIncomingDataFlows = aValue.incomingDataFlows();
+                        for (final Value theValue : theIncomingDataFlows) {
                             theAllValues.add(theValue);
 
                             String theValueID = null;
@@ -277,9 +284,9 @@ public class ControlFlowGraph {
                 }
             };
 
-            for (RegionNode theRegion : knownNodes) {
+            for (final RegionNode theRegion : knownNodes) {
 
-                String theRegionID = theRegister.idFor(theRegion);
+                final String theRegionID = theRegister.idFor(theRegion);
 
                 thePW.print("   subgraph cluster_");
                 thePW.print(theRegionID);
@@ -298,15 +305,15 @@ public class ControlFlowGraph {
                 thePW.print(theRegionID);
                 thePW.println("_control [shape=box, label=\"Control\"];");
 
-                DotContext theContext = new DotContext(theRegion, theRegion.getExpressions(), "C_" + theRegionID+"_control");
+                final DotContext theContext = new DotContext(theRegion, theRegion.getExpressions(), "C_" + theRegionID+"_control");
                 theExpressionConsumer.accept(theContext);
 
                 thePW.println("   }");
             }
 
-            for (Value theValue : theAllValues) {
+            for (final Value theValue : theAllValues) {
 
-                String theNodeID = theRegister.idFor(theValue);
+                final String theNodeID = theRegister.idFor(theValue);
 
                 thePW.print("   ");
 
@@ -325,19 +332,19 @@ public class ControlFlowGraph {
                 thePW.print("[");
 
                 if (theValue instanceof Expression) {
-                    Expression theValueExpression = (Expression) theValue;
+                    final Expression theValueExpression = (Expression) theValue;
                     thePW.print("label=\"");
                     thePW.print(theValueExpression.getClass().getSimpleName().replace("Expression", ""));
                     thePW.print("\"");
                 }
                 if (theValue instanceof PrimitiveValue) {
-                    PrimitiveValue thePrimitive = (PrimitiveValue) theValue;
+                    final PrimitiveValue thePrimitive = (PrimitiveValue) theValue;
                     thePW.print("label=\"");
                     thePW.print(thePrimitive.getClass().getSimpleName().replace("Value", ""));
                     thePW.print("\",color=orange");
                 }
                 if (theValue instanceof Variable) {
-                    Variable theVariable = (Variable) theValue;
+                    final Variable theVariable = (Variable) theValue;
                     thePW.print("label=\"");
                     thePW.print(theVariable.getName());
                     thePW.print("\",color=green");
@@ -347,7 +354,7 @@ public class ControlFlowGraph {
 
             }
 
-            for (DotJump theJump : theJumps) {
+            for (final DotJump theJump : theJumps) {
 
                 thePW.print("   ");
                 thePW.print(theJump.source);
@@ -366,10 +373,10 @@ public class ControlFlowGraph {
         return theStr.toString();
     }
 
-    protected Set<RegionNode> dominatedNodesOf(RegionNode aNode) {
-        Set<RegionNode> theResult = new HashSet<>();
+    protected Set<RegionNode> dominatedNodesOf(final RegionNode aNode) {
+        final Set<RegionNode> theResult = new HashSet<>();
         theResult.add(aNode);
-        for (RegionNode theNode : knownNodes) {
+        for (final RegionNode theNode : knownNodes) {
             if (theNode.isOnlyReachableThru(aNode)) {
                 theResult.add(theNode);
             }
@@ -377,8 +384,8 @@ public class ControlFlowGraph {
         return theResult;
     }
 
-    public void delete(RegionNode aNode) {
-        for (RegionNode theNode : knownNodes) {
+    public void delete(final RegionNode aNode) {
+        for (final RegionNode theNode : knownNodes) {
             theNode.removeEdgesTo(aNode);
             theNode.removeFromPaths(aNode);
         }
