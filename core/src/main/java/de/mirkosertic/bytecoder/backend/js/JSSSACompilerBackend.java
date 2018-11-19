@@ -30,20 +30,16 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
-import de.mirkosertic.bytecoder.classlib.ExceptionRethrower;
+import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -56,23 +52,24 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
-    private final BytecodeMethodSignature registerExceptionOutcomeSignature;
-    private final BytecodeMethodSignature getLastExceptionOutcomeSignature;
+    private final BytecodeMethodSignature pushExceptionSignature;
+    private final BytecodeMethodSignature popExceptionSignature;
     private final ProgramGeneratorFactory programGeneratorFactory;
 
     public JSSSACompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
         programGeneratorFactory = aProgramGeneratorFactory;
-        registerExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
-        getLastExceptionOutcomeSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
+        pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
+        popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
     }
 
     @Override
     public JSCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
 
-        final BytecodeLinkedClass theExceptionRethrower = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                ExceptionRethrower.class));
-        theExceptionRethrower.resolveStaticMethod("registerExceptionOutcome", registerExceptionOutcomeSignature);
-        theExceptionRethrower.resolveStaticMethod("getLastOutcomeOrNullAndReset", getLastExceptionOutcomeSignature);
+        final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
+                ExceptionManager.class));
+        theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
+        theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
+        theExceptionManager.resolveStaticMethod("laszExceptionOrNull", popExceptionSignature);
 
         final StringWriter theStrWriter = new StringWriter();
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
@@ -549,35 +546,5 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.flush();
 
         return new JSCompileResult(new JSCompileResult.JSContent("bytecoder.js", theStrWriter.toString()));
-    }
-
-    private void writeExceptionHandlerCode(final BytecodeLinkerContext aLinkerContext, final BytecodeLinkedClass aExceptionRethrower,
-            final PrintWriter aWriter, final BytecodeProgram aProgram,
-            final String aInset, final BytecodeInstruction aInstruction, final String aExceptionVariableName) {
-        final BytecodeExceptionTableEntry[] theActiveHandlers = aProgram.getActiveExceptionHandlers(aInstruction.getOpcodeAddress(), aProgram.getExceptionHandlers());
-        if (0 == theActiveHandlers.length) {
-            // Missing catch block
-            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + '.' + JSWriterUtils.toMethodName("registerExceptionOutcome",
-                    registerExceptionOutcomeSignature) + '(' + aExceptionVariableName + ");");
-            aWriter.println(aInset + "return;");
-        } else {
-            for (final BytecodeExceptionTableEntry theEntry : theActiveHandlers) {
-                if (!theEntry.isFinally()) {
-                    final BytecodeClassinfoConstant theConstant = theEntry.getCatchType();
-                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.isLinkedOrNull(theConstant.getConstant());
-                    if (null != theLinkedClass) {
-                        aWriter.println(
-                                aInset + "if (" + aExceptionVariableName + ".clazz.instanceOfType(" + theLinkedClass.getUniqueId()
-                                        + ")) {");
-                        aWriter.println(aInset + "    currentLabel = " + theEntry.getHandlerPc().getAddress() + ';');
-                        aWriter.println(aInset + "    continue controlflowloop;");
-                        aWriter.println(aInset + '}');
-                    }
-                }
-            }
-            aWriter.println(aInset + JSWriterUtils.toClassName(aExceptionRethrower.getClassName()) + '.' + JSWriterUtils.toMethodName("registerExceptionOutcome",
-                    registerExceptionOutcomeSignature) + '(' + aExceptionVariableName + ");");
-            aWriter.println(aInset + "return;");
-        }
     }
 }
