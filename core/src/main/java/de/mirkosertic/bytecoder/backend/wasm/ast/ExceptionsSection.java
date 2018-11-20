@@ -20,30 +20,30 @@ import java.util.List;
 
 public class ExceptionsSection extends ModuleSection {
 
-    private final ExceptionIndex eventIndex;
+    private final ExceptionIndex exceptionIndex;
 
     public ExceptionsSection(final Module module) {
         super(module);
-        eventIndex = new ExceptionIndex();
+        exceptionIndex = new ExceptionIndex();
     }
 
-    public ExceptionIndex eventIndex() {
-        return eventIndex;
+    public ExceptionIndex exceptionIndex() {
+        return exceptionIndex;
     }
 
     public WASMException newException(final String label, final List<PrimitiveType> arguments) {
         final WASMException e = new WASMException(this, label, arguments);
-        eventIndex.add(e);
+        exceptionIndex.add(e);
         return e;
     }
 
     public void writeCodeTo(final BinaryWriter writer) throws IOException {
-        if (!eventIndex.isEmpty()) {
+        if (!exceptionIndex.isEmpty()) {
             try (final BinaryWriter.SectionWriter sectionWriter = writer.customSection()) {
                 sectionWriter.writeUTF8("exception");
-                sectionWriter.writeUnsignedLeb128(eventIndex.size());
-                for (int i=0; i<eventIndex.size();i++) {
-                    final WASMException event = eventIndex.get(i);
+                sectionWriter.writeUnsignedLeb128(exceptionIndex.size());
+                for (int i = 0; i< exceptionIndex.size(); i++) {
+                    final WASMException event = exceptionIndex.get(i);
                     event.writeTo(sectionWriter);
                 }
             }
@@ -51,8 +51,8 @@ public class ExceptionsSection extends ModuleSection {
     }
 
     public void writeCodeTo(final TextWriter writer) throws IOException {
-        for (int i=0; i<eventIndex.size();i++) {
-            final WASMException event = eventIndex.get(i);
+        for (int i = 0; i< exceptionIndex.size(); i++) {
+            final WASMException event = exceptionIndex.get(i);
             event.writeTo(writer);
         }
     }

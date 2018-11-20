@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import java.util.Stack;
+public class RethrowException implements WASMExpression {
 
-public class ExceptionManager {
-
-    private static final Stack<Throwable> exceptions = new Stack<>();
-
-    public static boolean isEmpty() {
-        return exceptions.isEmpty();
+    RethrowException() {
     }
 
-    public static Throwable lastExceptionOrNull() {
-        if (exceptions.isEmpty()) {
-            return null;
-        }
-        return exceptions.pop();
+    @Override
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
+        textWriter.opening();
+        textWriter.write("rethrow");
+        textWriter.closing();
+        textWriter.newLine();
     }
 
-    public static void push(final Throwable t) {
-        exceptions.push(t);
-    }
-
-    public static Throwable pop() {
-        return exceptions.pop();
+    @Override
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
+        codeWriter.writeByte((byte) 0x09);
     }
 }

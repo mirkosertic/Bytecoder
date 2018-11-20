@@ -934,7 +934,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final Relooper.SimpleBlock aSimpleBlock) {
         JSSSAWriter theWriter = this;
-        final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException();
+        final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException() && options.isEnableExceptions();
         if (canThrowExeption) {
             println("try {");
             theWriter = theWriter.withDeeperIndent();
@@ -1045,7 +1045,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 theDeeper.println(" :");
                 theDeeper.printlnComment(theEntry.getType().toString());
 
-                if (theEntry.getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
+                if (theEntry.getType() == RegionNode.BlockType.EXCEPTION_HANDLER && options.isEnableExceptions()) {
 
                     final List<RegionNode> theFinallyNodes = theEntry.getSuccessors().values().stream().filter(t -> t.getType() == RegionNode.BlockType.FINALLY).collect(Collectors.toList());
                     if (!theFinallyNodes.isEmpty()) {

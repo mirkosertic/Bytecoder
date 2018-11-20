@@ -151,4 +151,9 @@ public class Expressions {
         final ThrowException t = new ThrowException(exception, arguments);
         parent.addChild(t);
     }
+
+    public void rethrowException() {
+        final RethrowException r  = new RethrowException();
+        parent.addChild(r);
+    }
 }
