@@ -144,9 +144,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     }
 
     private WebDriver newDriverForTest() {
-        final ChromeOptions theOptions = new ChromeOptions();
-        theOptions.addArguments("headless");
-        theOptions.addArguments("disable-gpu");
+        final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
+        theOptions.addArguments("--js-flags=experimental-wasm-eh");
+        theOptions.addArguments("--enable-experimental-wasm-eh");
 
         final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
@@ -176,7 +176,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final StringWriter theStrWriter = new StringWriter();
             final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true);
             final JSCompileResult result = (JSCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final JSCompileResult.JSContent content = result.getContent()[0];
 
@@ -280,7 +280,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCodeWriter.println("var theTestInstance = new " + theCompileTarget.toClassName(theTypeRef) + ".Create();");
             theCodeWriter.println("theTestInstance." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
             theCodeWriter.println("var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
-                    ExceptionManager.class)) + "." + theCompileTarget.toMethodName("laszExceptionOrNull", theGetLastExceptionSignature) + "();");
+                    ExceptionManager.class)) + "." + theCompileTarget.toMethodName("lastExceptionOrNull", theGetLastExceptionSignature) + "();");
             theCodeWriter.println("if (theLastException) {");
             theCodeWriter.println("var theStringData = theLastException.message.data.data;");
             theCodeWriter.println("   var theMessage = \"\";");
@@ -350,7 +350,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL);
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true);
             final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
             final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
@@ -418,9 +418,19 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("            function compile(wabt) {");
             theWriter.println("                console.log('Test started');");
             theWriter.println("                try {");
-            theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText);");
+            theWriter.println("                var features = {\n" +
+                    "                         'exceptions' : true,\n" +
+                    "                        'mutable_globals' : true,\n" +
+                    "                        'sat_float_to_int' : true,\n" +
+                    "                        'sign_extension' : true,\n" +
+                    "                        'simd' : true,\n" +
+                    "                        'threads' : true,\n" +
+                    "                        'multi_value' : true,\n" +
+                    "                        'tail_call' : true,\n" +
+                    "                    };");
+            theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText, features);");
             theWriter.println("                    module.resolveNames();");
-            theWriter.println("                    module.validate();");
+            theWriter.println("                    module.validate(features);");
 
             theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");

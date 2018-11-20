@@ -23,11 +23,13 @@ public class CompileOptions {
     private final Logger logger;
     private final boolean debugOutput;
     private final Optimizer optimizer;
+    private final boolean enableExceptions;
 
-    public CompileOptions(Logger aLogger, boolean aDebugOutput, Optimizer aOptimizer) {
+    public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
+        this.enableExceptions = aEnableExceptions;
     }
 
     public Logger getLogger() {
@@ -40,5 +42,9 @@ public class CompileOptions {
 
     public Optimizer getOptimizer() {
         return optimizer;
+    }
+
+    public boolean isEnableExceptions() {
+        return enableExceptions;
     }
 }

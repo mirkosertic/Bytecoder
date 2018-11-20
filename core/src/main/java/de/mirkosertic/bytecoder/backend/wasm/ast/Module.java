@@ -77,7 +77,7 @@ public class Module {
     }
 
     public ExceptionIndex exceptionIndex() {
-        return exceptions.eventIndex();
+        return exceptions.exceptionIndex();
     }
 
     public FunctionIndex functionIndex() {

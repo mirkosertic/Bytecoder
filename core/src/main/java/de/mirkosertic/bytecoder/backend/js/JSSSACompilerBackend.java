@@ -69,7 +69,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 ExceptionManager.class));
         theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
         theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
-        theExceptionManager.resolveStaticMethod("laszExceptionOrNull", popExceptionSignature);
+        theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
 
         final StringWriter theStrWriter = new StringWriter();
         final PrintWriter theWriter = new PrintWriter(theStrWriter);

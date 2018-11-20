@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.I32Const;
@@ -140,6 +141,7 @@ public class WASMSSAASTWriter {
     public static final String VTABLEFUNCTIONSUFFIX = "__resolvevtableindex";
     public static final String RUNTIMECLASSSUFFIX = "__runtimeclass";
     public static final String INSTANCEOFSUFFIX = "__instanceof";
+    public static final String EXCEPTION_NAME = "EX";
 
     public interface Resolver {
         Global globalForStringFromPool(StringValue aValue);
@@ -202,6 +204,11 @@ public class WASMSSAASTWriter {
 
     private WASMSSAASTWriter block(final String label) {
         final Block block = flow.block(label);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
+    }
+
+    private WASMSSAASTWriter Try(final String label) {
+        final Try block = flow.Try(label);
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
     }
 
@@ -428,15 +435,22 @@ public class WASMSSAASTWriter {
     }
 
     private void generateThrowExpression(final ThrowExpression aExpression) {
-        stackExit();
-        flow.unreachable();
+        if (compileOptions.isEnableExceptions()) {
+            final Value theException = aExpression.incomingDataFlows().get(0);
+            final WASMValue theValue = toValue(theException);
+            stackExit();
+            flow.throwException(module.getExceptions().exceptionIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue));
+        } else {
+            stackExit();
+            flow.unreachable();
+        }
     }
 
     private void generateInvokeStaticExpression(final InvokeStaticMethodExpression aExpression) {
         if (aExpression.getSignature().getReturnType().isVoid()) {
-            container.addChild(invokeStaticValue((InvokeStaticMethodExpression) aExpression));
+            container.addChild(invokeStaticValue(aExpression));
         } else {
-            flow.drop(invokeStaticValue((InvokeStaticMethodExpression) aExpression));
+            flow.drop(invokeStaticValue(aExpression));
         }
     }
 
@@ -506,9 +520,9 @@ public class WASMSSAASTWriter {
 
     private void generateDirectMethodInvokeExpression(final DirectInvokeMethodExpression aExpression) {
         if (aExpression.getSignature().getReturnType().isVoid()) {
-            container.addChild(directMethodInvokeValue((DirectInvokeMethodExpression) aExpression));
+            container.addChild(directMethodInvokeValue(aExpression));
         } else {
-            flow.drop(directMethodInvokeValue((DirectInvokeMethodExpression) aExpression));
+            flow.drop(directMethodInvokeValue(aExpression));
         }
     }
 
@@ -1369,11 +1383,21 @@ public class WASMSSAASTWriter {
     private void writeSimpleBlock(final Relooper.SimpleBlock aSimpleBlock) {
         WASMSSAASTWriter theWriter = this;
 
-        if (aSimpleBlock.isLabelRequired()) {
-            theWriter = block(aSimpleBlock.label().name());
-        }
+        final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException() && compileOptions.isEnableExceptions();
+        if (canThrowExeption) {
+            theWriter = Try(aSimpleBlock.label().name());
+            theWriter.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
 
-        theWriter.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+            final Try theTry = (Try) theWriter.container;
+
+            theTry.catchBlock.flow.rethrowException();
+        } else {
+            if (aSimpleBlock.isLabelRequired()) {
+                theWriter = block(aSimpleBlock.label().name());
+            }
+
+            theWriter.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+        }
 
         writeReloopedInternal(aSimpleBlock.next());
     }

@@ -109,6 +109,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected boolean debugOutput;
 
     /**
+     * Shall Exception-Handling be activated?
+     */
+    @Parameter(required = false, defaultValue = "false")
+    protected boolean enableExceptionHandling;
+
+    /**
      * Which kind of optimization should be applied? Can be NONE, ALL or EXPERIMENTAL.
      */
     @Parameter(required = false, defaultValue = "ALL")
@@ -136,7 +142,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel));
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling);
             final CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
