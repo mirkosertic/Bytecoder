@@ -53,6 +53,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>js</backend>
                             <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
+                            <enableExceptionHandling>true</enableExceptionHandling>
                         </configuration>
                     </execution>
                     <execution>
@@ -63,6 +64,7 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>wasm</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
                         </configuration>
                     </execution>
                 </executions>

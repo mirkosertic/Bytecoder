@@ -129,11 +129,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
 
-        final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                ExceptionManager.class));
-        theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
-        theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
-        theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
+        if (aOptions.isEnableExceptions()) {
+            final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
+                    ExceptionManager.class));
+            theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
+            theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
+            theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
+        }
 
         final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
         if (!theStringClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}))) {
