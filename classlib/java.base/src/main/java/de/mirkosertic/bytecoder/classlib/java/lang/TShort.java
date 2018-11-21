@@ -33,13 +33,13 @@ public class TShort extends Number {
     public boolean equals(final Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof Short)) {
+        if (!(o instanceof TShort)) {
             return false;
         }
 
-        final Short tShort = (Short) o;
+        final TShort tShort = (TShort) o;
 
-        if (shortValue != tShort.shortValue())
+        if (shortValue != tShort.shortValue)
             return false;
 
         return true;

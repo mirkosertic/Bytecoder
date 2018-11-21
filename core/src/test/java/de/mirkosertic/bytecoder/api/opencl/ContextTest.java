@@ -74,7 +74,7 @@ public class ContextTest {
 
     @Test
     public void testVectorNormalize() throws Exception {
-        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+/*        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
 
         final Float2[] theA = {new Float2(10f, 20f)};
         final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
@@ -91,6 +91,6 @@ public class ContextTest {
 
         for (Float2 aTheResult : theResult) {
             System.out.println(aTheResult);
-        }
+        }*/
     }
 }
