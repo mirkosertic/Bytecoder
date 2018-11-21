@@ -745,8 +745,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     aHelper.push(new IntegerValue(theC.getIntegerValue()));
                 } else if (theConstant instanceof BytecodeStringConstant) {
                     final BytecodeStringConstant theC = (BytecodeStringConstant) theConstant;
-                    final Variable theVariable = aTargetBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(String.class)), new StringValue(theC.getValue().stringValue()));
-                    aHelper.push(theVariable);
+                    aHelper.push(new StringValue(theC.getValue().stringValue()));
                 } else if (theConstant instanceof BytecodeClassinfoConstant) {
                     final BytecodeClassinfoConstant theC = (BytecodeClassinfoConstant) theConstant;
 
@@ -812,9 +811,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 final BytecodeInstructionIINC theINS = (BytecodeInstructionIINC) theInstruction;
                 final Value theValueToIncrement = aHelper.getLocalVariable(theINS.getIndex());
-                final Value theNewVariable = aTargetBlock.newVariable(
-                        TypeRef.Native.INT, new BinaryExpression(TypeRef.Native.INT, theValueToIncrement, BinaryExpression.Operator.ADD, new IntegerValue(theINS.getConstant())));
-                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getIndex(), theNewVariable);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getIndex(), new BinaryExpression(TypeRef.Native.INT, theValueToIncrement, BinaryExpression.Operator.ADD, new IntegerValue(theINS.getConstant())));
             } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                 final BytecodeInstructionGenericREM theINS = (BytecodeInstructionGenericREM) theInstruction;
                 final Value theValue2 = aHelper.pop();

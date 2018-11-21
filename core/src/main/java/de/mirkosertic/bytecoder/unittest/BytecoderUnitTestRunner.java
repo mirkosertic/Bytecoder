@@ -15,18 +15,16 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
+import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
+import de.mirkosertic.bytecoder.classlib.ExceptionManager;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,16 +45,17 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
-import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
-import de.mirkosertic.bytecoder.classlib.ExceptionManager;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -350,7 +349,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true);
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false);
             final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
             final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
@@ -636,6 +635,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        } else if (null != getDescription().getAnnotation(JSAndJVMOnly.class)) {
+            testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
