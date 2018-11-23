@@ -50,6 +50,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
@@ -392,8 +393,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
                 for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
-                    final Block b = instanceOf.flow.block("b" + theType.getUniqueId());
-                    b.flow.branchIff(b, i32.ne(getLocal(instanceOf.localByLabel("p1")), i32.c(theType.getUniqueId())));
+                    final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1")), i32.c(theType.getUniqueId())));
                     b.flow.ret(i32.c(1));
                 }
                 instanceOf.flow.ret(i32.c(0));

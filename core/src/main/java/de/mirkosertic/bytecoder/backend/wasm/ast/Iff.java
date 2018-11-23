@@ -32,17 +32,23 @@ public class Iff extends LabeledContainer implements WASMExpression {
         textWriter.write("if");
         textWriter.space();
         textWriter.writeLabel(getLabel());
-        textWriter.newLine();
+        textWriter.space();
         condition.writeTo(textWriter, context);
+        textWriter.newLine();
+
+        textWriter.opening();
+        textWriter.write("then");
+        textWriter.newLine();
         if (hasChildren()) {
             for (final WASMValue child : getChildren()) {
-                textWriter.newLine();
                 child.writeTo(textWriter, context);
             }
             textWriter.closing();
         } else {
             textWriter.closing();
         }
+        textWriter.closing();
+        textWriter.newLine();
     }
 
     @Override
