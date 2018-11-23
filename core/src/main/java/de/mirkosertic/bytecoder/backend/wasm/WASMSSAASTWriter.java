@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
@@ -207,6 +208,11 @@ public class WASMSSAASTWriter {
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
     }
 
+    private WASMSSAASTWriter iff(final String label, final WASMValue condition) {
+        final Iff block = flow.iff(label, condition);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
+    }
+
     private WASMSSAASTWriter Try(final String label) {
         final Try block = flow.Try(label);
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
@@ -352,8 +358,7 @@ public class WASMSSAASTWriter {
 
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getPairs().entrySet()) {
-            final WASMSSAASTWriter inner = outer.block("switch_" + theEntry.getKey());
-            inner.flow.branchIff((LabeledContainer) inner.container, i32.ne(i32.c(((Number) theEntry.getKey()).intValue()), toValue(theValue)));
+            final WASMSSAASTWriter inner = outer.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), toValue(theValue)));
             inner.writeExpressionList(theEntry.getValue());
             inner.flow.branch((LabeledContainer) outer.container);
         }
@@ -378,8 +383,7 @@ public class WASMSSAASTWriter {
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getOffsets().entrySet()) {
 
-            final WASMSSAASTWriter theSwitch = theTableSwitch.block("switch_" + theEntry.getKey());
-            theSwitch.flow.branchIff((LabeledContainer) theSwitch.container, i32.ne(i32.c(((Number) theEntry.getKey()).intValue()), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue()))));
+            final WASMSSAASTWriter theSwitch = theTableSwitch.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue()))));
             theSwitch.writeExpressionList(theEntry.getValue());
             theSwitch.flow.branch((LabeledContainer) theTableSwitch.container);
         }
@@ -513,9 +517,8 @@ public class WASMSSAASTWriter {
     }
 
     private void generateIFExpression(final IFExpression aExpression) {
-        final WASMSSAASTWriter block = block("if_" + aExpression.getAddress().getAddress());
-        block.flow.branchIff((LabeledContainer) block.container, i32.eqz(toValue(aExpression.incomingDataFlows().get(0))));
-        block.writeExpressionList(aExpression.getExpressions());
+        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), i32.ne(toValue(aExpression.incomingDataFlows().get(0)), i32.c(0)));
+        iff.writeExpressionList(aExpression.getExpressions());
     }
 
     private void generateDirectMethodInvokeExpression(final DirectInvokeMethodExpression aExpression) {
@@ -1428,8 +1431,7 @@ public class WASMSSAASTWriter {
             for (final RegionNode theEntry : theHandler.entries()) {
                 final int theEntryAddress = theEntry.getStartAddress().getAddress();
 
-                final WASMSSAASTWriter block = loop.block("$case_" + theEntryAddress);
-                block.flow.branchIff((LabeledContainer) block.container, i32.ne(getLocal(label), i32.c(theEntryAddress)));
+                final WASMSSAASTWriter block = loop.iff("$case_" + theEntryAddress, i32.eq(getLocal(label), i32.c(theEntryAddress)));
                 block.writeReloopedInternal(theHandler);
             }
         }

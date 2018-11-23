@@ -376,18 +376,19 @@ public class ModuleTest {
         final Exporter exporter = new Exporter();
         exporter.export(module, pw);
 
-        final String expected = "(module $mod" + System.lineSeparator()
-                + "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator()
-                + "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator()
-                + "        (local $loc i32)" + System.lineSeparator()
-                + "        (block $outer" + System.lineSeparator()
-                + "            (if $label" + System.lineSeparator()
-                + "                (i32.eq (i32.const 10) (i32.const 20))" + System.lineSeparator()
-                + "                (return (get_local $loc))" + System.lineSeparator()
-                + "                ))" + System.lineSeparator()
-                + "        (unreachable))" + System.lineSeparator()
-                + "    (export \"expfunction\" (func $label))" + System.lineSeparator()
-                + "    )";
+        final String expected = "(module $mod" + System.lineSeparator() +
+                "    (type $t0 (func (param i32) (param i32) (result i32)))" + System.lineSeparator() +
+                "    (func $label (type $t0) (param $p1 i32) (param $p2 i32) (result i32)" + System.lineSeparator() +
+                "        (local $loc i32)" + System.lineSeparator() +
+                "        (block $outer" + System.lineSeparator() +
+                "            (if $label (i32.eq (i32.const 10) (i32.const 20))" + System.lineSeparator() +
+                "                (then" + System.lineSeparator() +
+                "                    (return (get_local $loc))" + System.lineSeparator() +
+                "                    ))" + System.lineSeparator() +
+                "            )" + System.lineSeparator() +
+                "        (unreachable))" + System.lineSeparator() +
+                "    (export \"expfunction\" (func $label))" + System.lineSeparator() +
+                "    )";
         Assert.assertEquals(expected, strWriter.toString());
     }
 
