@@ -567,8 +567,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);
 
                     for (final Variable theVariable : theSSAProgram.getVariables()) {
-                        if (!(theVariable.isSynthetic()) &&
-                                !writer.isStackVariable(theVariable)) {
+                        if (!(theVariable.isSynthetic())) {
                             instanceFunction.newLocal(theVariable.getName(), WASMSSAASTWriter.toType(theVariable.resolveType()));
                         }
                     }
@@ -618,8 +617,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction);
             for (final Variable theVariable : theSSAProgram.getVariables()) {
 
-                if (!(theVariable.isSynthetic()) &&
-                        !(writer.isStackVariable(theVariable))) {
+                if (!(theVariable.isSynthetic())) {
                     theFunction.newLocal(theVariable.getName(), WASMSSAASTWriter.toType(theVariable.resolveType()));
                 }
             }
