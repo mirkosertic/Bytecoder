@@ -538,26 +538,25 @@ public class WASMSSAASTWriter {
             return;
         }
 
+        final Local theLocal = function.localByLabel(theVariable.getName());
+        flow.setLocal(theLocal, toValue(theNewValue));
+
         if (isStackVariable(theVariable)) {
             final Local sp = function.localByLabel(SP);
             final int theOffset = stackOffsetFor(theVariable);
             switch (theVariable.resolveType().resolve()) {
                 case DOUBLE:
                 case FLOAT: {
-                    flow.f32.store(theOffset, getLocal(sp), toValue(theNewValue));
+                    flow.f32.store(theOffset, getLocal(sp), getLocal(theLocal));
                     break;
                 }
                 case UNKNOWN:
                     throw new IllegalStateException();
                 default: {
-                    flow.i32.store(theOffset, getLocal(sp), toValue(theNewValue));
+                    flow.i32.store(theOffset, getLocal(sp), getLocal(theLocal));
                     break;
                 }
             }
-
-        } else {
-            final Local theLocal = function.localByLabel(theVariable.getName());
-            flow.setLocal(theLocal, toValue(theNewValue));
         }
     }
 
@@ -1316,23 +1315,8 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue variableName(final Variable aVariable) {
-        if (isStackVariable(aVariable)) {
-            final Local sp = function.localByLabel(SP);
-            final int offset = stackOffsetFor(aVariable);
-
-            switch (aVariable.resolveType().resolve()) {
-            case DOUBLE:
-            case FLOAT:
-                return f32.load(offset, getLocal(sp));
-            case UNKNOWN:
-                throw new IllegalStateException();
-            default:
-                return i32.load(offset, getLocal(sp));
-            }
-        } else {
-            final Local local = function.localByLabel(aVariable.getName());
-            return getLocal(local);
-        }
+        final Local local = function.localByLabel(aVariable.getName());
+        return getLocal(local);
     }
 
     public void stackEnter() {
