@@ -17,70 +17,47 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-public class InefficientIFOptimizer implements Optimizer {
+public class InefficientIFOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
     @Override
-    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        for (RegionNode theNode : aGraph.getKnownNodes()) {
-            checkExpressions(aGraph, theNode, theNode.getExpressions());
+    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+        for (final RegionNode theNode : aGraph.getKnownNodes()) {
+            visit(aGraph, aLinkerContext);
         }
     }
 
-    private void checkExpressions(ControlFlowGraph aGraph, RegionNode aNode, ExpressionList aList) {
-/*        for (Expression theExpression : aList.toList()) {
-            if (theExpression instanceof IFExpression) {
-                IFExpression theIF = (IFExpression) theExpression;
-                Value theBooleanValue = theIF.getBooleanValue();
-                if (theBooleanValue instanceof BinaryExpression) {
-                    BinaryExpression theBinary = (BinaryExpression) theBooleanValue;
-                    Value theFirst = theBinary.resolveFirstArgument();
-                    Value theSecond = theBinary.resolveSecondArgument();
+    @Override
+    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
+        if (aExpression instanceof IFExpression) {
+            final IFExpression theIf = (IFExpression) aExpression;
+            final Expression theBefore = aList.predecessorOf(aExpression);
+            if (theBefore instanceof VariableAssignmentExpression) {
+                final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
+                final Variable theVariable = theAssignment.getVariable();
+                final Value theVariableValue = theAssignment.getValue();
+                if (theVariable.incomingDataFlows().size() == 1) {
+                    final Value theIFCondition = theIf.incomingDataFlows().get(0);
+                    if (theIFCondition.incomingDataFlows().contains(theVariable)) {
+                        // We have a match!
 
-                    if ((theFirst instanceof Variable) && (theSecond instanceof IntegerValue)){
-                        List<Value> theInits = theFirst.consumedValues(Value.ConsumptionType.INITIALIZATION);
-                        if (theInits.size() == 1) {
-                            Value theFirstValue = theInits.get(0);
-                            if (theFirstValue instanceof CompareExpression) {
-                                CompareExpression theCompare = (CompareExpression) theFirstValue;
-                                Value theCompareA = theCompare.resolveFirstArgument();
-                                Value theCompareB = theCompare.resolveSecondArgument();
-                                IntegerValue theInteger = (IntegerValue) theSecond;
-                                // We have a candidate
+                        // We can delete the Variable and the Variable Assignment
+                        // and replae the assigned Value in the IF condition
+                        aGraph.getProgram().deleteVariable(theVariable);
 
-                                // Compare follows this logic:
-                                // a == b -> 0
-                                // a >= b -> 1
-                                // a < b -> -1
-                                if (theInteger.getIntValue() == 0) {
-                                    switch (theBinary.getOperator()) {
-                                        case EQUALS:
-                                        case GREATEROREQUALS:
-                                        case LESSTHAN:
-                                        case LESSTHANOREQUALS:
-                                        case GREATERTHAN: {
-                                            // Unbind all
-                                            theCompare.unbind();
-                                            theBinary.unbind();
-                                            // The new boolean expression and the new if
-                                            BinaryExpression theNewBooleanValue = new BinaryExpression(theBinary.resolveType(), theCompareA, theBinary.getOperator(), theCompareB);
-                                            IFExpression theNewIf = theIF.withNewBooleanValue(theNewBooleanValue);
-                                            aList.replace(theIF, theNewIf);
-                                            // Finally, get rid of the removed variable
-                                            aGraph.getProgram().deleteVariable((Variable) theFirst);
-                                            break;
-                                        }
-                                        default:
-                                            break;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                        theIFCondition.replaceIncomingDataEdge(theVariable, theVariableValue);
+                        aList.remove(theAssignment);
+                   }
                 }
             }
-        }*/
+        }
     }
 }

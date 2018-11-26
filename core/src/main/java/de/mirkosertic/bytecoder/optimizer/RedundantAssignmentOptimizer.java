@@ -32,27 +32,29 @@ import java.util.stream.Collectors;
 public class RedundantAssignmentOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
     @Override
-    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
+    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         visit(aGraph, aLinkerContext);
     }
 
     @Override
-    protected void visit(ControlFlowGraph aGraph, ExpressionList aList, Expression aExpression, BytecodeLinkerContext aLinkerContext) {
+    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
         // Check if a variable assignment is before the current expression
-        Expression theBefore = aList.predecessorOf(aExpression);
-        if (theBefore instanceof VariableAssignmentExpression) {
-            VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
-            Variable theVariable = theAssignment.getVariable();
-            Value theValue = theAssignment.getValue();
+        if (aExpression instanceof VariableAssignmentExpression) {
+            final Expression theBefore = aList.predecessorOf(aExpression);
+            if (theBefore instanceof VariableAssignmentExpression) {
+                final VariableAssignmentExpression thePrevAssignment = (VariableAssignmentExpression) theBefore;
+                final Variable theVariable = thePrevAssignment.getVariable();
+                final Value theValue = thePrevAssignment.getValue();
 
-            // Check if there is only one data flow
-            List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-            if (theDataEdges.size() == 1) {
-                List<Value> theIncomingData = aExpression.incomingDataFlows();
-                if (theIncomingData.contains(theVariable)) {
-                    aExpression.replaceIncomingDataEdge(theVariable, theValue);
-                    aList.remove(theAssignment);
-                    aGraph.getProgram().deleteVariable(theVariable);
+                // Check if there is only one data flow
+                final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                if (theDataEdges.size() == 1) {
+                    final List<Value> theIncomingData = aExpression.incomingDataFlows();
+                    if (theIncomingData.contains(theVariable)) {
+                        aExpression.replaceIncomingDataEdge(theVariable, theValue);
+                        aList.remove(thePrevAssignment);
+                        aGraph.getProgram().deleteVariable(theVariable);
+                    }
                 }
             }
         }
