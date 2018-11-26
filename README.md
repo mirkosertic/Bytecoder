@@ -102,10 +102,12 @@ There is Bytecoder Maven Plugin available.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2018-11-06</version>
+            <version>2018-11-25</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
-                <backend>js</backend>                    
+                <backend>js</backend>
+                <enableExceptionHandling>true</enableExceptionHandling>
+                <optimizationLevel>ALL</optimizationLevel>
             </configuration>
             <executions>
                 <execution>
@@ -131,10 +133,12 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2018-11-06</version>
+            <version>2018-11-25</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
-                <backend>wasm</backend>                    
+                <backend>wasm</backend>
+                <enableExceptionHandling>false</enableExceptionHandling>
+                <optimizationLevel>ALL</optimizationLevel>
             </configuration>
             <executions>
                 <execution>
