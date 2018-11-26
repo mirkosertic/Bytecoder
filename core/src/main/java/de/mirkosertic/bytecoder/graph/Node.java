@@ -32,7 +32,7 @@ public abstract class Node {
         incomingEdges = new ArrayList<>();
     }
 
-    protected void addIncomingEdge(Edge aEdge) {
+    protected void addIncomingEdge(final Edge aEdge) {
         incomingEdges.add(aEdge);
     }
 
@@ -40,11 +40,11 @@ public abstract class Node {
         return (Stream<T>) outgoingEdges.stream();
     }
 
-    public <T extends Edge> Stream<T> outgoingEdges(Predicate<EdgeType> aPredicate) {
+    public <T extends Edge> Stream<T> outgoingEdges(final Predicate<EdgeType> aPredicate) {
         return (Stream<T>) outgoingEdges().filter(t -> aPredicate.test(t.edgeType()));
     }
-    public <T extends Node> T addEdgeTo(EdgeType aType, T aTargetNode) {
-        Edge theNewEdge = new Edge(this, aType, aTargetNode);
+    public <T extends Node> T addEdgeTo(final EdgeType aType, final T aTargetNode) {
+        final Edge theNewEdge = new Edge(this, aType, aTargetNode);
         outgoingEdges.add(theNewEdge);
         aTargetNode.addIncomingEdge(theNewEdge);
         return aTargetNode;
@@ -54,12 +54,12 @@ public abstract class Node {
         return (Stream<T>) incomingEdges.stream();
     }
 
-    public <T extends Edge> Stream<T> incomingEdges(Predicate<EdgeType> aPredicate) {
+    public <T extends Edge> Stream<T> incomingEdges(final Predicate<EdgeType> aPredicate) {
         return (Stream<T>) incomingEdges().filter(t -> aPredicate.test(t.edgeType()));
     }
 
-    public <T extends Node> Optional<T> singleOutgoingNodeMatching(Predicate<EdgeType> aPredicate) {
-        List<Edge> theEdges = outgoingEdges(aPredicate).collect(Collectors.toList());
+    public <T extends Node> Optional<T> singleOutgoingNodeMatching(final Predicate<EdgeType> aPredicate) {
+        final List<Edge> theEdges = outgoingEdges(aPredicate).collect(Collectors.toList());
         if (theEdges.isEmpty()) {
             return Optional.empty();
         }
@@ -67,5 +67,9 @@ public abstract class Node {
             throw new IllegalStateException("Too many edges found!");
         }
         return Optional.of((T) theEdges.get(0).targetNode());
+    }
+
+
+    public void unbind() {
     }
 }
