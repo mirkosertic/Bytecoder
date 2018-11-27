@@ -21,7 +21,7 @@ public class NewArrayExpression extends Expression {
 
     private final BytecodeTypeRef type;
 
-    public NewArrayExpression(BytecodeTypeRef aType, Value aLength) {
+    public NewArrayExpression(final BytecodeTypeRef aType, final Value aLength) {
         type = aType;
         receivesDataFrom(aLength);
     }
@@ -33,5 +33,10 @@ public class NewArrayExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

@@ -21,7 +21,7 @@ public class NewObjectExpression extends Expression {
 
     private final BytecodeClassinfoConstant type;
 
-    public NewObjectExpression(BytecodeClassinfoConstant aType) {
+    public NewObjectExpression(final BytecodeClassinfoConstant aType) {
         type = aType;
     }
 
@@ -32,5 +32,10 @@ public class NewObjectExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

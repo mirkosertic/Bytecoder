@@ -17,7 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ReturnValueExpression extends Expression {
 
-    public ReturnValueExpression(Value aValue) {
+    public ReturnValueExpression(final Value aValue) {
         receivesDataFrom(aValue);
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

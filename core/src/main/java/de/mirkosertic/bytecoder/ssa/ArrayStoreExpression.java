@@ -19,12 +19,17 @@ public class ArrayStoreExpression extends Expression {
 
     private final TypeRef arrayType;
 
-    public ArrayStoreExpression(TypeRef aArrayType, Value aArray, Value aIndex, Value aValue) {
+    public ArrayStoreExpression(final TypeRef aArrayType, final Value aArray, final Value aIndex, final Value aValue) {
         arrayType = aArrayType;
         receivesDataFrom(aArray, aIndex, aValue);
     }
 
     public TypeRef getArrayType() {
         return arrayType;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

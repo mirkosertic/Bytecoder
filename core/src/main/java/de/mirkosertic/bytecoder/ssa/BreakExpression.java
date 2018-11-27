@@ -24,7 +24,7 @@ public class BreakExpression extends Expression {
     private boolean silent;
     private boolean setLabelRequired;
 
-    public BreakExpression(Label aBlockToBreak, BytecodeOpcodeAddress aJumpTarget) {
+    public BreakExpression(final Label aBlockToBreak, final BytecodeOpcodeAddress aJumpTarget) {
         blockToBreak = aBlockToBreak;
         jumpTarget = aJumpTarget;
         silent = false;
@@ -53,5 +53,10 @@ public class BreakExpression extends Expression {
 
     public BytecodeOpcodeAddress jumpTarget() {
         return jumpTarget;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

@@ -16,4 +16,9 @@
 package de.mirkosertic.bytecoder.ssa;
 
 public class ReturnExpression extends Expression {
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
+    }
 }

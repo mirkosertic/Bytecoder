@@ -21,7 +21,7 @@ public class InvocationExpression extends Expression {
 
     private final BytecodeMethodSignature signature;
 
-    public InvocationExpression(BytecodeMethodSignature aSignature) {
+    public InvocationExpression(final BytecodeMethodSignature aSignature) {
         signature = aSignature;
     }
 
@@ -32,5 +32,10 @@ public class InvocationExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.toType(signature.getReturnType());
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

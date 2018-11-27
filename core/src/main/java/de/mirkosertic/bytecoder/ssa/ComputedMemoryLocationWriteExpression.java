@@ -17,12 +17,17 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ComputedMemoryLocationWriteExpression extends Expression {
 
-    public ComputedMemoryLocationWriteExpression(Value aOrigin, Value aOffset) {
+    public ComputedMemoryLocationWriteExpression(final Value aOrigin, final Value aOffset) {
         receivesDataFrom(aOrigin, aOffset);
     }
 
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.INT;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

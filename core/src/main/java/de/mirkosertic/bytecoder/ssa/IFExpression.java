@@ -26,15 +26,11 @@ public class IFExpression extends Expression implements ExpressionListContainer 
     private final ExpressionList expressions;
     private final BytecodeOpcodeAddress gotoAddress;
 
-    public IFExpression(BytecodeOpcodeAddress aAddress, BytecodeOpcodeAddress aGotoAddress, Value aBooleanValue, ExpressionList aExpressions) {
+    public IFExpression(final BytecodeOpcodeAddress aAddress, final BytecodeOpcodeAddress aGotoAddress, final Value aBooleanValue, final ExpressionList aExpressions) {
         address = aAddress;
         expressions = aExpressions;
         gotoAddress = aGotoAddress;
         receivesDataFrom(aBooleanValue);
-    }
-
-    public IFExpression withNewBooleanValue(Value aBooleanValue) {
-        return new IFExpression(address, gotoAddress, aBooleanValue, expressions);
     }
 
     public BytecodeOpcodeAddress getAddress() {
@@ -47,12 +43,17 @@ public class IFExpression extends Expression implements ExpressionListContainer 
 
     @Override
     public Set<ExpressionList> getExpressionLists() {
-        Set<ExpressionList> theResult = new HashSet<>();
+        final Set<ExpressionList> theResult = new HashSet<>();
         theResult.add(expressions);
         return theResult;
     }
 
     public BytecodeOpcodeAddress getGotoAddress() {
         return gotoAddress;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

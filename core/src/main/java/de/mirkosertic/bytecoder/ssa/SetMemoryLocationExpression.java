@@ -17,7 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class SetMemoryLocationExpression extends Expression {
 
-    public SetMemoryLocationExpression(Value aAddress, Value aValue) {
+    public SetMemoryLocationExpression(final Value aAddress, final Value aValue) {
         receivesDataFrom(aAddress, aValue);
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

@@ -15,13 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.Node;
 
 public abstract class Value extends Node {
@@ -29,18 +25,18 @@ public abstract class Value extends Node {
     protected Value() {
     }
 
-    protected void receivesDataFrom(Value aOtherValue) {
+    protected void receivesDataFrom(final Value aOtherValue) {
         aOtherValue.addEdgeTo(new DataFlowEdgeType(), this);
     }
 
-    protected void receivesDataFrom(List<Value> aValues) {
-        for (Value aValue : aValues) {
+    protected void receivesDataFrom(final List<Value> aValues) {
+        for (final Value aValue : aValues) {
             receivesDataFrom(aValue);
         }
     }
 
-    protected void receivesDataFrom(Value... aValues) {
-        for (Value aValue : aValues) {
+    protected void receivesDataFrom(final Value... aValues) {
+        for (final Value aValue : aValues) {
             receivesDataFrom(aValue);
         }
     }
@@ -49,27 +45,16 @@ public abstract class Value extends Node {
         return incomingEdges(DataFlowEdgeType.filter()).map(t -> (T) t.sourceNode()).collect(Collectors.toList());
     }
 
-    public List<Edge> incomingDataFlowEdges() {
-        return incomingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-    }
-
-    public List<Edge> incomingDataFlowEdgesRecursive() {
-        return incomingDataFlowEdgesRecursive(new HashSet<>());
-    }
-
-    private List<Edge> incomingDataFlowEdgesRecursive(Set<Value> aAlreadyVisited) {
-        List<Edge> theResult = new ArrayList<>();
-        if (aAlreadyVisited.add(this)) {
-            for (Edge theEdge : incomingDataFlowEdges()) {
-                theResult.add(theEdge);
-                Value theSource = (Value) theEdge.sourceNode();
-                theResult.addAll(theSource.incomingDataFlowEdgesRecursive(aAlreadyVisited));
+    public boolean isTrulyFunctional() {
+        for (final Value theIncoming : incomingDataFlows()) {
+            if (!theIncoming.isTrulyFunctional()) {
+                return false;
             }
         }
-        return theResult;
+        return true;
     }
 
-    public void replaceIncomingDataEdge(Value aOldValue, Value aNewValue) {
+    public void replaceIncomingDataEdge(final Value aOldValue, final Value aNewValue) {
         incomingEdges(DataFlowEdgeType.filter()).forEach(aEdge -> {
             if (aEdge.sourceNode() == aOldValue) {
                 aEdge.newSourceIs(aNewValue);
@@ -77,7 +62,7 @@ public abstract class Value extends Node {
         });
     }
 
-    public void routeIncomingDataFlowsTo(Value aNewExpression) {
+    public void routeIncomingDataFlowsTo(final Value aNewExpression) {
         incomingEdges(DataFlowEdgeType.filter()).forEach(aEdge -> {
             aEdge.newTargetId(aNewExpression);
             aNewExpression.addIncomingEdge(aEdge);

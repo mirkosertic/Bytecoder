@@ -19,7 +19,7 @@ public class ArrayEntryExpression extends Expression {
 
     private final TypeRef arrayType;
 
-    public ArrayEntryExpression(TypeRef aArrayType, Value aArray, Value aIndex) {
+    public ArrayEntryExpression(final TypeRef aArrayType, final Value aArray, final Value aIndex) {
         arrayType = aArrayType;
         receivesDataFrom(aArray, aIndex);
     }
@@ -27,5 +27,10 @@ public class ArrayEntryExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return arrayType;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

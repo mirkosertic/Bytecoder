@@ -23,7 +23,7 @@ public class NewMultiArrayExpression extends Expression {
 
     private final BytecodeTypeRef type;
 
-    public NewMultiArrayExpression(BytecodeTypeRef aType, List<Value> aDimensions) {
+    public NewMultiArrayExpression(final BytecodeTypeRef aType, final List<Value> aDimensions) {
         type = aType;
         receivesDataFrom(aDimensions);
     }
@@ -35,5 +35,10 @@ public class NewMultiArrayExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }
