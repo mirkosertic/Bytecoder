@@ -37,6 +37,6 @@ public class NewArrayExpression extends Expression {
 
     @Override
     public boolean isTrulyFunctional() {
-        return false;
+        return true;
     }
 }

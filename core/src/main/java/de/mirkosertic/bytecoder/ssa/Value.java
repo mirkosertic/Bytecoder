@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.graph.Node;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class Value extends Node {
 
@@ -45,10 +48,30 @@ public abstract class Value extends Node {
         return incomingEdges(DataFlowEdgeType.filter()).map(t -> (T) t.sourceNode()).collect(Collectors.toList());
     }
 
+    public <T extends Value> List<T> incomingDataFlowsRecursive() {
+        return incomingDataFlowsRecursive(new ArrayList<>());
+    }
+
+    private <T extends Value> List<T> incomingDataFlowsRecursive(final List<T> aValues) {
+        if (!aValues.contains(this)) {
+            aValues.add((T) this);
+            for (final Value theValue : incomingDataFlows()) {
+                theValue.incomingDataFlowsRecursive(aValues);
+            }
+        }
+        return aValues;
+    }
+
     public boolean isTrulyFunctional() {
-        for (final Value theIncoming : incomingDataFlows()) {
-            if (!theIncoming.isTrulyFunctional()) {
-                return false;
+        return isTrulyFunctional(new HashSet<>());
+    }
+
+    private boolean isTrulyFunctional(final Set<Value> aVisited) {
+        if (aVisited.add(this)) {
+            for (final Value theIncoming : incomingDataFlows()) {
+                if (!theIncoming.isTrulyFunctional(aVisited)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -60,6 +83,12 @@ public abstract class Value extends Node {
                 aEdge.newSourceIs(aNewValue);
             }
         });
+    }
+
+    public void replaceIncomingDataEdgeRecursive(final Value aOldValue, final Value aNewValue) {
+        for (final Value theValue : incomingDataFlowsRecursive()) {
+            theValue.replaceIncomingDataEdge(aOldValue, aNewValue);
+        }
     }
 
     public void routeIncomingDataFlowsTo(final Value aNewExpression) {

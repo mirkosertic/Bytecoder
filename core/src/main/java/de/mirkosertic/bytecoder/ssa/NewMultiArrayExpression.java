@@ -39,6 +39,6 @@ public class NewMultiArrayExpression extends Expression {
 
     @Override
     public boolean isTrulyFunctional() {
-        return false;
+        return true;
     }
 }

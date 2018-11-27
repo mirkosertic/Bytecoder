@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public enum KnownOptimizer implements Optimizer {
 
@@ -34,9 +34,7 @@ public enum KnownOptimizer implements Optimizer {
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(new RemoveObjectConstructorCallOptimizer());
-            theOptimizer.add(new RedundantAssignmentOptimizer());
-            theOptimizer.add(new InefficientIFOptimizer());
-            theOptimizer.add(new InefficientReturnOptimizer());
+            theOptimizer.add(new RedundantVariablesOptimizer());
             theOptimizer.add(new InlineFinalNodesOptimizer());
             theOptimizer.add(new InvokeVirtualOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
@@ -46,14 +44,9 @@ public enum KnownOptimizer implements Optimizer {
     EXPERIMENTAL {
         @Override
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+            ALL.optimize(aGraph, aLinkerContext);
             final List<Optimizer> theOptimizer = new ArrayList<>();
-            theOptimizer.add(new RemoveObjectConstructorCallOptimizer());
-            theOptimizer.add(new RedundantAssignmentOptimizer());
-            theOptimizer.add(new InefficientIFOptimizer());
-            theOptimizer.add(new InefficientReturnOptimizer());
-            theOptimizer.add(new InlineFinalNodesOptimizer());
             theOptimizer.add(new InlineGotoOptimizer());
-            theOptimizer.add(new InvokeVirtualOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
     };
