@@ -21,7 +21,9 @@ import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
@@ -29,7 +31,7 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RedundantAssignmentOptimizer extends RecursiveExpressionVisitor implements Optimizer {
+public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
     @Override
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
@@ -38,24 +40,31 @@ public class RedundantAssignmentOptimizer extends RecursiveExpressionVisitor imp
 
     @Override
     protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
-        if (aExpression instanceof VariableAssignmentExpression) {
+        if ((aExpression instanceof VariableAssignmentExpression) ||
+                // (aExpression instanceof IFExpression) ||
+                (aExpression instanceof InvocationExpression) ||
+                (aExpression instanceof ReturnValueExpression)) {
             boolean modified = true;
-            while (modified) {
+            while(modified) {
                 modified = false;
+                final List<Value> theIncoming = aExpression.incomingDataFlowsRecursive();
                 final Expression theBefore = aList.predecessorOf(aExpression);
                 if (theBefore instanceof VariableAssignmentExpression) {
-                    final VariableAssignmentExpression thePrevAssignment = (VariableAssignmentExpression) theBefore;
-                    final Variable theVariable = thePrevAssignment.getVariable();
-                    final Value theValue = thePrevAssignment.getValue();
-
-                    // Check if there is only one data flow
+                    final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
+                    final Variable theVariable = theAssignment.getVariable();
                     final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-                    if (theDataEdges.size() == 1) {
-                        final List<Value> theIncomingData = aExpression.incomingDataFlows();
-                        if (theIncomingData.contains(theVariable)) {
-                            aExpression.replaceIncomingDataEdge(theVariable, theValue);
-                            aList.remove(thePrevAssignment);
+                    if (theDataEdges.size() == 1 && theIncoming.contains(theVariable) && !theVariable.getName().startsWith("local_")) {
+                        // Variable is only used once and is used as an incoming data flow
+                        final Value theVariableValue = theAssignment.getValue();
+                        if (theVariableValue.isTrulyFunctional()) {
+                            // We can replace the variable with its assigned value
+                            // We variable can also be deleted
+                            // We variavle assignment is also no nolger used
+                            aList.remove(theBefore);
+
+                            aExpression.replaceIncomingDataEdgeRecursive(theVariable, theVariableValue);
                             aGraph.getProgram().deleteVariable(theVariable);
+
                             modified = true;
                         }
                     }

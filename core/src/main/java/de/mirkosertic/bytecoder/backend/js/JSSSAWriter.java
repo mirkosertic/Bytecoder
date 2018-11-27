@@ -706,7 +706,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
-    private void writeExpressions(final ExpressionList aExpressions) {
+    public void writeExpressions(final ExpressionList aExpressions) {
         for (final Expression theExpression : aExpressions.toList()) {
             if (options.isDebugOutput()) {
                 final String theComment = theExpression.getComment();

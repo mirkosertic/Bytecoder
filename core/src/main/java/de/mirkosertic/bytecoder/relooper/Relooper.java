@@ -28,9 +28,12 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,10 +50,10 @@ public class Relooper {
         private final Label label;
         private int labelRequired;
 
-        protected Block(Set<RegionNode> aEntries, String aLabelPrefix) {
+        protected Block(final Set<RegionNode> aEntries, final String aLabelPrefix) {
             entries = aEntries;
-            StringBuilder theBuilder = new StringBuilder();
-            for (RegionNode aLabel : aEntries) {
+            final StringBuilder theBuilder = new StringBuilder();
+            for (final RegionNode aLabel : aEntries) {
                 if (theBuilder.length() > 0) {
                     theBuilder.append("_");
                 }
@@ -68,8 +71,10 @@ public class Relooper {
             labelRequired++;
         }
 
-        public Set<RegionNode> entries() {
-            return entries;
+        public List<RegionNode> entries() {
+            final ArrayList<RegionNode> theResult = new ArrayList<>(entries);
+            theResult.sort(Comparator.comparingInt(o -> o.getStartAddress().getAddress()));
+            return theResult;
         }
 
         public abstract Block next();
@@ -96,7 +101,7 @@ public class Relooper {
             private final JumpType type;
             private final Label label;
 
-            public Jump(JumpType type, Label label) {
+            public Jump(final JumpType type, final Label label) {
                 this.type = type;
                 this.label = label;
             }
@@ -114,18 +119,18 @@ public class Relooper {
         private final Block next;
         private final Map<BytecodeOpcodeAddress, Jump> knownJumps;
 
-        public SimpleBlock(Set<RegionNode> aEntries, RegionNode aInternalLabel, Block aNext) {
+        public SimpleBlock(final Set<RegionNode> aEntries, final RegionNode aInternalLabel, final Block aNext) {
             super(aEntries, "S_");
             internalLabel = aInternalLabel;
             next = aNext;
             knownJumps = new HashMap<>();
         }
 
-        public void registerJump(BytecodeOpcodeAddress target, Jump jump) {
+        public void registerJump(final BytecodeOpcodeAddress target, final Jump jump) {
             knownJumps.put(target, jump);
         }
 
-        public Jump jumpTo(BytecodeOpcodeAddress target) {
+        public Jump jumpTo(final BytecodeOpcodeAddress target) {
             return knownJumps.get(target);
         }
 
@@ -155,7 +160,7 @@ public class Relooper {
         private final Block inner;
         private final Block next;
 
-        public LoopBlock(Set<RegionNode> aEntries, Block aInner, Block aNext) {
+        public LoopBlock(final Set<RegionNode> aEntries, final Block aInner, final Block aNext) {
             super(aEntries, "L_");
             inner = aInner;
             next = aNext;
@@ -191,7 +196,7 @@ public class Relooper {
         private final Set<Block> handlers;
         private final Block next;
 
-        public MultipleBlock(Set<RegionNode> aEntries, Set<Block> aHandlers, Block aNext) {
+        public MultipleBlock(final Set<RegionNode> aEntries, final Set<Block> aHandlers, final Block aNext) {
             super(aEntries, "M_");
             handlers = aHandlers;
             next = aNext;
@@ -207,16 +212,16 @@ public class Relooper {
         }
     }
 
-    public Block reloop(ControlFlowGraph aGraph) {
-        Set<RegionNode> theEntries = new HashSet<>();
-        RegionNode theStart = aGraph.startNode();
+    public Block reloop(final ControlFlowGraph aGraph) {
+        final Set<RegionNode> theEntries = new HashSet<>();
+        final RegionNode theStart = aGraph.startNode();
         theEntries.add(aGraph.startNode());
 
         // At this point, we use the dominated nodes of our start node as
         // the initisl "label-soup" for the Relooper. This will exclude
         // exception handler and finalize blocks from the the CFG and
         // will reduce the amount of labels to be processed(hopefully)
-        Block theBlock =  reloop(theEntries, theStart.dominatedNodes());
+        final Block theBlock =  reloop(theEntries, theStart.dominatedNodes());
 
         // At this point, we have a constructed Relooper-CFG. Now we have to replace
         // all GOTOs with either corresponding break or continue statements.
@@ -226,30 +231,30 @@ public class Relooper {
         return theBlock;
     }
 
-    private void replaceGotosIn(Block aBlock) {
+    private void replaceGotosIn(final Block aBlock) {
         replaceGotosIn(new Stack<>(), aBlock);
     }
 
-    private void replaceGotosIn(Stack<Block> aTraversalStack, Block aBlock) {
+    private void replaceGotosIn(final Stack<Block> aTraversalStack, final Block aBlock) {
         if (aBlock == null) {
             return;
         }
         if (aBlock instanceof SimpleBlock) {
-            SimpleBlock theSimple = (SimpleBlock) aBlock;
+            final SimpleBlock theSimple = (SimpleBlock) aBlock;
 
             aTraversalStack.push(theSimple);
-            RegionNode theInternalLabel = theSimple.internalLabel();
+            final RegionNode theInternalLabel = theSimple.internalLabel();
             replaceGotosIn(aTraversalStack, theSimple, theInternalLabel, theInternalLabel.getExpressions());
 
             replaceGotosIn(aTraversalStack, theSimple.next());
             aTraversalStack.pop();
 
-            RegionNode theNode = theSimple.internalLabel;
-            Expression theLastExpression = theNode.getExpressions().lastExpression();
+            final RegionNode theNode = theSimple.internalLabel;
+            final Expression theLastExpression = theNode.getExpressions().lastExpression();
             // Breaks at the end of the internal label breaking out of the simple block
             // can be silent, they only need to set the __label__ variable
             if (theLastExpression instanceof BreakExpression) {
-                BreakExpression theBreak = (BreakExpression) theLastExpression;
+                final BreakExpression theBreak = (BreakExpression) theLastExpression;
                 if (Objects.equals(theBreak.blockToBreak().name(), theSimple.label().name())) {
                     theBreak.silent();
                 }
@@ -257,14 +262,14 @@ public class Relooper {
 
             // At this place, we check the goto labels for the blocks successors to make them available during rendering
             // We search the successor edge
-            for (Map.Entry<RegionNode.Edge, RegionNode> theSuc : theInternalLabel.getSuccessors().entrySet()) {
-                RegionNode theTarget = theSuc.getValue();
+            for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : theInternalLabel.getSuccessors().entrySet()) {
+                final RegionNode theTarget = theSuc.getValue();
                 // We found the matching edge
                 if (theSuc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                     // We can only branch to the next block
                     // We search the whole hiararchy to find the right block to break out
                     for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
-                        Block theNestingBlock = aTraversalStack.get(i);
+                        final Block theNestingBlock = aTraversalStack.get(i);
                         if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
 
                             theNestingBlock.requireLabel();
@@ -280,7 +285,7 @@ public class Relooper {
 
                 } else {
                     // We can only branch back into the known stack of nested blocks
-                    for (Block theNestingBlock : aTraversalStack) {
+                    for (final Block theNestingBlock : aTraversalStack) {
                         if (theNestingBlock.entries().contains(theTarget)) {
 
                             // We can return to the target in the hierarchy
@@ -295,7 +300,7 @@ public class Relooper {
             return;
         }
         if (aBlock instanceof LoopBlock) {
-            LoopBlock theLoop = (LoopBlock) aBlock;
+            final LoopBlock theLoop = (LoopBlock) aBlock;
 
             aTraversalStack.push(theLoop);
             replaceGotosIn(aTraversalStack, theLoop.inner());
@@ -305,9 +310,9 @@ public class Relooper {
             return;
         }
         if (aBlock instanceof MultipleBlock) {
-            MultipleBlock theMultiple = (MultipleBlock) aBlock;
+            final MultipleBlock theMultiple = (MultipleBlock) aBlock;
             aTraversalStack.push(theMultiple);
-            for (Block theHandler : theMultiple.handlers()) {
+            for (final Block theHandler : theMultiple.handlers()) {
                 replaceGotosIn(aTraversalStack, theHandler);
             }
 
@@ -319,22 +324,22 @@ public class Relooper {
         throw new IllegalStateException("Don't know how to handle " + aBlock);
     }
 
-    private void replaceGotosIn(Stack<Block> aTraversalStack, SimpleBlock aCurrent, RegionNode aLabel, ExpressionList aList) {
-        for (Expression theExpression : aList.toList()) {
+    private void replaceGotosIn(final Stack<Block> aTraversalStack, final SimpleBlock aCurrent, final RegionNode aLabel, final ExpressionList aList) {
+        for (final Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
-                ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (ExpressionList theList : theContainer.getExpressionLists()) {
+                final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
+                for (final ExpressionList theList : theContainer.getExpressionLists()) {
                     replaceGotosIn(aTraversalStack, aCurrent, aLabel, theList);
                 }
             }
             if (theExpression instanceof GotoExpression) {
-                GotoExpression theGoto = (GotoExpression) theExpression;
+                final GotoExpression theGoto = (GotoExpression) theExpression;
                 boolean theGotoFound = false;
                 // We search the successor edge
-                for (Map.Entry<RegionNode.Edge, RegionNode> theSuc : aLabel.getSuccessors().entrySet()) {
+                for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : aLabel.getSuccessors().entrySet()) {
                     if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.getJumpTarget())) {
                         theGotoFound = true;
-                        RegionNode theTarget = theSuc.getValue();
+                        final RegionNode theTarget = theSuc.getValue();
                         // We found the matching edge
                         if (theSuc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                             // We can only branch to the next block
@@ -342,10 +347,10 @@ public class Relooper {
 
                             boolean theSomethingFound = false;
                             for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
-                                Block theNestingBlock = aTraversalStack.get(i);
+                                final Block theNestingBlock = aTraversalStack.get(i);
                                 if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
                                     theNestingBlock.requireLabel();
-                                    BreakExpression theBreak = new BreakExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    final BreakExpression theBreak = new BreakExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theBreak);
 
                                     if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
@@ -356,7 +361,7 @@ public class Relooper {
                                     break;
                                 } else if (theNestingBlock.entries().contains(theTarget)) {
                                     theNestingBlock.requireLabel();
-                                    ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    final ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theContinue);
                                     theSomethingFound = true;
                                     break;
@@ -370,13 +375,13 @@ public class Relooper {
                         } else {
                             // We can only branch back into the known stack of nested blocks
                             boolean theSomethingFound = false;
-                            for (Block theNestingBlock : aTraversalStack) {
+                            for (final Block theNestingBlock : aTraversalStack) {
                                 if (theNestingBlock.entries().contains(theTarget)) {
                                     theSomethingFound = true;
 
                                     // We can return to the target in the hierarchy
                                     theNestingBlock.requireLabel();
-                                    ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    final ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theContinue);
                                     break;
                                 }
@@ -400,7 +405,7 @@ public class Relooper {
      * points. We wish to create a block comprised of all those
      * labels.
      */
-    private Block reloop(Set<RegionNode> aEntryLabels, Set<RegionNode> aLabelSoup) {
+    private Block reloop(final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup) {
 
         // If there are no entry labels at all, we return null.
         // This will become the next value of the predecessor block and will mark the end of the
@@ -409,7 +414,7 @@ public class Relooper {
             return null;
         }
 
-        Collection<RegionNode> theJumptargets = jumpTargetsOf(aLabelSoup);
+        final Collection<RegionNode> theJumptargets = jumpTargetsOf(aLabelSoup);
 
         // If we have a single entry, and cannot return to it (by
         // some other label later on branching to it) then create a
@@ -418,7 +423,7 @@ public class Relooper {
         // for the Next block are the entries to which the internal
         // label can branch.
         if (aEntryLabels.size() == 1) {
-            RegionNode theEntry = aEntryLabels.iterator().next();
+            final RegionNode theEntry = aEntryLabels.iterator().next();
             if (!theJumptargets.contains(theEntry)) {
                 return createSimpleBlock(aEntryLabels, aLabelSoup, theEntry);
             }
@@ -439,23 +444,23 @@ public class Relooper {
             // SimpleBlock as its loop body and a next block with a block
             // the loop body can branch out to.
             if (aEntryLabels.size() == 1) {
-                RegionNode theSingleEntry = aEntryLabels.iterator().next();
+                final RegionNode theSingleEntry = aEntryLabels.iterator().next();
 
-                Set<RegionNode> theInternalLabels = theSingleEntry.dominatedNodes();
-                Set<RegionNode> theRestLabels = new HashSet<>(aLabelSoup);
+                final Set<RegionNode> theInternalLabels = theSingleEntry.dominatedNodes();
+                final Set<RegionNode> theRestLabels = new HashSet<>(aLabelSoup);
                 theRestLabels.removeAll(theInternalLabels);
 
                 // Search for branch-outs of the current loop
-                Set<RegionNode> theRestEntries = new HashSet<>();
-                for (RegionNode theReachable : theSingleEntry.forwardReachableNodes()) {
+                final Set<RegionNode> theRestEntries = new HashSet<>();
+                for (final RegionNode theReachable : theSingleEntry.forwardReachableNodes()) {
                     if (theRestLabels.contains(theReachable)) {
                         theRestEntries.add(theReachable);
                     }
                 }
 
-                Block theInternalBlock =
+                final Block theInternalBlock =
                         createSimpleBlock(aEntryLabels, theInternalLabels, theSingleEntry);
-                Block theNextBlock = reloop(theRestEntries, theRestLabels);
+                final Block theNextBlock = reloop(theRestEntries, theRestLabels);
 
                 return new LoopBlock(aEntryLabels, theInternalBlock, theNextBlock);
             }
@@ -471,30 +476,30 @@ public class Relooper {
         // the Handled blocks, and also labels that can be reached
         // from the Handled blocks.
         if (aEntryLabels.size() > 1) {
-            Set<RegionNode> theRest = new HashSet<>(aLabelSoup);
-            Set<RegionNode> theRestEntries = new HashSet<>();
-            Map<RegionNode, Set<RegionNode>> theEntryReaches = new HashMap<>();
+            final Set<RegionNode> theRest = new HashSet<>(aLabelSoup);
+            final Set<RegionNode> theRestEntries = new HashSet<>();
+            final Map<RegionNode, Set<RegionNode>> theEntryReaches = new HashMap<>();
 
-            Set<Block> theHandlers = new HashSet<>();
-            for (RegionNode theEntry : aEntryLabels) {
-                Set<RegionNode> theDominated = theEntry.dominatedNodes();
+            final Set<Block> theHandlers = new HashSet<>();
+            for (final RegionNode theEntry : aEntryLabels) {
+                final Set<RegionNode> theDominated = theEntry.dominatedNodes();
                 theEntryReaches.put(theEntry, theDominated);
                 theRest.removeAll(theDominated);
 
-                Set<RegionNode> theHandlerEntries = new HashSet<>();
+                final Set<RegionNode> theHandlerEntries = new HashSet<>();
                 theHandlerEntries.add(theEntry);
                 theHandlers.add(reloop(theHandlerEntries, theDominated));
             }
 
-            for (Map.Entry<RegionNode, Set<RegionNode>> theHandler : theEntryReaches.entrySet()) {
-                for (RegionNode theJumpTarget : allForwardJumpTargetsOf(theHandler.getValue())) {
+            for (final Map.Entry<RegionNode, Set<RegionNode>> theHandler : theEntryReaches.entrySet()) {
+                for (final RegionNode theJumpTarget : allForwardJumpTargetsOf(theHandler.getValue())) {
                     if (theRest.contains(theJumpTarget)) {
                         theRestEntries.add(theJumpTarget);
                     }
                 }
             }
 
-            Block theNext = reloop(theRestEntries, theRest);
+            final Block theNext = reloop(theRestEntries, theRest);
             return new MultipleBlock(aEntryLabels, theHandlers, theNext);
         }
 
@@ -503,11 +508,11 @@ public class Relooper {
         throw new IllegalStateException("What do do now?");
     }
 
-    private Block createSimpleBlock(Set<RegionNode> aEntryLabels, Set<RegionNode> aLabelSoup,
-            RegionNode theEntry) {
-        Set<RegionNode> theNextEntries = new HashSet<>();
-        Set<RegionNode> theDominated = theEntry.dominatedNodes();
-        for (Map.Entry<RegionNode.Edge, RegionNode> theSucc : theEntry.getSuccessors().entrySet()) {
+    private Block createSimpleBlock(final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup,
+                                    final RegionNode theEntry) {
+        final Set<RegionNode> theNextEntries = new HashSet<>();
+        final Set<RegionNode> theDominated = theEntry.dominatedNodes();
+        for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : theEntry.getSuccessors().entrySet()) {
             if (theSucc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                 if (theDominated.contains(theSucc.getValue())) {
                     theNextEntries.add(theSucc.getValue());
@@ -515,15 +520,15 @@ public class Relooper {
             }
         }
 
-        Set<RegionNode> theOtherLabels = new HashSet<>(aLabelSoup);
+        final Set<RegionNode> theOtherLabels = new HashSet<>(aLabelSoup);
         theOtherLabels.remove(theEntry);
         return new SimpleBlock(aEntryLabels, theEntry, reloop(theNextEntries, theOtherLabels));
     }
 
-    private Set<RegionNode> jumpTargetsOf(Collection<RegionNode> aLabelSoup) {
-        Set<RegionNode> theResults = new HashSet<>();
-        for (RegionNode theNode : aLabelSoup) {
-            for (Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
+    private Set<RegionNode> jumpTargetsOf(final Collection<RegionNode> aLabelSoup) {
+        final Set<RegionNode> theResults = new HashSet<>();
+        for (final RegionNode theNode : aLabelSoup) {
+            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
                 if (aLabelSoup.contains(theEntry.getValue())) {
                     theResults.add(theEntry.getValue());
                 }
@@ -532,10 +537,10 @@ public class Relooper {
         return theResults;
     }
 
-    private Set<RegionNode> allForwardJumpTargetsOf(Collection<RegionNode> aLabelSoup) {
-        Set<RegionNode> theResults = new HashSet<>();
-        for (RegionNode theNode : aLabelSoup) {
-            for (Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
+    private Set<RegionNode> allForwardJumpTargetsOf(final Collection<RegionNode> aLabelSoup) {
+        final Set<RegionNode> theResults = new HashSet<>();
+        for (final RegionNode theNode : aLabelSoup) {
+            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
                 if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                     theResults.add(theEntry.getValue());
                 }
@@ -544,11 +549,11 @@ public class Relooper {
         return theResults;
     }
 
-    public void debugPrint(PrintStream aStream, Block aBlock) {
+    public void debugPrint(final PrintStream aStream, final Block aBlock) {
         debugPrint(aStream, aBlock, 0);
     }
 
-    private void debugPrint(PrintStream aStream, Block aBlock, int aInset) {
+    private void debugPrint(final PrintStream aStream, final Block aBlock, final int aInset) {
         printInset(aStream, aInset);
         if (aBlock == null) {
             aStream.println(" NULL");
@@ -556,7 +561,7 @@ public class Relooper {
         }
         if (aBlock instanceof SimpleBlock) {
             aStream.println("SimpleBlock " + aBlock.label().name());
-            SimpleBlock theSimple = (SimpleBlock) aBlock;
+            final SimpleBlock theSimple = (SimpleBlock) aBlock;
             debugPrint(aStream, aInset +1, theSimple.internalLabel().getExpressions());
 
             debugPrint(aStream, theSimple.next(), aInset + 1);
@@ -564,15 +569,15 @@ public class Relooper {
         }
         if (aBlock instanceof LoopBlock) {
             aStream.println("Loop " + aBlock.label().name());
-            LoopBlock theLoop = (LoopBlock) aBlock;
+            final LoopBlock theLoop = (LoopBlock) aBlock;
             debugPrint(aStream, theLoop.inner(), aInset + 1);
             debugPrint(aStream, theLoop.next(), aInset + 1);
             return;
         }
         if (aBlock instanceof MultipleBlock) {
             aStream.println("Multiple " + aBlock.label().name());
-            MultipleBlock theMultiple = (MultipleBlock) aBlock;
-            for (Block theHandler : theMultiple.handlers()) {
+            final MultipleBlock theMultiple = (MultipleBlock) aBlock;
+            for (final Block theHandler : theMultiple.handlers()) {
                 debugPrint(aStream, theHandler, aInset + 1);
             }
             debugPrint(aStream, theMultiple.next, aInset + 1);
@@ -581,21 +586,21 @@ public class Relooper {
         throw new IllegalStateException("No handler for " + aBlock);
     }
 
-    private void printInset(PrintStream aStream, int aInset) {
+    private void printInset(final PrintStream aStream, final int aInset) {
         for (int i = 0; i < aInset; i++) {
             aStream.print(" ");
         }
     }
 
-    private void debugPrint(PrintStream aStream, int aInset, ExpressionList aExpressionList) {
-        for (Expression theExpression : aExpressionList.toList()) {
+    private void debugPrint(final PrintStream aStream, final int aInset, final ExpressionList aExpressionList) {
+        for (final Expression theExpression : aExpressionList.toList()) {
             if (theExpression instanceof BreakExpression) {
-                BreakExpression theBreak = (BreakExpression) theExpression;
+                final BreakExpression theBreak = (BreakExpression) theExpression;
                 printInset(aStream, aInset);
                 aStream.println(
                         "Break " + theBreak.blockToBreak().name() + " and jump to " + theBreak.jumpTarget().getAddress());
             } else if (theExpression instanceof ContinueExpression) {
-                ContinueExpression theContinue = (ContinueExpression) theExpression;
+                final ContinueExpression theContinue = (ContinueExpression) theExpression;
                 printInset(aStream, aInset);
                 aStream.println(
                         "Continue at " + theContinue.labelToReturnTo().name());
