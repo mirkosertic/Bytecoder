@@ -21,11 +21,16 @@ public class GotoExpression extends Expression {
 
     private final BytecodeOpcodeAddress jumpTarget;
 
-    public GotoExpression(BytecodeOpcodeAddress aJumpTarget) {
+    public GotoExpression(final BytecodeOpcodeAddress aJumpTarget) {
         jumpTarget = aJumpTarget;
     }
 
     public BytecodeOpcodeAddress getJumpTarget() {
         return jumpTarget;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

@@ -21,12 +21,17 @@ public class PutFieldExpression extends Expression {
 
     private final BytecodeFieldRefConstant field;
 
-    public PutFieldExpression(BytecodeFieldRefConstant aField, Value aTarget, Value aValue) {
+    public PutFieldExpression(final BytecodeFieldRefConstant aField, final Value aTarget, final Value aValue) {
         field = aField;
         receivesDataFrom(aTarget, aValue);
     }
 
     public BytecodeFieldRefConstant getField() {
         return field;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

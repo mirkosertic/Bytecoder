@@ -17,7 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class ThrowExpression extends Expression {
 
-    public ThrowExpression(Value aValue) {
+    public ThrowExpression(final Value aValue) {
         receivesDataFrom(aValue);
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

@@ -21,4 +21,9 @@ public class StackTopExpression extends Expression {
     public TypeRef resolveType() {
         return TypeRef.Native.INT;
     }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
+    }
 }

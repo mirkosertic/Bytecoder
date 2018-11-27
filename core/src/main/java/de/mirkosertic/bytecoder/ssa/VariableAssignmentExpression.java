@@ -23,7 +23,7 @@ public class VariableAssignmentExpression extends Expression {
     private final Variable variable;
     private Value value;
 
-    public VariableAssignmentExpression(Variable aVariable, Value aValue) {
+    public VariableAssignmentExpression(final Variable aVariable, final Value aValue) {
         if (aValue == null) {
             throw new IllegalStateException("Null not allowed");
         }
@@ -40,7 +40,7 @@ public class VariableAssignmentExpression extends Expression {
     }
 
     @Override
-    public void replaceIncomingDataEdge(Value aOldValue, Value aNewValue) {
+    public void replaceIncomingDataEdge(final Value aOldValue, final Value aNewValue) {
         if (value == aOldValue) {
             value = aNewValue;
         }
@@ -48,8 +48,13 @@ public class VariableAssignmentExpression extends Expression {
 
     @Override
     public <T extends Value> List<T> incomingDataFlows() {
-        List<T> theResult = new ArrayList<>();
+        final List<T> theResult = new ArrayList<>();
         theResult.add((T) value);
         return theResult;
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        return false;
     }
 }

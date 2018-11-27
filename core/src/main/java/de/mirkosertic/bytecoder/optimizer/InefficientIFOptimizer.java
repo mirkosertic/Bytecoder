@@ -16,46 +16,52 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class InefficientIFOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
     @Override
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-        for (final RegionNode theNode : aGraph.getKnownNodes()) {
-            visit(aGraph, aLinkerContext);
-        }
+        visit(aGraph, aLinkerContext);
     }
 
     @Override
     protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
         if (aExpression instanceof IFExpression) {
             final IFExpression theIf = (IFExpression) aExpression;
-            final Expression theBefore = aList.predecessorOf(aExpression);
-            if (theBefore instanceof VariableAssignmentExpression) {
-                final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
-                final Variable theVariable = theAssignment.getVariable();
-                final Value theVariableValue = theAssignment.getValue();
-                if (theVariable.incomingDataFlows().size() == 1) {
-                    final Value theIFCondition = theIf.incomingDataFlows().get(0);
-                    if (theIFCondition.incomingDataFlows().contains(theVariable)) {
-                        // We have a match!
+            final Value theIFCondition = theIf.incomingDataFlows().get(0);
+            boolean modified = true;
+            while (modified) {
+                modified = false;
+                final Expression theBefore = aList.predecessorOf(aExpression);
+                if (theBefore instanceof VariableAssignmentExpression) {
+                    final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
+                    final Variable theVariable = theAssignment.getVariable();
+                    final Value theVariableValue = theAssignment.getValue();
+                    final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                    if (theDataEdges.size() == 1) {
+                        if (theIFCondition.incomingDataFlows().contains(theVariable)) {
+                            // We can delete the Variable and the Variable Assignment
+                            // and replace the assigned Value in the IF condition
+                            aGraph.getProgram().deleteVariable(theVariable);
 
-                        // We can delete the Variable and the Variable Assignment
-                        // and replae the assigned Value in the IF condition
-                        aGraph.getProgram().deleteVariable(theVariable);
-
-                        theIFCondition.replaceIncomingDataEdge(theVariable, theVariableValue);
-                        aList.remove(theAssignment);
-                   }
+                            theIFCondition.replaceIncomingDataEdge(theVariable, theVariableValue);
+                            aList.remove(theAssignment);
+                            modified = true;
+                        }
+                    }
                 }
             }
         }
