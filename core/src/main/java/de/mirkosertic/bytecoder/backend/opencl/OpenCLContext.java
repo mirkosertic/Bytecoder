@@ -114,7 +114,7 @@ class OpenCLContext implements Context {
         platform = aPlatform;
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
-        compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true);
+        compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl");
 
         final cl_context_properties contextProperties = new cl_context_properties();
         contextProperties.addProperty(CL_CONTEXT_PLATFORM, aPlatform.selectedPlatform.id);

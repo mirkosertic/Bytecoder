@@ -17,22 +17,22 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericInvoke {
 
-    public BytecodeInstructionINVOKESTATIC(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINVOKESTATIC(final BytecodeOpcodeAddress aOpcodeIndex, final int aIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex, aIndex, aConstantPool);
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
-        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
+        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 
-        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
         if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()))
                 .resolveStaticMethod(theName.stringValue(), theSig)) {
-            throw new IllegalStateException("Cannot find static method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue());
+            throw new IllegalStateException("Cannot find static method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " wizh signature " +theSig.toString());
         }
 
     }

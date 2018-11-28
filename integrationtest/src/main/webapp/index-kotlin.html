@@ -1,0 +1,226 @@
+<html>
+<head>
+    <title>Bytecoder JBox2D Performance Test</title>
+</head>
+<body>
+<canvas id="benchmark-canvas" width="600" height="600"></canvas>
+<script type="text/javascript" src="stats.min.js"></script>
+<script type="text/javascript" src="bytecoder-kotlin.js"></script>
+<button id="button" onclick="stepFunction()" value="Click me" style="display: none">Click Me</button>
+<table border="1">
+    <tr>
+        <td>Avg ms / Frame</td>
+        <td>50%</td>
+        <td>75%</td>
+        <td>95%</td>
+        <td>98%</td>
+        <td>99%</td>
+    </tr>
+    <tr>
+        <td id="stats_avg"></td>
+        <td id="stats_50"></td>
+        <td id="stats_75"></td>
+        <td id="stats_95"></td>
+        <td id="stats_98"></td>
+        <td id="stats_99"></td>
+    </tr>
+</table>
+<a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
+
+<script type="text/javascript">
+
+    function sortNumber(a,b) {
+        return a - b;
+    }
+
+    function quantile(array, percentile) {
+        array.sort(sortNumber);
+        index = percentile/100. * (array.length-1);
+        if (Math.floor(index) == index) {
+            result = array[index];
+        } else {
+            i = Math.floor(index)
+            fraction = index - i;
+            result = array[i] + (array[i+1] - array[i]) * fraction;
+        }
+        return result;
+    }
+
+    var stats = new Stats();
+    stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild(stats.dom);
+
+    var theCanvas = document.getElementById("benchmark-canvas");
+    var theCanvasContext = theCanvas.getContext("2d");
+
+    // dynamic linking
+    bytecoder.imports.system = {
+        currentTimeMillis: function() {
+            return Date.now();
+        },
+        nanoTime: function() {
+            return Date.now() * 1000000;
+        },
+        writeByteArrayToConsole: function(thisRef, p1) {
+            bytecoder.logByteArrayAsString(p1);
+        },
+        logDebug: function(thisref, p1) {
+            bytecoder.logDebug(p1);
+        },
+    };
+    bytecoder.imports.printstream = {
+        logDebug: function(p1) {
+            bytecoder.logDebug(p1);
+        },
+    };
+    bytecoder.imports.math = {
+        ceil: function(p1) {
+            return Math.ceil(p1);
+        },
+        floor: function(p1) {
+            return Math.floor(p1);
+        },
+        sin: function(p1) {
+            return Math.sin(p1);
+        },
+        cos: function(p1) {
+            return Math.cos(p1);
+        },
+        sqrt: function(p1) {
+            return Math.sqrt(p1);
+        },
+        round: function(p1) {
+            return Math.round(p1);
+        },
+        NaN: function(p1) {
+            return NaN;
+        },
+        atan2: function(p1, p2) {
+            return Math.atan2(p1, p2);
+        },
+        max: function(p1, p2) {
+            return Math.max(p1, p2);
+        },
+        random: function() {
+            return Math.random();
+        },
+        tan: function(p1) {
+            return Math.tan(p1);
+        },
+        toRadians: function(p1) {
+            return Math.toRadians(p1);
+        },
+        toDegrees: function(p1) {
+            return Math.toDegrees(p1);
+        },
+        min: function (p1, p2) {
+            return Math.min(p1, p2);
+        },
+        add: function(p1, p2) {
+            return p1 + p2;
+        }
+    };
+    bytecoder.imports.strictmath = {
+        sin: function(p1) {
+            return Math.sin(p1);
+        },
+        cos: function(p1) {
+            return Math.cos(p1);
+        },
+        sqrt: function(p1) {
+            return Math.sqrt(p1);
+        },
+        round: function(p1) {
+            return Math.round(p1);
+        },
+        atan2: function(p1, p2) {
+            return Math.atan2(p1, p2);
+        },
+    };
+    bytecoder.imports.canvas = {
+        canvasClear : function(thisref) {
+            theCanvasContext.fillStyle = "white";
+            theCanvasContext.strokeStyke = "grey";
+            theCanvasContext.fillRect(0, 0, 600, 600);
+        },
+        contextSave : function(thisref) {
+            theCanvasContext.save();
+        },
+        contextRestore : function(thisref) {
+            theCanvasContext.restore();
+        },
+        contextTranslate : function(thisref,aX, aY) {
+            theCanvasContext.translate(aX, aY);
+        },
+        contextScale : function(thisref,aX, aY) {
+            theCanvasContext.scale(aX, aY);
+        },
+        contextLineWidth : function(thisref,aWidth) {
+            theCanvasContext.lineWidth = aWidth;
+        },
+        contextRotate : function(thisref,aAngleInRadians) {
+            theCanvasContext.rotate(aAngleInRadians);
+        },
+        contextBeginPath : function(thisref) {
+            theCanvasContext.beginPath();
+        },
+        contextClosePath : function(thisref) {
+            theCanvasContext.closePath();
+        },
+        contextMoveTo: function(thisref,aX, aY) {
+            theCanvasContext.moveTo(aX, aY);
+        },
+        contextLineTo : function(thisref,aX, aY) {
+            theCanvasContext.lineTo(aX, aY);
+        },
+        contextArc : function(thisref,x, y, radius, startAngle, endAngle, anticlockwise) {
+            if (anticlockwise == 0) {
+                theCanvasContext.arc(x, y, radius, startAngle, endAngle, false);
+            } else {
+                theCanvasContext.arc(x, y, radius, startAngle, endAngle, true);
+            }
+        },
+        contextStroke : function(thisref) {
+            theCanvasContext.stroke();
+        }
+    };
+
+    var lastRuntime = 0;
+    var lastRuntimeTimeSeries = [];
+
+    bytecoder.imports.debug = {
+        logRuntime : function(aClass, a) {
+            lastRuntimeTimeSeries.push(a);
+            if (lastRuntimeTimeSeries.length > 500) {
+                lastRuntimeTimeSeries.shift();
+            }
+            lastRuntime = (lastRuntime + a) / 2;
+            document.getElementById("stats_avg").innerText = '' + lastRuntime.toFixed(2) + " ms";
+
+            [50, 75, 95, 98, 99].forEach(function (element, index, array) {
+                var q = quantile(lastRuntimeTimeSeries, element).toFixed(2) + " ms";
+                document.getElementById("stats_" + element).innerText = q;
+
+            });
+        }
+    };
+
+    console.log("Init");
+    bytecoder.bootstrap();
+
+    dmbiJBox2DSimulationKotlin.VOIDmainA1jlString();
+    console.log("Ready");
+
+    document.getElementById("button").style.display = "block";
+
+    var stepFunction = function(timestamp) {
+        stats.begin();
+        dmbiJBox2DSimulationKotlin.VOIDproceedSimulation(dmbiJBox2DSimulationKotlin);
+        stats.end();
+
+        window.requestAnimationFrame(stepFunction);
+    };
+
+</script>
+</body>
+</html>
