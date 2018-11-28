@@ -41,7 +41,6 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
     @Override
     protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
         if ((aExpression instanceof VariableAssignmentExpression) ||
-                // (aExpression instanceof IFExpression) ||
                 (aExpression instanceof InvocationExpression) ||
                 (aExpression instanceof ReturnValueExpression)) {
             boolean modified = true;
@@ -59,7 +58,7 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
                         if (theVariableValue.isTrulyFunctional()) {
                             // We can replace the variable with its assigned value
                             // We variable can also be deleted
-                            // We variavle assignment is also no nolger used
+                            // We variable assignment is also no longer used
                             aList.remove(theBefore);
 
                             aExpression.replaceIncomingDataEdgeRecursive(theVariable, theVariableValue);

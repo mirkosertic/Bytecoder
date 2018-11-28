@@ -1415,7 +1415,7 @@ public class WASMSSAASTWriter {
             for (final RegionNode theEntry : theHandler.entries()) {
                 final int theEntryAddress = theEntry.getStartAddress().getAddress();
 
-                final WASMSSAASTWriter block = loop.iff("$case_" + theEntryAddress, i32.eq(getLocal(label), i32.c(theEntryAddress)));
+                final WASMSSAASTWriter block = loop.iff("case_" + theEntryAddress, i32.eq(getLocal(label), i32.c(theEntryAddress)));
                 block.writeReloopedInternal(theHandler);
             }
         }

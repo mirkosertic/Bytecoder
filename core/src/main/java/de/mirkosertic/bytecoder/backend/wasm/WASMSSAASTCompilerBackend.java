@@ -155,8 +155,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         // Instanceof check
         {
             final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("INSTANCEOF_CHECK", Arrays.asList(param("thisRef", PrimitiveType.i32), param("type", PrimitiveType.i32)), PrimitiveType.i32);
-            final Block nullCheck = instanceOfCheck.flow.block("nullcheck");
-            nullCheck.flow.branchIff(nullCheck, i32.ne(getLocal(instanceOfCheck.localByLabel("thisRef")), i32.c(0)));
+            final Iff nullCheck = instanceOfCheck.flow.iff("nullcheck", i32.eq(getLocal(instanceOfCheck.localByLabel("thisRef")), i32.c(0)));
             nullCheck.flow.ret(i32.c(0));
 
             final WASMType instanceOfType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
@@ -419,21 +418,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                         if (theVisitedMethods.add(theMethodIdentifier)) {
 
-                            final Block block = resolveTableIndex.flow.block("b");
-                            block.flow.branchIff(block, i32.ne(getLocal(resolveTableIndex.localByLabel("p1")), i32.c(theMethodIdentifier.getIdentifier())));
+                            final Iff iff = resolveTableIndex.flow.iff("b" + theMethodIdentifier.getIdentifier(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1")), i32.c(theMethodIdentifier.getIdentifier())));
 
                             final String theFullMethodName = WASMWriterUtils
                                     .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
                                             theMethod.getName(),
                                             theMethod.getSignature());
 
-                            block.flow.ret(weakFunctionTableReference(theFullMethodName));
+                            iff.flow.ret(weakFunctionTableReference(theFullMethodName));
                         }
                     }
                 }
 
-                final Block block = resolveTableIndex.flow.block("b");
-                block.flow.branchIff(block, i32.ne(getLocal(resolveTableIndex.localByLabel("p1")), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID)));
+                final Iff block = resolveTableIndex.flow.iff("b", i32.eq(getLocal(resolveTableIndex.localByLabel("p1")), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID)));
                 final int theIndex = module.getTables().funcTable().indexOf(instanceOf);
                 block.flow.ret(i32.c(theIndex));
 
@@ -592,8 +589,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             final ExportableFunction initFunction = module.functionIndex().firstByLabel(theClassName + "__classinitcheck");
             final Global initGlobal = module.globalsIndex().globalByLabel(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
-            final Block check = initFunction.flow.block("check");
-            check.flow.branchIff(check, i32.eq(i32.load(8, getGlobal(initGlobal)), i32.c(1)));
+            final Iff check = initFunction.flow.iff("check", i32.ne(i32.load(8, getGlobal(initGlobal)), i32.c(1)));
             check.flow.i32.store(8, getGlobal(initGlobal), i32.c(1));
 
             for (final BytecodeObjectTypeRef theRef : theStaticReferences) {
