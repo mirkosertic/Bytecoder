@@ -545,6 +545,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.flush();
 
-        return new JSCompileResult(new JSCompileResult.JSContent("bytecoder.js", theStrWriter.toString()));
+        return new JSCompileResult(new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js", theStrWriter.toString()));
     }
 }

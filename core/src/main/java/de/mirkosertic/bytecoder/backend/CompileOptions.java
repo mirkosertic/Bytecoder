@@ -24,12 +24,15 @@ public class CompileOptions {
     private final boolean debugOutput;
     private final Optimizer optimizer;
     private final boolean enableExceptions;
+    private final String filenamePrefix;
 
-    public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions) {
+    public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
+                          final String aFilenamePrefix) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
-        this.enableExceptions = aEnableExceptions;
+        enableExceptions = aEnableExceptions;
+        filenamePrefix = aFilenamePrefix;
     }
 
     public Logger getLogger() {
@@ -46,5 +49,9 @@ public class CompileOptions {
 
     public boolean isEnableExceptions() {
         return enableExceptions;
+    }
+
+    public String getFilenamePrefix() {
+        return filenamePrefix;
     }
 }

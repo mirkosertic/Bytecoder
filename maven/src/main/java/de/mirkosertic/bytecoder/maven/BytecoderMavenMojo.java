@@ -126,6 +126,11 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "SIMPLE_OPTIMIZATIONS")
     protected String closureOptimizationLevel;
 
+    /**
+     * Prefix of the generated files.
+     */
+    @Parameter(required = false, defaultValue = "bytecoder")
+    protected String filenamePrefix;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -142,7 +147,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling);
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix);
             final CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

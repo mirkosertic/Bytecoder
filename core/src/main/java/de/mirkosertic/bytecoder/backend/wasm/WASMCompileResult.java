@@ -59,16 +59,18 @@ public class WASMCompileResult implements CompileResult<String> {
     public static class WASMTextualCompileResult extends WASMCompileContent {
 
         private final String data;
+        private final String filenamePrefix;
 
         public WASMTextualCompileResult(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                        final List<String> generatedFunctions, final String data) {
+                                        final List<String> generatedFunctions, final String data, final String afilenamePrefix) {
             super(memoryLayouter, linkerContext, generatedFunctions);
             this.data = data;
+            this.filenamePrefix = afilenamePrefix;
         }
 
         @Override
         public String getFileName() {
-            return "bytecoder.wat";
+            return filenamePrefix + ".wat";
         }
 
         @Override
@@ -82,16 +84,18 @@ public class WASMCompileResult implements CompileResult<String> {
     public static class WASMBinaryCompileResult extends WASMCompileContent {
 
         private final byte[] data;
+        private final String filenamePrefix;
 
         public WASMBinaryCompileResult(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                        final List<String> generatedFunctions, final byte[] data) {
+                                       final List<String> generatedFunctions, final byte[] data, final String filenamePrefix) {
             super(memoryLayouter, linkerContext, generatedFunctions);
             this.data = data;
+            this.filenamePrefix = filenamePrefix;
         }
 
         @Override
         public String getFileName() {
-            return "bytecoder.wasm";
+            return filenamePrefix + ".wasm";
         }
 
         @Override

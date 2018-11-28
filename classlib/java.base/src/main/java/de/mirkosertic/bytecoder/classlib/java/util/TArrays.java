@@ -23,29 +23,37 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
 
-    public static void sort(Object[] aData, int aStart, int aEnd) {
+    public static void sort(final Object[] aData, final int aStart, final int aEnd) {
     }
 
-    public static <T> List<T> asList(T... aValues) {
-        ArrayList<T> theResult = new ArrayList<>();
-        for (T theValue : aValues) {
+    public static <T> List<T> asList(final T... aValues) {
+        final ArrayList<T> theResult = new ArrayList<>();
+        for (final T theValue : aValues) {
             theResult.add(theValue);
         }
         return theResult;
     }
 
-    public static <T> T[] copyOf(T[] original, int newLength) {
+    public static <T> T[] copyOf(final T[] original, final int newLength) {
         return copyOf(original, newLength, null);
     }
 
-    public static <T> T[] copyOf(T[] original, int newLength, Class aType) {
+    public static <T> T[] copyOf(final T[] original, final int newLength, final Class aType) {
         int theMax = original.length;
         if (newLength < theMax) {
             theMax = newLength;
         }
-        T[] theResult = (T[]) new Object[newLength];
+        final T[] theResult = (T[]) new Object[newLength];
         for (int i=0;i<theMax;i++) {
             theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static <T> T[] copyOfRange(final T[] original, final int from, final int to, final Class aType) {
+        final T[] theResult = (T[]) new Object[to - from];
+        for (int i=from;i<to;i++) {
+            theResult[i-from] = original[i];
         }
         return theResult;
     }
