@@ -24,6 +24,17 @@ The *WebAssembly* backend transforms the intermediate representation into WebAss
 The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
 existing programs running on the JVM to utilize the vast power of modern GPUs.
 
+## Demos
+
+![Demo screenshot](docassets/jbox2ddemo.png)
+
+ Demo                                            |                                   
+-------------------------------------------------|
+ [JBox2D Demo compiled from Java to JavaScript](https://www.mirkosertic.de/examples/jbox2d/index.html)    |  
+ [JBox2D Demo compiled from Java to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/indexwasm.html)   |
+ [JBox2D Demo compiled from Kotlin to JavaScript](https://www.mirkosertic.de/examples/jbox2d/index-kotlin.html)  |  
+ [JBox2D Demo compiled from Kotlin to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/indexwasm-kotlin.html) |
+
 ## Using OpenCL
 
 The following program demonstrates the use of the Bytecoder `OpenCL` backend embedded into a JVM program:
@@ -102,7 +113,7 @@ There is Bytecoder Maven Plugin available.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2018-11-25</version>
+            <version>2018-11-29</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
@@ -133,7 +144,7 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2018-11-25</version>
+            <version>2018-11-29</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>wasm</backend>
