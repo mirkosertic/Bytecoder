@@ -82,14 +82,11 @@ public class JBox2DSimulation {
 
 ### Calling exported functionality from JavaScript
 
-Easy, just call the method:
+Just call an exported method using the Bytecoder module API:
 
 ```
-JBox2DSimulation.VOIDproceedSimulation();
+bytecoder.exports.proceedSimulation();
 ```
-
-The JavaScript makes all methods available, inclusive private, protected or not 
-`@de.mirkosertic.bytecoder.api.Export`annotated methods.
 
 ### Calling exported functionality from WebAssembly
 

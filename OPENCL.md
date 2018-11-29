@@ -13,7 +13,7 @@ PlatformFactory theFactory = new PlatformFactory();
 Platform thePlatform = theFactory.createPlatform();
 ```
 
-The `Platform` instance must only be ontained only once and can be cached.
+The `Platform` instance must only be ontained once and can be cached.
 
 If you have multiple GPUs or a system with NVIDIA Optimus technology, you
 have multiple OpenCL platform available. One for the NVIDIA GPU, and another
