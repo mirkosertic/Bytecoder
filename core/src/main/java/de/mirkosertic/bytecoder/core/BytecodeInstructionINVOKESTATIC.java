@@ -32,7 +32,7 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericI
 
         if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()))
                 .resolveStaticMethod(theName.stringValue(), theSig)) {
-            throw new IllegalStateException("Cannot find static method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " wizh signature " +theSig.toString());
+            throw new IllegalStateException("Cannot find static method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
         }
 
     }
