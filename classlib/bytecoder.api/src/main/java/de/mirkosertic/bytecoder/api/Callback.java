@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.api;
 
-public class HTMLDocument {
+public interface Callback<T extends OpaqueReferenceType> {
 
-    public <T extends Element> T getElementById(String aId) {
-        return(T)  new Canvas(aId);
-    }
+    void apply(T aValue);
 }

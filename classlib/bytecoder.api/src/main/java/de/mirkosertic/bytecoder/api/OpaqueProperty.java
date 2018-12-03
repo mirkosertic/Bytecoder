@@ -13,19 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.api;
 
-public class Canvas extends Element {
+public @interface OpaqueProperty {
 
-    private final String id;
-    private final CanvasRenderingContext2D renderingContext2D;
-
-    public Canvas(String aId) {
-        id = aId;
-        renderingContext2D = new CanvasRenderingContext2D(this);
-    }
-
-    public CanvasRenderingContext2D getContext() {
-        return renderingContext2D;
-    }
+    String value() default "";
 }

@@ -15,8 +15,17 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+public class HTMLCanvasElement extends Element {
 
-public abstract class Element implements OpaqueReferenceType {
+    private final String id;
+    private final CanvasRenderingContext2D renderingContext2D;
 
+    public HTMLCanvasElement(String aId) {
+        id = aId;
+        renderingContext2D = new CanvasRenderingContext2D(this);
+    }
+
+    public CanvasRenderingContext2D getContext() {
+        return renderingContext2D;
+    }
 }
