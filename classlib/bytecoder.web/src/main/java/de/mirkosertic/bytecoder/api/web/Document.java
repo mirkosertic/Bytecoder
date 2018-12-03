@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public abstract class Element implements OpaqueReferenceType {
+public class Document implements OpaqueReferenceType {
 
+    public <T extends Element> T getElementById(String aId) {
+        return(T)  new HTMLCanvasElement(aId);
+    }
 }

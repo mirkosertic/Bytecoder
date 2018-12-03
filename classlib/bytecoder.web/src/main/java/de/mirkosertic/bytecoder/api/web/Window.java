@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-public class Window {
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-    public static HTMLDocument document() {
-        return new HTMLDocument();
+public class Window implements OpaqueReferenceType {
+
+    public static Document document() {
+        return new Document();
     }
 }

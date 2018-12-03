@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.integrationtest
 
 import de.mirkosertic.bytecoder.api.Export
 import de.mirkosertic.bytecoder.api.Import
-import de.mirkosertic.bytecoder.api.web.Canvas
+import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D
 import de.mirkosertic.bytecoder.api.web.Window
 import org.jbox2d.collision.shapes.CircleShape
@@ -165,7 +165,7 @@ object JBox2DSimulationKotlin {
     @JvmStatic
     fun main(args: Array<String>?) {
         scene = JBox2DSimulation.Scene()
-        val theCanvas = Window.document().getElementById<Canvas>("benchmark-canvas")
+        val theCanvas = Window.document().getElementById<HTMLCanvasElement>("benchmark-canvas")
         renderingContext2D = theCanvas.context
     }
 

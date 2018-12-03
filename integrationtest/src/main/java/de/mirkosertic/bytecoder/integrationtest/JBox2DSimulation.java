@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.integrationtest;
 
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.web.Canvas;
+import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement;
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
 import de.mirkosertic.bytecoder.api.web.Window;
 import org.jbox2d.collision.shapes.CircleShape;
@@ -36,11 +36,11 @@ import org.jbox2d.dynamics.joints.RevoluteJointDef;
 public class JBox2DSimulation {
 
     public static class Scene {
-        private World world;
+        private final World world;
         private Body axis;
         private Body reel;
         private long lastCalculated;
-        private long startTime;
+        private final long startTime;
 
         public Scene() {
             world = new World(new Vec2(0, -9.8f));
@@ -175,7 +175,7 @@ public class JBox2DSimulation {
 
     public static void main(String[] args) {
         scene = new Scene();
-        Canvas theCanvas = Window.document().getElementById("benchmark-canvas");
+        HTMLCanvasElement theCanvas = Window.document().getElementById("benchmark-canvas");
         renderingContext2D = theCanvas.getContext();
     }
 

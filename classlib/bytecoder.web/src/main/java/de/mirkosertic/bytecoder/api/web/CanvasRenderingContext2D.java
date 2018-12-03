@@ -16,12 +16,13 @@
 package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public class CanvasRenderingContext2D {
+public class CanvasRenderingContext2D implements OpaqueReferenceType {
 
-    private final Canvas owningCanvas;
+    private final HTMLCanvasElement owningCanvas;
 
-    public CanvasRenderingContext2D(Canvas aOwningCanvas) {
+    public CanvasRenderingContext2D(HTMLCanvasElement aOwningCanvas) {
         owningCanvas = aOwningCanvas;
     }
 

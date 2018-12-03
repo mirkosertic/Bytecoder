@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.api;
 
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
-
-public abstract class Element implements OpaqueReferenceType {
-
+public interface OpaqueReferenceType {
 }
