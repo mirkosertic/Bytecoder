@@ -138,6 +138,26 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     },");
 
         theWriter.println();
+        theWriter.println("     toBytecoderString: function(aJSString) {");
+        theWriter.println("         var theLength = aJSString.length;");
+        theWriter.println("         var theArray = [];");
+        theWriter.println("         for (var i=0;i<theLength;i++) {");
+        theWriter.println("             theArray.push(aJSString.charCodeAt(i));");
+        theWriter.println("         }");
+        theWriter.println("         return bytecoder.newString(theArray);");
+        theWriter.println("     },");
+        theWriter.println();
+
+        theWriter.println("     toJSString: function(aBytecoderString) {");
+        theWriter.println("         var theArray = aBytecoderString.data.data;");
+        theWriter.println("         var theResult = '';");
+        theWriter.println("         for (var i=0;i<theArray.length;i++) {");
+        theWriter.println("             theResult+=String.fromCharCode(theArray[i]);");
+        theWriter.println("         }");
+        theWriter.println("         return theResult;");
+        theWriter.println("     },");
+
+        theWriter.println();
         theWriter.println("     dynamicType : function(aFunction) { ");
         theWriter.println("         return new Proxy({}, {");
         theWriter.println("             get: function(target, name) {");

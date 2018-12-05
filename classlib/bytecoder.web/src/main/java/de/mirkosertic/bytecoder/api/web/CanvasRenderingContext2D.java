@@ -16,18 +16,27 @@
 package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public class CanvasRenderingContext2D implements OpaqueReferenceType {
 
     private final HTMLCanvasElement owningCanvas;
 
-    public CanvasRenderingContext2D(HTMLCanvasElement aOwningCanvas) {
+    public CanvasRenderingContext2D(final HTMLCanvasElement aOwningCanvas) {
         owningCanvas = aOwningCanvas;
     }
 
-    @Import(module = "canvas", name = "canvasClear")
-    public native void clear();
+    @OpaqueProperty
+    @Import(module = "canvas", name = "setFillStyle")
+    public native void setFillStyle(String aStyle);
+
+    @OpaqueProperty
+    @Import(module = "canvas", name = "setStrokeStyle")
+    public native void setStrokeStyle(String aStyle);
+
+    @Import(module = "canvas", name = "fillRect")
+    public native void fillRect(float x, float y, float width, float height);
 
     @Import(module = "canvas", name = "contextSave")
     public native void save();
@@ -41,8 +50,9 @@ public class CanvasRenderingContext2D implements OpaqueReferenceType {
     @Import(module = "canvas", name = "contextScale")
     public native void scale(float aX, float aY);
 
-    @Import(module = "canvas", name = "contextLineWidth")
-    public native void lineWidth(float aWidth);
+    @Import(module = "canvas", name = "setLineWidth")
+    @OpaqueProperty
+    public native void setLineWidth(float aWidth);
 
     @Import(module = "canvas", name = "contextRotate")
     public native void rotate(float aAngleInRadians);

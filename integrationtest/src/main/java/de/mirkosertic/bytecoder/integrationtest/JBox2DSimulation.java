@@ -53,43 +53,43 @@ public class JBox2DSimulation {
         }
 
         private void initAxis() {
-            BodyDef axisDef = new BodyDef();
+            final BodyDef axisDef = new BodyDef();
             axisDef.type = BodyType.STATIC;
             axisDef.position = new Vec2(3, 3);
             axis = world.createBody(axisDef);
 
-            CircleShape axisShape = new CircleShape();
+            final CircleShape axisShape = new CircleShape();
             axisShape.setRadius(0.02f);
             axisShape.m_p.set(0, 0);
 
-            FixtureDef axisFixture = new FixtureDef();
+            final FixtureDef axisFixture = new FixtureDef();
             axisFixture.shape = axisShape;
             axis.createFixture(axisFixture);
         }
 
         private void initReel() {
-            BodyDef reelDef = new BodyDef();
+            final BodyDef reelDef = new BodyDef();
             reelDef.type = BodyType.DYNAMIC;
             reelDef.position = new Vec2(3, 3);
             reel = world.createBody(reelDef);
 
-            FixtureDef fixture = new FixtureDef();
+            final FixtureDef fixture = new FixtureDef();
             fixture.friction = 0.5f;
             fixture.restitution = 0.4f;
             fixture.density = 1;
 
-            int parts = 30;
+            final int parts = 30;
             for (int i = 0; i < parts; ++i) {
-                PolygonShape shape = new PolygonShape();
-                double angle1 = i / (double) parts * 2 * Math.PI;
-                double x1 = 2.7 * Math.cos(angle1);
-                double y1 = 2.7 * Math.sin(angle1);
-                double angle2 = (i + 1) / (double) parts * 2 * Math.PI;
-                double x2 = 2.7 * Math.cos(angle2);
-                double y2 = 2.7 * Math.sin(angle2);
-                double angle = (angle1 + angle2) / 2;
-                double x = 0.01 * Math.cos(angle);
-                double y = 0.01 * Math.sin(angle);
+                final PolygonShape shape = new PolygonShape();
+                final double angle1 = i / (double) parts * 2 * Math.PI;
+                final double x1 = 2.7 * Math.cos(angle1);
+                final double y1 = 2.7 * Math.sin(angle1);
+                final double angle2 = (i + 1) / (double) parts * 2 * Math.PI;
+                final double x2 = 2.7 * Math.cos(angle2);
+                final double y2 = 2.7 * Math.sin(angle2);
+                final double angle = (angle1 + angle2) / 2;
+                final double x = 0.01 * Math.cos(angle);
+                final double y = 0.01 * Math.sin(angle);
 
                 shape.set(new Vec2[] { new Vec2((float) x1, (float) y1), new Vec2((float) x2, (float) y2),
                         new Vec2((float) (x2 - x), (float) (y2 - y)), new Vec2((float) (x1 - x), (float) (y1 - y)) }, 4);
@@ -99,22 +99,22 @@ public class JBox2DSimulation {
         }
 
         private void initBalls() {
-            float ballRadius = 0.15f;
+            final float ballRadius = 0.15f;
 
-            BodyDef ballDef = new BodyDef();
+            final BodyDef ballDef = new BodyDef();
             ballDef.type = BodyType.DYNAMIC;
-            FixtureDef fixtureDef = new FixtureDef();
+            final FixtureDef fixtureDef = new FixtureDef();
             fixtureDef.friction = 0.3f;
             fixtureDef.restitution = 0.3f;
             fixtureDef.density = 0.2f;
-            CircleShape shape = new CircleShape();
+            final CircleShape shape = new CircleShape();
             shape.m_radius = ballRadius;
             fixtureDef.shape = shape;
 
             for (int i = 0; i < 6; ++i) {
                 for (int j = 0; j < 6; ++j) {
-                    float x = (j + 0.5f) * (ballRadius * 2 + 0.01f);
-                    float y = (i + 0.5f) * (ballRadius * 2 + 0.01f);
+                    final float x = (j + 0.5f) * (ballRadius * 2 + 0.01f);
+                    final float y = (i + 0.5f) * (ballRadius * 2 + 0.01f);
                     ballDef.position.x = 3 + x;
                     ballDef.position.y = 3 + y;
                     Body body = world.createBody(ballDef);
@@ -139,23 +139,23 @@ public class JBox2DSimulation {
         }
 
         private void joinReelToAxis() {
-            RevoluteJointDef jointDef = new RevoluteJointDef();
+            final RevoluteJointDef jointDef = new RevoluteJointDef();
             jointDef.bodyA = axis;
             jointDef.bodyB = reel;
             world.createJoint(jointDef);
         }
 
         public void calculate() {
-            long currentTime = System.currentTimeMillis();
+            final long currentTime = System.currentTimeMillis();
             int timeToCalculate = (int) (currentTime - lastCalculated);
-            long relativeTime = currentTime - startTime;
+            final long relativeTime = currentTime - startTime;
             System.out.println("Start of calculation");
             System.out.println(currentTime);
             System.out.println(timeToCalculate);
             while (timeToCalculate > 10) {
                 System.out.println("One step");
                 System.out.println((long) timeToCalculate);
-                int period = (int) ((relativeTime + 5000) / 10000);
+                final int period = (int) ((relativeTime + 5000) / 10000);
                 reel.applyTorque(period % 2 == 0 ? 8f : -8f);
                 world.step(0.01f, 20, 40);
                 lastCalculated += 10;
@@ -173,20 +173,21 @@ public class JBox2DSimulation {
     private static Scene scene;
     private static CanvasRenderingContext2D renderingContext2D;
 
-    public static void main(String[] args) {
+    @Export("main")
+    public static void main(final String[] args) {
         scene = new Scene();
-        HTMLCanvasElement theCanvas = Window.document().getElementById("benchmark-canvas");
-        renderingContext2D = theCanvas.getContext();
+        final HTMLCanvasElement theCanvas = Window.window().document().getElementById("benchmark-canvas");
+        renderingContext2D = theCanvas.getContext("2d");
     }
 
     @Export("proceedSimulation")
     public static void proceedSimulation() {
-        long theNow = System.currentTimeMillis();
+        final long theNow = System.currentTimeMillis();
         scene.calculate();
 
         render();
 
-        long theDuration = System.currentTimeMillis() - theNow;
+        final long theDuration = System.currentTimeMillis() - theNow;
         logRuntime((int) theDuration);
     }
 
@@ -194,28 +195,30 @@ public class JBox2DSimulation {
     public static native void logRuntime(int aValue);
 
     private static void render() {
-        renderingContext2D.clear();
+        renderingContext2D.setFillStyle("white");
+        renderingContext2D.setStrokeStyle("black");
+        renderingContext2D.fillRect(0, 0, 600, 600);
         renderingContext2D.save();
         renderingContext2D.translate(0, 600);
         renderingContext2D.scale(1, -1);
         renderingContext2D.scale(100, 100);
-        renderingContext2D.lineWidth(0.01f);
+        renderingContext2D.setLineWidth(0.01f);
         for (Body body = scene.getWorld().getBodyList(); body != null; body = body.getNext()) {
-            Vec2 center = body.getPosition();
+            final Vec2 center = body.getPosition();
             renderingContext2D.save();
             renderingContext2D.translate(center.x, center.y);
             renderingContext2D.rotate(body.getAngle());
             for (Fixture fixture = body.getFixtureList(); fixture != null; fixture = fixture.getNext()) {
-                Shape shape = fixture.getShape();
+                final Shape shape = fixture.getShape();
                 if (shape.getType() == ShapeType.CIRCLE) {
-                    CircleShape circle = (CircleShape) shape;
+                    final CircleShape circle = (CircleShape) shape;
                     renderingContext2D.beginPath();
                     renderingContext2D.arc(circle.m_p.x, circle.m_p.y, circle.getRadius(), 0, Math.PI * 2, true);
                     renderingContext2D.closePath();
                     renderingContext2D.stroke();
                 } else if (shape.getType() == ShapeType.POLYGON) {
-                    PolygonShape poly = (PolygonShape) shape;
-                    Vec2[] vertices = poly.getVertices();
+                    final PolygonShape poly = (PolygonShape) shape;
+                    final Vec2[] vertices = poly.getVertices();
                     renderingContext2D.beginPath();
                     renderingContext2D.moveTo(vertices[0].x, vertices[0].y);
                     for (int i = 1; i < poly.getVertexCount(); ++i) {

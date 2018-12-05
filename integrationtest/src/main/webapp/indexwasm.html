@@ -134,10 +134,16 @@
                     }
                 },
                 canvas: {
-                    canvasClear : function(aCaller) {
+                    fillRect : function(aCaller, x, y, width, height) {
+                        theCanvasContext.fillRect(x, y, width, height);
+                    },
+
+                    setFillStyle : function(aCaller, aStyle) {
                         theCanvasContext.fillStyle = "white";
-                        theCanvasContext.strokeStyke = "grey";
-                        theCanvasContext.fillRect(0, 0, 600, 600);
+                    },
+
+                    setStrokeStyle : function(aCaller, aStyle) {
+                        theCanvasContext.strokeStyle = "black";
                     },
 
                     contextSave : function(aCaller) {
@@ -156,7 +162,7 @@
                         theCanvasContext.scale(aX, aY);
                     },
 
-                    contextLineWidth : function(aCaller, aWidth) {
+                    setLineWidth : function(aCaller, aWidth) {
                         theCanvasContext.lineWidth = aWidth;
                     },
 
