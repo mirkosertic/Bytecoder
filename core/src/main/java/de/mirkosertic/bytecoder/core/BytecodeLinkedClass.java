@@ -15,8 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.graph.Node;
 
 import java.util.HashMap;
@@ -47,12 +49,44 @@ public class BytecodeLinkedClass extends Node {
     private final BytecodeClass bytecodeClass;
     private final BytecodeLinkerContext linkerContext;
     private BytecodeMethod classInitializer;
+    private Boolean opaque;
+    private Boolean callback;
 
     public BytecodeLinkedClass(final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkerContext = aLinkerContext;
+    }
+
+    public boolean isOpaqueType() {
+        if (opaque != null) {
+            return opaque;
+        }
+        final Set<BytecodeLinkedClass> theImplementingTypes = getImplementingTypes();
+        for (final BytecodeLinkedClass theClass : theImplementingTypes) {
+            if (theClass.getClassName().name().equals(OpaqueReferenceType.class.getName())) {
+                opaque = true;
+                return opaque;
+            }
+        }
+        opaque = false;
+        return opaque;
+    }
+
+    public boolean isCallback() {
+        if (callback != null) {
+            return callback;
+        }
+        final Set<BytecodeLinkedClass> theImplementingTypes = getImplementingTypes();
+        for (final BytecodeLinkedClass theClass : theImplementingTypes) {
+            if (theClass.getClassName().name().equals(Callback.class.getName())) {
+                callback = true;
+                return callback;
+            }
+        }
+        callback = false;
+        return callback;
     }
 
     public boolean emulatedByRuntime() {

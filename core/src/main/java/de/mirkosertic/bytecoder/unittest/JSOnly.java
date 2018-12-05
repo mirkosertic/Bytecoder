@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-public class Document extends Element {
-
-    @OpaqueProperty
-    public String getTitle() {
-        return "hallo";
-    }
-
-    @OpaqueProperty
-    public void setTitle(final String aValue) {
-    }
-
-    public <T extends Element> T getElementById(final String aId) {
-        return(T)  new HTMLCanvasElement(aId);
-    }
+@Retention(RetentionPolicy.RUNTIME)
+public @interface JSOnly {
 }

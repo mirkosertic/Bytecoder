@@ -163,10 +163,11 @@ object JBox2DSimulationKotlin {
     }
 
     @JvmStatic
+    @Export("main")
     fun main(args: Array<String>?) {
         scene = JBox2DSimulation.Scene()
-        val theCanvas = Window.document().getElementById<HTMLCanvasElement>("benchmark-canvas")
-        renderingContext2D = theCanvas.context
+        val theCanvas = Window.window().document().getElementById<HTMLCanvasElement>("benchmark-canvas")
+        renderingContext2D = theCanvas.getContext("2d")
     }
 
     @Export("proceedSimulation")
@@ -184,12 +185,14 @@ object JBox2DSimulationKotlin {
     external fun logRuntime(aValue: Int)
 
     private fun render() {
-        renderingContext2D!!.clear()
+        renderingContext2D!!.setFillStyle("white")
+        renderingContext2D!!.setStrokeStyle("black")
+        renderingContext2D!!.fillRect(0f, 0f, 600f, 600f)
         renderingContext2D!!.save()
         renderingContext2D!!.translate(0f, 600f)
         renderingContext2D!!.scale(1f, -1f)
         renderingContext2D!!.scale(100f, 100f)
-        renderingContext2D!!.lineWidth(0.01f)
+        renderingContext2D!!.setLineWidth(0.01f)
         var body: Body? = scene!!.world.bodyList
         while (body != null) {
             val center = body.position

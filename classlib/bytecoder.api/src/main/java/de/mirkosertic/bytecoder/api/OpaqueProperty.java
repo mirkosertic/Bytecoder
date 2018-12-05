@@ -15,6 +15,10 @@
  */
 package de.mirkosertic.bytecoder.api;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Retention(RetentionPolicy.RUNTIME)
 public @interface OpaqueProperty {
 
     String value() default "";

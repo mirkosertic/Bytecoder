@@ -137,51 +137,9 @@
             return Math.atan2(p1, p2);
         },
     };
-    bytecoder.imports.canvas = {
-        canvasClear : function(thisref) {
-            theCanvasContext.fillStyle = "white";
-            theCanvasContext.strokeStyke = "grey";
-            theCanvasContext.fillRect(0, 0, 600, 600);
-        },
-        contextSave : function(thisref) {
-            theCanvasContext.save();
-        },
-        contextRestore : function(thisref) {
-            theCanvasContext.restore();
-        },
-        contextTranslate : function(thisref,aX, aY) {
-            theCanvasContext.translate(aX, aY);
-        },
-        contextScale : function(thisref,aX, aY) {
-            theCanvasContext.scale(aX, aY);
-        },
-        contextLineWidth : function(thisref,aWidth) {
-            theCanvasContext.lineWidth = aWidth;
-        },
-        contextRotate : function(thisref,aAngleInRadians) {
-            theCanvasContext.rotate(aAngleInRadians);
-        },
-        contextBeginPath : function(thisref) {
-            theCanvasContext.beginPath();
-        },
-        contextClosePath : function(thisref) {
-            theCanvasContext.closePath();
-        },
-        contextMoveTo: function(thisref,aX, aY) {
-            theCanvasContext.moveTo(aX, aY);
-        },
-        contextLineTo : function(thisref,aX, aY) {
-            theCanvasContext.lineTo(aX, aY);
-        },
-        contextArc : function(thisref,x, y, radius, startAngle, endAngle, anticlockwise) {
-            if (anticlockwise == 0) {
-                theCanvasContext.arc(x, y, radius, startAngle, endAngle, false);
-            } else {
-                theCanvasContext.arc(x, y, radius, startAngle, endAngle, true);
-            }
-        },
-        contextStroke : function(thisref) {
-            theCanvasContext.stroke();
+    bytecoder.imports.runtime = {
+        nativewindow: function() {
+            return window;
         }
     };
 
@@ -208,14 +166,14 @@
     console.log("Init");
     bytecoder.bootstrap();
 
-    dmbiJBox2DSimulationKotlin.VOIDmainA1jlString();
+    bytecoder.exports.main();
     console.log("Ready");
 
     document.getElementById("button").style.display = "block";
 
     var stepFunction = function(timestamp) {
         stats.begin();
-        dmbiJBox2DSimulationKotlin.VOIDproceedSimulation(dmbiJBox2DSimulationKotlin);
+        bytecoder.exports.proceedSimulation(dmbiJBox2DSimulationKotlin);
         stats.end();
 
         window.requestAnimationFrame(stepFunction);

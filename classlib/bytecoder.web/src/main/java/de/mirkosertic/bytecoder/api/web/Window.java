@@ -15,11 +15,19 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public class Window implements OpaqueReferenceType {
 
-    public static Document document() {
+    @Import(module = "runtime", name = "nativewindow")
+    public static Window window() {
+        return new Window();
+    }
+
+    @OpaqueProperty("document")
+    public Document document() {
         return new Document();
     }
 }

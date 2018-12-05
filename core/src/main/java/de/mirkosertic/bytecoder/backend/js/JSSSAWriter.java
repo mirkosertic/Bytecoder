@@ -15,19 +15,17 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.lang.reflect.Array;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueMethod;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -103,6 +101,13 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+
+import java.io.PrintWriter;
+import java.lang.reflect.Array;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class JSSSAWriter extends IndentSSAWriter {
 
@@ -601,54 +606,249 @@ public class JSSSAWriter extends IndentSSAWriter {
         print(".Create()");
     }
 
+    private String conversionFunctionToBytecoderForOpaqueType(final BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            return null;
+        } else if (aTypeRef.isArray()) {
+            throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+        } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+            return("bytecoder.toBytecoderString");
+        } else {
+            final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType);
+            if (theLinkedClass.isOpaqueType()) {
+                return null;
+            } else {
+                throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
+            }
+        }
+    }
+
+    private void printToJSConvertedValue(final BytecodeTypeRef aTypeRef, final Value aValue) {
+        if (aTypeRef.isPrimitive()) {
+            print(aValue);
+        } else if (aTypeRef.isArray()) {
+            throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+        } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+            print("bytecoder.toJSString(");
+            print(aValue);
+            print(")");
+        } else {
+            final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType);
+            if (theLinkedClass.isOpaqueType()) {
+                print(aValue);
+            } else if (theLinkedClass.isCallback()) {
+                print("function(event) {");
+                print(aValue);
+                print(".apply(event);");
+                print("}");
+            } else {
+                throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+            }
+        }
+    }
+
     private void print(final InvokeStaticMethodExpression aValue) {
+
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        final List<Value> theVariables = aValue.incomingDataFlows();
+        if (theClass.isOpaqueType()) {
+            // It is an opaque type
+            // In this case, the method can be annotated with an @Import
+            // or just be native
+            final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+            final BytecodeAnnotation theImport = theMethod.getAttributes().getAnnotationByType(Import.class.getName());
+            if (theImport != null) {
+                // Method implementation is provided the runtime,we need special handling
+                final String theModuleName = theImport.getElementValueByName("module").stringValue();
+                final String theObjectName = theImport.getElementValueByName("name").stringValue();
 
-        print(JSWriterUtils.toClassName(aValue.getClassName()));
-        print(".");
-        print(JSWriterUtils.toMethodName(theMethodName, theSignature));
-        print("(");
+                if (theSignature.getReturnType().isVoid()) {
+                    throw new IllegalStateException("Don't know how to handle imported method with return type void!");
+                }
 
-        for (int i = 0; i < theVariables.size(); i++) {
-            if (i> 0) {
-                print(",");
+                final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(theSignature.getReturnType());
+                if (theReturnConvertFunction != null) {
+                    print(theReturnConvertFunction);
+                    print("(");
+                }
+                print("bytecoder.imports.");
+                print(theModuleName);
+                print(".");
+                print(theObjectName);
+                print("(");
+
+                final List<Value> theVariables = aValue.incomingDataFlows();
+
+                for (int i = 0; i < theVariables.size(); i++) {
+                    if (i> 0) {
+                        print(",");
+                    }
+                    printToJSConvertedValue(theSignature.getArguments()[i], theVariables.get(i));
+                }
+                print(")");
+
+                if (theReturnConvertFunction != null) {
+                    print(")");
+                }
+            } else {
+                // We continue the normal flow, as method implementation is provided by the bytecode
+                print(JSWriterUtils.toClassName(aValue.getClassName()));
+                print(".");
+                print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+                print("(");
+
+                final List<Value> theVariables = aValue.incomingDataFlows();
+
+                for (int i = 0; i < theVariables.size(); i++) {
+                    if (i> 0) {
+                        print(",");
+                    }
+                    print(theVariables.get(i));
+                }
+                print(")");
             }
-            print(theVariables.get(i));
+        } else {
+
+            print(JSWriterUtils.toClassName(aValue.getClassName()));
+            print(".");
+            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            print("(");
+
+            final List<Value> theVariables = aValue.incomingDataFlows();
+
+            for (int i = 0; i < theVariables.size(); i++) {
+                if (i> 0) {
+                    print(",");
+                }
+                print(theVariables.get(i));
+            }
+            print(")");
+
         }
-        print(")");
     }
 
     private void print(final DirectInvokeMethodExpression aValue) {
+
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
 
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
         final List<Value> theIncomingData = aValue.incomingDataFlows();
-
         final Value theTarget = theIncomingData.get(0);
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
-        if (!"<init>".equals(theMethodName)) {
-            print(theTarget);
-            print(".");
-            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+        final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+
+        if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
+            writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
-            print(JSWriterUtils.toClassName(aValue.getClazz()));
+
+            if (!"<init>".equals(theMethodName)) {
+                print(theTarget);
+                print(".");
+                print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            } else {
+                print(JSWriterUtils.toClassName(aValue.getClazz()));
+                print(".");
+                print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            }
+            print("(");
+
+            print(theTarget);
+
+            for (final Value theArgument : theArguments) {
+                print(",");
+                print(theArgument);
+            }
+            print(")");
+        }
+    }
+
+    private void writeOpaqueMethodInvocation(final BytecodeMethodSignature aMethodSignature, final Value aInvocationTarget, final List<Value> aMethodArguments, final BytecodeMethod aMethodImplementation) {
+        final BytecodeAnnotation theProperty = aMethodImplementation.getAttributes().getAnnotationByType(OpaqueProperty.class.getName());
+        if (theProperty != null) {
+            //
+            final String theMethodName = aMethodImplementation.getName().stringValue();
+            // This is a property access
+            final BytecodeAnnotation.ElementValue theValue = theProperty.getElementValueByName("value");
+            String theOpaquePropertyName;
+            if (theValue == null) {
+                if (theMethodName.startsWith("get")) {
+                    theOpaquePropertyName = theMethodName.substring(3);
+                } else if (theMethodName.startsWith("is")) {
+                    theOpaquePropertyName = theMethodName.substring(2);
+                } else if (theMethodName.startsWith("set")) {
+                    theOpaquePropertyName = theMethodName.substring(3);
+                } else {
+                    throw new IllegalArgumentException("Not supported propertyname : " + theMethodName);
+                }
+                theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
+            } else {
+                theOpaquePropertyName = theMethodName;
+            }
+
+            if (aMethodSignature.getReturnType().isVoid()) {
+                // Set property
+                print(aInvocationTarget);
+                print(".");
+                print(theOpaquePropertyName);
+                print("=");
+
+                printToJSConvertedValue(aMethodSignature.getArguments()[0], aMethodArguments.get(0));
+            } else {
+                final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(aMethodSignature.getReturnType());
+                if (theReturnConvertFunction != null) {
+                    print(theReturnConvertFunction);
+                    print("(");
+                }
+
+                // Get property
+                print(aInvocationTarget);
+                print(".");
+                print(theOpaquePropertyName);
+
+                if (theReturnConvertFunction != null) {
+                    print(")");
+                }
+            }
+        } else {
+
+            final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(aMethodSignature.getReturnType());
+            if (theReturnConvertFunction != null) {
+                print(theReturnConvertFunction);
+                print("(");
+            }
+
+            String theMethodName = aMethodImplementation.getName().stringValue();
+            final BytecodeAnnotation theMethod = aMethodImplementation.getAttributes().getAnnotationByType(OpaqueMethod.class.getName());
+            if (theMethod != null) {
+                theMethodName = theMethod.getElementValueByName("value").stringValue();
+            }
+
+            // Simple method invocation
+            print(aInvocationTarget);
             print(".");
-            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
-        }
-        print("(");
+            print(theMethodName);
+            print("(");
 
-        print(theTarget);
+            for (int i = 0; i < aMethodArguments.size(); i++) {
+                if (i > 0) {
+                    print(",");
+                }
+                printToJSConvertedValue(aMethodSignature.getArguments()[i], aMethodArguments.get(i));
+            }
 
-        for (final Value theArgument : theArguments) {
-            print(",");
-            print(theArgument);
+            print(")");
+
+            if (theReturnConvertFunction != null) {
+                print(")");
+            }
         }
-        print(")");
     }
 
     private void print(final InvokeVirtualMethodExpression aValue) {
@@ -660,8 +860,17 @@ public class JSSSAWriter extends IndentSSAWriter {
         final Value theTarget = theIncomingData.get(0);
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
+        // Check if we are invoking something on an opaque type
         final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
-
+        final List<BytecodeLinkedClass> theClasses = linkerContext.getAllClassesAndInterfacesWithMethod(theMethodIdentifier);
+        if (theClasses.size() == 1) {
+            final BytecodeLinkedClass theTargetClass = theClasses.get(0);
+            final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+            if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
+                writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
+                return;
+            }
+        }
         if (Objects.equals(aValue.getMethodName(), "invokeWithMagicBehindTheScenes")) {
             print("(");
         } else {

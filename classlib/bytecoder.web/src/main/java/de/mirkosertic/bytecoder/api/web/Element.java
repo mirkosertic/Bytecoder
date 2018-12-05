@@ -15,8 +15,11 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public abstract class Element implements OpaqueReferenceType {
 
+    public <T extends Event> void addEventListener(final String eventType, final Callback<T> aEventListener) {
+    }
 }

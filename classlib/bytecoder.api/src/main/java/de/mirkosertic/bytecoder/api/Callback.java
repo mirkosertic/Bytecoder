@@ -17,5 +17,5 @@ package de.mirkosertic.bytecoder.api;
 
 public interface Callback<T extends OpaqueReferenceType> {
 
-    void apply(T aValue);
+    void run(T aValue);
 }

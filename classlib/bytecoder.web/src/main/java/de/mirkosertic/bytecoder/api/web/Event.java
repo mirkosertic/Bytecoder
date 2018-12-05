@@ -15,20 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public class Document extends Element {
-
-    @OpaqueProperty
-    public String getTitle() {
-        return "hallo";
-    }
-
-    @OpaqueProperty
-    public void setTitle(final String aValue) {
-    }
-
-    public <T extends Element> T getElementById(final String aId) {
-        return(T)  new HTMLCanvasElement(aId);
-    }
+public interface Event extends OpaqueReferenceType {
 }

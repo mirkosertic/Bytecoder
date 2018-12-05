@@ -272,6 +272,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCodeWriter.println("         return Math.atan2(p1, p2);");
             theCodeWriter.println("     },");
             theCodeWriter.println("};");
+            theCodeWriter.println("bytecoder.imports.runtime = {");
+            theCodeWriter.println("     nativewindow: function() {");
+            theCodeWriter.println("         return window;");
+            theCodeWriter.println("     },");
+            theCodeWriter.println("};");
             theCodeWriter.println();
 
             theCodeWriter.println("console.log(\"Starting test\");");
@@ -635,6 +640,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        } else if (null != getDescription().getAnnotation(JSOnly.class)) {
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else if (null != getDescription().getAnnotation(JSAndJVMOnly.class)) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);

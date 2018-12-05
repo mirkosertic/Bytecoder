@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.api;
 
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-public class Document extends Element {
+@Retention(RetentionPolicy.RUNTIME)
+public @interface OpaqueMethod {
 
-    @OpaqueProperty
-    public String getTitle() {
-        return "hallo";
-    }
-
-    @OpaqueProperty
-    public void setTitle(final String aValue) {
-    }
-
-    public <T extends Element> T getElementById(final String aId) {
-        return(T)  new HTMLCanvasElement(aId);
-    }
+    String value();
 }

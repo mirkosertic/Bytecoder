@@ -20,12 +20,12 @@ public class HTMLCanvasElement extends Element {
     private final String id;
     private final CanvasRenderingContext2D renderingContext2D;
 
-    public HTMLCanvasElement(String aId) {
+    public HTMLCanvasElement(final String aId) {
         id = aId;
         renderingContext2D = new CanvasRenderingContext2D(this);
     }
 
-    public CanvasRenderingContext2D getContext() {
+    public CanvasRenderingContext2D getContext(final String contextName) {
         return renderingContext2D;
     }
 }
