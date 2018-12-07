@@ -44,18 +44,18 @@ public class OpaqueReferenceTest {
 
     @Test
     public void testEventListenerLambda() {
-        final Window window = Window.window();
-        window.document().addEventListener("click", aValue -> System.out.println("clicked!"));
+        final Window w = Window.window();
+        w.document().addEventListener("click", aValue -> w.document().setTitle("clicked!"));
     }
 
     @Test
     public void testEventListenerAnonymousInnerClass() {
-        final Window window = Window.window();
+        final Window w = Window.window();
         //noinspection Convert2Lambda
-        window.document().addEventListener("click", new Callback<Event>() {
+        w.document().addEventListener("click", new Callback<Event>() {
             @Override
             public void run(final Event aValue) {
-                System.out.println("clicked!");
+                w.document().setTitle("clicked!");
             }
         });
     }

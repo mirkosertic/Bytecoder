@@ -15,23 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
-import de.mirkosertic.bytecoder.classlib.Globals;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
@@ -51,6 +40,16 @@ import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
     private final BytecodeMethodSignature pushExceptionSignature;
@@ -65,8 +64,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
     @Override
     public JSCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
-
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Globals.class));
 
         final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 ExceptionManager.class));
