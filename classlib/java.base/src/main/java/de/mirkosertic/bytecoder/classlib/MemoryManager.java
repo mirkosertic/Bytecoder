@@ -15,10 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
-import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 
 /**
@@ -353,10 +351,5 @@ public class MemoryManager {
     @Export("setByteArrayEntry")
     public static void setByteArrayEntry(final byte[] aArray, final int aIndex, final byte aValue) {
         aArray[aIndex] = aValue;
-    }
-
-    @Export("summonCallback")
-    public static void summonCallback(final Callback aCallback, final OpaqueReferenceType aArgument) {
-        aCallback.run(aArgument);
     }
 }

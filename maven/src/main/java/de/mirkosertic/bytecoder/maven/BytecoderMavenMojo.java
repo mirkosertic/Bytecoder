@@ -148,7 +148,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
             final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix);
-            final CompileResult theCode = theCompileTarget.compileToJS(theOptions, theTargetClass, "main", theSignature);
+            final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
                 try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {

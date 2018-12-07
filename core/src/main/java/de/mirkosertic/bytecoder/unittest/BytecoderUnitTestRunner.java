@@ -176,7 +176,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
             final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder");
-            final JSCompileResult result = (JSCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final JSCompileResult.JSContent content = result.getContent()[0];
 
             theCodeWriter.println(content.asString());
@@ -261,7 +261,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
             final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder");
-            final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
+            final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
             final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
             final WASMCompileResult.WASMCompileContent jsContent = theResult.getContent()[2];

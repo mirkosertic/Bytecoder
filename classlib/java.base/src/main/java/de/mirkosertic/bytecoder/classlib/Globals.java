@@ -16,16 +16,13 @@
 package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public class Globals {
 
-  /*  static {
-        Callback callback = new Callback() {
-            @Override
-            public void run(OpaqueReferenceType aValue) {
-            }
-        };
-        callback.run(null);
-    }*/
+    @Export("summonCallback")
+    public static void summonCallback(final Callback aCallback, final OpaqueReferenceType aArgument) {
+        aCallback.run(aArgument);
+    }
 }

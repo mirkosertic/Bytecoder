@@ -41,7 +41,6 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
-import de.mirkosertic.bytecoder.classlib.Globals;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -131,8 +130,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
     @Override
     public WASMCompileResult generateCodeFor(
             final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
-
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Globals.class));
 
         // Link required mamory management code
         final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
@@ -875,9 +872,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println();
             theWriter.println("     toJSEventListener: function(value) {");
             theWriter.println("         return function(event) {");
-            theWriter.println("             var eventIndex = bytecoder.toBytecoderReference(event);");
-            theWriter.println("             bytecoder.exports.summonCallback(0,value,theIndex);");
-            theWriter.println("             delete bytecoder.referenceTable[eventIndex];");
+            theWriter.println("             try {");
+            theWriter.println("                 var eventIndex = bytecoder.toBytecoderReference(event);");
+            theWriter.println("                 bytecoder.exports.summonCallback(0,value,eventIndex);");
+            theWriter.println("                 delete bytecoder.referenceTable[eventIndex];");
+            theWriter.println("             } catch (e) {");
+            theWriter.println("                 console.log(e);");
+            theWriter.println("             }");
             theWriter.println("         };");
             theWriter.println("     },");
             theWriter.println();

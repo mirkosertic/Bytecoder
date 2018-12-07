@@ -640,8 +640,10 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print(aValue);
             } else if (theLinkedClass.isCallback()) {
                 print("function(event) {");
+                print("var v = ");
                 print(aValue);
-                print(".apply(event);");
+                print(";v");
+                print(".VOIDrundmbaOpaqueReferenceType(v, event);");
                 print("}");
             } else {
                 throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");

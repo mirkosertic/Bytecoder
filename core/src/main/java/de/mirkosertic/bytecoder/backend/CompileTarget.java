@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
+import de.mirkosertic.bytecoder.classlib.Globals;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -59,13 +60,15 @@ public class CompileTarget {
         bytecodeLoader = new BytecodeLoader(aClassLoader);
     }
 
-    public CompileResult compileToJS(
+    public CompileResult compile(
             final CompileOptions aOptions, final Class aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aOptions.getLogger());
 
         final BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
         theClassLinkedCass.resolveConstructorInvocation(new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
+
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Globals.class));
 
         // Lambda handling
         final BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.ImplementingCallsite.class));
