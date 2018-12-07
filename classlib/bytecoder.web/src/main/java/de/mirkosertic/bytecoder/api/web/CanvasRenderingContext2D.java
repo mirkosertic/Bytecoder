@@ -15,63 +15,41 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public class CanvasRenderingContext2D implements OpaqueReferenceType {
-
-    private final HTMLCanvasElement owningCanvas;
-
-    public CanvasRenderingContext2D(final HTMLCanvasElement aOwningCanvas) {
-        owningCanvas = aOwningCanvas;
-    }
+public interface CanvasRenderingContext2D extends OpaqueReferenceType {
 
     @OpaqueProperty
-    @Import(module = "canvas", name = "setFillStyle")
-    public native void setFillStyle(String aStyle);
+    void setFillStyle(String aStyle);
 
     @OpaqueProperty
-    @Import(module = "canvas", name = "setStrokeStyle")
-    public native void setStrokeStyle(String aStyle);
+    void setStrokeStyle(String aStyle);
 
-    @Import(module = "canvas", name = "fillRect")
-    public native void fillRect(float x, float y, float width, float height);
+    void fillRect(float x, float y, float width, float height);
 
-    @Import(module = "canvas", name = "contextSave")
-    public native void save();
+    void save();
 
-    @Import(module = "canvas", name = "contextRestore")
-    public native void restore();
+    void restore();
 
-    @Import(module = "canvas", name = "contextTranslate")
-    public native void translate(float aX, float aY);
+    void translate(float aX, float aY);
 
-    @Import(module = "canvas", name = "contextScale")
-    public native void scale(float aX, float aY);
+    void scale(float aX, float aY);
 
-    @Import(module = "canvas", name = "setLineWidth")
     @OpaqueProperty
-    public native void setLineWidth(float aWidth);
+    void setLineWidth(float aWidth);
 
-    @Import(module = "canvas", name = "contextRotate")
-    public native void rotate(float aAngleInRadians);
+    void rotate(float aAngleInRadians);
 
-    @Import(module = "canvas", name = "contextBeginPath")
-    public native void beginPath();
+    void beginPath();
 
-    @Import(module = "canvas", name = "contextClosePath")
-    public native void closePath();
+    void closePath();
 
-    @Import(module = "canvas", name = "contextMoveTo")
-    public native void moveTo(float aX, float aY);
+    void moveTo(float aX, float aY);
 
-    @Import(module = "canvas", name = "contextLineTo")
-    public native void lineTo(float aX, float aY);
+    void lineTo(float aX, float aY);
 
-    @Import(module = "canvas", name = "contextArc")
-    public native void arc(double x, double y, double radius, double startAngle, double endAngle, boolean anticlockwise);
+    void arc(double x, double y, double radius, double startAngle, double endAngle, boolean anticlockwise);
 
-    @Import(module = "canvas", name = "contextStroke")
-    public native void stroke();
+    void stroke();
 }

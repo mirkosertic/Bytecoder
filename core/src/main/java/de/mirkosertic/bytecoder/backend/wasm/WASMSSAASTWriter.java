@@ -57,6 +57,7 @@ import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -923,6 +924,25 @@ public class WASMSSAASTWriter {
         final Value theTarget = theFlows.get(0);
         final List<Value> theVariables = theFlows.subList(1, theFlows.size());
 
+        // Check if we are invoking something on an opaque type
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
+        final List<BytecodeLinkedClass> theClasses = linkerContext.getAllClassesAndInterfacesWithMethod(theMethodIdentifier);
+        if (theClasses.size() == 1) {
+            final BytecodeLinkedClass theTargetClass = theClasses.get(0);
+            final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(aValue.getMethodName(), aValue.getSignature());
+            if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
+                // At this point, we are creating a direct call invocation to the function
+                // Which is imported fom the WASM Host environment
+                final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(theTargetClass.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+                final List<WASMValue> arguments = new ArrayList<>();
+                arguments.add(toValue(theTarget));
+                for (final Value theValue : theVariables) {
+                    arguments.add(toValue(theValue));
+                }
+                return call(function, arguments);
+            }
+        }
+
         final List<PrimitiveType> theSignatureParams = new ArrayList<>();
         theSignatureParams.add(PrimitiveType.i32);
         for (int i = 0; i < aValue.getSignature().getArguments().length; i++) {
@@ -942,8 +962,6 @@ public class WASMSSAASTWriter {
         for (final Value theValue : theVariables) {
             theArguments.add(toValue(theValue));
         }
-
-        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
 
         final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();

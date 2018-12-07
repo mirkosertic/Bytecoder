@@ -15,19 +15,18 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public class Window implements OpaqueReferenceType {
+public abstract class Window implements OpaqueReferenceType {
 
     @Import(module = "runtime", name = "nativewindow")
-    public static Window window() {
-        return new Window();
-    }
+    public native static Window window();
 
     @OpaqueProperty("document")
-    public Document document() {
-        return new Document();
-    }
+    public abstract Document document();
+
+    public abstract <T extends Event> void addEventListener(final String eventType, final Callback<T> aEventListener);
 }

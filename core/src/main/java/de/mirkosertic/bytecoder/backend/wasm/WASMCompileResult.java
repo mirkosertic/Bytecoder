@@ -81,6 +81,31 @@ public class WASMCompileResult implements CompileResult<String> {
         }
     }
 
+    public static class WASMTextualJSCompileResult extends WASMCompileContent {
+
+        private final String data;
+        private final String filenamePrefix;
+
+        public WASMTextualJSCompileResult(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
+                                        final List<String> generatedFunctions, final String data, final String afilenamePrefix) {
+            super(memoryLayouter, linkerContext, generatedFunctions);
+            this.data = data;
+            this.filenamePrefix = afilenamePrefix;
+        }
+
+        @Override
+        public String getFileName() {
+            return filenamePrefix + "_wasmbindings.js";
+        }
+
+        @Override
+        public void writeTo(final OutputStream stream) {
+            try (final PrintStream ps = new PrintStream(stream)) {
+                ps.print(data);
+            }
+        }
+    }
+
     public static class WASMBinaryCompileResult extends WASMCompileContent {
 
         private final byte[] data;
