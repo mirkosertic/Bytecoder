@@ -25,7 +25,7 @@
             </tr>
         </table>
         <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
-
+        <script src="bytecoder_wasmbindings.js"></script>
         <script type="text/javascript">
 
             function sortNumber(a,b) {
@@ -49,154 +49,23 @@
             stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
             document.body.appendChild(stats.dom);
 
-            var theCanvas = document.getElementById("benchmark-canvas");
-            var theCanvasContext = theCanvas.getContext("2d");
-            var runningInstanceMemory = null;
-
-            function bytecoder_IntInMemory(value) {
-                return runningInstanceMemory[value]
-                    + (runningInstanceMemory[value + 1] * 256)
-                    + (runningInstanceMemory[value + 2] * 256 * 256)
-                    + (runningInstanceMemory[value + 3] * 256 * 256 * 256);
-            }
-
-            function bytecoder_logByteArrayAsString(acaller, value) {
-                var theLength = bytecoder_IntInMemory(value + 16);
-                var theData = '';
-                value = value + 20;
-                for (var i=0;i<theLength;i++) {
-                    var theCharCode = bytecoder_IntInMemory(value);
-                    value = value + 4;
-                    theData+= String.fromCharCode(theCharCode);
-                }
-                console.log(theData);
-            }
-
-            function bytecoder_logDebug(caller,value) {
-                console.log(value);
-            }
-
             var lastRuntime = 0;
             var lastRuntimeTimeSeries = [];
 
-            // Our module for dynamic linking
-            var importObject = {
-                system: {
-                    currentTimeMillis: function(aCaller) {return (Date.now() - 1514628979781);},
-                    nanoTime: function(aCaller) {return (Date.now() - 1514628979781) * 1000000;},
-                    logDebug: bytecoder_logDebug,
-                    writeByteArrayToConsole: bytecoder_logByteArrayAsString,
-                },
-                printstream: {
-                    logDebug: bytecoder_logDebug,
-                },
-                math: {
-                    floor: function (thisref, p1) {return Math.floor(p1);},
-                    ceil: function (thisref, p1) {return Math.ceil(p1);},
-                    sin: function (thisref, p1) {return Math.sin(p1);},
-                    cos: function  (thisref, p1) {return Math.cos(p1);},
-                    round: function  (thisref, p1) {return Math.round(p1);},
-                    sqrt: function(thisref, p1) {return Math.sqrt(p1);},
-                    add: function(thisref, p1, p2) {return p1 + p2;},
-                    max: function(p1, p2) { return Math.max(p1, p2);},
-                    min: function(p1, p2) { return Math.min(p1, p2);},
-                },
-                strictmath: {
-                    floor: function (thisref, p1) {return Math.floor(p1);},
-                    ceil: function (thisref, p1) {return Math.ceil(p1);},
-                    sin: function (thisref, p1) {return Math.sin(p1);},
-                    cos: function  (thisref, p1) {return Math.cos(p1);},
-                    round: function  (thisref, p1) {return Math.round(p1);},
-                    sqrt: function(thisref, p1) {return Math.sqrt(p1);},
-                },
-                debug: {
-                    logRuntime : function(acaller, a) {
-                        lastRuntimeTimeSeries.push(a);
-                        if (lastRuntimeTimeSeries.length > 500) {
-                            lastRuntimeTimeSeries.shift();
-                        }
-                        lastRuntime = (lastRuntime + a) / 2;
-                        document.getElementById("stats_avg").innerText = '' + lastRuntime.toFixed(2) + " ms";
-
-                        [50, 75, 95, 98, 99].forEach(function (element, index, array) {
-                            var q = quantile(lastRuntimeTimeSeries, element).toFixed(2) + " ms";
-                            document.getElementById("stats_" + element).innerText = q;
-
-                        });
+            bytecoder.imports.debug = {
+                logRuntime : function(acaller, a) {
+                    lastRuntimeTimeSeries.push(a);
+                    if (lastRuntimeTimeSeries.length > 500) {
+                        lastRuntimeTimeSeries.shift();
                     }
-                },
-                profiler: {
-                    logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {
-                        if (aUsed == 1) return;
-                        console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);
-                        console.log('      Block size is ' + bytecoder_IntInMemory(aStart));
-                        console.log('      Object type ' + bytecoder_IntInMemory(aStart + 12));
-                    }
-                },
-                canvas: {
-                    fillRect : function(aCaller, x, y, width, height) {
-                        theCanvasContext.fillRect(x, y, width, height);
-                    },
+                    lastRuntime = (lastRuntime + a) / 2;
+                    document.getElementById("stats_avg").innerText = '' + lastRuntime.toFixed(2) + " ms";
 
-                    setFillStyle : function(aCaller, aStyle) {
-                        theCanvasContext.fillStyle = "white";
-                    },
+                    [50, 75, 95, 98, 99].forEach(function (element, index, array) {
+                        var q = quantile(lastRuntimeTimeSeries, element).toFixed(2) + " ms";
+                        document.getElementById("stats_" + element).innerText = q;
 
-                    setStrokeStyle : function(aCaller, aStyle) {
-                        theCanvasContext.strokeStyle = "black";
-                    },
-
-                    contextSave : function(aCaller) {
-                        theCanvasContext.save();
-                    },
-
-                    contextRestore : function(aCaller) {
-                        theCanvasContext.restore();
-                    },
-
-                    contextTranslate : function(aCaller, aX, aY) {
-                        theCanvasContext.translate(aX, aY);
-                    },
-
-                    contextScale : function(aCaller, aX, aY) {
-                        theCanvasContext.scale(aX, aY);
-                    },
-
-                    setLineWidth : function(aCaller, aWidth) {
-                        theCanvasContext.lineWidth = aWidth;
-                    },
-
-                    contextRotate : function(aCaller, aAngleInRadians) {
-                        theCanvasContext.rotate(aAngleInRadians);
-                    },
-
-                    contextBeginPath : function(aCaller) {
-                        theCanvasContext.beginPath();
-                    },
-
-                    contextClosePath : function(aCaller) {
-                        theCanvasContext.closePath();
-                    },
-
-                    contextMoveTo: function(aCaller, aX, aY) {
-                        theCanvasContext.moveTo(aX, aY);
-                    },
-
-                    contextLineTo : function(aCaller, aX, aY) {
-                        theCanvasContext.lineTo(aX, aY);
-                    },
-
-                    contextArc : function(aCaller, x, y, radius, startAngle, endAngle, anticlockwise) {
-                        if (anticlockwise == 0) {
-                            theCanvasContext.arc(x, y, radius, startAngle, endAngle, false);
-                        } else {
-                            theCanvasContext.arc(x, y, radius, startAngle, endAngle, true);
-                        }
-                    },
-
-                    contextStroke : function(aCaller) {
-                        theCanvasContext.stroke();
-                    }
+                    });
                 }
             };
 
@@ -206,17 +75,14 @@
             request.responseType = 'arraybuffer';
             request.send();
 
-            var runningInstance;
-
             var instantiated = function(result) {
-                var wasmModule = result.module;
-                runningInstance = result.instance;
-                runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);
-                runningInstance.exports.initMemory(0);
+                bytecoder.init(result.instance);
+
+                bytecoder.exports.initMemory(0);
                 console.log("Memory initialized");
-                runningInstance.exports.bootstrap(0);
+                bytecoder.exports.bootstrap(0);
                 console.log("Bootstrapped");
-                runningInstance.exports.main(0);
+                bytecoder.exports.main(0);
                 console.log("Ready for action!");
 
                 document.getElementById("button").style.display = "block";
@@ -224,12 +90,12 @@
 
             request.onload = function() {
                 var bytes = request.response;
-                WebAssembly.instantiate(bytes, importObject).then(instantiated);
+                WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
             };
 
             var stepFunction = function(timestamp) {
                 stats.begin();
-                runningInstance.exports.proceedSimulation(0);
+                bytecoder.exports.proceedSimulation(0);
                 stats.end();
 
                 window.requestAnimationFrame(stepFunction);

@@ -19,38 +19,43 @@ import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.web.Document;
 import de.mirkosertic.bytecoder.api.web.Event;
 import de.mirkosertic.bytecoder.api.web.Window;
+import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.JSOnly;
+import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@JSOnly
+@JSAndWASMOnly
 public class OpaqueReferenceTest {
 
     @Test
     public void testGetSetTitle() {
         final Document currentDocument = Window.window().document();
-        final String currentTitle = currentDocument.getTitle();
-        currentDocument.setTitle("Bytecoder");
+        //final String currentTitle = currentDocument.getTitle();
 
-        currentDocument.addEventListener("scroll", aValue -> System.out.println("scrolled!"));
+        final String theABC = "Bytecoder";
+        TSystem.logDebug(theABC);
+        TSystem.logDebug(theABC.getBytes());
+        currentDocument.setTitle(theABC);
+        Assert.assertEquals("Bytecoder", currentDocument.getTitle());
     }
 
     @Test
     public void testEventListenerLambda() {
-        final Document currentDocument = Window.window().document();
-        currentDocument.addEventListener("scroll", aValue -> System.out.println("scrolled!"));
+        final Window window = Window.window();
+        window.document().addEventListener("click", aValue -> System.out.println("clicked!"));
     }
 
     @Test
     public void testEventListenerAnonymousInnerClass() {
-        final Document currentDocument = Window.window().document();
+        final Window window = Window.window();
         //noinspection Convert2Lambda
-        currentDocument.addEventListener("scroll", new Callback<Event>() {
+        window.document().addEventListener("click", new Callback<Event>() {
             @Override
             public void run(final Event aValue) {
-                System.out.println("scrolled!");
+                System.out.println("clicked!");
             }
         });
     }

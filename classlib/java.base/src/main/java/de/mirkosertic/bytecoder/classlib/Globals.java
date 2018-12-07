@@ -13,15 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.classlib;
 
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface Document extends Element {
+public class Globals {
 
-    @OpaqueProperty
-    String getTitle();
-
-    @OpaqueProperty
-    void setTitle(final String aValue);
+  /*  static {
+        Callback callback = new Callback() {
+            @Override
+            public void run(OpaqueReferenceType aValue) {
+            }
+        };
+        callback.run(null);
+    }*/
 }

@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
+import de.mirkosertic.bytecoder.classlib.Globals;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
@@ -65,6 +66,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     @Override
     public JSCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
 
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Globals.class));
+
         final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 ExceptionManager.class));
         theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
@@ -75,8 +78,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
         theWriter.println("'use strict';");
 
-        theWriter.println();
-        theWriter.println("var bytecoderGlobalMemory = [];");
         theWriter.println();
 
         theWriter.println("var bytecoder = {");
@@ -179,7 +180,96 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     },");
         theWriter.println();
 
-        theWriter.println("     imports : {},");
+        theWriter.println("     imports : {");
+        theWriter.println("         system : {");
+        theWriter.println("             currentTimeMillis: function() {");
+        theWriter.println("                 return Date.now();");
+        theWriter.println("             },");
+        theWriter.println("             nanoTime: function() {");
+        theWriter.println("                 return Date.now() * 1000000;");
+        theWriter.println("             },");
+        theWriter.println("             writeByteArrayToConsole: function(thisRef, p1) {");
+        theWriter.println("                 bytecoder.logByteArrayAsString(p1);");
+        theWriter.println("             },");
+        theWriter.println("             logDebug: function(thisref, p1) {");
+        theWriter.println("                 bytecoder.logDebug(p1);");
+        theWriter.println("             },");
+        theWriter.println("         },");
+        theWriter.println("         printstream : {");
+        theWriter.println("             logDebug: function(p1) {");
+        theWriter.println("                 bytecoder.logDebug(p1);");
+        theWriter.println("             },");
+        theWriter.println("         },");
+        theWriter.println("         math : {");
+        theWriter.println("             ceil: function(p1) {");
+        theWriter.println("                 return Math.ceil(p1);");
+        theWriter.println("             },");
+        theWriter.println("             floor: function(p1) {");
+        theWriter.println("                 return Math.floor(p1);");
+        theWriter.println("             },");
+        theWriter.println("             sin: function(p1) {");
+        theWriter.println("                 return Math.sin(p1);");
+        theWriter.println("             },");
+        theWriter.println("             cos: function(p1) {");
+        theWriter.println("                 return Math.cos(p1);");
+        theWriter.println("             },");
+        theWriter.println("             sqrt: function(p1) {");
+        theWriter.println("                 return Math.sqrt(p1);");
+        theWriter.println("             },");
+        theWriter.println("             round: function(p1) {");
+        theWriter.println("                 return Math.round(p1);");
+        theWriter.println("             },");
+        theWriter.println("             NaN: function(p1) {");
+        theWriter.println("                 return NaN;");
+        theWriter.println("             },");
+        theWriter.println("             atan2: function(p1, p2) {");
+        theWriter.println("                 return Math.atan2(p1, p2);");
+        theWriter.println("             },");
+        theWriter.println("             max: function(p1, p2) {");
+        theWriter.println("                 return Math.max(p1, p2);");
+        theWriter.println("             },");
+        theWriter.println("             random: function() {");
+        theWriter.println("                 return Math.random();");
+        theWriter.println("             },");
+        theWriter.println("             tan: function(p1) {");
+        theWriter.println("                 return Math.tan(p1);");
+        theWriter.println("             },");
+        theWriter.println("             toRadians: function(p1) {");
+        theWriter.println("                 return Math.toRadians(p1);");
+        theWriter.println("             },");
+        theWriter.println("             toDegrees: function(p1) {");
+        theWriter.println("                 return Math.toDegrees(p1);");
+        theWriter.println("             },");
+        theWriter.println("             min: function (p1, p2) {");
+        theWriter.println("                 return Math.min(p1, p2);");
+        theWriter.println("             },");
+        theWriter.println("             add: function(p1, p2) {");
+        theWriter.println("                 return p1 + p2;");
+        theWriter.println("             },");
+        theWriter.println("         },");
+        theWriter.println("         strictmath : {");
+        theWriter.println("             sin: function(p1) {");
+        theWriter.println("                 return Math.sin(p1);");
+        theWriter.println("             },");
+        theWriter.println("             cos: function(p1) {");
+        theWriter.println("                 return Math.cos(p1);");
+        theWriter.println("             },");
+        theWriter.println("             sqrt: function(p1) {");
+        theWriter.println("                 return Math.sqrt(p1);");
+        theWriter.println("             },");
+        theWriter.println("             round: function(p1) {");
+        theWriter.println("                 return Math.round(p1);");
+        theWriter.println("             },");
+        theWriter.println("             atan2: function(p1, p2) {");
+        theWriter.println("                 return Math.atan2(p1, p2);");
+        theWriter.println("             },");
+        theWriter.println("         },");
+        theWriter.println("         runtime : {");
+        theWriter.println("             nativewindow: function() {");
+        theWriter.println("                 return window;");
+        theWriter.println("             },");
+        theWriter.println("         },");
+        theWriter.println("     },");
         theWriter.println();
 
         theWriter.println("     exports : {},");
@@ -242,21 +332,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
                         if (theFieldType.isPrimitive()) {
                             final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
-                            switch (thePrimitive) {
-                            case BOOLEAN: {
+                            if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
                                 theWriter.print("    ");
                                 theWriter.print(aFieldEntry.getValue().getName().stringValue());
                                 theWriter.print(" : false, // declared in ");
                                 theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
-                                break;
-                            }
-                            default: {
+                            } else {
                                 theWriter.print("    ");
                                 theWriter.print(aFieldEntry.getValue().getName().stringValue());
                                 theWriter.print(" : 0, // declared in ");
                                 theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
-                                break;
-                            }
                             }
                         } else {
                             theWriter.print("    ");
@@ -277,21 +362,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
                             if (theFieldType.isPrimitive()) {
                                 final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
-                                switch (thePrimitive) {
-                                    case BOOLEAN: {
-                                        theWriter.print("        this.");
-                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                        theWriter.print(" = false; // declared in ");
-                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
-                                        break;
-                                    }
-                                    default: {
-                                        theWriter.print("        this.");
-                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                        theWriter.print(" = 0; // declared in ");
-                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
-                                        break;
-                                    }
+                                if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
+                                    theWriter.print("        this.");
+                                    theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                    theWriter.print(" = false; // declared in ");
+                                    theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                                } else {
+                                    theWriter.print("        this.");
+                                    theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                    theWriter.print(" = 0; // declared in ");
+                                    theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                                 }
                             } else {
                                 theWriter.print("        this.");

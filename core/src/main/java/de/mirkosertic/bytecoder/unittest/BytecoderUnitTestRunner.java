@@ -184,100 +184,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
             theCodeWriter.println();
-            theCodeWriter.println("bytecoder.imports.system = {");
-            theCodeWriter.println("     currentTimeMillis: function() {");
-            theCodeWriter.println("         return Date.now();");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     nanoTime: function() {");
-            theCodeWriter.println("         return Date.now() * 1000000;");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     writeByteArrayToConsole: function(thisRef, p1) {");
-            theCodeWriter.println("         bytecoder.logByteArrayAsString(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     logDebug: function(p1) {");
-            theCodeWriter.println("         bytecoder.logDebug(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     arraycopy: function(src, srcPos, dest, destPos, length) {");
-            theCodeWriter.println("         for (i=0;i<length;i++) {");
-            theCodeWriter.println("             dest.data[destPos++] = src.data[srcPos++];");
-            theCodeWriter.println("         }");
-            theCodeWriter.println("     }");
-            theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.printstream = {");
-            theCodeWriter.println("     logDebug: function(thisref, p1) {");
-            theCodeWriter.println("         bytecoder.logDebug(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.math = {");
-            theCodeWriter.println("     ceil: function(p1) {");
-            theCodeWriter.println("         return Math.ceil(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     floor: function(p1) {");
-            theCodeWriter.println("         return Math.floor(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     sin: function(p1) {");
-            theCodeWriter.println("         return Math.sin(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     cos: function(p1) {");
-            theCodeWriter.println("         return Math.cos(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     sqrt: function(p1) {");
-            theCodeWriter.println("         return Math.sqrt(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     round: function(p1) {");
-            theCodeWriter.println("         return Math.round(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     NaN: function(p1) {");
-            theCodeWriter.println("         return NaN;");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     atan2: function(p1, p2) {");
-            theCodeWriter.println("         return Math.atan2(p1, p2);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     max: function(p1, p2) {");
-            theCodeWriter.println("         return Math.max(p1, p2);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     random: function() {");
-            theCodeWriter.println("         return Math.random();");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     tan: function(p1) {");
-            theCodeWriter.println("         return Math.tan(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     toRadians: function(p1) {");
-            theCodeWriter.println("         return Math.toRadians(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     toDegrees: function(p1) {");
-            theCodeWriter.println("         return Math.toDegrees(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     min: function (p1, p2) {");
-            theCodeWriter.println("         return Math.min(p1, p2);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     add: function(p1, p2) {");
-            theCodeWriter.println("         return p1 + p2;");
-            theCodeWriter.println("     }");
-            theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.strictmath = {");
-            theCodeWriter.println("     sin: function(p1) {");
-            theCodeWriter.println("         return Math.sin(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     cos: function(p1) {");
-            theCodeWriter.println("         return Math.cos(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     sqrt: function(p1) {");
-            theCodeWriter.println("         return Math.sqrt(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     round: function(p1) {");
-            theCodeWriter.println("         return Math.round(p1);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("     atan2: function(p1, p2) {");
-            theCodeWriter.println("         return Math.atan2(p1, p2);");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("};");
-            theCodeWriter.println("bytecoder.imports.runtime = {");
-            theCodeWriter.println("     nativewindow: function() {");
-            theCodeWriter.println("         return window;");
-            theCodeWriter.println("     },");
-            theCodeWriter.println("};");
-            theCodeWriter.println();
 
             theCodeWriter.println("console.log(\"Starting test\");");
             theCodeWriter.println("bytecoder.bootstrap();");
@@ -358,6 +264,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compileToJS(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
             final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
+            final WASMCompileResult.WASMCompileContent jsContent = theResult.getContent()[2];
 
             final String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.html";
 
@@ -389,35 +296,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("        <script src=\"libwabt.js\">");
             theWriter.println("        </script>");
             theWriter.println("        <script>");
-            theWriter.println("            var runningInstance;");
-            theWriter.println("            var runningInstanceMemory;");
-            theWriter.println();
 
-            theWriter.println("            function bytecoder_IntInMemory(value) {");
-            theWriter.println("             return runningInstanceMemory[value]");
-            theWriter.println("                 + (runningInstanceMemory[value + 1] * 256)");
-            theWriter.println("                 + (runningInstanceMemory[value + 2] * 256 * 256)");
-            theWriter.println("                 + (runningInstanceMemory[value + 3] * 256 * 256 * 256);");
-            theWriter.println("            }");
-            theWriter.println();
-
-            theWriter.println("            function bytecoder_logByteArrayAsString(acaller, value) {");
-            theWriter.println("                 var theLength = bytecoder_IntInMemory(value + 16);");
-            theWriter.println("                 var theData = '';");
-            theWriter.println("                 value = value + 20;");
-            theWriter.println("                 for (var i=0;i<theLength;i++) {");
-            theWriter.println("                     var theCharCode = bytecoder_IntInMemory(value);");
-            theWriter.println("                     value = value + 4;");
-            theWriter.println("                     theData+= String.fromCharCode(theCharCode);");
-            theWriter.println("                 }");
-            theWriter.println("                 console.log(theData);");
-            theWriter.println("            }");
-            theWriter.println();
-
-            theWriter.println("            function bytecoder_logDebug(caller,value) {");
-            theWriter.println("                 console.log(value);");
-            theWriter.println("            }");
-            theWriter.println();
+            theWriter.println(jsContent.asString());
 
             theWriter.println("            function compile(wabt) {");
             theWriter.println("                console.log('Test started');");
@@ -457,82 +337,43 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
             theWriter.println();
-            theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, {");
-            theWriter.println("                         system: {");
-            theWriter.println("                             currentTimeMillis: function() {return Date.now();},");
-            theWriter.println("                             nanoTime: function() {return Date.now() * 1000000;},");
-            theWriter.println("                             logDebug: bytecoder_logDebug,");
-            theWriter.println("                             writeByteArrayToConsole: bytecoder_logByteArrayAsString,");
-            theWriter.println("                         },");
-            theWriter.println("                         printstream: {");
-            theWriter.println("                             logDebug: bytecoder_logDebug,");
-            theWriter.println("                         },");
-            theWriter.println("                         math: {");
-            theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
-            theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
-            theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
-            theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
-            theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
-            theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
-            theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
-            theWriter.println("                             max: function(p1, p2) { return Math.max(p1, p2);},");
-            theWriter.println("                             min: function(p1, p2) { return Math.min(p1, p2);},");
-            theWriter.println("                         },");
-            theWriter.println("                         strictmath: {");
-            theWriter.println("                             floor: function (thisref, p1) {return Math.floor(p1);},");
-            theWriter.println("                             ceil: function (thisref, p1) {return Math.ceil(p1);},");
-            theWriter.println("                             sin: function (thisref, p1) {return Math.sin(p1);},");
-            theWriter.println("                             cos: function  (thisref, p1) {return Math.cos(p1);},");
-            theWriter.println("                             round: function  (thisref, p1) {return Math.round(p1);},");
-            theWriter.println("                             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
-            theWriter.println("                             add: function(thisref, p1, p2) {return p1 + p2;},");
-            theWriter.println("                         },");
-            theWriter.println("                         profiler: {");
-            theWriter.println("                             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");
-            theWriter.println("                                 if (aUsed == 1) return;");
-            theWriter.println("                                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
-            theWriter.println("                                 console.log('      Block size is ' + bytecoder_IntInMemory(aStart));");
-            theWriter.println("                                 console.log('      Object type ' + bytecoder_IntInMemory(aStart + 12));");
-            theWriter.println("                             }");
-            theWriter.println("                         }");
-            theWriter.println("                    });");
+            theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, bytecoder.imports);");
             theWriter.println("                    theInstantiatePromise.then(");
             theWriter.println("                         function (resolved) {");
             theWriter.println("                             var wasmModule = resolved.module;");
-            theWriter.println("                             runningInstance = resolved.instance;");
-            theWriter.println("                             runningInstanceMemory = new Uint8Array(runningInstance.exports.memory.buffer);");
-            theWriter.println("                             runningInstance.exports.initMemory(0);");
+            theWriter.println("                             bytecoder.init(resolved.instance);");
+            theWriter.println("                             bytecoder.exports.initMemory(0);");
             theWriter.println("                             console.log(\"Memory initialized\")");
-            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
-            theWriter.println("                             console.log(\"Used memory in bytes \" + runningInstance.exports.usedMem());");
-            theWriter.println("                             console.log(\"Free memory in bytes \" + runningInstance.exports.freeMem());");
-            theWriter.println("                             runningInstance.exports.bootstrap(0);");
-            theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + runningInstance.exports.usedMem());");
-            theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + runningInstance.exports.freeMem());");
-            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                             bytecoder.exports.logMemoryLayout(0);");
+            theWriter.println("                             console.log(\"Used memory in bytes \" + bytecoder.exports.usedMem());");
+            theWriter.println("                             console.log(\"Free memory in bytes \" + bytecoder.exports.freeMem());");
+            theWriter.println("                             bytecoder.exports.bootstrap(0);");
+            theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + bytecoder.exports.usedMem());");
+            theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + bytecoder.exports.freeMem());");
+            theWriter.println("                             bytecoder.exports.logMemoryLayout(0);");
             theWriter.println("                             console.log(\"Creating test instance\")");
 
-            theWriter.print("                             var theTest = runningInstance.exports.newObject(0,");
+            theWriter.print("                             var theTest = bytecoder.exports.newObject(0,");
             theWriter.print(textualContent.getSizeOf(theTypeRef));
             theWriter.print(",");
             theWriter.print(textualContent.getTypeIDFor(theTypeRef));
             theWriter.print(",");
             theWriter.print(textualContent.getVTableIndexOf(theTypeRef));
             theWriter.println(", 0);");
-            theWriter.println("                             runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                             bytecoder.exports.logMemoryLayout(0);");
             theWriter.println("                             console.log(\"Bootstrapped\")");
             theWriter.println("                             try {");
-            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
+            theWriter.println("                                 bytecoder.exports.logMemoryLayout(0);");
             theWriter.println("                                 console.log(\"Starting main method\")");
-            theWriter.println("                                 runningInstance.exports.main(theTest);");
+            theWriter.println("                                 bytecoder.exports.main(theTest);");
             theWriter.println("                                 console.log(\"Main finished\")");
-            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
-            theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                                 bytecoder.exports.logMemoryLayout(0);");
+            theWriter.println("                                 wasmHexDump(bytecoder.runningInstanceMemory);");
             theWriter.println("                                 console.log(\"Test finished OK\")");
             theWriter.println("                             } catch (e) {");
             theWriter.println("                                 console.log(\"Test threw error\")");
-            theWriter.println("                                 runningInstance.exports.logMemoryLayout(0);");
-            theWriter.println("                                 wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                                 bytecoder.exports.logMemoryLayout(0);");
+            theWriter.println("                                 wasmHexDump(bytecoder.runningInstanceMemory);");
             theWriter.println("                                 throw e;");
             theWriter.println("                             }");
             theWriter.println("                         },");
@@ -545,9 +386,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
             theWriter.println("                    console.log(e.toString());");
             theWriter.println("                    console.log(e.stack);");
-            theWriter.println("                    if (runningInstance) {");
-            theWriter.println("                         runningInstance.exports.logMemoryLayout(0);");
-            theWriter.println("                         wasmHexDump(runningInstanceMemory);");
+            theWriter.println("                    if (bytecoder.runningInstance) {");
+            theWriter.println("                         bytecoder.exports.logMemoryLayout(0);");
+            theWriter.println("                         wasmHexDump(bytecoder.runningInstanceMemory);");
             theWriter.println("                    }");
             theWriter.println("                }");
             theWriter.println("            }");
@@ -589,6 +430,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
             try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wat"))) {
                 textualContent.writeTo(fos);
+            }
+
+            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.js"))) {
+                jsContent.writeTo(fos);
             }
 
             try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wasm"))) {
@@ -635,7 +480,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-
     @Override
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
@@ -645,6 +489,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } else if (null != getDescription().getAnnotation(JSAndJVMOnly.class)) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        } else if (null != getDescription().getAnnotation(JSAndWASMOnly.class)) {
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);

@@ -15,33 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.OpaqueMethod;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
@@ -50,18 +29,19 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ImportReference;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
+import de.mirkosertic.bytecoder.classlib.Globals;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -86,6 +66,31 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
     private static class CallSite {
@@ -98,6 +103,25 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
     }
 
+    private static class OpaqueReferenceMethod {
+
+        private final BytecodeLinkedClass linkedClass;
+        private final BytecodeMethod method;
+
+        public OpaqueReferenceMethod(final BytecodeLinkedClass linkedClass, final BytecodeMethod method) {
+            this.linkedClass = linkedClass;
+            this.method = method;
+        }
+
+        public BytecodeLinkedClass getLinkedClass() {
+            return linkedClass;
+        }
+
+        public BytecodeMethod getMethod() {
+            return method;
+        }
+    }
+
     private final ProgramGeneratorFactory programGeneratorFactory;
 
     public WASMSSAASTCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
@@ -107,6 +131,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
     @Override
     public WASMCompileResult generateCodeFor(
             final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
+
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Globals.class));
 
         // Link required mamory management code
         final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
@@ -126,6 +152,15 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        theMemoryManagerClass.resolveStaticMethod("newString", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+        theMemoryManagerClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theMemoryManagerClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+        theMemoryManagerClass.resolveStaticMethod("summonCallback",
+                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(
+                        Callback.class), BytecodeObjectTypeRef.fromRuntimeClass(
+                        OpaqueReferenceType.class)}));
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
@@ -169,10 +204,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         // We need a memory
         module.getMems().newMemory(512, 512).exportAs("memory");
 
+        // Out list of opaque reference methods, which are implemented
+        // by JS wrapper functions
+        final List<OpaqueReferenceMethod> opaqueReferenceMethods = new ArrayList<>();
+
         // Also import functions first
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-            if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
+            if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface() && !aEntry.targetNode().isOpaqueType()) {
                 return;
             }
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
@@ -182,23 +221,32 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
             theMethodMap.stream().forEach(aMethodMapEntry -> {
 
+                final BytecodeLinkedClass theProvidingClass = aMethodMapEntry.getProvidingClass();
+
                 // Only add implementation methods
-                if (!(aMethodMapEntry.getProvidingClass() == aEntry.targetNode())) {
+                if (!(theProvidingClass == aEntry.targetNode())) {
                     return;
                 }
 
                 final BytecodeMethod t = aMethodMapEntry.getValue();
                 final BytecodeMethodSignature theSignature = t.getSignature();
 
-                if (t.getAccessFlags().isNative()) {
-                    if (null != aMethodMapEntry.getProvidingClass().getBytecodeClass().getAttributes()
+                if (t.getAccessFlags().isNative() || (t.getAccessFlags().isAbstract() && theProvidingClass.isOpaqueType())) {
+                    if (null != theProvidingClass.getBytecodeClass().getAttributes()
                             .getAnnotationByType(EmulatedByRuntime.class.getName())) {
                         return;
                     }
 
-                    final BytecodeImportedLink theLink = aMethodMapEntry.getProvidingClass().linkfor(t);
+                    // Native methods are imported via annotation
+                    if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {
+                        // For all the other methods we programatically generate
+                        // the JS wrapper implementation later by this compiler
+                        opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
+                    }
 
-                    final String methodName = WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), t.getName(), theSignature);
+                    final BytecodeImportedLink theLink = theProvidingClass.linkfor(t);
+
+                    final String methodName = WASMWriterUtils.toMethodName(theProvidingClass.getClassName(), t.getName(), theSignature);
                     final ImportReference importReference = new ImportReference(theLink.getModuleName(), theLink.getLinkName());
 
                     final List<Param> params = new ArrayList<>();
@@ -770,8 +818,310 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             throw new RuntimeException(e);
         }
 
+        // Finally, we need to generate the opaque referene type JS adapter code
+        final StringWriter theJSCode = new StringWriter();
+        try (final PrintWriter theWriter = new PrintWriter(theJSCode)) {
+
+            theWriter.println("var bytecoder = {");
+            theWriter.println();
+            theWriter.println("     runningInstance: undefined,");
+            theWriter.println("     runningInstanceMemory: undefined,");
+            theWriter.println("     exports: undefined,");
+            theWriter.println("     referenceTable: [],");
+            theWriter.println();
+
+            theWriter.println("     init: function(instance) {");
+            theWriter.println("         bytecoder.runningInstance = instance;");
+            theWriter.println("         bytecoder.runningInstanceMemory = new Uint8Array(instance.exports.memory.buffer);");
+            theWriter.println("         bytecoder.exports = instance.exports;");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println("     intInMemory: function(value) {");
+            theWriter.println("         return bytecoder.runningInstanceMemory[value]");
+            theWriter.println("                + (bytecoder.runningInstanceMemory[value + 1] * 256)");
+            theWriter.println("                + (bytecoder.runningInstanceMemory[value + 2] * 256 * 256)");
+            theWriter.println("                + (bytecoder.runningInstanceMemory[value + 3] * 256 * 256 * 256);");
+            theWriter.println("     },");
+
+            theWriter.println();
+            theWriter.println("     logByteArrayAsString: function(acaller, value) {");
+            theWriter.println("         console.log(bytecoder.toJSString(value));");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println();
+            theWriter.println("     toJSString: function(value) {");
+            theWriter.println("         var theByteArray = bytecoder.intInMemory(value + 8);");
+            theWriter.println("         var theData = bytecoder.byteArraytoJSString(theByteArray);");
+            theWriter.println("         return theData;");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println("     byteArraytoJSString: function(value) {");
+            theWriter.println("         var theLength = bytecoder.intInMemory(value + 16);");
+            theWriter.println("         var theData = '';");
+            theWriter.println("         value = value + 20;");
+            theWriter.println("         for (var i=0;i<theLength;i++) {");
+            theWriter.println("             var theCharCode = bytecoder.intInMemory(value);");
+            theWriter.println("             value = value + 4;");
+            theWriter.println("             theData+= String.fromCharCode(theCharCode);");
+            theWriter.println("         }");
+            theWriter.println("         return theData;");
+            theWriter.println("     },");
+            theWriter.println();
+
+
+            theWriter.println();
+            theWriter.println("     toJSEventListener: function(value) {");
+            theWriter.println("         return function(event) {");
+            theWriter.println("             var eventIndex = bytecoder.toBytecoderReference(event);");
+            theWriter.println("             bytecoder.exports.summonCallback(0,value,theIndex);");
+            theWriter.println("             delete bytecoder.referenceTable[eventIndex];");
+            theWriter.println("         };");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println("     toBytecoderReference: function(value) {");
+            theWriter.println("         bytecoder.referenceTable.push(value);");
+            theWriter.println("         return bytecoder.referenceTable.length - 1;");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println("     toBytecoderString: function(value) {");
+            theWriter.println("         var newArray = bytecoder.exports.newByteArray(0, value.length);");
+            theWriter.println("         for (var i=0;i<value.length;i++) {");
+            theWriter.println("             bytecoder.exports.setByteArrayEntry(0,newArray,i,value.charCodeAt(i));");
+            theWriter.println("         }");
+            theWriter.println("         return bytecoder.exports.newString(0, newArray);");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println("     logDebug: function(caller,value) {");
+            theWriter.println("         console.log(value);");
+            theWriter.println("     },");
+            theWriter.println();
+
+            theWriter.println("     imports: {");
+            theWriter.println("         system: {");
+            theWriter.println("             currentTimeMillis: function() {return Date.now();},");
+            theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
+            theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller, value);},");
+            theWriter.println("             writeByteArrayToConsole: function(caller, value) {bytecoder.byteArraytoJSString(caller, value);},");
+            theWriter.println("         },");
+            theWriter.println("         tsystem: {");
+            theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller, value);},");
+            theWriter.println("         },");
+            theWriter.println("         printstream: {");
+            theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller,value);},");
+            theWriter.println("         },");
+            theWriter.println("         math: {");
+            theWriter.println("             floor: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("             ceil: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("             sin: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("             cos: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("             round: function  (thisref, p1) {return Math.round(p1);},");
+            theWriter.println("             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
+            theWriter.println("             max: function(p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("             min: function(p1, p2) { return Math.min(p1, p2);},");
+            theWriter.println("         },");
+            theWriter.println("         strictmath: {");
+            theWriter.println("             floor: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("             ceil: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("             sin: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("             cos: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("             round: function  (thisref, p1) {return Math.round(p1);},");
+            theWriter.println("             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
+            theWriter.println("         },");
+            theWriter.println("         profiler: {");
+            theWriter.println("             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");
+            theWriter.println("                 if (aUsed == 1) return;");
+            theWriter.println("                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
+            theWriter.println("                 console.log('      Block size is ' + bytecoder.intInMemory(aStart));");
+            theWriter.println("                 console.log('      Object type ' + bytecoder.intInMemory(aStart + 12));");
+            theWriter.println("             },");
+            theWriter.println("         },");
+            theWriter.println("         runtime: {");
+            theWriter.println("             nativewindow: function(caller) {return bytecoder.toBytecoderReference(window);},");
+            theWriter.println("         },");
+
+            final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
+            for (final Map.Entry<String, List<OpaqueReferenceMethod>> theEntry : theMethods.entrySet()) {
+
+                theWriter.print("         ");
+                theWriter.print(theEntry.getKey());
+                theWriter.println(": {");
+
+                for (final OpaqueReferenceMethod theMethod : theEntry.getValue()) {
+                    final BytecodeMethod theBytecdeMethod = theMethod.getMethod();
+
+                    final BytecodeImportedLink theImportedLink = theMethod.getLinkedClass().linkfor(theBytecdeMethod);
+                    theWriter.print("             ");
+                    theWriter.print(theImportedLink.getLinkName());
+                    theWriter.print(": function(");
+                    theWriter.print("target");
+                    final BytecodeMethodSignature theSignature = theBytecdeMethod.getSignature();
+                    for (int i=0;i<theSignature.getArguments().length;i++) {
+                        theWriter.print(",arg");
+                        theWriter.print(i);
+                    }
+                    theWriter.println(") {");
+
+                    String theMethodName = theBytecdeMethod.getName().stringValue();
+                    final BytecodeAnnotation theOpaqueProperty = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueProperty.class.getName());
+                    if (theOpaqueProperty != null) {
+                        final BytecodeAnnotation.ElementValue theValue = theOpaqueProperty.getElementValueByName("value");
+                        String theOpaquePropertyName;
+                        if (theValue == null) {
+                            if (theMethodName.startsWith("get")) {
+                                theOpaquePropertyName = theMethodName.substring(3);
+                            } else if (theMethodName.startsWith("is")) {
+                                theOpaquePropertyName = theMethodName.substring(2);
+                            } else if (theMethodName.startsWith("set")) {
+                                theOpaquePropertyName = theMethodName.substring(3);
+                            } else {
+                                throw new IllegalArgumentException("Not supported propertyname : " + theMethodName);
+                            }
+                            theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
+                        } else {
+                            theOpaquePropertyName = theMethodName;
+                        }
+                        if (theSignature.getReturnType().isVoid()) {
+                            theWriter.print("               ");
+                            theWriter.print("bytecoder.referenceTable[target].");
+                            theWriter.print(theOpaquePropertyName);
+
+                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[0]);
+                            if (theConversionFunction != null) {
+                                theWriter.print("=");
+                                theWriter.print(theConversionFunction);
+                                theWriter.println("(arg0);");
+                            } else {
+                                theWriter.println("=arg0;");
+                            }
+                        } else {
+                            theWriter.print("               return ");
+
+                            boolean theWriteClosingBraces = false;
+
+                            final String theConversionFunction = conversionFunctionToWASNForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            if (theConversionFunction != null) {
+                                theWriter.print(theConversionFunction);
+                                theWriter.print("(");
+
+                                theWriteClosingBraces = true;
+                            }
+
+                            theWriter.print("bytecoder.referenceTable[target].");
+                            theWriter.print(theOpaquePropertyName);
+
+                            if (theWriteClosingBraces) {
+                                theWriter.print(")");
+                            }
+                            theWriter.println(";");
+                        }
+                    } else {
+                        // It is a method invocation
+                        final BytecodeAnnotation theMethodAnnotation = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueMethod.class.getName());
+                        if (theMethodAnnotation != null) {
+                            theMethodName = theMethodAnnotation.getElementValueByName("value").stringValue();
+                        }
+
+                        boolean theWriteClosingBraces = false;
+
+                        if (!theSignature.getReturnType().isVoid()) {
+                            theWriter.print("               return ");
+
+                            final String theConversionFunction = conversionFunctionToWASNForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            if (theConversionFunction != null) {
+                                theWriter.print(theConversionFunction);
+                                theWriter.print("(");
+
+                                theWriteClosingBraces = true;
+                            }
+                        } else {
+                            theWriter.print("               ");
+                        }
+
+                        theWriter.print("bytecoder.referenceTable[target].");
+                        theWriter.print(theMethodName);
+                        theWriter.print("(");
+
+                        for (int i=0;i<theSignature.getArguments().length;i++) {
+                            if (i > 0) {
+                                theWriter.print(",");
+                            }
+
+                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[i]);
+                            if (theConversionFunction != null) {
+                                theWriter.print(theConversionFunction);
+                                theWriter.print("(arg");
+                                theWriter.print(i);
+                                theWriter.print(")");
+                            } else {
+                                theWriter.print("arg");
+                                theWriter.print(i);
+                            }
+                        }
+
+                        if (theWriteClosingBraces) {
+                            theWriter.print(")");
+                        }
+                        theWriter.println(");");
+
+                    }
+                    theWriter.println("             },");
+                }
+
+                theWriter.println("         },");
+
+            }
+
+            theWriter.println("     },");
+            theWriter.println("};");
+        }
         return new WASMCompileResult(
                 new WASMCompileResult.WASMTextualCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theStringWriter.toString(), aOptions.getFilenamePrefix()),
-                new WASMCompileResult.WASMBinaryCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), bos.toByteArray(), aOptions.getFilenamePrefix()));
+                new WASMCompileResult.WASMBinaryCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), bos.toByteArray(), aOptions.getFilenamePrefix()),
+                new WASMCompileResult.WASMTextualJSCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theJSCode.toString(), aOptions.getFilenamePrefix()));
+    }
+
+    private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            return null;
+        } else if (aTypeRef.isArray()) {
+            throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+        } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+            return "bytecoder.toJSString";
+        } else {
+            final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            if (theLinkedClass.isOpaqueType()) {
+                return "bytecoder.toJSReference";
+            } else if (theLinkedClass.isCallback()) {
+                return "bytecoder.toJSEventListener";
+            } else {
+                throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
+            }
+        }
+    }
+
+    private String conversionFunctionToWASNForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            return null;
+        } else if (aTypeRef.isArray()) {
+            throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+        } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+            return "bytecoder.toBytecoderString";
+        } else {
+            final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            if (theLinkedClass.isOpaqueType()) {
+                return "bytecoder.toBytecoderReference";
+            }
+            throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
+        }
     }
 }
