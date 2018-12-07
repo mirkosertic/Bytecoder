@@ -6,7 +6,7 @@
         <canvas id="benchmark-canvas" width="600" height="600"></canvas>
         <script type="text/javascript" src="stats.min.js"></script>
         <script type="text/javascript" src="bytecoder.js"></script>
-        <button id="button" onclick="stepFunction()" value="Click me" style="display: none">Click Me</button>
+        <button id="button" onclick="start()" value="Click me" style="display: none">Click Me</button>
         <table border="1">
             <tr>
                 <td>Avg ms / Frame</td>
@@ -87,6 +87,10 @@
                 window.requestAnimationFrame(stepFunction);
             };
 
+            var start = function() {
+                document.getElementById("button").disabled = true;
+                stepFunction();
+            };
         </script>
     </body>
 </html>
