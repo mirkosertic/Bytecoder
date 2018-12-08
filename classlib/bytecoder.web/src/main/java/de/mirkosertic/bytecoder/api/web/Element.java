@@ -15,12 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.Callback;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
-
-public interface Element extends OpaqueReferenceType {
+public interface Element extends Node, ParentNode {
 
     <T extends Element> T getElementById(final String aId);
-
-    <T extends Event> void addEventListener(final String eventType, final Callback<T> aEventListener);
 }

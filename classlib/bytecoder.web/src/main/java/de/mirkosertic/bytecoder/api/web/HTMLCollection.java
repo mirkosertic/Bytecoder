@@ -15,13 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface Document extends Element, ParentNode {
-
-    @OpaqueProperty
-    String getTitle();
-
-    @OpaqueProperty
-    void setTitle(final String aValue);
+public interface HTMLCollection extends OpaqueReferenceType {
 }
