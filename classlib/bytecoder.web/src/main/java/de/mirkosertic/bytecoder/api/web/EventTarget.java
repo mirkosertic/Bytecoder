@@ -15,13 +15,12 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface Document extends Element, ParentNode {
+public interface EventTarget extends OpaqueReferenceType {
 
-    @OpaqueProperty
-    String getTitle();
+    <T extends Event> void addEventListener(final String eventType, final Callback<T> aEventListener);
 
-    @OpaqueProperty
-    void setTitle(final String aValue);
+    <T extends Event> void dispatchEvent(T aEvent);
 }

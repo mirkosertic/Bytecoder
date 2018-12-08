@@ -15,13 +15,35 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface Document extends Element, ParentNode {
-
-    @OpaqueProperty
-    String getTitle();
+public interface ParentNode extends OpaqueReferenceType {
 
     @OpaqueProperty
-    void setTitle(final String aValue);
+    int childElementCount();
+
+    @OpaqueProperty
+    HTMLCollection children();
+
+    @OpaqueProperty
+    Element firstElementChild();
+
+    @OpaqueProperty
+    Element lastElementChild();
+
+    void append(Node aNode);
+
+    @OpaqueMethod("append")
+    void appendString(String aString);
+
+    void prepend(Node aNode);
+
+    @OpaqueMethod("prepend")
+    void prependString(String aString);
+
+    Element querySelector(String aSelector);
+
+    NodeList querySelectorAll(String aSelector);
 }
