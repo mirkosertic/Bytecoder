@@ -46,4 +46,6 @@ public interface ParentNode extends OpaqueReferenceType {
     Element querySelector(String aSelector);
 
     NodeList querySelectorAll(String aSelector);
+
+    <T extends Element> T getElementById(String id);
 }

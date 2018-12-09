@@ -17,11 +17,45 @@ package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
-public interface Document extends Element, ParentNode {
+public interface Document extends Node, ParentNode {
 
     @OpaqueProperty
-    String getTitle();
+    String characterSet();
 
     @OpaqueProperty
-    void setTitle(final String aValue);
+    String doctype();
+
+    @OpaqueProperty
+    Element documentElement();
+
+    @OpaqueProperty
+    String documentURI();
+
+    @OpaqueProperty
+    boolean hidden();
+
+    @OpaqueProperty
+    String lastStyleSheetSet();
+
+    Attr createAttribute(String name);
+
+    Comment createComment(String data);
+
+    <T extends Element> T createElement(String tagName);
+
+    <T extends Element> T  createElementNS(String tagName, String nameSpaceURI);
+
+    <T extends Event> T createEvent(String type);
+
+    TextNode createTextNode(String data);
+
+    <T extends Element> T elementFromPoint(int a, int y);
+
+    NodeList getElementsByClassName(String className);
+
+    NodeList getElementsByTagName(String tagName);
+
+    NodeList getElementsByTagNameNS(String tagName, String nameSpaceURI);
+
+    void normalizeDocument();
 }

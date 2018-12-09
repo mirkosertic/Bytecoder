@@ -16,12 +16,15 @@
 package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface NodeList extends OpaqueReferenceType {
+public interface CharacterData extends Node {
+
+    @OpaqueProperty
+    String data();
+
+    @OpaqueProperty
+    void data(String data);
 
     @OpaqueProperty
     int length();
-
-    <T extends Node> T item(int index);
 }
