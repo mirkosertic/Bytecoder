@@ -75,4 +75,6 @@ public interface Node extends EventTarget {
     void removeChild(Node aChildNode);
 
     void replaceChild(Node aNewChild, Node aOldChild);
+
+    void removeAll();
 }

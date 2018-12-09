@@ -18,10 +18,17 @@ package de.mirkosertic.bytecoder.api.web;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface NodeList extends OpaqueReferenceType {
+public interface Attr extends OpaqueReferenceType {
 
     @OpaqueProperty
-    int length();
+    String name();
 
-    <T extends Node> T item(int index);
+    @OpaqueProperty
+    String prefix();
+
+    @OpaqueProperty
+    String value();
+
+    @OpaqueProperty
+    void value(String value);
 }

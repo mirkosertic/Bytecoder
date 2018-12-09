@@ -16,12 +16,48 @@
 package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface NodeList extends OpaqueReferenceType {
+public interface HTMLDocument extends Document {
 
     @OpaqueProperty
-    int length();
+    Element activeElement();
 
-    <T extends Node> T item(int index);
+    @OpaqueProperty
+    Element body();
+
+    @OpaqueProperty
+    String cookie();
+
+    @OpaqueProperty
+    Window defaultView();
+
+    @OpaqueProperty
+    String dir();
+
+    @OpaqueProperty
+    String domain();
+
+    @OpaqueProperty
+    Element head();
+
+    @OpaqueProperty
+    int height();
+
+    @OpaqueProperty
+    String lastModified();
+
+    @OpaqueProperty
+    String location();
+
+    @OpaqueProperty
+    String referrer();
+
+    @OpaqueProperty
+    int width();
+
+    @OpaqueProperty
+    String title();
+
+    @OpaqueProperty
+    void title(String aNewTitle);
 }

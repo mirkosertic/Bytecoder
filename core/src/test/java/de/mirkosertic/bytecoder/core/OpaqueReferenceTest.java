@@ -16,8 +16,8 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.Callback;
-import de.mirkosertic.bytecoder.api.web.Document;
 import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.HTMLDocument;
 import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
@@ -32,20 +32,20 @@ public class OpaqueReferenceTest {
 
     @Test
     public void testGetSetTitle() {
-        final Document currentDocument = Window.window().document();
+        final HTMLDocument currentDocument = Window.window().document();
         //final String currentTitle = currentDocument.getTitle();
 
         final String theABC = "Bytecoder";
         TSystem.logDebug(theABC);
         TSystem.logDebug(theABC.getBytes());
-        currentDocument.setTitle(theABC);
-        Assert.assertEquals("Bytecoder", currentDocument.getTitle());
+        currentDocument.title(theABC);
+        Assert.assertEquals("Bytecoder", currentDocument.title());
     }
 
     @Test
     public void testEventListenerLambda() {
         final Window w = Window.window();
-        w.document().addEventListener("click", aValue -> w.document().setTitle("clicked!"));
+        w.document().addEventListener("click", aValue -> w.document().title("clicked!"));
     }
 
     @Test
@@ -55,7 +55,7 @@ public class OpaqueReferenceTest {
         w.document().addEventListener("click", new Callback<Event>() {
             @Override
             public void run(final Event aValue) {
-                w.document().setTitle("clicked!");
+                w.document().title("clicked!");
             }
         });
     }
