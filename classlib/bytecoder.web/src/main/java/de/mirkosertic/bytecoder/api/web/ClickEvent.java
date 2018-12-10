@@ -15,7 +15,5 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-public interface HTMLCanvasElement extends HTMLElement {
-
-    CanvasRenderingContext2D getContext(final String contextName);
+public interface ClickEvent extends Event {
 }

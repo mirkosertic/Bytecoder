@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
@@ -25,4 +26,6 @@ public abstract class Window implements EventTarget {
 
     @OpaqueProperty("document")
     public abstract HTMLDocument document();
+
+    public abstract void requestAnimationFrame(Callback<Event> callback);
 }

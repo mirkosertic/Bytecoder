@@ -978,14 +978,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         if (theValue == null) {
                             if (theMethodName.startsWith("get")) {
                                 theOpaquePropertyName = theMethodName.substring(3);
+                                theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
                             } else if (theMethodName.startsWith("is")) {
                                 theOpaquePropertyName = theMethodName.substring(2);
+                                theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
                             } else if (theMethodName.startsWith("set")) {
                                 theOpaquePropertyName = theMethodName.substring(3);
+                                theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
                             } else {
-                                throw new IllegalArgumentException("Not supported propertyname : " + theMethodName);
+                                theOpaquePropertyName = theMethodName;
                             }
-                            theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
                         } else {
                             theOpaquePropertyName = theMethodName;
                         }

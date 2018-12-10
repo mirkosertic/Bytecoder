@@ -37,7 +37,7 @@ bytecoder.imports.tmath = {
 };
 ```
 
-## Native-Linking in WebAssembly
+### Native-Linking in WebAssembly
 
 At startup, the following code must be provided:
 

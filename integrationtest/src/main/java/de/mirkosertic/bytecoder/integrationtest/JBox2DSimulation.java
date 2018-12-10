@@ -15,10 +15,15 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement;
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
+import de.mirkosertic.bytecoder.api.web.ClickEvent;
+import de.mirkosertic.bytecoder.api.web.Document;
+import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement;
+import de.mirkosertic.bytecoder.api.web.HTMLElement;
 import de.mirkosertic.bytecoder.api.web.Window;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
@@ -149,12 +154,7 @@ public class JBox2DSimulation {
             final long currentTime = System.currentTimeMillis();
             int timeToCalculate = (int) (currentTime - lastCalculated);
             final long relativeTime = currentTime - startTime;
-            System.out.println("Start of calculation");
-            System.out.println(currentTime);
-            System.out.println(timeToCalculate);
             while (timeToCalculate > 10) {
-                System.out.println("One step");
-                System.out.println((long) timeToCalculate);
                 final int period = (int) ((relativeTime + 5000) / 10000);
                 reel.applyTorque(period % 2 == 0 ? 8f : -8f);
                 world.step(0.01f, 20, 40);
@@ -162,7 +162,6 @@ public class JBox2DSimulation {
                 timeToCalculate -= 10;
             }
             lastCalculated = System.currentTimeMillis();
-            System.out.println("End");
         }
 
         public World getWorld() {
@@ -172,27 +171,55 @@ public class JBox2DSimulation {
 
     private static Scene scene;
     private static CanvasRenderingContext2D renderingContext2D;
+    private static Callback<Event> animationCallback;
+    private static Window window;
 
     @Export("main")
     public static void main(final String[] args) {
         scene = new Scene();
-        final HTMLCanvasElement theCanvas = Window.window().document().getElementById("benchmark-canvas");
+        window = Window.window();
+        Document document = window.document();
+        final HTMLCanvasElement theCanvas = document.getElementById("benchmark-canvas");
         renderingContext2D = theCanvas.getContext("2d");
-    }
 
-    @Export("proceedSimulation")
-    public static void proceedSimulation() {
-        final long theNow = System.currentTimeMillis();
-        scene.calculate();
+        animationCallback = new Callback<Event>() {
+            @Override
+            public void run(Event aValue) {
+                long theStart = System.currentTimeMillis();
 
-        render();
+                statsBegin();
 
-        final long theDuration = System.currentTimeMillis() - theNow;
-        logRuntime((int) theDuration);
+                scene.calculate();
+
+                render();
+
+                statsEnd();
+
+                int theDuration = (int) (System.currentTimeMillis() - theStart);
+                logRuntime(theDuration);
+
+                window.requestAnimationFrame(animationCallback);
+            }
+        };
+
+        final HTMLElement button = document.getElementById("button");
+        button.addEventListener("click", new Callback<ClickEvent>() {
+            @Override
+            public void run(ClickEvent aValue) {
+                button.style().setProperty("disabled", "true");
+                window.requestAnimationFrame(animationCallback);
+            }
+        });
     }
 
     @Import(module = "debug", name = "logRuntime")
     public static native void logRuntime(int aValue);
+
+    @Import(module = "stats", name = "begin")
+    public static native void statsBegin();
+
+    @Import(module = "stats", name = "end")
+    public static native void statsEnd();
 
     private static void render() {
         renderingContext2D.setFillStyle("white");

@@ -5,7 +5,7 @@
     <body>
         <canvas id="benchmark-canvas" width="600" height="600"></canvas>
         <script type="text/javascript" src="stats.min.js"></script>
-        <button id="button" onclick="start()" value="Click me" style="display: none">Click Me</button>
+        <button id="button" value="Click me" style="display: none">Click Me</button>
         <table border="1">
             <tr>
                 <td>Avg ms / Frame</td>
@@ -68,6 +68,14 @@
                     });
                 }
             };
+            bytecoder.imports.stats = {
+                begin: function() {
+                    stats.begin();
+                },
+                end: function() {
+                    stats.end();
+                }
+            };
 
             // Try to load the WASM file
             var request = new XMLHttpRequest();
@@ -91,19 +99,6 @@
             request.onload = function() {
                 var bytes = request.response;
                 WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-            };
-
-            var stepFunction = function(timestamp) {
-                stats.begin();
-                bytecoder.exports.proceedSimulation(0);
-                stats.end();
-
-                window.requestAnimationFrame(stepFunction);
-            };
-
-            var start = function() {
-                document.getElementById("button").disabled = true;
-                stepFunction();
             };
         </script>
     </body>

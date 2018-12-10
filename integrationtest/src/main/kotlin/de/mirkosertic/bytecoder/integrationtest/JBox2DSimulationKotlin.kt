@@ -145,12 +145,7 @@ object JBox2DSimulationKotlin {
             val currentTime = System.currentTimeMillis()
             var timeToCalculate = (currentTime - lastCalculated).toInt()
             val relativeTime = currentTime - startTime
-            println("Start of calculation")
-            println(currentTime)
-            println(timeToCalculate)
             while (timeToCalculate > 10) {
-                println("One step")
-                println(timeToCalculate.toLong())
                 val period = ((relativeTime + 5000) / 10000).toInt()
                 reel!!.applyTorque(if (period % 2 == 0) 8f else -8f)
                 world.step(0.01f, 20, 40)
@@ -158,7 +153,6 @@ object JBox2DSimulationKotlin {
                 timeToCalculate -= 10
             }
             lastCalculated = System.currentTimeMillis()
-            println("End")
         }
     }
 
