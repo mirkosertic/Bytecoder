@@ -1,7 +1,7 @@
 # Intermediate representation
 
 The Bytecoder internal intermediate representation is basically a directed graph. The key idea behind this is described 
-[in this paper](core/src/main/java/de/mirkosertic/bytecoder/graph/c2-ir95-150110.pdf).
+[in this paper](../core/src/main/java/de/mirkosertic/bytecoder/graph/c2-ir95-150110.pdf).
 
 Given this Java source code:
 
@@ -28,7 +28,7 @@ The following graph shows the further optimized version of the previous loop:
 
 ![Intermediate representation graph optimized](docassets/ir_loopexample_optimized.svg) 
 
-Part of the compiler optimization is the [relooper step](core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf).
+Part of the compiler optimization is the [relooper step](../core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf).
 Relooping tries to recover high level control flow constructs from the intermediate representation. This step eliminates
 the needs of GOTO statements and thus allows generation of more natural source code, which in turn can be easier read
 and optimized by Web Browsers or other tools.

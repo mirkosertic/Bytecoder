@@ -4,6 +4,38 @@ Programs do now live on their own, they need to communicate with their environme
 This communication can be tricky if done on multiple environments. Bytecoder supports
 JavaScript, WebAssembly and OpenCL as target platforms. How does this wok?
 
+## OpaqueReferenceTypes API
+
+Bytecoder allows transparent usage of APIs not implemented by Bytecoder itself. Such APIs are
+provided by the host environment, for instance the DOM API or interaction with the browser window.
+Bytecoder support such APIs by so called OpaqueReferenceTypes. For every external API, a new OpaqueRecerenceType
+in form of a JVM interface class needs to be created. Bytecoder already comes with implementations for the
+browser window and the DOM.
+
+See the following example, which demonstrates calls from Bytecoder to the HTML Canvas API:
+
+```
+Window window = Window.window();
+Document document = window.document();
+final HTMLCanvasElement theCanvas = document.getElementById("benchmark-canvas");
+CanvasRenderingContext2D renderingContext2D = theCanvas.getContext("2d");
+
+renderingContext2D.moveTo(10, 10);
+renderingContext2D.lineTo(20, 20);
+```
+
+Bytecoder also supports event listeners, as seen in the following example:
+
+```
+final HTMLElement button = document.getElementById("button");
+button.addEventListener("click", new Callback<ClickEvent>() {
+    @Override
+    public void run(ClickEvent aValue) {
+        button.style().setProperty("disabled", "true");
+    }
+});
+```
+
 ## Importing functionality from the host environment
 
 Using host environment functionality is quite common. This can be either simply

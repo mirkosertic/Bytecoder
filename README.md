@@ -14,7 +14,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 
 ## Compiling strategies
 
-The JVM Bytecode is parsed and transformed into an [intermediate representation](IR.md). This intermediate representation is passed thru 
+The JVM Bytecode is parsed and transformed into an [intermediate representation](manual/IR.md). This intermediate representation is passed thru 
 optimizer stages and sent to a backend implementation for target code generation.
 
 The *JavaScript* backend transforms the intermediate representation into JavaScript.
@@ -26,7 +26,7 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
 
 ## Demos
 
-![Demo screenshot](docassets/jbox2ddemo.png)
+![Demo screenshot](manual/docassets/jbox2ddemo.png)
 
  Demo                                            |                                   
 -------------------------------------------------|
@@ -67,11 +67,11 @@ The interesting part is the `Kernel` class. At runtime, the JVM bytecode is tran
 heavily parallel on the GPU. Writing OpenCL Kernels in Java keeps developer productivity up and allows to write efficient 
 algorithms that can transparently executed on the `GPU`.
 
-Details about OpenCL and its usage with Bytecoder are documented [here](OPENCL.md).
+Details about OpenCL and its usage with Bytecoder are documented [here](manual/OPENCL.md).
 
 ## Java to Target Platform Interop
 
-Details about this are documented [here](INTEROP.md).
+Details about this are documented [here](manual/INTEROP.md).
 
 ## Unit testing
 
@@ -94,7 +94,7 @@ public class SimpleMathTest {
 }
 ```
 
-Is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This test runner also supports comparison of original Java code and its cross compiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
+is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This test runner also supports comparison of original Java code and its cross compiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
 Bytecoder relies for WebAssembly unit testing on the WABT toolchain. Compilation is done by invoking the JS version of 
 the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
@@ -184,6 +184,6 @@ one implementation available.
 *JVM Bytecode* relies on the garbage collection mechanism provided by the Java Runtime. WebAssembly has currently no GC support in version 1.0.
 
 The WebAssembly backend must include garbage collection runtime code for memory management. The first implementation of such a GC will be a Mark-And-Sweep based.
-Details about WebAssembly are documented [here](WASM.md) 
+Details about WebAssembly are documented [here](manual/WASM.md) 
 
 The JavaScript backend relies on JavaScript garbage collection provided by the browser.
