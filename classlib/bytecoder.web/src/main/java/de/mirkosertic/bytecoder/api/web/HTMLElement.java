@@ -15,7 +15,10 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-public interface HTMLCanvasElement extends HTMLElement {
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
-    CanvasRenderingContext2D getContext(final String contextName);
+public interface HTMLElement extends Element {
+
+    @OpaqueProperty
+    CSSStyleDeclaration style();
 }

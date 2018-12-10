@@ -16,6 +16,4 @@
 package de.mirkosertic.bytecoder.api.web;
 
 public interface Element extends Node, ParentNode {
-
-    <T extends Element> T getElementById(final String aId);
 }
