@@ -29,7 +29,7 @@ import org.jbox2d.dynamics.joints.RevoluteJointDef
 
 object JBox2DSimulationKotlin {
 
-    private var scene: JBox2DSimulation.Scene? = null
+    private var scene: JBox2DSimulationKotlin.Scene? = null
     private var renderingContext2D: CanvasRenderingContext2D? = null
 
     class Scene {
@@ -159,7 +159,7 @@ object JBox2DSimulationKotlin {
     @JvmStatic
     @Export("main")
     fun main(args: Array<String>?) {
-        scene = JBox2DSimulation.Scene()
+        scene = JBox2DSimulationKotlin.Scene()
         val theCanvas = Window.window().document().getElementById<HTMLCanvasElement>("benchmark-canvas")
         renderingContext2D = theCanvas.getContext("2d")
     }
