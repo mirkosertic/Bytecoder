@@ -452,9 +452,11 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
                         final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.getJumpTarget());
                         final BlockState theImportingState = theGotoNode.toStartState();
-                        String theComments = "";
+                        final StringBuilder theComments = new StringBuilder();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
-                            theComments = theComments + theImporting.getKey() + " is of type " + theImporting.getValue().resolveType().resolve()+ " with values " + theImporting.getValue().incomingDataFlows();
+                            theComments.append(theImporting.getKey()).append(" is of type ")
+                                    .append(theImporting.getValue().resolveType().resolve()).append(" with values ")
+                                    .append(theImporting.getValue().incomingDataFlows());
                             final Value theReceivingValue = theImporting.getValue();
                             final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                             final Value theExportingValue = theHelper.requestValue(theImporting.getKey());
@@ -466,7 +468,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 aPoint.expressionList.addBefore(theInit, theGoto);
                             }
                         }
-                        theGoto.withComment(theComments);
+                        theGoto.withComment(theComments.toString());
                     }
                 });
             }
@@ -1021,13 +1023,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT);
                     aHelper.push(theNewVariable);
                 } else {
-                    if (Objects.equals(theObjectType, BytecodeObjectTypeRef.fromRuntimeClass(VM.RuntimeGeneratedType.class))) {
-                        final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, new RuntimeGeneratedTypeExpression());
-                        aHelper.push(theNewVariable);
-                    } else {
-                        final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theObjectType), new NewObjectExpression(theClassInfo));
-                        aHelper.push(theNewVariable);
-                    }
+                    final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theObjectType), new NewObjectExpression(theClassInfo));
+                    aHelper.push(theNewVariable);
                 }
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 final BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
@@ -1092,11 +1089,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final Variable theTarget = (Variable) aHelper.pop();
                 final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(VM.RuntimeGeneratedType.class))) {
-                    final RuntimeGeneratedTypeExpression theValue = (RuntimeGeneratedTypeExpression) theTarget.incomingDataFlows().get(0);
-                    theValue.setType(theArguments.get(0));
-                    theValue.setMethodRef(theArguments.get(1));
-                } else if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     theTarget.initializeWith(theArguments.get(0));
                     aTargetBlock.getExpressions().add(new VariableAssignmentExpression(theTarget, theArguments.get(0)));
                 } else {
@@ -1173,7 +1166,11 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final BytecodeClassinfoConstant theTargetClass = theINS.getMethodReference().getClassIndex().getClassConstant();
                 final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theTargetClass.getConstant());
-                if (Objects.equals(theObjectType.name(), MemoryManager.class.getName()) && "initTestMemory".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
+                if (Objects.equals(theObjectType.name(), VM.class.getName()) && "newRuntimeGeneratedType".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
+                    final RuntimeGeneratedTypeExpression theValue = new RuntimeGeneratedTypeExpression(theArguments.get(0), theArguments.get(1), theArguments.get(2));
+                    final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theValue);
+                    aHelper.push(theNewVariable);
+                } else if (Objects.equals(theObjectType.name(), MemoryManager.class.getName()) && "initTestMemory".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
                     // This invocation can be skipped!!!
                 } else if (Objects.equals(theObjectType.name(), Address.class.getName())) {
                     final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex()

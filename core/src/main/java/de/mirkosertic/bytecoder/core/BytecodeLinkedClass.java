@@ -15,12 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.api.Callback;
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
-import de.mirkosertic.bytecoder.graph.Node;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +22,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+import de.mirkosertic.bytecoder.graph.Node;
 
 public class BytecodeLinkedClass extends Node {
 
@@ -400,20 +400,29 @@ public class BytecodeLinkedClass extends Node {
         return classInitializer != null;
     }
 
+    private String simpleClassNameOf(final String aFullQualifiedClassName) {
+        final int p = aFullQualifiedClassName.lastIndexOf('.');
+        if (p>=0) {
+            return aFullQualifiedClassName.substring(p + 1);
+        }
+        return aFullQualifiedClassName;
+    }
+
     public BytecodeImportedLink linkfor(final BytecodeMethod aMethod) {
         final BytecodeAnnotation theImportAnnotation = aMethod.getAttributes().getAnnotationByType(Import.class.getName());
         if (theImportAnnotation == null) {
-            String theClassName = className.name();
-            final int p = theClassName.lastIndexOf('.');
-            if (p>=0) {
-                theClassName = theClassName.substring(p + 1);
+            final String theClassName = simpleClassNameOf(className.name());
+            final StringBuilder theMethodName = new StringBuilder(aMethod.getName().stringValue());
+            for (final BytecodeTypeRef theArgument : aMethod.getSignature().getArguments()) {
+                theMethodName.append(simpleClassNameOf(theArgument.name()));
             }
+
             // No import declaration found
             // By default we derive the module name from the classname to lower case
             // the link name is the method name
             return new BytecodeImportedLink(
                 theClassName.toLowerCase(),
-                aMethod.getName().stringValue()
+                    theMethodName.toString()
             );
         }
         return new BytecodeImportedLink(theImportAnnotation.getElementValueByName("module").stringValue(),

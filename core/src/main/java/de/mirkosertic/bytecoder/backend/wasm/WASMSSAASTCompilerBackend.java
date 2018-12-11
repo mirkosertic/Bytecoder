@@ -339,7 +339,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             runtimeResolvevtableindex.flow.unreachable();
         }
 
-        final ExportableFunction newLambdaFunction = module.getFunctions().newFunction("newLambda", Arrays.asList(param("type", PrimitiveType.i32), param("implMethodNumber", PrimitiveType.i32)), PrimitiveType.i32);
+        final ExportableFunction newLambdaFunction = module.getFunctions().newFunction("newLambda", Arrays.asList(param("type", PrimitiveType.i32), param("implMethodNumber", PrimitiveType.i32), param("staticArguments", PrimitiveType.i32)), PrimitiveType.i32);
 
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
@@ -907,34 +907,44 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         system: {");
             theWriter.println("             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
-            theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller, value);},");
+            theWriter.println("             logDebugObject: function(caller, value) {bytecoder.logDebug(caller, value);},");
             theWriter.println("             writeByteArrayToConsole: function(caller, value) {bytecoder.byteArraytoJSString(caller, value);},");
             theWriter.println("         },");
+            theWriter.println("         vm: {");
+            theWriter.println("             newRuntimeGeneratedTypeMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("         },");
             theWriter.println("         tsystem: {");
-            theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller, value);},");
+            theWriter.println("             logDebugObject: function(caller, value) {bytecoder.logDebug(caller, value);},");
             theWriter.println("         },");
             theWriter.println("         printstream: {");
             theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller,value);},");
             theWriter.println("         },");
             theWriter.println("         math: {");
-            theWriter.println("             floor: function (thisref, p1) {return Math.floor(p1);},");
-            theWriter.println("             ceil: function (thisref, p1) {return Math.ceil(p1);},");
-            theWriter.println("             sin: function (thisref, p1) {return Math.sin(p1);},");
-            theWriter.println("             cos: function  (thisref, p1) {return Math.cos(p1);},");
-            theWriter.println("             round: function  (thisref, p1) {return Math.round(p1);},");
-            theWriter.println("             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("             ceilDOUBLE: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("             sinDOUBLE: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("             cosDOUBLE: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("             roundDOUBLE: function  (thisref, p1) {return Math.round(p1);},");
+            theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
-            theWriter.println("             max: function(p1, p2) { return Math.max(p1, p2);},");
-            theWriter.println("             min: function(p1, p2) { return Math.min(p1, p2);},");
+            theWriter.println("             maxLONGLONG: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("             maxINTINT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("             minINTINT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+            theWriter.println("             toRadiansDOUBLE: function(thisref, p1) {");
+            theWriter.println("                 return Math.toRadians(p1);");
+            theWriter.println("             },");
+            theWriter.println("             toDegreesDOUBLE: function(thisref, p1) {");
+            theWriter.println("                 return Math.toDegrees(p1);");
+            theWriter.println("             },");
             theWriter.println("         },");
             theWriter.println("         strictmath: {");
-            theWriter.println("             floor: function (thisref, p1) {return Math.floor(p1);},");
-            theWriter.println("             ceil: function (thisref, p1) {return Math.ceil(p1);},");
-            theWriter.println("             sin: function (thisref, p1) {return Math.sin(p1);},");
-            theWriter.println("             cos: function  (thisref, p1) {return Math.cos(p1);},");
-            theWriter.println("             round: function  (thisref, p1) {return Math.round(p1);},");
-            theWriter.println("             sqrt: function(thisref, p1) {return Math.sqrt(p1);},");
-            theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
+            theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
+            theWriter.println("             ceilDOUBLE: function (thisref, p1) {return Math.ceil(p1);},");
+            theWriter.println("             sinDOUBLE: function (thisref, p1) {return Math.sin(p1);},");
+            theWriter.println("             cosDOUBLE: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("             roundFLOAT: function  (thisref, p1) {return Math.round(p1);},");
+            theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("             atan2DOUBLEDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("         },");
             theWriter.println("         profiler: {");
             theWriter.println("             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");

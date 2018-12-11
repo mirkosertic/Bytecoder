@@ -17,27 +17,27 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class RuntimeGeneratedTypeExpression extends Expression {
 
-    private Value type;
-    private Value methodRef;
-
-    public Value getType() {
-        return type;
-    }
-
-    public void setType(Value aType) {
-        type = aType;
-    }
-
-    public Value getMethodRef() {
-        return methodRef;
-    }
-
-    public void setMethodRef(Value aMethodRef) {
-        methodRef = aMethodRef;
+    public RuntimeGeneratedTypeExpression(final Value type, final Value methodRef, final Value staticArguments) {
+        receivesDataFrom(type);
+        receivesDataFrom(methodRef);
+        receivesDataFrom(staticArguments);
     }
 
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
     }
+
+    public Value getType() {
+        return incomingDataFlows().get(0);
+    }
+
+    public Value getMethodRef() {
+        return incomingDataFlows().get(1);
+    }
+
+    public Value getStaticArguments() {
+        return incomingDataFlows().get(2);
+    }
+
 }

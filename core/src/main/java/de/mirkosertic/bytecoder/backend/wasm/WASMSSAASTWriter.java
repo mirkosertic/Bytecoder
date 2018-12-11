@@ -787,7 +787,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression runtimeGeneratedTypeValue(final RuntimeGeneratedTypeExpression aValue) {
         final Function theNew = module.functionIndex().firstByLabel("newLambda");
-        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef())));
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef()), toValue(aValue.getStaticArguments())));
     }
 
     private WASMValue typeOfValue(final TypeOfExpression aValue) {

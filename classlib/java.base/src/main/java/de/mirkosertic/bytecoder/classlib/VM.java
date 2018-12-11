@@ -23,31 +23,22 @@ public class VM {
 
     public static abstract class ImplementingCallsite extends ConstantCallSite {
 
-        public ImplementingCallsite(MethodHandle target) {
+        public ImplementingCallsite(final MethodHandle target) {
             super(target);
         }
 
         public abstract Object invokeExact(Object... args) throws Throwable;
     }
 
-    public static class RuntimeGeneratedType {
-
-        private final MethodType type;
-        private final MethodHandle implementation;
-
-        public RuntimeGeneratedType(MethodType aType, MethodHandle aImplementation) {
-            type = aType;
-            implementation = aImplementation;
-        }
-    }
+    public static native Object newRuntimeGeneratedType(MethodType aType, MethodHandle aHandle, Object... staticArguments);
 
     public static final char NEWLINE = '\n';
 
-    public static long stringToLong(String aString) {
+    public static long stringToLong(final String aString) {
         long theResult = 0;
         int theMultiplier = 1;
         for (int k=aString.length()-1;k>=0;k--) {
-            char theCharAt = aString.charAt(k);
+            final char theCharAt = aString.charAt(k);
             if (k==0 && theCharAt == '-') {
                 theResult=-theResult;
             } else {
@@ -58,7 +49,7 @@ public class VM {
         return theResult;
     }
 
-    public static int charValue(char aValue) {
+    public static int charValue(final char aValue) {
         switch (aValue) {
         case '0':
             return 0;
@@ -85,7 +76,7 @@ public class VM {
         }
     }
 
-    public static char toHexCharacter(int aValue) {
+    public static char toHexCharacter(final int aValue) {
         switch (aValue) {
         case 0:
             return '0';
@@ -128,9 +119,9 @@ public class VM {
         if (aValue == 0) {
             return "0";
         }
-        StringBuilder theResult = new StringBuilder();
+        final StringBuilder theResult = new StringBuilder();
         while(aValue > 0) {
-            int theModulo = (int) (aValue % 16);
+            final int theModulo = (int) (aValue % 16);
             theResult.append(toHexCharacter(theModulo));
             aValue = aValue >> 4;
         }
