@@ -284,6 +284,8 @@ public class JSSSAWriter extends IndentSSAWriter {
     private void print(final RuntimeGeneratedTypeExpression aValue) {
         print("bytecoder.dynamicType(");
         print(aValue.getMethodRef());
+        print(",");
+        print(aValue.getStaticArguments());
         print(")");
     }
 
