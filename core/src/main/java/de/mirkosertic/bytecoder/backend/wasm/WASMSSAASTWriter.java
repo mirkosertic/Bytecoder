@@ -779,9 +779,9 @@ public class WASMSSAASTWriter {
 
     private WASMValue methodRefValue(final MethodRefExpression aValue) {
         final String theMethodName = WASMWriterUtils.toMethodName(
-                BytecodeObjectTypeRef.fromUtf8Constant(aValue.getMethodRef().getClassIndex().getClassConstant().getConstant()),
-                aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                aValue.getClassName(),
+                aValue.getMethodName(),
+                aValue.getSignature());
         return weakFunctionTableReference(theMethodName);
     }
 
