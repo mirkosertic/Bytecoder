@@ -15,6 +15,32 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
@@ -26,6 +52,7 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
@@ -57,38 +84,18 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -655,6 +662,120 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final ExportableFunction theFunction = module.functionIndex().firstByLabel(theEntry.getKey());
             final Program theSSAProgram = theEntry.getValue().program;
 
+            // At this point, we need to determine if there are lambdas generated
+            // so we can generate the adapter methods at compile time. This needs
+            // to be done because WebAssembly cannot generate code at runtime
+
+            final RegionNode theBootStrapcode = theEntry.getValue().bootstrapMethod;
+            for (final Expression theExpression : theBootStrapcode.getExpressions().toList()) {
+                final List<Value> theIncomingDataFlows = theExpression.incomingDataFlows();
+                for (final Value theValue : theIncomingDataFlows) {
+                    if (theValue instanceof InvokeStaticMethodExpression) {
+                        final InvokeStaticMethodExpression theStatic = (InvokeStaticMethodExpression) theValue;
+                        if (theStatic.getClassName().name().equals(LambdaMetafactory.class.getName()) && theStatic.getMethodName().equals("metafactory")) {
+                            // We have a winner
+                            final List<Value> theArguments = new ArrayList<>();
+                            for (final Value theArg : theStatic.incomingDataFlows()) {
+                                if (theArg instanceof Variable) {
+                                    theArguments.add(theArg.incomingDataFlows().get(0));
+                                } else {
+                                    theArguments.add(theArg);
+                                }
+                            }
+                            final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2);
+                            final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5);
+                            final MethodRefExpression theImplementationMethod = (MethodRefExpression) theArguments.get(4);
+                            if (theStaticInvocationType.getSignature().getArguments().length == 0) {
+                                // If we have no static invocation arguments, we do not need to generate an adapter method
+                                // We can directly refer to the implementation method
+                            } else {
+                                // We need to create an adapter method to make the two signatures compatible
+                                final List<Param> theParams = new ArrayList<>();
+                                theParams.add(param("selfRef", PrimitiveType.i32));
+                                for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
+                                    theParams.add(param("arg" + i, WASMSSAASTWriter.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getArguments()[i]))));
+                                }
+                                final BytecodeMethodSignature theImplementationSignature = theImplementationMethod.getSignature();
+
+                                final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
+                                        theImplementationMethod.getClassName(),
+                                        theImplementationMethod.getMethodName(),
+                                        theImplementationSignature
+                                ));
+
+                                final String theFunctionName = WASMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
+                                        theImplementationMethod.getMethodName() + theEntry.getKey(), theImplementationMethod.getSignature());
+
+                                // This is our new implementation
+                                theImplementationMethod.retargetToMethodName(theImplementationMethod.getMethodName() + theEntry.getKey());
+
+                                if (theImplementationSignature.getReturnType().isVoid()) {
+
+                                    ExportableFunction theAdapterFunction= theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
+                                            theParams).toTable();
+
+                                    final List<WASMValue> theDispatchArguments = new ArrayList<>();
+                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef")));
+
+                                    // Add static arguments
+                                    for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
+
+                                        final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef")));
+                                        final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4));
+                                        switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
+                                            case DOUBLE:
+                                            case FLOAT: {
+                                                theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr));
+                                            }
+                                            default: {
+                                                theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr));
+                                            }
+                                        }
+                                    }
+
+                                    // Add dynamic arguments
+                                    for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
+                                        theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i)));
+                                    }
+
+                                    theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments);
+                                } else {
+
+                                    final ExportableFunction theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
+                                            theParams, WASMSSAASTWriter.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getReturnType()))).toTable();
+
+                                    final List<WASMValue> theDispatchArguments = new ArrayList<>();
+                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef")));
+
+                                    // Add static arguments
+                                    for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
+
+                                        final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef")));
+                                        final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4));
+                                        switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
+                                        case DOUBLE:
+                                        case FLOAT: {
+                                            theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr));
+                                        }
+                                        default: {
+                                            theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr));
+                                        }
+                                        }
+                                    }
+
+                                    // Add dynamic arguments
+                                    for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
+                                        theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i)));
+                                    }
+
+                                    theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction);
             for (final Variable theVariable : theSSAProgram.getVariables()) {
 
@@ -790,9 +911,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final Local newRef = newLambdaFunction.newLocal("newRef", PrimitiveType.i32);
             newLambdaFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
-                            Arrays.asList(i32.c(0), i32.c(12),
+                            Arrays.asList(i32.c(0), i32.c(16),
                                     getLocal(newLambdaFunction.localByLabel("type")), i32.c(module.getTables().funcTable().indexOf(lambdaResolvevtableindex)))));
             newLambdaFunction.flow.i32.store(8, getLocal(newRef), getLocal(newLambdaFunction.localByLabel("implMethodNumber")));
+            newLambdaFunction.flow.i32.store(12, getLocal(newRef), getLocal(newLambdaFunction.localByLabel("staticArguments")));
             newLambdaFunction.flow.ret(getLocal(newRef));
         }
 

@@ -320,9 +320,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(final MethodRefExpression aValue) {
-        final String theMethodName = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        final BytecodeMethodSignature theSignature = aValue.getMethodRef().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
-        print(JSWriterUtils.toClassName(aValue.getMethodRef().getClassIndex().getClassConstant()));
+        final String theMethodName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
+        print(JSWriterUtils.toClassName(aValue.getClassName()));
         print(".");
         print(JSWriterUtils.toMethodName(theMethodName, theSignature));
     }

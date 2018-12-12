@@ -1441,7 +1441,10 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             final BytecodeReferenceIndex theReference = theMethodHandle.getReferenceIndex();
                             final BytecodeMethodRefConstant theReferenceConstant = (BytecodeMethodRefConstant) theReference
                                     .getConstant();
-                            theArguments.add(theInitNode.newVariable(TypeRef.Native.REFERENCE, new MethodRefExpression(theReferenceConstant)));
+                            theArguments.add(theInitNode.newVariable(TypeRef.Native.REFERENCE, new MethodRefExpression(
+                                    BytecodeObjectTypeRef.fromUtf8Constant(theReferenceConstant.getClassIndex().getClassConstant().getConstant()),
+                                    theReferenceConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                    theReferenceConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature())));
                             continue;
                         }
                         throw new IllegalStateException("Unsupported argument type : " + theArgumentConstant);

@@ -16,17 +16,36 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class MethodRefExpression extends Expression {
 
-    private final BytecodeMethodRefConstant methodRef;
+    private final BytecodeObjectTypeRef className;
+    private String methodName;
+    private final BytecodeMethodSignature signature;
 
-    public MethodRefExpression(BytecodeMethodRefConstant aMethodRef) {
-        methodRef = aMethodRef;
+    public MethodRefExpression(final BytecodeObjectTypeRef className, final String methodName,
+            final BytecodeMethodSignature signature) {
+        this.className = className;
+        this.methodName = methodName;
+        this.signature = signature;
     }
 
-    public BytecodeMethodRefConstant getMethodRef() {
-        return methodRef;
+    public BytecodeObjectTypeRef getClassName() {
+        return className;
+    }
+
+    public String getMethodName() {
+        return methodName;
+    }
+
+    public BytecodeMethodSignature getSignature() {
+        return signature;
+    }
+
+    public void retargetToMethodName(final String aNewMethodName) {
+        methodName = aNewMethodName;
     }
 
     @Override
