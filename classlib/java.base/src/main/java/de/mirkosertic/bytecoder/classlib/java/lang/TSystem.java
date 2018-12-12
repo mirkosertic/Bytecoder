@@ -32,14 +32,14 @@ public class TSystem {
         public native void writeByteArrayToConsole(byte[] aBytes);
 
         @Override
-        public void write(int b) throws IOException {
-            byte[] theData = new byte[1];
+        public void write(final int b) throws IOException {
+            final byte[] theData = new byte[1];
             theData[0] = (byte) b;
             write(theData);
         }
 
         @Override
-        public void write(byte[] b, int off, int len) throws IOException {
+        public void write(final byte[] b, final int off, final int len) throws IOException {
             writeByteArrayToConsole(b);
         }
 
@@ -56,15 +56,19 @@ public class TSystem {
 
     public static native void logDebug(Object aValue);
 
-    public static void arraycopy(Object aSource, int aSourcePos, Object aTarget, int aTargetPos, int aLength) {
-        Object[] theSource = (Object[]) aSource;
-        Object[] theTarget = (Object[]) aTarget;
+    public static void arraycopy(final Object aSource, final int aSourcePos, final Object aTarget, final int aTargetPos, final int aLength) {
+        final Object[] theSource = (Object[]) aSource;
+        final Object[] theTarget = (Object[]) aTarget;
         for (int i=0;i<aLength;i++) {
             theTarget[aTargetPos + i] = theSource[aSourcePos + i];
         }
     }
 
-    public static int identityHashCode(Object aValue) {
+    public static int identityHashCode(final Object aValue) {
         return aValue.hashCode();
+    }
+
+    public static SecurityManager getSecurityManager() {
+        return null;
     }
 }
