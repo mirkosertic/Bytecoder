@@ -518,7 +518,7 @@ public class WASMSSAASTWriter {
     }
 
     private void generateIFExpression(final IFExpression aExpression) {
-        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), i32.ne(toValue(aExpression.incomingDataFlows().get(0)), i32.c(0)));
+        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), toValue(aExpression.incomingDataFlows().get(0)));
         iff.writeExpressionList(aExpression.getExpressions());
     }
 
