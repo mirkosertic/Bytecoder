@@ -946,7 +946,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("     runningInstance: undefined,");
             theWriter.println("     runningInstanceMemory: undefined,");
             theWriter.println("     exports: undefined,");
-            theWriter.println("     referenceTable: [],");
+            theWriter.println("     referenceTable: ['EMPTY'],");
             theWriter.println();
 
             theWriter.println("     init: function(instance) {");
@@ -1006,6 +1006,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println();
 
             theWriter.println("     toBytecoderReference: function(value) {");
+            theWriter.println("         var index = bytecoder.referenceTable.indexOf(value);");
+            theWriter.println("         if (index>=0) {");
+            theWriter.println("             return index;");
+            theWriter.println("         }");
             theWriter.println("         bytecoder.referenceTable.push(value);");
             theWriter.println("         return bytecoder.referenceTable.length - 1;");
             theWriter.println("     },");

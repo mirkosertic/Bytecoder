@@ -6,7 +6,7 @@
 <canvas id="benchmark-canvas" width="600" height="600"></canvas>
 <script type="text/javascript" src="stats.min.js"></script>
 <script type="text/javascript" src="bytecoder-kotlin.js"></script>
-<button id="button" onclick="start()" value="Click me" style="display: none">Click Me</button>
+<button id="button" value="Click me" style="display: none">Click Me</button>
 <table border="1">
     <tr>
         <td>Avg ms / Frame</td>
@@ -70,6 +70,14 @@
             });
         }
     };
+    bytecoder.imports.stats = {
+        begin: function() {
+            stats.begin();
+        },
+        end: function() {
+            stats.end();
+        }
+    };
 
     console.log("Init");
     bytecoder.bootstrap();
@@ -78,19 +86,6 @@
     console.log("Ready");
 
     document.getElementById("button").style.display = "block";
-
-    var stepFunction = function(timestamp) {
-        stats.begin();
-        bytecoder.exports.proceedSimulation(dmbiJBox2DSimulationKotlin);
-        stats.end();
-
-        window.requestAnimationFrame(stepFunction);
-    };
-
-    var start = function() {
-        document.getElementById("button").disabled = true;
-        stepFunction();
-    };
 </script>
 </body>
 </html>

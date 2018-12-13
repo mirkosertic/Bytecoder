@@ -15,11 +15,10 @@
  */
 package de.mirkosertic.bytecoder.integrationtest
 
+import de.mirkosertic.bytecoder.api.Callback
 import de.mirkosertic.bytecoder.api.Export
 import de.mirkosertic.bytecoder.api.Import
-import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement
-import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D
-import de.mirkosertic.bytecoder.api.web.Window
+import de.mirkosertic.bytecoder.api.web.*
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.ShapeType
@@ -29,8 +28,10 @@ import org.jbox2d.dynamics.joints.RevoluteJointDef
 
 object JBox2DSimulationKotlin {
 
-    private var scene: JBox2DSimulationKotlin.Scene? = null
+    private var scene: Scene? = null
     private var renderingContext2D: CanvasRenderingContext2D? = null
+    private var animationCallback: Callback<Event>? = null
+    private var window: Window? = null
 
     class Scene {
         val world: World
@@ -156,27 +157,47 @@ object JBox2DSimulationKotlin {
         }
     }
 
-    @JvmStatic
     @Export("main")
+    @JvmStatic
     fun main(args: Array<String>?) {
-        scene = JBox2DSimulationKotlin.Scene()
-        val theCanvas = Window.window().document().getElementById<HTMLCanvasElement>("benchmark-canvas")
+        scene = Scene()
+        window = Window.window()
+        val document = window!!.document()
+        val theCanvas = document.getElementById<HTMLCanvasElement>("benchmark-canvas")
         renderingContext2D = theCanvas.getContext("2d")
-    }
 
-    @Export("proceedSimulation")
-    fun proceedSimulation() {
-        val theNow = System.currentTimeMillis()
-        scene!!.calculate()
+        animationCallback = Callback {
+            val theStart = System.currentTimeMillis()
 
-        render()
+            statsBegin()
 
-        val theDuration = System.currentTimeMillis() - theNow
-        logRuntime(theDuration.toInt())
+            scene!!.calculate()
+
+            render()
+
+            statsEnd()
+
+            val theDuration = (System.currentTimeMillis() - theStart).toInt()
+            logRuntime(theDuration)
+
+            window!!.requestAnimationFrame(animationCallback)
+        }
+
+        val button = document.getElementById<HTMLElement>("button")
+        button.addEventListener("click", Callback<ClickEvent> {
+            button.style().setProperty("disabled", "true")
+            window!!.requestAnimationFrame(animationCallback)
+        })
     }
 
     @Import(module = "debug", name = "logRuntime")
     external fun logRuntime(aValue: Int)
+
+    @Import(module = "stats", name = "begin")
+    external fun statsBegin()
+
+    @Import(module = "stats", name = "end")
+    external fun statsEnd()
 
     private fun render() {
         renderingContext2D!!.setFillStyle("white")
