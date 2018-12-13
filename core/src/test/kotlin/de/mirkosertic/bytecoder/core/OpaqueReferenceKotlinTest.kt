@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core
 
 import de.mirkosertic.bytecoder.api.Callback
 import de.mirkosertic.bytecoder.api.web.ClickEvent
+import de.mirkosertic.bytecoder.api.web.HTMLDocument
 import de.mirkosertic.bytecoder.api.web.Window
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner
 import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly
@@ -27,12 +28,24 @@ import org.junit.runner.RunWith
 @JSAndWASMOnly
 class OpaqueReferenceKotlinTest {
 
+    var window : Window? = null
+    var document : HTMLDocument? = null
+
     @Test
     fun setTitleTest() {
         val w = Window.window()
         val d = w.document()
         d.addEventListener("click", Callback<ClickEvent> {
             d.title("Hello world!!")
-        });
+        })
+    }
+
+    @Test
+    fun setTitleTestMember() {
+        window = Window.window()
+        document = window!!.document()
+        document!!.addEventListener("click", Callback<ClickEvent> {
+            document!!.title("Hello world!!")
+        })
     }
 }
