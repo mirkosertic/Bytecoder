@@ -159,8 +159,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("     dynamicType : function(aFunction,staticArguments) { ");
         theWriter.println("         return new Proxy({}, {");
         theWriter.println("             get: function(target, name) {");
-        theWriter.println("                 return function(inst, _p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9) {");
-        theWriter.println("                    return aFunction(_p1, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9);");
+        theWriter.println("                 return function() {");
+        theWriter.println("                    var args = Array.prototype.slice.call(arguments);");
+        theWriter.println("                    return aFunction.apply(target, staticArguments.data.concat(args.splice(1)));");
         theWriter.println("                 }");
         theWriter.println("             }");
         theWriter.println("         });");
