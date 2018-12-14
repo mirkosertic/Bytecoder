@@ -950,8 +950,12 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print(theVariable.getName());
                 print(" = ");
                 print(theValue);
-                print("; // type is ");
-                println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());
+                if (options.isDebugOutput()) {
+                    print("; // type is ");
+                    println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());
+                } else {
+                    println(";");
+                }
             } else if (theExpression instanceof PutStaticExpression) {
                 final PutStaticExpression theE = (PutStaticExpression) theExpression;
                 final BytecodeFieldRefConstant theField = theE.getField();

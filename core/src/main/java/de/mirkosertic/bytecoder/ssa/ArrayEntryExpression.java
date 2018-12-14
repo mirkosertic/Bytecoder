@@ -31,6 +31,6 @@ public class ArrayEntryExpression extends Expression {
 
     @Override
     public boolean isTrulyFunctional() {
-        return false;
+        return true;
     }
 }
