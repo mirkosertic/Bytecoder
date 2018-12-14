@@ -41,7 +41,10 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Return;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ReturnValue;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Unreachable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.I32Const;
@@ -1363,6 +1366,17 @@ public class WASMSSAASTWriter {
         function.newLocal(LABEL_LOCAL, PrimitiveType.i32);
         stackEnter();
         writeReloopedInternal(aBlock);
+
+        List<WASMExpression> theExpressions = container.getChildren();
+        if (!theExpressions.isEmpty()) {
+            WASMExpression theLast = theExpressions.get(theExpressions.size() - 1);
+            if (theLast instanceof Return || theLast instanceof ReturnValue ||
+                    theLast instanceof Unreachable) {
+                // Does not make sense to add an unreachable
+                return;
+            }
+        }
+
         flow.unreachable();
     }
 

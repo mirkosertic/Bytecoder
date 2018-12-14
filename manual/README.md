@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Rich Domain Model for Java Bytecode and Framework to interpret and transpile it to other 
+Bytecoder is a Rich Domain Model for Java Bytecode and Framework to interpret and transpile it to other 
 languages such as JavaScript, OpenCL or WebAssembly.
 
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
@@ -86,7 +86,7 @@ button.addEventListener("click", new Callback<ClickEvent>() {
 #### Importing functionality from the host environment
 
 Using host environment functionality is quite common. This can be either simply
-logging or more complex code like painting on a HTML5 Canvas.
+logging or more complex code. Basically something that cannot be archived by plain OpaqueReferenceTypes.
 
 Java has a built-in language feature for importing functionality. The `native` keyword!
 
@@ -109,8 +109,8 @@ derived from the classname in lowercase, the `importname` is the method name to 
 At startup, the following code must be provided:
 
 ```
-bytecoder.imports.tmath = {
-    sqrt: function(p1) {
+bytecoder.imports.math = {
+    sqrtDOUBLE: function(p1) {
         return Math.sqrt(p1);
     },
 };
@@ -121,10 +121,9 @@ bytecoder.imports.tmath = {
 At startup, the following code must be provided:
 
 ```
-// Our module for dynamic linking. This is passed to the WASM instantiate method.
-var importObject = {
-    tmath: {
-        sqrt: function(thisref, p1) {return Math.sqrt(p1);},
+bytecoder.imports.math = {
+    sqrtDOUBLE: function(thisref, p1) {
+        return Math.sqrt(p1);
     },
 };
 ```
