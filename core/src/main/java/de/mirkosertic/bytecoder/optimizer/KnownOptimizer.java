@@ -39,6 +39,8 @@ public enum KnownOptimizer implements Optimizer {
             theOptimizer.add(new InlineFinalNodesOptimizer());
             theOptimizer.add(new InvokeVirtualOptimizer());
             theOptimizer.add(new InlineGotoOptimizer());
+            theOptimizer.add(new InefficientFieldWriteOptimizer());
+            theOptimizer.add(new InefficientArrayWriteOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
     },
