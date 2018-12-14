@@ -15,21 +15,24 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
@@ -42,7 +45,10 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
     protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
         if ((aExpression instanceof VariableAssignmentExpression) ||
                 (aExpression instanceof InvocationExpression) ||
-                (aExpression instanceof ReturnValueExpression)) {
+                (aExpression instanceof ReturnValueExpression) ||
+                (aExpression instanceof PutFieldExpression) ||
+                (aExpression instanceof PutStaticExpression) ||
+                (aExpression instanceof ArrayStoreExpression)) {
             boolean modified = true;
             while(modified) {
                 modified = false;

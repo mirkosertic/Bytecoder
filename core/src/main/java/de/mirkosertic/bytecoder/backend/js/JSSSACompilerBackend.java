@@ -529,9 +529,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theVariablesWriter.print("var ");
                         theVariablesWriter.print(theVariable.getName());
                         theVariablesWriter.print(" = null;");
-                        theVariablesWriter.print(" // type is ");
-                        theVariablesWriter.print(theVariable.resolveType().resolve().name());
-                        theVariablesWriter.print(" # of inits = " + theVariable.incomingDataFlows().size());
+                        if (aOptions.isDebugOutput()) {
+                            theVariablesWriter.print(" // type is ");
+                            theVariablesWriter.print(theVariable.resolveType().resolve().name());
+                            theVariablesWriter.print(" # of inits = " + theVariable.incomingDataFlows().size());
+                        }
                         theVariablesWriter.println();
                     }
                 }
