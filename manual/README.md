@@ -43,7 +43,7 @@ public class OpaqueReferenceTest {
 }
 ```
 
-I'll try to exlain the basics behind this and how it can be compiled to JavaScript or WebAssembly in the following sections.
+I'll try to explain the basics behind this and how it can be compiled to JavaScript or WebAssembly in the following sections.
 
 ### Interoperability and runtime linkage
 
