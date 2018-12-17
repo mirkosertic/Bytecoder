@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
@@ -641,11 +642,24 @@ public class JSSSAWriter extends IndentSSAWriter {
             if (theLinkedClass.isOpaqueType()) {
                 print(aValue);
             } else if (theLinkedClass.isCallback()) {
-                print("function(event) {");
+
+                BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
+                List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(t -> !t.getValue().isConstructor() && !t.getValue().isClassInitializer()
+                        && !t.getProvidingClass().getClassName().name().equals(Object.class.getName())).map(t -> t.getValue()).collect(Collectors.toList());
+                if (availableCallbacks.size() != 1) {
+                    throw new IllegalStateException("Unvalid number of callback methods available for type " + theLinkedClass.getClassName().name() + ", expected 1, got " + availableCallbacks.size());
+                }
+
+                BytecodeMethod theCallbackMethod = availableCallbacks.get(0);
+                String theMethodName = JSWriterUtils.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
+
+                print("function() {");
                 print("var v = ");
                 print(aValue);
-                print(";v");
-                print(".VOIDrundmbaOpaqueReferenceType(v, event);");
+                print(";var args = Array.prototype.slice.call(arguments);args.unshift(v);v");
+                print(".");
+                print(theMethodName);
+                print(".apply(v, args);");
                 print("}");
             } else {
                 throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");

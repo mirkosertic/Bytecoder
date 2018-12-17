@@ -15,14 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
-import java.lang.reflect.Method;
-
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
-import de.mirkosertic.bytecoder.classlib.Globals;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -32,6 +30,10 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
+
+import java.lang.reflect.Method;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class CompileTarget {
 
@@ -68,8 +70,6 @@ public class CompileTarget {
         theClassLinkedCass.resolveConstructorInvocation(new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
 
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Globals.class));
-
         // Lambda handling
         final BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.ImplementingCallsite.class));
         theCallsite.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
@@ -83,6 +83,21 @@ public class CompileTarget {
             theClass.resolveStaticMethod(aMethodName, aSignature);
         } else {
             theClass.resolveVirtualMethod(aMethodName, aSignature);
+        }
+
+        // We have to link all callback implementations. They are not part of the dependency yet as
+        // they are not invoked by the bytecode, but from the outside world. By adding them to the
+        // dependency tree, we make sure they are available for invocation.
+        List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(t -> t.targetNode()).collect(Collectors.toList());
+        for (BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
+            if (theLinkedClass.isCallback()) {
+                BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
+                for (BytecodeMethod theCallbackMethod : theBytecodeClass.getMethods()) {
+                    if (!theCallbackMethod.isConstructor() && !theCallbackMethod.isClassInitializer()) {
+                        theLinkedClass.resolveVirtualMethod(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
+                    }
+                }
+            }
         }
 
         // Before code generation we have to make sure that all abstract method implementations are linked correctly

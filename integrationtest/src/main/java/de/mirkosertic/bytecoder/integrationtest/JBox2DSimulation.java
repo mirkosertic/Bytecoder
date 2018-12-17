@@ -15,13 +15,13 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
-import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.web.AnimationFrameCallback;
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
 import de.mirkosertic.bytecoder.api.web.ClickEvent;
 import de.mirkosertic.bytecoder.api.web.Document;
-import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
 import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement;
 import de.mirkosertic.bytecoder.api.web.HTMLElement;
 import de.mirkosertic.bytecoder.api.web.Window;
@@ -171,21 +171,21 @@ public class JBox2DSimulation {
 
     private static Scene scene;
     private static CanvasRenderingContext2D renderingContext2D;
-    private static Callback<Event> animationCallback;
+    private static AnimationFrameCallback animationCallback;
     private static Window window;
 
     @Export("main")
     public static void main(final String[] args) {
         scene = new Scene();
         window = Window.window();
-        Document document = window.document();
+        final Document document = window.document();
         final HTMLCanvasElement theCanvas = document.getElementById("benchmark-canvas");
         renderingContext2D = theCanvas.getContext("2d");
 
-        animationCallback = new Callback<Event>() {
+        animationCallback = new AnimationFrameCallback() {
             @Override
-            public void run(Event aValue) {
-                long theStart = System.currentTimeMillis();
+            public void run(final int aElapsedTime) {
+                final long theStart = System.currentTimeMillis();
 
                 statsBegin();
 
@@ -195,7 +195,7 @@ public class JBox2DSimulation {
 
                 statsEnd();
 
-                int theDuration = (int) (System.currentTimeMillis() - theStart);
+                final int theDuration = (int) (System.currentTimeMillis() - theStart);
                 logRuntime(theDuration);
 
                 window.requestAnimationFrame(animationCallback);
@@ -203,9 +203,9 @@ public class JBox2DSimulation {
         };
 
         final HTMLElement button = document.getElementById("button");
-        button.addEventListener("click", new Callback<ClickEvent>() {
+        button.addEventListener("click", new EventListener<ClickEvent>() {
             @Override
-            public void run(ClickEvent aValue) {
+            public void run(final ClickEvent aValue) {
                 button.style().setProperty("disabled", "true");
                 window.requestAnimationFrame(animationCallback);
             }
