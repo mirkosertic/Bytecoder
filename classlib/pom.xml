@@ -18,6 +18,7 @@
         <module>java.base</module>
         <module>bytecoder.opencl</module>
         <module>bytecoder.web</module>
+        <module>bytecoder.vue</module>
     </modules>
 
     <dependencyManagement>
@@ -40,6 +41,11 @@
             <dependency>
                 <groupId>e.mirkosertic.bytecoder</groupId>
                 <artifactId>bytecoder.web</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>bytecoder.vue</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

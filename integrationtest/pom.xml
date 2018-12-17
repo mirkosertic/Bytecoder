@@ -20,6 +20,11 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>bytecoder.vue</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
@@ -153,6 +158,20 @@
                             <filenamePrefix>bytecoder-kotlin</filenamePrefix>
                         </configuration>
                     </execution>
+
+                    <execution>
+                        <id>vue-wasm</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.VueDemo</mainClass>
+                            <backend>wasm</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
+                            <filenamePrefix>vuedemo</filenamePrefix>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 
