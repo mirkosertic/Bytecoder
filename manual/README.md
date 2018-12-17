@@ -75,13 +75,20 @@ Bytecoder also supports event listeners, as seen in the following example:
 
 ```
 final HTMLElement button = document.getElementById("button");
-button.addEventListener("click", new Callback<ClickEvent>() {
+button.addEventListener("click", new EventListener<ClickEvent>() {
     @Override
     public void run(ClickEvent aValue) {
         button.style().setProperty("disabled", "true");
     }
 });
 ```
+
+The OpaqueReferenceType API allows the following types for Bytecoder-Host communication:
+
+* Primitives(int,float,double,long,char,byte,short)
+* `java.lang.String`
+* `de.mirkosertic.bytecoder.api.OpaqueReferenceType` and sub classes of it
+* `de.mirkosertic.bytecoder.api.Callback` and sub classes of it
 
 #### Importing functionality from the host environment
 
@@ -192,12 +199,12 @@ PlatformFactory theFactory = new PlatformFactory();
 Platform thePlatform = theFactory.createPlatform();
 ```
 
-The `Platform` instance must only be ontained once and can be cached.
+The `Platform` instance must only be obtained once and can be cached.
 
 If you have multiple GPUs or a system with NVIDIA Optimus technology, you
 have multiple OpenCL platform available. One for the NVIDIA GPU, and another
 for the embedded Intel GPU on your CPU. By default Bytecoder logs the available
-platforms at startup and selects the OpenCL platform with the hightest number. 
+platforms at startup and selects the OpenCL platform with the highest number. 
 If this does not fit, you can always add a `OPENCL_PLATFORM=x` to your JVM properties 
 to set the OpenCL platform to number x.
 
@@ -208,8 +215,8 @@ of context instances forces the OpenCL runtime to recompile Kernels, which will
 cause a huge performance impact. `Context` instances are auto-closable, so they
 can be used with Java try-with-resource blocks.
 
-OpenCL `Kernel` instances are whe workhorse of the system. They can be created
-by subclassing `de.mirkosertic.bytecoder.api.opencl.Kernel` and adding a single
+OpenCL `Kernel` instances are the workhorse of the system. They can be created
+by sub classing `de.mirkosertic.bytecoder.api.opencl.Kernel` and adding a single
 method to it. Here is a simple example of the whole workflow:
 
 ```
@@ -364,7 +371,7 @@ public void testSimpleLoop() {
 }
 ```
 
-the following intermediate representation graph is generated (in its first, unoptimized form):
+the following intermediate representation graph is generated (in its first, un optimized form):
 
 ![Intermediate representation graph](docassets/ir_loopexample.svg)
 

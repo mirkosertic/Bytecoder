@@ -13,16 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.Callback;
-import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public class Globals {
+public interface AnimationFrameCallback extends Callback {
 
-    @Export("summonCallback")
-    public static void summonCallback(final Callback aCallback, final OpaqueReferenceType aArgument) {
-        aCallback.run(aArgument);
-    }
+    void run(int aElapsedTime);
 }
