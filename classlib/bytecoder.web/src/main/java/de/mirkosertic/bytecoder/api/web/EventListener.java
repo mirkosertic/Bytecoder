@@ -15,16 +15,9 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.Callback;
 
-public abstract class Window implements EventTarget {
+public interface EventListener<T extends Event> extends Callback {
 
-    @Import(module = "runtime", name = "nativewindow")
-    public native static Window window();
-
-    @OpaqueProperty("document")
-    public abstract HTMLDocument document();
-
-    public abstract void requestAnimationFrame(AnimationFrameCallback aCallback);
+    void run(T aEvent);
 }

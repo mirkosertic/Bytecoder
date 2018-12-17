@@ -24,29 +24,10 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.LambdaMetafactory;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
@@ -96,6 +77,23 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -161,10 +159,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         theMemoryManagerClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
-        theMemoryManagerClass.resolveStaticMethod("summonCallback",
-                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(
-                        Callback.class), BytecodeObjectTypeRef.fromRuntimeClass(
-                        OpaqueReferenceType.class)}));
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
@@ -926,6 +920,62 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             mainFunction.exportAs("main");
         }
 
+        // We need to generate
+        aLinkerContext.linkedClasses().map(t -> t.targetNode()).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
+
+            BytecodeResolvedMethods theMethods = t.resolvedMethods();
+            List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(x -> !x.getValue().isConstructor() && !x.getValue().isClassInitializer()
+                    && x.getProvidingClass() == t).map(x -> x.getValue()).collect(Collectors.toList());
+
+            if (availableCallbacks.size() > 0) {
+
+                if (availableCallbacks.size() != 1) {
+                    throw new IllegalStateException(
+                            "Unvalid number of callback methods available for type " + t.getClassName().name()
+                                    + ", expected 1, got " + availableCallbacks.size());
+                }
+
+                BytecodeMethod theDelegateMethod = availableCallbacks.get(0);
+
+                // Now we need to create a delegate method for this
+                final List<PrimitiveType> theSignatureParams = new ArrayList<>();
+
+                List<Param> theArguments = new ArrayList<>();
+                theSignatureParams.add(PrimitiveType.i32);
+                theArguments.add(param("target", PrimitiveType.i32));
+                BytecodeTypeRef[] theSignatureArguments = theDelegateMethod.getSignature().getArguments();
+                for (int i = 0; i < theSignatureArguments.length; i++) {
+                    PrimitiveType theSignatureType = WASMSSAASTWriter.toType(TypeRef.toType(theSignatureArguments[i]));
+                    theArguments.add(param("param" + i, theSignatureType));
+                    theSignatureParams.add(theSignatureType);
+                }
+
+                WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
+
+                BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
+
+                String theFunctionName = WASMWriterUtils
+                        .toMethodName(t.getClassName(), theDelegateMethod.getName(), theDelegateMethod.getSignature());
+                ExportableFunction theFunction = module.getFunctions().newFunction(theFunctionName, theArguments);
+
+                final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+                final List<WASMValue> theResolveArgument = new ArrayList<>();
+                theResolveArgument.add(getLocal(theFunction.localByLabel("target")));
+                theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));
+                final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theFunction.localByLabel("target"))));
+
+                List<WASMValue> theOtherArguments = new ArrayList<>();
+                theOtherArguments.add(getLocal(theFunction.localByLabel("target")));
+                for (int i = 0; i < theSignatureArguments.length; i++) {
+                    theOtherArguments.add(getLocal(theFunction.localByLabel("param" + i)));
+                }
+
+                theFunction.flow.voidCallIndirect(theCalledFunction, theOtherArguments, theIndex);
+
+                theFunction.exportAs(theFunctionName);
+            }
+        });
+
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
@@ -987,21 +1037,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             theData+= String.fromCharCode(theCharCode);");
             theWriter.println("         }");
             theWriter.println("         return theData;");
-            theWriter.println("     },");
-            theWriter.println();
-
-
-            theWriter.println();
-            theWriter.println("     toJSEventListener: function(value) {");
-            theWriter.println("         return function(event) {");
-            theWriter.println("             try {");
-            theWriter.println("                 var eventIndex = bytecoder.toBytecoderReference(event);");
-            theWriter.println("                 bytecoder.exports.summonCallback(0,value,eventIndex);");
-            theWriter.println("                 delete bytecoder.referenceTable[eventIndex];");
-            theWriter.println("             } catch (e) {");
-            theWriter.println("                 console.log(e);");
-            theWriter.println("             }");
-            theWriter.println("         };");
             theWriter.println("     },");
             theWriter.println();
 
@@ -1145,7 +1180,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                             boolean theWriteClosingBraces = false;
 
-                            final String theConversionFunction = conversionFunctionToWASNForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
                             if (theConversionFunction != null) {
                                 theWriter.print(theConversionFunction);
                                 theWriter.print("(");
@@ -1173,7 +1208,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         if (!theSignature.getReturnType().isVoid()) {
                             theWriter.print("               return ");
 
-                            final String theConversionFunction = conversionFunctionToWASNForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
                             if (theConversionFunction != null) {
                                 theWriter.print(theConversionFunction);
                                 theWriter.print("(");
@@ -1193,16 +1228,128 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 theWriter.print(",");
                             }
 
-                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[i]);
-                            if (theConversionFunction != null) {
-                                theWriter.print(theConversionFunction);
-                                theWriter.print("(arg");
+                            BytecodeTypeRef theRef = theSignature.getArguments()[i];
+                            if (theRef.isPrimitive()) {
+                                theWriter.print("arg");
+                                theWriter.print(i);
+                            } else if (theRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                                theWriter.print("bytecoder.toJSString(");
+                                theWriter.print("arg");
                                 theWriter.print(i);
                                 theWriter.print(")");
                             } else {
-                                theWriter.print("arg");
-                                theWriter.print(i);
+                                final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) theRef;
+                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theObjectType);
+                                if (theLinkedClass.isOpaqueType()) {
+                                    theWriter.print("bytecoder.toJSReference(");
+                                    theWriter.print("arg");
+                                    theWriter.print(i);
+                                    theWriter.print(")");
+                                } else if (theLinkedClass.isCallback()) {
+
+                                    List<BytecodeMethod> theCallbackMethods = theLinkedClass.resolvedMethods().stream().filter(x -> x.getProvidingClass() == theLinkedClass).map(x -> x.getValue()).collect(Collectors.toList());
+                                    if (theCallbackMethods.size() != 1) {
+                                        throw new IllegalStateException("Wrong number of callback methods in " + theLinkedClass.getClassName().name() + ", expected 1, got " + theCallbackMethods.size());
+                                    }
+                                    BytecodeMethod theImpl = theCallbackMethods.get(0);
+
+                                    theWriter.print("function (");
+                                    for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        if (j>0) {
+                                            theWriter.print(",");
+                                        }
+                                        theWriter.print("farg");
+                                        theWriter.print(j);
+                                    }
+                                    theWriter.print(") {");
+
+                                    for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        if (j>0) {
+                                            theWriter.print(",");
+                                        }
+                                        theWriter.print("var marg");
+                                        theWriter.print(j);
+                                        theWriter.print("=");
+
+                                        BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
+
+                                        if (theTypeRef.isPrimitive()) {
+                                            theWriter.print("farg");
+                                            theWriter.print(j);
+                                        } else if (theTypeRef.isArray()) {
+                                            throw new IllegalStateException("Type conversion to " + theTypeRef.name() + " is not supported!");
+                                        } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                                            theWriter.print("bytecoder.toBytecoderString(");
+                                            theWriter.print("farg");
+                                            theWriter.print(j);
+                                            theWriter.print(")");
+                                        } else {
+                                            final BytecodeObjectTypeRef theArgObjectType = (BytecodeObjectTypeRef) theTypeRef;
+                                            final BytecodeLinkedClass theArgLinkedClass = aLinkerContext.resolveClass(theArgObjectType);
+                                            if (!theArgLinkedClass.isOpaqueType()) {
+                                                throw new IllegalStateException("Type conversion from " + theTypeRef.name() + " is not supported!");
+
+                                            }
+                                            theWriter.print("bytecoder.toBytecoderReference(");
+                                            theWriter.print("farg");
+                                            theWriter.print(j);
+                                            theWriter.print(")");
+                                        }
+                                        theWriter.print(";");
+                                    }
+
+                                    String theCallbackMethod = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theImpl.getName(), theImpl.getSignature());
+                                    theWriter.print("bytecoder.exports.");
+                                    theWriter.print(theCallbackMethod);
+                                    theWriter.print("(arg");
+                                    theWriter.print(i);
+
+                                    for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        theWriter.print(",");
+                                        theWriter.print("marg");
+                                        theWriter.print(j);
+                                    }
+
+                                    theWriter.print(");");
+
+                                    for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
+
+                                        if (theTypeRef.isPrimitive()) {
+                                            // Nothing to clean up
+                                        } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                                            // Nothinng to clean up
+                                        } else {
+                                            // Cleanup object reference
+                                            theWriter.print("delete bytecoder.referenceTable[marg");
+                                            theWriter.print(j);
+                                            theWriter.print("];");
+                                        }
+                                        theWriter.print(";");
+                                    }
+
+                                    theWriter.print("}");
+                                } else {
+                                    throw new IllegalStateException("Type conversion from " + theRef.name() + " is not supported!");
+                                }
                             }
+
+                            /*
+
+            Example generated event listener code
+
+         eventtarget: {
+             addEventListenerStringEventListener: function(target,arg0,arg1) {
+               bytecoder.referenceTable[target].addEventListener(bytecoder.toJSString(arg0),
+                   function(event) {
+                       var eventIndex = bytecoder.toBytecoderReference(event);
+                       bytecoder.exports.dmbawEventListener_VOIDrundmbawEvent(arg1, eventIndex);
+                       delete bytecoder.referenceTable[eventIndex];
+                   }
+                );
+             },
+         },
+                             */
                         }
 
                         if (theWriteClosingBraces) {
@@ -1239,15 +1386,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
             if (theLinkedClass.isOpaqueType()) {
                 return "bytecoder.toJSReference";
-            } else if (theLinkedClass.isCallback()) {
-                return "bytecoder.toJSEventListener";
             } else {
                 throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
             }
         }
     }
 
-    private String conversionFunctionToWASNForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+    private String conversionFunctionToWASMForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             return null;
         } else if (aTypeRef.isArray()) {

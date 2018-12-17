@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.integrationtest
 
-import de.mirkosertic.bytecoder.api.Callback
 import de.mirkosertic.bytecoder.api.Export
 import de.mirkosertic.bytecoder.api.Import
 import de.mirkosertic.bytecoder.api.web.*
@@ -30,7 +29,7 @@ object JBox2DSimulationKotlin {
 
     private var scene: Scene? = null
     private var renderingContext2D: CanvasRenderingContext2D? = null
-    private var animationCallback: Callback<Event>? = null
+    private var animationCallback: AnimationFrameCallback? = null
     private var window: Window? = null
 
     class Scene {
@@ -166,7 +165,7 @@ object JBox2DSimulationKotlin {
         val theCanvas = document.getElementById<HTMLCanvasElement>("benchmark-canvas")
         renderingContext2D = theCanvas.getContext("2d")
 
-        animationCallback = Callback {
+        animationCallback = AnimationFrameCallback {
             val theStart = System.currentTimeMillis()
 
             statsBegin()
@@ -184,7 +183,7 @@ object JBox2DSimulationKotlin {
         }
 
         val button = document.getElementById<HTMLElement>("button")
-        button.addEventListener("click", Callback<ClickEvent> {
+        button.addEventListener("click", EventListener<ClickEvent> {
             button.style().setProperty("disabled", "true")
             window!!.requestAnimationFrame(animationCallback)
         })

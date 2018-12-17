@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
 import de.mirkosertic.bytecoder.api.web.HTMLDocument;
 import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
@@ -52,7 +52,7 @@ public class OpaqueReferenceTest {
     public void testEventListenerAnonymousInnerClass() {
         final Window w = Window.window();
         //noinspection Convert2Lambda
-        w.document().addEventListener("click", new Callback<Event>() {
+        w.document().addEventListener("click", new EventListener<Event>() {
             @Override
             public void run(final Event aValue) {
                 w.document().title("clicked!");
