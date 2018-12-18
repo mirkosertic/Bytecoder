@@ -37,7 +37,7 @@ public class VueDemo {
         theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, ClickEvent>() {
             @Override
             public void handle(MyVueInstance instance, ClickEvent event) {
-                instance.welcomemessage("hello workd, you have clicked. Timestamp is " + System.currentTimeMillis());
+                instance.welcomemessage("hello world, you have clicked. Timestamp is " + System.currentTimeMillis());
             }
         });
         MyVueInstance instance = theBuilder.build();
