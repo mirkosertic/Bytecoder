@@ -15,10 +15,11 @@
  */
 package de.mirkosertic.bytecoder.api.vue;
 
-import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public class VueFactory {
+public interface VueData extends OpaqueReferenceType {
 
-    @Import(module = "vue", name = "factory")
-    public static native <T extends Vue> T createVue();
+    void setProperty(String aProperty, String aValue);
+
+    String getStringProperty(String aProperty);
 }

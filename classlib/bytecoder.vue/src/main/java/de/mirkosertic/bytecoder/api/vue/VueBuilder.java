@@ -15,7 +15,17 @@
  */
 package de.mirkosertic.bytecoder.api.vue;
 
-public class Vue {
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
 
-    public static native <T extends VueInstance> VueBuilder<T> builder();
+public interface VueBuilder<T extends VueInstance> extends OpaqueReferenceType {
+
+    void bindToTemplateSelector(String aSelector);
+
+    <V extends Event> void addEventListener(String aEventName, VueEventListener<T, V> aListener);
+
+    VueData data();
+
+    T build();
 }

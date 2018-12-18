@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.vue;
 
-public class Vue {
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-    public static native <T extends VueInstance> VueBuilder<T> builder();
+public interface VueInstance extends OpaqueReferenceType, VueData {
 }

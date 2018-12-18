@@ -15,6 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.graph.Node;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,12 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import de.mirkosertic.bytecoder.api.Callback;
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
-import de.mirkosertic.bytecoder.graph.Node;
 
 public class BytecodeLinkedClass extends Node {
 
@@ -51,6 +52,7 @@ public class BytecodeLinkedClass extends Node {
     private BytecodeMethod classInitializer;
     private Boolean opaque;
     private Boolean callback;
+    private Boolean event;
 
     public BytecodeLinkedClass(final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
@@ -87,6 +89,21 @@ public class BytecodeLinkedClass extends Node {
         }
         callback = false;
         return callback;
+    }
+
+    public boolean isEvent() {
+        if (event != null) {
+            return event;
+        }
+        final Set<BytecodeLinkedClass> theImplementingTypes = getImplementingTypes();
+        for (final BytecodeLinkedClass theClass : theImplementingTypes) {
+            if (theClass.getClassName().name().equals(Event.class.getName())) {
+                event = true;
+                return event;
+            }
+        }
+        event = false;
+        return event;
     }
 
     public boolean emulatedByRuntime() {

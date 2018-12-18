@@ -1264,9 +1264,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     theWriter.print(") {");
 
                                     for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
-                                        if (j>0) {
-                                            theWriter.print(",");
-                                        }
                                         theWriter.print("var marg");
                                         theWriter.print(j);
                                         theWriter.print("=");
@@ -1320,12 +1317,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
                                             // Nothinng to clean up
                                         } else {
-                                            // Cleanup object reference
-                                            theWriter.print("delete bytecoder.referenceTable[marg");
-                                            theWriter.print(j);
-                                            theWriter.print("];");
+                                            BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef);
+                                            if (theLinkedType.isEvent()) {
+                                                // Cleanup object reference
+                                                theWriter.print("delete bytecoder.referenceTable[marg");
+                                                theWriter.print(j);
+                                                theWriter.print("];");
+                                            }
                                         }
-                                        theWriter.print(";");
                                     }
 
                                     theWriter.print("}");

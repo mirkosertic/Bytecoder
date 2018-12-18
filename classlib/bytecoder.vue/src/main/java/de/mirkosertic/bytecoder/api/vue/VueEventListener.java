@@ -15,7 +15,10 @@
  */
 package de.mirkosertic.bytecoder.api.vue;
 
-public class Vue {
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.web.Event;
 
-    public static native <T extends VueInstance> VueBuilder<T> builder();
+public interface VueEventListener<T extends VueInstance, V extends Event> extends Callback {
+
+    void handle(T instance, V event);
 }
