@@ -3,9 +3,51 @@
         <title>Bytecoder Vue-to-WebAssembly Test</title>
     </head>
     <body>
+    <div id="vuetemplate">
+        <h1>Hello, this is a vue.js instance</h1>
+        <span>Current message : {{welcomemessage}}</span>
+        <button v-on:click="clicked">Click me to change the message!</button>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="vuedemo_wasmbindings.js"></script>
     <script type="text/javascript">
+
+        bytecoder.imports.vue = {
+            builder : function() {
+                var builder = {
+                    config : {
+                        data: {
+                            setProperty: function(name, value) {
+                                this[name] = value;
+                            }
+                        },
+                        methods: {
+                        },
+                    },
+                    bindToTemplateSelector: function(aSelectorStr) {
+                        this.config.el = aSelectorStr;
+                    },
+                    data: function() {
+                        return this.config.data;
+                    },
+                    addEventListener: function(eventName,listenerFunction) {
+                        this.config.methods[eventName] = function() {
+                            var args = Array.prototype.slice.call(arguments);
+                            args.unshift(this);
+                            listenerFunction.apply(this, args);
+                        }
+                    },
+                    build: function() {
+                        var v = new Vue(this.config);
+                        v.setProperty = function(name, value) {
+                            v[name] = value;
+                        };
+                        return v;
+                    }
+                };
+                return bytecoder.toBytecoderReference(builder);
+            }
+        };
 
         // Try to load the WASM file
         var request = new XMLHttpRequest();

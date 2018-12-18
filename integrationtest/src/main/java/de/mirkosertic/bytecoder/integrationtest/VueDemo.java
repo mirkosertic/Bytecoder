@@ -15,8 +15,31 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.vue.Vue;
+import de.mirkosertic.bytecoder.api.vue.VueBuilder;
+import de.mirkosertic.bytecoder.api.vue.VueEventListener;
+import de.mirkosertic.bytecoder.api.vue.VueInstance;
+import de.mirkosertic.bytecoder.api.web.ClickEvent;
+
 public class VueDemo {
 
+    public interface MyVueInstance extends VueInstance {
+
+        @OpaqueProperty
+        void welcomemessage(String aNewMessage);
+    }
+
     public static void main(String[] args) {
+        VueBuilder<MyVueInstance> theBuilder = Vue.builder();
+        theBuilder.bindToTemplateSelector("#vuetemplate");
+        theBuilder.data().setProperty("welcomemessage", "hello world!");
+        theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, ClickEvent>() {
+            @Override
+            public void handle(MyVueInstance instance, ClickEvent event) {
+                instance.welcomemessage("hello workd, you have clicked. Timestamp is " + System.currentTimeMillis());
+            }
+        });
+        MyVueInstance instance = theBuilder.build();
     }
 }
