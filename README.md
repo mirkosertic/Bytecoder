@@ -9,6 +9,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
+* Allow integration with other UI-Frameworks such as vue.js
 * Use other tool chains such as Google Closure Compiler to further optimize generated code
 * Backed by OpenJDK 11 as JRE Classlib
 
@@ -34,6 +35,7 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
  [JBox2D Demo compiled from Java to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/indexwasm.html)   |
  [JBox2D Demo compiled from Kotlin to JavaScript](https://www.mirkosertic.de/examples/jbox2d/index-kotlin.html)  |  
  [JBox2D Demo compiled from Kotlin to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/indexwasm-kotlin.html) |
+ [vue.js integration Demo compiled to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/vuewasm.html) |
 
 ## User Manual
 
