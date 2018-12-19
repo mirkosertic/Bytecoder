@@ -1,75 +1,111 @@
 <html>
-    <head>
-        <title>Bytecoder Vue-to-WebAssembly Test</title>
-    </head>
-    <body>
-    <div id="vuetemplate">
-        <h1>Hello, this is a vue.js instance</h1>
-        <span>Current message : {{welcomemessage}}</span>
-        <button v-on:click="clicked">Click me to change the message!</button>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="vuedemo_wasmbindings.js"></script>
-    <script type="text/javascript">
+<head>
+    <title>Bytecoder Vue-to-WebAssembly Test</title>
+</head>
+<body>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+</style>
+<div v-cloak id="vuetemplate">
+    <h1>Hello, this is a vue.js instance running with WebAssembly</h1>
+    <span>Current message : {{welcomemessage}}</span>
+    <button v-on:click="clicked">Click me to change the message!</button>
+</div>
+<h2>And here is my Java code:-)</h2>
+<link rel="stylesheet"
+      href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.13.1/build/styles/default.min.css">
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.13.1/build/highlight.min.js"></script>
+<pre><code class="java">
+public class VueDemo {
 
-        bytecoder.imports.vue = {
-            builder : function() {
-                var builder = {
-                    config : {
-                        data: {
-                            setProperty: function(name, value) {
-                                this[name] = value;
-                            }
-                        },
-                        methods: {
-                        },
-                    },
-                    bindToTemplateSelector: function(aSelectorStr) {
-                        this.config.el = aSelectorStr;
-                    },
-                    data: function() {
-                        return this.config.data;
-                    },
-                    addEventListener: function(eventName,listenerFunction) {
-                        this.config.methods[eventName] = function() {
-                            var args = Array.prototype.slice.call(arguments);
-                            args.unshift(this);
-                            listenerFunction.apply(this, args);
+    public interface MyVueInstance extends VueInstance {
+
+        @OpaqueProperty
+        void welcomemessage(String aNewMessage);
+    }
+
+    public static void main(String[] args) {
+        VueBuilder<MyVueInstance> theBuilder = Vue.builder();
+        theBuilder.bindToTemplateSelector("#vuetemplate");
+        theBuilder.data().setProperty("welcomemessage", "hello world!");
+        theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, ClickEvent>() {
+            @Override
+            public void handle(MyVueInstance instance, ClickEvent event) {
+                instance.welcomemessage("hello world, you have clicked. Timestamp is " + System.currentTimeMillis());
+            }
+        });
+        MyVueInstance instance = theBuilder.build();
+    }
+}
+    </code></pre>
+<script>
+    hljs.initHighlightingOnLoad();
+</script>
+<a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="vuedemo_wasmbindings.js"></script>
+<script type="text/javascript">
+
+    bytecoder.imports.vue = {
+        builder : function() {
+            var builder = {
+                config : {
+                    data: {
+                        setProperty: function(name, value) {
+                            this[name] = value;
                         }
                     },
-                    build: function() {
-                        var v = new Vue(this.config);
-                        v.setProperty = function(name, value) {
-                            v[name] = value;
-                        };
-                        return v;
+                    methods: {
+                    },
+                },
+                bindToTemplateSelector: function(aSelectorStr) {
+                    this.config.el = aSelectorStr;
+                },
+                data: function() {
+                    return this.config.data;
+                },
+                addEventListener: function(eventName,listenerFunction) {
+                    this.config.methods[eventName] = function() {
+                        var args = Array.prototype.slice.call(arguments);
+                        args.unshift(this);
+                        listenerFunction.apply(this, args);
                     }
-                };
-                return bytecoder.toBytecoderReference(builder);
-            }
-        };
+                },
+                build: function() {
+                    var v = new Vue(this.config);
+                    v.setProperty = function(name, value) {
+                        v[name] = value;
+                    };
+                    return v;
+                }
+            };
+            return bytecoder.toBytecoderReference(builder);
+        }
+    };
 
-        // Try to load the WASM file
-        var request = new XMLHttpRequest();
-        request.open('GET', 'vuedemo.wasm');
-        request.responseType = 'arraybuffer';
-        request.send();
+    // Try to load the WASM file
+    var request = new XMLHttpRequest();
+    request.open('GET', 'vuedemo.wasm');
+    request.responseType = 'arraybuffer';
+    request.send();
 
-        var instantiated = function(result) {
-            bytecoder.init(result.instance);
+    var instantiated = function(result) {
+        bytecoder.init(result.instance);
 
-            bytecoder.exports.initMemory(0);
-            console.log("Memory initialized");
-            bytecoder.exports.bootstrap(0);
-            console.log("Bootstrapped");
-            bytecoder.exports.main(0);
-            console.log("Ready for action!");
-        };
+        bytecoder.exports.initMemory(0);
+        console.log("Memory initialized");
+        bytecoder.exports.bootstrap(0);
+        console.log("Bootstrapped");
+        bytecoder.exports.main(0);
+        console.log("Ready for action!");
+    };
 
-        request.onload = function() {
-            var bytes = request.response;
-            WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-        };
-    </script>
-    </body>
+    request.onload = function() {
+        var bytes = request.response;
+        WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
+    };
+</script>
+</body>
 <body>
