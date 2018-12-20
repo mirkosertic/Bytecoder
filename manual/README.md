@@ -25,17 +25,18 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
 Let's see how a simple Java program can be written that changes the document title in the Browser. Here it is:
 
 ```
-import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
+import de.mirkosertic.bytecoder.api.web.HTMLDocument;
 import de.mirkosertic.bytecoder.api.web.Window;
 
 public class OpaqueReferenceTest {
 
     public static void main(String[] args) {
         final Window w = Window.window();
-        w.document().addEventListener("click", new Callback<Event>() {
+        w.document().addEventListener("click", new EventListener<ClickEvent>() {
             @Override
-            public void run(final Event aValue) {
+            public void run(final ClickEvent aValue) {
                 w.document().title("clicked!");
             }
         });
