@@ -39,10 +39,10 @@ public class Variable extends Value {
     private final String name;
     private final boolean synthetic;
 
-    private Variable(TypeRef aType, String aName, boolean aSsynthetic) {
+    private Variable(TypeRef aType, String aName, boolean aSynthetic) {
         type = aType;
         name = aName;
-        synthetic = aSsynthetic;
+        synthetic = aSynthetic;
     }
 
     public Variable(TypeRef aType, String aName) {
@@ -71,5 +71,17 @@ public class Variable extends Value {
 
     public boolean isSynthetic() {
         return synthetic;
+    }
+
+    public boolean isLocal() {
+        return name.startsWith("local_");
+    }
+
+    @Override
+    public boolean isTrulyFunctional() {
+        if (isLocal()) {
+            return true;
+        }
+        return super.isTrulyFunctional();
     }
 }

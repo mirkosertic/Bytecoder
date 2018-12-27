@@ -23,6 +23,7 @@ import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
@@ -45,6 +46,24 @@ public class InefficientCompareOptimizer extends RecursiveExpressionVisitor impl
         if (aExpression instanceof IFExpression) {
             final IFExpression theIf = (IFExpression) aExpression;
             final Value theCondition = theIf.incomingDataFlows().get(0);
+            if (theCondition instanceof FixedBinaryExpression) {
+                final FixedBinaryExpression theBinary = (FixedBinaryExpression) theCondition;
+                final Value theFirst = theBinary.incomingDataFlows().get(0);
+                final Expression theBefore = aList.predecessorOf(aExpression);
+                if (theBefore instanceof VariableAssignmentExpression) {
+                    final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
+                    final Variable theVariable = theAssignment.getVariable();
+                    if (!theVariable.isLocal()) {
+                        final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter())
+                                .collect(Collectors.toList());
+                        if ((theDataEdges.size() == 1) && (theFirst == theDataEdges.get(0).sourceNode())) {
+                            aList.remove(theAssignment);
+                            theBinary.replaceIncomingDataEdge(theVariable, theAssignment.getValue());
+                            aGraph.getProgram().deleteVariable(theVariable);
+                        }
+                    }
+                }
+            }
             if (theCondition instanceof BinaryExpression) {
                 final BinaryExpression theBinary = (BinaryExpression) theCondition;
                 final Value theFirst = theBinary.incomingDataFlows().get(0);

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
-public class InvocationExpression extends Expression {
+public abstract class InvocationExpression extends Expression {
 
     private final BytecodeMethodSignature signature;
 

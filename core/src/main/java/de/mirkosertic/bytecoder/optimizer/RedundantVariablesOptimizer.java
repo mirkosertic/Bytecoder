@@ -58,7 +58,7 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
                     final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
                     final Variable theVariable = theAssignment.getVariable();
                     final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-                    if (theDataEdges.size() == 1 && theIncoming.contains(theVariable) && !theVariable.getName().startsWith("local_")) {
+                    if (theDataEdges.size() == 1 && theIncoming.contains(theVariable) && !theVariable.isLocal()) {
                         // Variable is only used once and is used as an incoming data flow
                         final Value theVariableValue = theAssignment.getValue();
                         if (theVariableValue.isTrulyFunctional()) {
