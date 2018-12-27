@@ -77,12 +77,6 @@
         }
     };
 
-    // Try to load the WASM file
-    var request = new XMLHttpRequest();
-    request.open('GET', 'bytecoder-kotlin.wasm');
-    request.responseType = 'arraybuffer';
-    request.send();
-
     var instantiated = function(result) {
         bytecoder.init(result.instance);
 
@@ -96,10 +90,21 @@
         document.getElementById("button").style.display = "block";
     };
 
-    request.onload = function() {
-        var bytes = request.response;
-        WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-    };
+    // Try to load the WASM file
+    WebAssembly.instantiateStreaming(fetch('bytecoder-kotlin.wasm'), bytecoder.imports)
+        .then(instantiated)
+        .catch(function(error) {
+            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!")
+            var request = new XMLHttpRequest();
+            request.open('GET', 'bytecoder-kotlin.wasm');
+            request.responseType = 'arraybuffer';
+            request.send();
+
+            request.onload = function() {
+                var bytes = request.response;
+                WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
+            };
+        });
 </script>
 </body>
 </html>
