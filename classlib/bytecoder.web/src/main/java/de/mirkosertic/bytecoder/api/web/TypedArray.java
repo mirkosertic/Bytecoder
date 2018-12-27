@@ -17,9 +17,5 @@ package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface EventTarget extends OpaqueReferenceType {
-
-    <T extends Event> void addEventListener(final String eventType, final EventListener<T> aEventListener);
-
-    <T extends Event> void dispatchEvent(T aEvent);
+public interface TypedArray<T> extends OpaqueReferenceType {
 }

@@ -15,11 +15,17 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
-public interface EventTarget extends OpaqueReferenceType {
+public abstract class FloatArray implements TypedArray {
 
-    <T extends Event> void addEventListener(final String eventType, final EventListener<T> aEventListener);
+    @OpaqueIndexed
+    public abstract float get(int aIndex);
 
-    <T extends Event> void dispatchEvent(T aEvent);
+    @OpaqueIndexed
+    public abstract void set(int aIndex, float aValue);
+
+    @OpaqueProperty("length")
+    public abstract int floatArrayLength();
 }

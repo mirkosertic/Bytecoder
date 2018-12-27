@@ -198,6 +198,17 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("                 bytecoder.logDebug(p1);");
         theWriter.println("             },");
         theWriter.println("         },");
+        theWriter.println("         opaquearrays : {");
+        theWriter.println("             createIntArrayINT: function(p1) {");
+        theWriter.println("                 return new Int32Array(p1);");
+        theWriter.println("             },");
+        theWriter.println("             createFloatArrayINT: function(p1) {");
+        theWriter.println("                 return new Float32Array(p1);");
+        theWriter.println("             },");
+        theWriter.println("             createObjectArray: function() {");
+        theWriter.println("                 return [];");
+        theWriter.println("             },");
+        theWriter.println("         },");
         theWriter.println("         math : {");
         theWriter.println("             ceilDOUBLE: function(p1) {");
         theWriter.println("                 return Math.ceil(p1);");

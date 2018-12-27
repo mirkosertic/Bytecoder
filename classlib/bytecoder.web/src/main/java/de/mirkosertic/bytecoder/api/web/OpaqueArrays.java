@@ -17,9 +17,11 @@ package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface EventTarget extends OpaqueReferenceType {
+public abstract class OpaqueArrays {
 
-    <T extends Event> void addEventListener(final String eventType, final EventListener<T> aEventListener);
+    public static native FloatArray createFloatArray(int aLength);
 
-    <T extends Event> void dispatchEvent(T aEvent);
+    public static native IntArray createIntArray(int aLength);
+
+    public static native <V extends OpaqueReferenceType> OpaqueReferenceArray<V> createObjectArray();
 }

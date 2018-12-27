@@ -26,6 +26,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFun
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -1050,6 +1051,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("     },");
             theWriter.println();
 
+            theWriter.println("     toJSReference: function(value) {");
+            theWriter.println("         return bytecoder.referenceTable[value];");
+            theWriter.println("     },");
+            theWriter.println();
+
             theWriter.println("     toBytecoderString: function(value) {");
             theWriter.println("         var newArray = bytecoder.exports.newByteArray(0, value.length);");
             theWriter.println("         for (var i=0;i<value.length;i++) {");
@@ -1079,6 +1085,17 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         },");
             theWriter.println("         printstream: {");
             theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller,value);},");
+            theWriter.println("         },");
+            theWriter.println("         opaquearrays : {");
+            theWriter.println("             createIntArrayINT: function(thisref, p1) {");
+            theWriter.println("                 return bytecoder.toBytecoderReference(new Int32Array(p1));");
+            theWriter.println("             },");
+            theWriter.println("             createFloatArrayINT: function(thisref, p1) {");
+            theWriter.println("                 return bytecoder.toBytecoderReference(new Float32Array(p1));");
+            theWriter.println("             },");
+            theWriter.println("             createObjectArray: function(thisref) {");
+            theWriter.println("                 return bytecoder.toBytecoderReference([]);");
+            theWriter.println("             },");
             theWriter.println("         },");
             theWriter.println("         math: {");
             theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
@@ -1143,7 +1160,42 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                     String theMethodName = theBytecdeMethod.getName().stringValue();
                     final BytecodeAnnotation theOpaqueProperty = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueProperty.class.getName());
-                    if (theOpaqueProperty != null) {
+                    final BytecodeAnnotation theOpaqueIndex = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueIndexed.class.getName());
+                    if (theOpaqueIndex != null) {
+                        if (theSignature.getReturnType().isVoid()) {
+                            theWriter.print("               ");
+                            theWriter.print("bytecoder.referenceTable[target]");
+                            theWriter.print("[arg0]");
+
+                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[1]);
+                            if (theConversionFunction != null) {
+                                theWriter.print("=");
+                                theWriter.print(theConversionFunction);
+                                theWriter.println("(arg1);");
+                            } else {
+                                theWriter.println("=arg1;");
+                            }
+                        } else {
+                            theWriter.print("               return ");
+
+                            boolean theWriteClosingBraces = false;
+
+                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            if (theConversionFunction != null) {
+                                theWriter.print(theConversionFunction);
+                                theWriter.print("(");
+
+                                theWriteClosingBraces = true;
+                            }
+
+                            theWriter.print("bytecoder.referenceTable[target][arg0]");
+
+                            if (theWriteClosingBraces) {
+                                theWriter.print(")");
+                            }
+                            theWriter.println(";");
+                        }
+                    } else if (theOpaqueProperty != null) {
                         final BytecodeAnnotation.ElementValue theValue = theOpaqueProperty.getElementValueByName("value");
                         String theOpaquePropertyName;
                         if (theValue == null) {
@@ -1160,7 +1212,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 theOpaquePropertyName = theMethodName;
                             }
                         } else {
-                            theOpaquePropertyName = theMethodName;
+                            theOpaquePropertyName = theValue.stringValue();
                         }
                         if (theSignature.getReturnType().isVoid()) {
                             theWriter.print("               ");

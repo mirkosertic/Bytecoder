@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.api;
 
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-public interface EventTarget extends OpaqueReferenceType {
-
-    <T extends Event> void addEventListener(final String eventType, final EventListener<T> aEventListener);
-
-    <T extends Event> void dispatchEvent(T aEvent);
+@Retention(RetentionPolicy.RUNTIME)
+public @interface OpaqueIndexed {
 }
