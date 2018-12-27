@@ -85,12 +85,6 @@ public class VueDemo {
         }
     };
 
-    // Try to load the WASM file
-    var request = new XMLHttpRequest();
-    request.open('GET', 'vuedemo.wasm');
-    request.responseType = 'arraybuffer';
-    request.send();
-
     var instantiated = function(result) {
         bytecoder.init(result.instance);
 
@@ -102,10 +96,21 @@ public class VueDemo {
         console.log("Ready for action!");
     };
 
-    request.onload = function() {
-        var bytes = request.response;
-        WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-    };
+    // Try to load the WASM file
+    WebAssembly.instantiateStreaming(fetch('vuedemo.wasm'), bytecoder.imports)
+        .then(instantiated)
+        .catch(function(error) {
+            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!")
+            var request = new XMLHttpRequest();
+            request.open('GET', 'vuedemo.wasm');
+            request.responseType = 'arraybuffer';
+            request.send();
+
+            request.onload = function() {
+                var bytes = request.response;
+                WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
+            };
+        });
 </script>
 </body>
 <body>
