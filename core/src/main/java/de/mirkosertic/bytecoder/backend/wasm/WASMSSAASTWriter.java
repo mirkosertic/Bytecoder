@@ -22,6 +22,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlob
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
@@ -543,7 +544,6 @@ public class WASMSSAASTWriter {
         }
 
         final Local theLocal = function.localByLabel(theVariable.getName());
-        flow.setLocal(theLocal, toValue(theNewValue));
 
         if (isStackVariable(theVariable)) {
             final Local sp = function.localByLabel(SP);
@@ -551,16 +551,18 @@ public class WASMSSAASTWriter {
             switch (theVariable.resolveType().resolve()) {
                 case DOUBLE:
                 case FLOAT: {
-                    flow.f32.store(theOffset, getLocal(sp), getLocal(theLocal));
+                    flow.f32.store(theOffset, getLocal(sp), teeLocal(theLocal, toValue(theNewValue)));
                     break;
                 }
                 case UNKNOWN:
                     throw new IllegalStateException();
                 default: {
-                    flow.i32.store(theOffset, getLocal(sp), getLocal(theLocal));
+                    flow.i32.store(theOffset, getLocal(sp), teeLocal(theLocal, toValue(theNewValue)));
                     break;
                 }
             }
+        } else {
+            flow.setLocal(theLocal, toValue(theNewValue));
         }
     }
 
