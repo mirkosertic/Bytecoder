@@ -22,8 +22,8 @@ import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
 import de.mirkosertic.bytecoder.api.web.ClickEvent;
 import de.mirkosertic.bytecoder.api.web.Document;
 import de.mirkosertic.bytecoder.api.web.EventListener;
+import de.mirkosertic.bytecoder.api.web.HTMLButton;
 import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement;
-import de.mirkosertic.bytecoder.api.web.HTMLElement;
 import de.mirkosertic.bytecoder.api.web.Window;
 import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.collision.shapes.PolygonShape;
@@ -202,11 +202,11 @@ public class JBox2DSimulation {
             }
         };
 
-        final HTMLElement button = document.getElementById("button");
+        final HTMLButton button = document.getElementById("button");
         button.addEventListener("click", new EventListener<ClickEvent>() {
             @Override
             public void run(final ClickEvent aValue) {
-                button.style().setProperty("disabled", "true");
+                button.disabled(true);
                 window.requestAnimationFrame(animationCallback);
             }
         });

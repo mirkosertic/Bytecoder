@@ -182,9 +182,9 @@ object JBox2DSimulationKotlin {
             window!!.requestAnimationFrame(animationCallback)
         }
 
-        val button = document.getElementById<HTMLElement>("button")
+        val button = document.getElementById<HTMLButton>("button")
         button.addEventListener("click", EventListener<ClickEvent> {
-            button.style().setProperty("disabled", "true")
+            button.disabled(true)
             window!!.requestAnimationFrame(animationCallback)
         })
     }
