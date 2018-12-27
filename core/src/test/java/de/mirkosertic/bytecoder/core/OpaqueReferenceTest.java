@@ -17,7 +17,11 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.web.Event;
 import de.mirkosertic.bytecoder.api.web.EventListener;
+import de.mirkosertic.bytecoder.api.web.FloatArray;
 import de.mirkosertic.bytecoder.api.web.HTMLDocument;
+import de.mirkosertic.bytecoder.api.web.IntArray;
+import de.mirkosertic.bytecoder.api.web.OpaqueArrays;
+import de.mirkosertic.bytecoder.api.web.OpaqueReferenceArray;
 import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
@@ -60,4 +64,32 @@ public class OpaqueReferenceTest {
         });
     }
 
+    @Test
+    public void testIntArray() {
+        final IntArray a = OpaqueArrays.createIntArray(10);
+        a.set(1, 99);
+        Assert.assertEquals(99, a.get(1), 0);
+    }
+
+    @Test
+    public void testFloatArray() {
+        final FloatArray a = OpaqueArrays.createFloatArray(10);
+        a.set(1, 99f);
+        Assert.assertEquals(99f, a.get(1), 0);
+    }
+
+    @Test
+    public void testReferenceArray() {
+        final Window w = Window.window();
+        final OpaqueReferenceArray<Window> a = OpaqueArrays.createObjectArray();
+        a.set(1, w);
+        Assert.assertSame(w, a.get(1));
+
+        final OpaqueReferenceArray<Window> b = OpaqueArrays.createObjectArray();
+        b.push(w);
+        Assert.assertEquals(1, b.objectArrayLength(), 0);
+        Window w2 = b.pop();
+        Assert.assertEquals(0, b.objectArrayLength(), 0);
+        Assert.assertSame(w, w2);
+    }
 }

@@ -15,11 +15,22 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface EventTarget extends OpaqueReferenceType {
+public abstract class OpaqueReferenceArray<T extends OpaqueReferenceType> implements OpaqueReferenceType {
 
-    <T extends Event> void addEventListener(final String eventType, final EventListener<T> aEventListener);
+    @OpaqueIndexed
+    public abstract T get(int aIndex);
 
-    <T extends Event> void dispatchEvent(T aEvent);
+    @OpaqueIndexed
+    public abstract void set(int aIndex, T aValue);
+
+    public abstract void push(T aValue);
+
+    public abstract T pop();
+
+    @OpaqueProperty("length")
+    public abstract int objectArrayLength();
 }

@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend.js;
 
 import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -788,12 +789,42 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void writeOpaqueMethodInvocation(final BytecodeMethodSignature aMethodSignature, final Value aInvocationTarget, final List<Value> aMethodArguments, final BytecodeMethod aMethodImplementation) {
-        final BytecodeAnnotation theProperty = aMethodImplementation.getAttributes().getAnnotationByType(OpaqueProperty.class.getName());
-        if (theProperty != null) {
+        final BytecodeAnnotation theSimpleProperty = aMethodImplementation.getAttributes().getAnnotationByType(OpaqueProperty.class.getName());
+        final BytecodeAnnotation theIndexedProperty = aMethodImplementation.getAttributes().getAnnotationByType(
+                OpaqueIndexed.class.getName());
+        if (theIndexedProperty != null) {
+            if (aMethodSignature.getReturnType().isVoid()) {
+                // Set property
+                print(aInvocationTarget);
+                print("[");
+                printToJSConvertedValue(aMethodSignature.getArguments()[0], aMethodArguments.get(0));
+                print("]");
+                print("=");
+
+                printToJSConvertedValue(aMethodSignature.getArguments()[1], aMethodArguments.get(1));
+            } else {
+                final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(aMethodSignature.getReturnType());
+                if (theReturnConvertFunction != null) {
+                    print(theReturnConvertFunction);
+                    print("(");
+                }
+
+                // Get property
+                print(aInvocationTarget);
+                print("[");
+                printToJSConvertedValue(aMethodSignature.getArguments()[0], aMethodArguments.get(0));
+                print("]");
+
+                if (theReturnConvertFunction != null) {
+                    print(")");
+                }
+            }
+
+        } else if (theSimpleProperty != null) {
             //
             final String theMethodName = aMethodImplementation.getName().stringValue();
             // This is a property access
-            final BytecodeAnnotation.ElementValue theValue = theProperty.getElementValueByName("value");
+            final BytecodeAnnotation.ElementValue theValue = theSimpleProperty.getElementValueByName("value");
             String theOpaquePropertyName;
             if (theValue == null) {
                 if (theMethodName.startsWith("get")) {
@@ -809,7 +840,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                     theOpaquePropertyName = theMethodName;
                 }
             } else {
-                theOpaquePropertyName = theMethodName;
+                theOpaquePropertyName = theValue.stringValue();
             }
 
             if (aMethodSignature.getReturnType().isVoid()) {
