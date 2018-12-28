@@ -147,6 +147,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println();
 
         theWriter.println("     toJSString: function(aBytecoderString) {");
+        theWriter.println("         if (typeof(aBytecoderString) === 'string') {");
+        theWriter.println("             return aBytecoderString;");
+        theWriter.println("         }");
         theWriter.println("         var theArray = aBytecoderString.data.data;");
         theWriter.println("         var theResult = '';");
         theWriter.println("         for (var i=0;i<theArray.length;i++) {");

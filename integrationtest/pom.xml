@@ -13,6 +13,11 @@
     <name>Bytecoder Integrationtest</name>
     <description>Bytecoder Integration Tests</description>
 
+    <properties>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -47,6 +52,17 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webresources/</directory>
+                        </resource>
+                    </webResources>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <groupId>org.jetbrains.kotlin</groupId>

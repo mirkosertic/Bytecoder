@@ -648,7 +648,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(t -> !t.getValue().isConstructor() && !t.getValue().isClassInitializer()
                         && !t.getProvidingClass().getClassName().name().equals(Object.class.getName())).map(t -> t.getValue()).collect(Collectors.toList());
                 if (availableCallbacks.size() != 1) {
-                    throw new IllegalStateException("Unvalid number of callback methods available for type " + theLinkedClass.getClassName().name() + ", expected 1, got " + availableCallbacks.size());
+                    throw new IllegalStateException("Invalid number of callback methods available for type " + theLinkedClass.getClassName().name() + ", expected 1, got " + availableCallbacks.size());
                 }
 
                 BytecodeMethod theCallbackMethod = availableCallbacks.get(0);

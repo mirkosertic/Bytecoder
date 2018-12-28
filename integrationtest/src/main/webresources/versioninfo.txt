@@ -1,0 +1,1 @@
+Bytecoder version ${project.version} build at ${timestamp}

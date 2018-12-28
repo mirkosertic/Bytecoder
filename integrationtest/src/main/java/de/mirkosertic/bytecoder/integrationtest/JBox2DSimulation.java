@@ -210,6 +210,12 @@ public class JBox2DSimulation {
                 window.requestAnimationFrame(animationCallback);
             }
         });
+
+        window.fetch("versioninfo.txt").then(response -> {
+            response.text().then(text -> {
+                document.getElementById("versioninfo").innerHTML(text);
+            });
+        });
     }
 
     @Import(module = "debug", name = "logRuntime")

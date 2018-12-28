@@ -932,7 +932,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 if (availableCallbacks.size() != 1) {
                     throw new IllegalStateException(
-                            "Unvalid number of callback methods available for type " + t.getClassName().name()
+                            "Invalid number of callback methods available for type " + t.getClassName().name()
                                     + ", expected 1, got " + availableCallbacks.size());
                 }
 
