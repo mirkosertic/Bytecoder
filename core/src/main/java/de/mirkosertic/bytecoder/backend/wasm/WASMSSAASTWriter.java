@@ -1349,8 +1349,7 @@ public class WASMSSAASTWriter {
             final Global stackTop = module.getGlobals().globalsIndex().globalByLabel(STACKTOP);
             final Local sp = function.newLocal(SP, PrimitiveType.i32);
             final Local oldsp = function.newLocal(OLDSP, PrimitiveType.i32);
-            flow.setLocal(oldsp, getGlobal(stackTop));
-            flow.setGlobal(stackTop, i32.sub(getGlobal(stackTop), i32.c(theStackSize)));
+            flow.setGlobal(stackTop, i32.sub(teeLocal(oldsp, getGlobal(stackTop)), i32.c(theStackSize)));
             flow.setLocal(sp, getGlobal(stackTop));
         }
     }

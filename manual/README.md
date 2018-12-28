@@ -79,7 +79,7 @@ final HTMLElement button = document.getElementById("button");
 button.addEventListener("click", new EventListener<ClickEvent>() {
     @Override
     public void run(ClickEvent aValue) {
-        button.style().setProperty("disabled", "true");
+        button.disabled = true;
     }
 });
 ```

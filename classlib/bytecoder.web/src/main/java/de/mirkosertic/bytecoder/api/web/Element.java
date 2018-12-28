@@ -15,5 +15,13 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
+
 public interface Element extends Node, ParentNode {
+
+    @OpaqueProperty
+    String innerHTML();
+
+    @OpaqueProperty
+    void innerHTML(String aNewValue);
 }

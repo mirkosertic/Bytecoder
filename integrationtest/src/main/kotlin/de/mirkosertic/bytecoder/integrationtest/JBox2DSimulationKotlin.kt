@@ -17,7 +17,13 @@ package de.mirkosertic.bytecoder.integrationtest
 
 import de.mirkosertic.bytecoder.api.Export
 import de.mirkosertic.bytecoder.api.Import
-import de.mirkosertic.bytecoder.api.web.*
+import de.mirkosertic.bytecoder.api.web.AnimationFrameCallback
+import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D
+import de.mirkosertic.bytecoder.api.web.EventListener
+import de.mirkosertic.bytecoder.api.web.ClickEvent
+import de.mirkosertic.bytecoder.api.web.HTMLButton
+import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement
+import de.mirkosertic.bytecoder.api.web.Window
 import org.jbox2d.collision.shapes.CircleShape
 import org.jbox2d.collision.shapes.PolygonShape
 import org.jbox2d.collision.shapes.ShapeType

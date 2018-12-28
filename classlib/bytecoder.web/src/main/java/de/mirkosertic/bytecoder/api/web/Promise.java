@@ -15,16 +15,14 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public abstract class Window implements EventTarget, WindowOrWorkerGlobalScope {
+public interface Promise<T extends OpaqueReferenceType> extends OpaqueReferenceType {
 
-    @Import(module = "runtime", name = "nativewindow")
-    public native static Window window();
+    interface Handler<T extends OpaqueReferenceType> extends Callback {
+        void handleObject(T aValue);
+    }
 
-    @OpaqueProperty("document")
-    public abstract HTMLDocument document();
-
-    public abstract void requestAnimationFrame(AnimationFrameCallback aCallback);
+    void then(Handler<T> aHandler);
 }

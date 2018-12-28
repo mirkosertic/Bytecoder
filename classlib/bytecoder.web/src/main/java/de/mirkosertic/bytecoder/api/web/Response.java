@@ -15,16 +15,10 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
-public abstract class Window implements EventTarget, WindowOrWorkerGlobalScope {
+public interface Response extends Body {
 
-    @Import(module = "runtime", name = "nativewindow")
-    public native static Window window();
-
-    @OpaqueProperty("document")
-    public abstract HTMLDocument document();
-
-    public abstract void requestAnimationFrame(AnimationFrameCallback aCallback);
+    @OpaqueProperty
+    boolean ok();
 }
