@@ -261,6 +261,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("             add: function(p1, p2) {");
         theWriter.println("                 return p1 + p2;");
         theWriter.println("             },");
+        theWriter.println("             random: function() {");
+        theWriter.println("                 return Math.random();");
+        theWriter.println("             },");
         theWriter.println("         },");
         theWriter.println("         strictmath : {");
         theWriter.println("             sinDOUBLE: function(p1) {");
@@ -288,6 +291,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("         runtime : {");
         theWriter.println("             nativewindow: function() {");
         theWriter.println("                 return window;");
+        theWriter.println("             },");
+        theWriter.println("             nativeconsole: function() {");
+        theWriter.println("                 return console;");
         theWriter.println("             },");
         theWriter.println("         },");
         theWriter.println("     },");

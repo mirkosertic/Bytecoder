@@ -630,7 +630,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                     writer.writeRelooped(theReloopedBlock);
                 } catch (final Exception e) {
-                    throw new IllegalStateException("Error relooping cfg", e);
+                    throw new IllegalStateException("Error relooping cfg for " + aMethodMapEntry.getProvidingClass().getBytecodeClass().getThisInfo().getConstant().stringValue() + "." + theMethod.getName().stringValue() + " " + theMethod.getSignature() , e);
                 }
             });
 
@@ -1114,6 +1114,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             toDegreesDOUBLE: function(thisref, p1) {");
             theWriter.println("                 return Math.toDegrees(p1);");
             theWriter.println("             },");
+            theWriter.println("             random: function(thisref) { return Math.random();},");
             theWriter.println("         },");
             theWriter.println("         strictmath: {");
             theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
@@ -1134,6 +1135,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         },");
             theWriter.println("         runtime: {");
             theWriter.println("             nativewindow: function(caller) {return bytecoder.toBytecoderReference(window);},");
+            theWriter.println("             nativeconsole: function(caller) {return bytecoder.toBytecoderReference(console);},");
             theWriter.println("         },");
 
             final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
