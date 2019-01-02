@@ -70,7 +70,7 @@ public class InlineGotoOptimizer implements Optimizer {
                         }
                     }
 
-                    if (theCount == 1) {
+                    if (theCount == 1 && theTargetNode.getStartAddress().getAddress() != 0) {
                         // Node can be inlined
                         aGraph.delete(theTargetNode);
                         aList.replace(theGOTO, theTargetNode.getExpressions());

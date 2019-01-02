@@ -34,12 +34,12 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
         if ("<init>".equals(theName.stringValue())) {
             if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName))
                     .resolveConstructorInvocation(theSig)) {
-                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue());
+                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig);
             }
         } else {
            if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName))
                     .resolvePrivateMethod(theName.stringValue(), theSig)) {
-                   throw new IllegalStateException("Cannot find private method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue());
+                   throw new IllegalStateException("Cannot find private method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig);
            }
         }
     }

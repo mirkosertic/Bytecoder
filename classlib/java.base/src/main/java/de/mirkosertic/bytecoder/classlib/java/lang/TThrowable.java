@@ -26,6 +26,9 @@ public class TThrowable {
     public TThrowable(String aMessage) {
     }
 
+    public TThrowable(String aMessage, Throwable aCause) {
+    }
+
     public TThrowable() {
     }
 

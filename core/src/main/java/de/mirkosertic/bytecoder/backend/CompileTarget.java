@@ -32,7 +32,9 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CompileTarget {
@@ -85,24 +87,40 @@ public class CompileTarget {
             theClass.resolveVirtualMethod(aMethodName, aSignature);
         }
 
-        // We have to link all callback implementations. They are not part of the dependency yet as
-        // they are not invoked by the bytecode, but from the outside world. By adding them to the
-        // dependency tree, we make sure they are available for invocation.
-        List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(t -> t.targetNode()).collect(Collectors.toList());
-        for (BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
-            if (theLinkedClass.isCallback()) {
-                BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
-                for (BytecodeMethod theCallbackMethod : theBytecodeClass.getMethods()) {
-                    if (!theCallbackMethod.isConstructor() && !theCallbackMethod.isClassInitializer()) {
-                        theLinkedClass.resolveVirtualMethod(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
+        // Before code generation we have to make sure that all abstract method implementations are linked correctly
+        aOptions.getLogger().info("Resolving abstract method hierarchy");
+        theLinkerContext.resolveAbstractMethodsInSubclasses();
+
+        // Ugly hack for deeply nested promises and anonymous inner classes
+        boolean somethingAdded = true;
+        final Set<BytecodeLinkedClass> theAlreadySeen = new HashSet<>();
+        while (somethingAdded) {
+            somethingAdded = false;
+            // We have to link all callback implementations. They are not part of the dependency yet as
+            // they are not invoked by the bytecode, but from the outside world. By adding them to the
+            // dependency tree, we make sure they are available for invocation.
+            List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(t -> t.targetNode())
+                    .collect(Collectors.toList());
+            for (BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
+                if (theLinkedClass.isCallback()) {
+                    if (theAlreadySeen.add(theLinkedClass)) {
+                        somethingAdded = true;
+                        BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
+                        aOptions.getLogger()
+                                .info("Resolving callback {}", theBytecodeClass.getThisInfo().getConstant().stringValue());
+                        for (BytecodeMethod theCallbackMethod : theBytecodeClass.getMethods()) {
+                            if (!theCallbackMethod.isConstructor() && !theCallbackMethod.isClassInitializer()) {
+                                aOptions.getLogger()
+                                        .info("Resolving callback method {} {}", theCallbackMethod.getName().stringValue(),
+                                                theCallbackMethod.getSignature().toString());
+                                theLinkedClass.resolveVirtualMethod(theCallbackMethod.getName().stringValue(),
+                                        theCallbackMethod.getSignature());
+                            }
+                        }
                     }
                 }
             }
         }
-
-        // Before code generation we have to make sure that all abstract method implementations are linked correctly
-        aOptions.getLogger().info("Resolving abstract method hierarchy");
-        theLinkerContext.resolveAbstractMethodsInSubclasses();
 
         return backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);
     }
