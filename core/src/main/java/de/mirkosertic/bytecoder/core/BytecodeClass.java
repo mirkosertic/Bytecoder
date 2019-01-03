@@ -72,7 +72,7 @@ public class BytecodeClass {
 
     public BytecodeMethod methodByNameAndSignatureOrNull(String aMethodName, BytecodeMethodSignature aSignature) {
         for (BytecodeMethod theMethod : methods) {
-            if (Objects.equals(aMethodName, theMethod.getName().stringValue()) && theMethod.getSignature().metchesExactlyTo(aSignature)) {
+            if (Objects.equals(aMethodName, theMethod.getName().stringValue()) && theMethod.getSignature().matchesExactlyTo(aSignature)) {
                 return theMethod;
             }
         }

@@ -415,7 +415,7 @@ public class Bytecode5XProgramParser implements BytecodeProgramParser {
                     break;
                 }
                 case 74: { // dstore_3 = 74 (0x4a)
-                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE, 2));
+                    theResult.addInstruction(new BytecodeInstructionGenericSTORE(theOpcodeIndex, BytecodePrimitiveTypeRef.DOUBLE, 3));
                     break;
                 }
                 case 75: { // astore_0 = 75 (0x4b)

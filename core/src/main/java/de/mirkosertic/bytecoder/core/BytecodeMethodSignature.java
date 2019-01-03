@@ -33,7 +33,7 @@ public class BytecodeMethodSignature {
         return arguments;
     }
 
-    public boolean metchesExactlyTo(BytecodeMethodSignature aSignature) {
+    public boolean matchesExactlyTo(BytecodeMethodSignature aSignature) {
         if (arguments.length != aSignature.arguments.length) {
             return false;
         }

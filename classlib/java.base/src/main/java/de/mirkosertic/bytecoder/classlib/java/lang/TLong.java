@@ -90,6 +90,12 @@ public class TLong extends Number {
         return theBuffer.toString();
     }
 
+    public static String toString(long aValue, int aBase) {
+        StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
+    }
+
     public static String toHexString(long aValue) {
         return VM.longToHex(aValue);
     }

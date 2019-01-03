@@ -38,7 +38,7 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
             BytecodeAnnotation theAnnotation = theShadowMethod.getAttributes().getAnnotationByType(Substitutes.class.getName());
             if (theAnnotation != null) {
                 String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
-                if (Objects.equals(theMethodName, aMethod.getName().stringValue()) && theShadowMethod.getSignature().metchesExactlyTo(aMethod.getSignature())) {
+                if (Objects.equals(theMethodName, aMethod.getName().stringValue()) && theShadowMethod.getSignature().matchesExactlyTo(aMethod.getSignature())) {
                     return aMethod.replaceAndFlagsFrom(theShadowMethod);
                 }
             }

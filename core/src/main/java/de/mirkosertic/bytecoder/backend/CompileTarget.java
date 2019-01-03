@@ -120,6 +120,9 @@ public class CompileTarget {
                     }
                 }
             }
+
+            aOptions.getLogger().info("Resolving abstract method hierarchy");
+            theLinkerContext.resolveAbstractMethodsInSubclasses();
         }
 
         return backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);

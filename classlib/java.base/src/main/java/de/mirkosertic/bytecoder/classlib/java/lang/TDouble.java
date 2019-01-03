@@ -121,9 +121,25 @@ public class TDouble extends Number {
         return new Double(aValue);
     }
 
+    public static boolean isNaN(double aValue) {
+        return aValue == TMath.getNaN();
+    }
+
     public static String toString(double aValue) {
         StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
+    }
+
+    public static long doubleToLongBits(double aValue) {
+        return 0;
+    }
+
+    public static boolean isInfinite(double aValue) {
+        return false;
+    }
+
+    public static double longBitsToDouble(long aValue) {
+        return 0d;
     }
 }

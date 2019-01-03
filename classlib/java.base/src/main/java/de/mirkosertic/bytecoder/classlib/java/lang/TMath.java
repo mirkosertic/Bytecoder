@@ -45,6 +45,13 @@ public class TMath {
         return a;
     }
 
+    public static int abs(int a) {
+        if (a<0) {
+            return -a;
+        }
+        return a;
+    }
+
     public static native double sqrt(double aValue);
 
     public static native double ceil(double aValue);
@@ -69,7 +76,11 @@ public class TMath {
 
     public static native int max(int aValue1, int aValue2);
 
+    public static native double max(double aValue1, double aValue2);
+
     public static native int min(int aValue1, int aValue2);
+
+    public static native double min(double aValue1, double aValue2);
 
     public static int getExponent(float f) {
         f = abs(f);
