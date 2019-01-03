@@ -86,7 +86,7 @@ public class BytecodeResolvedMethods {
             if (theEntry.getProvidingClass() == aClass) {
                 BytecodeMethod theSourceMethod = theEntry.getValue();
                 if (theSourceMethod.getName().stringValue().equals(aMethod.getName().stringValue())) {
-                    if (aMethod.getSignature().metchesExactlyTo(theSourceMethod.getSignature())) {
+                    if (aMethod.getSignature().matchesExactlyTo(theSourceMethod.getSignature())) {
                         return true;
                     }
                 }

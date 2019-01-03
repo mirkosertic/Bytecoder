@@ -37,6 +37,13 @@ public class TString implements java.io.Serializable, Comparable<String> {
         }
     }
 
+    public TString(char value[], int offset, int count) {
+        data = new byte[count];
+        for (int i=0;i<count;i++) {
+            data[i] = (byte) value[offset + i];
+        }
+    }
+
     public void setCharAt(int aIndex, byte aChar) {
         data[aIndex] = aChar;
     }
@@ -181,6 +188,18 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     public static String valueOf(Object obj) {
         return (obj == null) ? "null" : obj.toString();
+    }
+
+    public static String valueOf(int aValue) {
+        return Integer.toString(aValue);
+    }
+
+    public static String valueOf(double aValue) {
+        return Double.toString(aValue);
+    }
+
+    public static String valueOf(char aValue) {
+        return new String(new byte[] {(byte) aValue});
     }
 
     public static String format(String aPattern, Object[] aValues) {

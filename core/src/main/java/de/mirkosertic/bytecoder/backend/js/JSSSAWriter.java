@@ -657,10 +657,27 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print("function() {");
                 print("var v = ");
                 print(aValue);
-                print(";var args = Array.prototype.slice.call(arguments);args.unshift(v);v");
+                print(";var args = Array.prototype.slice.call(arguments);v");
                 print(".");
                 print(theMethodName);
-                print(".apply(v, args);");
+                print("(v");
+                BytecodeTypeRef[] theArguments = theCallbackMethod.getSignature().getArguments();
+                for (int i=0;i<theArguments.length;i++) {
+                    print(",");
+                    String theConversionFunction = conversionFunctionToBytecoderForOpaqueType(theArguments[i]);
+                    if (theConversionFunction != null) {
+                        print(theConversionFunction);
+                        print("(");
+                        print("args[");
+                        print(i);
+                        print("])");
+                    } else {
+                        print("args[");
+                        print(i);
+                        print("]");
+                    }
+                }
+                print(");");
                 print("}");
             } else {
                 throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");

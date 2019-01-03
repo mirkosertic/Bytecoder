@@ -48,6 +48,28 @@ public class TSystem {
         }
     });
 
+    public static final PrintStream err = new PrintStream(new OutputStream() {
+
+        @Import(module = "system", name = "writeByteArrayToConsole")
+        public native void writeByteArrayToConsole(byte[] aBytes);
+
+        @Override
+        public void write(final int b) throws IOException {
+            final byte[] theData = new byte[1];
+            theData[0] = (byte) b;
+            write(theData);
+        }
+
+        @Override
+        public void write(final byte[] b, final int off, final int len) throws IOException {
+            writeByteArrayToConsole(b);
+        }
+
+        @Override
+        public void close() throws IOException {
+        }
+    });
+
     public static native long nanoTime();
 
     public static native long currentTimeMillis();

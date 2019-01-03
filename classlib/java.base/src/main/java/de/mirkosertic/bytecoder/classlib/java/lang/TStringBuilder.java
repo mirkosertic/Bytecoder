@@ -30,6 +30,14 @@ public class TStringBuilder {
         byteData = new byte[0];
     }
 
+    public TStringBuilder(String aOtherString) {
+        byte[] other = aOtherString.getBytes();
+        byteData = new byte[other.length];
+        for (int i=0;i<other.length;i++) {
+            byteData[i] = other[i];
+        }
+    }
+
     public TStringBuilder(final byte[] aData) {
         byteData = aData;
     }

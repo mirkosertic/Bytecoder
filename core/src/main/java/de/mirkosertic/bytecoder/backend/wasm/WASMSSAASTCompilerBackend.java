@@ -48,6 +48,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -278,6 +279,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ExportableFunction classGetEnumConstants = module.getFunctions().newFunction("jlClass_A1jlObjectgetEnumConstants", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         classGetEnumConstants.flow.ret(i32.load(0, i32.load(12, getLocal(classGetEnumConstants.localByLabel("thisRef")))));
 
+        final ExportableFunction classGetName = module.getFunctions().newFunction("jlClass_jlStringgetName", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        {
+            List<WASMValue> theGetArguments = new ArrayList<>();
+            theGetArguments.add(i32.load(16, getLocal(classGetName.localByLabel("thisRef"))));
+            classGetName.flow.ret(call(weakFunctionReference("STRINGPOOL_GLOBAL_BY_INDEX"), theGetArguments));
+        }
+
         final ExportableFunction classDesiredAssertionStatus = module.getFunctions().newFunction("jlClass_BOOLEANdesiredAssertionStatus", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         classDesiredAssertionStatus.flow.ret(i32.c(0));
 
@@ -325,6 +333,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         block.flow.unreachable();
                     } else if (Objects.equals("toString", theMethod.getName().stringValue())) {
                         block.flow.unreachable();
+                    } else if (Objects.equals("getName", theMethod.getName().stringValue())) {
+                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetName)));
                     } else if (Objects.equals("equals", theMethod.getName().stringValue())) {
                         block.flow.unreachable();
                     } else if (Objects.equals("hashCode", theMethod.getName().stringValue())) {
@@ -786,7 +796,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ExportableFunction newRuntimeClassFunction;
         {
             final String mallocFunctionName = WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_dmbcAddressnewObjectINTINTINT";
-            newRuntimeClassFunction = module.getFunctions().newFunction("newRuntimeClass", Arrays.asList(param("type", PrimitiveType.i32),param("staticSize", PrimitiveType.i32),param("enumValuesOffset", PrimitiveType.i32)), PrimitiveType.i32);
+            newRuntimeClassFunction = module.getFunctions().newFunction("newRuntimeClass", Arrays.asList(param("type", PrimitiveType.i32),param("staticSize", PrimitiveType.i32),param("enumValuesOffset", PrimitiveType.i32),param("nameStringPoolIndex", PrimitiveType.i32)), PrimitiveType.i32);
             final Local newRef = newRuntimeClassFunction.newLocal("newRef", PrimitiveType.i32);
             newRuntimeClassFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
@@ -794,9 +804,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     i32.c(-1), i32.c(module.getTables().funcTable().indexOf(runtimeResolvevtableindex)))));
             newRuntimeClassFunction.flow.i32.store(12, getLocal(newRef),
                     i32.add(getLocal(newRef), getLocal(newRuntimeClassFunction.localByLabel("enumValuesOffset"))));
+            newRuntimeClassFunction.flow.i32.store(16, getLocal(newRef), getLocal(newRuntimeClassFunction.localByLabel("nameStringPoolIndex")));
             newRuntimeClassFunction.flow.ret(getLocal(newRef));
         }
-
 
         {
             final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
@@ -829,6 +839,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 } else {
                     initArguments.add(i32.c(-1));
                 }
+                StringValue theName = new StringValue(theLinkedClass.getClassName().name());
+                Global theGlobal = theResolver.globalForStringFromPool(theName);
+                initArguments.add(i32.c(theConstantPool.register(theName)));
 
                 bootstrap.flow.setGlobal(runtimeClassGlobal,
                         call(newRuntimeClassFunction, initArguments));
@@ -875,6 +888,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1BYTE");
                 bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool), getGlobal(theStringPoolData)));
+            }
+
+            ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX", Arrays.asList(param("index", PrimitiveType.i32)), PrimitiveType.i32);
+            {
+                for (int i=0;i<thePoolValues.size();i++) {
+                    final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
+                    Iff theIff = theGet.flow.iff("g" + i, i32.eq(getLocal(theGet.localByLabel("index")), i32.c(i)));
+                    theIff.flow.ret(getGlobal(theStringPool));
+                }
+                theGet.flow.unreachable();
             }
 
             aLinkerContext.linkedClasses().forEach(aEntry -> {
@@ -1102,6 +1125,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             ceilDOUBLE: function (thisref, p1) {return Math.ceil(p1);},");
             theWriter.println("             sinDOUBLE: function (thisref, p1) {return Math.sin(p1);},");
             theWriter.println("             cosDOUBLE: function  (thisref, p1) {return Math.cos(p1);},");
+            theWriter.println("             tanDOUBLE: function  (thisref, p1) {return Math.tan(p1);},");
             theWriter.println("             roundDOUBLE: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
@@ -1109,10 +1133,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             maxINTINT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("             minINTINT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("             toRadiansDOUBLE: function(thisref, p1) {");
-            theWriter.println("                 return Math.toRadians(p1);");
+            theWriter.println("                 return p1 * (Math.PI / 180);");
             theWriter.println("             },");
             theWriter.println("             toDegreesDOUBLE: function(thisref, p1) {");
-            theWriter.println("                 return Math.toDegrees(p1);");
+            theWriter.println("                 return p1 * (180 / Math.PI);");
             theWriter.println("             },");
             theWriter.println("             random: function(thisref) { return Math.random();},");
             theWriter.println("         },");

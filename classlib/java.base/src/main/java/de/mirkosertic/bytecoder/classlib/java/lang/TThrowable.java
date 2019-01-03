@@ -15,21 +15,29 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import java.io.PrintStream;
-
-import de.mirkosertic.bytecoder.api.DelegatesTo;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+import java.io.PrintStream;
 
 @SubstitutesInClass(completeReplace = true)
 public class TThrowable {
 
+    private final String message;
+
     public TThrowable(String aMessage) {
+        message = aMessage;
     }
 
     public TThrowable(String aMessage, Throwable aCause) {
+        message = aMessage;
+    }
+
+    public TThrowable(Throwable aCause) {
+        message = null;
     }
 
     public TThrowable() {
+        message = null;
     }
 
     private void doNothing() {
@@ -43,5 +51,9 @@ public class TThrowable {
 
     public Throwable fillInStackTrace() {
         return (Throwable) (Object) this;
+    }
+
+    public String getMessage() {
+        return message;
     }
 }

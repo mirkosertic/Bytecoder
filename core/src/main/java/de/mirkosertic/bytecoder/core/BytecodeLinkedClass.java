@@ -269,7 +269,7 @@ public class BytecodeLinkedClass extends Node {
         // Do we already have a link?
         if (outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
                 .map(t -> (BytecodeMethod) t.targetNode())
-                .anyMatch(t -> Objects.equals(t.getName().stringValue(), aMethodName) && t.getSignature().metchesExactlyTo(aSignature))) {
+                .anyMatch(t -> Objects.equals(t.getName().stringValue(), aMethodName) && t.getSignature().matchesExactlyTo(aSignature))) {
             return true;
         }
 
@@ -305,7 +305,7 @@ public class BytecodeLinkedClass extends Node {
         // Do we aready have a link?
         if (outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
                 .map(t -> (BytecodeMethod) t.targetNode())
-                .anyMatch(t -> t.isConstructor() && t.getSignature().metchesExactlyTo(aSignature))) {
+                .anyMatch(t -> t.isConstructor() && t.getSignature().matchesExactlyTo(aSignature))) {
             return true;
         }
 
@@ -330,7 +330,7 @@ public class BytecodeLinkedClass extends Node {
         // Do we already have a link?
         if (outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
                 .map(t -> (BytecodeMethod) t.targetNode())
-                .anyMatch(t -> Objects.equals(t.getName().stringValue(), aMethodName) && t.getSignature().metchesExactlyTo(aSignature))) {
+                .anyMatch(t -> Objects.equals(t.getName().stringValue(), aMethodName) && t.getSignature().matchesExactlyTo(aSignature))) {
             return true;
         }
 
@@ -355,7 +355,7 @@ public class BytecodeLinkedClass extends Node {
         // Do we already have a link?
         if (outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
                 .map(t -> (BytecodeMethod) t.targetNode())
-                .anyMatch(t -> t.getAccessFlags().isStatic() && Objects.equals(t.getName().stringValue(), aMethodName) && t.getSignature().metchesExactlyTo(aSignature))) {
+                .anyMatch(t -> t.getAccessFlags().isStatic() && Objects.equals(t.getName().stringValue(), aMethodName) && t.getSignature().matchesExactlyTo(aSignature))) {
             return true;
         }
 

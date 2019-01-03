@@ -96,4 +96,8 @@ public class TInteger extends Number {
     public static String toHexString(int aValue) {
         return VM.longToHex(aValue);
     }
+
+    public static int numberOfLeadingZeros(int aValue) {
+        return 0;
+    }
 }

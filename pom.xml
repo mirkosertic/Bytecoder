@@ -4,7 +4,7 @@
 
     <groupId>de.mirkosertic.bytecoder</groupId>
     <artifactId>bytecoder-parent</artifactId>
-    <version>2018-13-19-SNAPSHOT</version>
+    <version>0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Bytecoder Parent POM</name>
     <description>Parent POM for Bytecoder</description>

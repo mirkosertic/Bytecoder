@@ -28,7 +28,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 
 public class WASMMemoryLayouter {
 
-    public static final int CLASS_HEADER_SIZE = 16; // Object header plus initialization status + enum values offset
+    public static final int CLASS_HEADER_SIZE = 20; // Object header plus initialization status + enum values offset + classname
     public static final int OBJECT_HEADER_SIZE = 8;
     public static final int OBJECT_FIELDSIZE = 4;
 

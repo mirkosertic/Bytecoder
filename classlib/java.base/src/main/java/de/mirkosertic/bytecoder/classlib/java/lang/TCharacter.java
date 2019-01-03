@@ -20,6 +20,151 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TCharacter {
 
+    public static boolean isDigit(char aChar) {
+        switch (aChar) {
+        case '0':
+            return true;
+        case '1':
+            return true;
+        case '2':
+            return true;
+        case '3':
+            return true;
+        case '4':
+            return true;
+        case '5':
+            return true;
+        case '6':
+            return true;
+        case '7':
+            return true;
+        case '8':
+            return true;
+        case '9':
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    public static boolean isLowerCase(char aChar) {
+        switch (aChar) {
+        case 'A':
+            return false;
+        case 'B':
+            return false;
+        case 'C':
+            return false;
+        case 'D':
+            return false;
+        case 'E':
+            return false;
+        case 'F':
+            return false;
+        case 'G':
+            return false;
+        case 'H':
+            return false;
+        case 'I':
+            return false;
+        case 'J':
+            return false;
+        case 'K':
+            return false;
+        case 'L':
+            return false;
+        case 'M':
+            return false;
+        case 'N':
+            return false;
+        case 'O':
+            return false;
+        case 'P':
+            return false;
+        case 'Q':
+            return false;
+        case 'R':
+            return false;
+        case 'S':
+            return false;
+        case 'T':
+            return false;
+        case 'U':
+            return false;
+        case 'V':
+            return false;
+        case 'W':
+            return false;
+        case 'X':
+            return false;
+        case 'Y':
+            return false;
+        case 'Z':
+            return false;
+        default:
+            return true;
+        }
+    }
+
+    public static boolean isUpperCase(char aChar) {
+        switch (aChar) {
+        case 'A':
+            return true;
+        case 'B':
+            return true;
+        case 'C':
+            return true;
+        case 'D':
+            return true;
+        case 'E':
+            return true;
+        case 'F':
+            return true;
+        case 'G':
+            return true;
+        case 'H':
+            return true;
+        case 'I':
+            return true;
+        case 'J':
+            return true;
+        case 'K':
+            return true;
+        case 'L':
+            return true;
+        case 'M':
+            return true;
+        case 'N':
+            return true;
+        case 'O':
+            return true;
+        case 'P':
+            return true;
+        case 'Q':
+            return true;
+        case 'R':
+            return true;
+        case 'S':
+            return true;
+        case 'T':
+            return true;
+        case 'U':
+            return true;
+        case 'V':
+            return true;
+        case 'W':
+            return true;
+        case 'X':
+            return true;
+        case 'Y':
+            return true;
+        case 'Z':
+            return true;
+        default:
+            return false;
+        }
+    }
+
     public static char toLowerCase(char aChar) {
         switch (aChar) {
         case 'A':

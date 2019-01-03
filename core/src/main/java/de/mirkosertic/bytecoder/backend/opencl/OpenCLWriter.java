@@ -640,7 +640,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         AtomicBoolean theFound = new AtomicBoolean(false);
         theMethods.stream().forEach(aMethodMapsEntry -> {
             BytecodeMethod theMethod = aMethodMapsEntry.getValue();
-            if (Objects.equals(theMethod.getName().stringValue(), aValue.getMethodName()) && theMethod.getSignature().metchesExactlyTo(aValue.getSignature())) {
+            if (Objects.equals(theMethod.getName().stringValue(), aValue.getMethodName()) && theMethod.getSignature().matchesExactlyTo(aValue.getSignature())) {
                 BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(OpenCLFunction.class.getName());
                 if (theAnnotation == null) {
                     throw new IllegalArgumentException("Annotation @OpenCLFunction required for static method " + aValue.getMethodName());

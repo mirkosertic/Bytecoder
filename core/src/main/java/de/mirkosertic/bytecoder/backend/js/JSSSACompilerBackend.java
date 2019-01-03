@@ -250,10 +250,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("                 return Math.tan(p1);");
         theWriter.println("             },");
         theWriter.println("             toRadiansDOUBLE: function(p1) {");
-        theWriter.println("                 return Math.toRadians(p1);");
+        theWriter.println("                 return p1 * (Math.PI / 180);");
         theWriter.println("             },");
         theWriter.println("             toDegreesDOUBLE: function(p1) {");
-        theWriter.println("                 return Math.toDegrees(p1);");
+        theWriter.println("                 return p1 * (180 / Math.PI);");
         theWriter.println("             },");
         theWriter.println("             minINTINT: function (p1, p2) {");
         theWriter.println("                 return Math.min(p1, p2);");
@@ -426,6 +426,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    },");
                 theWriter.println();
 
+                theWriter.println("    jlStringgetName : function() {");
+                theWriter.print("        return bytecoder.stringpool[");
+                theWriter.print(thePool.register(new StringValue(theLinkedClass.getClassName().name())));
+                theWriter.println("];");
+                theWriter.println("    },");
+                theWriter.println();
+
                 theWriter.println("    BOOLEANdesiredAssertionStatus : function() {");
                 theWriter.println("        return false;");
                 theWriter.println("    },");
@@ -529,13 +536,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    " + JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature) + " : function(" + theArguments
                         + ") {");
 
-                if (Objects.equals(theMethod.getName().stringValue(), "<clinit>")) {
+//                if (Objects.equals(theMethod.getName().stringValue(), "<clinit>")) {
                     for (final BytecodeObjectTypeRef theRef : theSSAProgram.getStaticReferences()) {
                         if (!theInitDependencies.contains(theRef)) {
                             theInitDependencies.add(theRef);
                         }
                     }
-                }
+//                }
 
                 if (aOptions.isDebugOutput()) {
                     theWriter.println("        /**");

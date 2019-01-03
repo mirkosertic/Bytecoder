@@ -31,4 +31,9 @@ public class RuntimeClassTest {
         Assert.assertSame(str1.getClass(), str2.getClass());
         Assert.assertNotSame(str1.getClass(), RuntimeClassTest.class);
     }
+
+    @Test
+    public void testGetName() {
+        Assert.assertEquals("de.mirkosertic.bytecoder.core.RuntimeClassTest", RuntimeClassTest.class.getName());
+    }
 }

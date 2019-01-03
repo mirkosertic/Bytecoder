@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
-
-import java.io.IOException;
-import java.io.InputStream;
+package de.mirkosertic.bytecoder.classlib.java.lang.ref;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public abstract class TInputStream {
+public class TReference<T> {
 
-    public int read(byte b[], int off, int len) throws IOException {
-        return 0;
+    private T referent;
+
+    TReference(T referent) {
+        this.referent = referent;
+    }
+
+    public T get() {
+        return referent;
+    }
+
+    public void clear() {
+        referent = null;
     }
 }

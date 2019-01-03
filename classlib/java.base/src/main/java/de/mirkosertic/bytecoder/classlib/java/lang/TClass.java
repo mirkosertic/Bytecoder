@@ -30,6 +30,7 @@ public class TClass {
         return "";
     }
 
+    @EmulatedByRuntime
     public String getName() {
         return "";
     }

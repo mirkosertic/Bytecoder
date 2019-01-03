@@ -17,8 +17,11 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGenericInvoke {
 
+    private boolean virtualCall;
+
     public BytecodeInstructionINVOKESPECIAL(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex, aIndex, aConstantPool);
+        virtualCall = false;
     }
 
     @Override
@@ -31,16 +34,24 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
         BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
 
         BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        BytecodeLinkedClass theTarget = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName));
         if ("<init>".equals(theName.stringValue())) {
-            if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName))
-                    .resolveConstructorInvocation(theSig)) {
-                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig);
+            if (!theTarget.resolveConstructorInvocation(theSig)) {
+                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig + " in class " + theTarget.getClassName().name());
             }
         } else {
-           if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName))
-                    .resolvePrivateMethod(theName.stringValue(), theSig)) {
-                   throw new IllegalStateException("Cannot find private method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig);
-           }
+            if (!theTarget.resolvePrivateMethod(theName.stringValue(), theSig)) {
+                if (!theTarget.resolveVirtualMethod(theName.stringValue(), theSig)) {
+                    throw new IllegalStateException(
+                            "Cannot find private or virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant()
+                                    .stringValue() + " with signature " + theSig + " in class " + theTarget.getClassName().name());
+                }
+                virtualCall = true;
+            }
         }
+    }
+
+    public boolean isVirtualCall() {
+        return virtualCall;
     }
 }

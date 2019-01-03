@@ -20,7 +20,13 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TRandom {
 
+    private long seed;
+
     public TRandom() {
+    }
+
+    public TRandom(long seed) {
+        this.seed = seed;
     }
 
     public float nextFloat() {
