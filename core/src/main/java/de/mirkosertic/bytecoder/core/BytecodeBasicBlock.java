@@ -16,7 +16,9 @@
 package de.mirkosertic.bytecoder.core;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class BytecodeBasicBlock {
 
@@ -30,18 +32,21 @@ public class BytecodeBasicBlock {
     private final List<BytecodeBasicBlock> successors;
     private final Type type;
     private final BytecodeClassinfoConstant catchType;
+    private final Set<BytecodeBasicBlock> backendesFrom;
 
     public BytecodeBasicBlock(final Type aType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
         type = aType;
         catchType = null;
+        backendesFrom = new HashSet<>();
     }
     public BytecodeBasicBlock(final BytecodeClassinfoConstant aCatchType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
         type = Type.EXCEPTION_HANDLER;
         catchType = aCatchType;
+        backendesFrom = new HashSet<>();
     }
 
     public BytecodeClassinfoConstant getCatchType() {
@@ -50,6 +55,10 @@ public class BytecodeBasicBlock {
 
     public void addSuccessor(final BytecodeBasicBlock aBasicBlock) {
         successors.add(aBasicBlock);
+    }
+
+    public void addBackEdge(final BytecodeBasicBlock aBackEdge) {
+        backendesFrom.add(aBackEdge);
     }
 
     public List<BytecodeBasicBlock> getSuccessors() {
@@ -100,5 +109,9 @@ public class BytecodeBasicBlock {
     public boolean endsWithThrow() {
         final BytecodeInstruction theLastInstruction = instructions.get(instructions.size() - 1);
         return theLastInstruction instanceof BytecodeInstructionATHROW;
+    }
+
+    public BytecodeInstruction lastInstruction() {
+        return instructions.get(instructions.size() - 1);
     }
 }

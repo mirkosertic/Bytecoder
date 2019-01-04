@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,11 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.graph.Node;
-
-public class RegionNode extends Node {
+public class RegionNode {
 
     public enum BlockType {
         NORMAL,

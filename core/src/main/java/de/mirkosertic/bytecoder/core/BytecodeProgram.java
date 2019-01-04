@@ -55,14 +55,6 @@ public class BytecodeProgram {
         return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);
     }
 
-    public int getNextInstructionAddress(BytecodeInstruction aInstruction) {
-        int p = instructions.indexOf(aInstruction);
-        if (p== instructions.size() -1) {
-            return -1;
-        }
-        return instructions.get(p + 1).getOpcodeAddress().getAddress();
-    }
-
     public boolean isStartOfTryBlock(BytecodeOpcodeAddress aAddress) {
         for (BytecodeExceptionTableEntry aEntry : exceptionHandlers) {
             if (aAddress.equals(aEntry.getStartPC())) {
@@ -87,5 +79,10 @@ public class BytecodeProgram {
 
     public List<BytecodeExceptionTableEntry> getExceptionHandlers() {
         return exceptionHandlers;
+    }
+
+    public BytecodeInstruction nextInstructionOf(BytecodeInstruction aInstruction) {
+        int i = instructions.indexOf(aInstruction);
+        return instructions.get(i + 1);
     }
 }
