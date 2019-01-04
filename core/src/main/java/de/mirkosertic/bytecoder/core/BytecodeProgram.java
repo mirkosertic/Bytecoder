@@ -17,11 +17,29 @@ package de.mirkosertic.bytecoder.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class BytecodeProgram {
+
+    public class Flowinfo {
+
+        private final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots;
+        private final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks;
+
+        public Flowinfo(final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots, final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks) {
+            this.roots = roots;
+            this.knownBlocks = knownBlocks;
+        }
+
+        public BytecodeProgram getProgram() {
+            return BytecodeProgram.this;
+        }
+    }
 
     private final List<BytecodeInstruction> instructions;
     private final List<BytecodeExceptionTableEntry> exceptionHandlers;
@@ -84,5 +102,109 @@ public class BytecodeProgram {
     public BytecodeInstruction nextInstructionOf(BytecodeInstruction aInstruction) {
         int i = instructions.indexOf(aInstruction);
         return instructions.get(i + 1);
+    }
+
+    public Flowinfo toBasicBlocks() {
+
+        // First, we create a list of basic blocks
+        final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> theKnownBlocks = new HashMap<>();
+        final Set<BytecodeOpcodeAddress> theJumpTargets = getJumpTargets();
+        BytecodeBasicBlock theCurrentBlock = null;
+        for (BytecodeInstruction theInstruction : instructions) {
+            if (theJumpTargets.contains(theInstruction.getOpcodeAddress())) {
+                // Jump target, start a new basic block
+                theCurrentBlock = null;
+            }
+            if (isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
+                // start of try block, hence new basic block
+                theCurrentBlock = null;
+            }
+
+            if (theCurrentBlock == null) {
+                BytecodeClassinfoConstant theCatchType = null;
+                BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
+                for (final BytecodeExceptionTableEntry theHandler : getExceptionHandlers()) {
+                    if (Objects.equals(theHandler.getHandlerPc(), theInstruction.getOpcodeAddress())) {
+                        if (theHandler.isFinally()) {
+                            theType = BytecodeBasicBlock.Type.FINALLY;
+                        } else {
+                            theType = BytecodeBasicBlock.Type.EXCEPTION_HANDLER;
+                            theCatchType = theHandler.getCatchType();
+                        }
+                    }
+                }
+                final BytecodeBasicBlock theCurrentTemp = theCurrentBlock;
+                if (theCatchType != null) {
+                    theCurrentBlock = new BytecodeBasicBlock(theCatchType);
+                } else {
+                    theCurrentBlock = new BytecodeBasicBlock(theType);
+                }
+                if (theCurrentTemp != null && !theCurrentTemp.endsWithReturn() && !theCurrentTemp.endsWithThrow() && !theCurrentTemp.endsWithGoto() && !theCurrentTemp.endsWithConditionalJump()) {
+                    theCurrentTemp.addSuccessor(theCurrentBlock);
+                }
+
+                theCurrentBlock = new BytecodeBasicBlock(BytecodeBasicBlock.Type.NORMAL);
+                theKnownBlocks.put(theInstruction.getOpcodeAddress(), theCurrentBlock);
+            }
+            theCurrentBlock.addInstruction(theInstruction);
+
+            if (theInstruction.isJumpSource()) {
+                // conditional or unconditional jump, start new basic block
+                theCurrentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionRET) {
+                // returning, start new basic block
+                theCurrentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionRETURN) {
+                // returning, start new basic block
+                theCurrentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
+                // returning, start new basic block
+                theCurrentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
+                // returning, start new basic block
+                theCurrentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionATHROW) {
+                // thowing an exception, start new basic block
+                theCurrentBlock = null;
+            }
+        }
+
+        BytecodeOpcodeAddress theNull = new BytecodeOpcodeAddress(0);
+        // Calculate edges
+        Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
+        theRoots.put(theNull, generateEdges(theKnownBlocks.get(theNull), new HashSet<>(), theKnownBlocks));
+
+        return new Flowinfo(theRoots, theKnownBlocks);
+    }
+
+    private Set<BytecodeBasicBlock> generateEdges(BytecodeBasicBlock aBlock, Set<BytecodeBasicBlock> aAlreadySeen, Map<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocks) {
+        aAlreadySeen.add(aBlock);
+        for (BytecodeInstruction theInstruction : aBlock.getInstructions()) {
+            if (theInstruction.isJumpSource()) {
+                for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
+                    BytecodeBasicBlock theTargetBlock = aBlocks.get(theTarget);
+                    if (!aAlreadySeen.contains(theTargetBlock)) {
+                        // Normal edge
+                        aBlock.addSuccessor(theTargetBlock);
+                        generateEdges(theTargetBlock, new HashSet<>(aAlreadySeen), aBlocks);
+                    } else {
+                        // Back edge
+                        theTargetBlock.addBackEdge(aBlock);
+                        aBlock.addSuccessor(theTargetBlock);
+                    }
+                }
+            }
+        }
+
+        /*
+        if (!aBlock.endsWithReturn() && !aBlock.endsWithThrow() && !aBlock.endsWithGoto()) {
+            BytecodeInstruction theLast = aBlock.lastInstruction();
+            BytecodeInstruction theNext = nextInstructionOf(theLast);
+            BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
+            aBlock.addSuccessor(theNextBlock);
+            generateEdges(theNextBlock, new HashSet<>(aAlreadySeen), aBlocks);
+        }*/
+
+        return aAlreadySeen;
     }
 }
