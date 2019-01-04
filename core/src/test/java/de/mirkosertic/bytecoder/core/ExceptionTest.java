@@ -54,68 +54,23 @@ public class ExceptionTest {
         }
         Assert.assertEquals(70, i, 0);
     }
+
+    public void complexWithArgument(String aMessage) {
+        int i;
+        try {
+            i = 1;
+
+            if (false != (i!=0) );
+
+            return;
+        } catch ( Exception e ) {
+            RuntimeException le = new RuntimeException(aMessage);
+            throw le;
+        }
+    }
+
+    @Test
+    public void testComplexFlow() {
+        complexWithArgument("Hello!");
+    }
 }
-
-/*
-
-  private static void throwException(int);
-    Code:
-       0: new           #2                  // class java/lang/RuntimeException
-       3: dup
-       4: invokespecial #3                  // Method java/lang/RuntimeException."<init>":()V
-       7: athrow
-
-  public void testControlFlow();
-    Code:
-       0: bipush        10
-       2: istore_1
-       3: iinc          1, 1
-       6: iload_1
-       7: invokestatic  #4                  // Method throwException:(I)V
-      10: iinc          1, 1
-      13: iinc          1, 3
-      16: goto          35
-      19: astore_2
-      20: iinc          1, 1
-      23: iinc          1, 3
-      26: goto          35
-      29: astore_3
-      30: iinc          1, 3
-      33: aload_3
-      34: athrow
-      35: ldc           #6                  // float 15.0f
-      37: iload_1
-      38: i2f
-      39: fconst_0
-      40: invokestatic  #7                  // Method org/junit/Assert.assertEquals:(FFF)V
-      43: return
-    Exception table:
-       from    to  target type
-           3    13    19   Class java/lang/Exception
-           3    13    29   any
-          19    23    29   any
-
-
-  public void testForLoop();
-    Code:
-       0: bipush        10
-       2: istore_1
-       3: iconst_0
-       4: istore_2
-       5: iload_2
-       6: bipush        20
-       8: if_icmpge     21
-      11: iload_1
-      12: iconst_3
-      13: iadd
-      14: istore_1
-      15: iinc          2, 1
-      18: goto          5
-      21: ldc           #8                  // float 70.0f
-      23: iload_1
-      24: i2f
-      25: fconst_0
-      26: invokestatic  #7                  // Method org/junit/Assert.assertEquals:(FFF)V
-      29: return
-
- */
