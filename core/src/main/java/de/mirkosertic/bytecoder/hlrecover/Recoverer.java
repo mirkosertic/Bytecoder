@@ -27,7 +27,7 @@ public class Recoverer {
         final BytecodeProgram theProgram = theCode.getProgram();
 
         // First, we create the program flow information
-        final BytecodeProgram.Flowinfo flowinfo = theProgram.toBasicBlocks();
+        final BytecodeProgram.FlowInformation flowinfo = theProgram.toFlow();
 
         return null;
     }

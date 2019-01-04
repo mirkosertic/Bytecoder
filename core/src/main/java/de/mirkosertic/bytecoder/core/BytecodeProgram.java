@@ -26,12 +26,14 @@ import java.util.Set;
 
 public class BytecodeProgram {
 
-    public class Flowinfo {
+    public class FlowInformation {
 
+        private final BytecodeOpcodeAddress regularStartNode;
         private final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots;
         private final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks;
 
-        public Flowinfo(final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots, final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks) {
+        public FlowInformation(final BytecodeOpcodeAddress regularStartNode, final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots, final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks) {
+            this.regularStartNode = regularStartNode;
             this.roots = roots;
             this.knownBlocks = knownBlocks;
         }
@@ -104,7 +106,7 @@ public class BytecodeProgram {
         return instructions.get(i + 1);
     }
 
-    public Flowinfo toBasicBlocks() {
+    public FlowInformation toFlow() {
 
         // First, we create a list of basic blocks
         final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> theKnownBlocks = new HashMap<>();
@@ -133,17 +135,13 @@ public class BytecodeProgram {
                         }
                     }
                 }
-                final BytecodeBasicBlock theCurrentTemp = theCurrentBlock;
+
                 if (theCatchType != null) {
                     theCurrentBlock = new BytecodeBasicBlock(theCatchType);
                 } else {
                     theCurrentBlock = new BytecodeBasicBlock(theType);
                 }
-                if (theCurrentTemp != null && !theCurrentTemp.endsWithReturn() && !theCurrentTemp.endsWithThrow() && !theCurrentTemp.endsWithGoto() && !theCurrentTemp.endsWithConditionalJump()) {
-                    theCurrentTemp.addSuccessor(theCurrentBlock);
-                }
 
-                theCurrentBlock = new BytecodeBasicBlock(BytecodeBasicBlock.Type.NORMAL);
                 theKnownBlocks.put(theInstruction.getOpcodeAddress(), theCurrentBlock);
             }
             theCurrentBlock.addInstruction(theInstruction);
@@ -169,12 +167,20 @@ public class BytecodeProgram {
             }
         }
 
-        BytecodeOpcodeAddress theNull = new BytecodeOpcodeAddress(0);
-        // Calculate edges
+        BytecodeOpcodeAddress theRegularStart = new BytecodeOpcodeAddress(0);
+        // Calculage regular program flow
         Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
-        theRoots.put(theNull, generateEdges(theKnownBlocks.get(theNull), new HashSet<>(), theKnownBlocks));
+        theRoots.put(theRegularStart, generateEdges(theKnownBlocks.get(theRegularStart), new HashSet<>(), theKnownBlocks));
 
-        return new Flowinfo(theRoots, theKnownBlocks);
+        // Calculate the program flow for finally blocks and exception handlers
+        for (BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
+            if (theBlock.getType() != BytecodeBasicBlock.Type.NORMAL) {
+                theRoots.put(theBlock.getStartAddress(), generateEdges(theBlock, new HashSet<>(), theKnownBlocks));
+            }
+        }
+
+        // We are done here
+        return new FlowInformation(theRegularStart, theRoots, theKnownBlocks);
     }
 
     private Set<BytecodeBasicBlock> generateEdges(BytecodeBasicBlock aBlock, Set<BytecodeBasicBlock> aAlreadySeen, Map<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocks) {
@@ -196,14 +202,14 @@ public class BytecodeProgram {
             }
         }
 
-        /*
+        // Properly handle the fall thru case
         if (!aBlock.endsWithReturn() && !aBlock.endsWithThrow() && !aBlock.endsWithGoto()) {
             BytecodeInstruction theLast = aBlock.lastInstruction();
             BytecodeInstruction theNext = nextInstructionOf(theLast);
             BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
             aBlock.addSuccessor(theNextBlock);
             generateEdges(theNextBlock, new HashSet<>(aAlreadySeen), aBlocks);
-        }*/
+        }
 
         return aAlreadySeen;
     }
