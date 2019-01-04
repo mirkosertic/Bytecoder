@@ -104,6 +104,16 @@ public class ParsingHelperCache {
     public ParsingHelper resolveInitialPHIStateForNode(final RegionNode aBlock) {
         final ParsingHelper.ValueProvider theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
 
+        if (aBlock.getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
+            // Exception handlers are a special case, as the stack is unwided
+            // to the begin of the try block
+            // We make sure here to have at least the local variables available
+
+            // Local variables are inherited by the provider
+            final ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
+            return theHelper;
+        }
+
         // We collect the stacks from all predecessor nodes
         final Map<StackVariableDescription, Set<Value>> theStackToImport = new HashMap<>();
         int theRequestedStack = -1;
@@ -114,7 +124,7 @@ public class ParsingHelperCache {
                     theRequestedStack = theHelper.getStack().size();
                 } else {
                     if (theRequestedStack != theHelper.getStack().size()) {
-                        throw new IllegalStateException("Wrong number of exported stack in " + thePredecessor.getStartAddress().getAddress() + " expected " + theRequestedStack + " got " + theHelper.getStack().size());
+                        throw new IllegalStateException("Wrong number of exported stack in " + thePredecessor.getStartAddress().getAddress() + " expected " + theRequestedStack + " got " + theHelper.getStack().size() + " to jump to " + aBlock.getStartAddress().getAddress());
                     }
                 }
                 for (int i=0;i<theHelper.getStack().size();i++) {
