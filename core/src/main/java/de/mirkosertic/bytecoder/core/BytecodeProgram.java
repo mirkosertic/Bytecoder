@@ -168,14 +168,16 @@ public class BytecodeProgram {
         }
 
         BytecodeOpcodeAddress theRegularStart = new BytecodeOpcodeAddress(0);
-        // Calculage regular program flow
+        // Calculage regular control flow
         Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
-        theRoots.put(theRegularStart, generateEdges(theKnownBlocks.get(theRegularStart), new HashSet<>(), theKnownBlocks));
+        Set<BytecodeBasicBlock> theRegularBlocks = new HashSet<>();
+        theRoots.put(theRegularStart, generateEdges(theKnownBlocks.get(theRegularStart), theRegularBlocks, theKnownBlocks));
 
         // Calculate the program flow for finally blocks and exception handlers
+        // till their merging with the regular control flow
         for (BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
             if (theBlock.getType() != BytecodeBasicBlock.Type.NORMAL) {
-                theRoots.put(theBlock.getStartAddress(), generateEdges(theBlock, new HashSet<>(), theKnownBlocks));
+                theRoots.put(theBlock.getStartAddress(), generateEdges(theBlock, new HashSet<>(theRegularBlocks), theKnownBlocks));
             }
         }
 
