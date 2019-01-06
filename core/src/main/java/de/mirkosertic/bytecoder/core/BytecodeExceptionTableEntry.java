@@ -50,4 +50,8 @@ public class BytecodeExceptionTableEntry {
     public BytecodeClassinfoConstant getCatchType() {
         return (BytecodeClassinfoConstant) constantPool.constantByIndex(catchType - 1);
     }
+
+    public boolean coveres(BytecodeOpcodeAddress aAddress) {
+        return startPC.getAddress() <= aAddress.getAddress() && endPc.getAddress() > aAddress.getAddress();
+    }
 }

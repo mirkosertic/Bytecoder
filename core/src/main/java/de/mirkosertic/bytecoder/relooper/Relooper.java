@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.relooper;
 
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
@@ -509,13 +510,27 @@ public class Relooper {
     }
 
     private Block createSimpleBlock(final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup,
-                                    final RegionNode theEntry) {
+                                    final RegionNode aEntry) {
 
         // TODO: Implement Exception Handling guarded blocks here
+        final List<BytecodeExceptionTableEntry> theHandlers = aEntry.exceptionHandlersStartingHere();
+        if (!theHandlers.isEmpty()) {
+            final Set<RegionNode> theCoveredNodes = new HashSet<>();
+            final Set<RegionNode> theNextNodes = new HashSet<>();
+            for (RegionNode theLabel : aLabelSoup) {
+                for (BytecodeExceptionTableEntry theHandler : theHandlers) {
+                    if (theHandler.coveres(theLabel.getStartAddress())) {
+                        theCoveredNodes.add(theLabel);
+                    } else {
+                        theNextNodes.add(theLabel);
+                    }
+                }
+            }
+        }
 
         final Set<RegionNode> theNextEntries = new HashSet<>();
-        final Set<RegionNode> theDominated = theEntry.dominatedNodes();
-        for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : theEntry.getSuccessors().entrySet()) {
+        final Set<RegionNode> theDominated = aEntry.dominatedNodes();
+        for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : aEntry.getSuccessors().entrySet()) {
             if (theSucc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
                 if (theDominated.contains(theSucc.getValue())) {
                     theNextEntries.add(theSucc.getValue());
@@ -524,8 +539,8 @@ public class Relooper {
         }
 
         final Set<RegionNode> theOtherLabels = new HashSet<>(aLabelSoup);
-        theOtherLabels.remove(theEntry);
-        return new SimpleBlock(aEntryLabels, theEntry, reloop(theNextEntries, theOtherLabels));
+        theOtherLabels.remove(aEntry);
+        return new SimpleBlock(aEntryLabels, aEntry, reloop(theNextEntries, theOtherLabels));
     }
 
     private Set<RegionNode> jumpTargetsOf(final Collection<RegionNode> aLabelSoup) {
