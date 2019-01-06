@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 import java.util.ArrayList;
@@ -46,12 +47,21 @@ public class Program {
     private final List<Variable> variables;
     private final Set<Variable> globals;
     private final List<Argument> arguments;
+    private BytecodeProgram.FlowInformation flowInformation;
 
     public Program() {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
         globals = new HashSet<>();
         arguments = new ArrayList<>();
+    }
+
+    public void setFlowInformation(BytecodeProgram.FlowInformation flowInformation) {
+        this.flowInformation = flowInformation;
+    }
+
+    public BytecodeProgram.FlowInformation getFlowInformation() {
+        return flowInformation;
     }
 
     public void addArgument(final LocalVariableDescription aVariableDescription, final Variable aVariable) {

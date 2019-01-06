@@ -188,6 +188,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         final BytecodeProgram.FlowInformation theFlowInformation = theCode.getProgram().toFlow();
+        theProgram.setFlowInformation(theFlowInformation);
 
         // Ok, now we transform it to GraphNodes with yet empty content
         final Map<BytecodeBasicBlock, RegionNode> theCreatedBlocks = new HashMap<>();
