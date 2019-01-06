@@ -15,9 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -91,6 +95,17 @@ public class RegionNode {
         reachableBy = new ArrayList<>();
         expressions = new ExpressionList();
         catchType = aCatchType;
+    }
+
+    public List<BytecodeExceptionTableEntry> exceptionHandlersStartingHere() {
+        List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
+        BytecodeProgram theBytecode =  program.getFlowInformation().getProgram();
+        for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
+            if (theEntry.getStartPC().equals(startAddress)) {
+                theResult.add(theEntry);
+            }
+        }
+        return theResult;
     }
 
     public BytecodeLinkedClass getCatchType() {
