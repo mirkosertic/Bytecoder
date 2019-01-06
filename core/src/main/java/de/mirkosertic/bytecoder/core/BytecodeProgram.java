@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Stack;
 
 public class BytecodeProgram {
 
@@ -40,6 +41,18 @@ public class BytecodeProgram {
 
         public BytecodeProgram getProgram() {
             return BytecodeProgram.this;
+        }
+
+        public BytecodeBasicBlock blockAt(BytecodeOpcodeAddress aBlockAddress) {
+            return knownBlocks.get(aBlockAddress);
+        }
+
+        public BytecodeOpcodeAddress getRegularStart() {
+            return regularStartNode;
+        }
+
+        public Set<BytecodeBasicBlock> blocksDominatedByRoot(BytecodeOpcodeAddress aRootAddress) {
+            return roots.get(aRootAddress);
         }
     }
 
@@ -171,13 +184,13 @@ public class BytecodeProgram {
         // Calculage regular control flow
         Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
         Set<BytecodeBasicBlock> theRegularBlocks = new HashSet<>();
-        theRoots.put(theRegularStart, generateEdges(theKnownBlocks.get(theRegularStart), theRegularBlocks, theKnownBlocks));
+        theRoots.put(theRegularStart, generateEdges(theRegularBlocks, theKnownBlocks.get(theRegularStart), new Stack<>(), theKnownBlocks));
 
         // Calculate the program flow for finally blocks and exception handlers
         // till their merging with the regular control flow
         for (BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
             if (theBlock.getType() != BytecodeBasicBlock.Type.NORMAL) {
-                theRoots.put(theBlock.getStartAddress(), generateEdges(theBlock, new HashSet<>(theRegularBlocks), theKnownBlocks));
+                theRoots.put(theBlock.getStartAddress(), generateEdges(new HashSet<>(theRegularBlocks), theBlock, new Stack<>(), theKnownBlocks));
             }
         }
 
@@ -185,34 +198,39 @@ public class BytecodeProgram {
         return new FlowInformation(theRegularStart, theRoots, theKnownBlocks);
     }
 
-    private Set<BytecodeBasicBlock> generateEdges(BytecodeBasicBlock aBlock, Set<BytecodeBasicBlock> aAlreadySeen, Map<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocks) {
-        aAlreadySeen.add(aBlock);
-        for (BytecodeInstruction theInstruction : aBlock.getInstructions()) {
-            if (theInstruction.isJumpSource()) {
-                for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
-                    BytecodeBasicBlock theTargetBlock = aBlocks.get(theTarget);
-                    if (!aAlreadySeen.contains(theTargetBlock)) {
-                        // Normal edge
-                        aBlock.addSuccessor(theTargetBlock);
-                        generateEdges(theTargetBlock, new HashSet<>(aAlreadySeen), aBlocks);
-                    } else {
-                        // Back edge
-                        theTargetBlock.addBackEdge(aBlock);
-                        aBlock.addSuccessor(theTargetBlock);
+    private Set<BytecodeBasicBlock> generateEdges(Set<BytecodeBasicBlock> aVisited, BytecodeBasicBlock aBlock, Stack<BytecodeBasicBlock> aNestingStack, Map<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocks) {
+        aNestingStack.push(aBlock);
+
+        if (aVisited.add(aBlock)) {
+            for (BytecodeInstruction theInstruction : aBlock.getInstructions()) {
+                if (theInstruction.isJumpSource()) {
+                    for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
+                        BytecodeBasicBlock theTargetBlock = aBlocks.get(theTarget);
+                        if (!aNestingStack.contains(theTargetBlock)) {
+                            // Normal edge
+                            aBlock.addSuccessor(theTargetBlock);
+                            generateEdges(aVisited, theTargetBlock, aNestingStack, aBlocks);
+                        } else {
+                            // Back edge
+                            theTargetBlock.addBackEdge(aBlock);
+                            aBlock.addSuccessor(theTargetBlock);
+                        }
                     }
                 }
             }
+
+            // Properly handle the fall thru case
+            if (!aBlock.endsWithReturn() && !aBlock.endsWithThrow() && !aBlock.endsWithGoto()) {
+                BytecodeInstruction theLast = aBlock.lastInstruction();
+                BytecodeInstruction theNext = nextInstructionOf(theLast);
+                BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
+                aBlock.addSuccessor(theNextBlock);
+                generateEdges(aVisited, theNextBlock, aNestingStack, aBlocks);
+            }
         }
 
-        // Properly handle the fall thru case
-        if (!aBlock.endsWithReturn() && !aBlock.endsWithThrow() && !aBlock.endsWithGoto()) {
-            BytecodeInstruction theLast = aBlock.lastInstruction();
-            BytecodeInstruction theNext = nextInstructionOf(theLast);
-            BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
-            aBlock.addSuccessor(theNextBlock);
-            generateEdges(theNextBlock, new HashSet<>(aAlreadySeen), aBlocks);
-        }
+        aNestingStack.pop();
 
-        return aAlreadySeen;
+        return aVisited;
     }
 }

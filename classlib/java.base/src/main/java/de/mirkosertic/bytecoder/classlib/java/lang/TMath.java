@@ -80,6 +80,8 @@ public class TMath {
 
     public static native int min(int aValue1, int aValue2);
 
+    public static native float min(float aValue1, float aValue2);
+
     public static native double min(double aValue1, double aValue2);
 
     public static int getExponent(float f) {

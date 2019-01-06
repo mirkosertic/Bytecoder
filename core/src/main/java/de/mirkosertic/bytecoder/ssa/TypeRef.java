@@ -68,6 +68,8 @@ public interface TypeRef {
                 switch (aOtherType) {
                     case SHORT:
                         return SHORT;
+                    case INT:
+                        return INT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
 
@@ -112,6 +114,8 @@ public interface TypeRef {
                     case CHAR:
                         return INT;
                     case REFERENCE:
+                        return INT;
+                    case SHORT:
                         return INT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);

@@ -125,6 +125,18 @@ public class Program {
                     theResult.add(BytecodeObjectTypeRef
                             .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
                 }
+                for (Value theIncoming : theExpression.incomingDataFlows()) {
+                    if (theIncoming instanceof GetStaticExpression) {
+                        GetStaticExpression theGet = (GetStaticExpression) theIncoming;
+                        theResult.add(BytecodeObjectTypeRef
+                                .fromUtf8Constant(theGet.getField().getClassIndex().getClassConstant().getConstant()));
+                    }
+                }
+                if (theExpression instanceof PutStaticExpression) {
+                    final PutStaticExpression theE = (PutStaticExpression) theExpression;
+                    theResult.add(BytecodeObjectTypeRef
+                            .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
+                }
             }
         }
 
