@@ -510,6 +510,9 @@ public class Relooper {
 
     private Block createSimpleBlock(final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup,
                                     final RegionNode theEntry) {
+
+        // TODO: Implement Exception Handling guarded blocks here
+
         final Set<RegionNode> theNextEntries = new HashSet<>();
         final Set<RegionNode> theDominated = theEntry.dominatedNodes();
         for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : theEntry.getSuccessors().entrySet()) {
