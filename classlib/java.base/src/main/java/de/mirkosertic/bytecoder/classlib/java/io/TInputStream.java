@@ -23,6 +23,10 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public abstract class TInputStream {
 
+    public int read() {
+        return 0;
+    }
+
     public int read(byte b[], int off, int len) throws IOException {
         return 0;
     }

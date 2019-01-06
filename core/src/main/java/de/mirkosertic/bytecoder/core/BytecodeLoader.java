@@ -69,6 +69,10 @@ public class BytecodeLoader {
         int theMinorVersion = aStream.readUnsignedShort();
         int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
+            case 47:
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);
+            case 48:
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);
             case 49:
                 return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);
             case 50:

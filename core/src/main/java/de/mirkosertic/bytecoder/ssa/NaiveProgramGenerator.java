@@ -15,19 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
@@ -40,7 +27,6 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
@@ -96,7 +82,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionInvoke;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
@@ -114,7 +99,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRET;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
@@ -138,6 +122,18 @@ import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public final class NaiveProgramGenerator implements ProgramGenerator {
 
@@ -187,115 +183,17 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
         }
 
-        final List<BytecodeBasicBlock> theBlocks = new ArrayList<>();
-        final Function<BytecodeOpcodeAddress, BytecodeBasicBlock> theBasicBlockByAddress = aValue -> {
-            for (final BytecodeBasicBlock theBlock : theBlocks) {
-                if (Objects.equals(aValue, theBlock.getStartAddress())) {
-                    return theBlock;
-                }
-            }
-            throw new IllegalStateException("No Block for " + aValue.getAddress());
-        };
-
         if (aMethod.getAccessFlags().isAbstract() || aMethod.getAccessFlags().isNative()) {
             return theProgram;
         }
 
-        final BytecodeProgram theBytecode = theCode.getProgram();
-        final Set<BytecodeOpcodeAddress> theJumpTarget = theBytecode.getJumpTargets();
-        BytecodeBasicBlock currentBlock = null;
-        for (final BytecodeInstruction theInstruction : theBytecode.getInstructions()) {
-            if (theJumpTarget.contains(theInstruction.getOpcodeAddress())) {
-                // Jump target, start a new basic block
-                currentBlock = null;
-            }
-            if (theBytecode.isStartOfTryBlock(theInstruction.getOpcodeAddress())) {
-                // start of try block, hence new basic block
-                currentBlock = null;
-            }
-            if (currentBlock == null) {
-                BytecodeClassinfoConstant theCatchType = null;
-                BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
-                for (final BytecodeExceptionTableEntry theHandler : theBytecode.getExceptionHandlers()) {
-                    if (Objects.equals(theHandler.getHandlerPc(), theInstruction.getOpcodeAddress())) {
-                        if (theHandler.isFinally()) {
-                            theType = BytecodeBasicBlock.Type.FINALLY;
-                        } else {
-                            theType = BytecodeBasicBlock.Type.EXCEPTION_HANDLER;
-                            theCatchType = theHandler.getCatchType();
-                        }
-                    }
-                }
-                final BytecodeBasicBlock theCurrentTemp = currentBlock;
-                if (theCatchType != null) {
-                    currentBlock = new BytecodeBasicBlock(theCatchType);
-                } else {
-                    currentBlock = new BytecodeBasicBlock(theType);
-                }
-                if (theCurrentTemp != null && !theCurrentTemp.endsWithReturn() && !theCurrentTemp.endsWithThrow() && theCurrentTemp.endsWithGoto() && !theCurrentTemp.endsWithConditionalJump()) {
-                    theCurrentTemp.addSuccessor(currentBlock);
-                }
-                theBlocks.add(currentBlock);
-            }
-            currentBlock.addInstruction(theInstruction);
-            if (theInstruction.isJumpSource()) {
-                // conditional or unconditional jump, start new basic block
-                currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionRET) {
-                // returning, start new basic block
-                currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionRETURN) {
-                // returning, start new basic block
-                currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionObjectRETURN) {
-                // returning, start new basic block
-                currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionGenericRETURN) {
-                // returning, start new basic block
-                currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionATHROW) {
-                // thowing an exception, start new basic block
-                currentBlock = null;
-            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
-                // invocation, start new basic block
-                // currentBlock = null;
-            }
-        }
-
-        // Now, we have to build the successors of each block
-        for (int i=0;i<theBlocks.size();i++) {
-            final BytecodeBasicBlock theBlock = theBlocks.get(i);
-            if (!theBlock.endsWithReturn() && !theBlock.endsWithThrow()) {
-                if (theBlock.endsWithJump()) {
-                    for (final BytecodeInstruction theInstruction : theBlock.getInstructions()) {
-                        if (theInstruction.isJumpSource()) {
-                            for (final BytecodeOpcodeAddress theBlockJumpTarget : theInstruction.getPotentialJumpTargets()) {
-                                theBlock.addSuccessor(theBasicBlockByAddress.apply(theBlockJumpTarget));
-                            }
-                        }
-                    }
-                    if (theBlock.endsWithConditionalJump()) {
-                        if (i<theBlocks.size()-1) {
-                            theBlock.addSuccessor(theBlocks.get(i + 1));
-                        } else {
-                            throw new IllegalStateException("Block at end with no jump target!");
-                        }
-                    }
-                } else {
-                    if (i<theBlocks.size()-1) {
-                        theBlock.addSuccessor(theBlocks.get(i + 1));
-                    } else {
-                        throw new IllegalStateException("Block at end with no jump target!");
-                    }
-                }
-            }
-        }
+        final BytecodeProgram.FlowInformation theFlowInformation = theCode.getProgram().toFlow();
 
         // Ok, now we transform it to GraphNodes with yet empty content
         final Map<BytecodeBasicBlock, RegionNode> theCreatedBlocks = new HashMap<>();
 
         final ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
-        for (final BytecodeBasicBlock theBlock : theBlocks) {
+        for (final BytecodeBasicBlock theBlock : theFlowInformation.blocksDominatedByRoot(theFlowInformation.getRegularStart())) {
             final RegionNode theSingleAssignmentBlock;
             switch (theBlock.getType()) {
             case NORMAL:
@@ -318,48 +216,31 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             for (final BytecodeBasicBlock theSuccessor : theEntry.getKey().getSuccessors()) {
                 final RegionNode theSuccessorBlock = theCreatedBlocks.get(theSuccessor);
                 if (theSuccessorBlock == null) {
-                    throw new IllegalStateException("Cannot find successor block");
+                    throw new IllegalStateException("Cannot find successor block " + theSuccessor.getStartAddress().getAddress() + " from " + theEntry.getKey().getStartAddress().getAddress());
                 }
                 theEntry.getValue().addSuccessor(theSuccessorBlock);
             }
         }
 
-        // And add dependencies for exception handlers
-        for (final BytecodeExceptionTableEntry theHandler : theBytecode.getExceptionHandlers()) {
-            final RegionNode theHandlerNode = theProgram.getControlFlowGraph().nodeStartingAt(theHandler.getHandlerPc());
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
-                if (theNode.getStartAddress().getAddress() >= theHandler.getStartPC().getAddress() &&
-                        theNode.getStartAddress().getAddress() < theHandler.getEndPc().getAddress()) {
-                    theNode.addSuccessor(theHandlerNode);
-                }
-            }
-        }
-
         // Now we can add the SSA instructions to the graph nodes
-        final Set<RegionNode> theVisited = new HashSet<>();
         final RegionNode theStart = theProgram.getControlFlowGraph().startNode();
 
         // First of all, we need to mark the back-edges of the graph
         theProgram.getControlFlowGraph().calculateReachabilityAndMarkBackEdges();
 
         try {
+            final Set<RegionNode> theVisited = new HashSet<>();
+
             // Now we can continue to create the program flow
             final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theDebugInfos);
 
             // This will traverse the CFG from bottom to top
             for (final RegionNode theNode : theProgram.getControlFlowGraph().finalNodes()) {
-                initializeBlock(theProgram, aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
-                            theBasicBlockByAddress);
+                initializeBlock(aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
+                            theFlowInformation);
             }
 
-            // Finally, we have to check for blocks what were not directly accessible, for instance exception handlers or
-            // finally blocks
-            for (final Map.Entry<BytecodeBasicBlock, RegionNode> theEntry : theCreatedBlocks.entrySet()) {
-                final RegionNode theBlock = theEntry.getValue();
-                if (theBlock.getType() != RegionNode.BlockType.NORMAL) {
-                    initializeBlock(theProgram, aOwningClass, aMethod, theBlock, theVisited, theParsingHelperCache, theBasicBlockByAddress);
-                }
-            }
+            // TODO: Also initialize exceptional control flows
 
             // Check if there are infinite looping blocks
             // Additionally, we have to add gotos
@@ -508,7 +389,12 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
     }
 
     private void initializeBlock(
-            final Program aProgram, final BytecodeClass aOwningClass, final BytecodeMethod aMethod, final RegionNode aCurrentBlock, final Set<RegionNode> aAlreadyVisited, final ParsingHelperCache aCache, final Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress) {
+            final BytecodeClass aOwningClass,
+            final BytecodeMethod aMethod,
+            final RegionNode aCurrentBlock,
+            final Set<RegionNode> aAlreadyVisited,
+            final ParsingHelperCache aCache,
+            final BytecodeProgram.FlowInformation aFlowInformation) {
 
         if (aAlreadyVisited.add(aCurrentBlock)) {
 
@@ -516,7 +402,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             // We have to ignore back edges!!
             final Set<RegionNode> thePredecessors = aCurrentBlock.getPredecessorsIgnoringBackEdges();
             for (final RegionNode thePredecessor : thePredecessors) {
-                initializeBlock(aProgram, aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aBlocksByAddress);
+                initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aFlowInformation);
             }
 
             final ParsingHelper theParsingState;
@@ -554,17 +440,21 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
             }
 
-            initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aBlocksByAddress, theParsingState);
+            initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aFlowInformation, theParsingState);
 
             // register the final state after program flow
             aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
         }
     }
 
-    private void initializeBlockWith(final BytecodeClass aOwningClass, final BytecodeMethod aMethod, final RegionNode aTargetBlock, final Function<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocksByAddress,  final ParsingHelper aHelper) {
+    private void initializeBlockWith(final BytecodeClass aOwningClass,
+                                     final BytecodeMethod aMethod,
+                                     final RegionNode aTargetBlock,
+                                     final BytecodeProgram.FlowInformation aFlowInformation,
+                                     final ParsingHelper aHelper) {
 
         // Finally we can start to parse the program
-        final BytecodeBasicBlock theBytecodeBlock = aBlocksByAddress.apply(aTargetBlock.getStartAddress());
+        final BytecodeBasicBlock theBytecodeBlock = aFlowInformation.blockAt(aTargetBlock.getStartAddress());
 
         for (final BytecodeInstruction theInstruction : theBytecodeBlock.getInstructions()) {
 

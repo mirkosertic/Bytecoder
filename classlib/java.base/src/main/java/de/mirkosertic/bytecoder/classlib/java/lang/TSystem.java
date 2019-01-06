@@ -93,4 +93,8 @@ public class TSystem {
     public static SecurityManager getSecurityManager() {
         return null;
     }
+
+    public static String getProperty(String aProperty) {
+        return null;
+    }
 }

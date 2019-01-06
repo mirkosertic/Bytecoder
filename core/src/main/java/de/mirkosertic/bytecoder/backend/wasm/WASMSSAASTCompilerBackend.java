@@ -15,15 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
@@ -48,7 +39,6 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -96,6 +86,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -161,6 +160,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         theMemoryManagerClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Math.class))
+                .resolveStaticMethod("getNaN", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
@@ -1129,9 +1131,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             roundDOUBLE: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
+            theWriter.println("             getNaN: function(thisref, p1, p2) { return NaN;},");
             theWriter.println("             maxLONGLONG: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("             maxDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("             maxINTINT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("             maxFLOATFLOAT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+            theWriter.println("             minFLOATFLOAT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("             minINTINT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+            theWriter.println("             minDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("             toRadiansDOUBLE: function(thisref, p1) {");
             theWriter.println("                 return p1 * (Math.PI / 180);");
             theWriter.println("             },");
@@ -1139,6 +1146,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                 return p1 * (180 / Math.PI);");
             theWriter.println("             },");
             theWriter.println("             random: function(thisref) { return Math.random();},");
+            theWriter.println("         },");
+            theWriter.println("         tmath: {");
+            theWriter.println("             getNaN: function(thisref, p1, p2) { return NaN;},");
             theWriter.println("         },");
             theWriter.println("         strictmath: {");
             theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
