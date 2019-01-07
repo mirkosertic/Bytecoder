@@ -617,7 +617,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 // Try to reloop it!
                 try {
-                    final Relooper theRelooper = new Relooper();
+                    final Relooper theRelooper = new Relooper(aOptions);
                     final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
                     final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);

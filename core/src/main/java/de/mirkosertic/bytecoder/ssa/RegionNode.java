@@ -99,10 +99,13 @@ public class RegionNode {
 
     public List<BytecodeExceptionTableEntry> exceptionHandlersStartingHere() {
         List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
-        BytecodeProgram theBytecode =  program.getFlowInformation().getProgram();
-        for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
-            if (theEntry.getStartPC().equals(startAddress)) {
-                theResult.add(theEntry);
+        BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
+        if (theFlowinfo != null) {
+            BytecodeProgram theBytecode = theFlowinfo.getProgram();
+            for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
+                if (theEntry.getStartPC().equals(startAddress)) {
+                    theResult.add(theEntry);
+                }
             }
         }
         return theResult;

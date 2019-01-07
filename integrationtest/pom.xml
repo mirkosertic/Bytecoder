@@ -136,7 +136,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>js</backend>
                             <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
-                            <enableExceptionHandling>true</enableExceptionHandling>
+                            <enableExceptionHandling>false</enableExceptionHandling>
                         </configuration>
                     </execution>
                     <execution>
@@ -147,7 +147,7 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulationKotlin</mainClass>
                             <backend>js</backend>
-                            <enableExceptionHandling>true</enableExceptionHandling>
+                            <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>bytecoder-kotlin</filenamePrefix>
                         </configuration>
                     </execution>

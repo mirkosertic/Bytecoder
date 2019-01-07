@@ -1210,16 +1210,15 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((Relooper.MultipleBlock) aBlock);
             return;
         }
+        if (aBlock instanceof Relooper.TryBlock) {
+            print((Relooper.TryBlock) aBlock);
+            return;
+        }
         throw new IllegalStateException("Not implemented : " + aBlock);
     }
 
     private void print(final Relooper.SimpleBlock aSimpleBlock) {
         JSSSAWriter theWriter = this;
-        final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException() && options.isEnableExceptions();
-        if (canThrowExeption) {
-            println("try {");
-            theWriter = theWriter.withDeeperIndent();
-        }
         if (aSimpleBlock.isLabelRequired()) {
             theWriter.print("$");
             theWriter.print(aSimpleBlock.label().name());
@@ -1233,61 +1232,6 @@ public class JSSSAWriter extends IndentSSAWriter {
 
         if (aSimpleBlock.isLabelRequired()) {
             theWriter.println("}");
-        }
-
-        if (canThrowExeption) {
-            println("} catch (e) {");
-
-            final JSSSAWriter theDeeper = withDeeperIndent();
-
-            theDeeper.println("dmbcExceptionManager.VOIDpushjlThrowable(e);");
-
-            int handlerCounter = 0;
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : aSimpleBlock.internalLabel().getSuccessors().entrySet()) {
-                if (theEntry.getValue().getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
-                    if (handlerCounter > 0) {
-                        theDeeper.print("} else ");
-                    }
-                    theDeeper.print("if (e.instanceOf(");
-                    theDeeper.print(JSWriterUtils.toClassName(theEntry.getValue().getCatchType().getClassName()));
-                    theDeeper.println(")) {");
-                    final JSSSAWriter theDeeper2 = theDeeper.withDeeperIndent();
-
-                    final Relooper.SimpleBlock.Jump jump = aSimpleBlock.jumpTo(theEntry.getValue().getStartAddress());
-                    if (jump != null) {
-                        theDeeper2.print("__label__ = ");
-                        theDeeper2.print(theEntry.getValue().getStartAddress().getAddress());
-                        theDeeper2.println(";");
-                        switch (jump.getType()) {
-                            case CONTINUE:
-                                theDeeper2.print("continue $");
-                                break;
-                            case BREAK:
-                                theDeeper2.print("break $");
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Not implemented!");
-                        }
-                        theDeeper2.print(jump.getLabel().name());
-                        theDeeper2.println(";");
-                    } else {
-                        theDeeper2.print("__label__ = ");
-                        theDeeper2.print(theEntry.getValue().getStartAddress().getAddress());
-                        theDeeper2.println(";");
-                    }
-
-                    handlerCounter++;
-                }
-            }
-            if (handlerCounter > 0) {
-                theDeeper.println("} else {");
-                theDeeper.withDeeperIndent().println("throw dmbcExceptionManager.jlThrowablepop();");
-                theDeeper.println("}");
-            } else {
-                theDeeper.println("throw dmbcExceptionManager.jlThrowablepop();");
-            }
-
-            println("}");
         }
 
         print(aSimpleBlock.next());
@@ -1326,42 +1270,39 @@ public class JSSSAWriter extends IndentSSAWriter {
                 theDeeper.println(" :");
                 theDeeper.printlnComment(theEntry.getType().toString());
 
-                if (theEntry.getType() == RegionNode.BlockType.EXCEPTION_HANDLER && options.isEnableExceptions()) {
 
-                    final List<RegionNode> theFinallyNodes = theEntry.getSuccessors().values().stream().filter(t -> t.getType() == RegionNode.BlockType.FINALLY).collect(Collectors.toList());
-                    if (!theFinallyNodes.isEmpty()) {
-
-                        final JSSSAWriter theDeeper3 = theDeeper.withDeeperIndent();
-                        theDeeper3.println("try {");
-
-                        final JSSSAWriter theHandlerWriter = theDeeper3.withDeeperIndent();
-                        theHandlerWriter.print(theHandler);
-
-                        theDeeper3.println("} catch (e) {");
-
-                        final JSSSAWriter theDeeper2 = theDeeper3.withDeeperIndent();
-                        theDeeper2.println("dmbcExceptionManager.VOIDpushjlThrowable(e);");
-                        theDeeper2.print("__label__ = ");
-                        theDeeper2.print(theFinallyNodes.get(0).getStartAddress().getAddress());
-                        theDeeper2.println(";");
-                        theDeeper2.print("continue ");
-                        theDeeper2.print("$");
-                        theDeeper2.print(aMultiple.label().name());
-                        theDeeper2.println(";");
-
-                        theDeeper3.println("}");
-                    } else {
-                        final JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
-                        theHandlerWriter.print(theHandler);
-                    }
-                } else {
-                    final JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
-                    theHandlerWriter.print(theHandler);
-                }
+                final JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
+                theHandlerWriter.print(theHandler);
             }
         }
 
         println("}");
         print(aMultiple.next());
     }
-}
+
+    private void print(final Relooper.TryBlock aTryBlock) {
+
+        if (aTryBlock.isLabelRequired()) {
+            print("$");
+            print(aTryBlock.label().name());
+            print(" : ");
+        }
+        println("try {");
+
+        final JSSSAWriter theDeeper = withDeeperIndent();
+        theDeeper.print(aTryBlock.inner());
+
+        println("} catch (e) {");
+
+        final JSSSAWriter theHandlerDeeper = withDeeperIndent();
+        theHandlerDeeper.println("dmbcExceptionManager.VOIDpushjlThrowable(e);");
+
+        // TODO: Implement handler logic here
+
+        theHandlerDeeper.println("throw dmbcExceptionManager.jlThrowablepop();");
+        println("}");
+
+        print(aTryBlock.next());
+    }
+
+    }

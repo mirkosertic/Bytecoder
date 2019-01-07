@@ -24,4 +24,8 @@ public abstract class Console implements OpaqueReferenceType {
     public native static Console console();
 
     public abstract void log(String aMessage);
+
+    public abstract void time(String aLabel);
+
+    public abstract void timeEnd(String aLabel);
 }

@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.relooper;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
@@ -94,49 +95,42 @@ public class Relooper {
      */
     public static class SimpleBlock extends Block {
 
-        public enum JumpType {
-            BREAK, CONTINUE
-        }
-
-        public static class Jump {
-            private final JumpType type;
-            private final Label label;
-
-            public Jump(final JumpType type, final Label label) {
-                this.type = type;
-                this.label = label;
-            }
-
-            public JumpType getType() {
-                return type;
-            }
-
-            public Label getLabel() {
-                return label;
-            }
-        }
-
         private final RegionNode internalLabel;
         private final Block next;
-        private final Map<BytecodeOpcodeAddress, Jump> knownJumps;
 
         public SimpleBlock(final Set<RegionNode> aEntries, final RegionNode aInternalLabel, final Block aNext) {
             super(aEntries, "S_");
             internalLabel = aInternalLabel;
             next = aNext;
-            knownJumps = new HashMap<>();
-        }
-
-        public void registerJump(final BytecodeOpcodeAddress target, final Jump jump) {
-            knownJumps.put(target, jump);
-        }
-
-        public Jump jumpTo(final BytecodeOpcodeAddress target) {
-            return knownJumps.get(target);
         }
 
         public RegionNode internalLabel() {
             return internalLabel;
+        }
+
+        @Override
+        public Block next() {
+            return next;
+        }
+    }
+
+    /**
+     * A Try block guards its inner block for exceptions. Without exceptions, control
+     * flow is continued in the next block.
+     */
+    public static class TryBlock extends Block {
+
+        private final Block inner;
+        private final Block next;
+
+        public TryBlock(final Set<RegionNode> aEntries, final Block inner, final Block next) {
+            super(aEntries, "T_");
+            this.inner = inner;
+            this.next = next;
+        }
+
+        public Block inner() {
+            return inner;
         }
 
         @Override
@@ -213,6 +207,12 @@ public class Relooper {
         }
     }
 
+    private final CompileOptions compileOptions;
+
+    public Relooper(final CompileOptions aCompileOptions) {
+        compileOptions = aCompileOptions;
+    }
+
     public Block reloop(final ControlFlowGraph aGraph) {
         final Set<RegionNode> theEntries = new HashSet<>();
         final RegionNode theStart = aGraph.startNode();
@@ -238,6 +238,16 @@ public class Relooper {
 
     private void replaceGotosIn(final Stack<Block> aTraversalStack, final Block aBlock) {
         if (aBlock == null) {
+            return;
+        }
+        if (aBlock instanceof TryBlock) {
+
+            TryBlock theTry = (TryBlock) aBlock;
+            aTraversalStack.push(theTry);
+            replaceGotosIn(aTraversalStack, theTry.inner());
+            replaceGotosIn(aTraversalStack, theTry.next());
+            aTraversalStack.pop();
+
             return;
         }
         if (aBlock instanceof SimpleBlock) {
@@ -272,14 +282,10 @@ public class Relooper {
                     for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
                         final Block theNestingBlock = aTraversalStack.get(i);
                         if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
-
                             theNestingBlock.requireLabel();
-                            theSimple.registerJump(theTarget.getStartAddress(), new SimpleBlock.Jump(SimpleBlock.JumpType.BREAK, theNestingBlock.label()));
                             break;
                         } else if (theNestingBlock.entries().contains(theTarget)) {
                             theNestingBlock.requireLabel();
-
-                            theSimple.registerJump(theTarget.getStartAddress(), new SimpleBlock.Jump(SimpleBlock.JumpType.CONTINUE, theNestingBlock.label()));
                             break;
                         }
                     }
@@ -288,10 +294,8 @@ public class Relooper {
                     // We can only branch back into the known stack of nested blocks
                     for (final Block theNestingBlock : aTraversalStack) {
                         if (theNestingBlock.entries().contains(theTarget)) {
-
                             // We can return to the target in the hierarchy
                             theNestingBlock.requireLabel();
-                            theSimple.registerJump(theTarget.getStartAddress(), new SimpleBlock.Jump(SimpleBlock.JumpType.CONTINUE, theNestingBlock.label()));
                             break;
                         }
                     }
@@ -513,18 +517,47 @@ public class Relooper {
                                     final RegionNode aEntry) {
 
         // TODO: Implement Exception Handling guarded blocks here
-        final List<BytecodeExceptionTableEntry> theHandlers = aEntry.exceptionHandlersStartingHere();
-        if (!theHandlers.isEmpty()) {
-            final Set<RegionNode> theCoveredNodes = new HashSet<>();
-            final Set<RegionNode> theNextNodes = new HashSet<>();
-            for (RegionNode theLabel : aLabelSoup) {
-                for (BytecodeExceptionTableEntry theHandler : theHandlers) {
-                    if (theHandler.coveres(theLabel.getStartAddress())) {
-                        theCoveredNodes.add(theLabel);
-                    } else {
-                        theNextNodes.add(theLabel);
+
+        if (compileOptions.isEnableExceptions()) {
+
+            final List<BytecodeExceptionTableEntry> theHandlers = aEntry.exceptionHandlersStartingHere();
+            if (!theHandlers.isEmpty()) {
+                final Set<RegionNode> theCoveredNodes = new HashSet<>();
+                final Set<RegionNode> theNextNodes = new HashSet<>();
+                for (final RegionNode theLabel : aLabelSoup) {
+                    for (BytecodeExceptionTableEntry theHandler : theHandlers) {
+                        if (theHandler.coveres(theLabel.getStartAddress())) {
+                            theCoveredNodes.add(theLabel);
+                        } else {
+                            theNextNodes.add(theLabel);
+                        }
                     }
                 }
+
+                final Set<RegionNode> theInnerNext = new HashSet<>();
+                final Set<RegionNode> theOuterNext = new HashSet<>();
+                for (RegionNode theCoveredNode : theCoveredNodes) {
+                    for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : theCoveredNode.getSuccessors().entrySet()) {
+                        RegionNode theNode = theSucc.getValue();
+                        if (theSucc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                            if (theCoveredNodes.contains(theNode)) {
+                                theInnerNext.add(theNode);
+                            } else{
+                                theOuterNext.add(theNode);
+                            }
+                        }
+                    }
+                }
+
+                theCoveredNodes.removeAll(aEntryLabels);
+                Block theInnerBlock = new SimpleBlock(aEntryLabels, aEntry, reloop(theInnerNext, theCoveredNodes));
+
+                // If all blocks are covered, there is no next
+                if (theNextNodes.isEmpty()) {
+                    return new TryBlock(aEntryLabels, theInnerBlock, null);
+                }
+
+                return new TryBlock(aEntryLabels, theInnerBlock, reloop(theOuterNext, theNextNodes));
             }
         }
 
@@ -532,7 +565,8 @@ public class Relooper {
         final Set<RegionNode> theDominated = aEntry.dominatedNodes();
         for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : aEntry.getSuccessors().entrySet()) {
             if (theSucc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
-                if (theDominated.contains(theSucc.getValue())) {
+                RegionNode theNode = theSucc.getValue();
+                if (theDominated.contains(theNode) && aLabelSoup.contains(theNode)) {
                     theNextEntries.add(theSucc.getValue());
                 }
             }

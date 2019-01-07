@@ -585,7 +585,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 // Try to reloop it!
                 try {
-                    final Relooper theRelooper = new Relooper();
+                    final Relooper theRelooper = new Relooper(aOptions);
                     final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
                     theVariablesWriter.printRelooped(theReloopedBlock);

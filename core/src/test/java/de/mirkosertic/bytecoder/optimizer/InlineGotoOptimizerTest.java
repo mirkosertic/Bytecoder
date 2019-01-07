@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
@@ -28,6 +29,7 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import org.mockito.Mockito;
 
 public class InlineGotoOptimizerTest {
 
@@ -56,7 +58,8 @@ public class InlineGotoOptimizerTest {
 
         Assert.assertEquals(0, theNode.getSuccessors().size(), 0);
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theRoot = theRelooper.reloop(theGraph);
     }
 
@@ -90,7 +93,8 @@ public class InlineGotoOptimizerTest {
 
         Assert.assertEquals(0, theNode.getSuccessors().size(), 0);
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theRoot = theRelooper.reloop(theGraph);
     }
 
