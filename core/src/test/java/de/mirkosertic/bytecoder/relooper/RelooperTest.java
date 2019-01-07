@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.relooper;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
@@ -22,6 +23,7 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class RelooperTest {
 
@@ -42,7 +44,8 @@ public class RelooperTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theBlock = theRelooper.reloop(theGraph);
 
         theRelooper.debugPrint(System.out, theBlock);
@@ -66,7 +69,8 @@ public class RelooperTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theBlock = theRelooper.reloop(theGraph);
 
         theRelooper.debugPrint(System.out, theBlock);
@@ -92,7 +96,8 @@ public class RelooperTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theBlock = theRelooper.reloop(theGraph);
 
         theRelooper.debugPrint(System.out, theBlock);
@@ -120,7 +125,8 @@ public class RelooperTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theBlock = theRelooper.reloop(theGraph);
 
         theRelooper.debugPrint(System.out, theBlock);
@@ -160,7 +166,8 @@ public class RelooperTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        Relooper theRelooper = new Relooper();
+        CompileOptions theOptions = Mockito.mock(CompileOptions.class);
+        Relooper theRelooper = new Relooper(theOptions);
         Relooper.Block theBlock = theRelooper.reloop(theGraph);
 
         theRelooper.debugPrint(System.out, theBlock);

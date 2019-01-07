@@ -73,4 +73,35 @@ public class ExceptionTest {
     public void testComplexFlow() {
         complexWithArgument("Hello!");
     }
+
+    @Test
+    public void testSimpleTry() {
+        int x = 10;
+        try {
+            x = x * 2;
+        } catch (Exception e) {
+            System.out.println("Exceptions happened!");
+        }
+        Assert.assertEquals(20, x, 0);
+    }
+
+    private boolean value1;
+    private boolean value2;
+
+    @Test
+    public void testExceptionWithCondition() {
+        boolean value1 = false;
+        try {
+            value1 = null != System.getProperty("CALLS");
+        } catch (Exception e) {
+
+        }
+        try {
+            value2 = null != System.getProperty("LALA");
+        } catch (Exception e) {
+
+        }
+        value1 = true;
+        value2 = true;
+    }
 }

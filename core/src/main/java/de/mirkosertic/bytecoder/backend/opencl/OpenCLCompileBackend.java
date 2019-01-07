@@ -92,7 +92,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         final OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
 
         // We use the relooper here
-        final Relooper theRelooper = new Relooper();
+        final Relooper theRelooper = new Relooper(aOptions);
 
         theMethodMap.stream().forEach(aMethodMapEntry -> {
             final BytecodeMethod theMethod = aMethodMapEntry.getValue();

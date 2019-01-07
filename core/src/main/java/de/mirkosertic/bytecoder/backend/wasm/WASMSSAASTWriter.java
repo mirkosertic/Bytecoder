@@ -26,14 +26,6 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLoca
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
@@ -41,20 +33,20 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Return;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ReturnValue;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Unreachable;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.I32Const;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Return;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ReturnValue;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Unreachable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMExpression;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
@@ -135,6 +127,14 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class WASMSSAASTWriter {
 
@@ -1397,6 +1397,10 @@ public class WASMSSAASTWriter {
             writeMultipleBlock((Relooper.MultipleBlock) aBlock);
             return;
         }
+        if (aBlock instanceof Relooper.TryBlock) {
+            writeTryBlock((Relooper.TryBlock) aBlock);
+            return;
+        }
         throw new IllegalStateException("Don't know how to handle : " + aBlock);
     }
 
@@ -1454,5 +1458,10 @@ public class WASMSSAASTWriter {
         }
 
         writeReloopedInternal(aMultipleBlock.next());
+    }
+
+    private void writeTryBlock(final Relooper.TryBlock aTryBlock) {
+        writeReloopedInternal(aTryBlock.inner());
+        writeReloopedInternal(aTryBlock.next());
     }
 }
