@@ -841,7 +841,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 } else {
                     initArguments.add(i32.c(-1));
                 }
-                StringValue theName = new StringValue(theLinkedClass.getClassName().name());
+                StringValue theName = new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name()));
                 Global theGlobal = theResolver.globalForStringFromPool(theName);
                 initArguments.add(i32.c(theConstantPool.register(theName)));
 

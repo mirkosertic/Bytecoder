@@ -40,4 +40,13 @@ public class ConstantPool {
     public List<StringValue> stringValues() {
         return knownValues;
     }
+
+    public static String simpleClassName(String aName) {
+        final int p = aName.lastIndexOf(".");
+        if (p>0) {
+            return aName.substring(p + 1);
+        }
+        return aName;
+
+    }
 }

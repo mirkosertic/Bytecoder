@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
+import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -23,13 +24,67 @@ import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 public class RegionNode {
+
+    public static class ExceptionHandler {
+
+        private final BytecodeOpcodeAddress startPc;
+        private final BytecodeOpcodeAddress endPC;
+        private final List<BytecodeExceptionTableEntry> catchEntries;
+
+        public ExceptionHandler(BytecodeOpcodeAddress startPc, BytecodeOpcodeAddress endPC) {
+            this.startPc = startPc;
+            this.endPC = endPC;
+            this.catchEntries = new ArrayList<>();
+        }
+
+        public void addCatchEntry(BytecodeExceptionTableEntry aEntry) {
+            catchEntries.add(aEntry);
+        }
+
+        public boolean regionMatchesTo(BytecodeExceptionTableEntry aEntry) {
+            return startPc.equals(aEntry.getStartPC()) && endPC.equals(aEntry.getEndPc());
+        }
+
+        public List<BytecodeExceptionTableEntry> getCatchEntries() {
+            return catchEntries;
+        }
+
+        public BytecodeOpcodeAddress getStartPc() {
+            return startPc;
+        }
+
+        public BytecodeOpcodeAddress getEndPC() {
+            return endPC;
+        }
+
+        public boolean sameCatchBlockAs(ExceptionHandler aOther) {
+            if (catchEntries.size() != aOther.catchEntries.size()) {
+                return false;
+            }
+            for (BytecodeExceptionTableEntry theCatch : catchEntries) {
+                boolean found = false;
+                for (BytecodeExceptionTableEntry theOtherCatch : catchEntries) {
+                    if (theOtherCatch.getHandlerPc().getAddress() == theCatch.getHandlerPc().getAddress() &&
+                        theOtherCatch.getCatchTypeAsInt() == theCatch.getCatchTypeAsInt()) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
 
     public enum BlockType {
         NORMAL,
@@ -67,7 +122,6 @@ public class RegionNode {
     private final List<GraphNodePath> reachableBy;
     private final ControlFlowGraph owningGraph;
     private final ExpressionList expressions;
-    private final BytecodeLinkedClass catchType;
 
     protected RegionNode(
             final ControlFlowGraph aOwningGraph, final BlockType aType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
@@ -80,11 +134,10 @@ public class RegionNode {
         exported = new HashMap<>();
         reachableBy = new ArrayList<>();
         expressions = new ExpressionList();
-        catchType = null;
     }
 
     protected RegionNode(
-            final ControlFlowGraph aOwningGraph, final BytecodeLinkedClass aCatchType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
+            final ControlFlowGraph aOwningGraph, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
         type = BlockType.EXCEPTION_HANDLER;
         owningGraph = aOwningGraph;
         startAddress = aStartAddress;
@@ -94,25 +147,6 @@ public class RegionNode {
         exported = new HashMap<>();
         reachableBy = new ArrayList<>();
         expressions = new ExpressionList();
-        catchType = aCatchType;
-    }
-
-    public List<BytecodeExceptionTableEntry> exceptionHandlersStartingHere() {
-        List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
-        BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
-        if (theFlowinfo != null) {
-            BytecodeProgram theBytecode = theFlowinfo.getProgram();
-            for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
-                if (theEntry.getStartPC().equals(startAddress)) {
-                    theResult.add(theEntry);
-                }
-            }
-        }
-        return theResult;
-    }
-
-    public BytecodeLinkedClass getCatchType() {
-        return catchType;
     }
 
     public ExpressionList getExpressions() {

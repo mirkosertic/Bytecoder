@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-
 @RunWith(BytecoderUnitTestRunner.class)
+@JSAndWASMOnly
 public class RuntimeClassTest {
 
     @Test
@@ -34,6 +35,6 @@ public class RuntimeClassTest {
 
     @Test
     public void testGetName() {
-        Assert.assertEquals("de.mirkosertic.bytecoder.core.RuntimeClassTest", RuntimeClassTest.class.getName());
+        Assert.assertEquals("RuntimeClassTest", RuntimeClassTest.class.getName());
     }
 }

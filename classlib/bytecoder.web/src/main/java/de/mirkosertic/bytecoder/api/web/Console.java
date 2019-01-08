@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.Import;
+import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public abstract class Console implements OpaqueReferenceType {
@@ -25,7 +26,9 @@ public abstract class Console implements OpaqueReferenceType {
 
     public abstract void log(String aMessage);
 
-    public abstract void time(String aLabel);
+    @OpaqueMethod("time")
+    public abstract void profileTime(String aLabel);
 
-    public abstract void timeEnd(String aLabel);
+    @OpaqueMethod("timeEnd")
+    public abstract void profileTimeEnd(String aLabel);
 }

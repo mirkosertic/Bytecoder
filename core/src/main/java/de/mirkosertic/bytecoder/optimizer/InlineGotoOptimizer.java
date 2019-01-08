@@ -26,11 +26,14 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class InlineGotoOptimizer implements Optimizer {
 
     @Override
     public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
+
         while (true) {
             boolean theChanged = false;
             for (RegionNode theNode : aGraph.getKnownNodes()) {
@@ -70,7 +73,7 @@ public class InlineGotoOptimizer implements Optimizer {
                         }
                     }
 
-                    if (theCount == 1 && theTargetNode.getStartAddress().getAddress() != 0 && theTargetNode.exceptionHandlersStartingHere().isEmpty()) {
+                    if (theCount == 1 && theTargetNode.getStartAddress().getAddress() != 0 && isSafeToInline(aGraph, aNode, theTargetNode)) {
                         // Node can be inlined
                         aGraph.delete(theTargetNode);
                         aList.replace(theGOTO, theTargetNode.getExpressions());
@@ -105,5 +108,25 @@ public class InlineGotoOptimizer implements Optimizer {
                 }
             }
         }
+    }
+
+    public boolean isSafeToInline(ControlFlowGraph aGraph, RegionNode aSourceNode, RegionNode aTargetNode) {
+        List<RegionNode.ExceptionHandler> theHandler = aGraph.exceptionHandlersStartingAt(aTargetNode.getStartAddress());
+        if (theHandler.isEmpty()) {
+            // No exception handlers allocated to this block,
+            // to it can be inlined
+            return true;
+        }
+        List<RegionNode.ExceptionHandler> theActiveHandlers = aGraph.exceptionHandlersActiveAt(aSourceNode.getStartAddress());
+        if (theActiveHandlers.size() == theHandler.size()) {
+            // We collect the targets
+            if (theActiveHandlers.size() != 1) {
+                throw new IllegalStateException("Nested try blocks not supported yet!");
+            }
+            RegionNode.ExceptionHandler theA = theHandler.get(0);
+            RegionNode.ExceptionHandler theB = theActiveHandlers.get(0);
+            return theA.sameCatchBlockAs(theB);
+        }
+        return false;
     }
 }

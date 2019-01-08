@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -74,18 +76,6 @@ public class BytecodeProgram {
 
     public List<BytecodeInstruction> getInstructions() {
         return instructions;
-    }
-
-    public BytecodeExceptionTableEntry[] getActiveExceptionHandlers(BytecodeOpcodeAddress aAddress, List<BytecodeExceptionTableEntry> aExceptionHandlerEntries) {
-        List<BytecodeExceptionTableEntry> theResult = new ArrayList<>();
-        for (BytecodeExceptionTableEntry aEntry : aExceptionHandlerEntries) {
-            if (!aEntry.isFinally()) {
-                if (aEntry.getStartPC().isBefore(aAddress) && aEntry.getEndPc().isAfter(aAddress)) {
-                    theResult.add(aEntry);
-                }
-            }
-        }
-        return theResult.toArray(new BytecodeExceptionTableEntry[theResult.size()]);
     }
 
     public boolean isStartOfTryBlock(BytecodeOpcodeAddress aAddress) {

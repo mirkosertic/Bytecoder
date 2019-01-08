@@ -201,7 +201,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.NORMAL);
                 break;
             case EXCEPTION_HANDLER:
-                theSingleAssignmentBlock = theGraph.createExceptionHandler(theBlock.getStartAddress(), linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theBlock.getCatchType().getConstant())));
+                linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theBlock.getCatchType().getConstant()));
+                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
                 break;
             case FINALLY:
                 theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.FINALLY);

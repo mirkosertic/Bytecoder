@@ -446,7 +446,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.println("    jlStringgetName : function() {");
                 theWriter.print("        return bytecoder.stringpool[");
-                theWriter.print(thePool.register(new StringValue(theLinkedClass.getClassName().name())));
+                theWriter.print(thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name()))));
                 theWriter.println("];");
                 theWriter.println("    },");
                 theWriter.println();
@@ -568,7 +568,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theWriter.println("        */");
                 }
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, "        ", theWriter, aLinkerContext, thePool);
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, "        ", theWriter, aLinkerContext, thePool, false);
                 for (final Variable theVariable : theSSAProgram.globalVariables()) {
                     if (!theVariable.isSynthetic()) {
                         theVariablesWriter.print("var ");

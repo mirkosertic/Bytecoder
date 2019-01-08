@@ -24,7 +24,6 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
@@ -40,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of the Relooper Algorithm as described in Alon Zakai's Emscripten Paper.
@@ -84,6 +84,8 @@ public class Relooper {
         public Label label() {
             return label;
         }
+
+        public abstract boolean containsMultipleBlock();
     }
 
     /**
@@ -112,6 +114,14 @@ public class Relooper {
         public Block next() {
             return next;
         }
+
+        @Override
+        public boolean containsMultipleBlock() {
+            if (next != null) {
+                return next.containsMultipleBlock();
+            }
+            return false;
+        }
     }
 
     /**
@@ -136,6 +146,17 @@ public class Relooper {
         @Override
         public Block next() {
             return next;
+        }
+
+        @Override
+        public boolean containsMultipleBlock() {
+            if (inner.containsMultipleBlock()) {
+                return true;
+            }
+            if (next != null) {
+                return next.containsMultipleBlock();
+            }
+            return false;
         }
     }
 
@@ -168,6 +189,17 @@ public class Relooper {
         @Override
         public Block next() {
             return next;
+        }
+
+        @Override
+        public boolean containsMultipleBlock() {
+            if (inner.containsMultipleBlock()) {
+                return true;
+            }
+            if (next != null) {
+                return next.containsMultipleBlock();
+            }
+            return false;
         }
     }
 
@@ -205,6 +237,11 @@ public class Relooper {
         public Block next() {
             return next;
         }
+
+        @Override
+        public boolean containsMultipleBlock() {
+            return true;
+        }
     }
 
     private final CompileOptions compileOptions;
@@ -222,7 +259,7 @@ public class Relooper {
         // the initisl "label-soup" for the Relooper. This will exclude
         // exception handler and finalize blocks from the the CFG and
         // will reduce the amount of labels to be processed(hopefully)
-        final Block theBlock =  reloop(theEntries, theStart.dominatedNodes());
+        final Block theBlock =  reloop(aGraph, theEntries, theStart.dominatedNodes());
 
         // At this point, we have a constructed Relooper-CFG. Now we have to replace
         // all GOTOs with either corresponding break or continue statements.
@@ -241,13 +278,11 @@ public class Relooper {
             return;
         }
         if (aBlock instanceof TryBlock) {
-
             TryBlock theTry = (TryBlock) aBlock;
             aTraversalStack.push(theTry);
             replaceGotosIn(aTraversalStack, theTry.inner());
-            replaceGotosIn(aTraversalStack, theTry.next());
             aTraversalStack.pop();
-
+            replaceGotosIn(aTraversalStack, theTry.next());
             return;
         }
         if (aBlock instanceof SimpleBlock) {
@@ -393,7 +428,7 @@ public class Relooper {
                             }
                             if (!theSomethingFound) {
                                 throw new IllegalStateException(
-                                        "No back edge target found for " + theTarget.getStartAddress().getAddress());
+                                        "No back edge target from " + aLabel.getStartAddress().getAddress() + " to " + theTarget.getStartAddress().getAddress());
                             }
                         }
                     }
@@ -410,7 +445,7 @@ public class Relooper {
      * points. We wish to create a block comprised of all those
      * labels.
      */
-    private Block reloop(final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup) {
+    private Block reloop(final ControlFlowGraph aGraph, final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup) {
 
         // If there are no entry labels at all, we return null.
         // This will become the next value of the predecessor block and will mark the end of the
@@ -430,7 +465,7 @@ public class Relooper {
         if (aEntryLabels.size() == 1) {
             final RegionNode theEntry = aEntryLabels.iterator().next();
             if (!theJumptargets.contains(theEntry)) {
-                return createSimpleBlock(aEntryLabels, aLabelSoup, theEntry);
+                return createSimpleBlock(aGraph, aEntryLabels, aLabelSoup, theEntry);
             }
         }
 
@@ -451,7 +486,8 @@ public class Relooper {
             if (aEntryLabels.size() == 1) {
                 final RegionNode theSingleEntry = aEntryLabels.iterator().next();
 
-                final Set<RegionNode> theInternalLabels = theSingleEntry.dominatedNodes();
+                final Set<RegionNode> theInternalLabels = theSingleEntry.dominatedNodes().stream().filter(t -> aLabelSoup.contains(t)).collect(
+                        Collectors.toSet());
                 final Set<RegionNode> theRestLabels = new HashSet<>(aLabelSoup);
                 theRestLabels.removeAll(theInternalLabels);
 
@@ -464,8 +500,8 @@ public class Relooper {
                 }
 
                 final Block theInternalBlock =
-                        createSimpleBlock(aEntryLabels, theInternalLabels, theSingleEntry);
-                final Block theNextBlock = reloop(theRestEntries, theRestLabels);
+                        createSimpleBlock(aGraph, aEntryLabels, theInternalLabels, theSingleEntry);
+                final Block theNextBlock = reloop(aGraph, theRestEntries, theRestLabels);
 
                 return new LoopBlock(aEntryLabels, theInternalBlock, theNextBlock);
             }
@@ -487,13 +523,14 @@ public class Relooper {
 
             final Set<Block> theHandlers = new HashSet<>();
             for (final RegionNode theEntry : aEntryLabels) {
-                final Set<RegionNode> theDominated = theEntry.dominatedNodes();
+                final Set<RegionNode> theDominated = theEntry.dominatedNodes().stream().filter(t -> aLabelSoup.contains(t)).collect(
+                        Collectors.toSet());
                 theEntryReaches.put(theEntry, theDominated);
                 theRest.removeAll(theDominated);
 
                 final Set<RegionNode> theHandlerEntries = new HashSet<>();
                 theHandlerEntries.add(theEntry);
-                theHandlers.add(reloop(theHandlerEntries, theDominated));
+                theHandlers.add(reloop(aGraph, theHandlerEntries, theDominated));
             }
 
             for (final Map.Entry<RegionNode, Set<RegionNode>> theHandler : theEntryReaches.entrySet()) {
@@ -504,7 +541,7 @@ public class Relooper {
                 }
             }
 
-            final Block theNext = reloop(theRestEntries, theRest);
+            final Block theNext = reloop(aGraph, theRestEntries, theRest);
             return new MultipleBlock(aEntryLabels, theHandlers, theNext);
         }
 
@@ -513,23 +550,40 @@ public class Relooper {
         throw new IllegalStateException("What do do now?");
     }
 
-    private Block createSimpleBlock(final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup,
+    private Block createSimpleBlock(final ControlFlowGraph aGraph, final Set<RegionNode> aEntryLabels, final Set<RegionNode> aLabelSoup,
                                     final RegionNode aEntry) {
 
         // TODO: Implement Exception Handling guarded blocks here
-
         if (compileOptions.isEnableExceptions()) {
 
-            final List<BytecodeExceptionTableEntry> theHandlers = aEntry.exceptionHandlersStartingHere();
+            final List<RegionNode.ExceptionHandler> theHandlers = aGraph.exceptionHandlersStartingAt(aEntry.getStartAddress());
             if (!theHandlers.isEmpty()) {
+                if (theHandlers.size() != 1) {
+                    throw new IllegalStateException("Overlapping exception handling regions not yet supported!");
+                }
+                RegionNode.ExceptionHandler theSingleHandler = theHandlers.get(0);
                 final Set<RegionNode> theCoveredNodes = new HashSet<>();
                 final Set<RegionNode> theNextNodes = new HashSet<>();
                 for (final RegionNode theLabel : aLabelSoup) {
-                    for (BytecodeExceptionTableEntry theHandler : theHandlers) {
-                        if (theHandler.coveres(theLabel.getStartAddress())) {
+                    // All regions covered by the same catch handler
+                    // are part of the try block
+                    List<RegionNode.ExceptionHandler> theActive = aGraph.exceptionHandlersActiveAt(theLabel.getStartAddress());
+                    if (!theActive.isEmpty()) {
+                        // We chose the first element, as this is the mose enclosing one due to
+                        // the sorting in the list
+                        RegionNode.ExceptionHandler theSingleActiveHandler = theActive.get(0);
+                        if (theSingleActiveHandler.sameCatchBlockAs(theSingleHandler)) {
                             theCoveredNodes.add(theLabel);
                         } else {
                             theNextNodes.add(theLabel);
+                        }
+                    } else {
+                        for (final BytecodeExceptionTableEntry theSingleExceptionCatch : theSingleHandler.getCatchEntries()) {
+                            if (theSingleExceptionCatch.coveres(theLabel.getStartAddress())) {
+                                theCoveredNodes.add(theLabel);
+                            } else {
+                                theNextNodes.add(theLabel);
+                            }
                         }
                     }
                 }
@@ -550,14 +604,14 @@ public class Relooper {
                 }
 
                 theCoveredNodes.removeAll(aEntryLabels);
-                Block theInnerBlock = new SimpleBlock(aEntryLabels, aEntry, reloop(theInnerNext, theCoveredNodes));
+                Block theInnerBlock = new SimpleBlock(aEntryLabels, aEntry, reloop(aGraph, theInnerNext, theCoveredNodes));
 
                 // If all blocks are covered, there is no next
                 if (theNextNodes.isEmpty()) {
                     return new TryBlock(aEntryLabels, theInnerBlock, null);
                 }
 
-                return new TryBlock(aEntryLabels, theInnerBlock, reloop(theOuterNext, theNextNodes));
+                return new TryBlock(aEntryLabels, theInnerBlock, reloop(aGraph, theOuterNext, theNextNodes));
             }
         }
 
@@ -574,7 +628,7 @@ public class Relooper {
 
         final Set<RegionNode> theOtherLabels = new HashSet<>(aLabelSoup);
         theOtherLabels.remove(aEntry);
-        return new SimpleBlock(aEntryLabels, aEntry, reloop(theNextEntries, theOtherLabels));
+        return new SimpleBlock(aEntryLabels, aEntry, reloop(aGraph, theNextEntries, theOtherLabels));
     }
 
     private Set<RegionNode> jumpTargetsOf(final Collection<RegionNode> aLabelSoup) {
