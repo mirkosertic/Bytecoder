@@ -104,4 +104,57 @@ public class ExceptionTest {
         value1 = true;
         value2 = true;
     }
+
+    @Test
+    public void testExceptionWithForLoop() {
+        int x = 1;
+        try {
+            for (int y = 0; y < 10; y++) {
+                if (y > 0) {
+                    return;
+                }
+            }
+        } catch (NullPointerException e) {
+            return;
+        } catch (Exception e) {
+            return;
+        }
+        return;
+    }
+
+    private boolean computeMultiple() {
+        try {
+            for (int x=0;x<10;x++) {
+                if (x > 2) {
+                    return true;
+                }
+                if (x < 2) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            return true;
+        }
+        return false;
+    }
+
+    @Test
+    public void testExceptionMultipleExit() {
+        Assert.assertTrue(computeMultiple());
+    }
+
+    @Test
+    public void testNestedExceptionHandling() {
+        int x = 0;
+        try {
+            x = 1;
+            try {
+                x = 3;
+            } catch (RuntimeException e) {
+                return;
+            }
+        } catch (Exception e) {
+            return;
+        }
+    }
 }

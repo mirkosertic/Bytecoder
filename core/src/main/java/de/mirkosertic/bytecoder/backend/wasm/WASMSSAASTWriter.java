@@ -175,6 +175,7 @@ public class WASMSSAASTWriter {
     private final CompileOptions compileOptions;
     private final List<Variable> stackVariables;
     private final WASMMemoryLayouter memoryLayouter;
+    private boolean labelRequired;
 
     public WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction) {
@@ -192,11 +193,12 @@ public class WASMSSAASTWriter {
                 stackVariables.add(theVariable);
             }
         }
+        labelRequired = false;
     }
 
     private WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Variable> aStackVariables) {
+            final List<Variable> aStackVariables, boolean aLabelRequired) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -206,26 +208,27 @@ public class WASMSSAASTWriter {
         memoryLayouter = aMemoryLayouter;
         container = aContainer;
         flow = container.flow;
+        labelRequired = aLabelRequired;
     }
 
     private WASMSSAASTWriter block(final String label) {
         final Block block = flow.block(label);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired);
     }
 
     private WASMSSAASTWriter iff(final String label, final WASMValue condition) {
         final Iff block = flow.iff(label, condition);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired);
     }
 
     private WASMSSAASTWriter Try(final String label) {
         final Try block = flow.Try(label);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired);
     }
 
     private WASMSSAASTWriter loop(final String label) {
         final Loop loop = flow.loop(label);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired);
     }
 
     private int stackSize() {
@@ -328,7 +331,7 @@ public class WASMSSAASTWriter {
         }
         if (aExpression instanceof BreakExpression) {
             final BreakExpression theBreak = (BreakExpression) aExpression;
-            if (theBreak.isSetLabelRequired()) {
+            if (theBreak.isSetLabelRequired() && labelRequired) {
                 final Local label = function.localByLabel(LABEL_LOCAL);
                 flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress()));
             }
@@ -341,8 +344,10 @@ public class WASMSSAASTWriter {
         if (aExpression instanceof ContinueExpression) {
             final ContinueExpression theContinue = (ContinueExpression) aExpression;
 
-            final Local label = function.localByLabel(LABEL_LOCAL);
-            flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress()));
+            if (labelRequired) {
+                final Local label = function.localByLabel(LABEL_LOCAL);
+                flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress()));
+            }
 
             final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
             flow.branch(target);
@@ -1364,7 +1369,10 @@ public class WASMSSAASTWriter {
 
     public void writeRelooped(final Relooper.Block aBlock) {
         // We need the local label for structured control flow
-        function.newLocal(LABEL_LOCAL, PrimitiveType.i32);
+        labelRequired = aBlock.containsMultipleBlock();
+        if (labelRequired) {
+            function.newLocal(LABEL_LOCAL, PrimitiveType.i32);
+        }
         stackEnter();
         writeReloopedInternal(aBlock);
 

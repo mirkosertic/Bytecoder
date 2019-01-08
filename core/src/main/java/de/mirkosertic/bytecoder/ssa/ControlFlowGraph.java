@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +26,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 public class ControlFlowGraph {
 
@@ -89,12 +92,6 @@ public class ControlFlowGraph {
         return theNewBlock;
     }
 
-    public RegionNode createExceptionHandler(final BytecodeOpcodeAddress aAddress, final BytecodeLinkedClass aCatchType) {
-        final RegionNode theNewBlock = new RegionNode(this, aCatchType, program, aAddress);
-        addDominatedNode(theNewBlock);
-        return theNewBlock;
-    }
-
     public void addDominatedNode(final RegionNode aGraphNode) {
         dominatedNodes.add(aGraphNode);
         knownNodes.add(aGraphNode);
@@ -120,6 +117,58 @@ public class ControlFlowGraph {
 
     public List<RegionNode> getKnownNodes() {
         return new ArrayList<>(knownNodes);
+    }
+
+    public List<RegionNode.ExceptionHandler> exceptionHandlersStartingAt(BytecodeOpcodeAddress aAddress) {
+        final List<RegionNode.ExceptionHandler> theHandler = new ArrayList<>();
+        final BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
+        if (theFlowinfo != null) {
+            final BytecodeProgram theBytecode = theFlowinfo.getProgram();
+            for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
+                if (theEntry.getStartPC().equals(aAddress) && !theEntry.isFinally()) {
+                    RegionNode.ExceptionHandler theMatchingHandler = null;
+                    for (RegionNode.ExceptionHandler theExisting : theHandler) {
+                        if (theExisting.regionMatchesTo(theEntry)) {
+                            theMatchingHandler = theExisting;
+                        }
+                    }
+                    if (theMatchingHandler == null) {
+                        theMatchingHandler = new RegionNode.ExceptionHandler(theEntry.getStartPC(), theEntry.getEndPc());
+                        theHandler.add(theMatchingHandler);
+                    }
+
+                    theMatchingHandler.addCatchEntry(theEntry);
+                }
+            }
+        }
+        theHandler.sort((o1, o2) -> Integer.compare(o2.getEndPC().getAddress(),  o1.getEndPC().getAddress()));
+        return theHandler;
+    }
+
+    public List<RegionNode.ExceptionHandler> exceptionHandlersActiveAt(BytecodeOpcodeAddress aAddress) {
+        final List<RegionNode.ExceptionHandler> theHandler = new ArrayList<>();
+        final BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
+        if (theFlowinfo != null) {
+            final BytecodeProgram theBytecode = theFlowinfo.getProgram();
+            for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
+                if (theEntry.coveres(aAddress) && !theEntry.isFinally()) {
+                    RegionNode.ExceptionHandler theMatchingHandler = null;
+                    for (RegionNode.ExceptionHandler theExisting : theHandler) {
+                        if (theExisting.regionMatchesTo(theEntry)) {
+                            theMatchingHandler = theExisting;
+                        }
+                    }
+                    if (theMatchingHandler == null) {
+                        theMatchingHandler = new RegionNode.ExceptionHandler(theEntry.getStartPC(), theEntry.getEndPc());
+                        theHandler.add(theMatchingHandler);
+                    }
+
+                    theMatchingHandler.addCatchEntry(theEntry);
+                }
+            }
+        }
+        theHandler.sort((o1, o2) -> Integer.compare(o2.getEndPC().getAddress(),  o1.getEndPC().getAddress()));
+        return theHandler;
     }
 
     private static class IDRegister {

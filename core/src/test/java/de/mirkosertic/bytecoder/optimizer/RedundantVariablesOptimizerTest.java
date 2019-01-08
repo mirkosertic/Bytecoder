@@ -57,7 +57,7 @@ public class RedundantVariablesOptimizerTest {
         assertTrue(theNode.getExpressions().toList().get(0) instanceof ReturnValueExpression);
 
         final StringWriter theString = new StringWriter();
-        final JSSSAWriter theWriter = new JSSSAWriter(mock(CompileOptions.class), theProgram, "", new PrintWriter(theString), null, null);
+        final JSSSAWriter theWriter = new JSSSAWriter(mock(CompileOptions.class), theProgram, "", new PrintWriter(theString), null, null, false);
         theWriter.writeExpressions(theNode.getExpressions());
 
         assertEquals("return (10 + 300);" + System.lineSeparator(), theString.toString());

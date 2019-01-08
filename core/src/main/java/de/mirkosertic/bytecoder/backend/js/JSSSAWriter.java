@@ -114,15 +114,17 @@ import java.util.stream.Collectors;
 public class JSSSAWriter extends IndentSSAWriter {
 
     private final ConstantPool constantPool;
+    private boolean labelRequired;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-            final ConstantPool aConstantPool) {
+            final ConstantPool aConstantPool, final boolean aLabelRequired) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         constantPool = aConstantPool;
+        labelRequired = aLabelRequired;
     }
 
     private JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool);
+        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool, labelRequired);
     }
 
     private void print(final Value aValue) {
@@ -259,8 +261,6 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(final ResolveCallsiteObjectExpression aValue) {
-
-
         print("bytecoder.resolveStaticCallSiteObject(");
         print(JSWriterUtils.toClassName(aValue.getOwningClass().getThisInfo()));
         print(",'");
@@ -1165,7 +1165,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 println("throw 'Unreachable';");
             } else if (theExpression instanceof BreakExpression) {
                 final BreakExpression theBreak = (BreakExpression) theExpression;
-                if (theBreak.isSetLabelRequired()) {
+                if (theBreak.isSetLabelRequired() && labelRequired) {
                     print("__label__ = ");
                     print(theBreak.jumpTarget().getAddress());
                     println(";");
@@ -1177,9 +1177,11 @@ public class JSSSAWriter extends IndentSSAWriter {
                 }
             } else if (theExpression instanceof ContinueExpression) {
                 final ContinueExpression theContinue = (ContinueExpression) theExpression;
-                print("__label__ = ");
-                print(theContinue.jumpTarget().getAddress());
-                println(";");
+                if (labelRequired) {
+                    print("__label__ = ");
+                    print(theContinue.jumpTarget().getAddress());
+                    println(";");
+                }
                 print("continue $");
                 print(theContinue.labelToReturnTo().name());
                 println(";");
@@ -1190,7 +1192,10 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     public void printRelooped(final Relooper.Block aBlock) {
-        println("var __label__ = null;");
+        labelRequired = aBlock.containsMultipleBlock();
+        if (labelRequired) {
+            println("var __label__ = null;");
+        }
         print(aBlock);
     }
 
