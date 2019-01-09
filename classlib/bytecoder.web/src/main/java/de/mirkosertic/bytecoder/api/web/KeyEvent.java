@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2016 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,14 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public abstract class Window implements EventTarget, WindowOrWorkerGlobalScope {
-
-    @Import(module = "runtime", name = "nativewindow")
-    public native static Window window();
-
-    @OpaqueProperty("document")
-    public abstract HTMLDocument document();
-
-    public abstract void requestAnimationFrame(AnimationFrameCallback aCallback);
+public interface KeyEvent extends Event {
 
     @OpaqueProperty
-    public abstract float innerWidth();
+    OpaqueReferenceType getWhich();
 
     @OpaqueProperty
-    public abstract float innerHeight();
+    float keyCode();
 }
