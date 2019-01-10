@@ -65,6 +65,11 @@ public class ControlFlowGraph {
 
     public void calculateReachabilityAndMarkBackEdges() {
         calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
+        for (final RegionNode theCreated : knownNodes) {
+            if (theCreated.getType() != RegionNode.BlockType.NORMAL) {
+                calculateReachabilityAndMarkBackEdges(new GraphNodePath(), theCreated);
+            }
+        }
     }
 
     private void calculateReachabilityAndMarkBackEdges(final GraphNodePath aPath, final RegionNode aNode) {
@@ -119,15 +124,15 @@ public class ControlFlowGraph {
         return new ArrayList<>(knownNodes);
     }
 
-    public List<RegionNode.ExceptionHandler> exceptionHandlersStartingAt(BytecodeOpcodeAddress aAddress) {
+    public List<RegionNode.ExceptionHandler> exceptionHandlersStartingAt(final BytecodeOpcodeAddress aAddress) {
         final List<RegionNode.ExceptionHandler> theHandler = new ArrayList<>();
         final BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
         if (theFlowinfo != null) {
             final BytecodeProgram theBytecode = theFlowinfo.getProgram();
-            for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
+            for (final BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
                 if (theEntry.getStartPC().equals(aAddress) && !theEntry.isFinally()) {
                     RegionNode.ExceptionHandler theMatchingHandler = null;
-                    for (RegionNode.ExceptionHandler theExisting : theHandler) {
+                    for (final RegionNode.ExceptionHandler theExisting : theHandler) {
                         if (theExisting.regionMatchesTo(theEntry)) {
                             theMatchingHandler = theExisting;
                         }
@@ -145,15 +150,15 @@ public class ControlFlowGraph {
         return theHandler;
     }
 
-    public List<RegionNode.ExceptionHandler> exceptionHandlersActiveAt(BytecodeOpcodeAddress aAddress) {
+    public List<RegionNode.ExceptionHandler> exceptionHandlersActiveAt(final BytecodeOpcodeAddress aAddress) {
         final List<RegionNode.ExceptionHandler> theHandler = new ArrayList<>();
         final BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
         if (theFlowinfo != null) {
             final BytecodeProgram theBytecode = theFlowinfo.getProgram();
-            for (BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
+            for (final BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
                 if (theEntry.coveres(aAddress) && !theEntry.isFinally()) {
                     RegionNode.ExceptionHandler theMatchingHandler = null;
-                    for (RegionNode.ExceptionHandler theExisting : theHandler) {
+                    for (final RegionNode.ExceptionHandler theExisting : theHandler) {
                         if (theExisting.regionMatchesTo(theEntry)) {
                             theMatchingHandler = theExisting;
                         }

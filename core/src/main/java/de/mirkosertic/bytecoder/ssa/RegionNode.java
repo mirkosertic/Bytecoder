@@ -15,22 +15,16 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class RegionNode {
 
@@ -40,17 +34,17 @@ public class RegionNode {
         private final BytecodeOpcodeAddress endPC;
         private final List<BytecodeExceptionTableEntry> catchEntries;
 
-        public ExceptionHandler(BytecodeOpcodeAddress startPc, BytecodeOpcodeAddress endPC) {
+        public ExceptionHandler(final BytecodeOpcodeAddress startPc, final BytecodeOpcodeAddress endPC) {
             this.startPc = startPc;
             this.endPC = endPC;
             this.catchEntries = new ArrayList<>();
         }
 
-        public void addCatchEntry(BytecodeExceptionTableEntry aEntry) {
+        public void addCatchEntry(final BytecodeExceptionTableEntry aEntry) {
             catchEntries.add(aEntry);
         }
 
-        public boolean regionMatchesTo(BytecodeExceptionTableEntry aEntry) {
+        public boolean regionMatchesTo(final BytecodeExceptionTableEntry aEntry) {
             return startPc.equals(aEntry.getStartPC()) && endPC.equals(aEntry.getEndPc());
         }
 
@@ -66,13 +60,13 @@ public class RegionNode {
             return endPC;
         }
 
-        public boolean sameCatchBlockAs(ExceptionHandler aOther) {
+        public boolean sameCatchBlockAs(final ExceptionHandler aOther) {
             if (catchEntries.size() != aOther.catchEntries.size()) {
                 return false;
             }
-            for (BytecodeExceptionTableEntry theCatch : catchEntries) {
+            for (final BytecodeExceptionTableEntry theCatch : catchEntries) {
                 boolean found = false;
-                for (BytecodeExceptionTableEntry theOtherCatch : catchEntries) {
+                for (final BytecodeExceptionTableEntry theOtherCatch : catchEntries) {
                     if (theOtherCatch.getHandlerPc().getAddress() == theCatch.getHandlerPc().getAddress() &&
                         theOtherCatch.getCatchTypeAsInt() == theCatch.getCatchTypeAsInt()) {
                         found = true;
@@ -136,19 +130,6 @@ public class RegionNode {
         expressions = new ExpressionList();
     }
 
-    protected RegionNode(
-            final ControlFlowGraph aOwningGraph, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
-        type = BlockType.EXCEPTION_HANDLER;
-        owningGraph = aOwningGraph;
-        startAddress = aStartAddress;
-        program = aProgram;
-        successors = new HashMap<>();
-        imported = new HashMap<>();
-        exported = new HashMap<>();
-        reachableBy = new ArrayList<>();
-        expressions = new ExpressionList();
-    }
-
     public ExpressionList getExpressions() {
          return expressions;
     }
@@ -186,17 +167,22 @@ public class RegionNode {
         return false;
     }
 
+    private Set<RegionNode> predecessorCacheWithoutBackEdges;
+
     public Set<RegionNode> getPredecessorsIgnoringBackEdges() {
-        final Set<RegionNode> theResult = new HashSet<>();
-        for (final GraphNodePath thePath : reachableBy) {
-            if (!thePath.isEmpty()) {
-                final RegionNode theLastElement = thePath.lastElement();
-                if (!theLastElement.hasBackEdgeTo(this)) {
-                    theResult.add(theLastElement);
+        if (predecessorCacheWithoutBackEdges == null) {
+            final Set<RegionNode> theResult = new HashSet<>();
+            for (final GraphNodePath thePath : reachableBy) {
+                if (!thePath.isEmpty()) {
+                    final RegionNode theLastElement = thePath.lastElement();
+                    if (!theLastElement.hasBackEdgeTo(this)) {
+                        theResult.add(theLastElement);
+                    }
                 }
             }
+            predecessorCacheWithoutBackEdges = theResult;
         }
-        return theResult;
+        return predecessorCacheWithoutBackEdges;
     }
 
     public void addSuccessor(final RegionNode aBlock) {
@@ -228,6 +214,16 @@ public class RegionNode {
         v.initializeWith(aValue);
         return v;
     }
+
+    public Variable findLocalVariable(final int index) {
+        final String theName = "local_" + index + "_";
+        final List<Variable> theKnown = program.getVariables().stream().filter(t -> t.getName().startsWith(theName)).collect(Collectors.toList());
+        if (theKnown.size() != 1) {
+            throw new IllegalStateException("Unexpected number of variables for " + theName + ", found = " + theKnown.size() + " expected = 1");
+        }
+        return theKnown.get(0);
+    }
+
 
     public Variable newVariable(final TypeRef aType) {
         return program.createVariable(aType);
@@ -276,14 +272,6 @@ public class RegionNode {
         imported.put(aDescription, aValue);
     }
 
-    public BlockState toFinalState() {
-        final BlockState theState = new BlockState();
-        for (final Map.Entry<VariableDescription, Value> theEntry : exported.entrySet()) {
-            theState.assignToPort(theEntry.getKey(), theEntry.getValue());
-        }
-        return theState;
-    }
-
     public BlockState toStartState() {
         final BlockState theState = new BlockState();
         for (final Map.Entry<VariableDescription, Value> theEntry : imported.entrySet()) {
@@ -292,32 +280,9 @@ public class RegionNode {
         return theState;
     }
 
-
     public boolean isStrictlyDominatedBy(final RegionNode aNode) {
         final List<RegionNode> thePredecessors = new ArrayList<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
-    }
-
-    public void deleteVariable(final Variable aVariable) {
-        deleteVariable(aVariable, expressions);
-    }
-
-    private void deleteVariable(final Variable aVariable, final ExpressionList aList) {
-        for (final Expression theExpression : aList.toList()) {
-            if (theExpression instanceof ExpressionListContainer) {
-                final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (final ExpressionList theList : theContainer.getExpressionLists()) {
-                    deleteVariable(aVariable, theList);
-                }
-            }
-            if (theExpression instanceof VariableAssignmentExpression) {
-                final VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
-                final List<Value> theIncomingDataFlows = theInit.incomingDataFlows();
-                if (theIncomingDataFlows.get(0) == aVariable) {
-                    aList.remove(theExpression);
-                }
-            }
-        }
     }
 
     public boolean isOnlyReachableThru(final RegionNode aOtherNode) {

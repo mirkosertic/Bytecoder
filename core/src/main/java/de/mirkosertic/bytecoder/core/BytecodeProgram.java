@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.ssa.RegionNode;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,12 +29,10 @@ public class BytecodeProgram {
 
     public class FlowInformation {
 
-        private final BytecodeOpcodeAddress regularStartNode;
         private final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots;
         private final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks;
 
-        public FlowInformation(final BytecodeOpcodeAddress regularStartNode, final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots, final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks) {
-            this.regularStartNode = regularStartNode;
+        public FlowInformation(final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> roots, final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> knownBlocks) {
             this.roots = roots;
             this.knownBlocks = knownBlocks;
         }
@@ -45,16 +41,16 @@ public class BytecodeProgram {
             return BytecodeProgram.this;
         }
 
-        public BytecodeBasicBlock blockAt(BytecodeOpcodeAddress aBlockAddress) {
+        public BytecodeBasicBlock blockAt(final BytecodeOpcodeAddress aBlockAddress) {
             return knownBlocks.get(aBlockAddress);
         }
 
-        public BytecodeOpcodeAddress getRegularStart() {
-            return regularStartNode;
+        public Set<BytecodeBasicBlock> blocksDominatedByRoot(final BytecodeOpcodeAddress aRootAddress) {
+            return roots.get(aRootAddress);
         }
 
-        public Set<BytecodeBasicBlock> blocksDominatedByRoot(BytecodeOpcodeAddress aRootAddress) {
-            return roots.get(aRootAddress);
+        public Set<BytecodeOpcodeAddress> knownRoots() {
+            return roots.keySet();
         }
     }
 
@@ -66,11 +62,11 @@ public class BytecodeProgram {
         exceptionHandlers = new ArrayList<>();
     }
 
-    public void addInstruction(BytecodeInstruction aInstruction) {
+    public void addInstruction(final BytecodeInstruction aInstruction) {
         instructions.add(aInstruction);
     }
 
-    public void addExceptionHandler(BytecodeExceptionTableEntry aHandler) {
+    public void addExceptionHandler(final BytecodeExceptionTableEntry aHandler) {
         exceptionHandlers.add(aHandler);
     }
 
@@ -78,8 +74,8 @@ public class BytecodeProgram {
         return instructions;
     }
 
-    public boolean isStartOfTryBlock(BytecodeOpcodeAddress aAddress) {
-        for (BytecodeExceptionTableEntry aEntry : exceptionHandlers) {
+    public boolean isStartOfTryBlock(final BytecodeOpcodeAddress aAddress) {
+        for (final BytecodeExceptionTableEntry aEntry : exceptionHandlers) {
             if (aAddress.equals(aEntry.getStartPC())) {
                 return true;
             }
@@ -88,13 +84,13 @@ public class BytecodeProgram {
     }
 
     public Set<BytecodeOpcodeAddress> getJumpTargets() {
-        Set<BytecodeOpcodeAddress> theJumpTarget = new HashSet();
-        for (BytecodeInstruction theInstruction : instructions) {
+        final Set<BytecodeOpcodeAddress> theJumpTarget = new HashSet();
+        for (final BytecodeInstruction theInstruction : instructions) {
             if (theInstruction.isJumpSource()) {
                 theJumpTarget.addAll(Arrays.asList(theInstruction.getPotentialJumpTargets()));
             }
         }
-        for (BytecodeExceptionTableEntry aEntry: exceptionHandlers) {
+        for (final BytecodeExceptionTableEntry aEntry: exceptionHandlers) {
             theJumpTarget.add(aEntry.getHandlerPc());
         }
         return theJumpTarget;
@@ -104,8 +100,8 @@ public class BytecodeProgram {
         return exceptionHandlers;
     }
 
-    public BytecodeInstruction nextInstructionOf(BytecodeInstruction aInstruction) {
-        int i = instructions.indexOf(aInstruction);
+    public BytecodeInstruction nextInstructionOf(final BytecodeInstruction aInstruction) {
+        final int i = instructions.indexOf(aInstruction);
         return instructions.get(i + 1);
     }
 
@@ -115,7 +111,7 @@ public class BytecodeProgram {
         final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> theKnownBlocks = new HashMap<>();
         final Set<BytecodeOpcodeAddress> theJumpTargets = getJumpTargets();
         BytecodeBasicBlock theCurrentBlock = null;
-        for (BytecodeInstruction theInstruction : instructions) {
+        for (final BytecodeInstruction theInstruction : instructions) {
             if (theJumpTargets.contains(theInstruction.getOpcodeAddress())) {
                 // Jump target, start a new basic block
                 theCurrentBlock = null;
@@ -126,7 +122,7 @@ public class BytecodeProgram {
             }
 
             if (theCurrentBlock == null) {
-                BytecodeClassinfoConstant theCatchType = null;
+                Set<BytecodeUtf8Constant> theCatchType = null;
                 BytecodeBasicBlock.Type theType = BytecodeBasicBlock.Type.NORMAL;
                 for (final BytecodeExceptionTableEntry theHandler : getExceptionHandlers()) {
                     if (Objects.equals(theHandler.getHandlerPc(), theInstruction.getOpcodeAddress())) {
@@ -134,7 +130,10 @@ public class BytecodeProgram {
                             theType = BytecodeBasicBlock.Type.FINALLY;
                         } else {
                             theType = BytecodeBasicBlock.Type.EXCEPTION_HANDLER;
-                            theCatchType = theHandler.getCatchType();
+                            if (theCatchType == null) {
+                                theCatchType = new HashSet<>();
+                            }
+                            theCatchType.add(theHandler.getCatchType().getConstant());
                         }
                     }
                 }
@@ -170,32 +169,36 @@ public class BytecodeProgram {
             }
         }
 
-        BytecodeOpcodeAddress theRegularStart = new BytecodeOpcodeAddress(0);
+        final BytecodeOpcodeAddress theRegularStart = new BytecodeOpcodeAddress(0);
         // Calculage regular control flow
-        Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
-        Set<BytecodeBasicBlock> theRegularBlocks = new HashSet<>();
+        final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
+        final Set<BytecodeBasicBlock> theRegularBlocks = new HashSet<>();
         theRoots.put(theRegularStart, generateEdges(theRegularBlocks, theKnownBlocks.get(theRegularStart), new Stack<>(), theKnownBlocks));
 
         // Calculate the program flow for finally blocks and exception handlers
         // till their merging with the regular control flow
-        for (BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
-            if (theBlock.getType() != BytecodeBasicBlock.Type.NORMAL) {
-                theRoots.put(theBlock.getStartAddress(), generateEdges(new HashSet<>(theRegularBlocks), theBlock, new Stack<>(), theKnownBlocks));
-            }
+        for (final BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
+/*            if (theBlock.getType() == BytecodeBasicBlock.Type.FINALLY) {
+                final Set<BytecodeBasicBlock> theAlreadyVisited = new HashSet<>(theRegularBlocks);
+                generateEdges(theAlreadyVisited, theBlock, new Stack<>(), theKnownBlocks);
+                theAlreadyVisited.removeAll(theRegularBlocks);
+                theRoots.put(theBlock.getStartAddress(), theAlreadyVisited);
+            }*/
         }
 
         // We are done here
-        return new FlowInformation(theRegularStart, theRoots, theKnownBlocks);
+        return new FlowInformation(theRoots, theKnownBlocks);
     }
 
-    private Set<BytecodeBasicBlock> generateEdges(Set<BytecodeBasicBlock> aVisited, BytecodeBasicBlock aBlock, Stack<BytecodeBasicBlock> aNestingStack, Map<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocks) {
+    private Set<BytecodeBasicBlock> generateEdges(
+            final Set<BytecodeBasicBlock> aVisited, final BytecodeBasicBlock aBlock, final Stack<BytecodeBasicBlock> aNestingStack, final Map<BytecodeOpcodeAddress, BytecodeBasicBlock> aBlocks) {
         aNestingStack.push(aBlock);
 
         if (aVisited.add(aBlock)) {
-            for (BytecodeInstruction theInstruction : aBlock.getInstructions()) {
+            for (final BytecodeInstruction theInstruction : aBlock.getInstructions()) {
                 if (theInstruction.isJumpSource()) {
-                    for (BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
-                        BytecodeBasicBlock theTargetBlock = aBlocks.get(theTarget);
+                    for (final BytecodeOpcodeAddress theTarget : theInstruction.getPotentialJumpTargets()) {
+                        final BytecodeBasicBlock theTargetBlock = aBlocks.get(theTarget);
                         if (!aNestingStack.contains(theTargetBlock)) {
                             // Normal edge
                             aBlock.addSuccessor(theTargetBlock);
@@ -211,9 +214,9 @@ public class BytecodeProgram {
 
             // Properly handle the fall thru case
             if (!aBlock.endsWithReturn() && !aBlock.endsWithThrow() && !aBlock.endsWithGoto()) {
-                BytecodeInstruction theLast = aBlock.lastInstruction();
-                BytecodeInstruction theNext = nextInstructionOf(theLast);
-                BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
+                final BytecodeInstruction theLast = aBlock.lastInstruction();
+                final BytecodeInstruction theNext = nextInstructionOf(theLast);
+                final BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
                 aBlock.addSuccessor(theNextBlock);
                 generateEdges(aVisited, theNextBlock, aNestingStack, aBlocks);
             }

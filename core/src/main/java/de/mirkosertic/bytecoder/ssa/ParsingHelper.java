@@ -117,13 +117,6 @@ public class ParsingHelper {
             }
         }
 
-        // Try to find global variables
-        /*if (!(aValue instanceof Variable)) {
-            // Promote value to variable
-            aValue = block.newVariable(aValue.resolveType(), aValue);
-        }
-        localVariables.put(aIndex, (Variable) aValue);
-        block.addToExportedList(aValue, new LocalVariableDescription(aIndex));*/
         final Variable v = block.setLocalVariable(aIndex, aValue);
         localVariables.put(aIndex, v);
         block.addToExportedList(v, new LocalVariableDescription(aIndex));

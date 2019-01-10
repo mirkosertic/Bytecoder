@@ -20,7 +20,8 @@ public class BytecodeInstructionGenericLOAD extends BytecodeInstruction {
     private final BytecodePrimitiveTypeRef type;
     private final int localVariableIndex;
 
-    public BytecodeInstructionGenericLOAD(BytecodeOpcodeAddress aOpcodeIndex, BytecodePrimitiveTypeRef aType, int aVariableIndex) {
+    public BytecodeInstructionGenericLOAD(
+            final BytecodeOpcodeAddress aOpcodeIndex, final BytecodePrimitiveTypeRef aType, final int aVariableIndex) {
         super(aOpcodeIndex);
         type = aType;
         localVariableIndex = aVariableIndex;
@@ -28,5 +29,9 @@ public class BytecodeInstructionGenericLOAD extends BytecodeInstruction {
 
     public int getVariableIndex() {
         return localVariableIndex;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
     }
 }

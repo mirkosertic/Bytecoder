@@ -31,7 +31,7 @@ public class BytecodeBasicBlock {
     private final List<BytecodeInstruction> instructions;
     private final List<BytecodeBasicBlock> successors;
     private final Type type;
-    private final BytecodeClassinfoConstant catchType;
+    private final Set<BytecodeUtf8Constant> catchType;
     private final Set<BytecodeBasicBlock> backendesFrom;
 
     public BytecodeBasicBlock(final Type aType) {
@@ -41,7 +41,7 @@ public class BytecodeBasicBlock {
         catchType = null;
         backendesFrom = new HashSet<>();
     }
-    public BytecodeBasicBlock(final BytecodeClassinfoConstant aCatchType) {
+    public BytecodeBasicBlock(final Set<BytecodeUtf8Constant> aCatchType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
         type = Type.EXCEPTION_HANDLER;
@@ -49,7 +49,7 @@ public class BytecodeBasicBlock {
         backendesFrom = new HashSet<>();
     }
 
-    public BytecodeClassinfoConstant getCatchType() {
+    public Set<BytecodeUtf8Constant> getCatchType() {
         return catchType;
     }
 
@@ -79,19 +79,6 @@ public class BytecodeBasicBlock {
 
     public List<BytecodeInstruction> getInstructions() {
         return instructions;
-    }
-
-    public boolean endsWithJump() {
-        return instructions.get(instructions.size() - 1).isJumpSource();
-    }
-
-    public boolean endsWithConditionalJump() {
-        final BytecodeInstruction theInstruction = instructions.get(instructions.size() - 1);
-        return theInstruction instanceof BytecodeInstructionIFICMP ||
-                theInstruction instanceof BytecodeInstructionIFNULL ||
-                theInstruction instanceof BytecodeInstructionIFCOND ||
-                theInstruction instanceof BytecodeInstructionIFACMP ||
-                theInstruction instanceof BytecodeInstructionIFNONNULL;
     }
 
     public boolean endsWithReturn() {
