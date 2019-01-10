@@ -102,17 +102,23 @@ public class ParsingHelperCache {
     }
 
     public ParsingHelper resolveInitialPHIStateForNode(final RegionNode aBlock) {
-        final ParsingHelper.ValueProvider theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
 
-        if (aBlock.getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
-            // Exception handlers are a special case, as the stack is unwided
-            // to the begin of the try block
-            // We make sure here to have at least the local variables available
+        if (aBlock.getType() != RegionNode.BlockType.NORMAL) {
+            // Exception handler and finally blocks do not import a stack
+            final ParsingHelper.ValueProvider theProvider = aDescription -> {
+                if (aDescription instanceof StackVariableDescription) {
+                    throw new IllegalStateException("Stack imports not allowed for EXCEPTION HANDLER or FINALLY blocks");
+                }
+                final LocalVariableDescription theLocal = (LocalVariableDescription) aDescription;
+                final Variable theVariable = aBlock.findLocalVariable(theLocal.getIndex());
+                aBlock.addToImportedList(theVariable, theLocal);
+                return theVariable;
+            };
 
-            // Local variables are inherited by the provider
             final ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
             return theHelper;
         }
+        final ParsingHelper.ValueProvider theProvider;
 
         // We collect the stacks from all predecessor nodes
         final Map<StackVariableDescription, Set<Value>> theStackToImport = new HashMap<>();
@@ -124,11 +130,15 @@ public class ParsingHelperCache {
                     theRequestedStack = theHelper.getStack().size();
                 } else {
                     if (theRequestedStack != theHelper.getStack().size()) {
-                        throw new IllegalStateException("Wrong number of exported stack in " + thePredecessor.getStartAddress().getAddress() + " expected " + theRequestedStack + " got " + theHelper.getStack().size() + " to jump to " + aBlock.getStartAddress().getAddress());
+                        throw new IllegalStateException(
+                                "Wrong number of exported stack in " + thePredecessor.getStartAddress().getAddress()
+                                        + " expected " + theRequestedStack + " got " + theHelper.getStack().size()
+                                        + " to jump to " + aBlock.getStartAddress().getAddress());
                     }
                 }
-                for (int i=0;i<theHelper.getStack().size();i++) {
-                    final StackVariableDescription theStackPos = new StackVariableDescription(theHelper.getStack().size() - i - 1);
+                for (int i = 0; i < theHelper.getStack().size(); i++) {
+                    final StackVariableDescription theStackPos = new StackVariableDescription(
+                            theHelper.getStack().size() - i - 1);
                     final Value theStackValue = theHelper.getStack().get(i);
 
                     final Set<Value> theKnownValues = theStackToImport.computeIfAbsent(theStackPos, k -> new HashSet<>());
@@ -136,7 +146,7 @@ public class ParsingHelperCache {
                 }
             }
         }
-
+        theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
         final ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
 
         // Now we import the stack and check if we need to insert phi values
@@ -157,7 +167,6 @@ public class ParsingHelperCache {
                 theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, thePHI);
             }
         }
-
         return theHelper;
     }
 

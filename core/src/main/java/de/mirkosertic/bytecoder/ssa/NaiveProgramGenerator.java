@@ -27,6 +27,7 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
@@ -194,23 +195,30 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         final Map<BytecodeBasicBlock, RegionNode> theCreatedBlocks = new HashMap<>();
 
         final ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
-        for (final BytecodeBasicBlock theBlock : theFlowInformation.blocksDominatedByRoot(theFlowInformation.getRegularStart())) {
-            final RegionNode theSingleAssignmentBlock;
-            switch (theBlock.getType()) {
-            case NORMAL:
-                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.NORMAL);
-                break;
-            case EXCEPTION_HANDLER:
-                linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theBlock.getCatchType().getConstant()));
-                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
-                break;
-            case FINALLY:
-                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.FINALLY);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported block type : " + theBlock.getType());
+
+        for (final BytecodeOpcodeAddress theRootAddress : theFlowInformation.knownRoots()) {
+            for (final BytecodeBasicBlock theBlock : theFlowInformation
+                    .blocksDominatedByRoot(theRootAddress)) {
+                final RegionNode theSingleAssignmentBlock;
+                switch (theBlock.getType()) {
+                case NORMAL:
+                    theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.NORMAL);
+                    theCreatedBlocks.put(theBlock, theSingleAssignmentBlock);
+                    break;
+                case EXCEPTION_HANDLER:
+                    for (final BytecodeUtf8Constant theClassInfo : theBlock.getCatchType()) {
+                        linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo));
+                    }
+                    theSingleAssignmentBlock = theGraph
+                            .createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
+                    break;
+                case FINALLY:
+                    theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.FINALLY);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported block type : " + theBlock.getType());
+                }
             }
-            theCreatedBlocks.put(theBlock, theSingleAssignmentBlock);
         }
 
         // Initialize Block dependency graph
@@ -241,8 +249,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 initializeBlock(aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
                             theFlowInformation);
             }
-
-            // TODO: Also initialize exceptional control flows
 
             // Check if there are infinite looping blocks
             // Additionally, we have to add gotos
@@ -398,29 +404,18 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             final ParsingHelperCache aCache,
             final BytecodeProgram.FlowInformation aFlowInformation) {
 
-        if (aAlreadyVisited.add(aCurrentBlock)) {
+        // Resolve predecessor nodes. without them we would not have an initial state for the current node
+        // We have to ignore back edges!!
+        final Set<RegionNode> thePredecessors = aCurrentBlock.getPredecessorsIgnoringBackEdges();
+        for (final RegionNode thePredecessor : thePredecessors) {
+            initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aFlowInformation);
+        }
 
-            // Resolve predecessor nodes. without them we would not have an initial state for the current node
-            // We have to ignore back edges!!
-            final Set<RegionNode> thePredecessors = aCurrentBlock.getPredecessorsIgnoringBackEdges();
-            for (final RegionNode thePredecessor : thePredecessors) {
-                initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aFlowInformation);
-            }
+        if (aAlreadyVisited.add(aCurrentBlock)) {
 
             final ParsingHelper theParsingState;
             if (aCurrentBlock.getType() != RegionNode.BlockType.NORMAL) {
-                // Exception handler or finally code
-                // We only have the thrown exception on the stack!
-                // Everything else is at the same state as on control flow enter
-                // In case of synchronized blocks there is an additional reference with the semaphore to release
-                //if (thePredecessors.size() == 1) {
-                //    final RegionNode thePredecessor = thePredecessors.iterator().next();
-                //    theParsingState = aCache.resolveFinalStateForNode(thePredecessor);
-                //} else {
-
-                // TODO: SHouldn't this be the initial state of the first block of the beginning of the exception table?
                 theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
-                //}
                 if (!aMethod.getAccessFlags().isStatic()) {
                     theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
                 }

@@ -55,16 +55,16 @@ public class ExceptionTest {
         Assert.assertEquals(70, i, 0);
     }
 
-    public void complexWithArgument(String aMessage) {
-        int i;
+    public void complexWithArgument(final String aMessage) {
+        final int i;
         try {
             i = 1;
 
             if (false != (i!=0) );
 
             return;
-        } catch ( Exception e ) {
-            RuntimeException le = new RuntimeException(aMessage);
+        } catch ( final Exception e ) {
+            final RuntimeException le = new RuntimeException(aMessage);
             throw le;
         }
     }
@@ -79,7 +79,8 @@ public class ExceptionTest {
         int x = 10;
         try {
             x = x * 2;
-        } catch (Exception e) {
+        } catch (final Exception e) {
+            x = 20;
             System.out.println("Exceptions happened!");
         }
         Assert.assertEquals(20, x, 0);
@@ -93,12 +94,12 @@ public class ExceptionTest {
         boolean value1 = false;
         try {
             value1 = null != System.getProperty("CALLS");
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
         }
         try {
             value2 = null != System.getProperty("LALA");
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
         }
         value1 = true;
@@ -107,16 +108,16 @@ public class ExceptionTest {
 
     @Test
     public void testExceptionWithForLoop() {
-        int x = 1;
+        final int x = 1;
         try {
             for (int y = 0; y < 10; y++) {
                 if (y > 0) {
                     return;
                 }
             }
-        } catch (NullPointerException e) {
+        } catch (final NullPointerException e) {
             return;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             return;
         }
         return;
@@ -132,7 +133,7 @@ public class ExceptionTest {
                     return true;
                 }
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             return true;
         }
         return false;
@@ -150,11 +151,59 @@ public class ExceptionTest {
             x = 1;
             try {
                 x = 3;
-            } catch (RuntimeException e) {
+            } catch (final RuntimeException e) {
                 return;
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             return;
         }
+    }
+
+    @Test
+    public void testNestedWithSwitchCase() {
+        int x = 0;
+        try {
+            switch (x) {
+                case 1:
+                case 0: {
+                    try {
+                        x = 99;
+                    } catch (final RuntimeException e) {
+                        x = 101;
+                    }
+                    break;
+                }
+                default: {
+                    try {
+                        x = 2;
+                    } catch (final RuntimeException e) {
+                        x = 3;
+                    }
+                    break;
+                }
+            }
+        } catch (final Exception e) {
+
+        }
+    }
+
+    public static class EXA extends RuntimeException {
+
+    }
+
+    public static class EXB extends RuntimeException {
+
+    }
+
+    @Test
+    public void testMultiCatch() {
+        int x = 0;
+        try {
+             x = 1;
+        } catch (final EXA | EXB e) {
+            x = 2;
+            System.out.println(e.getMessage());
+        }
+        x = 13;
     }
 }

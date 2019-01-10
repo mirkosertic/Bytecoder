@@ -352,7 +352,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(final CurrentExceptionExpression aValue) {
-        print("dmbcExceptionManager.jlThrowablepop()");
+        print("CURRENTEXCEPTION");
     }
 
     private void print(final MethodParameterValue aValue) {
@@ -644,15 +644,15 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print(aValue);
             } else if (theLinkedClass.isCallback()) {
 
-                BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
-                List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(t -> !t.getValue().isConstructor() && !t.getValue().isClassInitializer()
+                final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
+                final List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(t -> !t.getValue().isConstructor() && !t.getValue().isClassInitializer()
                         && !t.getProvidingClass().getClassName().name().equals(Object.class.getName())).map(t -> t.getValue()).collect(Collectors.toList());
                 if (availableCallbacks.size() != 1) {
                     throw new IllegalStateException("Invalid number of callback methods available for type " + theLinkedClass.getClassName().name() + ", expected 1, got " + availableCallbacks.size());
                 }
 
-                BytecodeMethod theCallbackMethod = availableCallbacks.get(0);
-                String theMethodName = JSWriterUtils.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
+                final BytecodeMethod theCallbackMethod = availableCallbacks.get(0);
+                final String theMethodName = JSWriterUtils.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
 
                 print("function() {");
                 print("var v = ");
@@ -661,10 +661,10 @@ public class JSSSAWriter extends IndentSSAWriter {
                 print(".");
                 print(theMethodName);
                 print("(v");
-                BytecodeTypeRef[] theArguments = theCallbackMethod.getSignature().getArguments();
+                final BytecodeTypeRef[] theArguments = theCallbackMethod.getSignature().getArguments();
                 for (int i=0;i<theArguments.length;i++) {
                     print(",");
-                    String theConversionFunction = conversionFunctionToBytecoderForOpaqueType(theArguments[i]);
+                    final String theConversionFunction = conversionFunctionToBytecoderForOpaqueType(theArguments[i]);
                     if (theConversionFunction != null) {
                         print(theConversionFunction);
                         print("(");
@@ -1297,17 +1297,53 @@ public class JSSSAWriter extends IndentSSAWriter {
         final JSSSAWriter theDeeper = withDeeperIndent();
         theDeeper.print(aTryBlock.inner());
 
-        println("} catch (e) {");
+        println("} catch (CURRENTEXCEPTION) {");
 
-        final JSSSAWriter theHandlerDeeper = withDeeperIndent();
-        theHandlerDeeper.println("dmbcExceptionManager.VOIDpushjlThrowable(e);");
+        final JSSSAWriter theHandler = withDeeperIndent();
 
-        // TODO: Implement handler logic here
+        final Relooper.Block theFinally = aTryBlock.getFinallyBlock();
+        theHandler.println("try {");
 
-        theHandlerDeeper.println("throw dmbcExceptionManager.jlThrowablepop();");
+        final JSSSAWriter theCatchWriter = theHandler.withDeeperIndent();
+
+        for (final Relooper.TryBlock.CatchBlock theCatch : aTryBlock.getCatchBlocks()) {
+
+            theCatchWriter.print("if (");
+            boolean first = true;
+            for (final BytecodeUtf8Constant theInstanceCheck : theCatch.getCaughtExceptions()) {
+                if (!first) {
+                    theCatchWriter.print(" || ");
+                }
+                final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
+                theCatchWriter.print("e.instanceOf(");
+                theCatchWriter.print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
+                theCatchWriter.print(")");
+                first = false;
+            }
+
+            theCatchWriter.println(") {");
+
+            theCatchWriter.withDeeperIndent().print(theCatch.getHandler());
+
+            theCatchWriter.println("}");
+        }
+
+        theCatchWriter.println("throw CURRENTEXCEPTION;");
+
+        theHandler.println("} catch (CURRENTEXCEPTION) {");
+
+        final JSSSAWriter theFinallyDeeper = theHandler.withDeeperIndent();
+
+        if (theFinally != null) {
+            theFinallyDeeper.print(theFinally);
+        }
+
+        theFinallyDeeper.println("throw CURRENTEXCEPTION;");
+
+        theHandler.println("}");
+
         println("}");
 
         print(aTryBlock.next());
     }
-
-    }
+}

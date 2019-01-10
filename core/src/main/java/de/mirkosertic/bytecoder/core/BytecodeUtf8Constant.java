@@ -15,13 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.io.UnsupportedEncodingException;
+import java.util.Objects;
 
 public class BytecodeUtf8Constant implements BytecodeConstant {
 
     private final String value;
 
-    public BytecodeUtf8Constant(String aValue) {
+    public BytecodeUtf8Constant(final String aValue) {
         value = aValue;
     }
 
@@ -29,7 +29,18 @@ public class BytecodeUtf8Constant implements BytecodeConstant {
         return value;
     }
 
-    public byte[] toUTF8Bytes() throws UnsupportedEncodingException {
-        return value.getBytes("UTF-8");
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        final BytecodeUtf8Constant that = (BytecodeUtf8Constant) o;
+        return Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
     }
 }
