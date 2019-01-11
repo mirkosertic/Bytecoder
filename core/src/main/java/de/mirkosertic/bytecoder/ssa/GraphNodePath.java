@@ -22,7 +22,7 @@ public class GraphNodePath {
 
     private final List<RegionNode> nodes;
 
-    protected GraphNodePath(List<RegionNode> aNodes) {
+    protected GraphNodePath(final List<RegionNode> aNodes) {
         nodes = aNodes;
     }
 
@@ -30,11 +30,11 @@ public class GraphNodePath {
         this(new ArrayList<>());
     }
 
-    public GraphNodePath(GraphNodePath aOther) {
+    public GraphNodePath(final GraphNodePath aOther) {
         this(new ArrayList<>(aOther.nodes));
     }
 
-    public void addToPath(RegionNode aNode) {
+    public void addToPath(final RegionNode aNode) {
         if (!nodes.contains(aNode)) {
             nodes.add(aNode);
         }
@@ -48,15 +48,23 @@ public class GraphNodePath {
         return nodes.get(nodes.size() - 1);
     }
 
-    public List<RegionNode> nodes() {
-        return nodes;
-    }
-
-    public boolean contains(RegionNode aNode) {
+    public boolean contains(final RegionNode aNode) {
         return nodes.contains(aNode);
     }
 
-    public void remove(RegionNode aNodeToDelete) {
+    public void remove(final RegionNode aNodeToDelete) {
         nodes.remove(aNodeToDelete);
+    }
+
+    public boolean isReachableTrueExceptionHandler() {
+        for (final RegionNode theNode : nodes) {
+            if (theNode.getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
+                return true;
+            }
+            if (theNode.getType() == RegionNode.BlockType.FINALLY) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -1302,45 +1302,45 @@ public class JSSSAWriter extends IndentSSAWriter {
         final JSSSAWriter theHandler = withDeeperIndent();
 
         final Relooper.Block theFinally = aTryBlock.getFinallyBlock();
-        theHandler.println("try {");
-
-        final JSSSAWriter theCatchWriter = theHandler.withDeeperIndent();
+        JSSSAWriter theGuard = theHandler;
+        if (theFinally != null) {
+            theGuard.println("try {");
+            theGuard = theHandler.withDeeperIndent();
+        }
 
         for (final Relooper.TryBlock.CatchBlock theCatch : aTryBlock.getCatchBlocks()) {
 
-            theCatchWriter.print("if (");
+            theGuard.print("if (");
             boolean first = true;
             for (final BytecodeUtf8Constant theInstanceCheck : theCatch.getCaughtExceptions()) {
                 if (!first) {
-                    theCatchWriter.print(" || ");
+                    theGuard.print(" || ");
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
-                theCatchWriter.print("e.instanceOf(");
-                theCatchWriter.print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
-                theCatchWriter.print(")");
+                theGuard.print("e.instanceOf(");
+                theGuard.print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
+                theGuard.print(")");
                 first = false;
             }
 
-            theCatchWriter.println(") {");
+            theGuard.println(") {");
 
-            theCatchWriter.withDeeperIndent().print(theCatch.getHandler());
+            theGuard.withDeeperIndent().print(theCatch.getHandler());
 
-            theCatchWriter.println("}");
+            theGuard.println("}");
         }
 
-        theCatchWriter.println("throw CURRENTEXCEPTION;");
-
-        theHandler.println("} catch (CURRENTEXCEPTION) {");
-
-        final JSSSAWriter theFinallyDeeper = theHandler.withDeeperIndent();
+        theGuard.println("throw CURRENTEXCEPTION;");
 
         if (theFinally != null) {
+            theGuard.println("} catch (CURRENTEXCEPTION) {");
+
+            final JSSSAWriter theFinallyDeeper = theGuard.withDeeperIndent();
             theFinallyDeeper.print(theFinally);
+            theFinallyDeeper.println("throw CURRENTEXCEPTION;");
+
+            theGuard.println("}");
         }
-
-        theFinallyDeeper.println("throw CURRENTEXCEPTION;");
-
-        theHandler.println("}");
 
         println("}");
 

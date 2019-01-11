@@ -72,7 +72,7 @@ public class ParsingHelperCache {
                 }
             }
 
-            final ParsingHelper.ValueProvider theProvider = aDescription -> {
+            final ParsingHelper.ValueProvider theProvider = (aDescription) -> {
                 final Value theValue = theValues.get(aDescription);
                 if (theValue == null) {
                     throw new IllegalStateException("No value on cfg enter : " + aDescription);
@@ -105,7 +105,7 @@ public class ParsingHelperCache {
 
         if (aBlock.getType() != RegionNode.BlockType.NORMAL) {
             // Exception handler and finally blocks do not import a stack
-            final ParsingHelper.ValueProvider theProvider = aDescription -> {
+            final ParsingHelper.ValueProvider theProvider = (aDescription) -> {
                 if (aDescription instanceof StackVariableDescription) {
                     throw new IllegalStateException("Stack imports not allowed for EXCEPTION HANDLER or FINALLY blocks");
                 }
@@ -146,7 +146,7 @@ public class ParsingHelperCache {
                 }
             }
         }
-        theProvider = aDescription -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
+        theProvider = (aDescription) -> newPHIFor(aBlock.getPredecessorsIgnoringBackEdges(), aDescription, aBlock);
         final ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
 
         // Now we import the stack and check if we need to insert phi values

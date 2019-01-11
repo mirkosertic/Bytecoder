@@ -45,12 +45,8 @@ public class BytecodeProgram {
             return knownBlocks.get(aBlockAddress);
         }
 
-        public Set<BytecodeBasicBlock> blocksDominatedByRoot(final BytecodeOpcodeAddress aRootAddress) {
-            return roots.get(aRootAddress);
-        }
-
-        public Set<BytecodeOpcodeAddress> knownRoots() {
-            return roots.keySet();
+        public Set<BytecodeBasicBlock> knownBlocks() {
+            return new HashSet<>(knownBlocks.values());
         }
     }
 
@@ -169,24 +165,42 @@ public class BytecodeProgram {
             }
         }
 
+        // Now, we add the implicit exceptional control flows here
+        for (final BytecodeExceptionTableEntry theHandler : exceptionHandlers) {
+            if (!theHandler.isFinally()) {
+                final BytecodeBasicBlock theHandlerBlock = theKnownBlocks.get(theHandler.getHandlerPc());
+                if (theHandlerBlock == null) {
+                    throw new IllegalStateException("No exception handler at " + theHandler.getHandlerPc() + " found !");
+                }
+                for (final Map.Entry<BytecodeOpcodeAddress, BytecodeBasicBlock> theEntry : theKnownBlocks.entrySet()) {
+                    if (theHandler.coveres(theEntry.getKey())) {
+                        // We add an exceptional edge here
+                        theEntry.getValue().addSuccessor(theHandlerBlock);
+                    }
+                }
+            }
+        }
+
         final BytecodeOpcodeAddress theRegularStart = new BytecodeOpcodeAddress(0);
         // Calculage regular control flow
         final Map<BytecodeOpcodeAddress, Set<BytecodeBasicBlock>> theRoots = new HashMap<>();
         final Set<BytecodeBasicBlock> theRegularBlocks = new HashSet<>();
+
         theRoots.put(theRegularStart, generateEdges(theRegularBlocks, theKnownBlocks.get(theRegularStart), new Stack<>(), theKnownBlocks));
 
-        // Calculate the program flow for finally blocks and exception handlers
+        // Calculate the program flow for exception handlers
         // till their merging with the regular control flow
         for (final BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
-/*            if (theBlock.getType() == BytecodeBasicBlock.Type.FINALLY) {
+            if (theBlock.getType() == BytecodeBasicBlock.Type.EXCEPTION_HANDLER) {
                 final Set<BytecodeBasicBlock> theAlreadyVisited = new HashSet<>(theRegularBlocks);
                 generateEdges(theAlreadyVisited, theBlock, new Stack<>(), theKnownBlocks);
                 theAlreadyVisited.removeAll(theRegularBlocks);
                 theRoots.put(theBlock.getStartAddress(), theAlreadyVisited);
-            }*/
+            }
         }
 
         // We are done here
+        // We have a graph with all explicit and implicit control flow edges here
         return new FlowInformation(theRoots, theKnownBlocks);
     }
 
@@ -205,7 +219,6 @@ public class BytecodeProgram {
                             generateEdges(aVisited, theTargetBlock, aNestingStack, aBlocks);
                         } else {
                             // Back edge
-                            theTargetBlock.addBackEdge(aBlock);
                             aBlock.addSuccessor(theTargetBlock);
                         }
                     }

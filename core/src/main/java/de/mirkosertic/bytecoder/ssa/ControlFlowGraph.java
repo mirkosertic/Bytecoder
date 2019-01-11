@@ -65,11 +65,6 @@ public class ControlFlowGraph {
 
     public void calculateReachabilityAndMarkBackEdges() {
         calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
-        for (final RegionNode theCreated : knownNodes) {
-            if (theCreated.getType() != RegionNode.BlockType.NORMAL) {
-                calculateReachabilityAndMarkBackEdges(new GraphNodePath(), theCreated);
-            }
-        }
     }
 
     private void calculateReachabilityAndMarkBackEdges(final GraphNodePath aPath, final RegionNode aNode) {
@@ -352,7 +347,19 @@ public class ControlFlowGraph {
                 thePW.println("\";");
 
                 thePW.println("       style=filled;");
-                thePW.println("       color=lightgray;");
+
+                switch (theRegion.getType()) {
+                    case NORMAL:
+                        thePW.println("       color=lightgray;");
+                        break;
+                    case EXCEPTION_HANDLER:
+                        thePW.println("       color=lightsalmon;");
+                        break;
+                    case FINALLY:
+                        thePW.println("       color=goldenrod;");
+                        break;
+                }
+
                 thePW.println();
 
                 thePW.print("       C_");
