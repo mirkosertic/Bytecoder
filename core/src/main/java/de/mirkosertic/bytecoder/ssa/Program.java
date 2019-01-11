@@ -56,7 +56,7 @@ public class Program {
         arguments = new ArrayList<>();
     }
 
-    public void setFlowInformation(BytecodeProgram.FlowInformation flowInformation) {
+    public void setFlowInformation(final BytecodeProgram.FlowInformation flowInformation) {
         this.flowInformation = flowInformation;
     }
 
@@ -117,10 +117,10 @@ public class Program {
 
     public Variable createVariable(final TypeRef aType) {
         final int theIndex = variables.size();
-        return createVariable("var" + theIndex, aType);
+        return createVariable("var" + theIndex, aType.resolve());
     }
 
-    public Variable createVariable(final String aName, final TypeRef aType) {
+    public Variable createVariable(final String aName, final TypeRef.Native aType) {
         final Variable theNewVariable = new Variable(aType, aName);
         variables.add(theNewVariable);
         return theNewVariable;
@@ -135,9 +135,9 @@ public class Program {
                     theResult.add(BytecodeObjectTypeRef
                             .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
                 }
-                for (Value theIncoming : theExpression.incomingDataFlows()) {
+                for (final Value theIncoming : theExpression.incomingDataFlows()) {
                     if (theIncoming instanceof GetStaticExpression) {
-                        GetStaticExpression theGet = (GetStaticExpression) theIncoming;
+                        final GetStaticExpression theGet = (GetStaticExpression) theIncoming;
                         theResult.add(BytecodeObjectTypeRef
                                 .fromUtf8Constant(theGet.getField().getClassIndex().getClassConstant().getConstant()));
                     }

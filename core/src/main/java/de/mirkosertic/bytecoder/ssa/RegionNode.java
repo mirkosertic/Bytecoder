@@ -138,10 +138,6 @@ public class RegionNode {
         reachableBy.add(aPath);
     }
 
-    public List<GraphNodePath> reachableBy() {
-        return reachableBy;
-    }
-
     public BlockType getType() {
         return type;
     }
@@ -209,7 +205,7 @@ public class RegionNode {
                 return v;
             }
         }
-        final Variable v = program.createVariable(theName, theType);
+        final Variable v = program.createVariable(theName, theType.resolve());
         expressions.add(new VariableAssignmentExpression(v, aValue));
         v.initializeWith(aValue);
         return v;
@@ -340,5 +336,14 @@ public class RegionNode {
         for (final Map.Entry<Edge, RegionNode> theEntry : aNode.successors.entrySet()) {
             successors.put(theEntry.getKey(), theEntry.getValue());
         }
+    }
+
+    public boolean isReachableTrueExceptionHandler() {
+        for (final GraphNodePath thePath : reachableBy) {
+            if (thePath.isReachableTrueExceptionHandler()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

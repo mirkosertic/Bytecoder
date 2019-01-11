@@ -27,7 +27,6 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
@@ -196,33 +195,32 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
         final ControlFlowGraph theGraph = theProgram.getControlFlowGraph();
 
-        for (final BytecodeOpcodeAddress theRootAddress : theFlowInformation.knownRoots()) {
-            for (final BytecodeBasicBlock theBlock : theFlowInformation
-                    .blocksDominatedByRoot(theRootAddress)) {
-                final RegionNode theSingleAssignmentBlock;
-                switch (theBlock.getType()) {
-                case NORMAL:
-                    theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.NORMAL);
-                    theCreatedBlocks.put(theBlock, theSingleAssignmentBlock);
-                    break;
-                case EXCEPTION_HANDLER:
-                    for (final BytecodeUtf8Constant theClassInfo : theBlock.getCatchType()) {
-                        linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo));
-                    }
-                    theSingleAssignmentBlock = theGraph
-                            .createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
-                    break;
-                case FINALLY:
-                    theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.FINALLY);
-                    break;
-                default:
-                    throw new IllegalStateException("Unsupported block type : " + theBlock.getType());
+        // Create CFG edges from flowinfo
+        for (final BytecodeBasicBlock theBlock : theFlowInformation.knownBlocks()) {
+            final RegionNode theSingleAssignmentBlock;
+            switch (theBlock.getType()) {
+            case NORMAL:
+                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.NORMAL);
+                break;
+            case EXCEPTION_HANDLER:
+                for (final BytecodeUtf8Constant theClassInfo : theBlock.getCatchType()) {
+                    linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo));
                 }
+                theSingleAssignmentBlock = theGraph
+                        .createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
+                break;
+            case FINALLY:
+                theSingleAssignmentBlock = theGraph.createAt(theBlock.getStartAddress(), RegionNode.BlockType.FINALLY);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported block type : " + theBlock.getType());
             }
+            theCreatedBlocks.put(theBlock, theSingleAssignmentBlock);
         }
 
         // Initialize Block dependency graph
         for (final Map.Entry<BytecodeBasicBlock, RegionNode> theEntry : theCreatedBlocks.entrySet()) {
+            // Normal program flow
             for (final BytecodeBasicBlock theSuccessor : theEntry.getKey().getSuccessors()) {
                 final RegionNode theSuccessorBlock = theCreatedBlocks.get(theSuccessor);
                 if (theSuccessorBlock == null) {
@@ -245,9 +243,10 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theDebugInfos);
 
             // This will traverse the CFG from bottom to top
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().finalNodes()) {
+            final Set<RegionNode> theFinalNodes = theProgram.getControlFlowGraph().finalNodes();
+            for (final RegionNode theNode : theFinalNodes) {
                 initializeBlock(aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
-                            theFlowInformation);
+                        theFlowInformation);
             }
 
             // Check if there are infinite looping blocks
@@ -305,11 +304,11 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final RegionNode theReceiving = theEdge.getValue();
                         final BlockState theReceivingState = theReceiving.toStartState();
                         for (final Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {
+                            final Variable theReceivingTarget = (Variable) theEntry.getValue();
                             final Value theExportingValue = theHelper.requestValue(theEntry.getKey());
                             if (theExportingValue == null) {
                                 throw new IllegalStateException("No value for " + theEntry.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theReceiving.getStartAddress().getAddress());
                             }
-                            final Variable theReceivingTarget = (Variable) theEntry.getValue();
                             theReceivingTarget.initializeWith(theExportingValue);
                         }
                     }
@@ -407,6 +406,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         // Resolve predecessor nodes. without them we would not have an initial state for the current node
         // We have to ignore back edges!!
         final Set<RegionNode> thePredecessors = aCurrentBlock.getPredecessorsIgnoringBackEdges();
+
+        // First the normal flow
         for (final RegionNode thePredecessor : thePredecessors) {
             initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aFlowInformation);
         }

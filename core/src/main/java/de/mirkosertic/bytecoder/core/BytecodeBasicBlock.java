@@ -32,21 +32,18 @@ public class BytecodeBasicBlock {
     private final List<BytecodeBasicBlock> successors;
     private final Type type;
     private final Set<BytecodeUtf8Constant> catchType;
-    private final Set<BytecodeBasicBlock> backendesFrom;
 
     public BytecodeBasicBlock(final Type aType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
         type = aType;
         catchType = null;
-        backendesFrom = new HashSet<>();
     }
     public BytecodeBasicBlock(final Set<BytecodeUtf8Constant> aCatchType) {
         instructions = new ArrayList<>();
         successors = new ArrayList<>();
         type = Type.EXCEPTION_HANDLER;
         catchType = aCatchType;
-        backendesFrom = new HashSet<>();
     }
 
     public Set<BytecodeUtf8Constant> getCatchType() {
@@ -55,10 +52,6 @@ public class BytecodeBasicBlock {
 
     public void addSuccessor(final BytecodeBasicBlock aBasicBlock) {
         successors.add(aBasicBlock);
-    }
-
-    public void addBackEdge(final BytecodeBasicBlock aBackEdge) {
-        backendesFrom.add(aBackEdge);
     }
 
     public List<BytecodeBasicBlock> getSuccessors() {

@@ -206,4 +206,15 @@ public class ExceptionTest {
         }
         x = 13;
     }
+
+    @Test
+    public void testSimpleCatch() {
+        int x = 0;
+        try {
+            x = 1;
+        } catch (final EXA e) {
+            x = 2;
+        }
+        x = 13;
+    }
 }
