@@ -20,7 +20,7 @@ public class BytecodeInstructionGenericSTORE extends BytecodeInstruction {
     private final BytecodePrimitiveTypeRef type;
     private final int variableIndex;
 
-    public BytecodeInstructionGenericSTORE(BytecodeOpcodeAddress aIndex, BytecodePrimitiveTypeRef aType, int aVariableIndex) {
+    public BytecodeInstructionGenericSTORE(final BytecodeOpcodeAddress aIndex, final BytecodePrimitiveTypeRef aType, final int aVariableIndex) {
         super(aIndex);
         type = aType;
         variableIndex = aVariableIndex;
@@ -28,5 +28,9 @@ public class BytecodeInstructionGenericSTORE extends BytecodeInstruction {
 
     public int getVariableIndex() {
         return variableIndex;
+    }
+
+    public BytecodePrimitiveTypeRef getType() {
+        return type;
     }
 }

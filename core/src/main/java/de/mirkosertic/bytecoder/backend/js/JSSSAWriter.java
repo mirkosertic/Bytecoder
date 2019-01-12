@@ -1317,7 +1317,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                     theGuard.print(" || ");
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
-                theGuard.print("e.instanceOf(");
+                theGuard.print("CURRENTEXCEPTION.instanceOf(");
                 theGuard.print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
                 theGuard.print(")");
                 first = false;

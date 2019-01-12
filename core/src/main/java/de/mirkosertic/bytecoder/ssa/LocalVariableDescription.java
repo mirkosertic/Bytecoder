@@ -18,33 +18,35 @@ package de.mirkosertic.bytecoder.ssa;
 public class LocalVariableDescription implements VariableDescription {
 
     private final int index;
+    private final TypeRef typeRef;
 
-    public LocalVariableDescription(int aIndex) {
-        index = aIndex;
+    public LocalVariableDescription(final int index, final TypeRef typeRef) {
+        this.index = index;
+        this.typeRef = typeRef;
     }
 
     public int getIndex() {
         return index;
     }
 
-    @Override
-    public String toString() {
-        return "virtual variable #" + index;
+    public TypeRef getTypeRef() {
+        return typeRef;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public String toString() {
+        return "virtual variable #" + index + " of type " + typeRef;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
 
-        LocalVariableDescription that = (LocalVariableDescription) o;
-
-        if (index != that.index)
-            return false;
-
-        return true;
+        final LocalVariableDescription that = (LocalVariableDescription) o;
+        return index == that.index;
     }
 
     @Override
