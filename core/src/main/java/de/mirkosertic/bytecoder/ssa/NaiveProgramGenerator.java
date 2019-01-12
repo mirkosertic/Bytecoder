@@ -159,22 +159,23 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         }
         int theCurrentIndex = 0;
         if (!aMethod.getAccessFlags().isStatic()) {
-            theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createThisRef());
+            theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, TypeRef.Native.REFERENCE), Variable.createThisRef());
             theCurrentIndex++;
         }
         final BytecodeTypeRef[] theTypes = aMethod.getSignature().getArguments();
         for (int i=0;i<theTypes.length;i++) {
             final BytecodeTypeRef theRef = theTypes[i];
+            final TypeRef theType = TypeRef.toType(theRef);
             if (theDebugInfos != null) {
                 final BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(BytecodeOpcodeAddress.START_AT_ZERO, theCurrentIndex);
                 if (theEntry != null) {
                     final String theVariableName = theDebugInfos.resolveVariableName(theEntry);
-                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, theVariableName, TypeRef.toType(theTypes[i])));
+                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theVariableName, theType));
                 } else {
-                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, TypeRef.toType(theTypes[i])));
+                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theType));
                 }
             } else {
-                theProgram.addArgument(new LocalVariableDescription(theCurrentIndex), Variable.createMethodParameter(i + 1, TypeRef.toType(theTypes[i])));
+                theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theType));
             }
 
             theCurrentIndex++;
@@ -418,9 +419,10 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             if (aCurrentBlock.getType() != RegionNode.BlockType.NORMAL) {
                 theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
                 if (!aMethod.getAccessFlags().isStatic()) {
-                    theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(), Variable.createThisRef());
+                    theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(),
+                            TypeRef.Native.REFERENCE, Variable.createThisRef());
                 }
-                theParsingState.push(aCurrentBlock.newVariable(TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)), new CurrentExceptionExpression()));
+                theParsingState.push(new CurrentExceptionExpression());
             } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
                 // Programm is at start address, so we need the initial state
                 theParsingState = aCache.resolveFinalStateForNode(null);
@@ -561,12 +563,12 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                 final BytecodeInstructionASTORE theINS = (BytecodeInstructionASTORE) theInstruction;
                 final Value theValue = aHelper.pop();
-                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getVariableIndex(), theValue);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getVariableIndex(), theValue.resolveType(), theValue);
             } else if (theInstruction instanceof BytecodeInstructionGenericSTORE) {
                 final BytecodeInstructionGenericSTORE theINS = (BytecodeInstructionGenericSTORE) theInstruction;
                 final Value theValue = aHelper.pop();
                 final Variable theOtherVariable = aTargetBlock.newVariable(theValue.resolveType().resolve(), theValue);
-                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getVariableIndex(), theOtherVariable);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getVariableIndex(), TypeRef.toType(theINS.getType()), theOtherVariable);
             } else if (theInstruction instanceof BytecodeInstructionObjectArrayLOAD) {
                 final BytecodeInstructionObjectArrayLOAD theINS = (BytecodeInstructionObjectArrayLOAD) theInstruction;
                 final Value theIndex = aHelper.pop();
@@ -678,12 +680,12 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theNegatedValue);
             } else if (theInstruction instanceof BytecodeInstructionGenericLOAD) {
                 final BytecodeInstructionGenericLOAD theINS = (BytecodeInstructionGenericLOAD) theInstruction;
-                final Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex());
+                final Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex(), TypeRef.toType(theINS.getType()));
                 final Variable theSnapshot = aTargetBlock.newVariable(theValue.resolveType(), theValue);
                 aHelper.push(theSnapshot);
             } else if (theInstruction instanceof BytecodeInstructionALOAD) {
                 final BytecodeInstructionALOAD theINS = (BytecodeInstructionALOAD) theInstruction;
-                final Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex());
+                final Value theValue = aHelper.getLocalVariable(theINS.getVariableIndex(), TypeRef.Native.REFERENCE);
                 final Variable theSnapshot = aTargetBlock.newVariable(theValue.resolveType(), theValue);
                 aHelper.push(theSnapshot);
             } else if (theInstruction instanceof BytecodeInstructionGenericCMP) {
@@ -700,8 +702,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionIINC) {
                 final BytecodeInstructionIINC theINS = (BytecodeInstructionIINC) theInstruction;
-                final Value theValueToIncrement = aHelper.getLocalVariable(theINS.getIndex());
-                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getIndex(), new BinaryExpression(TypeRef.Native.INT, theValueToIncrement, BinaryExpression.Operator.ADD, new IntegerValue(theINS.getConstant())));
+                final Value theValueToIncrement = aHelper.getLocalVariable(theINS.getIndex(), TypeRef.Native.INT);
+                aHelper.setLocalVariable(theInstruction.getOpcodeAddress(), theINS.getIndex(), TypeRef.Native.INT, new BinaryExpression(TypeRef.Native.INT, theValueToIncrement, BinaryExpression.Operator.ADD, new IntegerValue(theINS.getConstant())));
             } else if (theInstruction instanceof BytecodeInstructionGenericREM) {
                 final BytecodeInstructionGenericREM theINS = (BytecodeInstructionGenericREM) theInstruction;
                 final Value theValue2 = aHelper.pop();

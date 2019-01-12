@@ -164,7 +164,11 @@ class OpenCLContext implements Context {
         final cl_program theCLProgram = clCreateProgramWithSource(context,
                 1, new String[]{ content.asString() }, null, null);
 
-        clBuildProgram(theCLProgram, 0, null, null, null, null);
+        try {
+            clBuildProgram(theCLProgram, 0, null, null, null, null);
+        } catch (final Exception e) {
+            throw new RuntimeException("Error compiling : " + content.asString(), e);
+        }
 
         final cl_kernel theKernel = clCreateKernel(theCLProgram, "BytecoderKernel", null);
 

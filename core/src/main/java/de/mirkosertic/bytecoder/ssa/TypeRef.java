@@ -44,13 +44,13 @@ public interface TypeRef {
     enum Native implements TypeRef {
         UNKNOWN {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 throw new IllegalStateException();
             }
         }
         ,BYTE {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case BYTE:
                         return BYTE;
@@ -64,7 +64,7 @@ public interface TypeRef {
         }
         ,SHORT {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case SHORT:
                         return SHORT;
@@ -77,7 +77,7 @@ public interface TypeRef {
             }
         },CHAR {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case CHAR:
                         return CHAR;
@@ -90,7 +90,7 @@ public interface TypeRef {
             }
         },BOOLEAN {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case INT:
                         return INT;
@@ -103,7 +103,7 @@ public interface TypeRef {
             }
         },INT {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case INT:
                         return INT;
@@ -124,7 +124,7 @@ public interface TypeRef {
             }
         },LONG {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case LONG:
                         return LONG;
@@ -135,7 +135,7 @@ public interface TypeRef {
             }
         },FLOAT {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case FLOAT:
                         return FLOAT;
@@ -146,7 +146,7 @@ public interface TypeRef {
             }
         },DOUBLE {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case DOUBLE:
                         return DOUBLE;
@@ -157,7 +157,7 @@ public interface TypeRef {
             }
         },REFERENCE {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case REFERENCE:
                         return REFERENCE;
@@ -173,7 +173,7 @@ public interface TypeRef {
             }
         },VOID {
             @Override
-            public Native eventuallyPromoteTo(Native aOtherType) {
+            public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
                     case VOID:
                         return VOID;
@@ -230,7 +230,7 @@ public interface TypeRef {
             };
         }
         if (aTypeRef.isPrimitive()) {
-            BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
+            final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
             switch (thePrimitive) {
             case INT:
                 return Native.INT;

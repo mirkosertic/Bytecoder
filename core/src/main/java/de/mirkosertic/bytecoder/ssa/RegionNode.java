@@ -195,9 +195,8 @@ public class RegionNode {
         return startAddress;
     }
 
-    public Variable setLocalVariable(final int aIndex, final Value aValue) {
-        final TypeRef theType = aValue.resolveType();
-        final String theName = "local_" + aIndex + "_" + theType.resolve().name();
+    public Variable setLocalVariable(final int aIndex, final TypeRef aType, final Value aValue) {
+        final String theName = "local_" + aIndex + "_" + aType.resolve().name();
         for (final Variable v : program.getVariables()) {
             if (v.getName().equals(theName)) {
                 expressions.add(new VariableAssignmentExpression(v, aValue));
@@ -205,17 +204,18 @@ public class RegionNode {
                 return v;
             }
         }
-        final Variable v = program.createVariable(theName, theType.resolve());
+        final Variable v = program.createVariable(theName, aValue.resolveType().resolve());
         expressions.add(new VariableAssignmentExpression(v, aValue));
         v.initializeWith(aValue);
         return v;
     }
 
-    public Variable findLocalVariable(final int index) {
-        final String theName = "local_" + index + "_";
-        final List<Variable> theKnown = program.getVariables().stream().filter(t -> t.getName().startsWith(theName)).collect(Collectors.toList());
+    public Variable findLocalVariable(final int index, final TypeRef aType) {
+        final String theName = "local_" + index + "_" + aType.resolve().name();
+        final List<Variable> theKnown = program.getVariables().stream().filter(t -> t.getName().equals(theName)).collect(Collectors.toList());
         if (theKnown.size() != 1) {
-            throw new IllegalStateException("Unexpected number of variables for " + theName + ", found = " + theKnown.size() + " expected = 1");
+            // At this point we assume there is such a variable and we use it
+            return program.createVariable(theName, aType.resolve());
         }
         return theKnown.get(0);
     }
@@ -336,14 +336,5 @@ public class RegionNode {
         for (final Map.Entry<Edge, RegionNode> theEntry : aNode.successors.entrySet()) {
             successors.put(theEntry.getKey(), theEntry.getValue());
         }
-    }
-
-    public boolean isReachableTrueExceptionHandler() {
-        for (final GraphNodePath thePath : reachableBy) {
-            if (thePath.isReachableTrueExceptionHandler()) {
-                return true;
-            }
-        }
-        return false;
     }
 }

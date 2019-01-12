@@ -57,14 +57,14 @@ public class ParsingHelperCache {
             // The stack is empty
             int theCurrentIndex = 0;
             if (!method.getAccessFlags().isStatic()) {
-                final LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
+                final LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex, TypeRef.Native.REFERENCE);
                 theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
                 theCurrentIndex++;
             }
 
             final BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
             for (final BytecodeTypeRef theRef : theTypes) {
-                final LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex);
+                final LocalVariableDescription theDesc = new LocalVariableDescription(theCurrentIndex, TypeRef.toType(theRef));
                 theValues.put(theDesc, program.matchingArgumentOf(theDesc).getVariable());
                 theCurrentIndex++;
                 if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
@@ -110,13 +110,12 @@ public class ParsingHelperCache {
                     throw new IllegalStateException("Stack imports not allowed for EXCEPTION HANDLER or FINALLY blocks");
                 }
                 final LocalVariableDescription theLocal = (LocalVariableDescription) aDescription;
-                final Variable theVariable = aBlock.findLocalVariable(theLocal.getIndex());
+                final Variable theVariable = aBlock.findLocalVariable(theLocal.getIndex(), theLocal.getTypeRef());
                 aBlock.addToImportedList(theVariable, theLocal);
                 return theVariable;
             };
 
-            final ParsingHelper theHelper = new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
-            return theHelper;
+            return new ParsingHelper(localVariableTableAttributeInfo, aBlock, theProvider);
         }
         final ParsingHelper.ValueProvider theProvider;
 
