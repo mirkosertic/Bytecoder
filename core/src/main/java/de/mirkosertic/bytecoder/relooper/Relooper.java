@@ -343,6 +343,9 @@ public class Relooper {
                 final BreakExpression theBreak = (BreakExpression) theLastExpression;
                 if (Objects.equals(theBreak.blockToBreak().name(), theSimple.label().name())) {
                     theBreak.silent();
+
+                    // TODO: If there is only one successor
+                    // with only one precessor, its label is not required
                 }
             }
 
@@ -368,7 +371,7 @@ public class Relooper {
                 } else {
                     // We can only branch back into the known stack of nested blocks
                     for (final Block theNestingBlock : aTraversalStack) {
-                        if (theNestingBlock.entries().contains(theTarget)) {
+                        if (theNestingBlock.entries().contains(theTarget) && (theNestingBlock instanceof LoopBlock)) {
                             // We can return to the target in the hierarchy
                             theNestingBlock.requireLabel();
                             break;
@@ -456,7 +459,7 @@ public class Relooper {
                             // We can only branch back into the known stack of nested blocks
                             boolean theSomethingFound = false;
                             for (final Block theNestingBlock : aTraversalStack) {
-                                if (theNestingBlock.entries().contains(theTarget)) {
+                                if (theNestingBlock.entries().contains(theTarget) && (theNestingBlock instanceof LoopBlock)) {
                                     theSomethingFound = true;
 
                                     // We can return to the target in the hierarchy
@@ -526,7 +529,7 @@ public class Relooper {
             if (aEntryLabels.size() == 1) {
                 final RegionNode theSingleEntry = aEntryLabels.iterator().next();
 
-                final Set<RegionNode> theInternalLabels = theSingleEntry.dominatedNodes().stream().filter(t -> aLabelSoup.contains(t)).collect(
+                final Set<RegionNode> theInternalLabels = theSingleEntry.dominatedNodes().stream().filter(aLabelSoup::contains).collect(
                         Collectors.toSet());
                 final Set<RegionNode> theRestLabels = new HashSet<>(aLabelSoup);
                 theRestLabels.removeAll(theInternalLabels);
@@ -563,7 +566,7 @@ public class Relooper {
 
             final Set<Block> theHandlers = new HashSet<>();
             for (final RegionNode theEntry : aEntryLabels) {
-                final Set<RegionNode> theDominated = theEntry.dominatedNodes().stream().filter(t -> aLabelSoup.contains(t)).collect(
+                final Set<RegionNode> theDominated = theEntry.dominatedNodes().stream().filter(aLabelSoup::contains).collect(
                         Collectors.toSet());
                 theEntryReaches.put(theEntry, theDominated);
                 theRest.removeAll(theDominated);
@@ -608,7 +611,7 @@ public class Relooper {
                 // Covered by this exception handler
                 // They will become part of the inner block
                 final Set<RegionNode> theInnerNodes = new HashSet<>();
-                final Set<BytecodeOpcodeAddress> theIncludesHandlers = theSingleHandler.getCatchEntries().stream().map(t -> t.getHandlerPc()).collect(
+                final Set<BytecodeOpcodeAddress> theIncludesHandlers = theSingleHandler.getCatchEntries().stream().map(BytecodeExceptionTableEntry::getHandlerPc).collect(
                         Collectors.toSet());
 
                 for (final BytecodeExceptionTableEntry theEntry : aGraph.getProgram().getFlowInformation().getProgram().getExceptionHandlers()) {
