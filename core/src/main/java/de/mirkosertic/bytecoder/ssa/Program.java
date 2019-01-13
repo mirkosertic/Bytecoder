@@ -117,10 +117,10 @@ public class Program {
 
     public Variable createVariable(final TypeRef aType) {
         final int theIndex = variables.size();
-        return createVariable("var" + theIndex, aType.resolve());
+        return createVariable("var" + theIndex, aType);
     }
 
-    public Variable createVariable(final String aName, final TypeRef.Native aType) {
+    public Variable createVariable(final String aName, final TypeRef aType) {
         final Variable theNewVariable = new Variable(aType, aName);
         variables.add(theNewVariable);
         return theNewVariable;
