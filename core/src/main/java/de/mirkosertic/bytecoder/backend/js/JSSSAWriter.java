@@ -1333,13 +1333,13 @@ public class JSSSAWriter extends IndentSSAWriter {
         theGuard.println("throw CURRENTEXCEPTION;");
 
         if (theFinally != null) {
-            theGuard.println("} catch (CURRENTEXCEPTION) {");
+            theHandler.println("} catch (CURRENTEXCEPTION) {");
 
-            final JSSSAWriter theFinallyDeeper = theGuard.withDeeperIndent();
+            final JSSSAWriter theFinallyDeeper = theHandler.withDeeperIndent();
             theFinallyDeeper.print(theFinally);
             theFinallyDeeper.println("throw CURRENTEXCEPTION;");
 
-            theGuard.println("}");
+            theHandler.println("}");
         }
 
         println("}");

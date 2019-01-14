@@ -217,4 +217,18 @@ public class ExceptionTest {
         }
         x = 13;
     }
+
+    @Test
+    public void testSimpleCatchFinally() {
+        int x = 0;
+        try {
+            x = 2;
+            throw new NullPointerException();
+        } catch (final NullPointerException e) {
+            x = 17;
+        } finally {
+            x = x + 1;
+        }
+        Assert.assertEquals(18, x, 0);
+    }
 }
