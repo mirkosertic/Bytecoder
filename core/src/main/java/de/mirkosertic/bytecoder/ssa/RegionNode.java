@@ -130,6 +130,10 @@ public class RegionNode {
         expressions = new ExpressionList();
     }
 
+    public List<GraphNodePath> getReachableBy() {
+        return reachableBy;
+    }
+
     public ExpressionList getExpressions() {
          return expressions;
     }

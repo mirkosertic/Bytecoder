@@ -26,11 +26,13 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.GraphNodePath;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -614,14 +616,19 @@ public class Relooper {
                 final Set<BytecodeOpcodeAddress> theIncludesHandlers = theSingleHandler.getCatchEntries().stream().map(BytecodeExceptionTableEntry::getHandlerPc).collect(
                         Collectors.toSet());
 
+                // We collect the known finally
+                // handlers here
+                final Set<BytecodeOpcodeAddress> theFinallyHandlers = new HashSet<>();
                 for (final BytecodeExceptionTableEntry theEntry : aGraph.getProgram().getFlowInformation().getProgram().getExceptionHandlers()) {
-                    if (!theEntry.isFinally()) {
-                        if (theIncludesHandlers.contains(theEntry.getHandlerPc())) {
-                            for (final RegionNode theInner : aLabelSoup) {
-                                if (theEntry.coveres(theInner.getStartAddress())) {
-                                    theInnerNodes.add(theInner);
-                                }
+                    if (theIncludesHandlers.contains(theEntry.getHandlerPc())) {
+                        for (final RegionNode theInner : aLabelSoup) {
+                            if (theEntry.coveres(theInner.getStartAddress())) {
+                                theInnerNodes.add(theInner);
                             }
+                        }
+                    } else {
+                        if (theEntry.isFinally() && theEntry.coveres(aEntry.getStartAddress())) {
+                            theFinallyHandlers.add(theEntry.getHandlerPc());
                         }
                     }
                 }
@@ -659,11 +666,6 @@ public class Relooper {
                         final Set<BytecodeUtf8Constant> theCatchTypes = theAssignedHandlers
                                 .computeIfAbsent(theEntry.getHandlerPc(), k -> new HashSet<>());
                         theCatchTypes.add(theEntry.getCatchType().getConstant());
-                    } else {
-                        final RegionNode theFinallyNode = aGraph.nodeStartingAt(theEntry.getHandlerPc());
-                        final Set<RegionNode> theEntries = new HashSet<>();
-                        theEntries.add(theFinallyNode);
-                        finallyBlock = reloop(aGraph, theEntries, theFinallyNode.dominatedNodes());
                     }
                 }
 
@@ -692,7 +694,28 @@ public class Relooper {
 
                     final TryBlock.CatchBlock theCatchBlock = new TryBlock.CatchBlock(theEntry.getValue(),
                             reloop(aGraph, theEntries, theTagSoup));
+
                     catchBlocks.add(theCatchBlock);
+                }
+
+                // At this point, we have to check the finally blocks
+                if (!theFinallyHandlers.isEmpty()) {
+                    if (theFinallyHandlers.size() != 1) {
+                        throw new IllegalStateException(
+                                "More than one finally handler found ! Size = " + theFinallyHandlers.size());
+                    }
+                    final RegionNode theFinallyNode = aGraph.nodeStartingAt(new ArrayList<>(theFinallyHandlers).get(0));
+                    final Set<RegionNode> theEntries = new HashSet<>();
+                    theEntries.add(theFinallyNode);
+
+                    final Set<RegionNode> theDominated = theFinallyNode.dominatedNodes();
+
+                    finallyBlock = reloop(aGraph, theEntries, theDominated);
+
+                    // The finally nodes cannot be reached anymore
+                    theNextEntries.remove(theFinallyNode);
+                    theNextNodes.remove(theFinallyNode);
+                    theNextNodes.removeAll(theDominated);
                 }
 
                 // And of course the next block
@@ -703,6 +726,7 @@ public class Relooper {
                     theTryNext = reloop(aGraph, theNextEntries, theNextNodes);
                 }
 
+                Collections.reverse(catchBlocks);
                 return new TryBlock(aEntryLabels, theTryInner, theTryNext, catchBlocks, finallyBlock);
             }
         }
