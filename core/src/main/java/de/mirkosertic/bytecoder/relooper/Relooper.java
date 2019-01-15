@@ -67,6 +67,10 @@ public class Relooper {
             label = new Label(aLabelPrefix + theBuilder.toString());
         }
 
+        public Label label() {
+            return label;
+        }
+
         public boolean isLabelRequired() {
             return labelRequired > 0;
         }
@@ -82,10 +86,6 @@ public class Relooper {
         }
 
         public abstract Block next();
-
-        public Label label() {
-            return label;
-        }
 
         public abstract boolean containsMultipleBlock();
     }
@@ -179,8 +179,18 @@ public class Relooper {
             if (inner.containsMultipleBlock()) {
                 return true;
             }
+            for (CatchBlock theCatch : catchBlocks) {
+                if (theCatch.handler.containsMultipleBlock()) {
+                    return true;
+                }
+            }
             if (next != null) {
-                return next.containsMultipleBlock();
+                if (next.containsMultipleBlock()) {
+                    return true;
+                }
+            }
+            if (finallyBlock != null) {
+                return finallyBlock.containsMultipleBlock();
             }
             return false;
         }

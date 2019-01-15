@@ -191,7 +191,8 @@ public class BytecodeProgram {
         // Calculate the program flow for exception handlers
         // till their merging with the regular control flow
         for (final BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
-            if (theBlock.getType() == BytecodeBasicBlock.Type.EXCEPTION_HANDLER) {
+            if (theBlock.getType() == BytecodeBasicBlock.Type.EXCEPTION_HANDLER ||
+                    theBlock.getType() == BytecodeBasicBlock.Type.FINALLY) {
                 final Set<BytecodeBasicBlock> theAlreadyVisited = new HashSet<>(theRegularBlocks);
                 generateEdges(theAlreadyVisited, theBlock, new Stack<>(), theKnownBlocks);
                 theAlreadyVisited.removeAll(theRegularBlocks);
