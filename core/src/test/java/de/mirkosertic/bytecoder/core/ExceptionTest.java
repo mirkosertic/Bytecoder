@@ -231,4 +231,44 @@ public class ExceptionTest {
         }
         Assert.assertEquals(18, x, 0);
     }
+
+    private void doSomething() {
+    }
+
+    @Test
+    public void testTryWithSwitch() {
+        int x = 0;
+        int y = 0;
+        int z = 0;
+        try {
+            switch (x) {
+                case 0: {
+                    y++;
+                }
+                case 1: {
+                    y+=3;
+                }
+            }
+        } catch (final RuntimeException e) {
+            if (x > 0) {
+                y = 10;
+                doSomething();
+                y = 15;
+            } else {
+                y = 20;
+                doSomething();
+                y = 25;
+            }
+            x = -1;
+        } finally {
+            z++;
+            if (z>0) {
+                z = 12;
+            } else {
+                z = 13;
+            }
+            doSomething();
+        }
+        Assert.assertEquals(4, y, 0);
+    }
 }

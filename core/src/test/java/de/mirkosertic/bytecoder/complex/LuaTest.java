@@ -32,10 +32,10 @@ public class LuaTest {
     @Test
     public void testLua() {
         System.out.println("Testing lua!");
-        Globals theGlobals = new Globals();
+        final Globals theGlobals = new Globals();
         LuaC.install(theGlobals);
-        LuaValue chunk = theGlobals.load("return 'hello, world'");
-        LuaString theResult = chunk.call().strvalue();
+        final LuaValue chunk = theGlobals.load("return 'hello, world'");
+        final LuaString theResult = chunk.call().strvalue();
         Window.window().document().title(theResult.tojstring());
     }
 }

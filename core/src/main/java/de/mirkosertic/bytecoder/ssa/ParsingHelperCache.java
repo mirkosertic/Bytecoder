@@ -179,7 +179,8 @@ public class ParsingHelperCache {
             theValues.add(theHelper.requestValue(aDescription));
         }
         if (theValues.isEmpty()) {
-            throw new IllegalStateException("No values for " + aDescription + " in block " + aImportingBlock.getStartAddress().getAddress());
+            throw new IllegalStateException(
+                    "No values for " + aDescription + " in block " + aImportingBlock.getStartAddress().getAddress());
         }
         if (theValues.size() == 1) {
             final Value theValue = theValues.iterator().next();
