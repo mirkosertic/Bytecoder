@@ -43,6 +43,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.luaj</groupId>
+            <artifactId>luaj-jse</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
             <version>${kotlin.version}</version>
@@ -185,6 +191,32 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>vuedemo</filenamePrefix>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>lua-js</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
+                            <backend>js</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
+                            <filenamePrefix>bytecoder-luademojs</filenamePrefix>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>lua-wasm</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
+                            <backend>wasm</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
+                            <filenamePrefix>bytecoder-luademowasm</filenamePrefix>
                         </configuration>
                     </execution>
 

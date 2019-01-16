@@ -101,15 +101,21 @@ public class Relooper {
 
         private final RegionNode internalLabel;
         private final Block next;
+        private final ExpressionList expressionList;
 
         public SimpleBlock(final Set<RegionNode> aEntries, final RegionNode aInternalLabel, final Block aNext) {
             super(aEntries, "S_");
             internalLabel = aInternalLabel;
             next = aNext;
+            expressionList = aInternalLabel.getExpressions().deepCopy();
         }
 
         public RegionNode internalLabel() {
             return internalLabel;
+        }
+
+        public ExpressionList expressions() {
+            return expressionList;
         }
 
         @Override
@@ -179,7 +185,7 @@ public class Relooper {
             if (inner.containsMultipleBlock()) {
                 return true;
             }
-            for (CatchBlock theCatch : catchBlocks) {
+            for (final CatchBlock theCatch : catchBlocks) {
                 if (theCatch.handler.containsMultipleBlock()) {
                     return true;
                 }
@@ -342,13 +348,12 @@ public class Relooper {
 
             aTraversalStack.push(theSimple);
             final RegionNode theInternalLabel = theSimple.internalLabel();
-            replaceGotosIn(aTraversalStack, theSimple, theInternalLabel, theInternalLabel.getExpressions());
+            replaceGotosIn(aTraversalStack, theSimple, theInternalLabel, theSimple.expressions());
 
             replaceGotosIn(aTraversalStack, theSimple.next());
             aTraversalStack.pop();
 
-            final RegionNode theNode = theSimple.internalLabel;
-            final Expression theLastExpression = theNode.getExpressions().lastExpression();
+            final Expression theLastExpression = theSimple.expressions().lastExpression();
             // Breaks at the end of the internal label breaking out of the simple block
             // can be silent, they only need to set the __label__ variable
             if (theLastExpression instanceof BreakExpression) {

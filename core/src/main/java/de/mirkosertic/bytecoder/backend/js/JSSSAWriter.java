@@ -1233,7 +1233,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             theWriter = theWriter.withDeeperIndent();
         }
 
-        theWriter.writeExpressions(aSimpleBlock.internalLabel().getExpressions());
+        theWriter.writeExpressions(aSimpleBlock.expressions());
 
         if (aSimpleBlock.isLabelRequired()) {
             theWriter.println("}");

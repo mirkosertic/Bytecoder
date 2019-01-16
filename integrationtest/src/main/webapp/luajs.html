@@ -1,0 +1,36 @@
+<html>
+    <head>
+        <title>Bytecoder Lua Scripting Test</title>
+    </head>
+    <body>
+        <h1>Bytecoder Lua Demo</h1>
+        <div class="codingarea">
+            <textarea id="luainput" rows="20" cols="10">return 'hello, world'</textarea>
+            <pre id="luaoutput">
+Run Lua to see the output!
+            </pre>
+        </div>
+        <style>
+            .codingarea {
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+                padding-bottom: 2rem;
+            }
+        </style>
+        <button id="runlua" value="Run Lua!" style="display: none">Run Lua!</button>
+        <script type="text/javascript" src="bytecoder-luademojs.js"></script>
+        <script type="text/javascript">
+            // dynamic linking
+
+            console.log("Init");
+            bytecoder.bootstrap();
+
+            bytecoder.exports.main();
+            console.log("Ready");
+
+            document.getElementById("runlua").style.display = "block";
+        </script>
+        <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
+    </body>
+</html>
