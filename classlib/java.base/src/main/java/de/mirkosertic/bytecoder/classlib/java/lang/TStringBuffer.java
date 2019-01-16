@@ -19,4 +19,38 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TStringBuffer {
+
+    private final StringBuilder builder;
+
+    public TStringBuffer() {
+        builder = new StringBuilder();
+    }
+
+    public StringBuffer append(final String aString) {
+        builder.append(aString);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
+    public StringBuffer append(final Object aObject) {
+        builder.append(aObject);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
+    public StringBuffer append(final int aValue) {
+        builder.append(aValue);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
+    public StringBuffer append(final char aValue) {
+        builder.append(aValue);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
+    public String toString() {
+        return builder.toString();
+    }
 }

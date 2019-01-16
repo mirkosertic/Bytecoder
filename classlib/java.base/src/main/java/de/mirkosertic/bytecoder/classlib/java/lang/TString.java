@@ -21,44 +21,44 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 public class TString implements java.io.Serializable, Comparable<String> {
 
     private int computedHash;
-    private byte[] data;
+    private final byte[] data;
 
-    public TString(int aSize) {
+    public TString(final int aSize) {
         data = new byte[aSize];
         for (int i=0;i<aSize;i++) {
             data[i] = 0;
         }
     }
 
-    public TString(char[] aData) {
+    public TString(final char[] aData) {
         data = new byte[aData.length];
         for (int i=0;i<aData.length;i++) {
             data[i] = (byte) aData[i];
         }
     }
 
-    public TString(char value[], int offset, int count) {
+    public TString(final char[] value, final int offset, final int count) {
         data = new byte[count];
         for (int i=0;i<count;i++) {
             data[i] = (byte) value[offset + i];
         }
     }
 
-    public void setCharAt(int aIndex, byte aChar) {
+    public void setCharAt(final int aIndex, final byte aChar) {
         data[aIndex] = aChar;
     }
 
     @Override
     public String toString() {
-        Object a = this;
+        final Object a = this;
         return (String) a;
     }
 
-    public TString(byte[] aData) {
+    public TString(final byte[] aData) {
         data = aData;
     }
 
-    public TString(TString aOtherString) {
+    public TString(final TString aOtherString) {
         data = aOtherString.data;
     }
 
@@ -70,12 +70,12 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return data;
     }
 
-    public char charAt(int aIndex) {
+    public char charAt(final int aIndex) {
         return (char) data[aIndex];
     }
 
     @Override
-    public int compareTo(String o) {
+    public int compareTo(final String o) {
         return 0;
     }
 
@@ -84,18 +84,18 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     @Override
-    public boolean equals(Object aOtherObject) {
+    public boolean equals(final Object aOtherObject) {
         if (this == aOtherObject) {
             return true;
         }
         if (!(aOtherObject instanceof String)) {
             return false;
         }
-        String theOtherString = (String) aOtherObject;
+        final String theOtherString = (String) aOtherObject;
         if (!(theOtherString.length() == data.length)) {
             return false;
         }
-        byte[] theOtherData = theOtherString.getBytes();
+        final byte[] theOtherData = theOtherString.getBytes();
         for (int i=0;i<data.length;i++) {
             if (data[i] != theOtherData[i]) {
                 return false;
@@ -104,7 +104,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return true;
     }
 
-    public boolean equalsIgnoreCase(String aOtherObject) {
+    public boolean equalsIgnoreCase(final String aOtherObject) {
         if ((Object) this == aOtherObject) {
             return true;
         }
@@ -115,7 +115,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
             return false;
         }
         for (int i=0;i<data.length;i++) {
-            byte[] theOtherData = ((String)aOtherObject).getBytes();
+            final byte[] theOtherData = ((String)aOtherObject).getBytes();
             if (Character.toLowerCase((char)data[i]) != Character.toLowerCase((char) theOtherData[i])) {
                 return false;
             }
@@ -135,7 +135,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return h;
     }
 
-    public int indexOf(int aChar) {
+    public int indexOf(final int aChar) {
         for (int i=0;i<data.length;i++) {
             if (data[i] == aChar) {
                 return i;
@@ -144,30 +144,30 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return -1;
     }
 
-    public int lastIndexOf(String aValue) {
+    public int lastIndexOf(final String aValue) {
         return -1;
     }
 
-    public String substring(int aStart) {
-        int theLength = data.length - aStart;
-        byte[] theNewData = new byte[theLength];
+    public String substring(final int aStart) {
+        final int theLength = data.length - aStart;
+        final byte[] theNewData = new byte[theLength];
         for (int i=0;i<theLength;i++) {
             theNewData[i] = data[i + aStart];
         }
         return new String(theNewData);
     }
 
-    public String substring(int aStart, int aEnd) {
-        int theLength = aEnd - aStart;
-        byte[] theNewData = new byte[theLength];
+    public String substring(final int aStart, final int aEnd) {
+        final int theLength = aEnd - aStart;
+        final byte[] theNewData = new byte[theLength];
         for (int i=0;i<theLength;i++) {
             theNewData[i] = data[i + aStart];
         }
         return new String(theNewData);
     }
 
-    public String replace(char aOldChar, char aNewChar) {
-        byte[] theNewData = new byte[data.length];
+    public String replace(final char aOldChar, final char aNewChar) {
+        final byte[] theNewData = new byte[data.length];
         for (int i=0;i<data.length;i++) {
             byte theData = data[i];
             if (theData == aOldChar) {
@@ -179,30 +179,68 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public char[] toCharArray() {
-        char[] theResult = new char[data.length];
+        final char[] theResult = new char[data.length];
         for (int i=0;i<data.length;i++) {
             theResult[i] = (char) data[i];
         }
         return theResult;
     }
 
-    public static String valueOf(Object obj) {
+    public static String valueOf(final Object obj) {
         return (obj == null) ? "null" : obj.toString();
     }
 
-    public static String valueOf(int aValue) {
+    public static String valueOf(final int aValue) {
         return Integer.toString(aValue);
     }
 
-    public static String valueOf(double aValue) {
+    public static String valueOf(final double aValue) {
         return Double.toString(aValue);
     }
 
-    public static String valueOf(char aValue) {
+    public static String valueOf(final char aValue) {
         return new String(new byte[] {(byte) aValue});
     }
 
-    public static String format(String aPattern, Object[] aValues) {
+    public static String format(final String aPattern, final Object[] aValues) {
         return aPattern;
+    }
+
+    public String trim() {
+        int len = data.length;
+        int st = 0;
+        while ((st < len) && ((data[st] == ' '))) {
+            st++;
+        }
+        while ((st < len) && ((data[len - 1] == ' '))) {
+            len--;
+        }
+        if (st > 0 || len < data.length) {
+            final char[] newData = new char[len - st];
+            for (int i=0;i<len-st;i++) {
+                newData[i] = (char) data[st + i];
+            }
+            return new String(newData);
+        }
+        final Object t = (this);
+        return (String) t;
+    }
+
+    public boolean startsWith(final String aOtherString) {
+        final int len = length();
+        final int otherlength = aOtherString.length();
+        if (otherlength == 0) {
+            return false;
+        }
+        if (len < otherlength) {
+            return false;
+        }
+        final byte[] theOtherData = aOtherString.getBytes();
+        for (int i=0;i<otherlength;i++) {
+            if (theOtherData[i] != data[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }
