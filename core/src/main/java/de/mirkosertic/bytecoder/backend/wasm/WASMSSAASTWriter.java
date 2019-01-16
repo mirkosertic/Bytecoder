@@ -198,7 +198,7 @@ public class WASMSSAASTWriter {
 
     private WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Variable> aStackVariables, boolean aLabelRequired) {
+            final List<Variable> aStackVariables, final boolean aLabelRequired) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -1376,9 +1376,9 @@ public class WASMSSAASTWriter {
         stackEnter();
         writeReloopedInternal(aBlock);
 
-        List<WASMExpression> theExpressions = container.getChildren();
+        final List<WASMExpression> theExpressions = container.getChildren();
         if (!theExpressions.isEmpty()) {
-            WASMExpression theLast = theExpressions.get(theExpressions.size() - 1);
+            final WASMExpression theLast = theExpressions.get(theExpressions.size() - 1);
             if (theLast instanceof Return || theLast instanceof ReturnValue ||
                     theLast instanceof Unreachable) {
                 // Does not make sense to add an unreachable
@@ -1418,7 +1418,7 @@ public class WASMSSAASTWriter {
         final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException() && compileOptions.isEnableExceptions();
         if (canThrowExeption) {
             theWriter = Try(aSimpleBlock.label().name());
-            theWriter.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+            theWriter.writeExpressionList(aSimpleBlock.expressions());
 
             final Try theTry = (Try) theWriter.container;
 
@@ -1428,7 +1428,7 @@ public class WASMSSAASTWriter {
                 theWriter = block(aSimpleBlock.label().name());
             }
 
-            theWriter.writeExpressionList(aSimpleBlock.internalLabel().getExpressions());
+            theWriter.writeExpressionList(aSimpleBlock.expressions());
         }
 
         writeReloopedInternal(aSimpleBlock.next());

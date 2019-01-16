@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,8 +27,8 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
     private final ExpressionList defaultExpressions;
     private final Map<Long, ExpressionList> offsets;
 
-    public TableSwitchExpression(Value aValue, long aLowValue, long aHighValue,
-            ExpressionList aDefaultPath, Map<Long, ExpressionList> aPathPerOffset) {
+    public TableSwitchExpression(final Value aValue, final long aLowValue, final long aHighValue,
+            final ExpressionList aDefaultPath, final Map<Long, ExpressionList> aPathPerOffset) {
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
@@ -53,9 +54,19 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
 
     @Override
     public Set<ExpressionList> getExpressionLists() {
-        Set<ExpressionList> theResult = new HashSet<>();
+        final Set<ExpressionList> theResult = new HashSet<>();
         theResult.add(defaultExpressions);
         theResult.addAll(offsets.values());
         return theResult;
+    }
+
+    @Override
+    public Expression deepCopy() {
+        final Map<Long, ExpressionList> theHandler = new HashMap<>();
+        for (final Map.Entry<Long, ExpressionList> theEntry : offsets.entrySet()) {
+            theHandler.put(theEntry.getKey(), theEntry.getValue().deepCopy());
+        }
+        return new TableSwitchExpression(incomingDataFlows().get(0),
+                lowValue, highValue, defaultExpressions.deepCopy(), theHandler);
     }
 }
