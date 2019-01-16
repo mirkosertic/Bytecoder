@@ -19,33 +19,37 @@ import java.lang.reflect.Array;
 
 public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGenericInvoke {
 
-    public BytecodeInstructionINVOKEVIRTUAL(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINVOKEVIRTUAL(final BytecodeOpcodeAddress aOpcodeIndex, final int aIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex, aIndex, aConstantPool);
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
-        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
+        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 
-        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
-        BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
-        String theClassName = theConstant.stringValue();
+        final BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
+        final String theClassName = theConstant.stringValue();
         if (theClassName.startsWith("[")) {
 
-            BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
-            BytecodeTypeRef theSingleType = theTypes[0];
+            final BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
+            final BytecodeTypeRef theSingleType = theTypes[0];
             aLinkerContext.resolveTypeRef(theSingleType);
 
             // We are linking an Array here, so mark the corresponding name
-            BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
-            aLinkerContext.resolveClass(theTypeRef).resolveVirtualMethod(theName.stringValue(), theSig);
+            final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
+            if (!aLinkerContext.resolveClass(theTypeRef).resolveVirtualMethod(theName.stringValue(), theSig)) {
+                //throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
+            }
         } else {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant))
-                    .resolveVirtualMethod(theName.stringValue(), theSig);
+            if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant))
+                    .resolveVirtualMethod(theName.stringValue(), theSig)) {
+                //throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
+            }
         }
     }
 }

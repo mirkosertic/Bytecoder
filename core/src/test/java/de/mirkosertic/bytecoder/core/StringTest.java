@@ -30,42 +30,55 @@ public class StringTest {
 
     @Test
     public void testLength() {
-        String theTest = getString();
+        final String theTest = getString();
         Assert.assertEquals(3, theTest.length(), 0);
     }
 
     @Test
     public void testStringArrayClone() {
-        String theNewString = new String(getString().getBytes());
+        final String theNewString = new String(getString().getBytes());
         Assert.assertEquals(3, theNewString.length(), 0);
     }
 
     @Test
     public void testConcatenation() {
-        String theTest = getString();
-        String theTest2 = theTest + "456";
-        int theLength = theTest2.length();
+        final String theTest = getString();
+        final String theTest2 = theTest + "456";
+        final int theLength = theTest2.length();
         Assert.assertEquals(6, theTest2.length(), 0);
     }
 
     @Test
     public void testEquals() {
-        String theString1  = getString() + "456";
-        String theString2  = getString() + "456";
+        final String theString1  = getString() + "456";
+        final String theString2  = getString() + "456";
         Assert.assertEquals(theString1, theString2);
     }
 
     @Test
     public void testStringBuilder() {
-        StringBuilder theBuilder = new StringBuilder();
-        String theResult = theBuilder.toString();
+        final StringBuilder theBuilder = new StringBuilder();
+        final String theResult = theBuilder.toString();
         Assert.assertEquals(theResult.length(), 0, 0);
     }
 
+    @Test
     public void testStringBuilderAppend() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(new String("123".getBytes()));
-        String theResult = theBuilder.toString();
+        final String theResult = theBuilder.toString();
         Assert.assertEquals(theResult.length(), 3, 0);
+    }
+
+    @Test
+    public void testTrim() {
+        Assert.assertEquals("test", "test".trim());
+        Assert.assertEquals("test", " test".trim());
+        Assert.assertEquals("test", " test ".trim());
+        Assert.assertEquals("test", "test ".trim());
+        Assert.assertEquals("1", "1 ".trim());
+        Assert.assertEquals("1", " 1".trim());
+        Assert.assertEquals("1", "  1 ".trim());
+        Assert.assertEquals(1, "  1 ".trim().length(), 0);
     }
 }
