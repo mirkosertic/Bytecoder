@@ -36,6 +36,8 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
  [JBox2D Demo compiled from Kotlin to JavaScript](https://www.mirkosertic.de/examples/jbox2d/index-kotlin.html)  |  
  [JBox2D Demo compiled from Kotlin to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/indexwasm-kotlin.html) |
  [vue.js integration Demo compiled to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/vuewasm.html) |
+ [Lua4J Demo compiled to JavaScript](https://www.mirkosertic.de/examples/jbox2d/luajs.html) |
+ [Lua4J Demo compiled to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/luawasm.html) |
 
 ## User Manual
 
