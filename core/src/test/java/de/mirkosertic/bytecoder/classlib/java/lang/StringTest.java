@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,8 +29,8 @@ public class StringTest {
 
     @Test
     public void testString() {
-        String lala = "Mirko";
-        byte[] theData = lala.getBytes();
+        final String lala = "Mirko";
+        final byte[] theData = lala.getBytes();
         assertEquals(5, theData.length, 0);
     }
 
@@ -58,5 +59,15 @@ public class StringTest {
     @Test
     public void testLength() {
         assertEquals(10, "0123456789".length(), 0);
+    }
+
+    @Test
+    public void testArrayCreate() {
+        final char[] data = new char[10];
+        data[0] = '1';
+        data[1] = '2';
+        data[3] = '\u0000';
+        final String theString = new String(data, 0, 3);
+        assertEquals("12", theString.trim());
     }
 }

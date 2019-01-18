@@ -244,6 +244,13 @@ public class WASMSSAASTWriter {
         return false;
     }
 
+    private BytecodeResolvedFields.FieldEntry implementingClassForStaticField(final BytecodeObjectTypeRef aClass, final String aFieldName) {
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass);
+        final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
+        final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aFieldName);
+        return theField;
+    }
+
     private int stackOffsetFor(final Variable aVariable) {
         int theStart = 0;
         for (final Variable theVariable : stackVariables) {
@@ -470,12 +477,15 @@ public class WASMSSAASTWriter {
 
     private void generatePutStaticExpression(final PutStaticExpression aExpression) {
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
-        final int theMemoryOffset = theLayout.offsetForClassMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()),
+                aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
+        final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final List<Value> theIncomingData = aExpression.incomingDataFlows();
 
-        final String theClassName = WASMWriterUtils.toClassName(aExpression.getField().getClassIndex().getClassConstant());
+        final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
         final Global theGlobal = module.globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
         switch (theIncomingData.get(0).resolveType().resolve()) {
             case DOUBLE:
@@ -1095,20 +1105,16 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue getStaticValue(final GetStaticExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
-        final int theMemoryOffset = theLayout.offsetForClassMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-        final String theFieldName = aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
-        final BytecodeResolvedFields.FieldEntry theField = theStaticFields.fieldByName(theFieldName);
-        if (!theField.getValue().getAccessFlags().isStatic()) {
-            throw new IllegalStateException("Field " + theFieldName + " is not static!");
-        }
+        final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()),
+                aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        final String theClassName = WASMWriterUtils.toClassName(aValue.getField().getClassIndex().getClassConstant());
+        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
+        final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
+
+        final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
         final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
-        switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
+        switch (TypeRef.toType(theEntry.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT: {
                 return f32.load(theMemoryOffset, getGlobal(theRuntimeClass));

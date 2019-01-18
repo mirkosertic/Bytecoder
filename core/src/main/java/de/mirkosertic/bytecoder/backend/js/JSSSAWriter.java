@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
@@ -352,7 +353,7 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(final CurrentExceptionExpression aValue) {
-        print("CURRENTEXCEPTION");
+        print("CURRENTEXCEPTION.exception");
     }
 
     private void print(final MethodParameterValue aValue) {
@@ -969,7 +970,10 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void printStaticFieldReference(final BytecodeFieldRefConstant aField) {
-        print(JSWriterUtils.toClassName(aField.getClassIndex().getClassConstant()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
+        final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
+        final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        print(JSWriterUtils.toClassName(theField.getProvidingClass().getClassName()));
         print(".");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
@@ -1035,9 +1039,9 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else if (theExpression instanceof ThrowExpression) {
                 final ThrowExpression theE = (ThrowExpression) theExpression;
                 final Value theValue = theE.incomingDataFlows().get(0);
-                print("throw ");
+                print("throw {exception :");
                 print(theValue);
-                println(";");
+                println(", stack : new Error().stack};");
             } else if (theExpression instanceof InvokeVirtualMethodExpression) {
                 final InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
                 print(theE);
@@ -1317,7 +1321,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                     theGuard.print(" || ");
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
-                theGuard.print("CURRENTEXCEPTION.instanceOf(");
+                theGuard.print("CURRENTEXCEPTION.exception.instanceOf(");
                 theGuard.print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
                 theGuard.print(")");
                 first = false;

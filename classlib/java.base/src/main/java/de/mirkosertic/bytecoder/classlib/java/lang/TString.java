@@ -209,10 +209,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
     public String trim() {
         int len = data.length;
         int st = 0;
-        while ((st < len) && ((data[st] == ' '))) {
+        while ((st < len) && ((data[st] == ' ' || data[st] == '\u0000'))) {
             st++;
         }
-        while ((st < len) && ((data[len - 1] == ' '))) {
+        while ((st < len) && ((data[len - 1] == ' ' || data[len - 1] == '\u0000'))) {
             len--;
         }
         if (st > 0 || len < data.length) {

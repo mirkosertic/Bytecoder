@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.complex;
 
-import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.luaj.vm2.Globals;
@@ -26,16 +25,41 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.compiler.LuaC;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@JSAndWASMOnly
 public class LuaTest {
 
     @Test
-    public void testLua() {
-        System.out.println("Testing lua!");
+    public void testLuaReturnString() {
         final Globals theGlobals = new Globals();
         LuaC.install(theGlobals);
         final LuaValue chunk = theGlobals.load("return 'hello, world'");
         final LuaString theResult = chunk.call().strvalue();
-        Window.window().document().title(theResult.tojstring());
+        Assert.assertEquals("hello, world", theResult.tojstring());
+    }
+
+    @Test
+    public void testLuaReturnInteger() {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        final LuaValue chunk = theGlobals.load("return 123");
+        final LuaString theResult = chunk.call().strvalue();
+        Assert.assertEquals("123", theResult.tojstring());
+    }
+
+    @Test
+    public void testLuaReturnIntegerAdd() {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        final LuaValue chunk = theGlobals.load("return 123 + 231");
+        final LuaString theResult = chunk.call().strvalue();
+        Assert.assertEquals("354", theResult.tojstring());
+    }
+
+    @Test
+    public void testLuaFunction() {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        final LuaValue chunk = theGlobals.load("function add(a,b)\nreturn a+b\nend\nreturn add(1,2)");
+        final LuaString theResult = chunk.call().strvalue();
+        Assert.assertEquals("3", theResult.tojstring());
     }
 }

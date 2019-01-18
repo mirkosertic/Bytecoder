@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import java.text.DecimalFormatSymbols;
-
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+import java.text.DecimalFormatSymbols;
 
 @SubstitutesInClass(completeReplace = true)
 public class TStringBuilder {
@@ -30,8 +30,8 @@ public class TStringBuilder {
         byteData = new byte[0];
     }
 
-    public TStringBuilder(String aOtherString) {
-        byte[] other = aOtherString.getBytes();
+    public TStringBuilder(final String aOtherString) {
+        final byte[] other = aOtherString.getBytes();
         byteData = new byte[other.length];
         for (int i=0;i<other.length;i++) {
             byteData[i] = other[i];
@@ -72,12 +72,20 @@ public class TStringBuilder {
     }
 
     public TStringBuilder append(final CharSequence aCharSequence) {
+        if (aCharSequence == null) {
+            internalAdd("null".getBytes());
+            return this;
+        }
         final byte[] theOtherData = ((TString) aCharSequence).getBytes();
         internalAdd(theOtherData);
         return this;
     }
 
     public TStringBuilder append(final String aString) {
+        if (aString == null) {
+            internalAdd("null".getBytes());
+            return this;
+        }
         final byte[] theOtherData = aString.getBytes();
         internalAdd(theOtherData);
         return this;

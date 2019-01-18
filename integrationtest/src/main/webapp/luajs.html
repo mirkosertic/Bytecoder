@@ -4,8 +4,15 @@
     </head>
     <body>
         <h1>Bytecoder Lua Demo</h1>
+        <p>See Lua4J compiled to JavaScript in action!</p>
         <div class="codingarea">
-            <textarea id="luainput" rows="20" cols="10">return 'hello, world'</textarea>
+            <h2>Lua Code</h2>
+            <textarea id="luainput" rows="10" cols="10">function add(a,b)
+    return a+b
+end
+
+return add(1,2)</textarea>
+            <h2>Respose</h2>
             <pre id="luaoutput">
 Run Lua to see the output!
             </pre>

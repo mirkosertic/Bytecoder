@@ -188,19 +188,17 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theCodeWriter.println("console.log(\"Starting test\");");
             theCodeWriter.println("bytecoder.bootstrap();");
             theCodeWriter.println("var theTestInstance = new " + theCompileTarget.toClassName(theTypeRef) + ".Create();");
-            theCodeWriter.println("theTestInstance." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
-            theCodeWriter.println("var theLastException = " + theCompileTarget.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(
-                    ExceptionManager.class)) + "." + theCompileTarget.toMethodName("lastExceptionOrNull", theGetLastExceptionSignature) + "();");
-            theCodeWriter.println("if (theLastException) {");
-            theCodeWriter.println("var theStringData = theLastException.message.data.data;");
-            theCodeWriter.println("   var theMessage = \"\";");
-            theCodeWriter.println("   for (var i=0;i<theStringData.length;i++) {");
-            theCodeWriter.println("     theMessage += String.fromCharCode(theStringData[i]);");
-            theCodeWriter.println("   }");
-            theCodeWriter.println("   console.log(\"Test finished with exception. Message = \" + theMessage);");
-            theCodeWriter.println("  throw theLastException;");
+            theCodeWriter.println("try {");
+            theCodeWriter.println("     theTestInstance." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
+            theCodeWriter.println("     console.log(\"Test finished OK\");");
+            theCodeWriter.println("} catch (e) {");
+            theCodeWriter.println("     if (e.exception) {");
+            theCodeWriter.println("         console.log(\"Test finished with exception. Message = \" + bytecoder.toJSString(e.exception.message));");
+            theCodeWriter.println("     } else {");
+            theCodeWriter.println("         console.log(\"Test finished with exception.\");");
+            theCodeWriter.println("     }");
+            theCodeWriter.println("     console.log(e.stack);");
             theCodeWriter.println("}");
-            theCodeWriter.println("console.log(\"Test finished OK\");");
 
             theCodeWriter.flush();
 
