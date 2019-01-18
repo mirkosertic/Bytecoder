@@ -169,7 +169,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             if (theDebugInfos != null) {
                 final BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(BytecodeOpcodeAddress.START_AT_ZERO, theCurrentIndex);
                 if (theEntry != null) {
-                    final String theVariableName = theDebugInfos.resolveVariableName(theEntry);
+                    final String theVariableName = "_" + theDebugInfos.resolveVariableName(theEntry);
                     theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theVariableName, theType));
                 } else {
                     theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theType));

@@ -404,25 +404,27 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("    Create : function() {");
                 theInstanceFields.streamForInstanceFields().forEach(
                         aFieldEntry -> {
-                            final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
-                            if (theFieldType.isPrimitive()) {
-                                final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
-                                if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                    theWriter.print("        this.");
-                                    theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                    theWriter.print(" = false; // declared in ");
-                                    theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                            if (aFieldEntry.getProvidingClass() == theLinkedClass) {
+                                final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
+                                if (theFieldType.isPrimitive()) {
+                                    final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
+                                    if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
+                                        theWriter.print("        this.");
+                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                        theWriter.print(" = false; // declared in ");
+                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                                    } else {
+                                        theWriter.print("        this.");
+                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                        theWriter.print(" = 0; // declared in ");
+                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
+                                    }
                                 } else {
                                     theWriter.print("        this.");
                                     theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                    theWriter.print(" = 0; // declared in ");
+                                    theWriter.print(" = null; // declared in ");
                                     theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                                 }
-                            } else {
-                                theWriter.print("        this.");
-                                theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                theWriter.print(" = null; // declared in ");
-                                theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                             }
                         });
                 theWriter.println("    },");

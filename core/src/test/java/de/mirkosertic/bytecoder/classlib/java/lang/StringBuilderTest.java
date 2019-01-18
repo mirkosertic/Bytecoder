@@ -26,64 +26,73 @@ public class StringBuilderTest {
 
     @Test
     public void testEmpty() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         assertEquals(0, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendString() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append("Hello");
         assertEquals(5, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendObject() {
-        StringBuilder theBuilder = new StringBuilder();
-        Object theValue = new Integer(10);
+        final StringBuilder theBuilder = new StringBuilder();
+        final Object theValue = new Integer(10);
         theBuilder.append(theValue);
         assertEquals(2, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendInteger() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123);
         assertEquals(3, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendNegativeInteger() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(-123);
         assertEquals(4, theBuilder.length(), 0);
     }
 
     @Test
     public void testAppendFloat() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123.123f);
         assertEquals("123.123", theBuilder.toString());
     }
 
     @Test
     public void testAppendNegativeFloat() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(-123.123f);
         assertEquals("-123.123", theBuilder.toString());
     }
 
     @Test
     public void testAppendDouble() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123.123d);
         assertEquals("123.123", theBuilder.toString());
     }
 
     @Test
     public void testAppendNegativeDouble() {
-        StringBuilder theBuilder = new StringBuilder();
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(-123.123d);
         assertEquals("-123.123", theBuilder.toString());
+    }
+
+    @Test
+    public void testAppendChar() {
+        final StringBuilder theBuilder = new StringBuilder();
+        theBuilder.append('1');
+        assertEquals("1", theBuilder.toString());
+        theBuilder.append("");
+        assertEquals("1", theBuilder.toString());
     }
 }
