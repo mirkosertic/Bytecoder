@@ -20,8 +20,8 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 public interface ClickEvent extends Event {
 
     @OpaqueProperty
-    int clientX();
+    float clientX();
 
     @OpaqueProperty
-    int clientY();
+    float clientY();
 }
