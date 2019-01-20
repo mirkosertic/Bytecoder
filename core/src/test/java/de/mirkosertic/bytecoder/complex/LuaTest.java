@@ -20,8 +20,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.Varargs;
 import org.luaj.vm2.compiler.LuaC;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -61,5 +63,15 @@ public class LuaTest {
         final LuaValue chunk = theGlobals.load("function add(a,b)\nreturn a+b\nend\nreturn add(1,2)");
         final LuaString theResult = chunk.call().strvalue();
         Assert.assertEquals("3", theResult.tojstring());
+    }
+
+    @Test
+    public void testVarArgs() {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        Varargs theArguments = LuaValue.varargsOf(new LuaValue[]{
+                LuaInteger.valueOf(100),
+                LuaInteger.valueOf(200)
+        });
     }
 }
