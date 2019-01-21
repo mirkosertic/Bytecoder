@@ -385,6 +385,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final ClassReferenceValue aValue) {
         print(JSWriterUtils.toClassName(aValue.getType()));
+        print(".init()");
     }
 
     private void print(final InstanceOfExpression aValue) {
@@ -751,7 +752,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         } else {
 
             print(JSWriterUtils.toClassName(aValue.getClassName()));
-            print(".");
+            print(".init().");
             print(JSWriterUtils.toMethodName(theMethodName, theSignature));
             print("(");
 
@@ -974,7 +975,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         print(JSWriterUtils.toClassName(theField.getProvidingClass().getClassName()));
-        print(".");
+        print(".init().");
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
