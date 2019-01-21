@@ -283,7 +283,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final ExportableFunction classGetName = module.getFunctions().newFunction("jlClass_jlStringgetName", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
-            List<WASMValue> theGetArguments = new ArrayList<>();
+            final List<WASMValue> theGetArguments = new ArrayList<>();
             theGetArguments.add(i32.load(16, getLocal(classGetName.localByLabel("thisRef"))));
             classGetName.flow.ret(call(weakFunctionReference("STRINGPOOL_GLOBAL_BY_INDEX"), theGetArguments));
         }
@@ -361,9 +361,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 return;
             }
 
-            // Create a class init check function first
             final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
-            module.getFunctions().newFunction(theClassName + "__classinitcheck", Collections.emptyList());
 
             // We also create a global for the runtime class
             final Global runtimeClass = module.getGlobals().newMutableGlobal(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX, PrimitiveType.i32, i32.c(-1));
@@ -645,22 +643,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     throw new IllegalStateException("Error relooping cfg for " + aMethodMapEntry.getProvidingClass().getBytecodeClass().getThisInfo().getConstant().stringValue() + "." + theMethod.getName().stringValue() + " " + theMethod.getSignature() , e);
                 }
             });
-
-            final ExportableFunction initFunction = module.functionIndex().firstByLabel(theClassName + "__classinitcheck");
-            final Global initGlobal = module.globalsIndex().globalByLabel(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
-            final Iff check = initFunction.flow.iff("check", i32.ne(i32.load(8, getGlobal(initGlobal)), i32.c(1)));
-            check.flow.i32.store(8, getGlobal(initGlobal), i32.c(1));
-
-            for (final BytecodeObjectTypeRef theRef : theStaticReferences) {
-                if (!Objects.equals(theRef, aEntry.edgeType().objectTypeRef())) {
-                    final Function theOtherInit = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theRef) + "__classinitcheck");
-                    check.flow.voidCall(theOtherInit, Collections.emptyList());
-                }
-            }
-
-            if (theLinkedClass.hasClassInitializer()) {
-                check.flow.voidCall(module.functionIndex().firstByLabel(theClassName + "_VOIDclinit"), Collections.singletonList(i32.c(-1)));
-            }
         });
 
         // Render callsites
@@ -841,8 +823,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 } else {
                     initArguments.add(i32.c(-1));
                 }
-                StringValue theName = new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name()));
-                Global theGlobal = theResolver.globalForStringFromPool(theName);
+                final StringValue theName = new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name()));
+                final Global theGlobal = theResolver.globalForStringFromPool(theName);
                 initArguments.add(i32.c(theConstantPool.register(theName)));
 
                 bootstrap.flow.setGlobal(runtimeClassGlobal,
@@ -869,7 +851,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final List<WASMValue> theMallocArguments = new ArrayList<>();
                 theMallocArguments.add(i32.c(0));
                 theMallocArguments.add(i32.c(theDataBytes.length));
-                theMallocArguments.add(getGlobal(module.globalsIndex().globalByLabel(WASMWriterUtils.toClassName(theArrayClass.getClassName())+ WASMSSAASTWriter.RUNTIMECLASSSUFFIX)));
+                theMallocArguments.add(call(weakFunctionReference(WASMWriterUtils.toClassName(theArrayClass.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX), Collections.emptyList()));
                 final Function theVtableFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theArrayClass.getClassName())+ WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
                 theMallocArguments.add(i32.c(module.getTables().funcTable().indexOf(theVtableFunction)));
                 bootstrap.flow.setGlobal(theStringPoolData, call(module.functionIndex().firstByLabel(theMethodName), theMallocArguments));
@@ -892,11 +874,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool), getGlobal(theStringPoolData)));
             }
 
-            ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX", Arrays.asList(param("index", PrimitiveType.i32)), PrimitiveType.i32);
+            final ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX", Arrays.asList(param("index", PrimitiveType.i32)), PrimitiveType.i32);
             {
                 for (int i=0;i<thePoolValues.size();i++) {
                     final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
-                    Iff theIff = theGet.flow.iff("g" + i, i32.eq(getLocal(theGet.localByLabel("index")), i32.c(i)));
+                    final Iff theIff = theGet.flow.iff("g" + i, i32.eq(getLocal(theGet.localByLabel("index")), i32.c(i)));
                     theIff.flow.ret(getGlobal(theStringPool));
                 }
                 theGet.flow.unreachable();
@@ -910,8 +892,26 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                    final Function classInitCheckFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()) + "__classinitcheck");
-                    bootstrap.flow.voidCall(classInitCheckFunction, Collections.emptyList());
+
+                    final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+                    final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
+                    final Global theGlobal = module.globalsIndex().globalByLabel(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
+                    final ExportableFunction theClassInitFunction = module.getFunctions().newFunction( theClassName + WASMSSAASTWriter.CLASSINITSUFFIX, PrimitiveType.i32);
+
+                    final Iff check = theClassInitFunction.flow.iff("check", i32.ne(i32.load(8, getGlobal(theGlobal)), i32.c(1)));
+                    check.flow.i32.store(8, getGlobal(theGlobal), i32.c(1));
+
+                    if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                        final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
+                        final String theSuperWASMName = WASMWriterUtils.toClassName(theSuper.getClassName());
+                        check.flow.drop(call(weakFunctionReference(theSuperWASMName + WASMSSAASTWriter.CLASSINITSUFFIX), Collections.emptyList()));
+                    }
+
+                    if (aEntry.targetNode().hasClassInitializer()) {
+                        check.flow.voidCall(weakFunctionReference(theClassName + "_VOIDclinit"), Collections.singletonList(i32.c(-1)));
+                    }
+
+                    theClassInitFunction.flow.ret(getGlobal(theGlobal));
                 }
             });
 
@@ -949,8 +949,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         // We need to generate
         aLinkerContext.linkedClasses().map(t -> t.targetNode()).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
 
-            BytecodeResolvedMethods theMethods = t.resolvedMethods();
-            List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(x -> !x.getValue().isConstructor() && !x.getValue().isClassInitializer()
+            final BytecodeResolvedMethods theMethods = t.resolvedMethods();
+            final List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(x -> !x.getValue().isConstructor() && !x.getValue().isClassInitializer()
                     && x.getProvidingClass() == t).map(x -> x.getValue()).collect(Collectors.toList());
 
             if (availableCallbacks.size() > 0) {
@@ -961,28 +961,28 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     + ", expected 1, got " + availableCallbacks.size());
                 }
 
-                BytecodeMethod theDelegateMethod = availableCallbacks.get(0);
+                final BytecodeMethod theDelegateMethod = availableCallbacks.get(0);
 
                 // Now we need to create a delegate method for this
                 final List<PrimitiveType> theSignatureParams = new ArrayList<>();
 
-                List<Param> theArguments = new ArrayList<>();
+                final List<Param> theArguments = new ArrayList<>();
                 theSignatureParams.add(PrimitiveType.i32);
                 theArguments.add(param("target", PrimitiveType.i32));
-                BytecodeTypeRef[] theSignatureArguments = theDelegateMethod.getSignature().getArguments();
+                final BytecodeTypeRef[] theSignatureArguments = theDelegateMethod.getSignature().getArguments();
                 for (int i = 0; i < theSignatureArguments.length; i++) {
-                    PrimitiveType theSignatureType = WASMSSAASTWriter.toType(TypeRef.toType(theSignatureArguments[i]));
+                    final PrimitiveType theSignatureType = WASMSSAASTWriter.toType(TypeRef.toType(theSignatureArguments[i]));
                     theArguments.add(param("param" + i, theSignatureType));
                     theSignatureParams.add(theSignatureType);
                 }
 
-                WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
+                final WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
 
-                BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
+                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
 
-                String theFunctionName = WASMWriterUtils
+                final String theFunctionName = WASMWriterUtils
                         .toMethodName(t.getClassName(), theDelegateMethod.getName(), theDelegateMethod.getSignature());
-                ExportableFunction theFunction = module.getFunctions().newFunction(theFunctionName, theArguments);
+                final ExportableFunction theFunction = module.getFunctions().newFunction(theFunctionName, theArguments);
 
                 final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
                 final List<WASMValue> theResolveArgument = new ArrayList<>();
@@ -990,7 +990,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));
                 final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theFunction.localByLabel("target"))));
 
-                List<WASMValue> theOtherArguments = new ArrayList<>();
+                final List<WASMValue> theOtherArguments = new ArrayList<>();
                 theOtherArguments.add(getLocal(theFunction.localByLabel("target")));
                 for (int i = 0; i < theSignatureArguments.length; i++) {
                     theOtherArguments.add(getLocal(theFunction.localByLabel("param" + i)));
@@ -1316,7 +1316,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 theWriter.print(",");
                             }
 
-                            BytecodeTypeRef theRef = theSignature.getArguments()[i];
+                            final BytecodeTypeRef theRef = theSignature.getArguments()[i];
                             if (theRef.isPrimitive()) {
                                 theWriter.print("arg");
                                 theWriter.print(i);
@@ -1335,11 +1335,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     theWriter.print(")");
                                 } else if (theLinkedClass.isCallback()) {
 
-                                    List<BytecodeMethod> theCallbackMethods = theLinkedClass.resolvedMethods().stream().filter(x -> x.getProvidingClass() == theLinkedClass).map(x -> x.getValue()).collect(Collectors.toList());
+                                    final List<BytecodeMethod> theCallbackMethods = theLinkedClass.resolvedMethods().stream().filter(x -> x.getProvidingClass() == theLinkedClass).map(x -> x.getValue()).collect(Collectors.toList());
                                     if (theCallbackMethods.size() != 1) {
                                         throw new IllegalStateException("Wrong number of callback methods in " + theLinkedClass.getClassName().name() + ", expected 1, got " + theCallbackMethods.size());
                                     }
-                                    BytecodeMethod theImpl = theCallbackMethods.get(0);
+                                    final BytecodeMethod theImpl = theCallbackMethods.get(0);
 
                                     theWriter.print("function (");
                                     for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
@@ -1356,7 +1356,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         theWriter.print(j);
                                         theWriter.print("=");
 
-                                        BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
+                                        final BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
 
                                         if (theTypeRef.isPrimitive()) {
                                             theWriter.print("farg");
@@ -1383,7 +1383,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         theWriter.print(";");
                                     }
 
-                                    String theCallbackMethod = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theImpl.getName(), theImpl.getSignature());
+                                    final String theCallbackMethod = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theImpl.getName(), theImpl.getSignature());
                                     theWriter.print("bytecoder.exports.");
                                     theWriter.print(theCallbackMethod);
                                     theWriter.print("(arg");
@@ -1398,14 +1398,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     theWriter.print(");");
 
                                     for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
-                                        BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
+                                        final BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
 
                                         if (theTypeRef.isPrimitive()) {
                                             // Nothing to clean up
                                         } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
                                             // Nothinng to clean up
                                         } else {
-                                            BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef);
+                                            final BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef);
                                             if (theLinkedType.isEvent()) {
                                                 // Cleanup object reference
                                                 theWriter.print("delete bytecoder.referenceTable[marg");

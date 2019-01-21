@@ -48,6 +48,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Unreachable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMExpression;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -148,6 +149,7 @@ public class WASMSSAASTWriter {
     public static final String RUNTIMECLASSSUFFIX = "__runtimeclass";
     public static final String INSTANCEOFSUFFIX = "__instanceof";
     public static final String EXCEPTION_NAME = "EX";
+    public static final String CLASSINITSUFFIX = "__init";
 
     public interface Resolver {
         Global globalForStringFromPool(StringValue aValue);
@@ -486,15 +488,15 @@ public class WASMSSAASTWriter {
         final List<Value> theIncomingData = aExpression.incomingDataFlows();
 
         final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
-        final Global theGlobal = module.globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
         switch (theIncomingData.get(0).resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                flow.f32.store(theMemoryOffset, getGlobal(theGlobal), toValue(theIncomingData.get(0)));
+                flow.f32.store(theMemoryOffset, call(theClassInit, Collections.emptyList()), toValue(theIncomingData.get(0)));
                 break;
             }
             default: {
-                flow.i32.store(theMemoryOffset, getGlobal(theGlobal), toValue(theIncomingData.get(0)));
+                flow.i32.store(theMemoryOffset, call(theClassInit, Collections.emptyList()), toValue(theIncomingData.get(0)));
                 break;
             }
 
@@ -783,7 +785,7 @@ public class WASMSSAASTWriter {
         }
 
         final String theClassName = WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
         final List<WASMValue> theArguments = new ArrayList<>();
@@ -791,7 +793,7 @@ public class WASMSSAASTWriter {
         for (final Value theDimension : theDimensions) {
             theArguments.add(toValue(theDimension));
         }
-        theArguments.add(getGlobal(theRuntimeClass));
+        theArguments.add(call(theClassInit, Collections.emptyList()));
         theArguments.add(weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX));
 
         return call(theFunction, theArguments);
@@ -816,8 +818,8 @@ public class WASMSSAASTWriter {
 
     private WASMValue classReferenceValue(final ClassReferenceValue aValue) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getType());
-        final String globalName = WASMWriterUtils.toClassName(theLinkedClass.getClassName()) + RUNTIMECLASSSUFFIX;
-        return getGlobal(module.globalsIndex().globalByLabel(globalName));
+        final WeakFunctionReferenceCallable classInit = weakFunctionReference(WASMWriterUtils.toClassName(theLinkedClass.getClassName()) + CLASSINITSUFFIX);
+        return call(classInit, Collections.emptyList());
     }
 
     private WASMValue currentException(final CurrentExceptionExpression aValue) {
@@ -919,10 +921,10 @@ public class WASMSSAASTWriter {
                         Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final String theClassName = WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
-        return call(theFunction, Arrays.asList(i32.c(0), toValue(aValue), getGlobal(theRuntimeClass), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX)));
+        return call(theFunction, Arrays.asList(i32.c(0), toValue(aValue), call(theClassInit, Collections.emptyList()), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX)));
     }
 
     private WASMValue newArrayValue(final NewArrayExpression aValue) {
@@ -1113,14 +1115,14 @@ public class WASMSSAASTWriter {
         final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
-        final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
         switch (TypeRef.toType(theEntry.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT: {
-                return f32.load(theMemoryOffset, getGlobal(theRuntimeClass));
+                return f32.load(theMemoryOffset, call(theClassInit, Collections.emptyList()));
             }
             default: {
-                return i32.load(theMemoryOffset, getGlobal(theRuntimeClass));
+                return i32.load(theMemoryOffset, call(theClassInit, Collections.emptyList()));
             }
         }
     }
@@ -1139,10 +1141,10 @@ public class WASMSSAASTWriter {
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theType);
         final String theClassName = WASMWriterUtils.toClassName(theLinkedClass.getClassName());
-        final Global theRuntimeClass = module.getGlobals().globalsIndex().globalByLabel(theClassName + RUNTIMECLASSSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
-        return call(theFunction, Arrays.asList(i32.c(0), i32.c(theLayout.instanceSize()), getGlobal(theRuntimeClass), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX)));
+        return call(theFunction, Arrays.asList(i32.c(0), i32.c(theLayout.instanceSize()), call(theClassInit, Collections.emptyList()), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX)));
     }
 
     private WASMValue getFieldValue(final GetFieldExpression aValue) {
