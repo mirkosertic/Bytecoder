@@ -243,4 +243,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
         }
         return true;
     }
+
+    public void getChars(final int srcBegin, final int srcEnd, final char[] dst, int dstBegin) {
+        for (int i=srcBegin;i<srcEnd;i++) {
+            dst[dstBegin++]=(char) data[i];
+        }
+    }
 }

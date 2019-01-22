@@ -465,4 +465,9 @@ public class BytecodeLinkedClass extends Node {
                 .map(t -> (BytecodeMethod) t.targetNode())
                 .map(t -> linkerContext.getMethodCollection().identifierFor(t)).anyMatch(t -> Objects.equals(t, aIdentifier));
     }
+
+    @Override
+    public String toString() {
+        return className.name();
+    }
 }

@@ -941,6 +941,11 @@ public class JSSSAWriter extends IndentSSAWriter {
                 return;
             }
         }
+
+        if (!theClasses.stream().filter(t -> t.isOpaqueType()).collect(Collectors.toList()).isEmpty()) {
+            throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
+        }
+
         if (Objects.equals(aValue.getMethodName(), "invokeWithMagicBehindTheScenes")) {
             print("(");
         } else {
