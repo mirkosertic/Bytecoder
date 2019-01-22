@@ -136,6 +136,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class WASMSSAASTWriter {
 
@@ -963,6 +964,10 @@ public class WASMSSAASTWriter {
                 }
                 return call(function, arguments);
             }
+        }
+
+        if (!theClasses.stream().filter(t -> t.isOpaqueType()).collect(Collectors.toList()).isEmpty()) {
+            throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
         final List<PrimitiveType> theSignatureParams = new ArrayList<>();

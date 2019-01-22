@@ -20,11 +20,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.Prototype;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.compiler.LuaC;
+
+import java.io.IOException;
+import java.io.StringReader;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class LuaTest {
@@ -69,9 +74,23 @@ public class LuaTest {
     public void testVarArgs() {
         final Globals theGlobals = new Globals();
         LuaC.install(theGlobals);
-        Varargs theArguments = LuaValue.varargsOf(new LuaValue[]{
+        final Varargs theArguments = LuaValue.varargsOf(new LuaValue[]{
                 LuaInteger.valueOf(100),
                 LuaInteger.valueOf(200)
         });
+    }
+
+    @Test
+    public void testCall() throws IOException {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        final Prototype thePrototype = theGlobals.compilePrototype(new StringReader("function add(a,b)\nreturn a + b\nend"), "script");
+        new LuaClosure(thePrototype, theGlobals).call();
+        final LuaValue theFunction = theGlobals.get("add");
+        final Varargs theArguments = LuaValue.varargsOf(new LuaValue[] {
+                LuaInteger.valueOf(100),
+                LuaInteger.valueOf(200)
+        });
+        theFunction.invoke(theArguments);
     }
 }
