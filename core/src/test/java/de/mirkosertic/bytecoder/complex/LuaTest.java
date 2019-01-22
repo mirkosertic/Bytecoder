@@ -84,13 +84,14 @@ public class LuaTest {
     public void testCall() throws IOException {
         final Globals theGlobals = new Globals();
         LuaC.install(theGlobals);
-        final Prototype thePrototype = theGlobals.compilePrototype(new StringReader("function add(a,b)\nreturn a + b\nend"), "script");
+        final Prototype thePrototype = theGlobals.compilePrototype(new StringReader("function add(a,b) return a + b end"), "script");
         new LuaClosure(thePrototype, theGlobals).call();
         final LuaValue theFunction = theGlobals.get("add");
         final Varargs theArguments = LuaValue.varargsOf(new LuaValue[] {
                 LuaInteger.valueOf(100),
                 LuaInteger.valueOf(200)
         });
-        theFunction.invoke(theArguments);
+        final LuaInteger theResult = (LuaInteger) theFunction.invoke(theArguments);
+        Assert.assertEquals("300", theResult.tojstring());
     }
 }
