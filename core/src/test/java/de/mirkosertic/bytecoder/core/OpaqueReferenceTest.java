@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.web.Console;
 import de.mirkosertic.bytecoder.api.web.Event;
 import de.mirkosertic.bytecoder.api.web.EventListener;
 import de.mirkosertic.bytecoder.api.web.FloatArray;
@@ -22,6 +23,9 @@ import de.mirkosertic.bytecoder.api.web.HTMLDocument;
 import de.mirkosertic.bytecoder.api.web.IntArray;
 import de.mirkosertic.bytecoder.api.web.OpaqueArrays;
 import de.mirkosertic.bytecoder.api.web.OpaqueReferenceArray;
+import de.mirkosertic.bytecoder.api.web.Promise;
+import de.mirkosertic.bytecoder.api.web.Response;
+import de.mirkosertic.bytecoder.api.web.StringPromise;
 import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
@@ -91,5 +95,31 @@ public class OpaqueReferenceTest {
         Window w2 = b.pop();
         Assert.assertEquals(0, b.objectArrayLength(), 0);
         Assert.assertSame(w, w2);
+    }
+
+    @Test
+    public void testFetchAPI() {
+        final Window w = Window.window();
+        final Console c = Console.console();
+        final Object[] fetched = new Object[0];
+        c.log("Fetching");
+        w.fetch("https://httpbin.org/status/200").then(new Promise.Handler<Response>() {
+            @Override
+            public void handleObject(Response aValue) {
+                c.log("Data received");
+                aValue.text().then(new StringPromise.Handler() {
+                    @Override
+                    public void handleString(String aValue) {
+                        c.log("String data is " + aValue);
+                        fetched[0] = "ok";
+                   }
+                });
+            }
+        });
+        c.log("Fetched");
+        int counter = 0;
+        while(fetched[0] == null && counter++ < 1000) {
+            c.log("Waiting");
+        }
     }
 }
