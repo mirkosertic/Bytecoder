@@ -203,7 +203,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         // We need a memory
-        module.getMems().newMemory(512, 512).exportAs("memory");
+        module.getMems().newMemory(aOptions.getWasmMinimumPageSize(), aOptions.getWasmMaximumPageSize()).exportAs("memory");
 
         // Out list of opaque reference methods, which are implemented
         // by JS wrapper functions

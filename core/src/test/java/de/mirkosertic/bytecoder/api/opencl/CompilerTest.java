@@ -78,7 +78,7 @@ public class CompilerTest {
     public void testSimpleKernel() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl");
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512);
 
         final Kernel theKernel = createKernel();
         final Class theKernelClass = theKernel.getClass();
@@ -105,7 +105,7 @@ public class CompilerTest {
     public void testKernelWithComplexType() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl");
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512);
 
         final Float2[] theIn = new Float2[10];
         final Float2[] theOut = new Float2[10];

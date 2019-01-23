@@ -168,7 +168,6 @@ public class MemoryManager {
 
     public static void logException(final Exception e) throws Exception {
         logExceptionText(e.getMessage());
-        throw e;
     }
 
     @Export("free")

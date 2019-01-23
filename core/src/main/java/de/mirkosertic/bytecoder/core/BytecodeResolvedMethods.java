@@ -26,7 +26,7 @@ public class BytecodeResolvedMethods {
         private final BytecodeLinkedClass providingClass;
         private final BytecodeMethod value;
 
-        public MethodEntry(BytecodeLinkedClass aProvidingClass, BytecodeMethod aField) {
+        public MethodEntry(final BytecodeLinkedClass aProvidingClass, final BytecodeMethod aField) {
             providingClass = aProvidingClass;
             value = aField;
         }
@@ -40,12 +40,12 @@ public class BytecodeResolvedMethods {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            MethodEntry that = (MethodEntry) o;
+            final MethodEntry that = (MethodEntry) o;
             return Objects.equals(providingClass, that.providingClass) &&
                     Objects.equals(value, that.value);
         }
@@ -62,16 +62,16 @@ public class BytecodeResolvedMethods {
         entries = new ArrayList<>();
     }
 
-    public void merge(BytecodeResolvedMethods aOtherMethods) {
-        for (MethodEntry theOtherEntry : aOtherMethods.entries) {
+    public void merge(final BytecodeResolvedMethods aOtherMethods) {
+        for (final MethodEntry theOtherEntry : aOtherMethods.entries) {
             if (!entries.contains(theOtherEntry)) {
                 entries.add(theOtherEntry);
             }
         }
     }
 
-    public void register(BytecodeLinkedClass aProvidingClass, BytecodeMethod aMethod) {
-        MethodEntry theNewEntry = new MethodEntry(aProvidingClass, aMethod);
+    public void register(final BytecodeLinkedClass aProvidingClass, final BytecodeMethod aMethod) {
+        final MethodEntry theNewEntry = new MethodEntry(aProvidingClass, aMethod);
         if (!entries.contains(theNewEntry)) {
             entries.add(theNewEntry);
         }
@@ -81,10 +81,10 @@ public class BytecodeResolvedMethods {
         return entries.stream();
     }
 
-    public boolean isImplementedBy(BytecodeMethod aMethod, BytecodeLinkedClass aClass) {
-        for (MethodEntry theEntry : entries) {
+    public boolean isImplementedBy(final BytecodeMethod aMethod, final BytecodeLinkedClass aClass) {
+        for (final MethodEntry theEntry : entries) {
             if (theEntry.getProvidingClass() == aClass) {
-                BytecodeMethod theSourceMethod = theEntry.getValue();
+                final BytecodeMethod theSourceMethod = theEntry.getValue();
                 if (theSourceMethod.getName().stringValue().equals(aMethod.getName().stringValue())) {
                     if (aMethod.getSignature().matchesExactlyTo(theSourceMethod.getSignature())) {
                         return true;
@@ -93,5 +93,16 @@ public class BytecodeResolvedMethods {
             }
         }
         return false;
+    }
+
+    public MethodEntry implementingClassOf(final String aMethodName, final BytecodeMethodSignature aSignature) {
+        for (final MethodEntry theEntry : entries) {
+            final BytecodeMethod theMethod = theEntry.getValue();
+            if (theMethod.getName().stringValue().equals(aMethodName) &&
+             theMethod.getSignature().matchesExactlyTo(aSignature)) {
+                return theEntry;
+            }
+        }
+        throw new IllegalArgumentException("Cannot find method " + aMethodName);
     }
 }
