@@ -970,64 +970,36 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeInstructionINVOKESPECIAL theINS = (BytecodeInstructionINVOKESPECIAL) theInstruction;
                 final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
-                if (theINS.isVirtualCall()) {
+                final List<Value> theArguments = new ArrayList<>();
+                final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
+                for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
+                    theArguments.add(aHelper.pop());
+                }
+                Collections.reverse(theArguments);
 
-                    if (theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE) && "getClass".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
-                        final Value theValue = new TypeOfExpression(aHelper.pop());
-                        final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                        continue;
-                    }
-
-                    final List<Value> theArguments = new ArrayList<>();
-                    final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
-                    for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
-                        theArguments.add(aHelper.pop());
-                    }
-                    Collections.reverse(theArguments);
-
-                    final Value theTarget = aHelper.pop();
-                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
-                    if (theSignature.getReturnType().isVoid()) {
-                        aTargetBlock.getExpressions().add(theExpression);
-                    } else {
-                        final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.toType(theSignature.getReturnType()), theExpression);
-                        aHelper.push(theNewVariable);
-                    }
-
+                final Variable theTarget = (Variable) aHelper.pop();
+                final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef
+                        .fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
+                if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                    theTarget.initializeWith(theArguments.get(0));
+                    aTargetBlock.getExpressions().add(new VariableAssignmentExpression(theTarget, theArguments.get(0)));
                 } else {
-
-                    final List<Value> theArguments = new ArrayList<>();
-                    final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
-                    for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
-                        theArguments.add(aHelper.pop());
-                    }
-                    Collections.reverse(theArguments);
-
-                    final Variable theTarget = (Variable) aHelper.pop();
-                    final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef
-                            .fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                    if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                        theTarget.initializeWith(theArguments.get(0));
-                        aTargetBlock.getExpressions().add(new VariableAssignmentExpression(theTarget, theArguments.get(0)));
+                    final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType()
+                            .getNameIndex().getName().stringValue();
+                    if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE
+                            .matchesExactlyTo(theSignature)) {
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(TypeRef.toType(theSignature.getReturnType()), new TypeOfExpression(theTarget));
+                        aHelper.push(theNewVariable);
                     } else {
-                        final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType()
-                                .getNameIndex().getName().stringValue();
-                        if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE
-                                .matchesExactlyTo(theSignature)) {
-                            final Variable theNewVariable = aTargetBlock
-                                    .newVariable(TypeRef.toType(theSignature.getReturnType()), new TypeOfExpression(theTarget));
-                            aHelper.push(theNewVariable);
+                        final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(theType,
+                                theMethodName, theSignature, theTarget, theArguments);
+                        if (theSignature.getReturnType().isVoid()) {
+                            aTargetBlock.getExpressions().add(theExpression);
                         } else {
-                            final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(theType,
-                                    theMethodName, theSignature, theTarget, theArguments);
-                            if (theSignature.getReturnType().isVoid()) {
-                                aTargetBlock.getExpressions().add(theExpression);
-                            } else {
-                                final Variable theNewVariable = aTargetBlock
-                                        .newVariable(TypeRef.toType(theSignature.getReturnType()), theExpression);
-                                aHelper.push(theNewVariable);
-                            }
+                            final Variable theNewVariable = aTargetBlock
+                                    .newVariable(TypeRef.toType(theSignature.getReturnType()), theExpression);
+                            aHelper.push(theNewVariable);
                         }
                     }
                 }

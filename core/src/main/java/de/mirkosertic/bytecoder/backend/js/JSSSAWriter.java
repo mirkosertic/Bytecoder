@@ -772,7 +772,6 @@ public class JSSSAWriter extends IndentSSAWriter {
     private void print(final DirectInvokeMethodExpression aValue) {
 
         final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
-
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -785,16 +784,22 @@ public class JSSSAWriter extends IndentSSAWriter {
         if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
-
-            if (!"<init>".equals(theMethodName)) {
-                print(theTarget);
-                print(".");
-                print(JSWriterUtils.toMethodName(theMethodName, theSignature));
-            } else {
+            if ("<init>".equals(theMethodName)) {
                 print(JSWriterUtils.toClassName(aValue.getClazz()));
-                print(".");
-                print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            } else {
+                final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+                final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
+                if (theEntry.getValue().getAccessFlags().isAbstract()) {
+                    // Abstract methods are converted to a virtual call
+                    print(theTarget);
+                } else {
+                    // Else we know exactly what methods to invoke
+                    print(JSWriterUtils.toClassName(theEntry.getProvidingClass().getClassName()));
+                }
             }
+            print(".");
+            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+
             print("(");
 
             print(theTarget);

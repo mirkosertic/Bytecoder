@@ -132,6 +132,18 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "bytecoder")
     protected String filenamePrefix;
 
+    /**
+     * Minimum number of pages for WASM memory.
+     */
+    @Parameter(required = false, defaultValue = "512")
+    protected int wasmInitialPages;
+
+    /**
+     * Maximum number of pages for WASM memory.
+     */
+    @Parameter(required = false, defaultValue = "1024")
+    protected int wasmMaximumPages;
+
     @Override
     public void execute() throws MojoExecutionException {
         final File theBaseDirectory = new File(buldDirectory);
@@ -147,7 +159,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix);
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages);
             final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

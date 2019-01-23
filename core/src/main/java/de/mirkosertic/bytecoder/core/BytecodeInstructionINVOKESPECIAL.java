@@ -17,24 +17,21 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGenericInvoke {
 
-    private boolean virtualCall;
-
-    public BytecodeInstructionINVOKESPECIAL(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINVOKESPECIAL(final BytecodeOpcodeAddress aOpcodeIndex, final int aIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex, aIndex, aConstantPool);
-        virtualCall = false;
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
-        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
+        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 
-        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
+        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        final BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
 
-        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-        BytecodeLinkedClass theTarget = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName));
+        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        final BytecodeLinkedClass theTarget = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName));
         if ("<init>".equals(theName.stringValue())) {
             if (!theTarget.resolveConstructorInvocation(theSig)) {
                 throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig + " in class " + theTarget.getClassName().name());
@@ -46,12 +43,7 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
                             "Cannot find private or virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant()
                                     .stringValue() + " with signature " + theSig + " in class " + theTarget.getClassName().name());
                 }
-                virtualCall = true;
             }
         }
-    }
-
-    public boolean isVirtualCall() {
-        return virtualCall;
     }
 }

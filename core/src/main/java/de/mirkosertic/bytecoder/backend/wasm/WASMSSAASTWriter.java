@@ -59,6 +59,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
@@ -1183,13 +1184,81 @@ public class WASMSSAASTWriter {
 
     private WASMExpression directMethodInvokeValue(final DirectInvokeMethodExpression aValue) {
 
-        final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final String theMethodName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
 
         final List<Value> theIncomingData = aValue.incomingDataFlows();
+        final Value theTarget = theIncomingData.get(0);
+        final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
+
+        final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+
+        if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+
+            final List<WASMValue> arguments = new ArrayList<>();
+            arguments.add(toValue(theTarget));
+            for (final Value theValue : theArguments) {
+                arguments.add(toValue(theValue));
+            }
+
+            return call(function, arguments);
+        }
+
+        if ("<init>".equals(theMethodName)) {
+
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+
+            final List<WASMValue> arguments = new ArrayList<>();
+            arguments.add(toValue(theTarget));
+            for (final Value theValue : theArguments) {
+                arguments.add(toValue(theValue));
+            }
+
+            return call(function, arguments);
+        }
+
+        final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+        final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
+        if (theEntry.getValue().getAccessFlags().isAbstract()) {
+            // Abstract methods are converted to a virtual call
+            final List<PrimitiveType> theSignatureParams = new ArrayList<>();
+            theSignatureParams.add(PrimitiveType.i32);
+            for (int i = 0; i < aValue.getSignature().getArguments().length; i++) {
+                final BytecodeTypeRef theParamType = aValue.getSignature().getArguments()[i];
+                theSignatureParams.add(toType(TypeRef.toType(theParamType)));
+            }
+
+            final WASMType theCalledFunction;
+            if (!aValue.getSignature().getReturnType().isVoid()) {
+                theCalledFunction = module.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(aValue.getSignature().getReturnType())));
+            } else {
+                theCalledFunction = module.getTypes().typeFor(theSignatureParams);
+            }
+
+            final List<WASMValue> theWASMArguments = new ArrayList<>();
+            theWASMArguments.add(toValue(theTarget));
+            for (final Value theValue : theArguments) {
+                theWASMArguments.add(toValue(theValue));
+            }
+
+            final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
+            final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+            final List<WASMValue> theResolveArgument = new ArrayList<>();
+            theResolveArgument.add(toValue(theTarget));
+            theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));
+            final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, toValue(theTarget)));
+
+            return call(theCalledFunction, theWASMArguments, theIndex);
+        }
+        final Function function = module.functionIndex().firstByLabel(WASMWriterUtils
+                .toMethodName(theEntry.getProvidingClass().getClassName(),
+                        aValue.getMethodName(), aValue.getSignature()));
 
         final List<WASMValue> arguments = new ArrayList<>();
-        arguments.add(toValue(theIncomingData.get(0)));
-        for (final Value theValue : theIncomingData.subList(1, theIncomingData.size())) {
+        arguments.add(toValue(theTarget));
+        for (final Value theValue : theArguments) {
             arguments.add(toValue(theValue));
         }
 
