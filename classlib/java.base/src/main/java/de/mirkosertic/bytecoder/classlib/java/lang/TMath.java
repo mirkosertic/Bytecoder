@@ -31,21 +31,21 @@ public class TMath {
                 0x1p-63f };
     }
 
-    public static float abs(float a) {
+    public static float abs(final float a) {
         if (a<0) {
             return -a;
         }
         return a;
     }
 
-    public static double abs(double a) {
+    public static double abs(final double a) {
         if (a<0) {
             return -a;
         }
         return a;
     }
 
-    public static int abs(int a) {
+    public static int abs(final int a) {
         if (a<0) {
             return -a;
         }
@@ -55,8 +55,6 @@ public class TMath {
     public static native double sqrt(double aValue);
 
     public static native double ceil(double aValue);
-
-    public static native float getNaN();
 
     public static native double floor(double aValue);
 
@@ -87,9 +85,9 @@ public class TMath {
     public static int getExponent(float f) {
         f = abs(f);
         int exp = 0;
-        float[] exponents = FloatExponents.exponents;
-        float[] negativeExponents = FloatExponents.negativeExponents;
-        float[] negativeExponents2 = FloatExponents.negativeExponents2;
+        final float[] exponents = FloatExponents.exponents;
+        final float[] negativeExponents = FloatExponents.negativeExponents;
+        final float[] negativeExponents2 = FloatExponents.negativeExponents2;
         if (f > 1) {
             int expBit = 1 << (exponents.length - 1);
             for (int i = exponents.length - 1; i >= 0; --i) {

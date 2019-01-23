@@ -21,20 +21,22 @@ import de.mirkosertic.bytecoder.classlib.VM;
 @SubstitutesInClass(completeReplace = true)
 public class TDouble extends Number {
 
+    public static final double NaN = 0.0d / 0.0;
+
     private final double doubleValue;
 
-    public TDouble(double aDoubleValue) {
+    public TDouble(final double aDoubleValue) {
         doubleValue = aDoubleValue;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
 
-        Double aDouble = (Double) o;
+        final Double aDouble = (Double) o;
 
         if (Double.compare(aDouble.doubleValue(), doubleValue) != 0)
             return false;
@@ -77,7 +79,7 @@ public class TDouble extends Number {
         return doubleValue;
     }
 
-    public static int compare(double d1, double d2) {
+    public static int compare(final double d1, final double d2) {
         if(d1 < d2) {
             return -1;
         }
@@ -87,15 +89,15 @@ public class TDouble extends Number {
         return 0;
     }
 
-    public static double parseDouble(String aValue) {
-        int p = aValue.indexOf('.');
+    public static double parseDouble(final String aValue) {
+        final int p = aValue.indexOf('.');
         if (p<0) {
             return VM.stringToLong(aValue);
         }
-        String thePrefix = aValue.substring(0, p);
-        String theSuffix = aValue.substring(p + 1);
-        long theA = VM.stringToLong(thePrefix);
-        long theB = VM.stringToLong(theSuffix);
+        final String thePrefix = aValue.substring(0, p);
+        final String theSuffix = aValue.substring(p + 1);
+        final long theA = VM.stringToLong(thePrefix);
+        final long theB = VM.stringToLong(theSuffix);
         int theMultiplier = 1;
         int theLength = Long.toString(theB).length();
         while(theLength > 0) {
@@ -113,33 +115,33 @@ public class TDouble extends Number {
         return toString(doubleValue);
     }
 
-    public static Double valueOf(String aValue) {
+    public static Double valueOf(final String aValue) {
         return new Double(parseDouble(aValue));
     }
 
-    public static Double valueOf(double aValue) {
+    public static Double valueOf(final double aValue) {
         return new Double(aValue);
     }
 
-    public static boolean isNaN(double aValue) {
-        return aValue == TMath.getNaN();
+    public static boolean isNaN(final double aValue) {
+        return !(aValue == aValue);
     }
 
-    public static String toString(double aValue) {
-        StringBuilder theBuffer = new StringBuilder();
+    public static String toString(final double aValue) {
+        final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
 
-    public static long doubleToLongBits(double aValue) {
+    public static long doubleToLongBits(final double aValue) {
         return 0;
     }
 
-    public static boolean isInfinite(double aValue) {
+    public static boolean isInfinite(final double aValue) {
         return false;
     }
 
-    public static double longBitsToDouble(long aValue) {
+    public static double longBitsToDouble(final long aValue) {
         return 0d;
     }
 }

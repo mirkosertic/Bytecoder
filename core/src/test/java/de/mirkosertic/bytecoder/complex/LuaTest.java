@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaClosure;
+import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
@@ -93,5 +94,27 @@ public class LuaTest {
         });
         final LuaInteger theResult = (LuaInteger) theFunction.invoke(theArguments);
         Assert.assertEquals("300", theResult.tojstring());
+    }
+
+    @Test
+    public void testCallStringResult() throws IOException {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        final Prototype thePrototype = theGlobals.compilePrototype(new StringReader("function add(a,b) return 'hello' end"), "script");
+        new LuaClosure(thePrototype, theGlobals).call();
+        final LuaValue theFunction = theGlobals.get("add");
+        final Varargs theArguments = LuaValue.varargsOf(new LuaValue[] {
+                LuaInteger.valueOf(100),
+                LuaInteger.valueOf(200)
+        });
+        final LuaValue theValue = (LuaValue) theFunction.invoke(theArguments);
+        Assert.assertTrue(theValue.isstring());
+        Assert.assertEquals("hello", theValue.tojstring());
+    }
+
+    @Test
+    public void testLuaError() {
+        final LuaError error = new LuaError("Test");
+        Assert.assertEquals("Test", error.getMessage());
     }
 }

@@ -164,6 +164,13 @@ public class MemoryManager {
         }
     }
 
+    public static native void logExceptionText(String aMessage);
+
+    public static void logException(final Exception e) throws Exception {
+        logExceptionText(e.getMessage());
+        throw e;
+    }
+
     @Export("free")
     public static void free(final Address aPointer) {
 

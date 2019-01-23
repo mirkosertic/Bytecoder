@@ -69,9 +69,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
         theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
 
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Math.class))
-                .resolveStaticMethod("getNaN", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
-
         final StringWriter theStrWriter = new StringWriter();
         final PrintWriter theWriter = new PrintWriter(theStrWriter);
         theWriter.println("'use strict';");
@@ -270,9 +267,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println("             },");
         theWriter.println("             minDOUBLEDOUBLE: function (p1, p2) {");
         theWriter.println("                 return Math.min(p1, p2);");
-        theWriter.println("             },");
-        theWriter.println("             getNaN: function (p1, p2) {");
-        theWriter.println("                 return NaN;");
         theWriter.println("             },");
         theWriter.println("             add: function(p1, p2) {");
         theWriter.println("                 return p1 + p2;");
