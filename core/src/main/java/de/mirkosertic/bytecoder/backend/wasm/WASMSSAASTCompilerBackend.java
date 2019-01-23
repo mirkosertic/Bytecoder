@@ -142,6 +142,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
 
+        theMemoryManagerClass.resolveStaticMethod("logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)}));
+
         theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
         theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
 
@@ -160,9 +162,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         theMemoryManagerClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
-
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Math.class))
-                .resolveStaticMethod("getNaN", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
@@ -874,7 +873,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool), getGlobal(theStringPoolData)));
             }
 
-            final ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX", Arrays.asList(param("index", PrimitiveType.i32)), PrimitiveType.i32);
+            final ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX",
+                    Collections.singletonList(param("index", PrimitiveType.i32)), PrimitiveType.i32);
             {
                 for (int i=0;i<thePoolValues.size();i++) {
                     final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
@@ -1111,6 +1111,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         printstream: {");
             theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller,value);},");
             theWriter.println("         },");
+            theWriter.println("         memorymanager: {");
+            theWriter.println("             logExceptionTextString : function(thisref, p1) {");
+            theWriter.println("                 console.log('Exception with message : ' + bytecoder.toJSString(p1));");
+            theWriter.println("             }");
+            theWriter.println("         },");
             theWriter.println("         opaquearrays : {");
             theWriter.println("             createIntArrayINT: function(thisref, p1) {");
             theWriter.println("                 return bytecoder.toBytecoderReference(new Int32Array(p1));");
@@ -1131,7 +1136,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             roundDOUBLE: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
-            theWriter.println("             getNaN: function(thisref, p1, p2) { return NaN;},");
             theWriter.println("             maxLONGLONG: function(thisref, p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("             maxDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("             maxINTINT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
@@ -1146,9 +1150,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                 return p1 * (180 / Math.PI);");
             theWriter.println("             },");
             theWriter.println("             random: function(thisref) { return Math.random();},");
-            theWriter.println("         },");
-            theWriter.println("         tmath: {");
-            theWriter.println("             getNaN: function(thisref, p1, p2) { return NaN;},");
             theWriter.println("         },");
             theWriter.println("         strictmath: {");
             theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");

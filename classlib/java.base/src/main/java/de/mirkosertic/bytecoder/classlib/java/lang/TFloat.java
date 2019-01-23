@@ -23,26 +23,26 @@ public class TFloat extends Number {
 
     public static final float POSITIVE_INFINITY = 1 / 0.0f;
     public static final float NEGATIVE_INFINITY = -POSITIVE_INFINITY;
-    public static final float NaN = POSITIVE_INFINITY - 1; // TODO correct implementation of NAN here
+    public static final float NaN = 0.0f / 0.0f;
 
-    private float floatValue;
+    private final float floatValue;
 
-    public TFloat(float aValue) {
+    public TFloat(final float aValue) {
         floatValue = aValue;
     }
 
-    public TFloat(double aValue) {
+    public TFloat(final double aValue) {
         floatValue = (float) aValue;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TFloat tFloat = (TFloat) o;
+        final TFloat tFloat = (TFloat) o;
 
         if (Float.compare(tFloat.floatValue, floatValue) != 0)
             return false;
@@ -55,9 +55,9 @@ public class TFloat extends Number {
         return (int) floatValue;
     }
 
-    public int compareTo(Float o) {
-        float f = floatValue;
-        float k = o.floatValue();
+    public int compareTo(final Float o) {
+        final float f = floatValue;
+        final float k = o.floatValue();
         if (f == k) {
             return 0;
         }
@@ -67,7 +67,7 @@ public class TFloat extends Number {
         return -1;
     }
 
-    public static int compare(float f1, float f2) {
+    public static int compare(final float f1, final float f2) {
         if(f1 < f2) {
             return -1;
         }
@@ -77,11 +77,11 @@ public class TFloat extends Number {
         return 0;
     }
 
-    public static boolean isNaN(float aFloat) {
-        return false;
+    public static boolean isNaN(final float aValue) {
+        return !(aValue == aValue);
     }
 
-    public static boolean isInfinite(float aFloat) {
+    public static boolean isInfinite(final float aFloat) {
         return false;
     }
 
@@ -135,11 +135,11 @@ public class TFloat extends Number {
         return result;
     }
 
-    public static int floatToRawIntBits(float value) {
+    public static int floatToRawIntBits(final float value) {
         return floatToIntBits(value);
     }
 
-    public static int floatToIntBits(float value) {
+    public static int floatToIntBits(final float value) {
         if (value == POSITIVE_INFINITY) {
             return 0x7F800000;
         } else if (value == NEGATIVE_INFINITY) {
@@ -147,24 +147,24 @@ public class TFloat extends Number {
         } else if (isNaN(value)) {
             return 0x7FC00000;
         }
-        float abs = de.mirkosertic.bytecoder.classlib.java.lang.TMath.abs(value);
+        final float abs = de.mirkosertic.bytecoder.classlib.java.lang.TMath.abs(value);
         int exp = Math.getExponent(abs);
         int negExp = -exp + 23;
         if (exp < -126) {
             exp = -127;
             negExp = 126 + 23;
         }
-        float doubleMantissa;
+        final float doubleMantissa;
         if (negExp <= 126) {
             doubleMantissa = abs * binaryExponent(negExp);
         } else {
             doubleMantissa = abs * 0x1p126f * binaryExponent(negExp - 126);
         }
-        int mantissa = (int) (doubleMantissa + 0.5f) & 0x7FFFFF;
+        final int mantissa = (int) (doubleMantissa + 0.5f) & 0x7FFFFF;
         return mantissa | ((exp + 127) << 23) | (value < 0 || 1 / value == NEGATIVE_INFINITY  ? (1 << 31) : 0);
     }
 
-    public static float intBitsToFloat(int bits) {
+    public static float intBitsToFloat(final int bits) {
         if ((bits & 0x7F800000) == 0x7F800000) {
             if (bits == 0x7F800000) {
                 return POSITIVE_INFINITY;
@@ -174,27 +174,27 @@ public class TFloat extends Number {
                 return NaN;
             }
         }
-        boolean negative = (bits & (1 << 31)) != 0;
-        int rawExp = (bits >> 23) & 0xFF;
+        final boolean negative = (bits & (1 << 31)) != 0;
+        final int rawExp = (bits >> 23) & 0xFF;
         int mantissa = bits & 0x7FFFFF;
         if (rawExp == 0) {
             mantissa <<= 1;
         } else {
             mantissa |= 1L << 23;
         }
-        float value = mantissa * binaryExponent(rawExp - 127 - 23);
+        final float value = mantissa * binaryExponent(rawExp - 127 - 23);
         return !negative ? value : -value;
     }
 
-    public static float parseFloat(String aValue) {
-        int p = aValue.indexOf('.');
+    public static float parseFloat(final String aValue) {
+        final int p = aValue.indexOf('.');
         if (p<0) {
             return VM.stringToLong(aValue);
         }
-        String thePrefix = aValue.substring(0, p);
-        String theSuffix = aValue.substring(p + 1);
-        long theA = VM.stringToLong(thePrefix);
-        long theB = VM.stringToLong(theSuffix);
+        final String thePrefix = aValue.substring(0, p);
+        final String theSuffix = aValue.substring(p + 1);
+        final long theA = VM.stringToLong(thePrefix);
+        final long theB = VM.stringToLong(theSuffix);
         int theMultiplier = 1;
         int theLength = Long.toString(theB).length();
         while(theLength > 0) {
@@ -207,16 +207,16 @@ public class TFloat extends Number {
         return theA - ((float) theB) / theMultiplier;
     }
 
-    public static Float valueOf(float aValue) {
+    public static Float valueOf(final float aValue) {
         return new Float(aValue);
     }
 
-    public static Float valueOf(String aValue) {
+    public static Float valueOf(final String aValue) {
         return parseFloat(aValue);
     }
 
-    public static String toString(float aValue) {
-        StringBuilder theBuilder = new StringBuilder();
+    public static String toString(final float aValue) {
+        final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(aValue);
         return theBuilder.toString();
     }

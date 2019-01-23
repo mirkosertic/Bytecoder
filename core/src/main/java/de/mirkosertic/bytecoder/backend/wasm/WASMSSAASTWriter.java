@@ -465,6 +465,12 @@ public class WASMSSAASTWriter {
             stackExit();
             flow.throwException(module.getExceptions().exceptionIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue));
         } else {
+            final Value theException = aExpression.incomingDataFlows().get(0);
+            final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), "logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)})));
+            final List<WASMValue> arguments = new ArrayList<>();
+            arguments.add(i32.c(0));
+            arguments.add(toValue(theException));
+            flow.voidCall(function, arguments);
             stackExit();
             flow.unreachable();
         }
@@ -1043,7 +1049,8 @@ public class WASMSSAASTWriter {
                     case LONG:
                     case CHAR: {
                         // Convert f32 to i32
-                        return i32.trunc_sF32(toValue(theSource));
+                        final WASMValue theValue = toValue(theSource);
+                        return select(i32.trunc_sF32(theValue), i32.c(0), f32.eq(theValue, theValue));
                     }
                     default:
                         throw new IllegalStateException("target type " + aValue.resolveType() + " not supported!");
