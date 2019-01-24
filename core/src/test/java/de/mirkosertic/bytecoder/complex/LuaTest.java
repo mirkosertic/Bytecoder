@@ -24,6 +24,7 @@ import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Prototype;
 import org.luaj.vm2.Varargs;
@@ -67,7 +68,10 @@ public class LuaTest {
         final Globals theGlobals = new Globals();
         LuaC.install(theGlobals);
         final LuaValue chunk = theGlobals.load("function add(a,b)\nreturn a+b\nend\nreturn add(1,2)");
-        final LuaString theResult = chunk.call().strvalue();
+        Assert.assertFalse(chunk.isnil());
+        Assert.assertTrue(chunk instanceof LuaClosure);
+        final LuaClosure luaClosure = (LuaClosure) chunk;
+        final LuaString theResult = luaClosure.call().strvalue();
         Assert.assertEquals("3", theResult.tojstring());
     }
 
@@ -88,6 +92,7 @@ public class LuaTest {
         final Prototype thePrototype = theGlobals.compilePrototype(new StringReader("function add(a,b) return a + b end"), "script");
         new LuaClosure(thePrototype, theGlobals).call();
         final LuaValue theFunction = theGlobals.get("add");
+        Assert.assertFalse(theFunction.isnil());
         final Varargs theArguments = LuaValue.varargsOf(new LuaValue[] {
                 LuaInteger.valueOf(100),
                 LuaInteger.valueOf(200)
@@ -116,5 +121,14 @@ public class LuaTest {
     public void testLuaError() {
         final LuaError error = new LuaError("Test");
         Assert.assertEquals("Test", error.getMessage());
+    }
+
+    @Test
+    public void testLuaTable() {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        final LuaTable theTable = new LuaTable();
+        theTable.set("20", 200);
+        Assert.assertEquals(200, theTable.get("20").toint(), 0);
     }
 }

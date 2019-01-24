@@ -1221,37 +1221,6 @@ public class WASMSSAASTWriter {
 
         final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
         final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-        if (theEntry.getValue().getAccessFlags().isAbstract()) {
-            // Abstract methods are converted to a virtual call
-            final List<PrimitiveType> theSignatureParams = new ArrayList<>();
-            theSignatureParams.add(PrimitiveType.i32);
-            for (int i = 0; i < aValue.getSignature().getArguments().length; i++) {
-                final BytecodeTypeRef theParamType = aValue.getSignature().getArguments()[i];
-                theSignatureParams.add(toType(TypeRef.toType(theParamType)));
-            }
-
-            final WASMType theCalledFunction;
-            if (!aValue.getSignature().getReturnType().isVoid()) {
-                theCalledFunction = module.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(aValue.getSignature().getReturnType())));
-            } else {
-                theCalledFunction = module.getTypes().typeFor(theSignatureParams);
-            }
-
-            final List<WASMValue> theWASMArguments = new ArrayList<>();
-            theWASMArguments.add(toValue(theTarget));
-            for (final Value theValue : theArguments) {
-                theWASMArguments.add(toValue(theValue));
-            }
-
-            final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
-            final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
-            final List<WASMValue> theResolveArgument = new ArrayList<>();
-            theResolveArgument.add(toValue(theTarget));
-            theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));
-            final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, toValue(theTarget)));
-
-            return call(theCalledFunction, theWASMArguments, theIndex);
-        }
         final Function function = module.functionIndex().firstByLabel(WASMWriterUtils
                 .toMethodName(theEntry.getProvidingClass().getClassName(),
                         aValue.getMethodName(), aValue.getSignature()));

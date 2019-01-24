@@ -789,13 +789,7 @@ public class JSSSAWriter extends IndentSSAWriter {
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-                if (theEntry.getValue().getAccessFlags().isAbstract()) {
-                    // Abstract methods are converted to a virtual call
-                    print(theTarget);
-                } else {
-                    // Else we know exactly what methods to invoke
-                    print(JSWriterUtils.toClassName(theEntry.getProvidingClass().getClassName()));
-                }
+                print(JSWriterUtils.toClassName(theEntry.getProvidingClass().getClassName()));
             }
             print(".");
             print(JSWriterUtils.toMethodName(theMethodName, theSignature));
@@ -1025,8 +1019,12 @@ public class JSSSAWriter extends IndentSSAWriter {
                 }
 
                 print(theVariable.getName());
-                print(" = ");
+                print(" = (");
                 print(theValue);
+                print(")");
+                if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
+                    print(" | 0");
+                }
                 if (options.isDebugOutput()) {
                     print("; // type is ");
                     println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());

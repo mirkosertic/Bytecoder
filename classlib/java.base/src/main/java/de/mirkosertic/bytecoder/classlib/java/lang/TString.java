@@ -128,7 +128,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
         int h = computedHash;
         if (h == 0 && data.length > 0) {
             for (int i = 0; i < data.length; i++) {
-                h = 31 * h + data[i];
+                h = 31 * h + (data[i] & 0xff);
             }
             computedHash = h;
         }

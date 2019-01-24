@@ -15,11 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class StringTest {
@@ -80,5 +79,31 @@ public class StringTest {
         Assert.assertEquals("1", " 1".trim());
         Assert.assertEquals("1", "  1 ".trim());
         Assert.assertEquals(1, "  1 ".trim().length(), 0);
+    }
+
+    @Test
+    public void testHashCode() {
+        final int hashCode = "TOP_LEFT".hashCode();
+        Assert.assertEquals(-1.54073903E8, hashCode, 0);
+    }
+
+    @Test
+    public void testStringSwitch() {
+        int x;
+        final String test = new String("TOP_LEFT".getBytes());
+        switch (test) {
+            case "LALA": {
+                x = 20;
+                break;
+            }
+            case "TOP_LEFT": {
+                 x = 20;
+                 break;
+            }
+            default:
+                x = 0;
+                break;
+        }
+        Assert.assertEquals(x, 20);
     }
 }
