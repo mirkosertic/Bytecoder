@@ -23,17 +23,19 @@ import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 public class InvokeVirtualMethodExpression extends InvocationExpression {
 
     private final String methodName;
+    private final boolean interfaceInvocation;
 
-    public InvokeVirtualMethodExpression(BytecodeNameAndTypeConstant aMethod, Value aTarget,
-                                    List<Value> aArguments) {
+    public InvokeVirtualMethodExpression(final BytecodeNameAndTypeConstant aMethod, final Value aTarget,
+                                         final List<Value> aArguments, final boolean aInterfaceInvocation) {
         this(aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
-                aTarget, aArguments);
+                aTarget, aArguments, aInterfaceInvocation);
     }
 
-    public InvokeVirtualMethodExpression(String aMethodName, BytecodeMethodSignature aSignature, Value aTarget,
-            List<Value> aArguments) {
+    public InvokeVirtualMethodExpression(final String aMethodName, final BytecodeMethodSignature aSignature, final Value aTarget,
+                                         final List<Value> aArguments, final boolean aInterfaceInvocation) {
         super(aSignature);
         methodName = aMethodName;
+        interfaceInvocation = aInterfaceInvocation;
 
         receivesDataFrom(aTarget);
         receivesDataFrom(aArguments);
@@ -41,5 +43,9 @@ public class InvokeVirtualMethodExpression extends InvocationExpression {
 
     public String getMethodName() {
         return methodName;
+    }
+
+    public boolean isInterfaceInvocation() {
+        return interfaceInvocation;
     }
 }

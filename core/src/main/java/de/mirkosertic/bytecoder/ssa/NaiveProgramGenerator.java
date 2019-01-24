@@ -1022,7 +1022,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 Collections.reverse(theArguments);
 
                 final Value theTarget = aHelper.pop();
-                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
+                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false);
                 if (theSignature.getReturnType().isVoid()) {
                     aTargetBlock.getExpressions().add(theExpression);
                 } else {
@@ -1041,7 +1041,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 Collections.reverse(theArguments);
 
                 final Value theTarget = aHelper.pop();
-                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments);
+                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true);
                 if (theSignature.getReturnType().isVoid()) {
                     aTargetBlock.getExpressions().add(theExpression);
                 } else {
@@ -1406,7 +1406,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                                     new BytecodeTypeRef[] {
                                             new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1) }),
-                            theCallsiteVariable, theInvokeArguments);
+                            theCallsiteVariable, theInvokeArguments, false);
 
                     final Variable theInvokeExactResult = aTargetBlock.newVariable(TypeRef.Native.REFERENCE, theInvokeValue);
                     aHelper.push(theInvokeExactResult);

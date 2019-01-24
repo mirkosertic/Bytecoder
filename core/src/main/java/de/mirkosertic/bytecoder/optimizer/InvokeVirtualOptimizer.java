@@ -36,13 +36,13 @@ import java.util.Optional;
 public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implements Optimizer {
 
     @Override
-    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
+    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         visit(aGraph, aLinkerContext);
     }
 
     @Override
-    protected void visit(ControlFlowGraph aGraph, ExpressionList aList, Expression aExpression,
-            BytecodeLinkerContext aLinkerContext) {
+    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression,
+                         final BytecodeLinkerContext aLinkerContext) {
         if (aExpression instanceof InvokeVirtualMethodExpression) {
             visit(aList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext);
         }
@@ -51,37 +51,42 @@ public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implement
         }
     }
 
-    private void visit(VariableAssignmentExpression aExpression, BytecodeLinkerContext aLinkerContext) {
-        Value theValue = aExpression.getValue();
+    private void visit(final VariableAssignmentExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+        final Value theValue = aExpression.getValue();
         if (theValue instanceof InvokeVirtualMethodExpression) {
-            Optional<DirectInvokeMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
+            final Optional<DirectInvokeMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
             theNewExpression.ifPresent(
                     directInvokeMethodExpression -> aExpression.replaceIncomingDataEdge(theValue, directInvokeMethodExpression));
         }
     }
 
-    private void visit(ExpressionList aExpressions, InvokeVirtualMethodExpression aExpression, BytecodeLinkerContext aLinkerContext) {
-        Optional<DirectInvokeMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
+    private void visit(final ExpressionList aExpressions, final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+        final Optional<DirectInvokeMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
         theNewExpression
                 .ifPresent(directInvokeMethodExpression -> aExpressions.replace(aExpression, directInvokeMethodExpression));
     }
 
-    private Optional<DirectInvokeMethodExpression> visit(InvokeVirtualMethodExpression aExpression, BytecodeLinkerContext aLinkerContext) {
-        String theMethodName = aExpression.getMethodName();
-        BytecodeMethodSignature theSignature = aExpression.getSignature();
+    private Optional<DirectInvokeMethodExpression> visit(final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+        // Do not optimize interface invocation as they might be used for lambda expressions
+        if (aExpression.isInterfaceInvocation()) {
+            return Optional.empty();
+        }
 
-        BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
-        List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
+        final String theMethodName = aExpression.getMethodName();
+        final BytecodeMethodSignature theSignature = aExpression.getSignature();
+
+        final BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
+        final List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
         if (theLinkedClasses.size() == 1) {
             // There is only one class implementing this method, so we can make a direct call
-            BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
+            final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
             if (!theLinked.emulatedByRuntime()) {
 
-                BytecodeMethod theMethod = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+                final BytecodeMethod theMethod = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
                 if (!theMethod.getAccessFlags().isAbstract()) {
-                    BytecodeObjectTypeRef theClazz = theLinked.getClassName();
+                    final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                    DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName,
+                    final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName,
                             theSignature);
                     aExpression.routeIncomingDataFlowsTo(theNewExpression);
 
