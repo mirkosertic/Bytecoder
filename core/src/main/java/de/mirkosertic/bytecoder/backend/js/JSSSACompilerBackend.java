@@ -145,6 +145,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.println();
 
         theWriter.println("     toJSString: function(aBytecoderString) {");
+        theWriter.println("         if (aBytecoderString == null) {");
+        theWriter.println("             return 'NULL';");
+        theWriter.println("         }");
         theWriter.println("         if (typeof(aBytecoderString) === 'string') {");
         theWriter.println("             return aBytecoderString;");
         theWriter.println("         }");
@@ -382,27 +385,25 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.println("        " + theJSClassName + ".init();");
                 theInstanceFields.streamForInstanceFields().forEach(
                         aFieldEntry -> {
-                            if (aFieldEntry.getProvidingClass() == theLinkedClass) {
-                                final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
-                                if (theFieldType.isPrimitive()) {
-                                    final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
-                                    if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                        theWriter.print("        this.");
-                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                        theWriter.print(" = false; // declared in ");
-                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
-                                    } else {
-                                        theWriter.print("        this.");
-                                        theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                        theWriter.print(" = 0; // declared in ");
-                                        theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
-                                    }
+                            final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
+                            if (theFieldType.isPrimitive()) {
+                                final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
+                                if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
+                                    theWriter.print("        this.");
+                                    theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                    theWriter.print(" = false; // declared in ");
+                                    theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                                 } else {
                                     theWriter.print("        this.");
                                     theWriter.print(aFieldEntry.getValue().getName().stringValue());
-                                    theWriter.print(" = null; // declared in ");
+                                    theWriter.print(" = 0; // declared in ");
                                     theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                                 }
+                            } else {
+                                theWriter.print("        this.");
+                                theWriter.print(aFieldEntry.getValue().getName().stringValue());
+                                theWriter.print(" = null; // declared in ");
+                                theWriter.println(aFieldEntry.getProvidingClass().getClassName().name());
                             }
                         });
                 theWriter.println("    },");

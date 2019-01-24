@@ -12,7 +12,7 @@
 end
 
 return add(1,2)</textarea>
-            <h2>Respose</h2>
+            <h2>Response</h2>
             <pre id="luaoutput">
 Run Lua to see the output!
             </pre>
@@ -47,7 +47,7 @@ Run Lua to see the output!
             WebAssembly.instantiateStreaming(fetch('bytecoder-luademowasm.wasm'), bytecoder.imports)
                 .then(instantiated)
                 .catch(function(error) {
-                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!")
+                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
                     var request = new XMLHttpRequest();
                     request.open('GET', 'bytecoder-luademowasm.wasm');
                     request.responseType = 'arraybuffer';
