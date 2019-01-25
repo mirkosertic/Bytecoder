@@ -38,6 +38,8 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
  [vue.js integration Demo compiled to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/vuewasm.html) |
  [Lua4J Demo compiled to JavaScript](https://www.mirkosertic.de/examples/jbox2d/luajs.html) |
  [Lua4J Demo compiled to WebAssembly](https://www.mirkosertic.de/examples/jbox2d/luawasm.html) |
+ [GameComposer Physics Game Example compiled to WebAssembly](https://www.mirkosertic.de/examples/gameengine/index.html). GameComposer is available [here](https://github.com/mirkosertic/GameComposer)|
+ [GameComposer Physics Game Example compiled to JavaScript](https://www.mirkosertic.de/examples/gameengine/indexjs.html). GameComposer is available [here](https://github.com/mirkosertic/GameComposer) |
 
 ## User Manual
 
