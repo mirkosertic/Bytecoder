@@ -39,7 +39,6 @@ public enum KnownOptimizer implements Optimizer {
             theOptimizer.add(new RedundantVariablesOptimizer());
             theOptimizer.add(new InlineFinalNodesOptimizer());
             theOptimizer.add(new InvokeVirtualOptimizer());
-//            theOptimizer.add(new InlineGotoOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
     },
@@ -47,8 +46,8 @@ public enum KnownOptimizer implements Optimizer {
     EXPERIMENTAL {
         @Override
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-            ALL.optimize(aGraph, aLinkerContext);
             final List<Optimizer> theOptimizer = new ArrayList<>();
+            theOptimizer.add(ALL);
             run(aGraph, aLinkerContext, theOptimizer);
         }
     };

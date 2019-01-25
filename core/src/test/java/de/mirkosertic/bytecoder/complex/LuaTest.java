@@ -107,11 +107,11 @@ public class LuaTest {
         LuaC.install(theGlobals);
         final Prototype thePrototype = theGlobals.compilePrototype(new StringReader("function add(a,b) return 'hello' end"), "script");
         new LuaClosure(thePrototype, theGlobals).call();
-        final LuaValue theFunction = theGlobals.get("add");
         final Varargs theArguments = LuaValue.varargsOf(new LuaValue[] {
                 LuaInteger.valueOf(100),
                 LuaInteger.valueOf(200)
         });
+        final LuaValue theFunction = theGlobals.get("add");
         final LuaValue theValue = (LuaValue) theFunction.invoke(theArguments);
         Assert.assertTrue(theValue.isstring());
         Assert.assertEquals("hello", theValue.tojstring());
@@ -130,5 +130,27 @@ public class LuaTest {
         final LuaTable theTable = new LuaTable();
         theTable.set("20", 200);
         Assert.assertEquals(200, theTable.get("20").toint(), 0);
+    }
+
+    @Test
+    public void testLuaConversion() {
+        final Globals theGlobals = new Globals();
+        LuaC.install(theGlobals);
+        theGlobals.set("key", 10);
+        Assert.assertEquals(10, theGlobals.get("key").toint());
+        Assert.assertEquals(10, theGlobals.get(LuaString.valueOf("key")).toint());
+
+        final LuaValue chunk = theGlobals.load("return key").call();
+        Assert.assertEquals(10, chunk.toint());
+    }
+
+    @Test
+    public void testGlobalSize() {
+        final Globals theGlobals = new Globals();
+        for (int i =0;i<=100;i++) {
+            theGlobals.set("ABC", Integer.toString(i));
+        }
+        theGlobals.presize(1000);
+        Assert.assertEquals(100, theGlobals.get("ABC").toint(),0);
     }
 }
