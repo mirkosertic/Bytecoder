@@ -271,7 +271,7 @@ __kernel void BytecoderKernel(__global const float* val$theA,
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2018-12-19</version>
+            <version>2019-01-26</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
@@ -303,7 +303,7 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2018-12-19</version>
+            <version>2019-01-26</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>wasm</backend>
