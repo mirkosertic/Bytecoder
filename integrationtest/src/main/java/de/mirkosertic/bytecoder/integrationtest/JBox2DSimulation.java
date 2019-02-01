@@ -174,7 +174,6 @@ public class JBox2DSimulation {
     private static AnimationFrameCallback animationCallback;
     private static Window window;
 
-    @Export("main")
     public static void main(final String[] args) {
         scene = new Scene();
         window = Window.window();

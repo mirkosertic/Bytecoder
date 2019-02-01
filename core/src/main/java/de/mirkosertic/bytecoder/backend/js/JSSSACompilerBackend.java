@@ -668,7 +668,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theWriter.print(".");
                     theWriter.print(JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature));
                     theWriter.println(";");
-
+                } else {
+                    // If the method is the main method and not exported by annotation, it is
+                    // exported by default name "main".
+                    if (aEntry.targetNode().getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName)) {
+                        theWriter.print("    bytecoder.exports.main = ");
+                        theWriter.print(JSWriterUtils.toClassName(aEntry.targetNode().getClassName()));
+                        theWriter.print(".");
+                        theWriter.print(JSWriterUtils.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature));
+                        theWriter.println(";");
+                    }
                 }
             });
         });

@@ -35,7 +35,6 @@ public class LuaDemo {
     private static HTMLElement output;
     private static HTMLButton button;
 
-    @Export("main")
     public static void main(final String[] args) {
         globals = new Globals();
         LuaC.install(globals);
