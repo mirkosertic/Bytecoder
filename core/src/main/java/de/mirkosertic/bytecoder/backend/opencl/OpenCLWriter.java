@@ -25,9 +25,9 @@ import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
@@ -202,6 +202,10 @@ public class OpenCLWriter extends IndentSSAWriter {
             print((Relooper.MultipleBlock) aBlock);
             return;
         }
+        if (aBlock instanceof Relooper.IFThenElseBlock) {
+            print((Relooper.IFThenElseBlock) aBlock);
+            return;
+        }
         throw new IllegalStateException("Not implemented : " + aBlock);
     }
 
@@ -224,6 +228,39 @@ public class OpenCLWriter extends IndentSSAWriter {
 
             print(aSimpleBlock.next());
 
+        }
+    }
+
+    private void print(final Relooper.IFThenElseBlock aIfThenElseBlock) {
+        OpenCLWriter theWriter = this;
+        if (aIfThenElseBlock.isLabelRequired()) {
+            print("$");
+            print(aIfThenElseBlock.label().name());
+            println(" :");
+            theWriter = theWriter.withDeeperIndent();
+        }
+
+        theWriter.writeExpressions(aIfThenElseBlock.getPrelude());
+
+        theWriter.print("if (");
+        theWriter.printValue(aIfThenElseBlock.getCondition());
+        theWriter.println(") {");
+
+        theWriter.withDeeperIndent().print(aIfThenElseBlock.getTrueBlock());
+
+        theWriter.println("} else {");
+
+        theWriter.withDeeperIndent().print(aIfThenElseBlock.getFalseBlock());
+
+        theWriter.println("}");
+
+        if (aIfThenElseBlock.next() != null) {
+
+            print("$");
+            print(aIfThenElseBlock.label().name());
+            println("_next:");
+
+            print(aIfThenElseBlock.next());
         }
     }
 

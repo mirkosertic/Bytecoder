@@ -342,10 +342,4 @@ public class RegionNode {
             thePath.remove(aNode);
         }
     }
-
-    public void inheritSuccessorsOf(final RegionNode aNode) {
-        for (final Map.Entry<Edge, RegionNode> theEntry : aNode.successors.entrySet()) {
-            successors.put(theEntry.getKey(), theEntry.getValue());
-        }
-    }
 }

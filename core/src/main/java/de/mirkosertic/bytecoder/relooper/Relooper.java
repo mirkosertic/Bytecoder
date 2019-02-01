@@ -26,9 +26,10 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.GraphNodePath;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.Value;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,6 +130,63 @@ public class Relooper {
                 return next.containsMultipleBlock();
             }
             return false;
+        }
+    }
+
+    /**
+     * Block for high level if/then/else language constructs.
+     */
+    public static class IFThenElseBlock extends Block {
+
+        private final ExpressionList prelude;
+        private final Value condition;
+        private final Block trueBlock;
+        private final Block falseBlock;
+        private final Block nextBlock;
+
+        public IFThenElseBlock(final ExpressionList aPrelude, final Set<RegionNode> aEntries, final Value condition,
+                final Block trueBlock, final Block falseBlock, final Block nextBlock) {
+            super(aEntries, "IF_");
+            this.prelude = aPrelude;
+            this.condition = condition;
+            this.trueBlock = trueBlock;
+            this.falseBlock = falseBlock;
+            this.nextBlock = nextBlock;
+        }
+
+        public Value getCondition() {
+            return condition;
+        }
+
+        public Block getTrueBlock() {
+            return trueBlock;
+        }
+
+        public Block getFalseBlock() {
+            return falseBlock;
+        }
+
+        @Override
+        public Block next() {
+            return nextBlock;
+        }
+
+        @Override
+        public boolean containsMultipleBlock() {
+            if (trueBlock != null && trueBlock.containsMultipleBlock()) {
+                return true;
+            }
+            if (falseBlock != null && falseBlock.containsMultipleBlock()) {
+                return true;
+            }
+            if (nextBlock != null) {
+                return nextBlock.containsMultipleBlock();
+            }
+            return false;
+        }
+
+        public ExpressionList getPrelude() {
+            return prelude;
         }
     }
 
@@ -409,6 +467,17 @@ public class Relooper {
             aTraversalStack.pop();
             return;
         }
+        if (aBlock instanceof IFThenElseBlock) {
+            final IFThenElseBlock theIf = (IFThenElseBlock) aBlock;
+
+            aTraversalStack.push(theIf);
+            replaceGotosIn(aTraversalStack, theIf.getTrueBlock());
+            replaceGotosIn(aTraversalStack, theIf.getFalseBlock());
+            replaceGotosIn(aTraversalStack, theIf.next());
+            aTraversalStack.pop();
+            return;
+        }
+
         if (aBlock instanceof MultipleBlock) {
             final MultipleBlock theMultiple = (MultipleBlock) aBlock;
             aTraversalStack.push(theMultiple);
@@ -745,6 +814,81 @@ public class Relooper {
                 return new TryBlock(aEntryLabels, theTryInner, theTryNext, catchBlocks, finallyBlock);
             }
         }
+
+        // Search for conditional Jumps
+
+        /*
+        final List<Expression> theExpressions = aEntry.getExpressions().toList();
+        for (int i = 0; i < theExpressions.size() && false; i++) {
+            final Expression theExpression = theExpressions.get(i);
+            if (theExpression instanceof IFExpression) {
+                final IFExpression theIf = (IFExpression) theExpression;
+                // Ok, we found a condition
+                if (i < theExpressions.size() - 1) {
+                    // Were are following expressions
+                    final Expression theLast = theExpressions.get(theExpressions.size() - 1);
+                    if (theLast instanceof GotoExpression) {
+                        final GotoExpression theGoto = (GotoExpression) theLast;
+                        try {
+                            final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
+                            final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.getJumpTarget());
+                            if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+                                // We have a candidate!!
+                                final Value theCondition = theIf.incomingDataFlows().get(0);
+
+                                final Set<RegionNode> theNextEntries = new HashSet<>();
+                                final Set<RegionNode> theNextTagSoup = new HashSet<>(aLabelSoup);
+                                final Set<RegionNode> theTrueDominated = theTrueBranch.dominatedNodes();
+                                final Set<RegionNode> theFalseDominated = theFalseBranch.dominatedNodes();
+                                theNextTagSoup.removeAll(theTrueDominated);
+                                theNextTagSoup.removeAll(theFalseDominated);
+                                theNextTagSoup.remove(aEntry);
+
+                                // Calculate the entries for the next block
+                                for (final RegionNode theTrue : theTrueDominated) {
+                                    for (Map.Entry<RegionNode.Edge, RegionNode> theEntry : theTrue.getSuccessors().entrySet()) {
+                                        RegionNode theNode = theEntry.getValue();
+                                        if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
+                                            theNextEntries.add(theNode);
+                                        }
+                                    }
+                                }
+
+                                for (final RegionNode theFalse : theFalseDominated) {
+                                    for (Map.Entry<RegionNode.Edge, RegionNode> theEntry : theFalse.getSuccessors().entrySet()) {
+                                        RegionNode theNode = theEntry.getValue();
+                                        if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
+                                            theNextEntries.add(theNode);
+                                        }
+                                    }
+                                }
+
+                                final Block theTrueBranchBlock = reloop(aGraph, Collections.singleton(theTrueBranch),
+                                        theTrueDominated);
+                                final Block theFalseBranchBlock = reloop(aGraph, Collections.singleton(theFalseBranch),
+                                        theFalseDominated);
+
+                                final ExpressionList thePrelude = new ExpressionList();
+                                for (int j = 0; j < i; j++) {
+                                    thePrelude.add(theExpressions.get(j));
+                                }
+
+                                Block theNextBlock = null;
+                                if (!theNextEntries.isEmpty()) {
+                                    theNextBlock = reloop(aGraph, theNextEntries, theNextTagSoup);
+                                }
+
+                                return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
+                                        theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
+                            }
+                        } catch (final Exception e) {
+                            // Might happen, cannot recover, will continue with fallback handling
+                            //...
+                        }
+                    }
+                }
+            }
+        }*/
 
         final Set<RegionNode> theNextEntries = new HashSet<>();
         final Set<RegionNode> theDominated = aEntry.dominatedNodes();
