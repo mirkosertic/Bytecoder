@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,23 +95,6 @@ public class ExpressionList {
         final Expression theLastExpression = lastExpression();
         return theLastExpression instanceof ReturnExpression ||
                 theLastExpression instanceof ReturnValueExpression;
-    }
-
-    public List<BytecodeOpcodeAddress> jumpTargets() {
-        final List<BytecodeOpcodeAddress> theTargets = new ArrayList<>();
-        for (final Expression theExpression : expressions) {
-            if (theExpression instanceof GotoExpression) {
-                final GotoExpression theGoto = (GotoExpression) theExpression;
-                theTargets.add(theGoto.getJumpTarget());
-            }
-            if (theExpression instanceof ExpressionListContainer) {
-                final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (final ExpressionList theList : theContainer.getExpressionLists()) {
-                    theTargets.addAll(theList.jumpTargets());
-                }
-            }
-        }
-        return theTargets;
     }
 
     public ExpressionList deepCopy() {

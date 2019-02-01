@@ -202,7 +202,7 @@ public class WASMSSAASTWriter {
 
     private WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Variable> aStackVariables, final boolean aLabelRequired) {
+            final List<Variable> aStackVariables, final boolean aLabelRequired, final Expressions aFlow) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -211,28 +211,41 @@ public class WASMSSAASTWriter {
         stackVariables = aStackVariables;
         memoryLayouter = aMemoryLayouter;
         container = aContainer;
-        flow = container.flow;
+        flow = aFlow;
         labelRequired = aLabelRequired;
     }
 
     private WASMSSAASTWriter block(final String label) {
         final Block block = flow.block(label);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
     }
 
-    private WASMSSAASTWriter iff(final String label, final WASMValue condition) {
+    private class IFCondition {
+
+        private final WASMSSAASTWriter trueWriter;
+        private final WASMSSAASTWriter falseWriter;
+
+        public IFCondition(final WASMSSAASTWriter trueWriter, final WASMSSAASTWriter falseWriter) {
+            this.trueWriter = trueWriter;
+            this.falseWriter = falseWriter;
+        }
+    }
+
+    private IFCondition iff(final String label, final WASMValue condition) {
         final Iff block = flow.iff(label, condition);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired);
+        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow);
+        return new IFCondition(theTrueWriter, theFalseWriter);
     }
 
     private WASMSSAASTWriter Try(final String label) {
         final Try block = flow.Try(label);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
     }
 
     private WASMSSAASTWriter loop(final String label) {
         final Loop loop = flow.loop(label);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow);
     }
 
     private int stackSize() {
@@ -379,7 +392,7 @@ public class WASMSSAASTWriter {
 
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getPairs().entrySet()) {
-            final WASMSSAASTWriter inner = outer.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), toValue(theValue)));
+            final WASMSSAASTWriter inner = outer.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), toValue(theValue))).trueWriter;
             inner.writeExpressionList(theEntry.getValue());
             inner.flow.branch((LabeledContainer) outer.container);
         }
@@ -404,7 +417,7 @@ public class WASMSSAASTWriter {
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getOffsets().entrySet()) {
 
-            final WASMSSAASTWriter theSwitch = theTableSwitch.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue()))));
+            final WASMSSAASTWriter theSwitch = theTableSwitch.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue())))).trueWriter;
             theSwitch.writeExpressionList(theEntry.getValue());
             theSwitch.flow.branch((LabeledContainer) theTableSwitch.container);
         }
@@ -547,7 +560,7 @@ public class WASMSSAASTWriter {
     }
 
     private void generateIFExpression(final IFExpression aExpression) {
-        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), toValue(aExpression.incomingDataFlows().get(0)));
+        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), toValue(aExpression.incomingDataFlows().get(0))).trueWriter;
         iff.writeExpressionList(aExpression.getExpressions());
     }
 
@@ -1467,6 +1480,10 @@ public class WASMSSAASTWriter {
             writeTryBlock((Relooper.TryBlock) aBlock);
             return;
         }
+        if (aBlock instanceof Relooper.IFThenElseBlock) {
+            writeIfThenElseBlock((Relooper.IFThenElseBlock) aBlock);
+            return;
+        }
         throw new IllegalStateException("Don't know how to handle : " + aBlock);
     }
 
@@ -1490,6 +1507,16 @@ public class WASMSSAASTWriter {
         }
 
         writeReloopedInternal(aSimpleBlock.next());
+    }
+
+    private void writeIfThenElseBlock(final Relooper.IFThenElseBlock aIfBlock) {
+        writeExpressionList(aIfBlock.getPrelude());
+
+        final IFCondition theIfCondition = iff(aIfBlock.label().name(), toValue(aIfBlock.getCondition()));
+        theIfCondition.trueWriter.writeReloopedInternal(aIfBlock.getTrueBlock());
+        theIfCondition.falseWriter.writeReloopedInternal(aIfBlock.getFalseBlock());
+
+        writeReloopedInternal(aIfBlock.next());
     }
 
     private void writeLoopBlock(final Relooper.LoopBlock aLoopBlock) {
@@ -1518,7 +1545,7 @@ public class WASMSSAASTWriter {
             for (final RegionNode theEntry : theHandler.entries()) {
                 final int theEntryAddress = theEntry.getStartAddress().getAddress();
 
-                final WASMSSAASTWriter block = loop.iff("case_" + theEntryAddress, i32.eq(getLocal(label), i32.c(theEntryAddress)));
+                final WASMSSAASTWriter block = loop.iff("case_" + theEntryAddress, i32.eq(getLocal(label), i32.c(theEntryAddress))).trueWriter;
                 block.writeReloopedInternal(theHandler);
             }
         }

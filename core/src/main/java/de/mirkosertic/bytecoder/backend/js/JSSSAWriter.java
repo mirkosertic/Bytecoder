@@ -1232,7 +1232,42 @@ public class JSSSAWriter extends IndentSSAWriter {
             print((Relooper.TryBlock) aBlock);
             return;
         }
+        if (aBlock instanceof Relooper.IFThenElseBlock) {
+            print((Relooper.IFThenElseBlock) aBlock);
+            return;
+        }
         throw new IllegalStateException("Not implemented : " + aBlock);
+    }
+
+    private void print(final Relooper.IFThenElseBlock aIfThenElseBlock) {
+        JSSSAWriter theWriter = this;
+
+        theWriter.writeExpressions(aIfThenElseBlock.getPrelude());
+
+        if (aIfThenElseBlock.isLabelRequired()) {
+            theWriter.print("$");
+            theWriter.print(aIfThenElseBlock.label().name());
+            theWriter.println(" : {");
+            theWriter = theWriter.withDeeperIndent();
+        }
+
+        theWriter.print("if (");
+        theWriter.print(aIfThenElseBlock.getCondition());
+        theWriter.println(") {");
+
+        theWriter.withDeeperIndent().print(aIfThenElseBlock.getTrueBlock());
+
+        theWriter.println("} else {");
+
+        theWriter.withDeeperIndent().print(aIfThenElseBlock.getFalseBlock());
+
+        theWriter.println("}");
+
+        if (aIfThenElseBlock.isLabelRequired()) {
+            println("}");
+        }
+
+        print(aIfThenElseBlock.next());
     }
 
     private void print(final Relooper.SimpleBlock aSimpleBlock) {
