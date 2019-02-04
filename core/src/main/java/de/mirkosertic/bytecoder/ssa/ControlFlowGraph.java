@@ -15,21 +15,21 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 public class ControlFlowGraph {
 
@@ -132,32 +132,6 @@ public class ControlFlowGraph {
             final BytecodeProgram theBytecode = theFlowinfo.getProgram();
             for (final BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
                 if (theEntry.getStartPC().equals(aAddress) && !theEntry.isFinally()) {
-                    RegionNode.ExceptionHandler theMatchingHandler = null;
-                    for (final RegionNode.ExceptionHandler theExisting : theHandler) {
-                        if (theExisting.regionMatchesTo(theEntry)) {
-                            theMatchingHandler = theExisting;
-                        }
-                    }
-                    if (theMatchingHandler == null) {
-                        theMatchingHandler = new RegionNode.ExceptionHandler(theEntry.getStartPC(), theEntry.getEndPc());
-                        theHandler.add(theMatchingHandler);
-                    }
-
-                    theMatchingHandler.addCatchEntry(theEntry);
-                }
-            }
-        }
-        theHandler.sort((o1, o2) -> Integer.compare(o2.getEndPC().getAddress(),  o1.getEndPC().getAddress()));
-        return theHandler;
-    }
-
-    public List<RegionNode.ExceptionHandler> exceptionHandlersActiveAt(final BytecodeOpcodeAddress aAddress) {
-        final List<RegionNode.ExceptionHandler> theHandler = new ArrayList<>();
-        final BytecodeProgram.FlowInformation theFlowinfo = program.getFlowInformation();
-        if (theFlowinfo != null) {
-            final BytecodeProgram theBytecode = theFlowinfo.getProgram();
-            for (final BytecodeExceptionTableEntry theEntry : theBytecode.getExceptionHandlers()) {
-                if (theEntry.coveres(aAddress) && !theEntry.isFinally()) {
                     RegionNode.ExceptionHandler theMatchingHandler = null;
                     for (final RegionNode.ExceptionHandler theExisting : theHandler) {
                         if (theExisting.regionMatchesTo(theEntry)) {
@@ -440,15 +414,23 @@ public class ControlFlowGraph {
         return theStr.toString();
     }
 
+    private final Map<RegionNode, Set<RegionNode>> dominationCache = new HashMap<>();
+
     protected Set<RegionNode> dominatedNodesOf(final RegionNode aNode) {
-        final Set<RegionNode> theResult = new HashSet<>();
+        Set<RegionNode> theResult = dominationCache.get(aNode);
+        if (theResult != null) {
+            return theResult;
+        }
+        theResult = new HashSet<>();
         theResult.add(aNode);
         for (final RegionNode theNode : knownNodes) {
             if (theNode.isOnlyReachableThru(aNode)) {
                 theResult.add(theNode);
             }
         }
-        return theResult;
+        final Set<RegionNode> theUnmodifiable = Collections.unmodifiableSet(theResult);
+        dominationCache.put(aNode, theUnmodifiable);
+        return theUnmodifiable;
     }
 
     public void delete(final RegionNode aNode) {

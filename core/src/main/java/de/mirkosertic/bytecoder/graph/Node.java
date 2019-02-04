@@ -36,13 +36,10 @@ public abstract class Node {
         incomingEdges.add(aEdge);
     }
 
-    public <T extends Edge> Stream<T> outgoingEdges() {
-        return (Stream<T>) outgoingEdges.stream();
+    public <T extends Edge> Stream<T> outgoingEdges(final Predicate<EdgeType> aPredicate) {
+        return (Stream<T>) outgoingEdges.stream().filter(t -> aPredicate.test(t.edgeType()));
     }
 
-    public <T extends Edge> Stream<T> outgoingEdges(final Predicate<EdgeType> aPredicate) {
-        return (Stream<T>) outgoingEdges().filter(t -> aPredicate.test(t.edgeType()));
-    }
     public <T extends Node> T addEdgeTo(final EdgeType aType, final T aTargetNode) {
         final Edge theNewEdge = new Edge(this, aType, aTargetNode);
         outgoingEdges.add(theNewEdge);
@@ -50,12 +47,8 @@ public abstract class Node {
         return aTargetNode;
     }
 
-    public <T extends Edge> Stream<T> incomingEdges() {
-        return (Stream<T>) incomingEdges.stream();
-    }
-
     public <T extends Edge> Stream<T> incomingEdges(final Predicate<EdgeType> aPredicate) {
-        return (Stream<T>) incomingEdges().filter(t -> aPredicate.test(t.edgeType()));
+        return (Stream<T>) incomingEdges.stream().filter(t -> aPredicate.test(t.edgeType()));
     }
 
     public <T extends Node> Optional<T> singleOutgoingNodeMatching(final Predicate<EdgeType> aPredicate) {
@@ -67,9 +60,5 @@ public abstract class Node {
             throw new IllegalStateException("Too many edges found!");
         }
         return Optional.of((T) theEdges.get(0).targetNode());
-    }
-
-
-    public void unbind() {
     }
 }
