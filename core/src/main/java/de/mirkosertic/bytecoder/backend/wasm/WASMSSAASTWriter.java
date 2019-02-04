@@ -1512,11 +1512,25 @@ public class WASMSSAASTWriter {
     private void writeIfThenElseBlock(final Relooper.IFThenElseBlock aIfBlock) {
         writeExpressionList(aIfBlock.getPrelude());
 
+        final WASMSSAASTWriter theOuter = block(aIfBlock.label().name());
+        final IFCondition theIfCondition = theOuter.iff(aIfBlock.label().name() + "_inner", toValue(aIfBlock.getCondition()));
+        theIfCondition.trueWriter.writeReloopedInternal(aIfBlock.getTrueBlock());
+        theIfCondition.trueWriter.flow.branch((LabeledContainer) theOuter.container);
+
+        theOuter.writeReloopedInternal(aIfBlock.getFalseBlock());
+
+        writeReloopedInternal(aIfBlock.next());
+
+        //Check why the else flow of the if expression does not have the same
+        //meaning as the block structure from above
+/*
+        writeExpressionList(aIfBlock.getPrelude());
+
         final IFCondition theIfCondition = iff(aIfBlock.label().name(), toValue(aIfBlock.getCondition()));
         theIfCondition.trueWriter.writeReloopedInternal(aIfBlock.getTrueBlock());
         theIfCondition.falseWriter.writeReloopedInternal(aIfBlock.getFalseBlock());
 
-        writeReloopedInternal(aIfBlock.next());
+        writeReloopedInternal(aIfBlock.next());*/
     }
 
     private void writeLoopBlock(final Relooper.LoopBlock aLoopBlock) {

@@ -816,10 +816,8 @@ public class Relooper {
         }
 
         // Search for conditional Jumps
-
-        /*
         final List<Expression> theExpressions = aEntry.getExpressions().toList();
-        for (int i = 0; i < theExpressions.size() && false; i++) {
+        for (int i = 0; i < theExpressions.size(); i++) {
             final Expression theExpression = theExpressions.get(i);
             if (theExpression instanceof IFExpression) {
                 final IFExpression theIf = (IFExpression) theExpression;
@@ -829,66 +827,61 @@ public class Relooper {
                     final Expression theLast = theExpressions.get(theExpressions.size() - 1);
                     if (theLast instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) theLast;
-                        try {
-                            final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
-                            final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.getJumpTarget());
-                            if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
-                                // We have a candidate!!
-                                final Value theCondition = theIf.incomingDataFlows().get(0);
+                        final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
+                        final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.getJumpTarget());
+                        if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+                            // We have a candidate!!
+                            final Value theCondition = theIf.incomingDataFlows().get(0);
 
-                                final Set<RegionNode> theNextEntries = new HashSet<>();
-                                final Set<RegionNode> theNextTagSoup = new HashSet<>(aLabelSoup);
-                                final Set<RegionNode> theTrueDominated = theTrueBranch.dominatedNodes();
-                                final Set<RegionNode> theFalseDominated = theFalseBranch.dominatedNodes();
-                                theNextTagSoup.removeAll(theTrueDominated);
-                                theNextTagSoup.removeAll(theFalseDominated);
-                                theNextTagSoup.remove(aEntry);
+                            final Set<RegionNode> theNextEntries = new HashSet<>();
+                            final Set<RegionNode> theNextTagSoup = new HashSet<>(aLabelSoup);
+                            final Set<RegionNode> theTrueDominated = theTrueBranch.dominatedNodes();
+                            final Set<RegionNode> theFalseDominated = theFalseBranch.dominatedNodes();
+                            theNextTagSoup.removeAll(theTrueDominated);
+                            theNextTagSoup.removeAll(theFalseDominated);
+                            theNextTagSoup.remove(aEntry);
 
-                                // Calculate the entries for the next block
-                                for (final RegionNode theTrue : theTrueDominated) {
-                                    for (Map.Entry<RegionNode.Edge, RegionNode> theEntry : theTrue.getSuccessors().entrySet()) {
-                                        RegionNode theNode = theEntry.getValue();
-                                        if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
-                                            theNextEntries.add(theNode);
-                                        }
+                            // Calculate the entries for the next block
+                            for (final RegionNode theTrue : theTrueDominated) {
+                                for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theTrue.getSuccessors().entrySet()) {
+                                    final RegionNode theNode = theEntry.getValue();
+                                    if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
+                                        theNextEntries.add(theNode);
                                     }
                                 }
-
-                                for (final RegionNode theFalse : theFalseDominated) {
-                                    for (Map.Entry<RegionNode.Edge, RegionNode> theEntry : theFalse.getSuccessors().entrySet()) {
-                                        RegionNode theNode = theEntry.getValue();
-                                        if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
-                                            theNextEntries.add(theNode);
-                                        }
-                                    }
-                                }
-
-                                final Block theTrueBranchBlock = reloop(aGraph, Collections.singleton(theTrueBranch),
-                                        theTrueDominated);
-                                final Block theFalseBranchBlock = reloop(aGraph, Collections.singleton(theFalseBranch),
-                                        theFalseDominated);
-
-                                final ExpressionList thePrelude = new ExpressionList();
-                                for (int j = 0; j < i; j++) {
-                                    thePrelude.add(theExpressions.get(j));
-                                }
-
-                                Block theNextBlock = null;
-                                if (!theNextEntries.isEmpty()) {
-                                    theNextBlock = reloop(aGraph, theNextEntries, theNextTagSoup);
-                                }
-
-                                return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
-                                        theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
                             }
-                        } catch (final Exception e) {
-                            // Might happen, cannot recover, will continue with fallback handling
-                            //...
+
+                            for (final RegionNode theFalse : theFalseDominated) {
+                                for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theFalse.getSuccessors().entrySet()) {
+                                    final RegionNode theNode = theEntry.getValue();
+                                    if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
+                                        theNextEntries.add(theNode);
+                                    }
+                                }
+                            }
+
+                            final Block theTrueBranchBlock = reloop(aGraph, Collections.singleton(theTrueBranch),
+                                    theTrueDominated);
+                            final Block theFalseBranchBlock = reloop(aGraph, Collections.singleton(theFalseBranch),
+                                    theFalseDominated);
+
+                            final ExpressionList thePrelude = new ExpressionList();
+                            for (int j = 0; j < i; j++) {
+                                thePrelude.add(theExpressions.get(j));
+                            }
+
+                            Block theNextBlock = null;
+                            if (!theNextEntries.isEmpty()) {
+                                theNextBlock = reloop(aGraph, theNextEntries, theNextTagSoup);
+                            }
+
+                            return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
+                                    theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
                         }
                     }
                 }
             }
-        }*/
+        }
 
         final Set<RegionNode> theNextEntries = new HashSet<>();
         final Set<RegionNode> theDominated = aEntry.dominatedNodes();
@@ -901,7 +894,7 @@ public class Relooper {
             }
         }
 
-        final Set<RegionNode> theOtherLabels = aEntry.dominatedNodes();
+        final Set<RegionNode> theOtherLabels = new HashSet<>(aEntry.dominatedNodes());
         theOtherLabels.remove(aEntry);
         return new SimpleBlock(aEntryLabels, aEntry, reloop(aGraph, theNextEntries, theOtherLabels));
     }
