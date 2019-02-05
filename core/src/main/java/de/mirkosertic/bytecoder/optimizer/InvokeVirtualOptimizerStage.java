@@ -26,44 +26,48 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.List;
 import java.util.Optional;
 
-public class InvokeVirtualOptimizer extends RecursiveExpressionVisitor implements Optimizer {
+public class InvokeVirtualOptimizerStage implements OptimizerStage {
 
     @Override
-    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-        visit(aGraph, aLinkerContext);
-    }
+    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+            final ExpressionList aExpressionList, final Expression aExpression) {
 
-    @Override
-    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression,
-                         final BytecodeLinkerContext aLinkerContext) {
         if (aExpression instanceof InvokeVirtualMethodExpression) {
-            visit(aList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext);
+            return visit(aExpressionList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext);
         }
+
         if (aExpression instanceof VariableAssignmentExpression) {
-            visit((VariableAssignmentExpression) aExpression, aLinkerContext);
+            return visit((VariableAssignmentExpression) aExpression, aLinkerContext);
         }
+
+        return aExpression;
     }
 
-    private void visit(final VariableAssignmentExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+    private Expression visit(final VariableAssignmentExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
         final Value theValue = aExpression.getValue();
         if (theValue instanceof InvokeVirtualMethodExpression) {
             final Optional<DirectInvokeMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
             theNewExpression.ifPresent(
                     directInvokeMethodExpression -> aExpression.replaceIncomingDataEdge(theValue, directInvokeMethodExpression));
         }
+        return aExpression;
     }
 
-    private void visit(final ExpressionList aExpressions, final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+    private Expression visit(final ExpressionList aExpressions, final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
         final Optional<DirectInvokeMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
-        theNewExpression
-                .ifPresent(directInvokeMethodExpression -> aExpressions.replace(aExpression, directInvokeMethodExpression));
+        if (theNewExpression.isPresent()) {
+            final Expression theNew = theNewExpression.get();
+            aExpressions.replace(aExpression, theNew);
+            return theNew;
+        }
+        return aExpression;
     }
 
     private Optional<DirectInvokeMethodExpression> visit(final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {

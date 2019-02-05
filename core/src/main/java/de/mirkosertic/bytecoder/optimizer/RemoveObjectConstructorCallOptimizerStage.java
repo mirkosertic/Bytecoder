@@ -20,25 +20,22 @@ import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.util.Objects;
 
-public class RemoveObjectConstructorCallOptimizer extends RecursiveExpressionVisitor implements Optimizer {
+public class RemoveObjectConstructorCallOptimizerStage implements OptimizerStage {
 
     @Override
-    public void optimize(ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext) {
-        visit(aGraph, aLinkerContext);
-    }
-
-    @Override
-    protected void visit(ControlFlowGraph aGraph, ExpressionList aList, Expression aExpression,
-            BytecodeLinkerContext aLinkerContext) {
+    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+            final ExpressionList aExpressionList, final Expression aExpression) {
         if (aExpression instanceof DirectInvokeMethodExpression) {
-            DirectInvokeMethodExpression theInvoke = (DirectInvokeMethodExpression) aExpression;
+            final DirectInvokeMethodExpression theInvoke = (DirectInvokeMethodExpression) aExpression;
             if ("<init>".equals(theInvoke.getMethodName()) && Objects.equals(theInvoke.getClazz().name(), Object.class.getName())) {
-                aList.remove(theInvoke);
+                aExpressionList.remove(theInvoke);
+                return null;
             }
         }
+        return aExpression;
     }
 }
