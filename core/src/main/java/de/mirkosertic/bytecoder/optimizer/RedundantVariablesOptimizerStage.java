@@ -15,9 +15,6 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
@@ -28,21 +25,21 @@ import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor implements Optimizer {
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class RedundantVariablesOptimizerStage implements OptimizerStage {
 
     @Override
-    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-        visit(aGraph, aLinkerContext);
-    }
+    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+            final ExpressionList aExpressionList, final Expression aExpression) {
 
-    @Override
-    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
         if ((aExpression instanceof VariableAssignmentExpression) ||
                 (aExpression instanceof InvocationExpression) ||
                 (aExpression instanceof ReturnValueExpression) ||
@@ -53,7 +50,7 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
             while(modified) {
                 modified = false;
                 final List<Value> theIncoming = aExpression.incomingDataFlowsRecursive();
-                final Expression theBefore = aList.predecessorOf(aExpression);
+                final Expression theBefore = aExpressionList.predecessorOf(aExpression);
                 if (theBefore instanceof VariableAssignmentExpression) {
                     final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
                     final Variable theVariable = theAssignment.getVariable();
@@ -65,7 +62,7 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
                             // We can replace the variable with its assigned value
                             // We variable can also be deleted
                             // We variable assignment is also no longer used
-                            aList.remove(theBefore);
+                            aExpressionList.remove(theBefore);
 
                             aExpression.replaceIncomingDataEdgeRecursive(theVariable, theVariableValue);
                             aGraph.getProgram().deleteVariable(theVariable);
@@ -76,5 +73,6 @@ public class RedundantVariablesOptimizer extends RecursiveExpressionVisitor impl
                 }
             }
         }
+        return aExpression;
     }
 }

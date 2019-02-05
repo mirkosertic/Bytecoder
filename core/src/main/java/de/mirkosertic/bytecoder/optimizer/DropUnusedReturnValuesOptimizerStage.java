@@ -22,7 +22,7 @@ import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
-import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
@@ -30,26 +30,24 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DropUnusedReturnValuesOptimizer extends RecursiveExpressionVisitor implements Optimizer {
+public class DropUnusedReturnValuesOptimizerStage implements OptimizerStage{
 
     @Override
-    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-        visit(aGraph, aLinkerContext);
-    }
-
-    @Override
-    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
-        if ((aExpression instanceof VariableAssignmentExpression)) {
+    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+            final ExpressionList aExpressionList, final Expression aExpression) {
+        if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Variable theVariable = theAssignment.getVariable();
             final Value theValue = theAssignment.getValue();
             if (theValue instanceof InvocationExpression) {
                 final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
                 if (theDataEdges.isEmpty()) {
-                    aList.replace(aExpression, (InvocationExpression) theValue);
+                    aExpressionList.replace(aExpression, (InvocationExpression) theValue);
                     aGraph.getProgram().deleteVariable(theVariable);
+                    return (InvocationExpression) theValue;
                 }
             }
         }
+        return aExpression;
     }
 }

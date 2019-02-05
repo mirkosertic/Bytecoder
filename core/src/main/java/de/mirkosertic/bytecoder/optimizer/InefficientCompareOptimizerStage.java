@@ -26,7 +26,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.RecursiveExpressionVisitor;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
@@ -34,22 +34,18 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class InefficientCompareOptimizer extends RecursiveExpressionVisitor implements Optimizer {
+public class InefficientCompareOptimizerStage implements OptimizerStage{
 
     @Override
-    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-        visit(aGraph, aLinkerContext);
-    }
-
-    @Override
-    protected void visit(final ControlFlowGraph aGraph, final ExpressionList aList, final Expression aExpression, final BytecodeLinkerContext aLinkerContext) {
+    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+            final ExpressionList aExpressionList, final Expression aExpression) {
         if (aExpression instanceof IFExpression) {
             final IFExpression theIf = (IFExpression) aExpression;
             final Value theCondition = theIf.incomingDataFlows().get(0);
             if (theCondition instanceof FixedBinaryExpression) {
                 final FixedBinaryExpression theBinary = (FixedBinaryExpression) theCondition;
                 final Value theFirst = theBinary.incomingDataFlows().get(0);
-                final Expression theBefore = aList.predecessorOf(aExpression);
+                final Expression theBefore = aExpressionList.predecessorOf(aExpression);
                 if (theBefore instanceof VariableAssignmentExpression) {
                     final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
                     final Variable theVariable = theAssignment.getVariable();
@@ -57,9 +53,10 @@ public class InefficientCompareOptimizer extends RecursiveExpressionVisitor impl
                         final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter())
                                 .collect(Collectors.toList());
                         if ((theDataEdges.size() == 1) && (theFirst == theDataEdges.get(0).sourceNode())) {
-                            aList.remove(theAssignment);
+                            aExpressionList.remove(theAssignment);
                             theBinary.replaceIncomingDataEdge(theVariable, theAssignment.getValue());
                             aGraph.getProgram().deleteVariable(theVariable);
+                            return aExpression;
                         }
                     }
                 }
@@ -69,7 +66,7 @@ public class InefficientCompareOptimizer extends RecursiveExpressionVisitor impl
                 final Value theFirst = theBinary.incomingDataFlows().get(0);
                 final Value theSecond = theBinary.incomingDataFlows().get(1);
                 if (theSecond instanceof IntegerValue) {
-                    final Expression theBefore = aList.predecessorOf(aExpression);
+                    final Expression theBefore = aExpressionList.predecessorOf(aExpression);
                     if (theBefore instanceof VariableAssignmentExpression) {
                         final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
                         final Variable theVariable = theAssignment.getVariable();
@@ -90,49 +87,49 @@ public class InefficientCompareOptimizer extends RecursiveExpressionVisitor impl
                                             // compareResult >= 0      -> A >= B
                                             final BinaryExpression theNewCondition = new BinaryExpression(theCompare.resolveType(), theA, BinaryExpression.Operator.GREATEROREQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
-                                            aList.remove(theAssignment);
+                                            aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
-                                            break;
+                                            return aExpression;
                                         }
                                         case GREATERTHAN: {
                                             // compareResult >0        -> A > B
                                             final BinaryExpression theNewCondition = new BinaryExpression(theCompare.resolveType(), theA, BinaryExpression.Operator.GREATERTHAN, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
-                                            aList.remove(theAssignment);
+                                            aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
-                                            break;
+                                            return aExpression;
                                         }
                                         case LESSTHANOREQUALS: {
                                             // compareResult <=0       -> A <= B
                                             final BinaryExpression theNewCondition = new BinaryExpression(theCompare.resolveType(), theA, BinaryExpression.Operator.LESSTHANOREQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
-                                            aList.remove(theAssignment);
+                                            aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
-                                            break;
+                                            return aExpression;
                                         }
                                         case LESSTHAN: {
                                             // compareResult <0        -> A < B
                                             final BinaryExpression theNewCondition = new BinaryExpression(theCompare.resolveType(), theA, BinaryExpression.Operator.LESSTHAN, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
-                                            aList.remove(theAssignment);
+                                            aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
-                                            break;
+                                            return aExpression;
                                         }
                                         case EQUALS: {
                                             // compareResult == 0        -> A == B
                                             final BinaryExpression theNewCondition = new BinaryExpression(theCompare.resolveType(), theA, BinaryExpression.Operator.EQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
-                                            aList.remove(theAssignment);
+                                            aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
-                                            break;
+                                            return aExpression;
                                         }
                                         case NOTEQUALS: {
                                             // compareResult != 0        -> A != B
                                             final BinaryExpression theNewCondition = new BinaryExpression(theCompare.resolveType(), theA, BinaryExpression.Operator.NOTEQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
-                                            aList.remove(theAssignment);
+                                            aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
-                                            break;
+                                            return aExpression;
                                         }
                                     }
                                 }
@@ -142,5 +139,6 @@ public class InefficientCompareOptimizer extends RecursiveExpressionVisitor impl
                 }
             }
         }
+        return aExpression;
     }
 }
