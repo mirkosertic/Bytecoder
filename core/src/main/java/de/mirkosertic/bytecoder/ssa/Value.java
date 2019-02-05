@@ -25,11 +25,20 @@ import java.util.stream.Collectors;
 
 public abstract class Value extends Node {
 
+    private List<? extends Value> cachedIncomingFlows;
+    private List<? extends Value> cachedIncomingFlowsRecursive;
+
     protected Value() {
+    }
+
+    private void resetCaches() {
+        cachedIncomingFlowsRecursive = null;
+        cachedIncomingFlows = null;
     }
 
     protected void receivesDataFrom(final Value aOtherValue) {
         aOtherValue.addEdgeTo(new DataFlowEdgeType(), this);
+        resetCaches();
     }
 
     protected void receivesDataFrom(final List<Value> aValues) {
@@ -45,11 +54,17 @@ public abstract class Value extends Node {
     }
 
     public <T extends Value> List<T> incomingDataFlows() {
-        return incomingEdges(DataFlowEdgeType.filter()).map(t -> (T) t.sourceNode()).collect(Collectors.toList());
+        if (cachedIncomingFlows == null) {
+            cachedIncomingFlows = incomingEdges(DataFlowEdgeType.filter()).map(t -> (T) t.sourceNode()).collect(Collectors.toList());
+        }
+        return (List<T>) cachedIncomingFlows;
     }
 
     public <T extends Value> List<T> incomingDataFlowsRecursive() {
-        return incomingDataFlowsRecursive(new ArrayList<>());
+        if (cachedIncomingFlowsRecursive == null) {
+            cachedIncomingFlowsRecursive = incomingDataFlowsRecursive(new ArrayList<>());
+        }
+        return (List<T>) cachedIncomingFlowsRecursive;
     }
 
     private <T extends Value> List<T> incomingDataFlowsRecursive(final List<T> aValues) {
@@ -83,12 +98,14 @@ public abstract class Value extends Node {
                 aEdge.newSourceIs(aNewValue);
             }
         });
+        resetCaches();
     }
 
     public void replaceIncomingDataEdgeRecursive(final Value aOldValue, final Value aNewValue) {
         for (final Value theValue : incomingDataFlowsRecursive()) {
             theValue.replaceIncomingDataEdge(aOldValue, aNewValue);
         }
+        resetCaches();
     }
 
     public void routeIncomingDataFlowsTo(final Value aNewExpression) {
@@ -96,6 +113,7 @@ public abstract class Value extends Node {
             aEdge.newTargetId(aNewExpression);
             aNewExpression.addIncomingEdge(aEdge);
         });
+        resetCaches();
     }
 
     public abstract TypeRef resolveType();
