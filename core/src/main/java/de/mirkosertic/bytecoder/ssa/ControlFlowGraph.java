@@ -116,11 +116,6 @@ public class ControlFlowGraph {
         throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
     }
 
-
-    public List<RegionNode> getDominatedNodes() {
-        return new ArrayList<>(dominatedNodes);
-    }
-
     public List<RegionNode> getKnownNodes() {
         return new ArrayList<>(knownNodes);
     }
@@ -431,14 +426,5 @@ public class ControlFlowGraph {
         final Set<RegionNode> theUnmodifiable = Collections.unmodifiableSet(theResult);
         dominationCache.put(aNode, theUnmodifiable);
         return theUnmodifiable;
-    }
-
-    public void delete(final RegionNode aNode) {
-        for (final RegionNode theNode : knownNodes) {
-            theNode.removeEdgesTo(aNode);
-            theNode.removeFromPaths(aNode);
-        }
-        knownNodes.remove(aNode);
-        dominatedNodes.remove(aNode);
     }
 }

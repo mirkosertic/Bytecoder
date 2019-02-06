@@ -20,14 +20,16 @@ import java.util.Map;
 
 public class BytecodeMethodCollection {
 
+    private final Map<BytecodeMethod, BytecodeVirtualMethodIdentifier> knownIdentifierPerMethod;
     private final Map<String, BytecodeVirtualMethodIdentifier> knownIdentifier;
 
     public BytecodeMethodCollection() {
         knownIdentifier = new HashMap<>();
+        knownIdentifierPerMethod = new HashMap<>();
     }
 
-    public BytecodeVirtualMethodIdentifier identifierFor(String aMethodName, BytecodeMethodSignature aSignature) {
-        String theSignature = toSignature(aMethodName, aSignature);
+    public BytecodeVirtualMethodIdentifier identifierFor(final String aMethodName, final BytecodeMethodSignature aSignature) {
+        final String theSignature = toSignature(aMethodName, aSignature);
         BytecodeVirtualMethodIdentifier theIdentifier = knownIdentifier.get(theSignature);
         if (theIdentifier == null) {
             theIdentifier = new BytecodeVirtualMethodIdentifier(knownIdentifier.size());
@@ -36,34 +38,39 @@ public class BytecodeMethodCollection {
         return theIdentifier;
     }
 
-    public BytecodeVirtualMethodIdentifier identifierFor(BytecodeMethod aMethod) {
-        return identifierFor(aMethod.getName().stringValue(), aMethod.getSignature());
+    public BytecodeVirtualMethodIdentifier identifierFor(final BytecodeMethod aMethod) {
+        BytecodeVirtualMethodIdentifier theIdentifier = knownIdentifierPerMethod.get(aMethod);
+        if (theIdentifier == null) {
+            theIdentifier = identifierFor(aMethod.getName().stringValue(), aMethod.getSignature());
+            knownIdentifierPerMethod.put(aMethod, theIdentifier);
+        }
+        return theIdentifier;
     }
 
-    public BytecodeVirtualMethodIdentifier toIdentifier(String aMethodName, BytecodeMethodSignature aSignature) {
+    public BytecodeVirtualMethodIdentifier toIdentifier(final String aMethodName, final BytecodeMethodSignature aSignature) {
         return knownIdentifier.get(toSignature(aMethodName, aSignature));
     }
 
-    private String toSignature(String aMethodName, BytecodeMethodSignature aSignature) {
-        StringBuilder theStringBuilder = new StringBuilder();
+    private String toSignature(final String aMethodName, final BytecodeMethodSignature aSignature) {
+        final StringBuilder theStringBuilder = new StringBuilder();
         theStringBuilder.append(toSignature(aSignature.getReturnType()));
         theStringBuilder.append(aMethodName);
-        for (BytecodeTypeRef theRef : aSignature.getArguments()) {
+        for (final BytecodeTypeRef theRef : aSignature.getArguments()) {
             theStringBuilder.append(toSignature(theRef));
         }
         return theStringBuilder.toString();
     }
 
-    private String toSignature(BytecodeTypeRef aTypeRef) {
+    private String toSignature(final BytecodeTypeRef aTypeRef) {
         if (aTypeRef instanceof BytecodeObjectTypeRef) {
-            BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
             return theTypeRef.name().replace(".","_");
         }
         if (aTypeRef instanceof BytecodePrimitiveTypeRef) {
-            BytecodePrimitiveTypeRef theRef = (BytecodePrimitiveTypeRef) aTypeRef;
+            final BytecodePrimitiveTypeRef theRef = (BytecodePrimitiveTypeRef) aTypeRef;
             return theRef.name();
         }
-        BytecodeArrayTypeRef theArrayRef = (BytecodeArrayTypeRef) aTypeRef;
+        final BytecodeArrayTypeRef theArrayRef = (BytecodeArrayTypeRef) aTypeRef;
         return "A" + theArrayRef.getDepth() + toSignature(theArrayRef.getType());
     }
 }

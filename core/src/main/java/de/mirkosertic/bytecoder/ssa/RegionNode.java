@@ -325,21 +325,4 @@ public class RegionNode {
             }
         }
     }
-
-    public void removeEdgesTo(final RegionNode aNode) {
-        final Map<Edge, RegionNode> theNewSucc = new HashMap<>();
-        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
-            if (!(theEntry.getValue() == aNode)) {
-                theNewSucc.put(theEntry.getKey(), theEntry.getValue());
-            }
-        }
-        successors.clear();
-        successors.putAll(theNewSucc);
-    }
-
-    public void removeFromPaths(final RegionNode aNode) {
-        for (final GraphNodePath thePath : reachableBy) {
-            thePath.remove(aNode);
-        }
-    }
 }
