@@ -51,20 +51,4 @@ public class GraphNodePath {
     public boolean contains(final RegionNode aNode) {
         return nodes.contains(aNode);
     }
-
-    public void remove(final RegionNode aNodeToDelete) {
-        nodes.remove(aNodeToDelete);
-    }
-
-    public boolean isReachableTrueExceptionHandler() {
-        for (final RegionNode theNode : nodes) {
-            if (theNode.getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
-                return true;
-            }
-            if (theNode.getType() == RegionNode.BlockType.FINALLY) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
