@@ -21,7 +21,6 @@ import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
 import org.apache.commons.io.IOUtils;
@@ -156,8 +155,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theCapabilities);
     }
 
-    private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
-        final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend ");
+    private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final boolean aMinify) {
+        final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend Minify = " + aMinify);
         aRunNotifier.fireTestStarted(theDescription);
 
         WebDriver theDriver = null;
@@ -166,29 +165,27 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.js);
 
             final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
-            final BytecodeMethodSignature theGetLastExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                    Throwable.class), new BytecodeTypeRef[0]);
 
             final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
             final StringWriter theStrWriter = new StringWriter();
             final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512);
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, aMinify);
             final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final JSCompileResult.JSContent content = result.getContent()[0];
 
             theCodeWriter.println(content.asString());
 
-            final String theFilename = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
+            final String theFilename = result.getMinifier().toClassName(theTypeRef) + "." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
             theCodeWriter.println();
 
             theCodeWriter.println("console.log(\"Starting test\");");
             theCodeWriter.println("bytecoder.bootstrap();");
-            theCodeWriter.println("var theTestInstance = new " + theCompileTarget.toClassName(theTypeRef) + ".Create();");
+            theCodeWriter.println("var theTestInstance = new " + result.getMinifier().toClassName(theTypeRef) + ".C();");
             theCodeWriter.println("try {");
-            theCodeWriter.println("     theTestInstance." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
+            theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
             theCodeWriter.println("     console.log(\"Test finished OK\");");
             theCodeWriter.println("} catch (e) {");
             theCodeWriter.println("     if (e.exception) {");
@@ -257,13 +254,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
             final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512);
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, false);
             final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
             final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
             final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
             final WASMCompileResult.WASMCompileContent jsContent = theResult.getContent()[2];
 
-            final String theFileName = theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.html";
+            final String theFileName = theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.html";
 
             final File theWorkingDirectory = new File(".");
 
@@ -425,15 +422,15 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             theWriter.flush();
             theWriter.close();
 
-            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wat"))) {
+            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wat"))) {
                 textualContent.writeTo(fos);
             }
 
-            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.js"))) {
+            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.js"))) {
                 jsContent.writeTo(fos);
             }
 
-            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theCompileTarget.toClassName(theTypeRef) + "." + theCompileTarget.toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wasm"))) {
+            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_ast.wasm"))) {
                 binaryContent.writeTo(fos);
             }
 
@@ -482,16 +479,20 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else if (null != getDescription().getAnnotation(JSOnly.class)) {
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
         } else if (null != getDescription().getAnnotation(JSAndJVMOnly.class)) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
         } else if (null != getDescription().getAnnotation(JSAndWASMOnly.class)) {
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         }
     }

@@ -20,16 +20,16 @@ import de.mirkosertic.bytecoder.ssa.Program;
 
 import java.io.PrintWriter;
 
-public class IndentSSAWriter {
+public class IndentSSAWriter<T extends PrintWriter> {
 
     protected final Program program;
     protected final BytecodeLinkerContext linkerContext;
     protected final String indent;
-    protected final PrintWriter writer;
+    protected final T writer;
     private boolean newLine;
     protected final CompileOptions options;
 
-    public IndentSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext) {
+    public IndentSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final T aWriter, final BytecodeLinkerContext aLinkerContext) {
         writer = aWriter;
         indent = aIndent;
         program = aProgram;

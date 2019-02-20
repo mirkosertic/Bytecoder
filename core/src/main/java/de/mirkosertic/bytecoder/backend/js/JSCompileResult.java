@@ -46,13 +46,19 @@ public class JSCompileResult implements CompileResult<String> {
     }
 
     private final JSContent[] content;
+    private final JSMinifier minifier;
 
-    public JSCompileResult(final JSContent... content) {
+    public JSCompileResult(final JSMinifier aMinifier, final JSContent... content) {
+        this.minifier = aMinifier;
         this.content = content;
     }
 
     @Override
     public JSContent[] getContent() {
         return content;
+    }
+
+    public JSMinifier getMinifier() {
+        return minifier;
     }
 }
