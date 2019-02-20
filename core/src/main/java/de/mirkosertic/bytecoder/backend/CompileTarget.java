@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.backend;
 
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
-import de.mirkosertic.bytecoder.backend.js.JSWriterUtils;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -99,16 +98,16 @@ public class CompileTarget {
             // We have to link all callback implementations. They are not part of the dependency yet as
             // they are not invoked by the bytecode, but from the outside world. By adding them to the
             // dependency tree, we make sure they are available for invocation.
-            List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(t -> t.targetNode())
+            final List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(t -> t.targetNode())
                     .collect(Collectors.toList());
-            for (BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
+            for (final BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
                 if (theLinkedClass.isCallback()) {
                     if (theAlreadySeen.add(theLinkedClass)) {
                         somethingAdded = true;
-                        BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
+                        final BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
                         aOptions.getLogger()
                                 .info("Resolving callback {}", theBytecodeClass.getThisInfo().getConstant().stringValue());
-                        for (BytecodeMethod theCallbackMethod : theBytecodeClass.getMethods()) {
+                        for (final BytecodeMethod theCallbackMethod : theBytecodeClass.getMethods()) {
                             if (!theCallbackMethod.isConstructor() && !theCallbackMethod.isClassInitializer()) {
                                 aOptions.getLogger()
                                         .info("Resolving callback method {} {}", theCallbackMethod.getName().stringValue(),
@@ -126,14 +125,6 @@ public class CompileTarget {
         }
 
         return backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);
-    }
-
-    public String toClassName(final BytecodeObjectTypeRef aTypeRef) {
-        return JSWriterUtils.toClassName(aTypeRef);
-    }
-
-    public String toMethodName(final String aName, final BytecodeMethodSignature aSignature) {
-        return JSWriterUtils.toMethodName(aName, aSignature);
     }
 
     public BytecodeMethodSignature toMethodSignature(final Method aMethod) {

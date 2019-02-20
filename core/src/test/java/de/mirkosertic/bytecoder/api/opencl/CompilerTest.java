@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileBackend;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileResult;
@@ -27,8 +29,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 
 public class CompilerTest {
 
@@ -78,7 +78,7 @@ public class CompilerTest {
     public void testSimpleKernel() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512);
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false);
 
         final Kernel theKernel = createKernel();
         final Class theKernelClass = theKernel.getClass();
@@ -105,7 +105,7 @@ public class CompilerTest {
     public void testKernelWithComplexType() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512);
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false);
 
         final Float2[] theIn = new Float2[10];
         final Float2[] theOut = new Float2[10];

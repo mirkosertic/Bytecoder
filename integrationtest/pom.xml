@@ -143,6 +143,7 @@
                             <backend>js</backend>
                             <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
                             <enableExceptionHandling>false</enableExceptionHandling>
+                            <minifyCompileResult>true</minifyCompileResult>
                         </configuration>
                     </execution>
                     <execution>
@@ -155,6 +156,7 @@
                             <backend>js</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>bytecoder-kotlin</filenamePrefix>
+                            <minifyCompileResult>true</minifyCompileResult>
                         </configuration>
                     </execution>
                     <execution>
@@ -204,6 +206,7 @@
                             <backend>js</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>bytecoder-luademojs</filenamePrefix>
+                            <minifyCompileResult>true</minifyCompileResult>
                         </configuration>
                     </execution>
 

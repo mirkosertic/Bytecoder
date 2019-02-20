@@ -27,9 +27,11 @@ public class CompileOptions {
     private final String filenamePrefix;
     private final int wasmMinimumPageSize;
     private final int wasmMaximumPageSize;
+    private final boolean minify;
 
     public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
-                          final String aFilenamePrefix, final int aWasmMinimumPageSize, final int aWasmMaximumPageSize) {
+                          final String aFilenamePrefix, final int aWasmMinimumPageSize, final int aWasmMaximumPageSize,
+                          final boolean aMinify) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
@@ -37,7 +39,7 @@ public class CompileOptions {
         filenamePrefix = aFilenamePrefix;
         wasmMinimumPageSize = aWasmMinimumPageSize;
         wasmMaximumPageSize = aWasmMaximumPageSize;
-
+        minify = aMinify;
     }
 
     public Logger getLogger() {
@@ -66,5 +68,9 @@ public class CompileOptions {
 
     public int getWasmMaximumPageSize() {
         return wasmMaximumPageSize;
+    }
+
+    public boolean isMinify() {
+        return minify;
     }
 }

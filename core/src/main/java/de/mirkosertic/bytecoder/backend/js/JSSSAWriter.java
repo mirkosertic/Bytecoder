@@ -112,20 +112,22 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class JSSSAWriter extends IndentSSAWriter {
+public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
     private final ConstantPool constantPool;
     private boolean labelRequired;
+    private final JSMinifier minifier;
 
-    public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-            final ConstantPool aConstantPool, final boolean aLabelRequired) {
+    public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
+            final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         constantPool = aConstantPool;
         labelRequired = aLabelRequired;
+        minifier = aMinifier;
     }
 
     private JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool, labelRequired);
+        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool, labelRequired, minifier);
     }
 
     private void print(final Value aValue) {
@@ -250,7 +252,9 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
-        print(".ClassgetClass()");
+        print(".");
+        print(minifier.toMethodName("getClass", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0])));
+        print("()");
     }
 
     private void print(final StackTopExpression aValue) {
@@ -263,7 +267,7 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final ResolveCallsiteObjectExpression aValue) {
         print("bytecoder.resolveStaticCallSiteObject(");
-        print(JSWriterUtils.toClassName(aValue.getOwningClass().getThisInfo()));
+        print(minifier.toClassName(aValue.getOwningClass().getThisInfo()));
         print(",'");
         print(aValue.getCallsiteId());
         println("', function() {");
@@ -325,9 +329,9 @@ public class JSSSAWriter extends IndentSSAWriter {
     private void print(final MethodRefExpression aValue) {
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
-        print(JSWriterUtils.toClassName(aValue.getClassName()));
+        print(minifier.toClassName(aValue.getClassName()));
         print(".");
-        print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+        print(minifier.toMethodName(theMethodName, theSignature));
     }
 
     private void print(final FloorExpression aValue) {
@@ -384,8 +388,8 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void print(final ClassReferenceValue aValue) {
-        print(JSWriterUtils.toClassName(aValue.getType()));
-        print(".init()");
+        print(minifier.toClassName(aValue.getType()));
+        print(".i()");
     }
 
     private void print(final InstanceOfExpression aValue) {
@@ -399,10 +403,10 @@ public class JSSSAWriter extends IndentSSAWriter {
         final BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
         if (!theConstant.stringValue().startsWith("[")) {
             final BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
-            print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
+            print(minifier.toClassName(theLinkedClass.getClassName()));
         } else {
             final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-            print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
+            print(minifier.toClassName(theLinkedClass.getClassName()));
         }
 
         print(")");
@@ -608,8 +612,8 @@ public class JSSSAWriter extends IndentSSAWriter {
 
     private void print(final NewObjectExpression aValue) {
         print("new ");
-        print(JSWriterUtils.toClassName(aValue.getType()));
-        print(".Create()");
+        print(minifier.toClassName(aValue.getType()));
+        print(".C()");
     }
 
     private String conversionFunctionToBytecoderForOpaqueType(final BytecodeTypeRef aTypeRef) {
@@ -654,7 +658,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 }
 
                 final BytecodeMethod theCallbackMethod = availableCallbacks.get(0);
-                final String theMethodName = JSWriterUtils.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
+                final String theMethodName = minifier.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
 
                 print("function() {");
                 print("var v = ");
@@ -734,9 +738,9 @@ public class JSSSAWriter extends IndentSSAWriter {
                 }
             } else {
                 // We continue the normal flow, as method implementation is provided by the bytecode
-                print(JSWriterUtils.toClassName(aValue.getClassName()));
+                print(minifier.toClassName(aValue.getClassName()));
                 print(".");
-                print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+                print(minifier.toMethodName(theMethodName, theSignature));
                 print("(");
 
                 final List<Value> theVariables = aValue.incomingDataFlows();
@@ -751,9 +755,9 @@ public class JSSSAWriter extends IndentSSAWriter {
             }
         } else {
 
-            print(JSWriterUtils.toClassName(aValue.getClassName()));
-            print(".init().");
-            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            print(minifier.toClassName(aValue.getClassName()));
+            print(".i().");
+            print(minifier.toMethodName(theMethodName, theSignature));
             print("(");
 
             final List<Value> theVariables = aValue.incomingDataFlows();
@@ -785,14 +789,14 @@ public class JSSSAWriter extends IndentSSAWriter {
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
             if ("<init>".equals(theMethodName)) {
-                print(JSWriterUtils.toClassName(aValue.getClazz()));
+                print(minifier.toClassName(aValue.getClazz()));
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-                print(JSWriterUtils.toClassName(theEntry.getProvidingClass().getClassName()));
+                print(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
             }
             print(".");
-            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            print(minifier.toMethodName(theMethodName, theSignature));
 
             print("(");
 
@@ -950,7 +954,7 @@ public class JSSSAWriter extends IndentSSAWriter {
         } else {
             print(theTarget);
             print(".");
-            print(JSWriterUtils.toMethodName(theMethodName, theSignature));
+            print(minifier.toMethodName(theMethodName, theSignature));
             print("(");
         }
 
@@ -971,16 +975,16 @@ public class JSSSAWriter extends IndentSSAWriter {
     }
 
     private void printVariableName(final Variable aVariable) {
-        print(aVariable.getName());
+        print(minifier.toVariableName(aVariable.getName()));
     }
 
     private void printStaticFieldReference(final BytecodeFieldRefConstant aField) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-        print(JSWriterUtils.toClassName(theField.getProvidingClass().getClassName()));
-        print(".init().");
-        print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        print(minifier.toClassName(theField.getProvidingClass().getClassName()));
+        print(".i().");
+        print(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -1018,7 +1022,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                     print("var ");
                 }
 
-                print(theVariable.getName());
+                print(minifier.toVariableName(theVariable.getName()));
                 print(" = (");
                 print(theValue);
                 print(")");
@@ -1366,7 +1370,7 @@ public class JSSSAWriter extends IndentSSAWriter {
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
                 theGuard.print("CURRENTEXCEPTION.exception.instanceOf(");
-                theGuard.print(JSWriterUtils.toClassName(theLinkedClass.getClassName()));
+                theGuard.print(minifier.toClassName(theLinkedClass.getClassName()));
                 theGuard.print(")");
                 first = false;
             }

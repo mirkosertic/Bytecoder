@@ -130,9 +130,17 @@ public class WASMCompileResult implements CompileResult<String> {
     }
 
     private final WASMCompileContent[] content;
+    private final WASMMinifier minifier;
 
-    public WASMCompileResult(final WASMCompileContent... content) {
+    public WASMCompileResult(
+            final WASMMinifier minifier,
+            final WASMCompileContent... content) {
+        this.minifier = minifier;
         this.content = content;
+    }
+
+    public WASMMinifier getMinifier() {
+        return minifier;
     }
 
     @Override
