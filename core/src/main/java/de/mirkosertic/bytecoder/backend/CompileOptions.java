@@ -47,7 +47,7 @@ public class CompileOptions {
     }
 
     public boolean isDebugOutput() {
-        return debugOutput;
+        return debugOutput && (!minify);
     }
 
     public Optimizer getOptimizer() {
