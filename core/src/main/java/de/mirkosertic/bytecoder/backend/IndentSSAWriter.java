@@ -56,12 +56,6 @@ public class IndentSSAWriter<T extends PrintWriter> {
         newLine = true;
     }
 
-    public void printlnComment(final String aComment) {
-        checkNewLine();
-        writer.print("// ");
-        println(aComment);
-    }
-
     public void println(final String s) {
         checkNewLine();
         writer.println(s);

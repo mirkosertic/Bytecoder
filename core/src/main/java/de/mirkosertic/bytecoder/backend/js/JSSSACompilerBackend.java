@@ -178,10 +178,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("nanoTime").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now() * 1000000;").newLine();
         theWriter.tab(3).text("},").newLine();
-        theWriter.tab(3).text("writeByteArrayToConsole").colon().text("function(thisRef,p1)").space().text("{").newLine();
+        theWriter.tab(3).text("writeByteArrayToConsole").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.logByteArrayAsString(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
-        theWriter.tab(3).text("logDebugObject").colon().text("function(thisref,p1)").space().text("{").newLine();
+        theWriter.tab(3).text("logDebugObject").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.logDebug(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
@@ -383,7 +383,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             }
 
             if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.tab().text("instanceOf").colon().text("function(aType)").space().text("{").newLine();
+                theWriter.tab().text("iof").colon().text("function(aType)").space().text("{").newLine();
                 theWriter.tab(2).text("return ").text(theJSClassName).text(".__implementedTypes.includes(aType.__typeId);").newLine();
                 theWriter.tab().text("},").newLine();
 
@@ -485,18 +485,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.flush();
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, "        ", theWriter, aLinkerContext, thePool, false, theMinifier);
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier);
                 for (final Variable theVariable : theSSAProgram.globalVariables()) {
                     if (!theVariable.isSynthetic()) {
-                        theVariablesWriter.print("var ");
-                        theVariablesWriter.print(theMinifier.toVariableName(theVariable.getName()));
-                        theVariablesWriter.print(" = null;");
+                        final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");
                         if (aOptions.isDebugOutput()) {
-                            theVariablesWriter.print(" // type is ");
-                            theVariablesWriter.print(theVariable.resolveType().resolve().name());
-                            theVariablesWriter.print(" # of inits = " + theVariable.incomingDataFlows().size());
+                            thePW.text(" // type is ").text(theVariable.resolveType().resolve().name()).text(" # of inits = " + theVariable.incomingDataFlows().size());
                         }
-                        theVariablesWriter.println();
+                        thePW.newLine();
                     }
                 }
 
@@ -542,7 +538,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // Now we have to setup the prototype
                 // Only in case this class can be instantiated of course
                 theWriter.tab(2).text("var p").assign().text(theJSClassName).text(".C.prototype;").newLine();
-                theWriter.tab(2).text("p.instanceOf").assign().text(theJSClassName).text(".instanceOf;").newLine();
+                theWriter.tab(2).text("p.iof").assign().text(theJSClassName).text(".iof;").newLine();
                 theWriter.tab(2).text("p.").text(theGetClassMethodName).assign().text(theJSClassName).text(".").text(theGetClassMethodName).text(";").newLine();
 
                 final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethods.stream().collect(Collectors.toList());

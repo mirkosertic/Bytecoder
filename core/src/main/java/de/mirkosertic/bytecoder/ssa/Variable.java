@@ -17,20 +17,22 @@ package de.mirkosertic.bytecoder.ssa;
 
 public class Variable extends Value {
 
+    public static final String THISREF_NAME = "__tr";
+
     public static Variable createThisRef() {
-        Variable theVariable = new Variable(TypeRef.Native.REFERENCE, "thisRef", true);
+        final Variable theVariable = new Variable(TypeRef.Native.REFERENCE, THISREF_NAME, true);
         theVariable.initializeWith(new SelfReferenceParameterValue());
         return theVariable;
     }
 
-    public static Variable createMethodParameter(int aIndex, TypeRef aTypeRef) {
-        Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true);
+    public static Variable createMethodParameter(final int aIndex, final TypeRef aTypeRef) {
+        final Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true);
         theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
         return theVariable;
     }
 
-    public static Variable createMethodParameter(int aIndex, String aName, TypeRef aTypeRef) {
-        Variable theVariable = new Variable(aTypeRef, aName, true);
+    public static Variable createMethodParameter(final int aIndex, final String aName, final TypeRef aTypeRef) {
+        final Variable theVariable = new Variable(aTypeRef, aName, true);
         theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
         return theVariable;
     }
@@ -39,17 +41,17 @@ public class Variable extends Value {
     private final String name;
     private final boolean synthetic;
 
-    private Variable(TypeRef aType, String aName, boolean aSynthetic) {
+    private Variable(final TypeRef aType, final String aName, final boolean aSynthetic) {
         type = aType;
         name = aName;
         synthetic = aSynthetic;
     }
 
-    public Variable(TypeRef aType, String aName) {
+    public Variable(final TypeRef aType, final String aName) {
         this(aType, aName, false);
     }
 
-    public void initializeWith(Value aValue) {
+    public void initializeWith(final Value aValue) {
         // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(new DataFlowEdgeType(), this);

@@ -21,7 +21,6 @@ import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
-import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -105,29 +104,41 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
+public class JSSSAWriter {
 
+    protected final Program program;
+    protected final BytecodeLinkerContext linkerContext;
+    protected final JSPrintWriter writer;
+    protected final CompileOptions options;
     private final ConstantPool constantPool;
     private boolean labelRequired;
     private final JSMinifier minifier;
+    private final int indent;
 
-    public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final String aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
+    public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
             final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
-        super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
+        program = aProgram;
+        linkerContext = aLinkerContext;
+        writer = aWriter;
+        options = aOptions;
         constantPool = aConstantPool;
         labelRequired = aLabelRequired;
         minifier = aMinifier;
+        indent = aIndent;
     }
 
     private JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + "    ", writer, linkerContext, constantPool, labelRequired, minifier);
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier);
+    }
+
+    public JSPrintWriter startLine() {
+        return writer.tab(indent);
     }
 
     private void print(final Value aValue) {
@@ -229,48 +240,46 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
     }
 
     private void print(final MaxExpression aValue) {
-        print("Math.max(");
+        writer.text("Math.max(");
         print(aValue.incomingDataFlows().get(0));
-        print(",");
+        writer.text(",");
         print(aValue.incomingDataFlows().get(1));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final MinExpression aValue) {
-        print("Math.min(");
+        writer.text("Math.min(");
         print(aValue.incomingDataFlows().get(0));
-        print(",");
+        writer.text(",");
         print(aValue.incomingDataFlows().get(1));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final SqrtExpression aValue) {
-        print("Math.sqrt(");
+        writer.text("Math.sqrt(");
         print(aValue.incomingDataFlows().get(0));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
-        print(".");
-        print(minifier.toMethodName("getClass", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0])));
-        print("()");
+        writer.text(".").text(minifier.toMethodName("getClass", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]))).text("()");
     }
 
     private void print(final StackTopExpression aValue) {
-        print("0");
+        writer.text("0");
     }
 
     private void print(final MemorySizeExpression aValue) {
-        print("0");
+        writer.text("0");
     }
 
     private void print(final ResolveCallsiteObjectExpression aValue) {
-        print("bytecoder.resolveStaticCallSiteObject(");
-        print(minifier.toClassName(aValue.getOwningClass().getThisInfo()));
-        print(",'");
-        print(aValue.getCallsiteId());
-        println("', function() {");
+        writer.text("bytecoder.resolveStaticCallSiteObject(")
+                .text(minifier.toClassName(aValue.getOwningClass().getThisInfo()))
+                .text(",'")
+                .text(aValue.getCallsiteId())
+                .text("', function() {").newLine();
 
         final Program theProgram = aValue.getProgram();
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
@@ -278,32 +287,28 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         final JSSSAWriter theNested = withDeeperIndent();
 
         for (final Variable theVariable : theProgram.globalVariables()) {
-            theNested.print("var ");
-            theNested.print(theVariable.getName());
-            theNested.println(" = null;");
+            theNested.startLine().text("var ").text(theVariable.getName()).assign().text("null;").newLine();
         }
 
         theNested.writeExpressions(theBootstrapCode.getExpressions());
 
-        print("})");
+        writer.text("})");
     }
 
     private void print(final RuntimeGeneratedTypeExpression aValue) {
-        print("bytecoder.dynamicType(");
+        writer.text("bytecoder.dynamicType(");
         print(aValue.getMethodRef());
-        print(",");
+        writer.text(",");
         print(aValue.getStaticArguments());
-        print(")");
+        writer.text(")");
     }
 
     private void print(final MethodTypeExpression aValue) {
-        print("'");
-        print(aValue.getSignature().toString());
-        print("'");
+        writer.text("'").text(aValue.getSignature().toString()).text("'");
     }
 
     private void print(final MethodHandlesGeneratedLookupExpression aValue) {
-        print("null");
+        writer.text("null");
     }
 
     private void print(final ComputedMemoryLocationWriteExpression aValue) {
@@ -311,7 +316,7 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         final List<Value> theIncomingData = aValue.incomingDataFlows();
 
         print(theIncomingData.get(0));
-        print(" + ");
+        writer.space().text("+").space();
         print(theIncomingData.get(1));
     }
 
@@ -319,131 +324,122 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
         final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        print("bytecoderGlobalMemory[");
+        writer.text("bytecoderGlobalMemory[");
         print(theIncomingData.get(0));
-        print(" + ");
+        writer.space().text("+").space();
         print(theIncomingData.get(1));
-        print("]");
+        writer.text("]");
     }
 
     private void print(final MethodRefExpression aValue) {
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
-        print(minifier.toClassName(aValue.getClassName()));
-        print(".");
-        print(minifier.toMethodName(theMethodName, theSignature));
+        writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
     }
 
     private void print(final FloorExpression aValue) {
-        print("Math.floor(");
+        writer.text("Math.floor(");
         print(aValue.incomingDataFlows().get(0));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final FloatingPointFloorExpression aValue) {
-        print("Math.floor(");
+        writer.text("Math.floor(");
         print(aValue.incomingDataFlows().get(0));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final FloatingPointCeilExpression aValue) {
-        print("Math.ceil(");
+        writer.text("Math.ceil(");
         print(aValue.incomingDataFlows().get(0));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final UnknownExpression aValue) {
-        print("undefined");
+        writer.text("undefined");
     }
 
     private void print(final CurrentExceptionExpression aValue) {
-        print("CURRENTEXCEPTION.exception");
+        writer.text("CURRENTEXCEPTION.exception");
     }
 
     private void print(final MethodParameterValue aValue) {
-        print("p" + (aValue.getParameterIndex() + 1));
+        writer.text("p" + (aValue.getParameterIndex() + 1));
     }
 
     private void print(final SelfReferenceParameterValue aValue) {
-        print("thisRef");
+        writer.text(Variable.THISREF_NAME);
     }
 
     private void print(final NewMultiArrayExpression aValue) {
         final BytecodeTypeRef theType = aValue.getType();
         final Object theDefaultValue = theType.defaultValue();
         final String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
-        print("bytecoder.newMultiArray(");
-        print("[");
+        writer.text("bytecoder.newMultiArray([");
         final List<Value> theDimensions = aValue.incomingDataFlows();
         for (int i=0;i<theDimensions.size();i++) {
             if (i>0) {
-                print(",");
+                writer.text(",");
             }
             print(theDimensions.get(i));
         }
-        print("]");
-        print(",");
-        print(theStrDefault);
-        print(")");
+        writer.text("],").text(theStrDefault).text(")");
     }
 
     private void print(final ClassReferenceValue aValue) {
-        print(minifier.toClassName(aValue.getType()));
-        print(".i()");
+        writer.text(minifier.toClassName(aValue.getType())).text(".i()");
     }
 
     private void print(final InstanceOfExpression aValue) {
         final Value theValue = aValue.incomingDataFlows().get(0);
-        print("(");
+        writer.text("(");
         print(theValue);
-        print(" == null ? false : ");
+        writer.space().text("==").space().text("null").space().text("?").space().text("false").space().text(":");
         print(theValue);
-        print(".instanceOf(");
+        writer.text(".iof(");
 
         final BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
         if (!theConstant.stringValue().startsWith("[")) {
             final BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
-            print(minifier.toClassName(theLinkedClass.getClassName()));
+            writer.text(minifier.toClassName(theLinkedClass.getClassName()));
         } else {
             final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-            print(minifier.toClassName(theLinkedClass.getClassName()));
+            writer.text(minifier.toClassName(theLinkedClass.getClassName()));
         }
 
-        print(")");
-        print(")");
+        writer.text("))");
     }
 
     private void print(final LongValue aValue) {
-        print(aValue.getLongValue());
+        writer.text("" + aValue.getLongValue());
     }
 
     private void print(final ShortValue aValue) {
-        print(aValue.getShortValue());
+        writer.text("" + aValue.getShortValue());
     }
 
     private void print(final NegatedExpression aValue) {
         final Value theValue = aValue.incomingDataFlows().get(0);
-        print("(-");
+        writer.text("(-");
         print(theValue);
-        print(")");
+        writer.text(")");
     }
 
     private void print(final CompareExpression aValue) {
-
         final List<Value> theIncomingData = aValue.incomingDataFlows();
 
         final Value theVariable1 = theIncomingData.get(0);
         final Value theVariable2 = theIncomingData.get(1);
-        print("(");
+        writer.text("(");
         print(theVariable1);
-        print(" > ");
+        writer.space().text(">").space();
         print(theVariable2);
-        print(" ? 1 ");
-        print(" : (");
+        writer.space().text("?").space().text("1").space();
+        writer.text(":").space().text("(");
         print(theVariable1);
-        print(" < ");
+        writer.space().text("<").space();
         print(theVariable2);
-        print(" ? -1 : 0))");
+        writer.space().text("?").space().text("-1").space().text(":").space().text("0))");
     }
 
     private void print(final NewArrayExpression aValue) {
@@ -451,41 +447,37 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         final Value theLength =aValue.incomingDataFlows().get(0);
         final Object theDefaultValue = theType.defaultValue();
         final String theStrDefault = theDefaultValue != null ? theDefaultValue.toString() : "null";
-        print("bytecoder.newArray(");
+        writer.text("bytecoder.newArray(");
         print(theLength);
-        print(",");
-        print(theStrDefault);
-        print(")");
+        writer.text(",").text(theStrDefault).text(")");
     }
 
     private void print(final IntegerValue aValue) {
-        print(aValue.getIntValue());
+        writer.text("" + aValue.getIntValue());
     }
 
     private void print(final FloatValue aValue) {
-        print(aValue.getFloatValue());
+        writer.text("" + aValue.getFloatValue());
     }
 
     private void print(final DoubleValue aValue) {
-        print(aValue.getDoubleValue());
+        writer.text("" + aValue.getDoubleValue());
     }
 
     private void print(final StringValue aValue) {
         final int theIndex = constantPool.register(aValue);
-        print("bytecoder.stringpool[");
-        print(theIndex);
-        print("]");
+        writer.text("bytecoder.stringpool[").text("" + theIndex).text("]");
     }
 
     private void print(final ArrayLengthExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
-        print(".data.length");
+        writer.text(".data.length");
     }
 
     private void printArrayIndexReference(final Value aValue) {
-        print(".data[");
+        writer.text(".data[");
         print(aValue);
-        print("]");
+        writer.text("]");
     }
 
     private void print(final ArrayEntryExpression aValue) {
@@ -509,9 +501,9 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
                 print(theValue);
                 break;
             default:
-                print("Math.floor(");
+                writer.text("Math.floor(");
                 print(theValue);
-                print(")");
+                writer.text(")");
                 break;
         }
     }
@@ -527,65 +519,65 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
         final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        print("(");
+        writer.text("(");
         print(theIncomingData.get(0));
         switch (aValue.getOperator()) {
             case ADD:
-                print(" + ");
+                writer.space().text("+").space();
                 break;
             case DIV:
-                print(" / ");
+                writer.space().text("/").space();
                 break;
             case MUL:
-                print(" * ");
+                writer.space().text("*").space();
                 break;
             case SUB:
-                print(" - ");
+                writer.space().text("-").space();
                 break;
             case EQUALS:
-                print(" == ");
+                writer.space().text("==").space();
                 break;
             case BINARYOR:
-                print(" | ");
+                writer.space().text("|").space();
                 break;
             case LESSTHAN:
-                print(" < ");
+                writer.space().text("<").space();
                 break;
             case BINARYAND:
-                print(" & ");
+                writer.space().text("&").space();
                 break;
             case BINARYXOR:
-                print(" ^ ");
+                writer.space().text("^").space();
                 break;
             case NOTEQUALS:
-                print(" != ");
+                writer.space().text("!=").space();
                 break;
             case REMAINDER:
-                print(" % ");
+                writer.space().text("%").space();
                 break;
             case GREATERTHAN:
-                print(" > ");
+                writer.space().text(">").space();
                 break;
             case BINARYSHIFTLEFT:
-                print(" << ");
+                writer.space().text("<<").space();
                 break;
             case GREATEROREQUALS:
-                print(" >= ");
+                writer.space().text(">=").space();
                 break;
             case BINARYSHIFTRIGHT:
-                print(" >> ");
+                writer.space().text(">>").space();
                 break;
             case LESSTHANOREQUALS:
-                print(" <= ");
+                writer.space().text("<=").space();
                 break;
             case BINARYUNSIGNEDSHIFTRIGHT:
-                print(" >>> ");
+                writer.space().text(">>>").space();
                 break;
             default:
                 throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
         }
         print(theIncomingData.get(1));
-        print(")");
+        writer.text(")");
     }
 
     private void print(final FixedBinaryExpression aValue) {
@@ -593,13 +585,13 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         print(theValue1);
         switch (aValue.getOperator()) {
             case ISNONNULL:
-                print(" != null ");
+                writer.space().text("!=").space().text("null").space();
                 break;
             case ISZERO:
-                print(" == 0 ");
+                writer.space().text("==").space().text("0").space();
                 break;
             case ISNULL:
-                print(" == null ");
+                writer.space().text("==").space().text("null").space();
                 break;
             default:
                 throw new IllegalStateException("Unsupported operator : " + aValue.getOperator());
@@ -607,13 +599,11 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
     }
 
     private void print(final ByteValue aValue) {
-        print(aValue.getByteValue());
+        writer.text("" + aValue.getByteValue());
     }
 
     private void print(final NewObjectExpression aValue) {
-        print("new ");
-        print(minifier.toClassName(aValue.getType()));
-        print(".C()");
+        writer.text("new ").text(minifier.toClassName(aValue.getType())).text(".C()");
     }
 
     private String conversionFunctionToBytecoderForOpaqueType(final BytecodeTypeRef aTypeRef) {
@@ -640,9 +630,9 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         } else if (aTypeRef.isArray()) {
             throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
         } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
-            print("bytecoder.toJSString(");
+            writer.text("bytecoder.toJSString(");
             print(aValue);
-            print(")");
+            writer.text(")");
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
             final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType);
@@ -660,31 +650,21 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
                 final BytecodeMethod theCallbackMethod = availableCallbacks.get(0);
                 final String theMethodName = minifier.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
 
-                print("function() {");
-                print("var v = ");
+                writer.text("function() {").text("var v = ");
                 print(aValue);
-                print(";var args = Array.prototype.slice.call(arguments);v");
-                print(".");
-                print(theMethodName);
-                print("(v");
+                writer.text(";var args = Array.prototype.slice.call(arguments);v").text(".").text(theMethodName).text("(v");
                 final BytecodeTypeRef[] theArguments = theCallbackMethod.getSignature().getArguments();
                 for (int i=0;i<theArguments.length;i++) {
-                    print(",");
+                    writer.text(",");
                     final String theConversionFunction = conversionFunctionToBytecoderForOpaqueType(theArguments[i]);
                     if (theConversionFunction != null) {
-                        print(theConversionFunction);
-                        print("(");
-                        print("args[");
-                        print(i);
-                        print("])");
+                        writer.text(theConversionFunction).text("(").text("args[").text("" + i).text("])");
                     } else {
-                        print("args[");
-                        print(i);
-                        print("]");
+                        writer.text("args[").text("" + i).text("]");
                     }
                 }
-                print(");");
-                print("}");
+                writer.text(");");
+                writer.text("}");
             } else {
                 throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
             }
@@ -714,62 +694,49 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
                 final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(theSignature.getReturnType());
                 if (theReturnConvertFunction != null) {
-                    print(theReturnConvertFunction);
-                    print("(");
+                    writer.text(theReturnConvertFunction).text("(");
                 }
-                print("bytecoder.imports.");
-                print(theModuleName);
-                print(".");
-                print(theObjectName);
-                print("(");
+                writer.text("bytecoder.imports.").text(theModuleName).text(".").text(theObjectName).text("(");
 
                 final List<Value> theVariables = aValue.incomingDataFlows();
 
                 for (int i = 0; i < theVariables.size(); i++) {
                     if (i> 0) {
-                        print(",");
+                        writer.text(",");
                     }
                     printToJSConvertedValue(theSignature.getArguments()[i], theVariables.get(i));
                 }
-                print(")");
+                writer.text(")");
 
                 if (theReturnConvertFunction != null) {
-                    print(")");
+                    writer.text(")");
                 }
             } else {
                 // We continue the normal flow, as method implementation is provided by the bytecode
-                print(minifier.toClassName(aValue.getClassName()));
-                print(".");
-                print(minifier.toMethodName(theMethodName, theSignature));
-                print("(");
+                writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
                 final List<Value> theVariables = aValue.incomingDataFlows();
 
                 for (int i = 0; i < theVariables.size(); i++) {
                     if (i> 0) {
-                        print(",");
+                        writer.text(",");
                     }
                     print(theVariables.get(i));
                 }
-                print(")");
+                writer.text(")");
             }
         } else {
-
-            print(minifier.toClassName(aValue.getClassName()));
-            print(".i().");
-            print(minifier.toMethodName(theMethodName, theSignature));
-            print("(");
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".i().").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
             final List<Value> theVariables = aValue.incomingDataFlows();
 
             for (int i = 0; i < theVariables.size(); i++) {
                 if (i> 0) {
-                    print(",");
+                    writer.text(",");
                 }
                 print(theVariables.get(i));
             }
-            print(")");
-
+            writer.text(")");
         }
     }
 
@@ -789,24 +756,21 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
             if ("<init>".equals(theMethodName)) {
-                print(minifier.toClassName(aValue.getClazz()));
+                writer.text(minifier.toClassName(aValue.getClazz()));
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-                print(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
+                writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
             }
-            print(".");
-            print(minifier.toMethodName(theMethodName, theSignature));
-
-            print("(");
+            writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
             print(theTarget);
 
             for (final Value theArgument : theArguments) {
-                print(",");
+                writer.text(",");
                 print(theArgument);
             }
-            print(")");
+            writer.text(")");
         }
     }
 
@@ -818,27 +782,25 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
             if (aMethodSignature.getReturnType().isVoid()) {
                 // Set property
                 print(aInvocationTarget);
-                print("[");
+                writer.text("[");
                 printToJSConvertedValue(aMethodSignature.getArguments()[0], aMethodArguments.get(0));
-                print("]");
-                print("=");
+                writer.text("]=");
 
                 printToJSConvertedValue(aMethodSignature.getArguments()[1], aMethodArguments.get(1));
             } else {
                 final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(aMethodSignature.getReturnType());
                 if (theReturnConvertFunction != null) {
-                    print(theReturnConvertFunction);
-                    print("(");
+                    writer.text(theReturnConvertFunction).text("(");
                 }
 
                 // Get property
                 print(aInvocationTarget);
-                print("[");
+                writer.text("[");
                 printToJSConvertedValue(aMethodSignature.getArguments()[0], aMethodArguments.get(0));
-                print("]");
+                writer.text("]");
 
                 if (theReturnConvertFunction != null) {
-                    print(")");
+                    writer.text(")");
                 }
             }
 
@@ -868,33 +830,28 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
             if (aMethodSignature.getReturnType().isVoid()) {
                 // Set property
                 print(aInvocationTarget);
-                print(".");
-                print(theOpaquePropertyName);
-                print("=");
+                writer.text(".").text(theOpaquePropertyName).text("=");
 
                 printToJSConvertedValue(aMethodSignature.getArguments()[0], aMethodArguments.get(0));
             } else {
                 final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(aMethodSignature.getReturnType());
                 if (theReturnConvertFunction != null) {
-                    print(theReturnConvertFunction);
-                    print("(");
+                    writer.text(theReturnConvertFunction).text("(");
                 }
 
                 // Get property
                 print(aInvocationTarget);
-                print(".");
-                print(theOpaquePropertyName);
+                writer.text(".").text(theOpaquePropertyName);
 
                 if (theReturnConvertFunction != null) {
-                    print(")");
+                    writer.text(")");
                 }
             }
         } else {
 
             final String theReturnConvertFunction = conversionFunctionToBytecoderForOpaqueType(aMethodSignature.getReturnType());
             if (theReturnConvertFunction != null) {
-                print(theReturnConvertFunction);
-                print("(");
+                writer.text(theReturnConvertFunction).text("(");
             }
 
             String theMethodName = aMethodImplementation.getName().stringValue();
@@ -905,21 +862,19 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
             // Simple method invocation
             print(aInvocationTarget);
-            print(".");
-            print(theMethodName);
-            print("(");
+            writer.text(".").text(theMethodName).text("(");
 
             for (int i = 0; i < aMethodArguments.size(); i++) {
                 if (i > 0) {
-                    print(",");
+                    writer.text(",");
                 }
                 printToJSConvertedValue(aMethodSignature.getArguments()[i], aMethodArguments.get(i));
             }
 
-            print(")");
+            writer.text(")");
 
             if (theReturnConvertFunction != null) {
-                print(")");
+                writer.text(")");
             }
         }
     }
@@ -950,24 +905,22 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         }
 
         if (Objects.equals(aValue.getMethodName(), "invokeWithMagicBehindTheScenes")) {
-            print("(");
+            writer.text("(");
         } else {
             print(theTarget);
-            print(".");
-            print(minifier.toMethodName(theMethodName, theSignature));
-            print("(");
+            writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
         }
 
         print(theTarget);
         for (final Value theArgument : theArguments) {
-            print(",");
+            writer.text(",");
             print(theArgument);
         }
-        print(")");
+        writer.text(")");
     }
 
     private void print(final NullValue aValue) {
-        print("null");
+        writer.text("null");
     }
 
     private void print(final GetStaticExpression aValue) {
@@ -975,21 +928,18 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
     }
 
     private void printVariableName(final Variable aVariable) {
-        print(minifier.toVariableName(aVariable.getName()));
+        writer.text(minifier.toVariableName(aVariable.getName()));
     }
 
     private void printStaticFieldReference(final BytecodeFieldRefConstant aField) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-        print(minifier.toClassName(theField.getProvidingClass().getClassName()));
-        print(".i().");
-        print(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
+        writer.text(minifier.toClassName(theField.getProvidingClass().getClassName())).text(".i().").text(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
-        print(".");
-        print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        writer.text(".").text(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
     private String generateJumpCodeFor(final BytecodeOpcodeAddress aTarget) {
@@ -1001,14 +951,12 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
             if (options.isDebugOutput()) {
                 final String theComment = theExpression.getComment();
                 if (theComment != null && !theComment.isEmpty()) {
-                    print("// ");
-                    println(theComment);
+                    startLine().text("//").text(theComment).newLine();
                 }
             }
             if (theExpression instanceof ReturnExpression) {
                 final ReturnExpression theE = (ReturnExpression) theExpression;
-                print("return");
-                println(";");
+                startLine().text("return;").newLine();
             } else if (theExpression instanceof VariableAssignmentExpression) {
                 final VariableAssignmentExpression theE = (VariableAssignmentExpression) theExpression;
 
@@ -1018,55 +966,61 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
                 if (theValue instanceof ComputedMemoryLocationWriteExpression) {
                     continue;
                 }
+
+                final JSPrintWriter theWriter = startLine();
+
                 if (!program.isGlobalVariable(theVariable)) {
-                    print("var ");
+                    theWriter.text("var ");
                 }
 
-                print(minifier.toVariableName(theVariable.getName()));
-                print(" = (");
+                theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
                 print(theValue);
-                print(")");
+                theWriter.text(")");
                 if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
-                    print(" | 0");
+                    theWriter.space().text("|").space().text("0");
                 }
                 if (options.isDebugOutput()) {
-                    print("; // type is ");
-                    println(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType());
+                    theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
                 } else {
-                    println(";");
+                    theWriter.text(";").newLine();
                 }
             } else if (theExpression instanceof PutStaticExpression) {
                 final PutStaticExpression theE = (PutStaticExpression) theExpression;
                 final BytecodeFieldRefConstant theField = theE.getField();
                 final Value theValue = theE.incomingDataFlows().get(0);
+
+                startLine();
                 printStaticFieldReference(theField);
-                print(" = ");
+                writer.assign();
                 print(theValue);
-                println(";");
+                writer.text(";").newLine();
             } else if (theExpression instanceof ReturnValueExpression) {
                 final ReturnValueExpression theE = (ReturnValueExpression) theExpression;
                 final Value theValue = theE.incomingDataFlows().get(0);
-                print("return ");
+                startLine().text("return ");
                 print(theValue);
-                println(";");
+                writer.text(";").newLine();
             } else if (theExpression instanceof ThrowExpression) {
                 final ThrowExpression theE = (ThrowExpression) theExpression;
                 final Value theValue = theE.incomingDataFlows().get(0);
-                print("throw {exception :");
+                startLine().text("throw {exception :");
                 print(theValue);
-                println(", stack : new Error().stack};");
+                writer.text(", stack : new Error().stack};").newLine();
             } else if (theExpression instanceof InvokeVirtualMethodExpression) {
                 final InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
+                startLine();
                 print(theE);
-                println(";");
+                writer.text(";").newLine();
             } else if (theExpression instanceof DirectInvokeMethodExpression) {
                 final DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
+                startLine();
                 print(theE);
-                println(";");
+                writer.text(";").newLine();
             } else if (theExpression instanceof InvokeStaticMethodExpression) {
                 final InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
+                startLine();
                 print(theE);
-                println(";");
+                writer.text(";").newLine();
             } else if (theExpression instanceof PutFieldExpression) {
                 final PutFieldExpression theE = (PutFieldExpression) theExpression;
 
@@ -1076,25 +1030,28 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
                 final BytecodeFieldRefConstant theField = theE.getField();
 
                 final Value thevalue = theIncomingData.get(1);
-                print(theTarget);
 
+                startLine();
+
+                print(theTarget);
                 printInstanceFieldReference(theField);
-                print(" = ");
+                writer.assign();
                 print(thevalue);
-                println(";");
+                writer.text(";").newLine();
             } else if (theExpression instanceof IFExpression) {
                 final IFExpression theE = (IFExpression) theExpression;
-                print("if (");
+
+                startLine().text("if (");
                 print(theE.incomingDataFlows().get(0));
-                println(") {");
+                writer.text(") {").newLine();
 
                 withDeeperIndent().writeExpressions(theE.getExpressions());
 
-                println("}");
+                startLine().text("}").newLine();
 
             } else if (theExpression instanceof GotoExpression) {
                 final GotoExpression theE = (GotoExpression) theExpression;
-                println(generateJumpCodeFor(theE.getJumpTarget()));
+                startLine().text(generateJumpCodeFor(theE.getJumpTarget())).newLine();
             } else if (theExpression instanceof ArrayStoreExpression) {
                 final ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
 
@@ -1103,11 +1060,17 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
                 final Value theArray = theIncomingData.get(0);
                 final Value theIndex = theIncomingData.get(1);
                 final Value theValue = theIncomingData.get(2);
+
+                startLine();
+
                 print(theArray);
                 printArrayIndexReference(theIndex);
-                print(" = ");
+
+                writer.assign();
+
                 print(theValue);
-                println(";");
+
+                writer.text(";").newLine();
             } else if (theExpression instanceof CheckCastExpression) {
                 final CheckCastExpression theE = (CheckCastExpression) theExpression;
                 // Completely ignored
@@ -1115,52 +1078,49 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
                 final TableSwitchExpression theE = (TableSwitchExpression) theExpression;
                 final Value theValue = theE.incomingDataFlows().get(0);
 
-                print("if (");
+                startLine();
+
+                writer.newLine().text("if (");
                 print(theValue);
-                print(" < ");
-                print(theE.getLowValue());
-                print(" || ");
+                writer.space().text("<").space().text("" + theE.getLowValue());
+                writer.space().text("||").space();
                 print(theValue);
-                print(" > ");
-                print(theE.getHighValue());
-                println(") {");
-                print(" ");
+                writer.space().text(">").space().text("" + theE.getHighValue());
+                writer.text(") {").newLine();
 
                 writeExpressions(theE.getDefaultExpressions());
 
-                println("}");
-                print("switch(");
+                writer.text("}").newLine();
+
+                startLine().text("switch(");
                 print(theValue);
-                print(" - ");
-                print(theE.getLowValue());
-                println(") {");
+                writer.space().text("-").space().text("" + theE.getLowValue()).text(") {").newLine();
 
                 for (final Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
-                    print(" case ");
-                    print(theEntry.getKey());
-                    println(":");
-                    print("     ");
-                    writeExpressions(theEntry.getValue());
+
+                    startLine().text(" case ").text("" + theEntry.getKey()).text(":").newLine();
+
+                    withDeeperIndent().writeExpressions(theEntry.getValue());
                 }
 
-                println("}");
-                println("throw 'Illegal jump target!';");
+                writer.text("}").newLine();
+
+                startLine().text("throw 'Illegal jump target!';").newLine();
             } else if (theExpression instanceof LookupSwitchExpression) {
                 final LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
-                print("switch(");
+
+                startLine().text("switch(");
                 print(theE.incomingDataFlows().get(0));
-                println(") {");
+                writer.text(") {").newLine();
 
                 for (final Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
-                    print(" case ");
-                    print(theEntry.getKey());
-                    println(":");
 
-                    print("     ");
-                    writeExpressions(theEntry.getValue());
+                    startLine().text(" case ").text("" + theEntry.getKey()).text(":").newLine();
+
+                    withDeeperIndent().writeExpressions(theEntry.getValue());
                 }
 
-                println("}");
+                writer.text("}").newLine();
 
                 writeExpressions(theE.getDefaultExpressions());
             } else if (theExpression instanceof SetMemoryLocationExpression) {
@@ -1168,40 +1128,33 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
                 final List<Value> theIncomingData = theE.incomingDataFlows();
 
-                print("bytecoderGlobalMemory[");
+                startLine().text("bytecoderGlobalMemory[");
 
                 final ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
 
                 print(theValue);
 
-                print("] = ");
+                writer.text("]=");
 
                 print(theIncomingData.get(1));
-                println(";");
+
+                writer.text(";").newLine();
             } else if (theExpression instanceof UnreachableExpression) {
-                println("throw 'Unreachable';");
+                startLine().text("throw 'Unreachable';").newLine();
             } else if (theExpression instanceof BreakExpression) {
                 final BreakExpression theBreak = (BreakExpression) theExpression;
                 if (theBreak.isSetLabelRequired() && labelRequired) {
-                    print("__label__ = ");
-                    print(theBreak.jumpTarget().getAddress());
-                    println(";");
+                    startLine().text("__l").assign().text("" + theBreak.jumpTarget().getAddress()).text(";").newLine();
                 }
                 if (!theBreak.isSilent()) {
-                    print("break $");
-                    print(theBreak.blockToBreak().name());
-                    println(";");
+                    startLine().text("break $").text(theBreak.blockToBreak().name()).text(";").newLine();
                 }
             } else if (theExpression instanceof ContinueExpression) {
                 final ContinueExpression theContinue = (ContinueExpression) theExpression;
                 if (labelRequired) {
-                    print("__label__ = ");
-                    print(theContinue.jumpTarget().getAddress());
-                    println(";");
+                    startLine().text("__l").assign().text("" + theContinue.jumpTarget().getAddress()).text(";").newLine();
                 }
-                print("continue $");
-                print(theContinue.labelToReturnTo().name());
-                println(";");
+                startLine().text("continue $").text(theContinue.labelToReturnTo().name()).text(";").newLine();
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }
@@ -1211,7 +1164,7 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
     public void printRelooped(final Relooper.Block aBlock) {
         labelRequired = aBlock.containsMultipleBlock();
         if (labelRequired) {
-            println("var __label__ = null;");
+            startLine().text("var __l").assign().text("null;").newLine();
         }
         print(aBlock);
     }
@@ -1249,26 +1202,24 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         theWriter.writeExpressions(aIfThenElseBlock.getPrelude());
 
         if (aIfThenElseBlock.isLabelRequired()) {
-            theWriter.print("$");
-            theWriter.print(aIfThenElseBlock.label().name());
-            theWriter.println(" : {");
+            theWriter.startLine().text("$").text(aIfThenElseBlock.label().name()).colon().text("{").newLine();
             theWriter = theWriter.withDeeperIndent();
         }
 
-        theWriter.print("if (");
+        theWriter.startLine().text("if").space().text("(");
         theWriter.print(aIfThenElseBlock.getCondition());
-        theWriter.println(") {");
+        theWriter.writer.text(")").space().text("{").newLine();
 
         theWriter.withDeeperIndent().print(aIfThenElseBlock.getTrueBlock());
 
-        theWriter.println("} else {");
+        theWriter.startLine().text("}").space().text("else").space().text("{").newLine();
 
         theWriter.withDeeperIndent().print(aIfThenElseBlock.getFalseBlock());
 
-        theWriter.println("}");
+        theWriter.startLine().text("}").newLine();
 
         if (aIfThenElseBlock.isLabelRequired()) {
-            println("}");
+            startLine().text("}").newLine();
         }
 
         print(aIfThenElseBlock.next());
@@ -1276,11 +1227,12 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
     private void print(final Relooper.SimpleBlock aSimpleBlock) {
         JSSSAWriter theWriter = this;
+
         if (aSimpleBlock.isLabelRequired()) {
-            theWriter.print("$");
-            theWriter.print(aSimpleBlock.label().name());
-            theWriter.println(" : {");
-            theWriter.printlnComment(aSimpleBlock.internalLabel().getType().toString());
+            startLine().text("$").text(aSimpleBlock.label().name()).colon().text("{").newLine();
+            if (options.isDebugOutput()) {
+                startLine().text("// ").text(aSimpleBlock.internalLabel().getType().toString()).newLine();
+            }
 
             theWriter = theWriter.withDeeperIndent();
         }
@@ -1288,7 +1240,7 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
         theWriter.writeExpressions(aSimpleBlock.expressions());
 
         if (aSimpleBlock.isLabelRequired()) {
-            theWriter.println("}");
+            startLine().text("}").newLine();
         }
 
         print(aSimpleBlock.next());
@@ -1296,16 +1248,14 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
 
     private void print(final Relooper.LoopBlock aLoopBlock) {
         if (aLoopBlock.isLabelRequired()) {
-            print("$");
-            print(aLoopBlock.label().name());
-            print(" : ");
+            startLine().text("$").text(aLoopBlock.label().name()).colon().text("for").space().text("(;;)").space().text("{").newLine();
+        } else {
+            startLine().text("for").space().text("(;;)").space().text("{").newLine();
         }
-        println("for (;;) {");
 
-        final JSSSAWriter theDeeper = withDeeperIndent();
-        theDeeper.print(aLoopBlock.inner());
+        withDeeperIndent().print(aLoopBlock.inner());
 
-        println("}");
+        startLine().text("}").newLine();
 
         print(aLoopBlock.next());
     }
@@ -1313,88 +1263,80 @@ public class JSSSAWriter extends IndentSSAWriter<JSPrintWriter> {
     private void print(final Relooper.MultipleBlock aMultiple) {
 
         if (aMultiple.isLabelRequired()) {
-            print("$");
-            print(aMultiple.label().name());
-            print(" : ");
+            startLine().text("$").text(aMultiple.label().name()).colon().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
+        } else {
+            startLine().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
         }
-        println("for(;;) switch (__label__) {");
 
-        final JSSSAWriter theDeeper = withDeeperIndent();
         for (final Relooper.Block theHandler : aMultiple.handlers()) {
             for (final RegionNode theEntry : theHandler.entries()) {
-                theDeeper.print("case ");
-                theDeeper.print(theEntry.getStartAddress().getAddress());
-                theDeeper.println(" :");
-                theDeeper.printlnComment(theEntry.getType().toString());
-
-
-                final JSSSAWriter theHandlerWriter = theDeeper.withDeeperIndent();
-                theHandlerWriter.print(theHandler);
+                startLine().space().text("case ").text("" + theEntry.getStartAddress().getAddress()).colon().newLine();
+                if (options.isDebugOutput()) {
+                    startLine().text(" // ").text(theEntry.getType().toString()).newLine();
+                }
+                withDeeperIndent().print(theHandler);
             }
         }
 
-        println("}");
+        startLine().text("}").newLine();
+
         print(aMultiple.next());
     }
 
     private void print(final Relooper.TryBlock aTryBlock) {
 
         if (aTryBlock.isLabelRequired()) {
-            print("$");
-            print(aTryBlock.label().name());
-            print(" : ");
+            startLine().text("$").text(aTryBlock.label().name()).colon().text("try").space().text("{").newLine();
+        } else {
+            startLine().text("try").space().text("{").newLine();
         }
-        println("try {");
 
-        final JSSSAWriter theDeeper = withDeeperIndent();
-        theDeeper.print(aTryBlock.inner());
+        withDeeperIndent().print(aTryBlock.inner());
 
-        println("} catch (CURRENTEXCEPTION) {");
+        startLine().text("} catch (CURRENTEXCEPTION) {").newLine();
 
         final JSSSAWriter theHandler = withDeeperIndent();
 
         final Relooper.Block theFinally = aTryBlock.getFinallyBlock();
         JSSSAWriter theGuard = theHandler;
         if (theFinally != null) {
-            theGuard.println("try {");
+            theGuard.startLine().text("try {").newLine();
             theGuard = theHandler.withDeeperIndent();
         }
 
         for (final Relooper.TryBlock.CatchBlock theCatch : aTryBlock.getCatchBlocks()) {
 
-            theGuard.print("if (");
+            theGuard.startLine().text("if (");
             boolean first = true;
             for (final BytecodeUtf8Constant theInstanceCheck : theCatch.getCaughtExceptions()) {
                 if (!first) {
-                    theGuard.print(" || ");
+                    theGuard.writer.space().text("||").space();
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
-                theGuard.print("CURRENTEXCEPTION.exception.instanceOf(");
-                theGuard.print(minifier.toClassName(theLinkedClass.getClassName()));
-                theGuard.print(")");
+                theGuard.writer.text("CURRENTEXCEPTION.exception.iof(").text(minifier.toClassName(theLinkedClass.getClassName())).text(")");
                 first = false;
             }
 
-            theGuard.println(") {");
+            theGuard.writer.text(") {").newLine();
 
             theGuard.withDeeperIndent().print(theCatch.getHandler());
 
-            theGuard.println("}");
+            theGuard.startLine().text("}").newLine();
         }
 
-        theGuard.println("throw CURRENTEXCEPTION;");
+        theGuard.startLine().text("throw CURRENTEXCEPTION;").newLine();
 
         if (theFinally != null) {
-            theHandler.println("} catch (CURRENTEXCEPTION) {");
+            theHandler.startLine().text("} catch (CURRENTEXCEPTION) {").newLine();
 
             final JSSSAWriter theFinallyDeeper = theHandler.withDeeperIndent();
             theFinallyDeeper.print(theFinally);
-            theFinallyDeeper.println("throw CURRENTEXCEPTION;");
+            theFinallyDeeper.startLine().text("throw CURRENTEXCEPTION;").newLine();
 
-            theHandler.println("}");
+            theHandler.startLine().text("}").newLine();
         }
 
-        println("}");
+        startLine().text("}").newLine();
 
         print(aTryBlock.next());
     }
