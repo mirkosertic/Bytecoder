@@ -141,7 +141,6 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>js</backend>
-                            <optimizeWithGoogleClosure>true</optimizeWithGoogleClosure>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <minifyCompileResult>true</minifyCompileResult>
                         </configuration>

@@ -7,7 +7,6 @@ languages such as JavaScript, OpenCL or WebAssembly.
 
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
-* Use other tool chains such as Google Closure Compiler or Binaryen to further optimize generated code
 * Use OpenJDK 11 as Java Classlib
 
 The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
