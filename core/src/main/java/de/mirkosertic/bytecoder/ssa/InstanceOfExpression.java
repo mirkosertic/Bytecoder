@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class InstanceOfExpression extends Expression {
 
     private final BytecodeClassinfoConstant type;
 
-    public InstanceOfExpression(Value aVariable, BytecodeClassinfoConstant aType) {
+    public InstanceOfExpression(final BytecodeOpcodeAddress aAddress, final Value aVariable, final BytecodeClassinfoConstant aType) {
+        super(aAddress);
         type = aType;
         receivesDataFrom(aVariable);
     }

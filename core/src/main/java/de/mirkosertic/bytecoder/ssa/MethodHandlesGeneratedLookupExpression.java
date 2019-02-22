@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class MethodHandlesGeneratedLookupExpression extends Expression {
 
     private final BytecodeObjectTypeRef owningClass;
 
-    public MethodHandlesGeneratedLookupExpression(BytecodeObjectTypeRef aOwningClass) {
+    public MethodHandlesGeneratedLookupExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aOwningClass) {
+        super(aAddress);
         owningClass = aOwningClass;
     }
 

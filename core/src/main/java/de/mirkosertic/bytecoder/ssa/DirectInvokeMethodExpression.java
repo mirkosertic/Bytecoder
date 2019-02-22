@@ -19,23 +19,24 @@ import java.util.List;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class DirectInvokeMethodExpression extends InvocationExpression {
 
     private final BytecodeObjectTypeRef clazz;
     private final String methodName;
 
-    public DirectInvokeMethodExpression(BytecodeObjectTypeRef aClazz, String aMethodName,
-            BytecodeMethodSignature aMethodSignature, Value aTarget, List<Value> aArguments) {
-        this(aClazz, aMethodName, aMethodSignature);
+    public DirectInvokeMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
+            final BytecodeMethodSignature aMethodSignature, final Value aTarget, final List<Value> aArguments) {
+        this(aAddress, aClazz, aMethodName, aMethodSignature);
 
         receivesDataFrom(aTarget);
         receivesDataFrom(aArguments);
     }
 
-    public DirectInvokeMethodExpression(BytecodeObjectTypeRef aClazz, String aMethodName,
-            BytecodeMethodSignature aMethodSignature) {
-        super(aMethodSignature);
+    public DirectInvokeMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
+            final BytecodeMethodSignature aMethodSignature) {
+        super(aAddress, aMethodSignature);
         clazz = aClazz;
         methodName = aMethodName;
     }

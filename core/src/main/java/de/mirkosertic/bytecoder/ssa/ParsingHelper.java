@@ -117,7 +117,7 @@ public class ParsingHelper {
             }
         }
 
-        final Variable v = block.setLocalVariable(aIndex, aType, aValue);
+        final Variable v = block.setLocalVariable(aInstruction, aIndex, aType, aValue);
         localVariables.put(aIndex, v);
         block.addToExportedList(v, new LocalVariableDescription(aIndex, aType));
     }

@@ -19,21 +19,22 @@ import java.util.List;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class InvokeVirtualMethodExpression extends InvocationExpression {
 
     private final String methodName;
     private final boolean interfaceInvocation;
 
-    public InvokeVirtualMethodExpression(final BytecodeNameAndTypeConstant aMethod, final Value aTarget,
+    public InvokeVirtualMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeNameAndTypeConstant aMethod, final Value aTarget,
                                          final List<Value> aArguments, final boolean aInterfaceInvocation) {
-        this(aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
+        this(aAddress, aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
                 aTarget, aArguments, aInterfaceInvocation);
     }
 
-    public InvokeVirtualMethodExpression(final String aMethodName, final BytecodeMethodSignature aSignature, final Value aTarget,
+    public InvokeVirtualMethodExpression(final BytecodeOpcodeAddress aAddress, final String aMethodName, final BytecodeMethodSignature aSignature, final Value aTarget,
                                          final List<Value> aArguments, final boolean aInterfaceInvocation) {
-        super(aSignature);
+        super(aAddress, aSignature);
         methodName = aMethodName;
         interfaceInvocation = aInterfaceInvocation;
 

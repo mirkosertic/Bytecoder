@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class TypeConversionExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public TypeConversionExpression(Value aValue, TypeRef aTargetType) {
+    public TypeConversionExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
+        super(aAddress);
         targetType = aTargetType;
         receivesDataFrom(aValue);
     }

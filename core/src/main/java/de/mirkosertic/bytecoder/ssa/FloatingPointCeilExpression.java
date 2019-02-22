@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class FloatingPointCeilExpression extends Expression {
 
     private final TypeRef type;
 
-    public FloatingPointCeilExpression(final Value aValue, final TypeRef aTargetType) {
+    public FloatingPointCeilExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
+        super(aAddress);
         type = aTargetType;
         receivesDataFrom(aValue);
     }

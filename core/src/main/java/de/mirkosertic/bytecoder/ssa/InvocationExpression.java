@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public abstract class InvocationExpression extends Expression {
 
     private final BytecodeMethodSignature signature;
 
-    public InvocationExpression(final BytecodeMethodSignature aSignature) {
+    public InvocationExpression(final BytecodeOpcodeAddress aAddress, final BytecodeMethodSignature aSignature) {
+        super(aAddress);
         signature = aSignature;
     }
 

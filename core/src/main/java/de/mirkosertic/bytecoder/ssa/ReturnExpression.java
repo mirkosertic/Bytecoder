@@ -15,7 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class ReturnExpression extends Expression {
+
+    public ReturnExpression(final BytecodeOpcodeAddress address) {
+        super(address);
+    }
 
     @Override
     public boolean isTrulyFunctional() {

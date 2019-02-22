@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,8 +29,9 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
     private final ExpressionList defaultExpressions;
     private final Map<Long, ExpressionList> offsets;
 
-    public TableSwitchExpression(final Value aValue, final long aLowValue, final long aHighValue,
+    public TableSwitchExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final long aLowValue, final long aHighValue,
             final ExpressionList aDefaultPath, final Map<Long, ExpressionList> aPathPerOffset) {
+        super(aAddress);
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
@@ -66,7 +69,7 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
         for (final Map.Entry<Long, ExpressionList> theEntry : offsets.entrySet()) {
             theHandler.put(theEntry.getKey(), theEntry.getValue().deepCopy());
         }
-        return new TableSwitchExpression(incomingDataFlows().get(0),
+        return new TableSwitchExpression(getAddress(), incomingDataFlows().get(0),
                 lowValue, highValue, defaultExpressions.deepCopy(), theHandler);
     }
 }

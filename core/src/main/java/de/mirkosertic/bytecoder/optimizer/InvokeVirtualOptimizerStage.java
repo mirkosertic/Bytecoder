@@ -90,7 +90,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
                 if (!theMethod.getAccessFlags().isAbstract()) {
                     final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                    final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(theClazz, theMethodName,
+                    final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getAddress(), theClazz, theMethodName,
                             theSignature);
                     aExpression.routeIncomingDataFlowsTo(theNewExpression);
 

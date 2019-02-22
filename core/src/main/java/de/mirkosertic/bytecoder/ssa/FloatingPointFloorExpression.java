@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class FloatingPointFloorExpression extends Expression {
 
     private final TypeRef type;
 
-    public FloatingPointFloorExpression(final Value aValue, final TypeRef aTargetType) {
+    public FloatingPointFloorExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
+        super(aAddress);
         type = aTargetType;
         receivesDataFrom(aValue);
     }

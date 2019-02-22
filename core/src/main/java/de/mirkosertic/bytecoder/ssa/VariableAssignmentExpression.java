@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +25,8 @@ public class VariableAssignmentExpression extends Expression {
     private final Variable variable;
     private Value value;
 
-    public VariableAssignmentExpression(final Variable aVariable, final Value aValue) {
+    public VariableAssignmentExpression(final BytecodeOpcodeAddress aAddress, final Variable aVariable, final Value aValue) {
+        super(aAddress);
         if (aValue == null) {
             throw new IllegalStateException("Null not allowed");
         }

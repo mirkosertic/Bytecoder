@@ -17,13 +17,15 @@ package de.mirkosertic.bytecoder.ssa;
 
 import java.util.List;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class NewMultiArrayExpression extends Expression {
 
     private final BytecodeTypeRef type;
 
-    public NewMultiArrayExpression(final BytecodeTypeRef aType, final List<Value> aDimensions) {
+    public NewMultiArrayExpression(final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final List<Value> aDimensions) {
+        super(aAddress);
         type = aType;
         receivesDataFrom(aDimensions);
     }

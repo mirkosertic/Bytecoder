@@ -15,28 +15,28 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import org.junit.Test;
 
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 public class DominanceTest {
 
     @Test
     public void testDirectFlow() {
-        Program theProgram = new Program();
-        ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
+        final Program theProgram = new Program(new DebugInformation());
+        final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
-        theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(10)));
-        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        theNode2.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
-        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        theNode3.getExpressions().add(new ReturnExpression());
+        final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        theNode1.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(10)));
+        final RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new GotoExpression(null,new BytecodeOpcodeAddress(20)));
+        final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new ReturnExpression(null));
 
         theNode1.addSuccessor(theNode2);
         theNode2.addSuccessor(theNode3);
@@ -51,13 +51,13 @@ public class DominanceTest {
         assertFalse(theNode1.isOnlyReachableThru(theNode3));
         assertFalse(theNode2.isOnlyReachableThru(theNode3));
 
-        Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
+        final Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
         assertEquals(3, theDom1.size(), 0);
         assertTrue(theDom1.contains(theNode2));
         assertTrue(theDom1.contains(theNode3));
         assertTrue(theDom1.contains(theNode1));
 
-        Set<RegionNode> theDom2 = theGraph.dominatedNodesOf(theNode2);
+        final Set<RegionNode> theDom2 = theGraph.dominatedNodesOf(theNode2);
         assertEquals(2, theDom2.size(), 0);
         assertTrue(theDom2.contains(theNode3));
         assertTrue(theDom2.contains(theNode2));
@@ -66,15 +66,15 @@ public class DominanceTest {
 
     @Test
     public void testEndlessLoop() {
-        Program theProgram = new Program();
-        ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
+        final Program theProgram = new Program(new DebugInformation());
+        final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
-        theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(10)));
-        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        theNode2.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
-        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        theNode3.getExpressions().add(new GotoExpression(BytecodeOpcodeAddress.START_AT_ZERO));
+        final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        theNode1.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(10)));
+        final RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(20)));
+        final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new GotoExpression(null, BytecodeOpcodeAddress.START_AT_ZERO));
 
         theNode1.addSuccessor(theNode2);
         theNode2.addSuccessor(theNode3);
@@ -85,26 +85,26 @@ public class DominanceTest {
 
     @Test
     public void testIFElseWithJoining() {
-        Program theProgram = new Program();
-        ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
+        final Program theProgram = new Program(new DebugInformation());
+        final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
-        RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
 
-        ExpressionList theExpressions = new ExpressionList();
-        IFExpression theIF = new IFExpression(new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(10),
+        final ExpressionList theExpressions = new ExpressionList();
+        final IFExpression theIF = new IFExpression(new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(10),
                 new IntegerValue(1), theExpressions);
-        theExpressions.add(new GotoExpression(new BytecodeOpcodeAddress(10)));
+        theExpressions.add(new GotoExpression(null, new BytecodeOpcodeAddress(10)));
         theNode1.getExpressions().add(theIF);
-        theNode1.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(20)));
+        theNode1.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(20)));
 
-        RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        theNode2.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(30)));
+        final RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        theNode2.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(30)));
 
-        RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        theNode3.getExpressions().add(new GotoExpression(new BytecodeOpcodeAddress(30)));
+        final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        theNode3.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(30)));
 
-        RegionNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
-        theNode4.getExpressions().add(new ReturnExpression());
+        final RegionNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
+        theNode4.getExpressions().add(new ReturnExpression(null));
 
         theNode1.addSuccessor(theNode2);
         theNode1.addSuccessor(theNode3);
@@ -117,7 +117,7 @@ public class DominanceTest {
         assertFalse(theNode4.isOnlyReachableThru(theNode2));
         assertFalse(theNode4.isOnlyReachableThru(theNode3));
 
-        Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
+        final Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
         assertEquals(4, theDom1.size(), 0);
         assertTrue(theDom1.contains(theNode2));
         assertTrue(theDom1.contains(theNode3));

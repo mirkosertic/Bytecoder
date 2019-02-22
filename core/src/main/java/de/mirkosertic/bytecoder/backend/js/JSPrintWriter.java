@@ -15,16 +15,39 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.io.Writer;
 
-public class JSPrintWriter extends PrintWriter {
+public class JSPrintWriter {
 
     private final JSMinifier minifier;
+    private final Writer out;
+    private int lineCounter;
+    private int columnCounter;
 
     public JSPrintWriter(final Writer out, final JSMinifier minifier) {
-        super(out);
+        this.out = out;
         this.minifier = minifier;
+        this.lineCounter = 1;
+        this.columnCounter = 1;
+    }
+
+    public int getLineCounter() {
+        return lineCounter;
+    }
+
+    public int getColumnCounter() {
+        return columnCounter;
+    }
+
+    public JSPrintWriter print(final String aText) {
+        try {
+            out.write(aText);
+            columnCounter += aText.length();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+        return this;
     }
 
     public JSPrintWriter tab() {
@@ -50,7 +73,12 @@ public class JSPrintWriter extends PrintWriter {
     }
 
     public JSPrintWriter newLine() {
-        print(minifier.newLine());
+        final String theNewLine = minifier.newLine();
+        if (theNewLine.length() != 0) {
+            print(theNewLine);
+            lineCounter++;
+            columnCounter=1;
+        }
         return this;
     }
 
@@ -60,5 +88,13 @@ public class JSPrintWriter extends PrintWriter {
 
     public JSPrintWriter assign() {
         return space().text("=").space();
+    }
+
+    public void flush() {
+        try {
+            out.flush();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

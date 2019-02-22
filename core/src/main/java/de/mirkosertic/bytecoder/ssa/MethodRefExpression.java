@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class MethodRefExpression extends Expression {
 
@@ -25,8 +26,9 @@ public class MethodRefExpression extends Expression {
     private String methodName;
     private final BytecodeMethodSignature signature;
 
-    public MethodRefExpression(final BytecodeObjectTypeRef className, final String methodName,
+    public MethodRefExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
             final BytecodeMethodSignature signature) {
+        super(aAddress);
         this.className = className;
         this.methodName = methodName;
         this.signature = signature;

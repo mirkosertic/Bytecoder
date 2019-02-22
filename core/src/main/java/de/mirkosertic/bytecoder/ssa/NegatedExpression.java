@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class NegatedExpression extends Expression {
 
-    public NegatedExpression(Value aValue) {
+    public NegatedExpression(final BytecodeOpcodeAddress aAddress, final Value aValue) {
+        super(aAddress);
         receivesDataFrom(aValue);
     }
 
