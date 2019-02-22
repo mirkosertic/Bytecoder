@@ -15,13 +15,15 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 public class NewArrayExpression extends Expression {
 
     private final BytecodeTypeRef type;
 
-    public NewArrayExpression(final BytecodeTypeRef aType, final Value aLength) {
+    public NewArrayExpression(final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final Value aLength) {
+        super(aAddress);
         type = aType;
         receivesDataFrom(aLength);
     }

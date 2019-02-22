@@ -15,11 +15,18 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class Expression extends Value {
 
     private String comment;
+    private final BytecodeOpcodeAddress address;
 
-    public <T extends Expression> T withComment(String aComment) {
+    protected Expression(final BytecodeOpcodeAddress address) {
+        this.address = address;
+    }
+
+    public <T extends Expression> T withComment(final String aComment) {
         comment = aComment;
         return (T) this;
     }
@@ -31,5 +38,9 @@ public class Expression extends Value {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.VOID;
+    }
+
+    public BytecodeOpcodeAddress getAddress() {
+        return address;
     }
 }

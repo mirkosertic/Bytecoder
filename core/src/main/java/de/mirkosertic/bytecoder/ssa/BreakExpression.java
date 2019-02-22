@@ -24,7 +24,8 @@ public class BreakExpression extends Expression {
     private boolean silent;
     private boolean setLabelRequired;
 
-    public BreakExpression(final Label aBlockToBreak, final BytecodeOpcodeAddress aJumpTarget) {
+    public BreakExpression(final BytecodeOpcodeAddress aAddress, final Label aBlockToBreak, final BytecodeOpcodeAddress aJumpTarget) {
+        super(aAddress);
         blockToBreak = aBlockToBreak;
         jumpTarget = aJumpTarget;
         silent = false;

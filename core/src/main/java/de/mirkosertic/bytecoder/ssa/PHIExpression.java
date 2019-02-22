@@ -15,7 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class PHIExpression extends Expression {
+
+    public PHIExpression(final BytecodeOpcodeAddress address) {
+        super(address);
+    }
 
     @Override
     public TypeRef resolveType() {

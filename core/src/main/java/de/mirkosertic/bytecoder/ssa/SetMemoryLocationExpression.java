@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class SetMemoryLocationExpression extends Expression {
 
-    public SetMemoryLocationExpression(final Value aAddress, final Value aValue) {
+    public SetMemoryLocationExpression(final BytecodeOpcodeAddress aOpCodeAddress, final Value aAddress, final Value aValue) {
+        super(aOpCodeAddress);
         receivesDataFrom(aAddress, aValue);
     }
 

@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ResolveCallsiteObjectExpression extends Expression {
 
@@ -24,8 +25,9 @@ public class ResolveCallsiteObjectExpression extends Expression {
     private final Program program;
     private final RegionNode bootstrapMethod;
 
-    public ResolveCallsiteObjectExpression(String aCallsiteId, BytecodeClass aOwningClass,
-            Program aProgram, RegionNode aBootstrapMethod) {
+    public ResolveCallsiteObjectExpression(final BytecodeOpcodeAddress aAddress, final String aCallsiteId, final BytecodeClass aOwningClass,
+            final Program aProgram, final RegionNode aBootstrapMethod) {
+        super(aAddress);
         callsiteId = aCallsiteId;
         owningClass = aOwningClass;
         program = aProgram;

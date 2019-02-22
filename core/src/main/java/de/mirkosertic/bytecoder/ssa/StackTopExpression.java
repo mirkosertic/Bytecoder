@@ -15,7 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class StackTopExpression extends Expression {
+
+    public StackTopExpression(final BytecodeOpcodeAddress address) {
+        super(address);
+    }
 
     @Override
     public TypeRef resolveType() {

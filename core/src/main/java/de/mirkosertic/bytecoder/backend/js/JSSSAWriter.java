@@ -48,6 +48,7 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DebugPosition;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -142,6 +143,11 @@ public class JSSSAWriter {
     }
 
     private void print(final Value aValue) {
+
+        if (aValue instanceof Expression) {
+            writeExpressionSourcemapInfo((Expression) aValue);
+        }
+
         if (aValue instanceof Variable) {
             printVariableName((Variable) aValue);
         } else if (aValue instanceof GetStaticExpression) {
@@ -946,6 +952,19 @@ public class JSSSAWriter {
         return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
     }
 
+    private void writeExpressionSourcemapInfo(final Expression aExpression) {
+        final BytecodeOpcodeAddress theExpressionAddress = aExpression.getAddress();
+        if (theExpressionAddress != null) {
+            final DebugPosition thePosition = program.getDebugInformation().debugPositionFor(theExpressionAddress);
+            if (thePosition != null) {
+                final int theTargetLineNum = writer.getLineCounter();
+                final int theTargetColumn = writer.getColumnCounter();
+
+                // TODO: Generate source map
+            }
+        }
+    }
+
     public void writeExpressions(final ExpressionList aExpressions) {
         for (final Expression theExpression : aExpressions.toList()) {
             if (options.isDebugOutput()) {
@@ -954,6 +973,9 @@ public class JSSSAWriter {
                     startLine().text("//").text(theComment).newLine();
                 }
             }
+
+            writeExpressionSourcemapInfo(theExpression);
+
             if (theExpression instanceof ReturnExpression) {
                 final ReturnExpression theE = (ReturnExpression) theExpression;
                 startLine().text("return;").newLine();

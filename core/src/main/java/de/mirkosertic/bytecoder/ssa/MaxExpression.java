@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class MaxExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public MaxExpression(final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
+    public MaxExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
+        super(aAddress);
         targetType = aTargetType;
         receivesDataFrom(aLeftValue);
         receivesDataFrom(aRightValue);

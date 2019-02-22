@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class FixedBinaryExpression extends Expression {
 
     public enum Operator {
@@ -25,7 +27,8 @@ public class FixedBinaryExpression extends Expression {
 
     private final Operator operator;
 
-    public FixedBinaryExpression(Value aValue, Operator aOperator) {
+    public FixedBinaryExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final Operator aOperator) {
+        super(aAddress);
         operator = aOperator;
         receivesDataFrom(aValue);
     }

@@ -43,17 +43,23 @@ public class Program {
         }
     }
 
+    private final DebugInformation debugInformation;
     private final ControlFlowGraph controlFlowGraph;
     private final List<Variable> variables;
     private final Set<Variable> globals;
     private final List<Argument> arguments;
     private BytecodeProgram.FlowInformation flowInformation;
 
-    public Program() {
+    public Program(final DebugInformation aDebugInformation) {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
         globals = new HashSet<>();
         arguments = new ArrayList<>();
+        debugInformation = aDebugInformation;
+    }
+
+    public DebugInformation getDebugInformation() {
+        return debugInformation;
     }
 
     public void setFlowInformation(final BytecodeProgram.FlowInformation flowInformation) {
@@ -109,8 +115,7 @@ public class Program {
     }
 
     public List<Variable> getVariables() {
-        final List<Variable> theVariables = new ArrayList<>();
-        theVariables.addAll(variables);
+        final List<Variable> theVariables = new ArrayList<>(variables);
         theVariables.sort(Comparator.comparing(Variable::getName));
         return theVariables;
     }

@@ -19,15 +19,16 @@ import java.util.List;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class InvokeStaticMethodExpression extends InvocationExpression {
 
     private final BytecodeObjectTypeRef className;
     private final String methodName;
 
-    public InvokeStaticMethodExpression(BytecodeObjectTypeRef aClassName, String aMethodName,
-            BytecodeMethodSignature aSignature, List<Value> aArguments) {
-        super(aSignature);
+    public InvokeStaticMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClassName, final String aMethodName,
+            final BytecodeMethodSignature aSignature, final List<Value> aArguments) {
+        super(aAddress, aSignature);
         className = aClassName;
         methodName = aMethodName;
 

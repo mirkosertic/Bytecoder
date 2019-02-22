@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,9 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class MinExpression extends Expression {
+public class DebugInformation {
 
-    private final TypeRef targetType;
-
-    public MinExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
-        super(aAddress);
-        targetType = aTargetType;
-        receivesDataFrom(aLeftValue);
-        receivesDataFrom(aRightValue);
-    }
-
-    @Override
-    public TypeRef resolveType() {
-        return targetType;
+    public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
+        return null;
     }
 }

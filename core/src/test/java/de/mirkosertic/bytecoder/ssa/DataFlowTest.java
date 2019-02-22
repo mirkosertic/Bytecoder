@@ -33,7 +33,7 @@ public class DataFlowTest {
         theVar2.initializeWith(int2);
 
         final Variable theVar3 = new Variable(TypeRef.Native.INT, "var3");
-        final BinaryExpression b = new BinaryExpression(TypeRef.Native.INT, theVar1, BinaryExpression.Operator.ADD, theVar2);
+        final BinaryExpression b = new BinaryExpression(null, TypeRef.Native.INT, theVar1, BinaryExpression.Operator.ADD, theVar2);
         theVar3.initializeWith(b);
 
         final List<Value> theIncomingDataFlows = theVar3.incomingDataFlowsRecursive();

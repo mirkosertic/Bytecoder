@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class ArrayLengthExpression extends Expression {
 
-    public ArrayLengthExpression(Value aArray) {
+    public ArrayLengthExpression(final BytecodeOpcodeAddress aAddress, final Value aArray) {
+        super(aAddress);
         receivesDataFrom(aArray);
     }
 

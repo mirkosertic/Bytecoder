@@ -519,7 +519,7 @@ public class Relooper {
                                 final Block theNestingBlock = aTraversalStack.get(i);
                                 if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
                                     theNestingBlock.requireLabel();
-                                    final BreakExpression theBreak = new BreakExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    final BreakExpression theBreak = new BreakExpression(theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theBreak);
 
                                     if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
@@ -530,7 +530,7 @@ public class Relooper {
                                     break;
                                 } else if (theNestingBlock.entries().contains(theTarget)) {
                                     theNestingBlock.requireLabel();
-                                    final ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    final ContinueExpression theContinue = new ContinueExpression(theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theContinue);
                                     theSomethingFound = true;
                                     break;
@@ -550,7 +550,7 @@ public class Relooper {
 
                                     // We can return to the target in the hierarchy
                                     theNestingBlock.requireLabel();
-                                    final ContinueExpression theContinue = new ContinueExpression(theNestingBlock.label(), theTarget.getStartAddress());
+                                    final ContinueExpression theContinue = new ContinueExpression(theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
                                     aList.replace(theGoto, theContinue);
                                     break;
                                 }

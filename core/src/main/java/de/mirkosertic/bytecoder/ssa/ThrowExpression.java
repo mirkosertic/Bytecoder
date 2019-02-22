@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class ThrowExpression extends Expression {
 
-    public ThrowExpression(final Value aValue) {
+    public ThrowExpression(final BytecodeOpcodeAddress aAddress, final Value aValue) {
+        super(aAddress);
         receivesDataFrom(aValue);
     }
 

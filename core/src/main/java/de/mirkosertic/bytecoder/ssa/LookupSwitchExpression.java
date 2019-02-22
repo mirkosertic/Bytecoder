@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,8 +27,9 @@ public class LookupSwitchExpression extends Expression implements ExpressionList
     private final ExpressionList defaultExpressions;
     private final Map<Long, ExpressionList> pairs;
 
-    public LookupSwitchExpression(final Value aValue, final ExpressionList aDefaultExpressions,
+    public LookupSwitchExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final ExpressionList aDefaultExpressions,
             final Map<Long, ExpressionList> aPairs) {
+        super(aAddress);
         defaultExpressions = aDefaultExpressions;
         pairs = aPairs;
         receivesDataFrom(aValue);
@@ -54,6 +57,6 @@ public class LookupSwitchExpression extends Expression implements ExpressionList
         for (final Map.Entry<Long, ExpressionList> theEntry : pairs.entrySet()) {
             thePairs.put(theEntry.getKey(), theEntry.getValue().deepCopy());
         }
-        return new LookupSwitchExpression(incomingDataFlows().get(0), defaultExpressions.deepCopy(), thePairs);
+        return new LookupSwitchExpression(getAddress(), incomingDataFlows().get(0), defaultExpressions.deepCopy(), thePairs);
     }
 }

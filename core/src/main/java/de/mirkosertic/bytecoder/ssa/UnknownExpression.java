@@ -15,7 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+
 public class UnknownExpression extends Expression {
+
+    public UnknownExpression(final BytecodeOpcodeAddress address) {
+        super(address);
+    }
 
     @Override
     public TypeRef resolveType() {

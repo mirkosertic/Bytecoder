@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class CheckCastExpression extends Expression {
 
     private final BytecodeClassinfoConstant type;
 
-    public CheckCastExpression(Value aValue, BytecodeClassinfoConstant aType) {
+    public CheckCastExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final BytecodeClassinfoConstant aType) {
+        super(aAddress);
         type = aType;
         receivesDataFrom(aValue);
     }

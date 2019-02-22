@@ -22,19 +22,14 @@ import java.util.Set;
 
 public class IFExpression extends Expression implements ExpressionListContainer {
 
-    private final BytecodeOpcodeAddress address;
     private final ExpressionList expressions;
     private final BytecodeOpcodeAddress gotoAddress;
 
     public IFExpression(final BytecodeOpcodeAddress aAddress, final BytecodeOpcodeAddress aGotoAddress, final Value aBooleanValue, final ExpressionList aExpressions) {
-        address = aAddress;
+        super(aAddress);
         expressions = aExpressions;
         gotoAddress = aGotoAddress;
         receivesDataFrom(aBooleanValue);
-    }
-
-    public BytecodeOpcodeAddress getAddress() {
-        return address;
     }
 
     public ExpressionList getExpressions() {
@@ -59,6 +54,6 @@ public class IFExpression extends Expression implements ExpressionListContainer 
 
     @Override
     public Expression deepCopy() {
-        return new IFExpression(address, gotoAddress, incomingDataFlows().get(0), expressions.deepCopy());
+        return new IFExpression(getAddress(), gotoAddress, incomingDataFlows().get(0), expressions.deepCopy());
     }
 }

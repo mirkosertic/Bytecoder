@@ -72,7 +72,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final StringWriter theStrWriter = new StringWriter();
         final JSPrintWriter theWriter = new JSPrintWriter(theStrWriter, theMinifier);
-        theWriter.println("'use strict';");
+        theWriter.print("'use strict';").newLine();
 
         theWriter.text("var bytecoder").assign().text("{").newLine();
 
@@ -311,7 +311,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab().text("stringpool").colon().text("[],").newLine();
 
-        theWriter.text("};").println();
+        theWriter.text("};").newLine();
 
         final String theGetClassMethodName = theMinifier.toMethodName("getClass", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]));
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
@@ -340,7 +340,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.print(",");
                     }
                     first = false;
-                    theWriter.print(theType.getUniqueId());
+                    theWriter.print("" + theType.getUniqueId());
                 }
             }
             theWriter.text("],").newLine();
@@ -481,9 +481,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab().text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).colon().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
 
                 if (aOptions.isDebugOutput()) {
-                    theWriter.println("        /**");
-                    theWriter.println("        " + theSSAProgram.getControlFlowGraph().toDOT());
-                    theWriter.println("        */");
+                    theWriter.tab(2).text("/**").newLine();
+                    theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
+                    theWriter.tab(2).text("**/").newLine();
                 }
 
                 theWriter.flush();
