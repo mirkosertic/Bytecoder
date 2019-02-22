@@ -72,12 +72,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.javascript</groupId>
-            <artifactId>closure-compiler</artifactId>
-            <version>v20190215</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
             <version>3.5.0</version>
