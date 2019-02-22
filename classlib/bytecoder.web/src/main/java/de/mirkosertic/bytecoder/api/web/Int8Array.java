@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
-public abstract class OpaqueArrays {
+public abstract class Int8Array implements TypedArray {
 
-    public static native FloatArray createFloatArray(int aLength);
+    @OpaqueIndexed
+    public abstract byte get(int aIndex);
 
-    public static native IntArray createIntArray(int aLength);
+    @OpaqueIndexed
+    public abstract void set(int aIndex, byte aValue);
 
-    public static native Int8Array createInt8Array(int aLength);
-
-    public static native <V extends OpaqueReferenceType> OpaqueReferenceArray<V> createObjectArray();
+    @OpaqueProperty("length")
+    public abstract int byteArrayLength();
 }

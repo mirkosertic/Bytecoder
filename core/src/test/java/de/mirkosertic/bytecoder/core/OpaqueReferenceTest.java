@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.api.web.Event;
 import de.mirkosertic.bytecoder.api.web.EventListener;
 import de.mirkosertic.bytecoder.api.web.FloatArray;
 import de.mirkosertic.bytecoder.api.web.HTMLDocument;
+import de.mirkosertic.bytecoder.api.web.Int8Array;
 import de.mirkosertic.bytecoder.api.web.IntArray;
 import de.mirkosertic.bytecoder.api.web.OpaqueArrays;
 import de.mirkosertic.bytecoder.api.web.OpaqueReferenceArray;
@@ -92,7 +93,7 @@ public class OpaqueReferenceTest {
         final OpaqueReferenceArray<Window> b = OpaqueArrays.createObjectArray();
         b.push(w);
         Assert.assertEquals(1, b.objectArrayLength(), 0);
-        Window w2 = b.pop();
+        final Window w2 = b.pop();
         Assert.assertEquals(0, b.objectArrayLength(), 0);
         Assert.assertSame(w, w2);
     }
@@ -105,11 +106,11 @@ public class OpaqueReferenceTest {
         c.log("Fetching");
         w.fetch("https://httpbin.org/status/200").then(new Promise.Handler<Response>() {
             @Override
-            public void handleObject(Response aValue) {
+            public void handleObject(final Response aValue) {
                 c.log("Data received");
                 aValue.text().then(new StringPromise.Handler() {
                     @Override
-                    public void handleString(String aValue) {
+                    public void handleString(final String aValue) {
                         c.log("String data is " + aValue);
                         fetched[0] = "ok";
                    }
@@ -121,5 +122,12 @@ public class OpaqueReferenceTest {
         while(fetched[0] == null && counter++ < 1000) {
             c.log("Waiting");
         }
+    }
+
+    @Test
+    public void testInt8Array() {
+        final Int8Array a = OpaqueArrays.createInt8Array(10);
+        a.set(1, (byte) 99);
+        Assert.assertEquals((byte) 99, a.get(1), 0);
     }
 }
