@@ -202,6 +202,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("createObjectArray").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return [];").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("createInt8ArrayINT").colon().text("function(p1)").space().text("{").newLine();
+        theWriter.tab(4).text("return new Int8Array(p1);").newLine();
+        theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
         theWriter.tab(2).text("math").colon().text("{").newLine();
