@@ -19,11 +19,17 @@ public class DebugPosition {
 
     private final String fileName;
     private final int lineNumber;
-    private final int column;
 
-    public DebugPosition(final String fileName, final int lineNumber, final int column) {
+    public DebugPosition(final String fileName, final int lineNumber) {
         this.fileName = fileName;
         this.lineNumber = lineNumber;
-        this.column = column;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public int getLineNumber() {
+        return lineNumber;
     }
 }

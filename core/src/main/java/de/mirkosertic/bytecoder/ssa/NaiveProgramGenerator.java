@@ -18,120 +18,10 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
-import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
-import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethodsAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInstruction;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionALOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionANEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionARRAYLENGTH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionASTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionATHROW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionBIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionCHECKCAST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionD2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X1;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX2;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionFCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericADD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericAND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArrayLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericArraySTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericDIV;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLDC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericMUL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericNEG;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericREM;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSHR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericUSHR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericXOR;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionI2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFACMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFCOND;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFICMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNONNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionIINC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINSTANCEOF;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEDYNAMIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionL2Generic;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCMP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLCONST;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionLOOKUPSWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionMONITORENTER;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionMONITOREXIT;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEW;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNEWMULTIARRAY;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionNOP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArrayLOAD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectArraySTORE;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionObjectRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPOP2;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
-import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
-import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeLongConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodHandleConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeMethodTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
-import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.*;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -145,18 +35,35 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         linkerContext = aLinkerContext;
     }
 
+    private DebugInformation debugInformationFor(final BytecodeClass aOwningClass, BytecodeCodeAttributeInfo aCode) {
+        final BytecodeSourceFileAttributeInfo theSourceFileAttribute = aOwningClass.getAttributes().getByType(BytecodeSourceFileAttributeInfo.class);
+        final BytecodeLineNumberTableAttributeInfo theLineInfoAttribute = aCode.attributeByType(BytecodeLineNumberTableAttributeInfo.class);
+        if (theSourceFileAttribute != null && theLineInfoAttribute != null) {
+            final String theSourceFileName = theSourceFileAttribute.getFileName();
+            final String theClassName = aOwningClass.getThisInfo().getConstant().stringValue();
+            final int p = theClassName.lastIndexOf("/");
+            final String thePackageName = theClassName.substring(0, p);
+            final String theOriginaFileName = thePackageName.replace(".","/") + "/" + theSourceFileName;
+            return DebugInformation.jvm(theOriginaFileName, theLineInfoAttribute);
+        }
+        return DebugInformation.empty();
+    }
+
     @Override
     public Program generateFrom(final BytecodeClass aOwningClass, final BytecodeMethod aMethod) {
 
         final BytecodeCodeAttributeInfo theCode = aMethod.getCode(aOwningClass);
-
-        final Program theProgram = new Program(new DebugInformation());
+        final Program theProgram;
 
         // Initialize programm arguments
         BytecodeLocalVariableTableAttributeInfo theDebugInfos = null;
         if (theCode != null) {
             theDebugInfos = theCode.attributeByType(BytecodeLocalVariableTableAttributeInfo.class);
+            theProgram = new Program(debugInformationFor(aOwningClass, theCode));
+        } else {
+            theProgram = new Program(DebugInformation.empty());
         }
+
         int theCurrentIndex = 0;
         if (!aMethod.getAccessFlags().isStatic()) {
             theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, TypeRef.Native.REFERENCE), Variable.createThisRef());
@@ -1273,7 +1180,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
                 final BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
 
-                final Program theProgram = new Program(new DebugInformation());
+                final Program theProgram = new Program(DebugInformation.empty());
                 final RegionNode theInitNode = theProgram.getControlFlowGraph().createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
 
                 switch (theMethodRef.getReferenceKind()) {

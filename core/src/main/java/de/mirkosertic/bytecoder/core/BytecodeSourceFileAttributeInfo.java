@@ -24,4 +24,8 @@ public class BytecodeSourceFileAttributeInfo implements BytecodeAttributeInfo {
         constantPool = aConstantPool;
         nameIndex = aNameIndex;
     }
+
+    public String getFileName() {
+        return ((BytecodeUtf8Constant)constantPool.constantByIndex(nameIndex - 1)).stringValue();
+    }
 }

@@ -959,7 +959,8 @@ public class JSSSAWriter {
             if (thePosition != null) {
                 final int theTargetLineNum = writer.getLineCounter();
                 final int theTargetColumn = writer.getColumnCounter();
-
+                final String theSourceFile = thePosition.getFileName();
+                final int theSourceLineNum = thePosition.getLineNumber();
                 // TODO: Generate source map
             }
         }
