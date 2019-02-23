@@ -15,12 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.IsObject;
+
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import de.mirkosertic.bytecoder.api.IsObject;
 
 // https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7
 public class Bytecode5xClassParser implements BytecodeClassParser {
@@ -44,35 +45,35 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
     private final BytecodeSignatureParser signatureParser;
     private final BytecodeReplacer bytecodeReplacer;
 
-    public Bytecode5xClassParser(BytecodeProgramParser aParser,
-            BytecodeSignatureParser aSignatureParser,
-            BytecodeReplacer aReplacer) {
+    public Bytecode5xClassParser(final BytecodeProgramParser aParser,
+                                 final BytecodeSignatureParser aSignatureParser,
+                                 final BytecodeReplacer aReplacer) {
         programmParser = aParser;
         signatureParser = aSignatureParser;
         bytecodeReplacer = aReplacer;
     }
 
     @Override
-    public BytecodeClass parseBody(DataInput dis) throws IOException {
+    public BytecodeClass parseBody(final DataInput dis) throws IOException {
 
-        BytecodeConstantPool theConstantPool = parseConstantPool(dis);
+        final BytecodeConstantPool theConstantPool = parseConstantPool(dis);
 
-        BytecodeAccessFlags theAccessFlags = parseAccessFlags(dis);
-        BytecodeClassinfoConstant theThisClass = parseThisClass(dis, theConstantPool);
+        final BytecodeAccessFlags theAccessFlags = parseAccessFlags(dis);
+        final BytecodeClassinfoConstant theThisClass = parseThisClass(dis, theConstantPool);
         BytecodeClassinfoConstant theSuperClass = parseSuperClass(dis, theConstantPool);
 
-        BytecodeInterface[] theInterfaces = parseInterfaces(dis, theConstantPool);
-        BytecodeField[] theFields = parseFields(dis, theConstantPool);
-        BytecodeMethod[] theMethods = parseMethods(dis, theConstantPool);
+        final BytecodeInterface[] theInterfaces = parseInterfaces(dis, theConstantPool);
+        final BytecodeField[] theFields = parseFields(dis, theConstantPool);
+        final BytecodeMethod[] theMethods = parseMethods(dis, theConstantPool);
 
-        BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
+        final BytecodeAttributeInfo[] theClassAttributes = parseAttributes(dis, theConstantPool);
 
-        BytecodeAttributes theAttributes = new BytecodeAttributes(theClassAttributes);
+        final BytecodeAttributes theAttributes = new BytecodeAttributes(theClassAttributes);
         if (theAttributes.getAnnotationByType(IsObject.class.getName()) != null) {
             theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
         }
 
-        BytecodeReplacer.MergeResult theResult = bytecodeReplacer.replace(theThisClass,
+        final BytecodeReplacer.MergeResult theResult = bytecodeReplacer.replace(theThisClass,
                 theMethods,
                 theFields,
                 theSuperClass,
@@ -88,11 +89,11 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                 theClassAttributes);
     }
 
-    private BytecodeConstantPool parseConstantPool(DataInput aDis) throws IOException {
-        BytecodeConstantPool theResult = new BytecodeConstantPool();
-        int theConstantPoolCount = aDis.readUnsignedShort();
+    private BytecodeConstantPool parseConstantPool(final DataInput aDis) throws IOException {
+        final BytecodeConstantPool theResult = new BytecodeConstantPool();
+        final int theConstantPoolCount = aDis.readUnsignedShort();
         for (int i=1;i<theConstantPoolCount;i++) {
-            int theTag = aDis.readUnsignedByte();
+            final int theTag = aDis.readUnsignedByte();
             switch (theTag) {
             case CONSTANT_Class:
                 parseConstantPool_CONSTANT_Class(aDis, theResult);
@@ -148,71 +149,71 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return theResult;
     }
 
-    private void parseConstantPool_CONSTANT_Class(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theNameIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_Class(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theNameIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeClassinfoConstant(theNameIndex, aConstantPool, bytecodeReplacer));
     }
 
-    private void parseConstantPool_CONSTANT_Fieldref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theClassIndex = aDis.readUnsignedShort();
-        int theNameAndTypeIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_Fieldref(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theClassIndex = aDis.readUnsignedShort();
+        final int theNameAndTypeIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeFieldRefConstant(new BytecodeClassIndex(theClassIndex, aConstantPool), new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
-    private void parseConstantPool_CONSTANT_Methodref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theClassIndex = aDis.readUnsignedShort();
-        int theNameAndTypeIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_Methodref(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theClassIndex = aDis.readUnsignedShort();
+        final int theNameAndTypeIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeMethodRefConstant(new BytecodeClassIndex(theClassIndex, aConstantPool), new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
-    private void parseConstantPool_CONSTANT_InterfaceMethodref(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theClassIndex = aDis.readUnsignedShort();
-        int theNameAndTypeIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_InterfaceMethodref(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theClassIndex = aDis.readUnsignedShort();
+        final int theNameAndTypeIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeInterfaceRefConstant(new BytecodeClassIndex(theClassIndex, aConstantPool), new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
-    private void parseConstantPool_CONSTANT_String(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theStringIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_String(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theStringIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeStringConstant(new BytecodeStringIndex(theStringIndex), aConstantPool));
     }
 
-    private void parseConstantPool_CONSTANT_Integer(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theBytes = aDis.readInt();
+    private void parseConstantPool_CONSTANT_Integer(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theBytes = aDis.readInt();
         aConstantPool.registerConstant(new BytecodeIntegerConstant(theBytes));
     }
 
-    private void parseConstantPool_CONSTANT_Float(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        float theFloat = aDis.readFloat();
+    private void parseConstantPool_CONSTANT_Float(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final float theFloat = aDis.readFloat();
         aConstantPool.registerConstant(new BytecodeFloatConstant(theFloat));
     }
 
-    private void parseConstantPool_CONSTANT_Long(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        long theLowBytes = aDis.readInt() & 0xFFFFFFFFL;
-        long theHighBytes = aDis.readInt() & 0xFFFFFFFFL;
+    private void parseConstantPool_CONSTANT_Long(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final long theLowBytes = aDis.readInt() & 0xFFFFFFFFL;
+        final long theHighBytes = aDis.readInt() & 0xFFFFFFFFL;
         aConstantPool.registerConstant(new BytecodeLongConstant(theHighBytes, theLowBytes));
     }
 
-    private void parseConstantPool_CONSTANT_Double(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        double theDouble = aDis.readDouble();
+    private void parseConstantPool_CONSTANT_Double(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final double theDouble = aDis.readDouble();
         aConstantPool.registerConstant(new BytecodeDoubleConstant(theDouble));
     }
 
-    private void parseConstantPool_CONSTANT_NameAndType(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theNameIndex = aDis.readUnsignedShort();
-        int theDescriptorIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_NameAndType(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theNameIndex = aDis.readUnsignedShort();
+        final int theDescriptorIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeNameAndTypeConstant(new BytecodeNameIndex(theNameIndex, aConstantPool), new BytecodeDescriptorIndex(theDescriptorIndex, aConstantPool, signatureParser)));
     }
 
-    private void parseConstantPool_CONSTANT_Utf8(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theLength = aDis.readUnsignedShort();
-        byte[] theData = new byte[theLength];
+    private void parseConstantPool_CONSTANT_Utf8(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theLength = aDis.readUnsignedShort();
+        final byte[] theData = new byte[theLength];
         aDis.readFully(theData);
-        aConstantPool.registerConstant(new BytecodeUtf8Constant(new String(theData, "UTF-8")));
+        aConstantPool.registerConstant(new BytecodeUtf8Constant(new String(theData, StandardCharsets.UTF_8)));
     }
 
-    private void parseConstantPool_CONSTANT_MethodHandle(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theReferenceKind = aDis.readUnsignedByte();
-        int theReferenceIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_MethodHandle(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theReferenceKind = aDis.readUnsignedByte();
+        final int theReferenceIndex = aDis.readUnsignedShort();
         switch (theReferenceKind) {
         case 1:
             aConstantPool.registerConstant(new BytecodeMethodHandleConstant(BytecodeReferenceKind.REF_getField, new BytecodeReferenceIndex(theReferenceIndex, aConstantPool)));
@@ -246,50 +247,50 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         }
     }
 
-    private void parseConstantPool_CONSTANT_MethodType(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theDescriptorIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_MethodType(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theDescriptorIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeMethodTypeConstant(new BytecodeDescriptorIndex(theDescriptorIndex, aConstantPool, signatureParser)));
     }
 
-    private void parseConstantPool_CONSTANT_InvokeDynamic(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theBootstrapMethodAttrIndex = aDis.readUnsignedShort();
-        int theNameAndTypeIndex = aDis.readUnsignedShort();
+    private void parseConstantPool_CONSTANT_InvokeDynamic(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theBootstrapMethodAttrIndex = aDis.readUnsignedShort();
+        final int theNameAndTypeIndex = aDis.readUnsignedShort();
         aConstantPool.registerConstant(new BytecodeInvokeDynamicConstant(new BytecodeMethodAttributeIndex(theBootstrapMethodAttrIndex),
                 new BytecodeNameAndTypeIndex(theNameAndTypeIndex, aConstantPool)));
     }
 
-    private BytecodeAccessFlags parseAccessFlags(DataInput aDis) throws IOException {
-        int theAccessFlags = aDis.readUnsignedShort();
+    private BytecodeAccessFlags parseAccessFlags(final DataInput aDis) throws IOException {
+        final int theAccessFlags = aDis.readUnsignedShort();
         return new BytecodeAccessFlags(theAccessFlags);
     }
 
-    private BytecodeClassinfoConstant parseThisClass(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theThisClass = aDis.readUnsignedShort();
-        BytecodeConstant theConstant = aConstantPool.constantByIndex(theThisClass - 1);
+    private BytecodeClassinfoConstant parseThisClass(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theThisClass = aDis.readUnsignedShort();
+        final BytecodeConstant theConstant = aConstantPool.constantByIndex(theThisClass - 1);
         if (!(theConstant instanceof BytecodeClassinfoConstant)) {
             throw new IllegalStateException("Invalid this constant reference : got type " + theConstant.getClass().getName());
         }
         return (BytecodeClassinfoConstant) theConstant;
     }
 
-    private BytecodeClassinfoConstant parseSuperClass(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theSuperClass = aDis.readUnsignedShort();
+    private BytecodeClassinfoConstant parseSuperClass(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theSuperClass = aDis.readUnsignedShort();
         if (theSuperClass == 0) {
             return BytecodeClassinfoConstant.OBJECT_CLASS;
         }
-        BytecodeConstant theConstant = aConstantPool.constantByIndex(theSuperClass - 1);
+        final BytecodeConstant theConstant = aConstantPool.constantByIndex(theSuperClass - 1);
         if (!(theConstant instanceof BytecodeClassinfoConstant)) {
             throw new IllegalStateException("Invalid super_class constant reference : got type " + theConstant.getClass().getName());
         }
         return (BytecodeClassinfoConstant) theConstant;
     }
 
-    private BytecodeInterface[] parseInterfaces(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        List<BytecodeInterface> theInterfaces = new ArrayList<>();
-        int theInterfaceCount = aDis.readUnsignedShort();
+    private BytecodeInterface[] parseInterfaces(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final List<BytecodeInterface> theInterfaces = new ArrayList<>();
+        final int theInterfaceCount = aDis.readUnsignedShort();
         for (int i=0;i<theInterfaceCount;i++) {
-            int theNameIndex = aDis.readUnsignedShort();
-            BytecodeConstant theConstant = aConstantPool.constantByIndex(theNameIndex - 1);
+            final int theNameIndex = aDis.readUnsignedShort();
+            final BytecodeConstant theConstant = aConstantPool.constantByIndex(theNameIndex - 1);
             if (!(theConstant instanceof BytecodeClassinfoConstant)) {
                 throw new IllegalStateException("Invalid constant reference : got type " + theConstant.getClass().getName());
             }
@@ -298,13 +299,13 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return theInterfaces.toArray(new BytecodeInterface[theInterfaces.size()]);
     }
 
-    private BytecodeBootstrapMethodsAttributeInfo parseBootstrapAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theNumMethods = aDis.readUnsignedShort();
-        List<BytecodeBootstrapMethod> theMethods = new ArrayList<>();
+    private BytecodeBootstrapMethodsAttributeInfo parseBootstrapAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theNumMethods = aDis.readUnsignedShort();
+        final List<BytecodeBootstrapMethod> theMethods = new ArrayList<>();
         for (int i=0;i<theNumMethods;i++) {
-            int theMethodRef = aDis.readUnsignedShort();
-            int theNumArguments = aDis.readUnsignedShort();
-            int[] theArguments = new int[theNumArguments];
+            final int theMethodRef = aDis.readUnsignedShort();
+            final int theNumArguments = aDis.readUnsignedShort();
+            final int[] theArguments = new int[theNumArguments];
             for (int j=0;j<theNumArguments;j++) {
                 theArguments[j] = aDis.readUnsignedShort();
             }
@@ -314,17 +315,33 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return new BytecodeBootstrapMethodsAttributeInfo(theMethods.toArray(new BytecodeBootstrapMethod[theMethods.size()]));
     }
 
-    private BytecodeLocalVariableTableAttributeInfo parseLocalVariableTableAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theNumTableEntries = aDis.readUnsignedShort();
-        List<BytecodeLocalVariableTableEntry> theEntries = new ArrayList<>();
-        for (int i=0;i<theNumTableEntries;i++) {
-            int theStartPC = aDis.readUnsignedShort();
-            int theLength = aDis.readUnsignedShort();
-            int theNameIndex = aDis.readUnsignedShort();
-            int theDescriptorIndex = aDis.readUnsignedShort();
-            int theIndex = aDis.readUnsignedShort();
+    private BytecodeSourceFileAttributeInfo parseSourceFileAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theNameIndex = aDis.readUnsignedShort();
+        return new BytecodeSourceFileAttributeInfo(aConstantPool, theNameIndex);
+    }
 
-            BytecodeTypeRef theTypeRef = signatureParser.toFieldType(((BytecodeUtf8Constant) aConstantPool.constantByIndex(theDescriptorIndex - 1)));
+    private BytecodeLineNumberTableAttributeInfo parseLineNumberTableAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theNumEntries = aDis.readUnsignedShort();
+        final BytecodeLineNumberTableAttributeInfo.Entry[] theEntries = new BytecodeLineNumberTableAttributeInfo.Entry[theNumEntries];
+        for (int i=0;i<theNumEntries;i++) {
+            final int theStartPC = aDis.readUnsignedShort();
+            final int theLineNum = aDis.readUnsignedShort();
+            theEntries[i] = new BytecodeLineNumberTableAttributeInfo.Entry(theStartPC, theLineNum);
+        }
+        return new BytecodeLineNumberTableAttributeInfo(theEntries);
+    }
+
+    private BytecodeLocalVariableTableAttributeInfo parseLocalVariableTableAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theNumTableEntries = aDis.readUnsignedShort();
+        final List<BytecodeLocalVariableTableEntry> theEntries = new ArrayList<>();
+        for (int i=0;i<theNumTableEntries;i++) {
+            final int theStartPC = aDis.readUnsignedShort();
+            final int theLength = aDis.readUnsignedShort();
+            final int theNameIndex = aDis.readUnsignedShort();
+            final int theDescriptorIndex = aDis.readUnsignedShort();
+            final int theIndex = aDis.readUnsignedShort();
+
+            final BytecodeTypeRef theTypeRef = signatureParser.toFieldType(((BytecodeUtf8Constant) aConstantPool.constantByIndex(theDescriptorIndex - 1)));
 
             theEntries.add(new BytecodeLocalVariableTableEntry(theStartPC, theLength, theNameIndex, theTypeRef, theIndex));
         }
@@ -332,35 +349,35 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return new BytecodeLocalVariableTableAttributeInfo(aConstantPool, theEntries.toArray(new BytecodeLocalVariableTableEntry[theEntries.size()]));
     }
 
-    private BytecodeAnnotation.ElementValue readAnnotationElementValueFrom(DataInput aDis, BytecodeConstantPool aConstantPool)
+    private BytecodeAnnotation.ElementValue readAnnotationElementValueFrom(final DataInput aDis, final BytecodeConstantPool aConstantPool)
             throws IOException {
-        char theTag = (char) aDis.readUnsignedByte();
+        final char theTag = (char) aDis.readUnsignedByte();
         switch (theTag) {
         case 's': {
-            int theConstValueIndex = aDis.readUnsignedShort();
+            final int theConstValueIndex = aDis.readUnsignedShort();
             return new BytecodeAnnotation.StringElementValue(theConstValueIndex, aConstantPool);
         }
         case 'I': {
-            int theConstValueIndex = aDis.readUnsignedShort();
+            final int theConstValueIndex = aDis.readUnsignedShort();
             return new BytecodeAnnotation.IntegerElementValue(theConstValueIndex, aConstantPool);
         }
         case 'c': {
-            int theClassInfoIndex = aDis.readUnsignedShort();
+            final int theClassInfoIndex = aDis.readUnsignedShort();
             return new BytecodeAnnotation.ClassElementValue(theClassInfoIndex, aConstantPool, signatureParser);
         }
         case 'Z': {
-            int theClassInfoIndex = aDis.readUnsignedShort();
+            final int theClassInfoIndex = aDis.readUnsignedShort();
             return new BytecodeAnnotation.BooleanElementValue(theClassInfoIndex, aConstantPool);
         }
         case 'e': {
-            int theTypeNameIndex = aDis.readUnsignedShort();
-            int theConstNameIndex = aDis.readUnsignedShort();
+            final int theTypeNameIndex = aDis.readUnsignedShort();
+            final int theConstNameIndex = aDis.readUnsignedShort();
             return new BytecodeAnnotation.EnumElementValue(aConstantPool,
                     theTypeNameIndex, theConstNameIndex);
         }
         case '[': {
-            int theLength = aDis.readUnsignedShort();
-            BytecodeAnnotation.ElementValue[] theValues = new BytecodeAnnotation.ElementValue[theLength];
+            final int theLength = aDis.readUnsignedShort();
+            final BytecodeAnnotation.ElementValue[] theValues = new BytecodeAnnotation.ElementValue[theLength];
             for (int i=0;i<theLength;i++) {
                 theValues[i] = readAnnotationElementValueFrom(aDis, aConstantPool);
             }
@@ -370,17 +387,17 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         throw new IllegalArgumentException("Not supported annotation value type : " + theTag);
     }
 
-    private BytecodeAnnotationAttributeInfo parseAnnotationAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        int theAnnotationCount = aDis.readUnsignedShort();
-        List<BytecodeAnnotation> theAnnotations = new ArrayList<>();
+    private BytecodeAnnotationAttributeInfo parseAnnotationAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theAnnotationCount = aDis.readUnsignedShort();
+        final List<BytecodeAnnotation> theAnnotations = new ArrayList<>();
         for (int i=0;i<theAnnotationCount;i++) {
-            int theTypeIndex = aDis.readUnsignedShort();
-            int theNumElementValuePairs = aDis.readUnsignedShort();
+            final int theTypeIndex = aDis.readUnsignedShort();
+            final int theNumElementValuePairs = aDis.readUnsignedShort();
 
-            List<BytecodeAnnotation.ElementValuePair> theElementValuePairs = new ArrayList<>();
+            final List<BytecodeAnnotation.ElementValuePair> theElementValuePairs = new ArrayList<>();
             for (int j=0;j<theNumElementValuePairs;j++) {
-                int theElementNameIndex = aDis.readUnsignedShort();
-                BytecodeAnnotation.ElementValue theAnnotationValue =  readAnnotationElementValueFrom(aDis, aConstantPool);
+                final int theElementNameIndex = aDis.readUnsignedShort();
+                final BytecodeAnnotation.ElementValue theAnnotationValue =  readAnnotationElementValueFrom(aDis, aConstantPool);
                 theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
                         theAnnotationValue,
                         aConstantPool));
@@ -392,41 +409,41 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return new BytecodeAnnotationAttributeInfo(theAnnotations.toArray(new BytecodeAnnotation[theAnnotations.size()]));
     }
 
-    private BytecodeCodeAttributeInfo parseCodeAttribute(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
+    private BytecodeCodeAttributeInfo parseCodeAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
 
-        int theMaxStack = aDis.readUnsignedShort();
-        int theMaxLocals = aDis.readUnsignedShort();
-        int theCodeLength = aDis.readInt();
-        byte[] theCode = new byte[theCodeLength];
+        final int theMaxStack = aDis.readUnsignedShort();
+        final int theMaxLocals = aDis.readUnsignedShort();
+        final int theCodeLength = aDis.readInt();
+        final byte[] theCode = new byte[theCodeLength];
         aDis.readFully(theCode);
 
-        BytecodeProgram theProgramm = programmParser.parse(theCode, aConstantPool);
+        final BytecodeProgram theProgramm = programmParser.parse(theCode, aConstantPool);
 
-        int theExceptionTableLength = aDis.readUnsignedShort();
+        final int theExceptionTableLength = aDis.readUnsignedShort();
         for (int i=0;i<theExceptionTableLength;i++) {
-            BytecodeOpcodeAddress theStartPC = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
-            BytecodeOpcodeAddress theEndPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
-            BytecodeOpcodeAddress theHandlerPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
-            int theCatchType = aDis.readUnsignedShort();
+            final BytecodeOpcodeAddress theStartPC = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
+            final BytecodeOpcodeAddress theEndPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
+            final BytecodeOpcodeAddress theHandlerPc = new BytecodeOpcodeAddress(aDis.readUnsignedShort());
+            final int theCatchType = aDis.readUnsignedShort();
             theProgramm.addExceptionHandler(new BytecodeExceptionTableEntry(theStartPC, theEndPc, theHandlerPc, theCatchType, aConstantPool));
         }
-        BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
+        final BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 
         return new BytecodeCodeAttributeInfo(theMaxStack, theMaxLocals, theProgramm, theAttributes);
     }
 
-    private BytecodeAttributeInfo[] parseAttributes(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        List<BytecodeAttributeInfo> theAttributes = new ArrayList<>();
-        int theAttributesCount = aDis.readUnsignedShort();
+    private BytecodeAttributeInfo[] parseAttributes(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final List<BytecodeAttributeInfo> theAttributes = new ArrayList<>();
+        final int theAttributesCount = aDis.readUnsignedShort();
         for (int j=0;j<theAttributesCount;j++) {
-            int theAttributeNameIndex = aDis.readUnsignedShort();
+            final int theAttributeNameIndex = aDis.readUnsignedShort();
 
-            BytecodeConstant theAttributeNameConstant = aConstantPool.constantByIndex(theAttributeNameIndex - 1);
+            final BytecodeConstant theAttributeNameConstant = aConstantPool.constantByIndex(theAttributeNameIndex - 1);
             if (!(theAttributeNameConstant instanceof BytecodeUtf8Constant)) {
                 throw new IllegalStateException("Invalid constant reference : got type " + theAttributeNameConstant.getClass().getName());
             }
 
-            int theAttributeLength = aDis.readInt();
+            final int theAttributeLength = aDis.readInt();
             switch (((BytecodeUtf8Constant) theAttributeNameConstant).stringValue()) {
             case "Code":
                 theAttributes.add(parseCodeAttribute(aDis, aConstantPool));
@@ -440,8 +457,14 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             case "LocalVariableTable":
                 theAttributes.add(parseLocalVariableTableAttribute(aDis, aConstantPool));
                 break;
+            case "SourceFile ":
+                theAttributes.add(parseSourceFileAttribute(aDis, aConstantPool));
+                break;
+            case "LineNumberTable ":
+                theAttributes.add(parseLineNumberTableAttribute(aDis, aConstantPool));
+                break;
             default:
-                byte[] theAttributeData = new byte[theAttributeLength];
+                final byte[] theAttributeData = new byte[theAttributeLength];
                 aDis.readFully(theAttributeData);
 
                 theAttributes.add(new BytecodeUnknownAttributeInfo((BytecodeUtf8Constant) theAttributeNameConstant, theAttributeData));
@@ -451,26 +474,26 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return theAttributes.toArray(new BytecodeAttributeInfo[theAttributes.size()]);
     }
 
-    private BytecodeField[] parseFields(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        List<BytecodeField> theFields = new ArrayList<>();
-        int theFieldCount = aDis.readUnsignedShort();
+    private BytecodeField[] parseFields(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final List<BytecodeField> theFields = new ArrayList<>();
+        final int theFieldCount = aDis.readUnsignedShort();
         for (int i=0;i<theFieldCount;i++) {
-            int theAccessFlags = aDis.readUnsignedShort();
-            int theNameIndex = aDis.readUnsignedShort();
-            BytecodeConstant theNameConstant = aConstantPool.constantByIndex(theNameIndex - 1);
+            final int theAccessFlags = aDis.readUnsignedShort();
+            final int theNameIndex = aDis.readUnsignedShort();
+            final BytecodeConstant theNameConstant = aConstantPool.constantByIndex(theNameIndex - 1);
             if (!(theNameConstant instanceof BytecodeUtf8Constant)) {
                 throw new IllegalStateException("Invalid interface constant reference : got type " + theNameConstant.getClass().getName());
             }
 
-            int theDescriptorIndex = aDis.readUnsignedShort();
-            BytecodeConstant theDescriptorConstant = aConstantPool.constantByIndex(theDescriptorIndex - 1);
+            final int theDescriptorIndex = aDis.readUnsignedShort();
+            final BytecodeConstant theDescriptorConstant = aConstantPool.constantByIndex(theDescriptorIndex - 1);
             if (!(theDescriptorConstant instanceof BytecodeUtf8Constant)) {
                 throw new IllegalStateException("Invalid interface constant reference : got type " + theDescriptorConstant.getClass().getName());
             }
 
-            BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
+            final BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 
-            BytecodeTypeRef theTypeRef = signatureParser.toFieldType(((BytecodeUtf8Constant) theDescriptorConstant));
+            final BytecodeTypeRef theTypeRef = signatureParser.toFieldType(((BytecodeUtf8Constant) theDescriptorConstant));
 
             theFields.add(new BytecodeField(
                     new BytecodeAccessFlags(theAccessFlags),
@@ -481,26 +504,26 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         return theFields.toArray(new BytecodeField[theFields.size()]);
     }
 
-    private BytecodeMethod[] parseMethods(DataInput aDis, BytecodeConstantPool aConstantPool) throws IOException {
-        List<BytecodeMethod> theMethods = new ArrayList<>();
-        int theMethodCount = aDis.readUnsignedShort();
+    private BytecodeMethod[] parseMethods(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final List<BytecodeMethod> theMethods = new ArrayList<>();
+        final int theMethodCount = aDis.readUnsignedShort();
         for (int i=0;i<theMethodCount;i++) {
-            int theAccessFlags = aDis.readUnsignedShort();
-            int theNameIndex = aDis.readUnsignedShort();
+            final int theAccessFlags = aDis.readUnsignedShort();
+            final int theNameIndex = aDis.readUnsignedShort();
 
-            BytecodeConstant theName = aConstantPool.constantByIndex(theNameIndex - 1);
+            final BytecodeConstant theName = aConstantPool.constantByIndex(theNameIndex - 1);
             if (!(theName instanceof BytecodeUtf8Constant)) {
                 throw new IllegalStateException("Invalid interface constant reference : got type " + theName.getClass().getName());
             }
 
-            int theDescriptorIndex = aDis.readUnsignedShort();
+            final int theDescriptorIndex = aDis.readUnsignedShort();
 
-            BytecodeConstant theDescriptor = aConstantPool.constantByIndex(theDescriptorIndex - 1);
+            final BytecodeConstant theDescriptor = aConstantPool.constantByIndex(theDescriptorIndex - 1);
             if (!(theDescriptor instanceof BytecodeUtf8Constant)) {
                 throw new IllegalStateException("Invalid interface constant reference : got type " + theDescriptor.getClass().getName());
             }
 
-            BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
+            final BytecodeAttributeInfo[] theAttributes = parseAttributes(aDis, aConstantPool);
 
             theMethods.add(new BytecodeMethod(new BytecodeAccessFlags(theAccessFlags),
                     (BytecodeUtf8Constant) theName,
