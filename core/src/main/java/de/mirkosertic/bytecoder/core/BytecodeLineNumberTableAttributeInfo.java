@@ -25,11 +25,23 @@ public class BytecodeLineNumberTableAttributeInfo implements BytecodeAttributeIn
             this.startPc = startPc;
             this.lineNumber = lineNumber;
         }
+
+        public int getStartPc() {
+            return startPc;
+        }
+
+        public int getLineNumber() {
+            return lineNumber;
+        }
     }
 
     private final Entry[] entries;
 
     public BytecodeLineNumberTableAttributeInfo(final Entry[] entries) {
         this.entries = entries;
+    }
+
+    public Entry[] getEntries() {
+        return entries;
     }
 }

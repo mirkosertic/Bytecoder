@@ -457,10 +457,10 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             case "LocalVariableTable":
                 theAttributes.add(parseLocalVariableTableAttribute(aDis, aConstantPool));
                 break;
-            case "SourceFile ":
+            case "SourceFile":
                 theAttributes.add(parseSourceFileAttribute(aDis, aConstantPool));
                 break;
-            case "LineNumberTable ":
+            case "LineNumberTable":
                 theAttributes.add(parseLineNumberTableAttribute(aDis, aConstantPool));
                 break;
             default:

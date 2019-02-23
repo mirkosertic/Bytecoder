@@ -15,11 +15,35 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeLineNumberTableAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class DebugInformation {
+public abstract class DebugInformation {
 
-    public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
-        return null;
+    public static DebugInformation empty() {
+        return new DebugInformation() {
+            @Override
+            public DebugPosition debugPositionFor(BytecodeOpcodeAddress aAddress) {
+                return null;
+            }
+        };
     }
+
+    public static DebugInformation jvm(String aOriginalFileName, BytecodeLineNumberTableAttributeInfo aLineNumberInfo) {
+        return new DebugInformation() {
+            @Override
+            public DebugPosition debugPositionFor(BytecodeOpcodeAddress aAddress) {
+                BytecodeLineNumberTableAttributeInfo.Entry[] theEntries = aLineNumberInfo.getEntries();
+                for (int i=0;i<theEntries.length;i++) {
+                    BytecodeLineNumberTableAttributeInfo.Entry theEntry = theEntries[i];
+                    if (theEntry.getStartPc() == aAddress.getAddress()) {
+                        return new DebugPosition(aOriginalFileName, theEntry.getLineNumber());
+                    }
+                }
+                return null;
+            }
+        };
+    }
+
+    public abstract DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress);
 }
