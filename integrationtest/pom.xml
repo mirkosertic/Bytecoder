@@ -218,7 +218,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-luademowasm,org.jbox2d</filenamePrefix>
+                            <filenamePrefix>bytecoder-luademowasm</filenamePrefix>
                         </configuration>
                     </execution>
 
