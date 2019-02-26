@@ -53,6 +53,7 @@ public class Call implements WASMExpression {
         for (final WASMValue argument : arguments) {
             argument.writeTo(codeWriter, context);
         }
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x10);
         codeWriter.writeUnsignedLeb128(function.resolveIndex(context));
     }

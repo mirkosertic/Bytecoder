@@ -156,7 +156,7 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.closing();
     }
 
-    public void writeCodeTo(final BinaryWriter.SectionWriter sectionWriter, final FunctionIndex functionIndex) throws IOException {
+    public void writeCodeTo(final BinaryWriter.Writer sectionWriter, final FunctionIndex functionIndex) throws IOException {
         try (final BinaryWriter.BlockWriter codeWriter = sectionWriter.blockWriter()) {
 
             // Local data

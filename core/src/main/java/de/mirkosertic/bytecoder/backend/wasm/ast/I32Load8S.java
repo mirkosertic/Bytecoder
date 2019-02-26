@@ -53,6 +53,7 @@ public class I32Load8S implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         ptr.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x2c);
         codeWriter.writeUnsignedLeb128(alignment.log2Value());
         codeWriter.writeUnsignedLeb128(offset);

@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class CurrentExceptionExpression extends Expression {
 
-    public CurrentExceptionExpression(final BytecodeOpcodeAddress address) {
-        super(address);
+    public CurrentExceptionExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
+        super(aProgram, address);
     }
 
     @Override

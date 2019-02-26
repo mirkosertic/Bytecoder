@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 public class LabeledContainer extends Container {
 
     private final String label;
-    private final Expression expression;
+    protected final Expression expression;
 
     public LabeledContainer(final Container parent, final String label, final Expression expression) {
         super(parent);

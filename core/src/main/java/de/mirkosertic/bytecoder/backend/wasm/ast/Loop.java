@@ -45,6 +45,7 @@ public class Loop extends LabeledContainer implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x03);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
         for (final WASMExpression e : getChildren()) {

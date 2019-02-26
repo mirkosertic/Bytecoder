@@ -105,6 +105,8 @@ public class Iff extends LabeledContainer implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         condition.writeTo(codeWriter, context);
+
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x04);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
         for (final WASMExpression e : getChildren()) {

@@ -40,5 +40,5 @@ public interface WASMValue {
 
     void writeTo(TextWriter textWriter, ExportContext context) throws IOException;
 
-    void writeTo(BinaryWriter.Writer codeWriter, ExportContext context) throws IOException;
+    void writeTo(BinaryWriter.Writer binaryWriter, ExportContext context) throws IOException;
 }

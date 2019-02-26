@@ -22,8 +22,8 @@ public class PutFieldExpression extends Expression {
 
     private final BytecodeFieldRefConstant field;
 
-    public PutFieldExpression(final BytecodeOpcodeAddress aAddress, final BytecodeFieldRefConstant aField, final Value aTarget, final Value aValue) {
-        super(aAddress);
+    public PutFieldExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeFieldRefConstant aField, final Value aTarget, final Value aValue) {
+        super(aProgram, aAddress);
         field = aField;
         receivesDataFrom(aTarget, aValue);
     }

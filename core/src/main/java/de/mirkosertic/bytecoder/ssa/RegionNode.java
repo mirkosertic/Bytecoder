@@ -210,13 +210,13 @@ public class RegionNode {
         final String theName = "local_" + aIndex + "_" + toNative(aType).name();
         for (final Variable v : program.getVariables()) {
             if (v.getName().equals(theName)) {
-                expressions.add(new VariableAssignmentExpression(aAddress, v, aValue));
+                expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
                 v.receivesDataFrom(aValue);
                 return v;
             }
         }
         final Variable v = program.createVariable(theName, aValue.resolveType());
-        expressions.add(new VariableAssignmentExpression(aAddress, v, aValue));
+        expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
         v.initializeWith(aValue);
         return v;
     }
@@ -251,7 +251,7 @@ public class RegionNode {
         final Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue);
         if (!aIsImport) {
-            expressions.add(new VariableAssignmentExpression(aAddress, theNewVariable, aValue));
+            expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
         }
         return theNewVariable;
     }

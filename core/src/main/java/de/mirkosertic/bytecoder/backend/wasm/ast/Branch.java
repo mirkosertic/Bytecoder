@@ -41,6 +41,7 @@ public class Branch implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         final int relativeDepth = context.owningContainer().relativeDepthTo(outerBlock);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x0c);
         codeWriter.writeUnsignedLeb128(relativeDepth);
     }

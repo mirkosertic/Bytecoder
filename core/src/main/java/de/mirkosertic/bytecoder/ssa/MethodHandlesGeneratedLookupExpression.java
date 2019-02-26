@@ -22,8 +22,8 @@ public class MethodHandlesGeneratedLookupExpression extends Expression {
 
     private final BytecodeObjectTypeRef owningClass;
 
-    public MethodHandlesGeneratedLookupExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aOwningClass) {
-        super(aAddress);
+    public MethodHandlesGeneratedLookupExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aOwningClass) {
+        super(aProgram, aAddress);
         owningClass = aOwningClass;
     }
 

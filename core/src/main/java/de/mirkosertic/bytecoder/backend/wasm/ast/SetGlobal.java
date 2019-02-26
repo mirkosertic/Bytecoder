@@ -46,6 +46,7 @@ public class SetGlobal implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         value.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x24);
         codeWriter.writeUnsignedLeb128(context.globalsIndex().indexOf(global));
     }

@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class CompareExpression extends Expression {
 
-    public CompareExpression(final BytecodeOpcodeAddress aAddress, final Value aValue1, final Value aValue2) {
-        super(aAddress);
+    public CompareExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue1, final Value aValue2) {
+        super(aProgram, aAddress);
         receivesDataFrom(aValue1, aValue2);
     }
 

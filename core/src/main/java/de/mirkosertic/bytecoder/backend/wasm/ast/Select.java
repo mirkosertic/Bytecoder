@@ -51,6 +51,7 @@ public class Select implements WASMExpression {
         leftValue.writeTo(codeWriter, context);
         rightValue.writeTo(codeWriter, context);
         condition.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x1b);
     }
 }

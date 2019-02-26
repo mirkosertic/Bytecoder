@@ -21,8 +21,8 @@ public class SqrtExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public SqrtExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aValue) {
-        super(aAddress);
+    public SqrtExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aValue) {
+        super(aProgram, aAddress);
         targetType = aTargetType;
         receivesDataFrom(aValue);
     }

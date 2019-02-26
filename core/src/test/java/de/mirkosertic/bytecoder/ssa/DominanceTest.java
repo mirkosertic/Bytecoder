@@ -32,11 +32,11 @@ public class DominanceTest {
         final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
         final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
-        theNode1.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(10)));
+        theNode1.getExpressions().add(new GotoExpression(null, null, new BytecodeOpcodeAddress(10)));
         final RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        theNode2.getExpressions().add(new GotoExpression(null,new BytecodeOpcodeAddress(20)));
+        theNode2.getExpressions().add(new GotoExpression(null, null,new BytecodeOpcodeAddress(20)));
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        theNode3.getExpressions().add(new ReturnExpression(null));
+        theNode3.getExpressions().add(new ReturnExpression(null, null));
 
         theNode1.addSuccessor(theNode2);
         theNode2.addSuccessor(theNode3);
@@ -70,11 +70,11 @@ public class DominanceTest {
         final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
         final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
-        theNode1.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(10)));
+        theNode1.getExpressions().add(new GotoExpression(null, null, new BytecodeOpcodeAddress(10)));
         final RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        theNode2.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(20)));
+        theNode2.getExpressions().add(new GotoExpression(null, null, new BytecodeOpcodeAddress(20)));
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        theNode3.getExpressions().add(new GotoExpression(null, BytecodeOpcodeAddress.START_AT_ZERO));
+        theNode3.getExpressions().add(new GotoExpression(null, null, BytecodeOpcodeAddress.START_AT_ZERO));
 
         theNode1.addSuccessor(theNode2);
         theNode2.addSuccessor(theNode3);
@@ -91,20 +91,20 @@ public class DominanceTest {
         final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
 
         final ExpressionList theExpressions = new ExpressionList();
-        final IFExpression theIF = new IFExpression(new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(10),
+        final IFExpression theIF = new IFExpression(null, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(10),
                 new IntegerValue(1), theExpressions);
-        theExpressions.add(new GotoExpression(null, new BytecodeOpcodeAddress(10)));
+        theExpressions.add(new GotoExpression(null, null, new BytecodeOpcodeAddress(10)));
         theNode1.getExpressions().add(theIF);
-        theNode1.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(20)));
+        theNode1.getExpressions().add(new GotoExpression(null, null, new BytecodeOpcodeAddress(20)));
 
         final RegionNode theNode2 = theGraph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        theNode2.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(30)));
+        theNode2.getExpressions().add(new GotoExpression(null, null, new BytecodeOpcodeAddress(30)));
 
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        theNode3.getExpressions().add(new GotoExpression(null, new BytecodeOpcodeAddress(30)));
+        theNode3.getExpressions().add(new GotoExpression(null, null, new BytecodeOpcodeAddress(30)));
 
         final RegionNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
-        theNode4.getExpressions().add(new ReturnExpression(null));
+        theNode4.getExpressions().add(new ReturnExpression(null, null));
 
         theNode1.addSuccessor(theNode2);
         theNode1.addSuccessor(theNode3);

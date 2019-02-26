@@ -21,8 +21,8 @@ public class ArrayStoreExpression extends Expression {
 
     private final TypeRef arrayType;
 
-    public ArrayStoreExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aArrayType, final Value aArray, final Value aIndex, final Value aValue) {
-        super(aAddress);
+    public ArrayStoreExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final TypeRef aArrayType, final Value aArray, final Value aIndex, final Value aValue) {
+        super(aProgram, aAddress);
         arrayType = aArrayType;
         receivesDataFrom(aArray, aIndex, aValue);
     }

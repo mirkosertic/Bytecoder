@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ReturnValueExpression extends Expression {
 
-    public ReturnValueExpression(final BytecodeOpcodeAddress aAddress, final Value aValue) {
-        super(aAddress);
+    public ReturnValueExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue) {
+        super(aProgram, aAddress);
         receivesDataFrom(aValue);
     }
 

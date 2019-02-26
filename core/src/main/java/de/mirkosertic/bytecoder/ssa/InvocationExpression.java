@@ -22,8 +22,8 @@ public abstract class InvocationExpression extends Expression {
 
     private final BytecodeMethodSignature signature;
 
-    public InvocationExpression(final BytecodeOpcodeAddress aAddress, final BytecodeMethodSignature aSignature) {
-        super(aAddress);
+    public InvocationExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeMethodSignature aSignature) {
+        super(aProgram, aAddress);
         signature = aSignature;
     }
 

@@ -21,8 +21,8 @@ public class TypeConversionExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public TypeConversionExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
-        super(aAddress);
+    public TypeConversionExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
+        super(aProgram, aAddress);
         targetType = aTargetType;
         receivesDataFrom(aValue);
     }

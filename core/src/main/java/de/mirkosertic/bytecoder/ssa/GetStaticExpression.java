@@ -22,8 +22,8 @@ public class GetStaticExpression extends Expression {
 
     private final BytecodeFieldRefConstant field;
 
-    public GetStaticExpression(final BytecodeOpcodeAddress aAddress, final BytecodeFieldRefConstant aField) {
-        super(aAddress);
+    public GetStaticExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeFieldRefConstant aField) {
+        super(aProgram, aAddress);
         field = aField;
     }
 

@@ -41,8 +41,11 @@ public class Exporter {
     }
 
     public void export(final Module module, final OutputStream binaryOutput, final Writer sourcemapOutput) throws IOException {
-        try (final BinaryWriter binaryWriter = new BinaryWriter(binaryOutput)) {
+        final SourceMapWriter sourceMapWriter = new SourceMapWriter();
+        try (final BinaryWriter binaryWriter = new BinaryWriter(sourceMapWriter)) {
             module.writeTo(binaryWriter, compileOptions.isDebugOutput());
+            final byte[] theData = binaryWriter.toByteArray();
+            binaryOutput.write(theData);
         }
         sourcemapOutput.write(sourceMapWriter.toSourceMap(compileOptions.getFilenamePrefix() + ".wasm"));
     }

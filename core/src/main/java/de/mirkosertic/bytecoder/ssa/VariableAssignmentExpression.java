@@ -25,8 +25,8 @@ public class VariableAssignmentExpression extends Expression {
     private final Variable variable;
     private Value value;
 
-    public VariableAssignmentExpression(final BytecodeOpcodeAddress aAddress, final Variable aVariable, final Value aValue) {
-        super(aAddress);
+    public VariableAssignmentExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Variable aVariable, final Value aValue) {
+        super(aProgram, aAddress);
         if (aValue == null) {
             throw new IllegalStateException("Null not allowed");
         }

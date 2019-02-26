@@ -24,8 +24,8 @@ public class NewMultiArrayExpression extends Expression {
 
     private final BytecodeTypeRef type;
 
-    public NewMultiArrayExpression(final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final List<Value> aDimensions) {
-        super(aAddress);
+    public NewMultiArrayExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final List<Value> aDimensions) {
+        super(aProgram, aAddress);
         type = aType;
         receivesDataFrom(aDimensions);
     }

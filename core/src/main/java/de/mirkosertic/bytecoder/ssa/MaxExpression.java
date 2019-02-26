@@ -21,8 +21,8 @@ public class MaxExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public MaxExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
-        super(aAddress);
+    public MaxExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
+        super(aProgram, aAddress);
         targetType = aTargetType;
         receivesDataFrom(aLeftValue);
         receivesDataFrom(aRightValue);

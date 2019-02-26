@@ -22,8 +22,8 @@ public class NewObjectExpression extends Expression {
 
     private final BytecodeClassinfoConstant type;
 
-    public NewObjectExpression(final BytecodeOpcodeAddress aAddress, final BytecodeClassinfoConstant aType) {
-        super(aAddress);
+    public NewObjectExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeClassinfoConstant aType) {
+        super(aProgram, aAddress);
         type = aType;
     }
 

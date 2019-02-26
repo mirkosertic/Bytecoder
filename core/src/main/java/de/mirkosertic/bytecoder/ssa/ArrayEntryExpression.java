@@ -21,8 +21,8 @@ public class ArrayEntryExpression extends Expression {
 
     private final TypeRef arrayType;
 
-    public ArrayEntryExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aArrayType, final Value aArray, final Value aIndex) {
-        super(aAddress);
+    public ArrayEntryExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final TypeRef aArrayType, final Value aArray, final Value aIndex) {
+        super(aProgram, aAddress);
         arrayType = aArrayType;
         receivesDataFrom(aArray, aIndex);
     }

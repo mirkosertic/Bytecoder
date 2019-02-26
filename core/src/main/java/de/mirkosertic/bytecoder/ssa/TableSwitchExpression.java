@@ -29,9 +29,9 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
     private final ExpressionList defaultExpressions;
     private final Map<Long, ExpressionList> offsets;
 
-    public TableSwitchExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final long aLowValue, final long aHighValue,
+    public TableSwitchExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final long aLowValue, final long aHighValue,
             final ExpressionList aDefaultPath, final Map<Long, ExpressionList> aPathPerOffset) {
-        super(aAddress);
+        super(aProgram, aAddress);
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
@@ -69,7 +69,7 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
         for (final Map.Entry<Long, ExpressionList> theEntry : offsets.entrySet()) {
             theHandler.put(theEntry.getKey(), theEntry.getValue().deepCopy());
         }
-        return new TableSwitchExpression(getAddress(), incomingDataFlows().get(0),
+        return new TableSwitchExpression(getProgram(), getAddress(), incomingDataFlows().get(0),
                 lowValue, highValue, defaultExpressions.deepCopy(), theHandler);
     }
 }

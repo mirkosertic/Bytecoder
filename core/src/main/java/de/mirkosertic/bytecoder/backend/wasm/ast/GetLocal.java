@@ -40,6 +40,7 @@ public class GetLocal implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x20);
         codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));
     }
