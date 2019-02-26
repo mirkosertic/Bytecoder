@@ -22,8 +22,8 @@ public class MethodTypeExpression extends Expression {
 
     private final BytecodeMethodSignature signature;
 
-    public MethodTypeExpression(final BytecodeOpcodeAddress aAddress, final BytecodeMethodSignature aSignature) {
-        super(aAddress);
+    public MethodTypeExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeMethodSignature aSignature) {
+        super(aProgram, aAddress);
         signature = aSignature;
     }
 

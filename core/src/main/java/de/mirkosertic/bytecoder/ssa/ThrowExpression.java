@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ThrowExpression extends Expression {
 
-    public ThrowExpression(final BytecodeOpcodeAddress aAddress, final Value aValue) {
-        super(aAddress);
+    public ThrowExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue) {
+        super(aProgram, aAddress);
         receivesDataFrom(aValue);
     }
 

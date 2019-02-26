@@ -45,6 +45,7 @@ public abstract class UnaryExpression implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         value.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte(binaryCode);
     }
 }

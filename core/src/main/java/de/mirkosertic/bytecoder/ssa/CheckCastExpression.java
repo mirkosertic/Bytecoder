@@ -22,8 +22,8 @@ public class CheckCastExpression extends Expression {
 
     private final BytecodeClassinfoConstant type;
 
-    public CheckCastExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final BytecodeClassinfoConstant aType) {
-        super(aAddress);
+    public CheckCastExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final BytecodeClassinfoConstant aType) {
+        super(aProgram, aAddress);
         type = aType;
         receivesDataFrom(aValue);
     }

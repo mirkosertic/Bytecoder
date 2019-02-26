@@ -26,15 +26,15 @@ public class InvokeVirtualMethodExpression extends InvocationExpression {
     private final String methodName;
     private final boolean interfaceInvocation;
 
-    public InvokeVirtualMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeNameAndTypeConstant aMethod, final Value aTarget,
+    public InvokeVirtualMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeNameAndTypeConstant aMethod, final Value aTarget,
                                          final List<Value> aArguments, final boolean aInterfaceInvocation) {
-        this(aAddress, aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
+        this(aProgram, aAddress, aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
                 aTarget, aArguments, aInterfaceInvocation);
     }
 
-    public InvokeVirtualMethodExpression(final BytecodeOpcodeAddress aAddress, final String aMethodName, final BytecodeMethodSignature aSignature, final Value aTarget,
+    public InvokeVirtualMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final String aMethodName, final BytecodeMethodSignature aSignature, final Value aTarget,
                                          final List<Value> aArguments, final boolean aInterfaceInvocation) {
-        super(aAddress, aSignature);
+        super(aProgram, aAddress, aSignature);
         methodName = aMethodName;
         interfaceInvocation = aInterfaceInvocation;
 

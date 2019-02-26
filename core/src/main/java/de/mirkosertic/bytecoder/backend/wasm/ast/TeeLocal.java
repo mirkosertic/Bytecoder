@@ -45,6 +45,7 @@ public class TeeLocal implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         value.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x22);
         codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));
     }

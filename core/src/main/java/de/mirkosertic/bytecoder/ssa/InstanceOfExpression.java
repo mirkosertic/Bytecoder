@@ -22,8 +22,8 @@ public class InstanceOfExpression extends Expression {
 
     private final BytecodeClassinfoConstant type;
 
-    public InstanceOfExpression(final BytecodeOpcodeAddress aAddress, final Value aVariable, final BytecodeClassinfoConstant aType) {
-        super(aAddress);
+    public InstanceOfExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aVariable, final BytecodeClassinfoConstant aType) {
+        super(aProgram, aAddress);
         type = aType;
         receivesDataFrom(aVariable);
     }

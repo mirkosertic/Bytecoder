@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class TypeOfExpression extends Expression {
 
-    public TypeOfExpression(final BytecodeOpcodeAddress aAddress, final Value aTarget) {
-        super(aAddress);
+    public TypeOfExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aTarget) {
+        super(aProgram, aAddress);
         receivesDataFrom(aTarget);
    }
 

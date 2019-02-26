@@ -50,6 +50,7 @@ public abstract class BinaryExpression implements WASMExpression {
     public final void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         leftValue.writeTo(codeWriter, context);
         rightValue.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte(binaryCode);
     }
 }

@@ -51,6 +51,7 @@ public class ThrowException implements WASMExpression {
         for (final WASMValue value : arguments) {
             value.writeTo(codeWriter, context);
         }
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x08);
         codeWriter.writeSignedLeb128(context.eventIndex().indexOf(exception));
     }

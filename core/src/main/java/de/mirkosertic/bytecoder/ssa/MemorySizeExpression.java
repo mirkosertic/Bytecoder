@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class MemorySizeExpression extends Expression {
 
-    public MemorySizeExpression(final BytecodeOpcodeAddress address) {
-        super(address);
+    public MemorySizeExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
+        super(aProgram, address);
     }
 
     @Override

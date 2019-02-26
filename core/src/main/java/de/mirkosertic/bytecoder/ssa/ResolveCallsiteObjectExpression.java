@@ -22,15 +22,13 @@ public class ResolveCallsiteObjectExpression extends Expression {
 
     private final String callsiteId;
     private final BytecodeClass owningClass;
-    private final Program program;
     private final RegionNode bootstrapMethod;
 
     public ResolveCallsiteObjectExpression(final BytecodeOpcodeAddress aAddress, final String aCallsiteId, final BytecodeClass aOwningClass,
             final Program aProgram, final RegionNode aBootstrapMethod) {
-        super(aAddress);
+        super(aProgram, aAddress);
         callsiteId = aCallsiteId;
         owningClass = aOwningClass;
-        program = aProgram;
         bootstrapMethod = aBootstrapMethod;
     }
 
@@ -40,10 +38,6 @@ public class ResolveCallsiteObjectExpression extends Expression {
 
     public BytecodeClass getOwningClass() {
         return owningClass;
-    }
-
-    public Program getProgram() {
-        return program;
     }
 
     public RegionNode getBootstrapMethod() {

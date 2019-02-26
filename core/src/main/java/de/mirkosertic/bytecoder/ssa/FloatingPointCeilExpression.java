@@ -21,8 +21,8 @@ public class FloatingPointCeilExpression extends Expression {
 
     private final TypeRef type;
 
-    public FloatingPointCeilExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
-        super(aAddress);
+    public FloatingPointCeilExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
+        super(aProgram, aAddress);
         type = aTargetType;
         receivesDataFrom(aValue);
     }

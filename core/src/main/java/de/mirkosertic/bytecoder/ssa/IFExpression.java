@@ -25,8 +25,8 @@ public class IFExpression extends Expression implements ExpressionListContainer 
     private final ExpressionList expressions;
     private final BytecodeOpcodeAddress gotoAddress;
 
-    public IFExpression(final BytecodeOpcodeAddress aAddress, final BytecodeOpcodeAddress aGotoAddress, final Value aBooleanValue, final ExpressionList aExpressions) {
-        super(aAddress);
+    public IFExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeOpcodeAddress aGotoAddress, final Value aBooleanValue, final ExpressionList aExpressions) {
+        super(aProgram, aAddress);
         expressions = aExpressions;
         gotoAddress = aGotoAddress;
         receivesDataFrom(aBooleanValue);
@@ -54,6 +54,6 @@ public class IFExpression extends Expression implements ExpressionListContainer 
 
     @Override
     public Expression deepCopy() {
-        return new IFExpression(getAddress(), gotoAddress, incomingDataFlows().get(0), expressions.deepCopy());
+        return new IFExpression(getProgram(), getAddress(), gotoAddress, incomingDataFlows().get(0), expressions.deepCopy());
     }
 }

@@ -26,9 +26,9 @@ public class MethodRefExpression extends Expression {
     private String methodName;
     private final BytecodeMethodSignature signature;
 
-    public MethodRefExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
+    public MethodRefExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
             final BytecodeMethodSignature signature) {
-        super(aAddress);
+        super(aProgram, aAddress);
         this.className = className;
         this.methodName = methodName;
         this.signature = signature;

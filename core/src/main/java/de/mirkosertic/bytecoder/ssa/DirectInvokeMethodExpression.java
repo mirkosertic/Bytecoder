@@ -26,17 +26,17 @@ public class DirectInvokeMethodExpression extends InvocationExpression {
     private final BytecodeObjectTypeRef clazz;
     private final String methodName;
 
-    public DirectInvokeMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
+    public DirectInvokeMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
             final BytecodeMethodSignature aMethodSignature, final Value aTarget, final List<Value> aArguments) {
-        this(aAddress, aClazz, aMethodName, aMethodSignature);
+        this(aProgram, aAddress, aClazz, aMethodName, aMethodSignature);
 
         receivesDataFrom(aTarget);
         receivesDataFrom(aArguments);
     }
 
-    public DirectInvokeMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
+    public DirectInvokeMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
             final BytecodeMethodSignature aMethodSignature) {
-        super(aAddress, aMethodSignature);
+        super(aProgram, aAddress, aMethodSignature);
         clazz = aClazz;
         methodName = aMethodName;
     }

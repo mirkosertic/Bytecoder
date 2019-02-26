@@ -40,6 +40,7 @@ public class GetGlobal implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x23);
         codeWriter.writeUnsignedLeb128(context.globalsIndex().indexOf(global));
     }

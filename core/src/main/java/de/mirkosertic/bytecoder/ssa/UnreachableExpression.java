@@ -19,7 +19,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class UnreachableExpression extends Expression {
 
-    public UnreachableExpression(final BytecodeOpcodeAddress address) {
-        super(address);
+    public UnreachableExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
+        super(aProgram, address);
     }
 }

@@ -21,8 +21,8 @@ public class MinExpression extends Expression {
 
     private final TypeRef targetType;
 
-    public MinExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
-        super(aAddress);
+    public MinExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aLeftValue, final Value aRightValue) {
+        super(aProgram, aAddress);
         targetType = aTargetType;
         receivesDataFrom(aLeftValue);
         receivesDataFrom(aRightValue);

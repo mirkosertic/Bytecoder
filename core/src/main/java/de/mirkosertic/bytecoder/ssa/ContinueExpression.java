@@ -22,8 +22,8 @@ public class ContinueExpression extends Expression {
     private final Label labelToReturnTo;
     private final BytecodeOpcodeAddress jumpTarget;
 
-    public ContinueExpression(final BytecodeOpcodeAddress aAddress, final Label aLabelToReturnTo, final BytecodeOpcodeAddress aJumpTarget) {
-        super(aAddress);
+    public ContinueExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Label aLabelToReturnTo, final BytecodeOpcodeAddress aJumpTarget) {
+        super(aProgram, aAddress);
         labelToReturnTo = aLabelToReturnTo;
         jumpTarget = aJumpTarget;
     }

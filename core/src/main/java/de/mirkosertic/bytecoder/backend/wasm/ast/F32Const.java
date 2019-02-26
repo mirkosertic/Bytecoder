@@ -44,6 +44,7 @@ public class F32Const implements WASMValue {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x43);
         codeWriter.writeFloat32(value);
     }

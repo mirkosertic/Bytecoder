@@ -45,8 +45,8 @@ public class BinaryExpression extends Expression {
     private final Operator operator;
     private final TypeRef targetType;
 
-    public BinaryExpression(final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aValue1, final Operator aOperator, final Value aValue2) {
-        super(aAddress);
+    public BinaryExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final TypeRef aTargetType, final Value aValue1, final Operator aOperator, final Value aValue2) {
+        super(aProgram, aAddress);
         operator = aOperator;
         targetType = aTargetType;
         receivesDataFrom(aValue1, aValue2);

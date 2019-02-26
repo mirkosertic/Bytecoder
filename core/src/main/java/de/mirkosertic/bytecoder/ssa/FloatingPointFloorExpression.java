@@ -21,8 +21,8 @@ public class FloatingPointFloorExpression extends Expression {
 
     private final TypeRef type;
 
-    public FloatingPointFloorExpression(final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
-        super(aAddress);
+    public FloatingPointFloorExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final TypeRef aTargetType) {
+        super(aProgram, aAddress);
         type = aTargetType;
         receivesDataFrom(aValue);
     }

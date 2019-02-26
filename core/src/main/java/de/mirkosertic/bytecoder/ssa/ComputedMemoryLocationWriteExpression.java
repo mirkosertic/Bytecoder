@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ComputedMemoryLocationWriteExpression extends Expression {
 
-    public ComputedMemoryLocationWriteExpression(final BytecodeOpcodeAddress aAddress, final Value aOrigin, final Value aOffset) {
-        super(aAddress);
+    public ComputedMemoryLocationWriteExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aOrigin, final Value aOffset) {
+        super(aProgram, aAddress);
         receivesDataFrom(aOrigin, aOffset);
     }
 

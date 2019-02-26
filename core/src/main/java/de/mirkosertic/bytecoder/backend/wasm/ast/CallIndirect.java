@@ -58,6 +58,7 @@ public class CallIndirect implements WASMExpression {
             argument.writeTo(codeWriter, context);
         }
         functionIndex.writeTo(codeWriter, context);
+        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x11);
         codeWriter.writeUnsignedLeb128(context.typeIndex().indexOf(functionType));
         codeWriter.writeByte((byte) 0);

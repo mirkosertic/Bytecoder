@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class StackTopExpression extends Expression {
 
-    public StackTopExpression(final BytecodeOpcodeAddress address) {
-        super(address);
+    public StackTopExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
+        super(aProgram, address);
     }
 
     @Override

@@ -26,9 +26,9 @@ public class InvokeStaticMethodExpression extends InvocationExpression {
     private final BytecodeObjectTypeRef className;
     private final String methodName;
 
-    public InvokeStaticMethodExpression(final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClassName, final String aMethodName,
+    public InvokeStaticMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClassName, final String aMethodName,
             final BytecodeMethodSignature aSignature, final List<Value> aArguments) {
-        super(aAddress, aSignature);
+        super(aProgram, aAddress, aSignature);
         className = aClassName;
         methodName = aMethodName;
 

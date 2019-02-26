@@ -22,8 +22,8 @@ public class NewArrayExpression extends Expression {
 
     private final BytecodeTypeRef type;
 
-    public NewArrayExpression(final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final Value aLength) {
-        super(aAddress);
+    public NewArrayExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final Value aLength) {
+        super(aProgram, aAddress);
         type = aType;
         receivesDataFrom(aLength);
     }

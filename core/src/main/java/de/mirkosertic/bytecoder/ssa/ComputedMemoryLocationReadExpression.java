@@ -19,8 +19,8 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class ComputedMemoryLocationReadExpression extends Expression {
 
-    public ComputedMemoryLocationReadExpression(final BytecodeOpcodeAddress aAddress, final Value aOrigin, final Value aOffset) {
-        super(aAddress);
+    public ComputedMemoryLocationReadExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aOrigin, final Value aOffset) {
+        super(aProgram, aAddress);
         receivesDataFrom(aOrigin, aOffset);
     }
 

@@ -50,6 +50,7 @@ public class WeakFunctionTableReference implements WASMValue {
         if (theIndex < 0) {
             throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
         }
+        codeWriter.registerDebugInformationFor(expression);
         final I32Const c = new I32Const(theIndex, expression);
         c.writeTo(codeWriter, context);
     }

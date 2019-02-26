@@ -85,7 +85,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                                     switch (theBinary.getOperator()) {
                                         case GREATEROREQUALS: {
                                             // compareResult >= 0      -> A >= B
-                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.GREATEROREQUALS, theB);
+                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getProgram(), theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.GREATEROREQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
                                             aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
@@ -93,7 +93,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                                         }
                                         case GREATERTHAN: {
                                             // compareResult >0        -> A > B
-                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.GREATERTHAN, theB);
+                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getProgram(), theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.GREATERTHAN, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
                                             aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
@@ -101,7 +101,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                                         }
                                         case LESSTHANOREQUALS: {
                                             // compareResult <=0       -> A <= B
-                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.LESSTHANOREQUALS, theB);
+                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getProgram(), theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.LESSTHANOREQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
                                             aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
@@ -109,7 +109,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                                         }
                                         case LESSTHAN: {
                                             // compareResult <0        -> A < B
-                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.LESSTHAN, theB);
+                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getProgram(), theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.LESSTHAN, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
                                             aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
@@ -117,7 +117,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                                         }
                                         case EQUALS: {
                                             // compareResult == 0        -> A == B
-                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.EQUALS, theB);
+                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getProgram(), theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.EQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
                                             aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
@@ -125,7 +125,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                                         }
                                         case NOTEQUALS: {
                                             // compareResult != 0        -> A != B
-                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.NOTEQUALS, theB);
+                                            final BinaryExpression theNewCondition = new BinaryExpression(theAssignment.getProgram(), theAssignment.getAddress(), theCompare.resolveType(), theA, BinaryExpression.Operator.NOTEQUALS, theB);
                                             theIf.replaceIncomingDataEdge(theCondition, theNewCondition);
                                             aExpressionList.remove(theAssignment);
                                             aGraph.getProgram().deleteVariable(theVariable);
