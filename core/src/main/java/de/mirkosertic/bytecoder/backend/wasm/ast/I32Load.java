@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class I32Load implements WASMExpression {
@@ -22,15 +24,17 @@ public class I32Load implements WASMExpression {
     private final Alignment alignment;
     private final int offset;
     private final WASMValue ptr;
+    private final Expression expression;
 
-    I32Load(final int offset, final WASMValue ptr) {
-        this(Alignment.FOUR, offset, ptr);
+    I32Load(final int offset, final WASMValue ptr, final Expression expression) {
+        this(Alignment.FOUR, offset, ptr, expression);
     }
 
-    I32Load(final Alignment alignment, final int offset, final WASMValue ptr) {
+    I32Load(final Alignment alignment, final int offset, final WASMValue ptr, final Expression expression) {
         this.alignment = alignment;
         this.offset = offset;
         this.ptr = ptr;
+        this.expression = expression;
     }
 
     @Override

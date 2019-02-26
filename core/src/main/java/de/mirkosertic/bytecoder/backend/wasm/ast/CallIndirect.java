@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -23,11 +25,13 @@ public class CallIndirect implements WASMExpression {
     private final WASMType functionType;
     private final List<WASMValue> arguments;
     private final WASMValue functionIndex;
+    private final Expression expression;
 
-    CallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue functionIndex) {
+    CallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue functionIndex, final Expression expression) {
         this.functionType = functionType;
         this.arguments = arguments;
         this.functionIndex = functionIndex;
+        this.expression = expression;
     }
 
     @Override

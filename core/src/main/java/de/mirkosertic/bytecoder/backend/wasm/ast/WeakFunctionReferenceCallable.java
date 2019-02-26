@@ -15,12 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class WeakFunctionReferenceCallable implements Callable {
 
     private final String label;
+    private final Expression expression;
 
-    WeakFunctionReferenceCallable(final String label) {
+    WeakFunctionReferenceCallable(final String label, final Expression expression) {
         this.label = label;
+        this.expression = expression;
     }
 
     @Override

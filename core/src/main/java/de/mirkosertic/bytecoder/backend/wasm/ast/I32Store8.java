@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class I32Store8 implements WASMExpression {
@@ -23,16 +25,18 @@ public class I32Store8 implements WASMExpression {
     private final int offset;
     private final WASMValue ptr;
     private final WASMValue value;
+    private final Expression expression;
 
-    I32Store8(final int offset, final WASMValue ptr, final WASMValue value) {
-        this(Alignment.ONE, offset, ptr, value);
+    I32Store8(final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+        this(Alignment.ONE, offset, ptr, value, expression);
     }
 
-    I32Store8(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
+    I32Store8(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
         this.alignment = alignment;
         this.offset = offset;
         this.ptr = ptr;
         this.value = value;
+        this.expression = expression;
     }
 
     @Override

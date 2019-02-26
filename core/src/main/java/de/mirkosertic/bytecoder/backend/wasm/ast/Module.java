@@ -32,8 +32,9 @@ public class Module {
     private final ExportsSection exports;
     private final NameSection names;
     private final ExceptionsSection exceptions;
+    private final SourceMapSection sourceMapSection;
 
-    public Module(final String label) {
+    public Module(final String label, final String sourcemapFileName) {
         this.label = label;
         types = new TypesSection(this);
         exports = new ExportsSection(this);
@@ -47,6 +48,7 @@ public class Module {
         imports = new ImportsSection(this);
         names = new NameSection(this);
         exceptions = new ExceptionsSection(this);
+        sourceMapSection = new SourceMapSection(this, sourcemapFileName);
     }
 
     public void writeTo(final TextWriter writer, final boolean enableDebug) throws IOException {
@@ -108,6 +110,7 @@ public class Module {
         if (enableDebug) {
             names.writeCodeTo(writer);
         }
+        sourceMapSection.writeTo(writer);
     }
 
     public String getLabel() {

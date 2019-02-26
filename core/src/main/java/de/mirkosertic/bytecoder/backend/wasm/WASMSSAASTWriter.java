@@ -215,8 +215,8 @@ public class WASMSSAASTWriter {
         labelRequired = aLabelRequired;
     }
 
-    private WASMSSAASTWriter block(final String label) {
-        final Block block = flow.block(label);
+    private WASMSSAASTWriter block(final String label, final Expression expression) {
+        final Block block = flow.block(label, expression);
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
     }
 
@@ -231,20 +231,20 @@ public class WASMSSAASTWriter {
         }
     }
 
-    private IFCondition iff(final String label, final WASMValue condition) {
-        final Iff block = flow.iff(label, condition);
+    private IFCondition iff(final String label, final WASMValue condition, final Expression expression) {
+        final Iff block = flow.iff(label, condition, expression);
         final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
         final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow);
         return new IFCondition(theTrueWriter, theFalseWriter);
     }
 
-    private WASMSSAASTWriter Try(final String label) {
-        final Try block = flow.Try(label);
+    private WASMSSAASTWriter Try(final String label, final Expression expression) {
+        final Try block = flow.Try(label, expression);
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
     }
 
-    private WASMSSAASTWriter loop(final String label) {
-        final Loop loop = flow.loop(label);
+    private WASMSSAASTWriter loop(final String label, final Expression expression) {
+        final Loop loop = flow.loop(label, expression);
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow);
     }
 
@@ -357,11 +357,11 @@ public class WASMSSAASTWriter {
             final BreakExpression theBreak = (BreakExpression) aExpression;
             if (theBreak.isSetLabelRequired() && labelRequired) {
                 final Local label = function.localByLabel(LABEL_LOCAL);
-                flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress()));
+                flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress(), aExpression), aExpression);
             }
             if (!theBreak.isSilent()) {
                 final LabeledContainer target = container.findByLabelInHierarchy(theBreak.blockToBreak().name());
-                flow.branch(target);
+                flow.branch(target, aExpression);
             }
             return;
         }
@@ -370,11 +370,11 @@ public class WASMSSAASTWriter {
 
             if (labelRequired) {
                 final Local label = function.localByLabel(LABEL_LOCAL);
-                flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress()));
+                flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress(), aExpression), aExpression);
             }
 
             final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
-            flow.branch(target);
+            flow.branch(target, aExpression);
             return;
         }
 
@@ -382,19 +382,19 @@ public class WASMSSAASTWriter {
     }
 
     private void generateUnreachable(final UnreachableExpression aExpression) {
-        flow.unreachable();
+        flow.unreachable(aExpression);
     }
 
     private void generateLookupSwitchExpression(final LookupSwitchExpression aExpression) {
-        final WASMSSAASTWriter outer = block("outer");
+        final WASMSSAASTWriter outer = block("outer", aExpression);
 
         final Value theValue = aExpression.incomingDataFlows().get(0);
 
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getPairs().entrySet()) {
-            final WASMSSAASTWriter inner = outer.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), toValue(theValue))).trueWriter;
+            final WASMSSAASTWriter inner = outer.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue(), null), toValue(theValue), null), null).trueWriter;
             inner.writeExpressionList(theEntry.getValue());
-            inner.flow.branch((LabeledContainer) outer.container);
+            inner.flow.branch((LabeledContainer) outer.container, null);
         }
 
         outer.writeExpressionList(aExpression.getDefaultExpressions());
@@ -403,32 +403,31 @@ public class WASMSSAASTWriter {
     private void generateTableSwitchExpression(final TableSwitchExpression aExpression) {
 
         final Value theValue = aExpression.incomingDataFlows().get(0);
-        final WASMSSAASTWriter theTableSwitch = block("tableswitch");
-        final WASMSSAASTWriter theMinCheck = theTableSwitch.block("label0");
-        theMinCheck.flow.branchIff((LabeledContainer) theMinCheck.container, i32.ge_s(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue())));
+        final WASMSSAASTWriter theTableSwitch = block("tableswitch", aExpression);
+        final WASMSSAASTWriter theMinCheck = theTableSwitch.block("label0", null);
+        theMinCheck.flow.branchIff((LabeledContainer) theMinCheck.container, i32.ge_s(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue(), null), null), null);
         theMinCheck.writeExpressionList(aExpression.getDefaultExpressions());
-        theMinCheck.flow.branch((LabeledContainer) theTableSwitch.container);
+        theMinCheck.flow.branch((LabeledContainer) theTableSwitch.container, null);
 
-        final WASMSSAASTWriter theMaxCheck = theTableSwitch.block("label0");
-        theMaxCheck.flow.branchIff((LabeledContainer) theMaxCheck.container, i32.le_s(toValue(theValue), i32.c(((Number) aExpression.getHighValue()).intValue())));
+        final WASMSSAASTWriter theMaxCheck = theTableSwitch.block("label0", null);
+        theMaxCheck.flow.branchIff((LabeledContainer) theMaxCheck.container, i32.le_s(toValue(theValue), i32.c(((Number) aExpression.getHighValue()).intValue(), null), null), null);
         theMaxCheck.writeExpressionList(aExpression.getDefaultExpressions());
-        theMaxCheck.flow.branch((LabeledContainer) theTableSwitch.container);
+        theMaxCheck.flow.branch((LabeledContainer) theTableSwitch.container, null);
 
         // For each statement
         for (final Map.Entry<Long, ExpressionList> theEntry : aExpression.getOffsets().entrySet()) {
-
-            final WASMSSAASTWriter theSwitch = theTableSwitch.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue()), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue())))).trueWriter;
+            final WASMSSAASTWriter theSwitch = theTableSwitch.iff("switch_" + theEntry.getKey(), i32.eq(i32.c(((Number) theEntry.getKey()).intValue(), null), i32.sub(toValue(theValue), i32.c(((Number) aExpression.getLowValue()).intValue(), null), null), null), null).trueWriter;
             theSwitch.writeExpressionList(theEntry.getValue());
-            theSwitch.flow.branch((LabeledContainer) theTableSwitch.container);
+            theSwitch.flow.branch((LabeledContainer) theTableSwitch.container, null);
         }
-        theTableSwitch.flow.unreachable();
+        theTableSwitch.flow.unreachable(null);
     }
 
     private void generateInvokeVirtualExpression(final InvokeVirtualMethodExpression aExpression) {
         if (aExpression.getSignature().getReturnType().isVoid()) {
             container.addChild(invokeVirtualValue(aExpression));
         } else {
-            flow.drop(invokeVirtualValue(aExpression));
+            flow.drop(invokeVirtualValue(aExpression), aExpression);
         }
     }
 
@@ -446,27 +445,27 @@ public class WASMSSAASTWriter {
             switch (aExpression.getArrayType().resolve()) {
                 case DOUBLE:
                 case FLOAT: {
-                    flow.f32.store(offset, toValue(theArray), toValue(theValue));
+                    flow.f32.store(offset, toValue(theArray), toValue(theValue), aExpression);
                     break;
                 }
                 default: {
-                    flow.i32.store(offset, toValue(theArray), toValue(theValue));
+                    flow.i32.store(offset, toValue(theArray), toValue(theValue), aExpression);
                     break;
                 }
             }
             return;
         }
 
-        final WASMValue thePtr = i32.add(toValue(theArray), i32.mul(toValue(theIndex), i32.c(4)));
+        final WASMValue thePtr = i32.add(toValue(theArray), i32.mul(toValue(theIndex), i32.c(4, aExpression), aExpression), aExpression);
 
         switch (aExpression.getArrayType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                flow.f32.store(20, thePtr, toValue(theValue));
+                flow.f32.store(20, thePtr, toValue(theValue), aExpression);
                 break;
             }
             default: {
-                flow.i32.store(20, thePtr, toValue(theValue));
+                flow.i32.store(20, thePtr, toValue(theValue), aExpression);
                 break;
             }
         }
@@ -477,16 +476,16 @@ public class WASMSSAASTWriter {
             final Value theException = aExpression.incomingDataFlows().get(0);
             final WASMValue theValue = toValue(theException);
             stackExit();
-            flow.throwException(module.getExceptions().exceptionIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue));
+            flow.throwException(module.getExceptions().exceptionIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue), aExpression);
         } else {
             final Value theException = aExpression.incomingDataFlows().get(0);
-            final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), "logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)})));
+            final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), "logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)})), aExpression);
             final List<WASMValue> arguments = new ArrayList<>();
-            arguments.add(i32.c(0));
+            arguments.add(i32.c(0, aExpression));
             arguments.add(toValue(theException));
-            flow.voidCall(function, arguments);
+            flow.voidCall(function, arguments, aExpression);
             stackExit();
-            flow.unreachable();
+            flow.unreachable(aExpression);
         }
     }
 
@@ -494,7 +493,7 @@ public class WASMSSAASTWriter {
         if (aExpression.getSignature().getReturnType().isVoid()) {
             container.addChild(invokeStaticValue(aExpression));
         } else {
-            flow.drop(invokeStaticValue(aExpression));
+            flow.drop(invokeStaticValue(aExpression), aExpression);
         }
     }
 
@@ -509,15 +508,15 @@ public class WASMSSAASTWriter {
         final List<Value> theIncomingData = aExpression.incomingDataFlows();
 
         final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
-        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, aExpression);
         switch (theIncomingData.get(0).resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                flow.f32.store(theMemoryOffset, call(theClassInit, Collections.emptyList()), toValue(theIncomingData.get(0)));
+                flow.f32.store(theMemoryOffset, call(theClassInit, Collections.emptyList(), aExpression), toValue(theIncomingData.get(0)), aExpression);
                 break;
             }
             default: {
-                flow.i32.store(theMemoryOffset, call(theClassInit, Collections.emptyList()), toValue(theIncomingData.get(0)));
+                flow.i32.store(theMemoryOffset, call(theClassInit, Collections.emptyList(), aExpression), toValue(theIncomingData.get(0)), aExpression);
                 break;
             }
 
@@ -526,7 +525,7 @@ public class WASMSSAASTWriter {
 
     private void generateSetMemoryLocationExpression(final SetMemoryLocationExpression aExpression) {
         final List<Value> theIncomingData = aExpression.incomingDataFlows();
-        flow.i32.store(0, toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)));
+        flow.i32.store(0, toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)), aExpression);
     }
 
     private void generatePutFieldExpression(final PutFieldExpression aExpression) {
@@ -543,10 +542,10 @@ public class WASMSSAASTWriter {
         switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT:
-                flow.f32.store(theMemoryOffset, toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)));
+                flow.f32.store(theMemoryOffset, toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)), aExpression);
                 break;
             default:
-                flow.i32.store(theMemoryOffset, toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)));
+                flow.i32.store(theMemoryOffset, toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)), aExpression);
                 break;
         }
     }
@@ -560,7 +559,7 @@ public class WASMSSAASTWriter {
     }
 
     private void generateIFExpression(final IFExpression aExpression) {
-        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), toValue(aExpression.incomingDataFlows().get(0))).trueWriter;
+        final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), toValue(aExpression.incomingDataFlows().get(0)), aExpression).trueWriter;
         iff.writeExpressionList(aExpression.getExpressions());
     }
 
@@ -568,7 +567,7 @@ public class WASMSSAASTWriter {
         if (aExpression.getSignature().getReturnType().isVoid()) {
             container.addChild(directMethodInvokeValue(aExpression));
         } else {
-            flow.drop(directMethodInvokeValue(aExpression));
+            flow.drop(directMethodInvokeValue(aExpression), aExpression);
         }
     }
 
@@ -589,18 +588,18 @@ public class WASMSSAASTWriter {
             switch (theVariable.resolveType().resolve()) {
                 case DOUBLE:
                 case FLOAT: {
-                    flow.f32.store(theOffset, getLocal(sp), teeLocal(theLocal, toValue(theNewValue)));
+                    flow.f32.store(theOffset, getLocal(sp, aExpression), teeLocal(theLocal, toValue(theNewValue), aExpression), aExpression);
                     break;
                 }
                 case UNKNOWN:
                     throw new IllegalStateException();
                 default: {
-                    flow.i32.store(theOffset, getLocal(sp), teeLocal(theLocal, toValue(theNewValue)));
+                    flow.i32.store(theOffset, getLocal(sp, aExpression), teeLocal(theLocal, toValue(theNewValue), aExpression), aExpression);
                     break;
                 }
             }
         } else {
-            flow.setLocal(theLocal, toValue(theNewValue));
+            flow.setLocal(theLocal, toValue(theNewValue), aExpression);
         }
     }
 
@@ -739,12 +738,12 @@ public class WASMSSAASTWriter {
 
     private WASMValue floatingPointCeil(final FloatingPointCeilExpression aValue) {
         final List<Value> theArguments = aValue.incomingDataFlows();
-        return f32.ceil(toValue(theArguments.get(0)));
+        return f32.ceil(toValue(theArguments.get(0)), aValue);
     }
 
     private WASMValue floatingPointFloor(final FloatingPointFloorExpression aValue) {
         final List<Value> theArguments = aValue.incomingDataFlows();
-        return f32.floor(toValue(theArguments.get(0)));
+        return f32.floor(toValue(theArguments.get(0)), aValue);
     }
 
     private WASMValue minValue(final MinExpression aValue) {
@@ -752,12 +751,12 @@ public class WASMSSAASTWriter {
         switch (aValue.resolveType().resolve()) {
         case DOUBLE:
         case FLOAT: {
-            return f32.min(toValue(theArguments.get(0)), toValue(theArguments.get(1)));
+            return f32.min(toValue(theArguments.get(0)), toValue(theArguments.get(1)), aValue);
         }
         default: {
             final WASMValue left = toValue(theArguments.get(0));
             final WASMValue right = toValue(theArguments.get(1));
-            return select(left, right, i32.lt_s(left, right));
+            return select(left, right, i32.lt_s(left, right, aValue), aValue);
         }
         }
     }
@@ -767,18 +766,18 @@ public class WASMSSAASTWriter {
         switch (aValue.resolveType().resolve()) {
         case DOUBLE:
         case FLOAT: {
-            return f32.max(toValue(theArguments.get(0)), toValue(theArguments.get(1)));
+            return f32.max(toValue(theArguments.get(0)), toValue(theArguments.get(1)), aValue);
         }
         default: {
             final WASMValue left = toValue(theArguments.get(0));
             final WASMValue right = toValue(theArguments.get(1));
-            return select(left, right, i32.gt_s(left, right));
+            return select(left, right, i32.gt_s(left, right, aValue), aValue);
         }
         }
     }
 
     private WASMValue sqrtValue(final SqrtExpression aValue) {
-        return f32.sqrt(toValue(aValue.incomingDataFlows().get(0)));
+        return f32.sqrt(toValue(aValue.incomingDataFlows().get(0)), aValue);
     }
 
     private WASMValue newMultiArrayValue(final NewMultiArrayExpression aValue) {
@@ -806,18 +805,18 @@ public class WASMSSAASTWriter {
         }
 
         final String theClassName = WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, aValue);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
         final List<WASMValue> theArguments = new ArrayList<>();
-        theArguments.add(i32.c(0));
+        theArguments.add(i32.c(0, aValue));
         for (final Value theDimension : theDimensions) {
             theArguments.add(toValue(theDimension));
         }
-        theArguments.add(call(theClassInit, Collections.emptyList()));
-        theArguments.add(weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX));
+        theArguments.add(call(theClassInit, Collections.emptyList(), aValue));
+        theArguments.add(weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX, aValue));
 
-        return call(theFunction, theArguments);
+        return call(theFunction, theArguments, aValue);
     }
 
     private WASMValue methodRefValue(final MethodRefExpression aValue) {
@@ -825,37 +824,37 @@ public class WASMSSAASTWriter {
                 aValue.getClassName(),
                 aValue.getMethodName(),
                 aValue.getSignature());
-        return weakFunctionTableReference(theMethodName);
+        return weakFunctionTableReference(theMethodName, aValue);
     }
 
     private WASMExpression runtimeGeneratedTypeValue(final RuntimeGeneratedTypeExpression aValue) {
         final Function theNew = module.functionIndex().firstByLabel("newLambda");
-        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef()), toValue(aValue.getStaticArguments())));
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMValue typeOfValue(final TypeOfExpression aValue) {
-        return i32.load(0, toValue(aValue.incomingDataFlows().get(0)));
+        return i32.load(0, toValue(aValue.incomingDataFlows().get(0)), aValue);
     }
 
     private WASMValue classReferenceValue(final ClassReferenceValue aValue) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getType());
-        final WeakFunctionReferenceCallable classInit = weakFunctionReference(WASMWriterUtils.toClassName(theLinkedClass.getClassName()) + CLASSINITSUFFIX);
-        return call(classInit, Collections.emptyList());
+        final WeakFunctionReferenceCallable classInit = weakFunctionReference(WASMWriterUtils.toClassName(theLinkedClass.getClassName()) + CLASSINITSUFFIX, null);
+        return call(classInit, Collections.emptyList(), null);
     }
 
     private WASMValue currentException(final CurrentExceptionExpression aValue) {
-        return i32.c(0);
+        return i32.c(0, aValue);
     }
 
     private WASMValue methodTypeValue(final MethodTypeExpression aValue) {
 //        print("(i32.const ");
 //        print(idResolver.resolveTypeIDForSignature(aValue.getSignature()));
 //        print(")");
-        return i32.c(0);
+        return i32.c(0, aValue);
     }
 
     private WASMValue methodHandlesGeneratedLookupValue(final MethodHandlesGeneratedLookupExpression aValue) {
-        return i32.c(0);
+        return i32.c(0, aValue);
     }
 
     private WASMExpression resolveCallSiteObjectValue(final ResolveCallsiteObjectExpression aValue) {
@@ -864,17 +863,17 @@ public class WASMSSAASTWriter {
                 aValue.getProgram(),
                 aValue.getBootstrapMethod()
         );
-        return call(theFunction, Collections.emptyList());
+        return call(theFunction, Collections.emptyList(), aValue);
     }
 
     private WASMValue doubleValue(final DoubleValue aValue) {
-        return f32.c(((Number) aValue.getDoubleValue()).floatValue());
+        return f32.c(((Number) aValue.getDoubleValue()).floatValue(), null);
     }
 
     private WASMValue instanceOfValue(final InstanceOfExpression aValue) {
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
         final Function theFunction = module.functionIndex().firstByLabel("INSTANCEOF_CHECK");
-        return call(theFunction, Arrays.asList(toValue(aValue.incomingDataFlows().get(0)), i32.c(theClass.getUniqueId())));
+        return call(theFunction, Arrays.asList(toValue(aValue.incomingDataFlows().get(0)), i32.c(theClass.getUniqueId(), aValue)), aValue);
     }
 
     private WASMValue negateValue(final NegatedExpression aValue) {
@@ -882,10 +881,10 @@ public class WASMSSAASTWriter {
         switch (theValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                return f32.neg(toValue(theValue));
+                return f32.neg(toValue(theValue), aValue);
             }
             default: {
-                return i32.mul(i32.c(-1), toValue(theValue));
+                return i32.mul(i32.c(-1, aValue), toValue(theValue), aValue);
             }
         }
     }
@@ -908,30 +907,30 @@ public class WASMSSAASTWriter {
         switch (theValue1Type) {
             case DOUBLE:
             case FLOAT:
-                return select(i32.c(1), select(i32.c(-1), i32.c(0), f32.lt(left, right)), f32.gt(left, right));
+                return select(i32.c(1, aValue), select(i32.c(-1, aValue), i32.c(0, aValue), f32.lt(left, right, aValue), aValue), f32.gt(left, right, aValue), aValue);
             default:
-                return select(i32.c(1), select(i32.c(-1), i32.c(0), i32.lt_s(left, right)), i32.gt_s(left, right));
+                return select(i32.c(1, aValue), select(i32.c(-1, aValue), i32.c(0, aValue), i32.lt_s(left, right, aValue), aValue), i32.gt_s(left, right, aValue), aValue);
         }
     }
 
     private WASMValue arrayEntryValue(final ArrayEntryExpression aValue) {
 
         final List<Value> theIncomingFlows = aValue.incomingDataFlows();
-        final WASMValue thePtr = i32.add(toValue(theIncomingFlows.get(0)), i32.mul(toValue(theIncomingFlows.get(1)), i32.c(4)));
+        final WASMValue thePtr = i32.add(toValue(theIncomingFlows.get(0)), i32.mul(toValue(theIncomingFlows.get(1)), i32.c(4, aValue), aValue), aValue);
 
         switch (aValue.resolveType().resolve()) {
             case DOUBLE:
             case FLOAT: {
-                return f32.load(20, thePtr);
+                return f32.load(20, thePtr, aValue);
             }
             default: {
-                return i32.load(20, thePtr);
+                return i32.load(20, thePtr, aValue);
             }
         }
     }
 
     private WASMValue stringValue(final StringValue aValue) {
-        return getGlobal(resolver.globalForStringFromPool(aValue));
+        return getGlobal(resolver.globalForStringFromPool(aValue), null);
     }
 
     private WASMExpression newArray(final Value aValue) {
@@ -942,10 +941,10 @@ public class WASMSSAASTWriter {
                         Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final String theClassName = WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, null);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
-        return call(theFunction, Arrays.asList(i32.c(0), toValue(aValue), call(theClassInit, Collections.emptyList()), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX)));
+        return call(theFunction, Arrays.asList(i32.c(0, null), toValue(aValue), call(theClassInit, Collections.emptyList(), null), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX, null)), null);
     }
 
     private WASMValue newArrayValue(final NewArrayExpression aValue) {
@@ -953,11 +952,11 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue arrayLengthValue(final ArrayLengthExpression aValue) {
-        return i32.load(16, toValue(aValue.incomingDataFlows().get(0)));
+        return i32.load(16, toValue(aValue.incomingDataFlows().get(0)), aValue);
     }
 
     private WASMValue floorValue(final FloorExpression aValue) {
-        return i32.trunc_sF32(f32.floor(toValue(aValue.incomingDataFlows().get(0))));
+        return i32.trunc_sF32(f32.floor(toValue(aValue.incomingDataFlows().get(0)), aValue), aValue);
     }
 
     private WASMExpression invokeVirtualValue(final InvokeVirtualMethodExpression aValue) {
@@ -976,13 +975,13 @@ public class WASMSSAASTWriter {
             if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
                 // At this point, we are creating a direct call invocation to the function
                 // Which is imported fom the WASM Host environment
-                final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(theTargetClass.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+                final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(theTargetClass.getClassName(), aValue.getMethodName(), aValue.getSignature()), aValue);
                 final List<WASMValue> arguments = new ArrayList<>();
                 arguments.add(toValue(theTarget));
                 for (final Value theValue : theVariables) {
                     arguments.add(toValue(theValue));
                 }
-                return call(function, arguments);
+                return call(function, arguments, aValue);
             }
         }
 
@@ -1013,31 +1012,31 @@ public class WASMSSAASTWriter {
         final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();
         theResolveArgument.add(toValue(theTarget));
-        theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));
-        final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, toValue(theTarget)));
+        theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), aValue));
+        final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, toValue(theTarget), aValue), aValue);
 
-        return call(theCalledFunction, theArguments, theIndex);
+        return call(theCalledFunction, theArguments, theIndex, aValue);
     }
 
     private WASMValue floatValue(final FloatValue aValue) {
-        return f32.c(aValue.getFloatValue());
+        return f32.c(aValue.getFloatValue(), null);
     }
 
     private WASMValue shortValue(final ShortValue aValue) {
-        return i32.c(aValue.getShortValue());
+        return i32.c(aValue.getShortValue(), null);
     }
 
     private WASMValue stackTopValue(final StackTopExpression aValue) {
         final Global stackTop = module.globalsIndex().globalByLabel(STACKTOP);
-        return getGlobal(stackTop);
+        return getGlobal(stackTop, null);
     }
 
     private WASMValue memorySizeValue(final MemorySizeExpression aValue) {
-        return i32.mul(currentMemory(), i32.c(65536));
+        return i32.mul(currentMemory(null), i32.c(65536, null), null);
     }
 
     private WASMValue nullValue(final NullValue aValue) {
-        return i32.c(0);
+        return i32.c(0, null);
     }
 
     private WASMValue typeConversion(final TypeConversionExpression aValue) {
@@ -1064,7 +1063,7 @@ public class WASMSSAASTWriter {
                     case CHAR: {
                         // Convert f32 to i32
                         final WASMValue theValue = toValue(theSource);
-                        return select(i32.trunc_sF32(theValue), i32.c(0), f32.eq(theValue, theValue));
+                        return select(i32.trunc_sF32(theValue, aValue), i32.c(0, aValue), f32.eq(theValue, theValue, aValue), aValue);
                     }
                     default:
                         throw new IllegalStateException("target type " + aValue.resolveType() + " not supported!");
@@ -1081,7 +1080,7 @@ public class WASMSSAASTWriter {
                 case DOUBLE:
                 case FLOAT: {
                     // Convert i32 to f32
-                    return f32.convert_sI32(toValue(theSource));
+                    return f32.convert_sI32(toValue(theSource), aValue);
                 }
                 case INT:
                 case SHORT:
@@ -1102,25 +1101,25 @@ public class WASMSSAASTWriter {
 
     private WASMValue computedMemoryLocationValue(final ComputedMemoryLocationWriteExpression aValue) {
         final List<Value> theIncomingData = aValue.incomingDataFlows();
-        return i32.add(toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)));
+        return i32.add(toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)), aValue);
     }
 
     private WASMValue computedMemoryLocationValue(final ComputedMemoryLocationReadExpression aValue) {
         final List<Value> theIncomingData = aValue.incomingDataFlows();
-        return i32.load(0, i32.add(toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1))));
+        return i32.load(0, i32.add(toValue(theIncomingData.get(0)), toValue(theIncomingData.get(1)), aValue), aValue);
     }
 
     private WASMValue fixedBinaryValue(final FixedBinaryExpression aValue) {
 
         switch (aValue.getOperator()) {
             case ISNULL: {
-                return i32.eq(toValue(aValue.incomingDataFlows().get(0)), i32.c(0));
+                return i32.eq(toValue(aValue.incomingDataFlows().get(0)), i32.c(0, aValue), aValue);
             }
             case ISNONNULL: {
-                return i32.ne(toValue(aValue.incomingDataFlows().get(0)), i32.c(0));
+                return i32.ne(toValue(aValue.incomingDataFlows().get(0)), i32.c(0, aValue), aValue);
             }
             case ISZERO: {
-                return i32.eq(toValue(aValue.incomingDataFlows().get(0)), i32.c(0));
+                return i32.eq(toValue(aValue.incomingDataFlows().get(0)), i32.c(0, aValue), aValue);
             }
             default: {
                 throw new IllegalStateException("Not supported");
@@ -1129,7 +1128,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue longValue(final LongValue aValue) {
-        return i32.c(((Number) aValue.getLongValue()).intValue());
+        return i32.c(((Number) aValue.getLongValue()).intValue(), null);
     }
 
     private WASMValue getStaticValue(final GetStaticExpression aValue) {
@@ -1141,14 +1140,14 @@ public class WASMSSAASTWriter {
         final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
-        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, aValue);
         switch (TypeRef.toType(theEntry.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT: {
-                return f32.load(theMemoryOffset, call(theClassInit, Collections.emptyList()));
+                return f32.load(theMemoryOffset, call(theClassInit, Collections.emptyList(), aValue), aValue);
             }
             default: {
-                return i32.load(theMemoryOffset, call(theClassInit, Collections.emptyList()));
+                return i32.load(theMemoryOffset, call(theClassInit, Collections.emptyList(), aValue), aValue);
             }
         }
     }
@@ -1167,10 +1166,10 @@ public class WASMSSAASTWriter {
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theType);
         final String theClassName = WASMWriterUtils.toClassName(theLinkedClass.getClassName());
-        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX);
+        final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, aValue);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
-        return call(theFunction, Arrays.asList(i32.c(0), i32.c(theLayout.instanceSize()), call(theClassInit, Collections.emptyList()), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX)));
+        return call(theFunction, Arrays.asList(i32.c(0, aValue), i32.c(theLayout.instanceSize(), aValue), call(theClassInit, Collections.emptyList(), aValue), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX, aValue)), aValue);
     }
 
     private WASMValue getFieldValue(final GetFieldExpression aValue) {
@@ -1189,9 +1188,9 @@ public class WASMSSAASTWriter {
         switch (TypeRef.toType(theField.getValue().getTypeRef()).resolve()) {
             case DOUBLE:
             case FLOAT:
-                return f32.load(theMemoryOffset, toValue(aValue.incomingDataFlows().get(0)));
+                return f32.load(theMemoryOffset, toValue(aValue.incomingDataFlows().get(0)), aValue);
             default:
-                return i32.load(theMemoryOffset, toValue(aValue.incomingDataFlows().get(0)));
+                return i32.load(theMemoryOffset, toValue(aValue.incomingDataFlows().get(0)), aValue);
         }
     }
 
@@ -1216,7 +1215,7 @@ public class WASMSSAASTWriter {
                 arguments.add(toValue(theValue));
             }
 
-            return call(function, arguments);
+            return call(function, arguments, aValue);
         }
 
         if ("<init>".equals(theMethodName)) {
@@ -1229,7 +1228,7 @@ public class WASMSSAASTWriter {
                 arguments.add(toValue(theValue));
             }
 
-            return call(function, arguments);
+            return call(function, arguments, aValue);
         }
 
         final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
@@ -1244,126 +1243,126 @@ public class WASMSSAASTWriter {
             arguments.add(toValue(theValue));
         }
 
-        return call(function, arguments);
+        return call(function, arguments, aValue);
     }
 
     private WASMExpression invokeStaticValue(final InvokeStaticMethodExpression aValue) {
 
-        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()), aValue);
         final List<WASMValue> arguments = new ArrayList<>();
-        arguments.add(i32.c(0));
+        arguments.add(i32.c(0, aValue));
 
         for (final Value theValue : aValue.incomingDataFlows()) {
             arguments.add(toValue(theValue));
         }
 
-        return call(function, arguments);
+        return call(function, arguments, aValue);
     }
 
     private I32Const byteValue(final ByteValue aValue) {
-        return i32.c(aValue.getByteValue());
+        return i32.c(aValue.getByteValue(), null);
     }
 
     private I32Const tntegerValue(final IntegerValue aValue) {
-        return i32.c(aValue.getIntValue());
+        return i32.c(aValue.getIntValue(), null);
     }
 
-    private WASMValue binaryValueI32(final BinaryExpression.Operator aOperator, final Value aValue1, final Value aValue2) {
+    private WASMValue binaryValueI32(final Expression aValue, final BinaryExpression.Operator aOperator, final Value aValue1, final Value aValue2) {
         switch (aOperator) {
         case NOTEQUALS: {
-            return i32.ne(toValue(aValue1), toValue(aValue2));
+            return i32.ne(toValue(aValue1), toValue(aValue2), aValue);
         }
         case EQUALS: {
-            return i32.eq(toValue(aValue1), toValue(aValue2));
+            return i32.eq(toValue(aValue1), toValue(aValue2), aValue);
         }
         case LESSTHAN: {
-            return i32.lt_s(toValue(aValue1), toValue(aValue2));
+            return i32.lt_s(toValue(aValue1), toValue(aValue2), aValue);
         }
         case LESSTHANOREQUALS: {
-            return i32.le_s(toValue(aValue1), toValue(aValue2));
+            return i32.le_s(toValue(aValue1), toValue(aValue2), aValue);
         }
         case GREATEROREQUALS: {
-            return i32.ge_s(toValue(aValue1), toValue(aValue2));
+            return i32.ge_s(toValue(aValue1), toValue(aValue2), aValue);
         }
         case GREATERTHAN: {
-            return i32.gt_s(toValue(aValue1), toValue(aValue2));
+            return i32.gt_s(toValue(aValue1), toValue(aValue2), aValue);
         }
         case ADD: {
-            return i32.add(toValue(aValue1), toValue(aValue2));
+            return i32.add(toValue(aValue1), toValue(aValue2), aValue);
         }
         case MUL: {
-            return i32.mul(toValue(aValue1), toValue(aValue2));
+            return i32.mul(toValue(aValue1), toValue(aValue2), aValue);
         }
         case DIV: {
-            return f32.div(toFloatValue(aValue1), toFloatValue(aValue2));
+            return f32.div(toFloatValue(aValue1), toFloatValue(aValue2), aValue);
         }
         case REMAINDER: {
             final WASMValue a = toValue(aValue1);
             final WASMValue b = toValue(aValue2);
-            return i32.rem_s(a, b);
+            return i32.rem_s(a, b, aValue);
         }
         case SUB: {
-            return i32.sub(toValue(aValue1), toValue(aValue2));
+            return i32.sub(toValue(aValue1), toValue(aValue2), aValue);
         }
         case BINARYXOR: {
-            return i32.xor(toValue(aValue1), toValue(aValue2));
+            return i32.xor(toValue(aValue1), toValue(aValue2), aValue);
         }
         case BINARYOR: {
-            return i32.or(toValue(aValue1), toValue(aValue2));
+            return i32.or(toValue(aValue1), toValue(aValue2), aValue);
         }
         case BINARYAND: {
-            return i32.and(toValue(aValue1), toValue(aValue2));
+            return i32.and(toValue(aValue1), toValue(aValue2), aValue);
         }
         case BINARYSHIFTLEFT: {
-            return i32.shl(toValue(aValue1), toValue(aValue2));
+            return i32.shl(toValue(aValue1), toValue(aValue2), aValue);
         }
         case BINARYSHIFTRIGHT: {
-            return i32.shr_s(toValue(aValue1), toValue(aValue2));
+            return i32.shr_s(toValue(aValue1), toValue(aValue2), aValue);
         }
         case BINARYUNSIGNEDSHIFTRIGHT: {
-            return i32.shr_u(toValue(aValue1), toValue(aValue2));
+            return i32.shr_u(toValue(aValue1), toValue(aValue2), aValue);
         }
         default:
             throw new IllegalStateException("Operator not supported : " + aOperator);
         }
     }
 
-    private WASMValue binaryValueF32(final BinaryExpression.Operator aOperator, final Value aValue1, final Value aValue2) {
+    private WASMValue binaryValueF32(final Expression aValue, final BinaryExpression.Operator aOperator, final Value aValue1, final Value aValue2) {
         switch (aOperator) {
         case NOTEQUALS: {
-            return f32.ne(toValue(aValue1), toValue(aValue2));
+            return f32.ne(toValue(aValue1), toValue(aValue2), aValue);
         }
         case EQUALS: {
-            return f32.eq(toValue(aValue1), toValue(aValue2));
+            return f32.eq(toValue(aValue1), toValue(aValue2), aValue);
         }
         case LESSTHAN: {
-            return f32.lt(toValue(aValue1), toValue(aValue2));
+            return f32.lt(toValue(aValue1), toValue(aValue2), aValue);
         }
         case LESSTHANOREQUALS: {
-            return f32.le(toValue(aValue1), toValue(aValue2));
+            return f32.le(toValue(aValue1), toValue(aValue2), aValue);
         }
         case GREATEROREQUALS: {
-            return f32.ge(toValue(aValue1), toValue(aValue2));
+            return f32.ge(toValue(aValue1), toValue(aValue2), aValue);
         }
         case GREATERTHAN: {
-            return f32.gt(toValue(aValue1), toValue(aValue2));
+            return f32.gt(toValue(aValue1), toValue(aValue2), aValue);
         }
         case ADD: {
-            return f32.add(toValue(aValue1), toValue(aValue2));
+            return f32.add(toValue(aValue1), toValue(aValue2), aValue);
         }
         case MUL: {
-            return f32.mul(toValue(aValue1), toValue(aValue2));
+            return f32.mul(toValue(aValue1), toValue(aValue2), aValue);
         }
         case DIV: {
-            return f32.div(toValue(aValue1), toValue(aValue2));
+            return f32.div(toValue(aValue1), toValue(aValue2), aValue);
         }
         case REMAINDER: {
             final WASMValue a = toValue(aValue1);
             final WASMValue b = toValue(aValue2);
-            return f32.sub(a, f32.mul(b, f32.trunc(f32.div(a, b))));
+            return f32.sub(a, f32.mul(b, f32.trunc(f32.div(a, b, aValue), aValue), aValue), aValue);
         }
         case SUB: {
-            return f32.sub(toValue(aValue1), toValue(aValue2));
+            return f32.sub(toValue(aValue1), toValue(aValue2), aValue);
         }
         default:
             throw new IllegalStateException("Operator not supported : " + aOperator);
@@ -1382,10 +1381,10 @@ public class WASMSSAASTWriter {
         final String theType2 = WASMWriterUtils.toType(theValue2.resolveType());
         switch (theType1) {
             case "i32": {
-                return binaryValueI32(aValue.getOperator(), theValue1, theValue2);
+                return binaryValueI32(aValue, aValue.getOperator(), theValue1, theValue2);
             }
             case "f32": {
-                return binaryValueF32(aValue.getOperator(), theValue1, theValue2);
+                return binaryValueF32(aValue, aValue.getOperator(), theValue1, theValue2);
             }
             default: {
                 throw new IllegalArgumentException("Not supported type : " + theType1);
@@ -1395,12 +1394,12 @@ public class WASMSSAASTWriter {
 
     private void generateReturnExpression(final ReturnExpression aExpression) {
         stackExit();
-        flow.ret();
+        flow.ret(aExpression);
     }
 
     private void generateReturnExpression(final ReturnValueExpression aExpression) {
         stackExit();
-        flow.ret(toValue(aExpression.incomingDataFlows().get(0)));
+        flow.ret(toValue(aExpression.incomingDataFlows().get(0)), aExpression);
     }
 
     private WASMValue toFloatValue(final Value aValue) {
@@ -1409,13 +1408,13 @@ public class WASMSSAASTWriter {
             case FLOAT:
                 return toValue(aValue);
             default:
-                return f32.convert_sI32(toValue(aValue));
+                return f32.convert_sI32(toValue(aValue), null);
         }
     }
 
     private WASMValue variableName(final Variable aVariable) {
         final Local local = function.localByLabel(aVariable.getName());
-        return getLocal(local);
+        return getLocal(local, null);
     }
 
     public void stackEnter() {
@@ -1425,8 +1424,8 @@ public class WASMSSAASTWriter {
             final Global stackTop = module.getGlobals().globalsIndex().globalByLabel(STACKTOP);
             final Local sp = function.newLocal(SP, PrimitiveType.i32);
             final Local oldsp = function.newLocal(OLDSP, PrimitiveType.i32);
-            flow.setGlobal(stackTop, i32.sub(teeLocal(oldsp, getGlobal(stackTop)), i32.c(theStackSize)));
-            flow.setLocal(sp, getGlobal(stackTop));
+            flow.setGlobal(stackTop, i32.sub(teeLocal(oldsp, getGlobal(stackTop, null), null), i32.c(theStackSize, null), null), null);
+            flow.setLocal(sp, getGlobal(stackTop, null), null);
         }
     }
 
@@ -1434,7 +1433,7 @@ public class WASMSSAASTWriter {
 
         final int theStackSize = stackSize();
         if (theStackSize > 0) {
-            flow.setGlobal(module.getGlobals().globalsIndex().globalByLabel(STACKTOP), getLocal(function.localByLabel(OLDSP)));
+            flow.setGlobal(module.getGlobals().globalsIndex().globalByLabel(STACKTOP), getLocal(function.localByLabel(OLDSP), null), null);
         }
     }
 
@@ -1457,7 +1456,7 @@ public class WASMSSAASTWriter {
             }
         }
 
-        flow.unreachable();
+        flow.unreachable(null);
     }
 
     private void writeReloopedInternal(final Relooper.Block aBlock) {
@@ -1492,15 +1491,15 @@ public class WASMSSAASTWriter {
 
         final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException() && compileOptions.isEnableExceptions();
         if (canThrowExeption) {
-            theWriter = Try(aSimpleBlock.label().name());
+            theWriter = Try(aSimpleBlock.label().name(), null);
             theWriter.writeExpressionList(aSimpleBlock.expressions());
 
             final Try theTry = (Try) theWriter.container;
 
-            theTry.catchBlock.flow.rethrowException();
+            theTry.catchBlock.flow.rethrowException(null);
         } else {
             if (aSimpleBlock.isLabelRequired()) {
-                theWriter = block(aSimpleBlock.label().name());
+                theWriter = block(aSimpleBlock.label().name(), null);
             }
 
             theWriter.writeExpressionList(aSimpleBlock.expressions());
@@ -1512,10 +1511,10 @@ public class WASMSSAASTWriter {
     private void writeIfThenElseBlock(final Relooper.IFThenElseBlock aIfBlock) {
         writeExpressionList(aIfBlock.getPrelude());
 
-        final WASMSSAASTWriter theOuter = block(aIfBlock.label().name());
-        final IFCondition theIfCondition = theOuter.iff(aIfBlock.label().name() + "_inner", toValue(aIfBlock.getCondition()));
+        final WASMSSAASTWriter theOuter = block(aIfBlock.label().name(), null);
+        final IFCondition theIfCondition = theOuter.iff(aIfBlock.label().name() + "_inner", toValue(aIfBlock.getCondition()), null);
         theIfCondition.trueWriter.writeReloopedInternal(aIfBlock.getTrueBlock());
-        theIfCondition.trueWriter.flow.branch((LabeledContainer) theOuter.container);
+        theIfCondition.trueWriter.flow.branch((LabeledContainer) theOuter.container, null);
 
         theOuter.writeReloopedInternal(aIfBlock.getFalseBlock());
 
@@ -1536,10 +1535,10 @@ public class WASMSSAASTWriter {
     private void writeLoopBlock(final Relooper.LoopBlock aLoopBlock) {
         WASMSSAASTWriter theWriter = this;
         if (aLoopBlock.isLabelRequired()) {
-            theWriter = block(aLoopBlock.label().name());
+            theWriter = block(aLoopBlock.label().name(), null);
         }
 
-        final WASMSSAASTWriter loop = theWriter.loop(aLoopBlock.label().name() + "_inner");
+        final WASMSSAASTWriter loop = theWriter.loop(aLoopBlock.label().name() + "_inner", null);
         loop.writeReloopedInternal(aLoopBlock.inner());
 
         writeReloopedInternal(aLoopBlock.next());
@@ -1548,10 +1547,10 @@ public class WASMSSAASTWriter {
     private void writeMultipleBlock(final Relooper.MultipleBlock aMultipleBlock) {
         WASMSSAASTWriter theWriter = this;
         if (aMultipleBlock.isLabelRequired()) {
-            theWriter = block(aMultipleBlock.label().name());
+            theWriter = block(aMultipleBlock.label().name(), null);
         }
 
-        final WASMSSAASTWriter loop = theWriter.loop(aMultipleBlock.label().name() + "_inner");
+        final WASMSSAASTWriter loop = theWriter.loop(aMultipleBlock.label().name() + "_inner", null);
 
         final Local label = function.localByLabel(LABEL_LOCAL);
 
@@ -1559,7 +1558,7 @@ public class WASMSSAASTWriter {
             for (final RegionNode theEntry : theHandler.entries()) {
                 final int theEntryAddress = theEntry.getStartAddress().getAddress();
 
-                final WASMSSAASTWriter block = loop.iff("case_" + theEntryAddress, i32.eq(getLocal(label), i32.c(theEntryAddress))).trueWriter;
+                final WASMSSAASTWriter block = loop.iff("case_" + theEntryAddress, i32.eq(getLocal(label, null), i32.c(theEntryAddress, null), null), null).trueWriter;
                 block.writeReloopedInternal(theHandler);
             }
         }

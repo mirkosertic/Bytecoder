@@ -15,9 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class Nop implements WASMExpression {
 
-    Nop() {
+    private final Expression expression;
+
+    Nop(final Expression expression) {
+        this.expression = expression;
     }
 
     @Override

@@ -15,16 +15,20 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class TeeLocal implements WASMExpression {
 
     private final Local local;
     private final WASMValue value;
+    private final Expression expression;
 
-    TeeLocal(final Local local, final WASMValue value) {
+    TeeLocal(final Local local, final WASMValue value, final Expression expression) {
         this.local = local;
         this.value = value;
+        this.expression = expression;
     }
 
     @Override

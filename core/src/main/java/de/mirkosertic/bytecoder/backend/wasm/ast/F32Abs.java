@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32Abs extends UnaryExpression {
 
-    F32Abs(final WASMValue value) {
-        super(value, "f32.abs", (byte) 0x8b);
+    F32Abs(final WASMValue value, final Expression expression) {
+        super(value, "f32.abs", (byte) 0x8b, expression);
     }
 }

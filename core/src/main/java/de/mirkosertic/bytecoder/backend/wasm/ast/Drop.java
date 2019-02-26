@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class Drop implements WASMExpression {
 
     private final WASMValue value;
+    private final Expression expression;
 
-    Drop(final WASMValue value) {
+    Drop(final WASMValue value, final Expression expression) {
         this.value = value;
+        this.expression = expression;
     }
 
     @Override

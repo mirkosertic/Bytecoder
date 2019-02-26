@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32Max extends BinaryExpression {
 
-    F32Max(final WASMValue left, final WASMValue right) {
-        super(left, right, "f32.max", (byte) 0x97);
+    F32Max(final WASMValue left, final WASMValue right, final Expression expression) {
+        super(left, right, "f32.max", (byte) 0x97, expression);
     }
 }

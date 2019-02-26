@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32ConvertUI32 extends UnaryExpression {
 
-    F32ConvertUI32(final WASMValue value) {
-        super(value, "f32.convert_u/i32", (byte) 0xb3);
+    F32ConvertUI32(final WASMValue value, final Expression expression) {
+        super(value, "f32.convert_u/i32", (byte) 0xb3, expression);
     }
 }

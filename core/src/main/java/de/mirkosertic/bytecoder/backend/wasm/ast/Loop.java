@@ -15,12 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class Loop extends LabeledContainer implements WASMExpression {
 
-    Loop(final String label, final Container parent) {
-        super(parent, label);
+    Loop(final String label, final Container parent, final Expression expression) {
+        super(parent, label, expression);
     }
 
     @Override

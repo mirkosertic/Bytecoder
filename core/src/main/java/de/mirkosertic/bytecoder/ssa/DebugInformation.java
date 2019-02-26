@@ -23,21 +23,22 @@ public abstract class DebugInformation {
     public static DebugInformation empty() {
         return new DebugInformation() {
             @Override
-            public DebugPosition debugPositionFor(BytecodeOpcodeAddress aAddress) {
+            public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
                 return null;
             }
         };
     }
 
-    public static DebugInformation jvm(String aOriginalFileName, BytecodeLineNumberTableAttributeInfo aLineNumberInfo) {
+    public static DebugInformation jvm(final String aOriginalFileName, final BytecodeLineNumberTableAttributeInfo aLineNumberInfo) {
         return new DebugInformation() {
             @Override
-            public DebugPosition debugPositionFor(BytecodeOpcodeAddress aAddress) {
-                BytecodeLineNumberTableAttributeInfo.Entry[] theEntries = aLineNumberInfo.getEntries();
+            public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
+                final BytecodeLineNumberTableAttributeInfo.Entry[] theEntries = aLineNumberInfo.getEntries();
                 for (int i=0;i<theEntries.length;i++) {
-                    BytecodeLineNumberTableAttributeInfo.Entry theEntry = theEntries[i];
+                    final BytecodeLineNumberTableAttributeInfo.Entry theEntry = theEntries[i];
                     if (theEntry.getStartPc() == aAddress.getAddress()) {
-                        return new DebugPosition(aOriginalFileName, theEntry.getLineNumber());
+                        // DebugPosition Line-Number indices are zero-based
+                        return new DebugPosition(aOriginalFileName, theEntry.getLineNumber() - 1);
                     }
                 }
                 return null;

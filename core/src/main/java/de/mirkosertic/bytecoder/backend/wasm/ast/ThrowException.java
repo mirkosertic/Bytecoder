@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -22,10 +24,12 @@ public class ThrowException implements WASMExpression {
 
     private final WASMException exception;
     private final List<WASMValue> arguments;
+    private final Expression expression;
 
-    public ThrowException(final WASMException exception, final List<WASMValue> arguments) {
+    public ThrowException(final WASMException exception, final List<WASMValue> arguments, final Expression expression) {
         this.exception = exception;
         this.arguments = arguments;
+        this.expression = expression;
     }
 
     @Override

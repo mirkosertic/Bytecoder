@@ -930,18 +930,18 @@ public class JSSSAWriter {
     }
 
     private void print(final GetStaticExpression aValue) {
-        printStaticFieldReference(aValue.getField());
+        printStaticFieldReference(aValue.getField(), program.getDebugInformation().debugPositionFor(aValue.getAddress()));
     }
 
     private void printVariableName(final Variable aVariable) {
         writer.text(minifier.toVariableName(aVariable.getName()));
     }
 
-    private void printStaticFieldReference(final BytecodeFieldRefConstant aField) {
+    private void printStaticFieldReference(final BytecodeFieldRefConstant aField, final DebugPosition aPosition) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-        writer.text(minifier.toClassName(theField.getProvidingClass().getClassName())).text(".i().").text(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
+        writer.text(minifier.toClassName(theField.getProvidingClass().getClassName())).text(".i().").symbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), aPosition);
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -957,11 +957,7 @@ public class JSSSAWriter {
         if (theExpressionAddress != null) {
             final DebugPosition thePosition = program.getDebugInformation().debugPositionFor(theExpressionAddress);
             if (thePosition != null) {
-                final int theTargetLineNum = writer.getLineCounter();
-                final int theTargetColumn = writer.getColumnCounter();
-                final String theSourceFile = thePosition.getFileName();
-                final int theSourceLineNum = thePosition.getLineNumber();
-                // TODO: Generate source map
+                writer.assignPositionToSourceFile(thePosition);
             }
         }
     }
@@ -1013,7 +1009,7 @@ public class JSSSAWriter {
                 final Value theValue = theE.incomingDataFlows().get(0);
 
                 startLine();
-                printStaticFieldReference(theField);
+                printStaticFieldReference(theField, program.getDebugInformation().debugPositionFor(theExpression.getAddress()));
                 writer.assign();
                 print(theValue);
                 writer.text(";").newLine();

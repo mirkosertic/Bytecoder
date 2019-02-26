@@ -106,6 +106,31 @@ public class WASMCompileResult implements CompileResult<String> {
         }
     }
 
+    public static class WASMSourcemapCompileResult extends WASMCompileContent {
+
+        private final String data;
+        private final String filenamePrefix;
+
+        public WASMSourcemapCompileResult(final WASMMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
+                final List<String> generatedFunctions, final String data, final String afilenamePrefix) {
+            super(memoryLayouter, linkerContext, generatedFunctions);
+            this.data = data;
+            this.filenamePrefix = afilenamePrefix;
+        }
+
+        @Override
+        public String getFileName() {
+            return filenamePrefix + ".wasm.map";
+        }
+
+        @Override
+        public void writeTo(final OutputStream stream) {
+            try (final PrintStream ps = new PrintStream(stream)) {
+                ps.print(data);
+            }
+        }
+    }
+
     public static class WASMBinaryCompileResult extends WASMCompileContent {
 
         private final byte[] data;

@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class I32Shl extends BinaryExpression {
 
-    I32Shl(final WASMValue left, final WASMValue right) {
-        super(left, right, "i32.shl", (byte) 0x74);
+    I32Shl(final WASMValue left, final WASMValue right, final Expression expression) {
+        super(left, right, "i32.shl", (byte) 0x74, expression);
     }
 }

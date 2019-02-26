@@ -15,17 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
@@ -36,15 +25,36 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+
 public class ModuleTest {
+
+    private CompileOptions debugOptions() {
+        final CompileOptions options = Mockito.mock(CompileOptions.class);
+        Mockito.when(options.isDebugOutput()).thenReturn(true);
+        Mockito.when(options.getFilenamePrefix()).thenReturn("mod");
+        return options;
+    }
 
     @Test
     public void testSimpleCase() throws IOException {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
-        final Exporter exporter = new Exporter();
+        final Module module = new Module("mod", "mod.wasm.map");
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -54,18 +64,20 @@ public class ModuleTest {
 
     @Test
     public void testSimpleCaseBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final StringWriter theSourceMap = new StringWriter();
 
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleCase.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleCase.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleCase.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
 
     }
 
@@ -75,14 +87,14 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
-        function.flow.ret(i32.c(42));
+        function.flow.ret(i32.c(42, null), null);
         function.exportAs("expfunction");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -98,23 +110,26 @@ public class ModuleTest {
     @Test
     public void testSimpleFunctionBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label", Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
 
-        function.flow.ret(i32.c(42));
+        function.flow.ret(i32.c(42, null), null);
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final Exporter exporter = new Exporter(debugOptions());
+        final StringWriter theSourceMap = new StringWriter();
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleFunction.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleFunction.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleFunction.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -123,11 +138,11 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final Memory memory = module.getMems().newMemory(10, 20);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         Assert.assertEquals("(module $mod" + System.lineSeparator()
@@ -137,21 +152,24 @@ public class ModuleTest {
 
     @Test
     public void testWithMemoryBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final Memory memory = module.getMems().newMemory(10, 20);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final StringWriter theSourceMap = new StringWriter();
 
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithMemory.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithMemory.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testWithMemory.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -160,12 +178,12 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final Memory memory = module.getMems().newMemory(10, 20);
         memory.exportAs("exported");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         Assert.assertEquals("(module $mod" + System.lineSeparator()
@@ -177,21 +195,24 @@ public class ModuleTest {
     @Test
     public void testWithExportedMemoryBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final Memory memory = module.getMems().newMemory(10, 20);
         memory.exportAs("exported");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithExportedMemory.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testWithExportedMemory.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testWithExportedMemory.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -199,7 +220,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final Function function = module.getImports().importFunction(new ImportReference("mod","obj"),"label", PrimitiveType.i32);
 
         try (final TextWriter writer = new TextWriter(pw)) {
@@ -214,19 +235,21 @@ public class ModuleTest {
 
     @Test
     public void testFunctionImportBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final Function function = module.getImports().importFunction(new ImportReference("mod","obj"),"label", PrimitiveType.i32);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFunctionImport.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFunctionImport.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testFunctionImport.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -235,7 +258,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -244,10 +267,10 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        function.flow.ret(getLocal(tempLocal));
+        function.flow.ret(getLocal(tempLocal, null), null);
         function.exportAs("expfunction");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -263,7 +286,7 @@ public class ModuleTest {
 
     @Test
     public void testLocalAccessBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -271,19 +294,22 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
-        function.flow.ret(getLocal(tempLocal));
+        function.flow.ret(getLocal(tempLocal, null), null);
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testLocalAccess.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testLocalAccess.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testLocalAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -292,7 +318,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -301,12 +327,12 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        block.flow.ret(getLocal(tempLocal));
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        block.flow.ret(getLocal(tempLocal, null), null);
+        function.flow.unreachable(null);
         function.exportAs("expfunction");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -324,7 +350,7 @@ public class ModuleTest {
 
     @Test
     public void testBlockBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -333,21 +359,24 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        block.flow.ret(getLocal(tempLocal));
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        block.flow.ret(getLocal(tempLocal, null), null);
+        function.flow.unreachable(null);
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBinary.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBinary.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBinary.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -356,7 +385,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -365,15 +394,15 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        function.flow.unreachable(null);
 
-        final Iff ifExp = block.flow.iff("label", i32.eq(i32.c(10), i32.c(20)));
-        ifExp.flow.ret(getLocal(tempLocal));
+        final Iff ifExp = block.flow.iff("label", i32.eq(i32.c(10, null), i32.c(20, null), null), null);
+        ifExp.flow.ret(getLocal(tempLocal, null), null);
 
         function.exportAs("expfunction");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator() +
@@ -394,7 +423,7 @@ public class ModuleTest {
 
     @Test
     public void testIfBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -403,22 +432,25 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        function.flow.unreachable(null);
 
-        final Iff ifExp = block.flow.iff("lab", i32.eq(i32.c(10), i32.c(20)));
-        ifExp.flow.branch(block);
+        final Iff ifExp = block.flow.iff("lab", i32.eq(i32.c(10, null), i32.c(20, null), null), null);
+        ifExp.flow.branch(block, null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
 //        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIf.wasm")) {
-//            exporter.export(module, fos);
+//            exporter.export(module, fos, theSourceMap);
 //        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIf.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
 
@@ -428,7 +460,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -437,12 +469,12 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        block.flow.branch(block);
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        block.flow.branch(block, null);
+        function.flow.unreachable(null);
         function.exportAs("expfunction");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -459,7 +491,7 @@ public class ModuleTest {
 
     @Test
     public void testBlockBranchBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -468,21 +500,24 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        block.flow.branch(block);
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        block.flow.branch(block, null);
+        function.flow.unreachable(null);
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranch.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranch.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranch.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -491,7 +526,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -500,12 +535,12 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        block.flow.branchIff(block, i32.c(42));
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        block.flow.branchIff(block, i32.c(42, null), null);
+        function.flow.unreachable(null);
         function.exportAs("expfunction");
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -524,7 +559,7 @@ public class ModuleTest {
 
     @Test
     public void testBlockBranchIfBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
@@ -533,21 +568,24 @@ public class ModuleTest {
 
         final Local tempLocal = function.newLocal("loc", PrimitiveType.i32);
 
-        final Block block = function.flow.block("outer");
-        block.flow.branchIff(block, i32.c(42));
-        function.flow.unreachable();
+        final Block block = function.flow.block("outer", null);
+        block.flow.branchIff(block, i32.c(42, null), null);
+        function.flow.unreachable(null);
         function.exportAs("expfunction");
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranchIf.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testBlockBranchIf.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testBlockBranchIf.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -556,17 +594,17 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        function.flow.unreachable();
+        function.flow.unreachable(null);
         function.toTable();
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator() +
@@ -582,26 +620,29 @@ public class ModuleTest {
     @Test
     public void testTableWithFunctionBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
         final Param p2 = param("p2", PrimitiveType.i32);
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        function.flow.unreachable();
+        function.flow.unreachable(null);
         function.toTable();
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
 //        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTableWithFunction.wasm")) {
-//            exporter.export(module, fos);
+//            exporter.export(module, fos, theSourceMap);
 //        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testTableWithFunction.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -610,10 +651,10 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
-        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42));
-        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21));
+        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42, null));
+        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21, null));
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -621,9 +662,9 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        function.flow.ret(getGlobal(g1));
+        function.flow.ret(getGlobal(g1, null), null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -640,10 +681,10 @@ public class ModuleTest {
     @Test
     public void testGlobalsBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
-        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42));
-        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21));
+        final Global g1 = module.getGlobals().newConstantGlobal("constant", PrimitiveType.i32, i32.c(42, null));
+        final Global g2 = module.getGlobals().newMutableGlobal("mutable", PrimitiveType.i32, i32.c(21, null));
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -651,18 +692,21 @@ public class ModuleTest {
         final ExportableFunction function = functionsContent.newFunction("label", Arrays
                 .asList(p1, p2), PrimitiveType.i32);
 
-        function.flow.ret(getGlobal(g1));
+        function.flow.ret(getGlobal(g1, null), null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testGlobalsBinary.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testGlobalsBinary.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testGlobalsBinary.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -671,7 +715,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -680,10 +724,10 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
-        function.flow.setLocal(loc1, i32.c(100));
-        function.flow.ret(i32.add(getLocal(loc1), i32.c(200)));
+        function.flow.setLocal(loc1, i32.c(100, null), null);
+        function.flow.ret(i32.add(getLocal(loc1, null), i32.c(200, null), null), null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -700,7 +744,7 @@ public class ModuleTest {
     @Test
     public void testIntegerMathBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -709,19 +753,22 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
-        function.flow.setLocal(loc1, i32.c(100));
-        function.flow.ret(i32.add(getLocal(loc1), i32.c(200)));
+        function.flow.setLocal(loc1, i32.c(100, null), null);
+        function.flow.ret(i32.add(getLocal(loc1, null), i32.c(200, null), null), null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
 //        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIntegerMath.wasm")) {
-//            exporter.export(module, fos);
+//            exporter.export(module, fos, theSourceMap);
 //        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIntegerMath.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -730,7 +777,7 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -739,9 +786,9 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
-        function.flow.ret(call(function, Arrays.asList(getLocal(p1), getLocal(p2))));
+        function.flow.ret(call(function, Arrays.asList(getLocal(p1, null), getLocal(p2, null)), null), null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -757,7 +804,7 @@ public class ModuleTest {
     @Test
     public void testCallBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final FunctionsSection functionsContent = module.getFunctions();
         final Param p1 = param("p1", PrimitiveType.i32);
@@ -766,18 +813,21 @@ public class ModuleTest {
                 .asList(p1, p2), PrimitiveType.i32);
 
         final Local loc1 = function.newLocal("local1", PrimitiveType.i32);
-        function.flow.ret(call(function, Arrays.asList(getLocal(p1), getLocal(p2))));
+        function.flow.ret(call(function, Arrays.asList(getLocal(p1, null), getLocal(p2, null)), null), null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testCall.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testCall.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testCall.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -786,13 +836,13 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
-        final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
+        final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1, null));
         final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
-        bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(), i32.c(65536)), i32.c(1)));
+        bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(null), i32.c(65536, null), null), i32.c(1, null), null), null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -808,22 +858,25 @@ public class ModuleTest {
     @Test
     public void testMemoryInitBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
-        final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1));
+        final Global stackTop = module.getGlobals().newMutableGlobal("STACKTOP", PrimitiveType.i32, i32.c(-1, null));
         final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
-        bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(), i32.c(65536)), i32.c(1)));
+        bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(null), i32.c(65536, null), null), i32.c(1, null), null), null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryInit.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryInit.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryInit.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -832,20 +885,20 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final Param p1 = param("p1", PrimitiveType.f32);
         final Param p2 = param("p2", PrimitiveType.f32);
         final ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(p1, p2), PrimitiveType.i32);
-        final Block b1 = compareValueF32.flow.block("b1");
-        b1.flow.branchIff(b1, ConstExpressions.f32.ne(getLocal(p1), getLocal(p2)));
-        b1.flow.ret(i32.c(0));
-        final Block b2 = compareValueF32.flow.block("b2");
-        b2.flow.branchIff(b2, ConstExpressions.f32.ge(getLocal(p1), getLocal(p2)));
-        b2.flow.ret(i32.c(-1));
-        compareValueF32.flow.ret(i32.c(1));
+        final Block b1 = compareValueF32.flow.block("b1", null);
+        b1.flow.branchIff(b1, ConstExpressions.f32.ne(getLocal(p1, null), getLocal(p2, null), null), null);
+        b1.flow.ret(i32.c(0, null), null);
+        final Block b2 = compareValueF32.flow.block("b2", null);
+        b2.flow.branchIff(b2, ConstExpressions.f32.ge(getLocal(p1, null), getLocal(p2, null), null), null);
+        b2.flow.ret(i32.c(-1, null), null);
+        compareValueF32.flow.ret(i32.c(1, null), null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -870,29 +923,32 @@ public class ModuleTest {
     @Test
     public void testSimpleF32Binary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final Param p1 = param("p1", PrimitiveType.f32);
         final Param p2 = param("p2", PrimitiveType.f32);
         final ExportableFunction compareValueF32 = module.getFunctions().newFunction("compareValueF32", Arrays.asList(p1, p2), PrimitiveType.i32);
-        final Block b1 = compareValueF32.flow.block("b1");
-        b1.flow.branchIff(b1, ConstExpressions.f32.ne(getLocal(p1), getLocal(p2)));
-        b1.flow.ret(i32.c(0));
-        final Block b2 = compareValueF32.flow.block("b2");
-        b2.flow.branchIff(b2, ConstExpressions.f32.ge(getLocal(p1), getLocal(p2)));
-        b2.flow.ret(i32.c(-1));
-        compareValueF32.flow.ret(i32.c(1));
+        final Block b1 = compareValueF32.flow.block("b1", null);
+        b1.flow.branchIff(b1, ConstExpressions.f32.ne(getLocal(p1, null), getLocal(p2, null), null), null);
+        b1.flow.ret(i32.c(0, null), null);
+        final Block b2 = compareValueF32.flow.block("b2", null);
+        b2.flow.branchIff(b2, ConstExpressions.f32.ge(getLocal(p1, null), getLocal(p2, null), null), null);
+        b2.flow.ret(i32.c(-1, null), null);
+        compareValueF32.flow.ret(i32.c(1, null), null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleF32.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testSimpleF32.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testSimpleF32.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -901,44 +957,44 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local local = testFunction.newLocal("loc1", PrimitiveType.i32);
-        testFunction.flow.setLocal(local, i32.add(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.and(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.clz(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.ctz(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.div_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.div_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.eq(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.eqz(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.ge_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.ge_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.gt_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.gt_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.le_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.le_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.lt_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.lt_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.mul(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.ne(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.or(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.popcount(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.reinterpretF32(f32.c(10.0f)));
-        testFunction.flow.setLocal(local, i32.rem_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.rem_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.rotl(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.rotr(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.shl(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.shr_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.shr_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.sub(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.trunc_sF32(f32.c(10.2f)));
-        testFunction.flow.setLocal(local, i32.trunc_uF32(f32.c(10.2f)));
-        testFunction.flow.setLocal(local, i32.xor(i32.c(10), i32.c(20)));
+        testFunction.flow.setLocal(local, i32.add(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.and(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.clz(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.ctz(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.div_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.div_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.eq(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.eqz(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.ge_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.ge_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.gt_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.gt_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.le_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.le_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.lt_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.lt_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.mul(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.ne(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.or(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.popcount(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.reinterpretF32(f32.c(10.0f,null),null),null);
+        testFunction.flow.setLocal(local, i32.rem_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.rem_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.rotl(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.rotr(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.shl(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.shr_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.shr_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.sub(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.trunc_sF32(f32.c(10.2f,null),null),null);
+        testFunction.flow.setLocal(local, i32.trunc_uF32(f32.c(10.2f,null),null),null);
+        testFunction.flow.setLocal(local, i32.xor(i32.c(10,null), i32.c(20,null),null),null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -985,53 +1041,56 @@ public class ModuleTest {
     @Test
     public void testIntegerMathCompleteBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local local = testFunction.newLocal("loc1", PrimitiveType.i32);
-        testFunction.flow.setLocal(local, i32.add(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.and(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.clz(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.ctz(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.div_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.div_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.eq(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.eqz(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.ge_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.ge_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.gt_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.gt_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.le_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.le_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.lt_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.lt_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.mul(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.ne(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.or(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.popcount(i32.c(10)));
-        testFunction.flow.setLocal(local, i32.reinterpretF32(f32.c(10.0f)));
-        testFunction.flow.setLocal(local, i32.rem_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.rem_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.rotl(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.rotr(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.shl(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.shr_s(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.shr_u(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.sub(i32.c(10), i32.c(20)));
-        testFunction.flow.setLocal(local, i32.trunc_sF32(f32.c(10.2f)));
-        testFunction.flow.setLocal(local, i32.trunc_uF32(f32.c(10.2f)));
-        testFunction.flow.setLocal(local, i32.xor(i32.c(10), i32.c(20)));
+        testFunction.flow.setLocal(local, i32.add(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.and(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.clz(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.ctz(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.div_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.div_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.eq(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.eqz(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.ge_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.ge_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.gt_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.gt_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.le_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.le_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.lt_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.lt_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.mul(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.ne(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.or(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.popcount(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(local, i32.reinterpretF32(f32.c(10.0f,null),null),null);
+        testFunction.flow.setLocal(local, i32.rem_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.rem_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.rotl(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.rotr(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.shl(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.shr_s(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.shr_u(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.sub(i32.c(10,null), i32.c(20,null),null),null);
+        testFunction.flow.setLocal(local, i32.trunc_sF32(f32.c(10.2f,null),null),null);
+        testFunction.flow.setLocal(local, i32.trunc_uF32(f32.c(10.2f,null),null),null);
+        testFunction.flow.setLocal(local, i32.xor(i32.c(10,null), i32.c(20,null),null),null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
 //        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testIntegerMathComplete.wasm")) {
-//            exporter.export(module, fos);
+//            exporter.export(module, fos, theSourceMap);
 //        }
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testIntegerMathComplete.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -1040,34 +1099,34 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
         final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
-        testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.add(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.convert_sI32(i32.c(10)));
-        testFunction.flow.setLocal(localf32, f32.convert_uI32(i32.c(10)));
-        testFunction.flow.setLocal(localf32, f32.copysign(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.div(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.eq(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.floor(f32.c(-10.4f)));
-        testFunction.flow.setLocal(locali32, f32.gt(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.le(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.lt(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.max(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.min(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.mul(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.ne(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.nearest(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.neg(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.sqrt(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.sub(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.trunc(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.add(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.convert_sI32(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.convert_uI32(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.copysign(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.div(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.eq(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.floor(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.gt(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.le(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.lt(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.max(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.min(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.mul(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.ne(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.nearest(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.neg(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.sqrt(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.sub(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.trunc(f32.c(-10.4f,null),null),null);
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -1104,43 +1163,46 @@ public class ModuleTest {
     @Test
     public void testFloatMathCompleteBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
         final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
-        testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.add(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.convert_sI32(i32.c(10)));
-        testFunction.flow.setLocal(localf32, f32.convert_uI32(i32.c(10)));
-        testFunction.flow.setLocal(localf32, f32.copysign(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.div(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.eq(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.floor(f32.c(-10.4f)));
-        testFunction.flow.setLocal(locali32, f32.gt(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.le(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.lt(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.max(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.min(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.mul(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(locali32, f32.ne(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.nearest(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.neg(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.sqrt(f32.c(-10.4f)));
-        testFunction.flow.setLocal(localf32, f32.sub(f32.c(10f), f32.c(20f)));
-        testFunction.flow.setLocal(localf32, f32.trunc(f32.c(-10.4f)));
+        testFunction.flow.setLocal(localf32, f32.abs(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.add(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.ceil(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.convert_sI32(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.convert_uI32(i32.c(10,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.copysign(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.div(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.eq(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.floor(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.gt(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.le(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.lt(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.max(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.min(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.mul(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(locali32, f32.ne(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.nearest(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.neg(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.sqrt(f32.c(-10.4f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.sub(f32.c(10f,null), f32.c(20f,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.trunc(f32.c(-10.4f,null),null),null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFloatMathComplete.wasm")) {
-//           exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testFloatMathComplete.wasm")) {
+        //   exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testFloatMathComplete.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -1149,23 +1211,23 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
-        final Loop loop = testFunction.flow.loop("lp1");
-        loop.flow.nop();
-        final Block block = loop.flow.block("bl1");
-        block.flow.nop();
-        block.flow.setLocal(locali32, select(i32.c(10), i32.c(20), i32.eq(i32.c(30), i32.c(40))));
-        block.flow.drop(teeLocal(locali32, i32.c(100)));
-        block.flow.voidCallIndirect(testFunction.getFunctionType(), Collections.emptyList(), i32.c(0));
-        block.flow.branch(block);
-        loop.flow.branch(loop);
+        final Loop loop = testFunction.flow.loop("lp1",null);
+        loop.flow.nop(null);
+        final Block block = loop.flow.block("bl1",null);
+        block.flow.nop(null);
+        block.flow.setLocal(locali32, select(i32.c(10,null), i32.c(20,null), i32.eq(i32.c(30,null), i32.c(40,null),null),null),null);
+        block.flow.drop(teeLocal(locali32, i32.c(100,null),null),null);
+        block.flow.voidCallIndirect(testFunction.getFunctionType(), Collections.emptyList(), i32.c(0,null),null);
+        block.flow.branch(block,null);
+        loop.flow.branch(loop,null);
 
         testFunction.toTable();
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -1191,32 +1253,35 @@ public class ModuleTest {
     @Test
     public void testTeeNopDropSelectBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
-        final Loop loop = testFunction.flow.loop("lp1");
-        loop.flow.nop();
-        final Block block = loop.flow.block("bl1");
-        block.flow.nop();
-        block.flow.setLocal(locali32, select(i32.c(10), i32.c(20), i32.eq(i32.c(30), i32.c(40))));
-        block.flow.drop(teeLocal(locali32, i32.c(100)));
-        block.flow.voidCallIndirect(testFunction.getFunctionType(), Collections.emptyList(), i32.c(0));
-        block.flow.branch(block);
-        loop.flow.branch(loop);
+        final Loop loop = testFunction.flow.loop("lp1",null);
+        loop.flow.nop(null);
+        final Block block = loop.flow.block("bl1",null);
+        block.flow.nop(null);
+        block.flow.setLocal(locali32, select(i32.c(10,null), i32.c(20,null), i32.eq(i32.c(30,null), i32.c(40,null),null),null),null);
+        block.flow.drop(teeLocal(locali32, i32.c(100,null),null),null);
+        block.flow.voidCallIndirect(testFunction.getFunctionType(), Collections.emptyList(), i32.c(0,null),null);
+        block.flow.branch(block,null);
+        loop.flow.branch(loop,null);
 
         testFunction.toTable();
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTeeNopDropSelect.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testTeeNopDropSelect.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testTeeNopDropSelect.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
@@ -1225,35 +1290,35 @@ public class ModuleTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         module.getMems().newMemory(512, 512);
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
         final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
-        testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_s(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_u(Alignment.ONE, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_u(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_s(Alignment.TWO, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_s(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_u(Alignment.TWO, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_u(24, i32.c(500)));
-        testFunction.flow.setLocal(localf32, f32.load(Alignment.FOUR, 24, i32.c(500)));
-        testFunction.flow.setLocal(localf32, f32.load(24, i32.c(500)));
-        testFunction.flow.i32.store(Alignment.FOUR, 24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store(24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store8(Alignment.ONE, 24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store8(24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store16(Alignment.TWO, 24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store16(24, i32.c(500), i32.c(100));
-        testFunction.flow.f32.store(Alignment.FOUR, 24, i32.c(500), f32.c(100f));
-        testFunction.flow.f32.store(24, i32.c(500), f32.c(100f));
+        testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_s(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_u(Alignment.ONE, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_u(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_s(Alignment.TWO, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_s(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_u(Alignment.TWO, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_u(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.load(Alignment.FOUR, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.load(24, i32.c(500,null),null),null);
+        testFunction.flow.i32.store(Alignment.FOUR, 24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store(24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store8(Alignment.ONE, 24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store8(24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store16(Alignment.TWO, 24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store16(24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.f32.store(Alignment.FOUR, 24, i32.c(500,null), f32.c(100f,null),null);
+        testFunction.flow.f32.store(24, i32.c(500,null), f32.c(100f,null),null);
 
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, pw);
 
         final String expected = "(module $mod" + System.lineSeparator()
@@ -1290,65 +1355,68 @@ public class ModuleTest {
     @Test
     public void testMemoryAccessBinary() throws IOException {
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         module.getMems().newMemory(512, 512);
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", Collections.emptyList());
         final Local locali32 = testFunction.newLocal("loc1", PrimitiveType.i32);
         final Local localf32 = testFunction.newLocal("loc2", PrimitiveType.f32);
-        testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_s(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_u(Alignment.ONE, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load8_u(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_s(Alignment.TWO, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_s(24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_u(Alignment.TWO, 24, i32.c(500)));
-        testFunction.flow.setLocal(locali32, i32.load16_u(24, i32.c(500)));
-        testFunction.flow.setLocal(localf32, f32.load(Alignment.FOUR, 24, i32.c(500)));
-        testFunction.flow.setLocal(localf32, f32.load(24, i32.c(500)));
-        testFunction.flow.i32.store(Alignment.FOUR, 24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store(24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store8(Alignment.ONE, 24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store8(24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store16(Alignment.TWO, 24, i32.c(500), i32.c(100));
-        testFunction.flow.i32.store16(24, i32.c(500), i32.c(100));
-        testFunction.flow.f32.store(Alignment.FOUR, 24, i32.c(500), f32.c(100f));
-        testFunction.flow.f32.store(24, i32.c(500), f32.c(100f));
+        testFunction.flow.setLocal(locali32, i32.load(Alignment.FOUR, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_s(Alignment.ONE, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_s(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_u(Alignment.ONE, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load8_u(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_s(Alignment.TWO, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_s(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_u(Alignment.TWO, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(locali32, i32.load16_u(24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.load(Alignment.FOUR, 24, i32.c(500,null),null),null);
+        testFunction.flow.setLocal(localf32, f32.load(24, i32.c(500,null),null),null);
+        testFunction.flow.i32.store(Alignment.FOUR, 24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store(24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store8(Alignment.ONE, 24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store8(24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store16(Alignment.TWO, 24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.i32.store16(24, i32.c(500,null), i32.c(100,null),null);
+        testFunction.flow.f32.store(Alignment.FOUR, 24, i32.c(500,null), f32.c(100f,null),null);
+        testFunction.flow.f32.store(24, i32.c(500,null), f32.c(100f,null),null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
 
-//        try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
-//            exporter.export(module, fos);
-//        }
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testMemoryAccess.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
+        //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testMemoryAccess.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
+
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 
     @Test
     public void testExceptionModule() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         module.getMems().newMemory(512, 512);
 
         final WASMException exception = module.getExceptions().newException("except", Collections.singletonList(PrimitiveType.i32));
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
-        final Try t = testFunction.flow.Try("tr");
-        t.flow.throwException(exception, Collections.singletonList(i32.c(42)));
-        t.flow.ret(i32.c(1));
+        final Try t = testFunction.flow.Try("tr",null);
+        t.flow.throwException(exception, Collections.singletonList(i32.c(42,null)),null);
+        t.flow.ret(i32.c(1,null),null);
 
-        t.catchBlock.flow.ret(i32.c(3));
+        t.catchBlock.flow.ret(i32.c(3,null),null);
 
-        testFunction.flow.unreachable();
+        testFunction.flow.unreachable(null);
 
         final StringWriter sw = new StringWriter();
 
-        final Exporter exporter = new Exporter();
+        final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, new PrintWriter(sw));
 
         Assert.assertEquals("(module $mod" + System.lineSeparator()
@@ -1369,7 +1437,7 @@ public class ModuleTest {
 
     @Test
     public void testExceptionModuleBinary() throws IOException {
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
 
         module.getMems().newMemory(512, 512);
 
@@ -1377,24 +1445,27 @@ public class ModuleTest {
         final WASMException exception = module.getExceptions().newException("except", Collections.singletonList(PrimitiveType.i32));
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
-        final Try t = testFunction.flow.Try("tr");
-        t.flow.throwException(exception, Collections.singletonList(i32.c(42)));
-        t.flow.ret(i32.c(1));
+        final Try t = testFunction.flow.Try("tr",null);
+        t.flow.throwException(exception, Collections.singletonList(i32.c(42,null)),null);
+        t.flow.ret(i32.c(1,null),null);
 
-        t.catchBlock.flow.ret(i32.c(3));
+        t.catchBlock.flow.ret(i32.c(3,null),null);
 
-        testFunction.flow.unreachable();
+        testFunction.flow.unreachable(null);
 
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        final Exporter exporter = new Exporter();
-        exporter.export(module, bos);
+        final StringWriter theSourceMap = new StringWriter();
 
-        //try (final FileOutputStream fos = new FileOutputStream("D:\\source\\idea_projects\\Bytecoder\\core\\src\\test\\resources\\de\\mirkosertic\\bytecoder\\backend\\wasm\\ast\\testExceptionModule.wasm")) {
-        //    exporter.export(module, fos);
+        final Exporter exporter = new Exporter(debugOptions());
+        exporter.export(module, bos, theSourceMap);
+
+        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testExceptionModule.wasm")) {
+        //    exporter.export(module, fos, theSourceMap);
         //}
 
         final byte[] expected = IOUtils.toByteArray(getClass().getResource("testExceptionModule.wasm"));
         Assert.assertArrayEquals(expected, bos.toByteArray());
 
+        Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
 }

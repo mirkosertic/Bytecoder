@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32Gt extends BinaryExpression {
 
-    F32Gt(final WASMValue leftValue, final WASMValue rightValue) {
-        super(leftValue, rightValue, "f32.gt", (byte) 0x5e);
+    F32Gt(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
+        super(leftValue, rightValue, "f32.gt", (byte) 0x5e, expression);
     }
 }

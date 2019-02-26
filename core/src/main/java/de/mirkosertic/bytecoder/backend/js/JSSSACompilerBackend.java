@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
+import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -29,6 +30,7 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
@@ -62,6 +64,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     @Override
     public JSCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
 
+        final SourceMapWriter theSourceMapWriter = new SourceMapWriter();
         final JSMinifier theMinifier = new JSMinifier(aOptions);
 
         final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
@@ -71,7 +74,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
 
         final StringWriter theStrWriter = new StringWriter();
-        final JSPrintWriter theWriter = new JSPrintWriter(theStrWriter, theMinifier);
+        final JSPrintWriter theWriter = new JSPrintWriter(theStrWriter, theMinifier, theSourceMapWriter);
         theWriter.print("'use strict';").newLine();
 
         theWriter.text("var bytecoder").assign().text("{").newLine();
@@ -329,7 +332,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.text("var ").text(theJSClassName).assign().text("{").newLine();
 
             // First of all, we add static fields required by the framework
-            theWriter.tab().text("__").text(theMinifier.toSymbol("initialized")).colon().text("false,").newLine();
+            theWriter.tab().text("__").symbol("initialized", null).colon().text("false,").newLine();
             theWriter.tab().text("__staticCallSites").colon().text("[],").newLine();
             theWriter.tab().text("__typeId").colon().text("" + theLinkedClass.getUniqueId()).text(",").newLine();
             theWriter.tab().text("__implementedTypes").colon().text("[");
@@ -353,12 +356,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         if (theFieldType.isPrimitive()) {
                             final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
                             if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                theWriter.tab().text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).colon().text("false,").newLine();
+                                theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("false,").newLine();
                             } else {
-                                theWriter.tab().text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).colon().text("0,").newLine();
+                                theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("0,").newLine();
                             }
                         } else {
-                            theWriter.tab().text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).colon().text("null,").newLine();
+                            theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("null,").newLine();
                         }
                     });
 
@@ -403,7 +406,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab().text("},").newLine();
 
                 theWriter.tab().text(theGetEnumConstantsMethodName).colon().text("function(aClazz)").space().text("{").newLine();
-                theWriter.tab(2).text("return aClazz.").text(theMinifier.toSymbol("$VALUES")).text(";").newLine();
+                theWriter.tab(2).text("return aClazz.").symbol("$VALUES", null).text(";").newLine();
                 theWriter.tab().text("},").newLine();
             }
 
@@ -478,6 +481,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     return;
                 }
 
+                theWriter.assignSymbolToSourceFile(theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue(), theSSAProgram.getDebugInformation().debugPositionFor(
+                        BytecodeOpcodeAddress.START_AT_ZERO));
+
                 theWriter.tab().text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).colon().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
 
                 if (aOptions.isDebugOutput()) {
@@ -516,9 +522,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
 
             theWriter.tab().text("i").colon().text("function()").space().text("{").newLine();
-            theWriter.tab(2).text("if").space ().text("(!").text(theJSClassName).text(".__").text(theMinifier.toSymbol("initialized")).text(")").space().text("{").newLine();
+            theWriter.tab(2).text("if").space ().text("(!").text(theJSClassName).text(".__").symbol("initialized", null).text(")").space().text("{").newLine();
 
-            theWriter.tab(3).text(theJSClassName).text(".__").text(theMinifier.toSymbol("initialized")).assign().text("true;").newLine();
+            theWriter.tab(3).text(theJSClassName).text(".__").symbol("initialized", null).assign().text("true;").newLine();
 
             if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
                 final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
@@ -603,7 +609,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.flush();
 
-        return new JSCompileResult(theMinifier, new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js", theStrWriter.toString()));
+        theStrWriter.append(System.lineSeparator()).append("//# sourceMappingURL=").append(aOptions.getFilenamePrefix()).append(".js.map");
+
+        return new JSCompileResult(theMinifier,
+                new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js", theStrWriter.toString()),
+                new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js.map", theSourceMapWriter.toSourceMap(aOptions.getFilenamePrefix() + ".js")));
     }
 
     public String toArray(final byte[] aData) {

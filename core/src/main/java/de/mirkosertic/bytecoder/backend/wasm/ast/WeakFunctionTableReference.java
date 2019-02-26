@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class WeakFunctionTableReference implements WASMValue {
 
     private final String functionName;
+    private final Expression expression;
 
-    WeakFunctionTableReference(final String functionName) {
+    WeakFunctionTableReference(final String functionName, final Expression expression) {
         this.functionName = functionName;
+        this.expression = expression;
     }
 
     @Override
@@ -46,7 +50,7 @@ public class WeakFunctionTableReference implements WASMValue {
         if (theIndex < 0) {
             throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
         }
-        final I32Const c = new I32Const(theIndex);
+        final I32Const c = new I32Const(theIndex, expression);
         c.writeTo(codeWriter, context);
     }
 }

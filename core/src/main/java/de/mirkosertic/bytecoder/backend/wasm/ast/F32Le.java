@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32Le extends BinaryExpression {
 
-    F32Le(final WASMValue leftValue, final WASMValue rightValue) {
-        super(leftValue, rightValue, "f32.le", (byte) 0x5f);
+    F32Le(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
+        super(leftValue, rightValue, "f32.le", (byte) 0x5f, expression);
     }
 }

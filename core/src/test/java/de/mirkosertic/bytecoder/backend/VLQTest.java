@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.wasm.ast;
+package de.mirkosertic.bytecoder.backend;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
+import org.junit.Assert;
+import org.junit.Test;
 
-import java.io.IOException;
+public class VLQTest {
 
-public class ReturnValue extends UnaryExpression {
-
-    ReturnValue(final WASMValue value, final Expression expression) {
-        super(value, "return", (byte) 0x0f, expression);
+    @Test
+    public void testDecode() {
+        final int[] theResult = VLQ.decode("IAAM");
+        Assert.assertEquals(4, theResult.length);
+        Assert.assertEquals(4, theResult[0]);
+        Assert.assertEquals(0, theResult[1]);
+        Assert.assertEquals(0, theResult[2]);
+        Assert.assertEquals(6, theResult[3]);
     }
 
-    @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
-        super.writeTo(textWriter, context);
-        textWriter.newLine();
+    @Test
+    public void testEncode() {
+        Assert.assertEquals("IAAM", VLQ.encode(new int[] {4,0,0,6}));
     }
 }

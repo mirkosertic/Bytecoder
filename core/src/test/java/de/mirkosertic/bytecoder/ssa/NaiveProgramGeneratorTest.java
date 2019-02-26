@@ -16,6 +16,8 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
+import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeAttributes;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
@@ -43,17 +45,19 @@ import static org.mockito.Mockito.when;
 
 public class NaiveProgramGeneratorTest {
 
-    private Program newProgramFrom(BytecodeProgram aProgram, BytecodeMethodSignature aSignature) {
+    private Program newProgramFrom(final BytecodeProgram aProgram, final BytecodeMethodSignature aSignature) {
 
-        BytecodeLinkerContext theContext = mock(BytecodeLinkerContext.class);
-        ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theContext);
+        final BytecodeLinkerContext theContext = mock(BytecodeLinkerContext.class);
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theContext);
 
-        BytecodeClass theClass = mock(BytecodeClass.class);
-        BytecodeMethod theMethod = mock(BytecodeMethod.class);
+        final BytecodeClass theClass = mock(BytecodeClass.class);
+        when(theClass.getAttributes()).thenReturn(new BytecodeAttributes(new BytecodeAttributeInfo[0]));
+
+        final BytecodeMethod theMethod = mock(BytecodeMethod.class);
         when(theMethod.getAccessFlags()).thenReturn(new BytecodeAccessFlags(0));
         when(theMethod.getSignature()).thenReturn(aSignature);
 
-        BytecodeCodeAttributeInfo theCodeAttribute = mock(BytecodeCodeAttributeInfo.class);
+        final BytecodeCodeAttributeInfo theCodeAttribute = mock(BytecodeCodeAttributeInfo.class);
         when(theCodeAttribute.getProgram()).thenReturn(aProgram);
         when(theMethod.getCode(any())).thenReturn(theCodeAttribute);
 
@@ -62,20 +66,20 @@ public class NaiveProgramGeneratorTest {
 
     @Test
     public void testWithReturn() {
-        BytecodeProgram theBytecodeProgram = new BytecodeProgram();
+        final BytecodeProgram theBytecodeProgram = new BytecodeProgram();
         theBytecodeProgram.addInstruction(new BytecodeInstructionRETURN(BytecodeOpcodeAddress.START_AT_ZERO));
 
-        Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         assertEquals(0, theProgram.getVariables().size());
-        ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
+        final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(1, theCFG.getKnownNodes().size());
-        RegionNode theSingleNode = theCFG.startNode();
+        final RegionNode theSingleNode = theCFG.startNode();
         assertEquals(1, theSingleNode.getExpressions().size());
     }
 
     @Test
     public void testPHIStack() {
-        BytecodeProgram theBytecodeProgram = new BytecodeProgram();
+        final BytecodeProgram theBytecodeProgram = new BytecodeProgram();
         theBytecodeProgram.addInstruction(new BytecodeInstructionICONST(BytecodeOpcodeAddress.START_AT_ZERO, 11));
         theBytecodeProgram.addInstruction(new BytecodeInstructionICONST(new BytecodeOpcodeAddress(1), 22));
         theBytecodeProgram.addInstruction(new BytecodeInstructionACONSTNULL(new BytecodeOpcodeAddress(2)));
@@ -92,11 +96,11 @@ public class NaiveProgramGeneratorTest {
         theBytecodeProgram.addInstruction(new BytecodeInstructionGenericADD(new BytecodeOpcodeAddress(101), BytecodePrimitiveTypeRef.INT));
         theBytecodeProgram.addInstruction(new BytecodeInstructionGenericRETURN(new BytecodeOpcodeAddress(102), BytecodePrimitiveTypeRef.INT));
 
-        Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         assertEquals(6, theProgram.getVariables().size());
-        ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
+        final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(4, theCFG.getKnownNodes().size());
-        RegionNode theSingleNode = theCFG.startNode();
+        final RegionNode theSingleNode = theCFG.startNode();
         assertEquals(2, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }

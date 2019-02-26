@@ -15,11 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class Unreachable implements WASMExpression {
 
-    Unreachable() {
+    private final Expression expression;
+
+    Unreachable(final Expression expression) {
+        this.expression = expression;
     }
 
     @Override
