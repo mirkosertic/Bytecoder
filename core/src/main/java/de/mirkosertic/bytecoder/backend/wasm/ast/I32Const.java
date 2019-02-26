@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class I32Const implements WASMValue {
 
     private final int value;
+    private final Expression expression;
 
-    I32Const(final int value) {
+    I32Const(final int value, final Expression expression) {
         this.value = value;
+        this.expression = expression;
     }
 
     @Override

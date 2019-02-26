@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +28,8 @@ public class Iff extends LabeledContainer implements WASMExpression {
     private final WASMValue condition;
     private final List<WASMExpression> falseChildren;
 
-    Iff(final Container parent, final String label, final WASMValue condition) {
-        super(parent, label);
+    Iff(final Container parent, final String label, final WASMValue condition, final Expression expression) {
+        super(parent, label, expression);
         this.condition = condition;
 
         this.falseChildren = new ArrayList<>();

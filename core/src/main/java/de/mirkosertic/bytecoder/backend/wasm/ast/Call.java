@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -22,10 +24,12 @@ public class Call implements WASMExpression {
 
     private final Callable function;
     private final List<WASMValue> arguments;
+    private final Expression expression;
 
-    Call(final Callable function, final List<WASMValue> arguments) {
+    Call(final Callable function, final List<WASMValue> arguments, final Expression expression) {
         this.function = function;
         this.arguments = arguments;
+        this.expression = expression;
     }
 
     @Override

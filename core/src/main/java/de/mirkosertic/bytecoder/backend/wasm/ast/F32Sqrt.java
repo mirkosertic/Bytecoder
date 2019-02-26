@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32Sqrt extends UnaryExpression {
 
-    F32Sqrt(final WASMValue value) {
-        super(value, "f32.sqrt", (byte) 0x91);
+    F32Sqrt(final WASMValue value, final Expression expression) {
+        super(value, "f32.sqrt", (byte) 0x91, expression);
     }
 }

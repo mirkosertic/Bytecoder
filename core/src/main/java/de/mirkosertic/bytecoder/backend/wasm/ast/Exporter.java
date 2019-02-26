@@ -16,33 +16,34 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Writer;
 
 public class Exporter {
 
-    private final boolean enableDebug;
+    private final SourceMapWriter sourceMapWriter;
+    private final CompileOptions compileOptions;
 
-    public Exporter() {
-        this(true);
-    }
-
-    public Exporter(final boolean enableDebug) {
-        this.enableDebug = enableDebug;
+    public Exporter(final CompileOptions options) {
+        this.sourceMapWriter = new SourceMapWriter();
+        this.compileOptions = options;
     }
 
     public void export(final Module module, final PrintWriter pw) throws IOException {
         try (final TextWriter writer = new TextWriter(pw)) {
-            module.writeTo(writer, enableDebug);
+            module.writeTo(writer, compileOptions.isDebugOutput());
         }
         pw.flush();
     }
 
-    public void export(final Module module, final OutputStream os) throws IOException {
-        try (final BinaryWriter binaryWriter = new BinaryWriter(os)) {
-            module.writeTo(binaryWriter, enableDebug);
+    public void export(final Module module, final OutputStream binaryOutput, final Writer sourcemapOutput) throws IOException {
+        try (final BinaryWriter binaryWriter = new BinaryWriter(binaryOutput)) {
+            module.writeTo(binaryWriter, compileOptions.isDebugOutput());
         }
+        sourcemapOutput.write(sourceMapWriter.toSourceMap(compileOptions.getFilenamePrefix() + ".wasm"));
     }
 }

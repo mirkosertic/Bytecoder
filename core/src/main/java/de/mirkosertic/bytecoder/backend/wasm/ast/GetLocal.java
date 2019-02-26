@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class GetLocal implements WASMExpression {
 
     private final Local local;
+    private final Expression expression;
 
-    GetLocal(final Local local) {
+    GetLocal(final Local local, final Expression expression) {
         this.local = local;
+        this.expression = expression;
     }
 
     @Override

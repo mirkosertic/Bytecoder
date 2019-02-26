@@ -181,27 +181,27 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             throw new IllegalStateException("No matching constructor!");
         }
 
-        final Module module = new Module("bytecoder");
+        final Module module = new Module("bytecoder", aOptions.getFilenamePrefix() + ".wasm.map");
 
         // Exception handling
         if (aOptions.isEnableExceptions()) {
             module.getExceptions().newException(WASMSSAASTWriter.EXCEPTION_NAME, Collections.singletonList(PrimitiveType.i32));
         }
 
-        final Global stackTop = module.getGlobals().newMutableGlobal(WASMSSAASTWriter.STACKTOP, PrimitiveType.i32, i32.c(-1));
+        final Global stackTop = module.getGlobals().newMutableGlobal(WASMSSAASTWriter.STACKTOP, PrimitiveType.i32, i32.c(-1, null));
 
         // Instanceof check
         {
             final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("INSTANCEOF_CHECK", Arrays.asList(param("thisRef", PrimitiveType.i32), param("type", PrimitiveType.i32)), PrimitiveType.i32);
-            final Iff nullCheck = instanceOfCheck.flow.iff("nullcheck", i32.eq(getLocal(instanceOfCheck.localByLabel("thisRef")), i32.c(0)));
-            nullCheck.flow.ret(i32.c(0));
+            final Iff nullCheck = instanceOfCheck.flow.iff("nullcheck", i32.eq(getLocal(instanceOfCheck.localByLabel("thisRef"), null), i32.c(0, null), null), null);
+            nullCheck.flow.ret(i32.c(0, null), null);
 
             final WASMType instanceOfType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
             final WASMType resolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
-            final WASMValue theIndex = call(resolveType, Arrays.asList(getLocal(instanceOfCheck.localByLabel("thisRef")),
-                    i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID)), i32.load(4, getLocal(instanceOfCheck.localByLabel("thisRef"))));
+            final WASMValue theIndex = call(resolveType, Arrays.asList(getLocal(instanceOfCheck.localByLabel("thisRef"), null),
+                    i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID, null)), i32.load(4, getLocal(instanceOfCheck.localByLabel("thisRef"), null), null), null);
 
-            instanceOfCheck.flow.ret(call(instanceOfType, Arrays.asList(getLocal(instanceOfCheck.localByLabel("thisRef")), getLocal(instanceOfCheck.localByLabel("type"))), theIndex));
+            instanceOfCheck.flow.ret(call(instanceOfType, Arrays.asList(getLocal(instanceOfCheck.localByLabel("thisRef"), null), getLocal(instanceOfCheck.localByLabel("type"), null)), theIndex, null), null);
         }
 
         // We need a memory
@@ -277,20 +277,20 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         });
 
         final ExportableFunction lambdaResolvevtableindex = module.getFunctions().newFunction("LAMBDA" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        lambdaResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaResolvevtableindex.localByLabel("thisRef"))));
+        lambdaResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaResolvevtableindex.localByLabel("thisRef"), null), null), null);
 
         final ExportableFunction classGetEnumConstants = module.getFunctions().newFunction("jlClass_A1jlObjectgetEnumConstants", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        classGetEnumConstants.flow.ret(i32.load(0, i32.load(12, getLocal(classGetEnumConstants.localByLabel("thisRef")))));
+        classGetEnumConstants.flow.ret(i32.load(0, i32.load(12, getLocal(classGetEnumConstants.localByLabel("thisRef"), null), null), null), null);
 
         final ExportableFunction classGetName = module.getFunctions().newFunction("jlClass_jlStringgetName", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
             final List<WASMValue> theGetArguments = new ArrayList<>();
-            theGetArguments.add(i32.load(16, getLocal(classGetName.localByLabel("thisRef"))));
-            classGetName.flow.ret(call(weakFunctionReference("STRINGPOOL_GLOBAL_BY_INDEX"), theGetArguments));
+            theGetArguments.add(i32.load(16, getLocal(classGetName.localByLabel("thisRef"), null), null));
+            classGetName.flow.ret(call(weakFunctionReference("STRINGPOOL_GLOBAL_BY_INDEX", null), theGetArguments, null), null);
         }
 
         final ExportableFunction classDesiredAssertionStatus = module.getFunctions().newFunction("jlClass_BOOLEANdesiredAssertionStatus", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        classDesiredAssertionStatus.flow.ret(i32.c(0));
+        classDesiredAssertionStatus.flow.ret(i32.c(0, null), null);
 
         final ConstantPool theConstantPool = new ConstantPool();
 
@@ -303,7 +303,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 try {
                     return module.getGlobals().globalsIndex().globalByLabel(theLabel);
                 } catch (final IllegalArgumentException e) {
-                    return module.getGlobals().newMutableGlobal(theLabel, PrimitiveType.i32, i32.c(-1));
+                    return module.getGlobals().newMutableGlobal(theLabel, PrimitiveType.i32, i32.c(-1, null));
                 }
             }
 
@@ -330,28 +330,28 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 if (!theMethod.getAccessFlags().isStatic()) {
                     final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethod);
 
-                    final Block block = runtimeResolvevtableindex.flow.block("m" + theMethodIdentifier.getIdentifier());
-                    block.flow.branchIff(block, i32.ne(getLocal(runtimeResolvevtableindex.localByLabel("methodId")), i32.c(theMethodIdentifier.getIdentifier())));
+                    final Block block = runtimeResolvevtableindex.flow.block("m" + theMethodIdentifier.getIdentifier(), null);
+                    block.flow.branchIff(block, i32.ne(getLocal(runtimeResolvevtableindex.localByLabel("methodId"), null), i32.c(theMethodIdentifier.getIdentifier(), null), null), null);
                     if (Objects.equals("getClass", theMethod.getName().stringValue())) {
-                        block.flow.unreachable();
+                        block.flow.unreachable(null);
                     } else if (Objects.equals("toString", theMethod.getName().stringValue())) {
-                        block.flow.unreachable();
+                        block.flow.unreachable(null);
                     } else if (Objects.equals("getName", theMethod.getName().stringValue())) {
-                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetName)));
+                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetName), null), null);
                     } else if (Objects.equals("equals", theMethod.getName().stringValue())) {
-                        block.flow.unreachable();
+                        block.flow.unreachable(null);
                     } else if (Objects.equals("hashCode", theMethod.getName().stringValue())) {
-                        block.flow.unreachable();
+                        block.flow.unreachable(null);
                     } else if (Objects.equals("desiredAssertionStatus", theMethod.getName().stringValue())) {
-                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classDesiredAssertionStatus)));
+                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classDesiredAssertionStatus), null), null);
                     } else if (Objects.equals("getEnumConstants", theMethod.getName().stringValue())) {
-                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetEnumConstants)));
+                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetEnumConstants), null), null);
                     } else {
-                        block.flow.unreachable();
+                        block.flow.unreachable(null);
                     }
                 }
             });
-            runtimeResolvevtableindex.flow.unreachable();
+            runtimeResolvevtableindex.flow.unreachable(null);
         }
 
         final ExportableFunction newLambdaFunction = module.getFunctions().newFunction("newLambda", Arrays.asList(param("type", PrimitiveType.i32), param("implMethodNumber", PrimitiveType.i32), param("staticArguments", PrimitiveType.i32)), PrimitiveType.i32);
@@ -365,7 +365,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
 
             // We also create a global for the runtime class
-            final Global runtimeClass = module.getGlobals().newMutableGlobal(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX, PrimitiveType.i32, i32.c(-1));
+            module.getGlobals().newMutableGlobal(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX, PrimitiveType.i32, i32.c(-1, null));
 
             final BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
             theMethodMap.stream().forEach(aMapEntry -> {
@@ -450,10 +450,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
                 for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
-                    final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1")), i32.c(theType.getUniqueId())));
-                    b.flow.ret(i32.c(1));
+                    final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1"), null), i32.c(theType.getUniqueId(), null), null), null);
+                    b.flow.ret(i32.c(1, null), null);
                 }
-                instanceOf.flow.ret(i32.c(0));
+                instanceOf.flow.ret(i32.c(0, null), null);
 
                 final ExportableFunction resolveTableIndex = module.getFunctions()
                         .newFunction(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX,
@@ -476,23 +476,23 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                         if (theVisitedMethods.add(theMethodIdentifier)) {
 
-                            final Iff iff = resolveTableIndex.flow.iff("b" + theMethodIdentifier.getIdentifier(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1")), i32.c(theMethodIdentifier.getIdentifier())));
+                            final Iff iff = resolveTableIndex.flow.iff("b" + theMethodIdentifier.getIdentifier(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theMethodIdentifier.getIdentifier(), null), null), null);
 
                             final String theFullMethodName = WASMWriterUtils
                                     .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
                                             theMethod.getName(),
                                             theMethod.getSignature());
 
-                            iff.flow.ret(weakFunctionTableReference(theFullMethodName));
+                            iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
                         }
                     }
                 }
 
-                final Iff block = resolveTableIndex.flow.iff("b", i32.eq(getLocal(resolveTableIndex.localByLabel("p1")), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID)));
+                final Iff block = resolveTableIndex.flow.iff("b", i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID, null), null), null);
                 final int theIndex = module.getTables().funcTable().indexOf(instanceOf);
-                block.flow.ret(i32.c(theIndex));
+                block.flow.ret(i32.c(theIndex, null), null);
 
-                resolveTableIndex.flow.unreachable();
+                resolveTableIndex.flow.unreachable(null);
             }
 
             theMethodMap.stream().forEach(aMethodMapEntry -> {
@@ -544,13 +544,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                                 final Callable theImplementation = weakFunctionReference(WASMWriterUtils
                                         .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(),
-                                                theSignature));
+                                                theSignature), null);
 
                                 final List<WASMValue> callValues = new ArrayList<>();
                                 for (final Param p : params) {
-                                    callValues.add(getLocal(p));
+                                    callValues.add(getLocal(p, null));
                                 }
-                                function.flow.ret(call(theImplementation, callValues));
+                                function.flow.ret(call(theImplementation, callValues, null), null);
                             } else {
 
                                 final ExportableFunction function = module.getFunctions().newFunction(
@@ -561,13 +561,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                                 final Callable theImplementation = weakFunctionReference(WASMWriterUtils
                                         .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName(),
-                                                theSignature));
+                                                theSignature), null);
 
                                 final List<WASMValue> callValues = new ArrayList<>();
                                 for (final Param p : params) {
-                                    callValues.add(getLocal(p));
+                                    callValues.add(getLocal(p, null));
                                 }
-                                function.flow.voidCall(theImplementation, callValues);
+                                function.flow.voidCall(theImplementation, callValues, null);
                             }
                         }
                     }
@@ -705,60 +705,60 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                             theParams).toTable();
 
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
-                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef")));
+                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef"), null));
 
                                     // Add static arguments
                                     for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
 
-                                        final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef")));
-                                        final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4));
+                                        final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
+                                        final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
                                         switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
                                             case DOUBLE:
                                             case FLOAT: {
-                                                theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr));
+                                                theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
                                             }
                                             default: {
-                                                theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr));
+                                                theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
                                             }
                                         }
                                     }
 
                                     // Add dynamic arguments
                                     for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                        theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i)));
+                                        theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
                                     }
 
-                                    theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments);
+                                    theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments, null);
                                 } else {
 
                                     final ExportableFunction theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
                                             theParams, WASMSSAASTWriter.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getReturnType()))).toTable();
 
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
-                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef")));
+                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef"), null));
 
                                     // Add static arguments
                                     for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
 
-                                        final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef")));
-                                        final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4));
+                                        final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
+                                        final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
                                         switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
                                         case DOUBLE:
                                         case FLOAT: {
-                                            theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr));
+                                            theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
                                         }
                                         default: {
-                                            theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr));
+                                            theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
                                         }
                                         }
                                     }
 
                                     // Add dynamic arguments
                                     for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                        theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i)));
+                                        theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
                                     }
 
-                                    theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments));
+                                    theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments, null), null);
                                 }
                             }
                         }
@@ -785,17 +785,17 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final Local newRef = newRuntimeClassFunction.newLocal("newRef", PrimitiveType.i32);
             newRuntimeClassFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
-                            Arrays.asList(i32.c(0), getLocal(newRuntimeClassFunction.localByLabel("staticSize")),
-                                    i32.c(-1), i32.c(module.getTables().funcTable().indexOf(runtimeResolvevtableindex)))));
-            newRuntimeClassFunction.flow.i32.store(12, getLocal(newRef),
-                    i32.add(getLocal(newRef), getLocal(newRuntimeClassFunction.localByLabel("enumValuesOffset"))));
-            newRuntimeClassFunction.flow.i32.store(16, getLocal(newRef), getLocal(newRuntimeClassFunction.localByLabel("nameStringPoolIndex")));
-            newRuntimeClassFunction.flow.ret(getLocal(newRef));
+                            Arrays.asList(i32.c(0, null), getLocal(newRuntimeClassFunction.localByLabel("staticSize"), null),
+                                    i32.c(-1, null), i32.c(module.getTables().funcTable().indexOf(runtimeResolvevtableindex), null)), null), null);
+            newRuntimeClassFunction.flow.i32.store(12, getLocal(newRef, null),
+                    i32.add(getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("enumValuesOffset"), null), null), null);
+            newRuntimeClassFunction.flow.i32.store(16, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("nameStringPoolIndex"), null), null);
+            newRuntimeClassFunction.flow.ret(getLocal(newRef, null), null);
         }
 
         {
             final ExportableFunction bootstrap = module.getFunctions().newFunction("bootstrap", Collections.emptyList());
-            bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(), i32.c(65536)), i32.c(1)));
+            bootstrap.flow.setGlobal(stackTop, i32.sub(i32.mul(currentMemory(null), i32.c(65536, null), null), i32.c(1, null), null), null);
 
             // Globals for static class data
             aLinkerContext.linkedClasses().forEach(aEntry -> {
@@ -812,24 +812,24 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final Global runtimeClassGlobal = module.globalsIndex().globalByLabel(WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()) + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
 
                 final List<WASMValue> initArguments = new ArrayList<>();
-                initArguments.add(i32.c(theLinkedClass.getUniqueId()));
+                initArguments.add(i32.c(theLinkedClass.getUniqueId(), null));
 
                 final WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(aEntry.edgeType().objectTypeRef());
 
-                initArguments.add(i32.c(theLayout.classSize()));
+                initArguments.add(i32.c(theLayout.classSize(), null));
 
                 final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
                 if (null != theStaticFields.fieldByName("$VALUES")) {
-                    initArguments.add(i32.c(theLayout.offsetForClassMember("$VALUES")));
+                    initArguments.add(i32.c(theLayout.offsetForClassMember("$VALUES"), null));
                 } else {
-                    initArguments.add(i32.c(-1));
+                    initArguments.add(i32.c(-1, null));
                 }
                 final StringValue theName = new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name()));
                 final Global theGlobal = theResolver.globalForStringFromPool(theName);
-                initArguments.add(i32.c(theConstantPool.register(theName)));
+                initArguments.add(i32.c(theConstantPool.register(theName), null));
 
                 bootstrap.flow.setGlobal(runtimeClassGlobal,
-                        call(newRuntimeClassFunction, initArguments));
+                        call(newRuntimeClassFunction, initArguments, null), null);
 
             });
 
@@ -842,7 +842,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final byte[] theDataBytes = theData.getBytes();
 
                 final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
-                final Global theStringPoolData = module.getGlobals().newMutableGlobal("stringPool" + i + "__array", PrimitiveType.i32, i32.c(-1));
+                final Global theStringPoolData = module.getGlobals().newMutableGlobal("stringPool" + i + "__array", PrimitiveType.i32, i32.c(-1, null));
 
                 final String theMethodName = WASMWriterUtils.toMethodName(
                         BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -850,29 +850,29 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 final List<WASMValue> theMallocArguments = new ArrayList<>();
-                theMallocArguments.add(i32.c(0));
-                theMallocArguments.add(i32.c(theDataBytes.length));
-                theMallocArguments.add(call(weakFunctionReference(WASMWriterUtils.toClassName(theArrayClass.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX), Collections.emptyList()));
+                theMallocArguments.add(i32.c(0, null));
+                theMallocArguments.add(i32.c(theDataBytes.length, null));
+                theMallocArguments.add(call(weakFunctionReference(WASMWriterUtils.toClassName(theArrayClass.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX, null), Collections.emptyList(), null));
                 final Function theVtableFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theArrayClass.getClassName())+ WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
-                theMallocArguments.add(i32.c(module.getTables().funcTable().indexOf(theVtableFunction)));
-                bootstrap.flow.setGlobal(theStringPoolData, call(module.functionIndex().firstByLabel(theMethodName), theMallocArguments));
+                theMallocArguments.add(i32.c(module.getTables().funcTable().indexOf(theVtableFunction), null));
+                bootstrap.flow.setGlobal(theStringPoolData, call(module.functionIndex().firstByLabel(theMethodName), theMallocArguments, null), null);
                 // Set array value
                 for (int j=0; j< theDataBytes.length;j++) {
                     //
                     final int offset = 20 + j * 4;
-                    bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData), i32.c(theDataBytes[j]));
+                    bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData, null), i32.c(theDataBytes[j], null), null);
                 }
 
                 final Function theMallocFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_dmbcAddressnewObjectINTINTINT");
                 final Function theStringVTable = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
 
                 bootstrap.flow.setGlobal(theStringPool,
-                        call(theMallocFunction, Arrays.asList(i32.c(0), i32.c(theStringMemoryLayout.instanceSize()),
-                                i32.c(theStringClass.getUniqueId()),
-                                i32.c(module.getTables().funcTable().indexOf(theStringVTable)))));
+                        call(theMallocFunction, Arrays.asList(i32.c(0, null), i32.c(theStringMemoryLayout.instanceSize(), null),
+                                i32.c(theStringClass.getUniqueId(), null),
+                                i32.c(module.getTables().funcTable().indexOf(theStringVTable), null)), null), null);
 
                 final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1BYTE");
-                bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool), getGlobal(theStringPoolData)));
+                bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool, null), getGlobal(theStringPoolData, null)), null);
             }
 
             final ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX",
@@ -880,10 +880,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             {
                 for (int i=0;i<thePoolValues.size();i++) {
                     final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
-                    final Iff theIff = theGet.flow.iff("g" + i, i32.eq(getLocal(theGet.localByLabel("index")), i32.c(i)));
-                    theIff.flow.ret(getGlobal(theStringPool));
+                    final Iff theIff = theGet.flow.iff("g" + i, i32.eq(getLocal(theGet.localByLabel("index"), null), i32.c(i, null), null), null);
+                    theIff.flow.ret(getGlobal(theStringPool, null), null);
                 }
-                theGet.flow.unreachable();
+                theGet.flow.unreachable(null);
             }
 
             aLinkerContext.linkedClasses().forEach(aEntry -> {
@@ -900,29 +900,29 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     final Global theGlobal = module.globalsIndex().globalByLabel(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
                     final ExportableFunction theClassInitFunction = module.getFunctions().newFunction( theClassName + WASMSSAASTWriter.CLASSINITSUFFIX, PrimitiveType.i32);
 
-                    final Iff check = theClassInitFunction.flow.iff("check", i32.ne(i32.load(8, getGlobal(theGlobal)), i32.c(1)));
-                    check.flow.i32.store(8, getGlobal(theGlobal), i32.c(1));
+                    final Iff check = theClassInitFunction.flow.iff("check", i32.ne(i32.load(8, getGlobal(theGlobal, null), null), i32.c(1, null), null), null);
+                    check.flow.i32.store(8, getGlobal(theGlobal, null), i32.c(1, null), null);
 
                     if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
                         final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
                         final String theSuperWASMName = WASMWriterUtils.toClassName(theSuper.getClassName());
-                        check.flow.drop(call(weakFunctionReference(theSuperWASMName + WASMSSAASTWriter.CLASSINITSUFFIX), Collections.emptyList()));
+                        check.flow.drop(call(weakFunctionReference(theSuperWASMName + WASMSSAASTWriter.CLASSINITSUFFIX, null), Collections.emptyList(), null), null);
                     }
 
                     if (aEntry.targetNode().hasClassInitializer()) {
-                        check.flow.voidCall(weakFunctionReference(theClassName + "_VOIDclinit"), Collections.singletonList(i32.c(-1)));
+                        check.flow.voidCall(weakFunctionReference(theClassName + "_VOIDclinit", null), Collections.singletonList(i32.c(-1, null)), null);
                     }
 
-                    theClassInitFunction.flow.ret(getGlobal(theGlobal));
+                    theClassInitFunction.flow.ret(getGlobal(theGlobal, null), null);
                 }
             });
 
             // After the Bootstrap, we need to all the static stuff on the stack, so it is not garbage collected
             final GlobalsIndex globalIndex = module.globalsIndex();
-            bootstrap.flow.setGlobal(stackTop, i32.sub(getGlobal(stackTop), i32.c(globalIndex.size() * 4)));
+            bootstrap.flow.setGlobal(stackTop, i32.sub(getGlobal(stackTop, null), i32.c(globalIndex.size() * 4, null), null), null);
             for (int i=0;i<globalIndex.size();i++) {
                 final Global global = globalIndex.get(i);
-                bootstrap.flow.i32.store(i * 4, getGlobal(stackTop), getGlobal(global));
+                bootstrap.flow.i32.store(i * 4, getGlobal(stackTop, null), getGlobal(global, null), null);
             }
 
             bootstrap.exportAs("bootstrap");
@@ -933,11 +933,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final Local newRef = newLambdaFunction.newLocal("newRef", PrimitiveType.i32);
             newLambdaFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
-                            Arrays.asList(i32.c(0), i32.c(16),
-                                    getLocal(newLambdaFunction.localByLabel("type")), i32.c(module.getTables().funcTable().indexOf(lambdaResolvevtableindex)))));
-            newLambdaFunction.flow.i32.store(8, getLocal(newRef), getLocal(newLambdaFunction.localByLabel("implMethodNumber")));
-            newLambdaFunction.flow.i32.store(12, getLocal(newRef), getLocal(newLambdaFunction.localByLabel("staticArguments")));
-            newLambdaFunction.flow.ret(getLocal(newRef));
+                            Arrays.asList(i32.c(0, null), i32.c(16, null),
+                                    getLocal(newLambdaFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaResolvevtableindex), null)), null), null);
+            newLambdaFunction.flow.i32.store(8, getLocal(newRef, null), getLocal(newLambdaFunction.localByLabel("implMethodNumber"), null), null);
+            newLambdaFunction.flow.i32.store(12, getLocal(newRef, null), getLocal(newLambdaFunction.localByLabel("staticArguments"), null), null);
+            newLambdaFunction.flow.ret(getLocal(newRef, null), null);
         }
 
         // Main function must be exported
@@ -988,29 +988,30 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
                 final List<WASMValue> theResolveArgument = new ArrayList<>();
-                theResolveArgument.add(getLocal(theFunction.localByLabel("target")));
-                theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier()));
-                final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theFunction.localByLabel("target"))));
+                theResolveArgument.add(getLocal(theFunction.localByLabel("target"), null));
+                theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
+                final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theFunction.localByLabel("target"), null), null), null);
 
                 final List<WASMValue> theOtherArguments = new ArrayList<>();
-                theOtherArguments.add(getLocal(theFunction.localByLabel("target")));
+                theOtherArguments.add(getLocal(theFunction.localByLabel("target"), null));
                 for (int i = 0; i < theSignatureArguments.length; i++) {
-                    theOtherArguments.add(getLocal(theFunction.localByLabel("param" + i)));
+                    theOtherArguments.add(getLocal(theFunction.localByLabel("param" + i), null));
                 }
 
-                theFunction.flow.voidCallIndirect(theCalledFunction, theOtherArguments, theIndex);
+                theFunction.flow.voidCallIndirect(theCalledFunction, theOtherArguments, theIndex, null);
 
                 theFunction.exportAs(theFunctionName);
             }
         });
 
         final StringWriter theStringWriter = new StringWriter();
-        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
+        final StringWriter theBinarySourceMap = new StringWriter();
         try {
             final PrintWriter theWriter = new PrintWriter(theStringWriter);
-            final Exporter exporter = new Exporter(aOptions.isDebugOutput());
+            final Exporter exporter = new Exporter(aOptions);
             exporter.export(module, theWriter);
-            exporter.export(module, bos);
+            exporter.export(module, theBinaryOutput, theBinarySourceMap);
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
@@ -1426,23 +1427,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     throw new IllegalStateException("Type conversion from " + theRef.name() + " is not supported!");
                                 }
                             }
-
-                            /*
-
-            Example generated event listener code
-
-         eventtarget: {
-             addEventListenerStringEventListener: function(target,arg0,arg1) {
-               bytecoder.referenceTable[target].addEventListener(bytecoder.toJSString(arg0),
-                   function(event) {
-                       var eventIndex = bytecoder.toBytecoderReference(event);
-                       bytecoder.exports.dmbawEventListener_VOIDrundmbawEvent(arg1, eventIndex);
-                       delete bytecoder.referenceTable[eventIndex];
-                   }
-                );
-             },
-         },
-                             */
                         }
 
                         if (theWriteClosingBraces) {
@@ -1464,8 +1448,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         return new WASMCompileResult(
                 theMinifier,
                 new WASMCompileResult.WASMTextualCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theStringWriter.toString(), aOptions.getFilenamePrefix()),
-                new WASMCompileResult.WASMBinaryCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), bos.toByteArray(), aOptions.getFilenamePrefix()),
-                new WASMCompileResult.WASMTextualJSCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theJSCode.toString(), aOptions.getFilenamePrefix()));
+                new WASMCompileResult.WASMBinaryCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theBinaryOutput.toByteArray(), aOptions.getFilenamePrefix()),
+                new WASMCompileResult.WASMTextualJSCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theJSCode.toString(), aOptions.getFilenamePrefix()),
+                new WASMCompileResult.WASMSourcemapCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theBinarySourceMap.toString(), aOptions.getFilenamePrefix()));
     }
 
     private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {

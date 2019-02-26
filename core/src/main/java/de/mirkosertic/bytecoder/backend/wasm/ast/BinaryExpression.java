@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public abstract class BinaryExpression implements WASMExpression {
@@ -23,12 +25,14 @@ public abstract class BinaryExpression implements WASMExpression {
     private final WASMValue rightValue;
     private final String textCode;
     private final byte binaryCode;
+    private final Expression expression;
 
-    protected BinaryExpression(final WASMValue leftValue, final WASMValue rightValue, final String textCode, final byte binaryCode) {
+    protected BinaryExpression(final WASMValue leftValue, final WASMValue rightValue, final String textCode, final byte binaryCode, final Expression expression) {
         this.leftValue = leftValue;
         this.rightValue = rightValue;
         this.textCode = textCode;
         this.binaryCode = binaryCode;
+        this.expression = expression;
     }
 
     @Override

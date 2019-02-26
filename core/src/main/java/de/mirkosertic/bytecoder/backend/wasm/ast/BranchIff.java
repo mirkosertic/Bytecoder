@@ -15,16 +15,20 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class BranchIff implements WASMExpression {
 
     private final LabeledContainer outerBlock;
     private final WASMValue condition;
+    private final Expression expression;
 
-    BranchIff(final LabeledContainer surroundingBlock, final WASMValue condition) {
+    BranchIff(final LabeledContainer surroundingBlock, final WASMValue condition, final Expression expression) {
         this.outerBlock = surroundingBlock;
         this.condition = condition;
+        this.expression = expression;
     }
 
     @Override

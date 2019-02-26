@@ -15,11 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class CurrentMemory implements WASMValue {
 
-    CurrentMemory() {
+    private final Expression expression;
+
+    CurrentMemory(final Expression expression) {
+        this.expression = expression;
     }
 
     @Override

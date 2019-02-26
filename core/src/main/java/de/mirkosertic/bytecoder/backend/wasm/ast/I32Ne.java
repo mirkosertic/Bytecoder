@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class I32Ne extends BinaryExpression {
 
-    I32Ne(final WASMValue leftValue, final WASMValue rightValue) {
-        super(leftValue, rightValue, "i32.ne", (byte) 0x47);
+    I32Ne(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
+        super(leftValue, rightValue, "i32.ne", (byte) 0x47, expression);
     }
 }

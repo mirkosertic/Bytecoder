@@ -33,11 +33,11 @@ public class FunctionTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(param("p1", PrimitiveType.i32)), PrimitiveType.i32);
-        function.flow.ret(i32.c(42));
+        function.flow.ret(i32.c(42, null), null);
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer, module);
         }
@@ -52,11 +52,11 @@ public class FunctionTest {
         final StringWriter strWriter = new StringWriter();
         final PrintWriter pw = new PrintWriter(strWriter);
 
-        final Module module = new Module("mod");
+        final Module module = new Module("mod", "mod.wasm.map");
         final FunctionsSection functionsContent = module.getFunctions();
         final ExportableFunction function = functionsContent.newFunction("label",
                 Collections.singletonList(param("p1", PrimitiveType.i32)));
-        function.flow.ret();
+        function.flow.ret(null);
         try (final TextWriter writer = new TextWriter(pw)) {
             function.writeTo(writer, module);
         }

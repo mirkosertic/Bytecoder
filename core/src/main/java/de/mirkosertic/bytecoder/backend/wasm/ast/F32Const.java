@@ -15,12 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class F32Const implements WASMValue {
 
     private final float value;
+    private final Expression expression;
 
-    F32Const(final float value) {
+    F32Const(final float value, final Expression expression) {
         this.value = value;
+        this.expression = expression;
     }
 
     @Override

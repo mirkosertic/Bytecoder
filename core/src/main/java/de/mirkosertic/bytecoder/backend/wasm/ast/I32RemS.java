@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class I32RemS extends BinaryExpression {
 
-    I32RemS(final WASMValue left, final WASMValue right) {
-        super(left, right,"i32.rem_s", (byte) 0x6f);
+    I32RemS(final WASMValue left, final WASMValue right, final Expression expression) {
+        super(left, right,"i32.rem_s", (byte) 0x6f, expression);
     }
 }

@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class GetGlobal implements WASMExpression {
 
     private final Global global;
+    private final Expression expression;
 
-    GetGlobal(final Global global) {
+    GetGlobal(final Global global, final Expression expression) {
         this.global = global;
+        this.expression = expression;
     }
 
     @Override

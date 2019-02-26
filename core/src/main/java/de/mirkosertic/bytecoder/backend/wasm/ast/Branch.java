@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class Branch implements WASMExpression {
 
     private final LabeledContainer outerBlock;
+    private final Expression expression;
 
-    Branch(final LabeledContainer surroundingBlock) {
+    Branch(final LabeledContainer surroundingBlock, final Expression expression) {
         this.outerBlock = surroundingBlock;
+        this.expression = expression;
     }
 
     @Override

@@ -15,14 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.io.IOException;
 
 public class Try extends LabeledContainer implements WASMExpression {
 
     public final Catch catchBlock;
 
-    Try(final Container parent, final String label) {
-        super(parent, label);
+    Try(final Container parent, final String label, final Expression expression) {
+        super(parent, label, expression);
         catchBlock = new Catch(this);
     }
 

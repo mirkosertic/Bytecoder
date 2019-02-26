@@ -15,11 +15,24 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
+import java.io.IOException;
 
-public class F32Add extends BinaryExpression {
+public class SourceMapSection extends ModuleSection {
 
-    F32Add(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right, "f32.add", (byte) 0x92, expression);
+    private final String fileName;
+
+    SourceMapSection(final Module module, final String fileName) {
+        super(module);
+        this.fileName = fileName;
+    }
+
+    public void writeTo(final TextWriter textWriter) {
+    }
+
+    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+        try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.customSection()) {
+            sectionWriter.writeUTF8("sourceMappingURL");
+            sectionWriter.writeUTF8(fileName);
+        }
     }
 }

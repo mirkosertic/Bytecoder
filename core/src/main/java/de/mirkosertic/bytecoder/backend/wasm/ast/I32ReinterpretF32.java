@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class I32ReinterpretF32 extends UnaryExpression {
 
-    I32ReinterpretF32(final WASMValue value) {
-        super(value, "i32.reinterpret/f32", (byte) 0xbc);
+    I32ReinterpretF32(final WASMValue value, final Expression expression) {
+        super(value, "i32.reinterpret/f32", (byte) 0xbc, expression);
     }
 }

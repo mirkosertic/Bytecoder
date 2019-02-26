@@ -15,50 +15,52 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 import java.util.List;
 
 public class Expressions {
 
     public class I32 {
-        public void store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
-            final I32Store store = new I32Store(alignment, offset, ptr, value);
+        public void store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final I32Store store = new I32Store(alignment, offset, ptr, value, expression);
             parent.addChild(store);
         }
 
-        public void store(final int offset, final WASMValue ptr, final WASMValue value) {
-            final I32Store store = new I32Store(offset, ptr, value);
+        public void store(final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final I32Store store = new I32Store(offset, ptr, value, expression);
             parent.addChild(store);
         }
 
-        public void store8(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
-            final I32Store8 store = new I32Store8(alignment, offset, ptr, value);
+        public void store8(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final I32Store8 store = new I32Store8(alignment, offset, ptr, value, expression);
             parent.addChild(store);
         }
 
-        public void store8(final int offset, final WASMValue ptr, final WASMValue value) {
-            final I32Store8 store = new I32Store8(offset, ptr, value);
+        public void store8(final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final I32Store8 store = new I32Store8(offset, ptr, value, expression);
             parent.addChild(store);
         }
 
-        public void store16(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
-            final I32Store16 store = new I32Store16(alignment, offset, ptr, value);
+        public void store16(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final I32Store16 store = new I32Store16(alignment, offset, ptr, value, expression);
             parent.addChild(store);
         }
 
-        public void store16(final int offset, final WASMValue ptr, final WASMValue value) {
-            final I32Store16 store = new I32Store16(offset, ptr, value);
+        public void store16(final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final I32Store16 store = new I32Store16(offset, ptr, value, expression);
             parent.addChild(store);
         }
     }
 
     public class F32 {
-        public void store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value) {
-            final F32Store store = new F32Store(alignment, offset, ptr, value);
+        public void store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final F32Store store = new F32Store(alignment, offset, ptr, value, expression);
             parent.addChild(store);
         }
 
-        public void store(final int offset, final WASMValue ptr, final WASMValue value) {
-            final F32Store store = new F32Store(offset, ptr, value);
+        public void store(final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+            final F32Store store = new F32Store(offset, ptr, value, expression);
             parent.addChild(store);
         }
     }
@@ -73,87 +75,87 @@ public class Expressions {
         this.f32 = new F32();
     }
 
-    public void voidCall(final Callable function, final List<WASMValue> arguments) {
-        final Call call = new Call(function, arguments);
+    public void voidCall(final Callable function, final List<WASMValue> arguments, final Expression expression) {
+        final Call call = new Call(function, arguments, expression);
         parent.addChild(call);
     }
 
-    public void voidCallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue tableIndex) {
-        final CallIndirect call = new CallIndirect(functionType, arguments, tableIndex);
+    public void voidCallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue tableIndex, final Expression expression) {
+        final CallIndirect call = new CallIndirect(functionType, arguments, tableIndex, expression);
         parent.addChild(call);
     }
 
-    public Iff iff(final String label, final WASMValue condition) {
-        final Iff elem = new Iff(parent, label, condition);
+    public Iff iff(final String label, final WASMValue condition, final Expression expression) {
+        final Iff elem = new Iff(parent, label, condition, expression);
         parent.addChild(elem);
         return elem;
     }
 
-    public Block block(final String label) {
-        final Block block = new Block(label, parent);
+    public Block block(final String label, final Expression expression) {
+        final Block block = new Block(label, parent, expression);
         parent.addChild(block);
         return block;
     }
 
-    public Loop loop(final String label) {
-        final Loop loop = new Loop(label, parent);
+    public Loop loop(final String label, final Expression expression) {
+        final Loop loop = new Loop(label, parent, expression);
         parent.addChild(loop);
         return loop;
     }
 
-    public void branch(final LabeledContainer surroundingBlock) {
-        final Branch branch = new Branch(surroundingBlock);
+    public void branch(final LabeledContainer surroundingBlock, final Expression expression) {
+        final Branch branch = new Branch(surroundingBlock, expression);
         parent.addChild(branch);
     }
 
-    public void branchIff(final LabeledContainer block, final WASMValue condition) {
-        final BranchIff branch = new BranchIff(block, condition);
+    public void branchIff(final LabeledContainer block, final WASMValue condition, final Expression expression) {
+        final BranchIff branch = new BranchIff(block, condition, expression);
         parent.addChild(branch);
     }
 
-    public void ret(final WASMValue value) {
-        parent.addChild(new ReturnValue(value));
+    public void ret(final WASMValue value, final Expression expression) {
+        parent.addChild(new ReturnValue(value, expression));
     }
 
-    public void ret() {
-        parent.addChild(new Return());
+    public void ret(final Expression expression) {
+        parent.addChild(new Return(expression));
     }
 
-    public void nop() {
-        parent.addChild(new Nop());
+    public void nop(final Expression expression) {
+        parent.addChild(new Nop(expression));
     }
 
-    public void drop(final WASMValue value) {
-        parent.addChild(new Drop(value));
+    public void drop(final WASMValue value, final Expression expression) {
+        parent.addChild(new Drop(value,expression));
     }
 
-    public void unreachable() {
-        parent.addChild(new Unreachable());
+    public void unreachable(final Expression expression) {
+        parent.addChild(new Unreachable(expression));
     }
 
-    public void setLocal(final Local local, final WASMValue value) {
-        final SetLocal setLocal = new SetLocal(local, value);
+    public void setLocal(final Local local, final WASMValue value, final Expression expression) {
+        final SetLocal setLocal = new SetLocal(local, value, expression);
         parent.addChild(setLocal);
     }
 
-    public void setGlobal(final Global global, final WASMValue value) {
-        final SetGlobal setGlobal = new SetGlobal(global, value);
+    public void setGlobal(final Global global, final WASMValue value, final Expression expression) {
+        final SetGlobal setGlobal = new SetGlobal(global, value, expression);
         parent.addChild(setGlobal);
     }
 
-    public Try Try(final String label) {
-        final Try t = new Try(parent, label);
+    public Try Try(final String label, final Expression expression) {
+        final Try t = new Try(parent, label, expression);
         parent.addChild(t);
         return t;
     }
 
-    public void throwException(final WASMException exception, final List<WASMValue> arguments) {
-        final ThrowException t = new ThrowException(exception, arguments);
+    public void throwException(final WASMException exception, final List<WASMValue> arguments, final Expression expression) {
+        final ThrowException t = new ThrowException(exception, arguments, expression);
         parent.addChild(t);
     }
 
-    public void rethrowException() {
-        final RethrowException r  = new RethrowException();
+    public void rethrowException(final Expression expression) {
+        final RethrowException r  = new RethrowException(expression);
         parent.addChild(r);
     }
 }

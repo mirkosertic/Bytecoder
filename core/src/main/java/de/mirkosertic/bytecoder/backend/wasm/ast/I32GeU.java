@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class I32GeU extends BinaryExpression {
 
-    I32GeU(final WASMValue leftValue, final WASMValue rightValue) {
-        super(leftValue, rightValue, "i32.ge_u", (byte) 0x4f);
+    I32GeU(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
+        super(leftValue, rightValue, "i32.ge_u", (byte) 0x4f, expression);
     }
 }

@@ -218,10 +218,32 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-luademowasm</filenamePrefix>
+                            <filenamePrefix>bytecoder-luademowasm,org.jbox2d</filenamePrefix>
                         </configuration>
                     </execution>
 
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>src-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <!-- use copy-dependencies instead if you don't want to explode the sources -->
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+                            <outputDirectory>${project.build.directory}/bytecoder</outputDirectory>
+                            <includeGroupIds>de.mirkosertic.bytecoder,org.jbox2d</includeGroupIds>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -232,6 +254,12 @@
                     <webResources>
                         <webResource>
                             <directory>${project.build.directory}/bytecoder</directory>
+                        </webResource>
+                        <webResource>
+                            <directory>src/main/java</directory>
+                        </webResource>
+                        <webResource>
+                            <directory>src/main/kotlin</directory>
                         </webResource>
                     </webResources>
                 </configuration>

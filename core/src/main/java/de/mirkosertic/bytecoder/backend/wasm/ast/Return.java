@@ -15,9 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class Return implements WASMExpression {
 
-    Return() {
+    private final Expression expression;
+
+    Return(final Expression expression) {
+        this.expression = expression;
     }
 
     @Override

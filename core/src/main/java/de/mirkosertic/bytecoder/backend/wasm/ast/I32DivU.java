@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.ssa.Expression;
+
 public class I32DivU extends BinaryExpression {
 
-    I32DivU(final WASMValue left, final WASMValue right) {
-        super(left, right,"i32.div_u", (byte) 0x6e);
+    I32DivU(final WASMValue left, final WASMValue right, final Expression expression) {
+        super(left, right,"i32.div_u", (byte) 0x6e, expression);
     }
 }

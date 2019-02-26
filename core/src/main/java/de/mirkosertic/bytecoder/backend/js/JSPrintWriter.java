@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.backend.SourceMapWriter;
+import de.mirkosertic.bytecoder.ssa.DebugPosition;
+
 import java.io.IOException;
 import java.io.Writer;
 
@@ -24,20 +27,14 @@ public class JSPrintWriter {
     private final Writer out;
     private int lineCounter;
     private int columnCounter;
+    private final SourceMapWriter sourceMapWriter;
 
-    public JSPrintWriter(final Writer out, final JSMinifier minifier) {
+    public JSPrintWriter(final Writer out, final JSMinifier minifier, final SourceMapWriter sourceMapWriter) {
         this.out = out;
         this.minifier = minifier;
-        this.lineCounter = 1;
-        this.columnCounter = 1;
-    }
-
-    public int getLineCounter() {
-        return lineCounter;
-    }
-
-    public int getColumnCounter() {
-        return columnCounter;
+        this.lineCounter = 0;
+        this.columnCounter = 0;
+        this.sourceMapWriter = sourceMapWriter;
     }
 
     public JSPrintWriter print(final String aText) {
@@ -72,12 +69,26 @@ public class JSPrintWriter {
         return this;
     }
 
+    public JSPrintWriter symbol(final String aSymbol, final DebugPosition aPositionl) {
+        sourceMapWriter.assignName(lineCounter, columnCounter, aSymbol, aPositionl);
+        print(minifier.toSymbol(aSymbol));
+        return this;
+    }
+
+    public void assignPositionToSourceFile(final DebugPosition aPosition) {
+        sourceMapWriter.assignDebugPosition(lineCounter, columnCounter, aPosition);
+    }
+
+    public void assignSymbolToSourceFile(final String aSymbol, final DebugPosition aPosition) {
+        sourceMapWriter.assignName(lineCounter, columnCounter, aSymbol, aPosition);
+    }
+
     public JSPrintWriter newLine() {
         final String theNewLine = minifier.newLine();
         if (theNewLine.length() != 0) {
             print(theNewLine);
             lineCounter++;
-            columnCounter=1;
+            columnCounter=0;
         }
         return this;
     }
