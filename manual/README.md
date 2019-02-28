@@ -7,6 +7,7 @@ languages such as JavaScript, OpenCL or WebAssembly.
 
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
+* Work well with Debugger Toolchains and SourceMaps
 * Use OpenJDK 11 as Java Classlib
 
 The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
@@ -270,7 +271,7 @@ __kernel void BytecoderKernel(__global const float* val$theA,
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-01-26</version>
+            <version>2019-02-27</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
@@ -302,7 +303,7 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-01-26</version>
+            <version>2019-02-27</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>wasm</backend>
