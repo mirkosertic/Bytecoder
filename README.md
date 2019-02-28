@@ -9,6 +9,7 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
+* Work well with Debugger Toolchains and SourceMaps
 * Allow integration with other UI-Frameworks such as vue.js
 * Backed by OpenJDK 11 as JRE Classlib
 
