@@ -145,7 +145,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("if").space().text("(typeof(aBytecoderString)").space().text("===").space().text("'string')").space().text("{").newLine();
         theWriter.tab(3).text("return aBytecoderString;").newLine();
         theWriter.tab(2).text("}").newLine();
-        theWriter.tab(2).text("var theArray").assign().text("aBytecoderString.data.data;").newLine();
+        theWriter.tab(2).text("var theArray").assign().text("aBytecoderString.").text(theMinifier.toSymbol("data")).text(".data").text(";").newLine();
         theWriter.tab(2).text("var theResult = '';").newLine();
         theWriter.tab(2).text("for").space().text("(var i=0;i<theArray.length;i++)").space().text("{").newLine();
         theWriter.tab(3).text("theResult+=String.fromCharCode(theArray[i]);").newLine();
@@ -377,12 +377,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             if (theFieldType.isPrimitive()) {
                                 final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
                                 if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                    theWriter.tab(2).text("this.").text(aFieldEntry.getValue().getName().stringValue()).assign().text("false;").newLine();
+                                    theWriter.tab(2).text("this.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("false;").newLine();
                                 } else {
-                                    theWriter.tab(2).text("this.").text(aFieldEntry.getValue().getName().stringValue()).assign().text("0;").newLine();
+                                    theWriter.tab(2).text("this.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("0;").newLine();
                                 }
                             } else {
-                                theWriter.tab(2).text("this.").text(aFieldEntry.getValue().getName().stringValue()).assign().text("null;").newLine();
+                                theWriter.tab(2).text("this.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("null;").newLine();
                             }
                         });
                 theWriter.tab().text("},").newLine();
