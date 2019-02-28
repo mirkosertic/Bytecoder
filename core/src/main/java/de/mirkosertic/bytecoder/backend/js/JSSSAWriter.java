@@ -945,7 +945,7 @@ public class JSSSAWriter {
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
-        writer.text(".").text(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        writer.text(".").text(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
     }
 
     private String generateJumpCodeFor(final BytecodeOpcodeAddress aTarget) {
@@ -992,11 +992,13 @@ public class JSSSAWriter {
                     theWriter.text("var ");
                 }
 
-                theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
-                print(theValue);
-                theWriter.text(")");
                 if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
-                    theWriter.space().text("|").space().text("0");
+                    theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
+                    print(theValue);
+                    theWriter.text(") | 0");
+                } else {
+                    theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
+                    print(theValue);
                 }
                 if (options.isDebugOutput()) {
                     theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
