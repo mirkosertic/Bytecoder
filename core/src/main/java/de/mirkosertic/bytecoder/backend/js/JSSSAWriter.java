@@ -993,9 +993,14 @@ public class JSSSAWriter {
                 }
 
                 if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
-                    theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
-                    print(theValue);
-                    theWriter.text(") | 0");
+                    if (!(theValue instanceof IntegerValue)) {
+                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
+                        print(theValue);
+                        theWriter.text(") | 0");
+                    } else {
+                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
+                        print(theValue);
+                    }
                 } else {
                     theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
                     print(theValue);
