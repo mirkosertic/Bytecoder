@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,30 +21,31 @@ import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DropUnusedReturnValuesOptimizerStage implements OptimizerStage {
+public class DirectAssignmentOptimizerStage implements OptimizerStage {
 
     @Override
     public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
             final ExpressionList aExpressionList, final Expression aExpression) {
+
         if (aExpression instanceof VariableAssignmentExpression) {
-            final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
-            final Variable theVariable = theAssignment.getVariable();
-            final Value theValue = theAssignment.getValue();
-            if (theValue instanceof InvocationExpression) {
-                final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-                if (theDataEdges.isEmpty()) {
-                    aExpressionList.replace(aExpression, (InvocationExpression) theValue);
-                    aGraph.getProgram().deleteVariable(theVariable);
-                    return (InvocationExpression) theValue;
+            final Expression theBefore = aExpressionList.predecessorOf(aExpression);
+            if (theBefore instanceof VariableAssignmentExpression) {
+                final VariableAssignmentExpression theVarBefore = (VariableAssignmentExpression) theBefore;
+                final VariableAssignmentExpression theVarLocal = (VariableAssignmentExpression) aExpression;
+
+                final List<Edge> theDataEdges = theVarBefore.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                if ((!theVarBefore.getVariable().isLocal()) && theVarLocal.getValue() == theVarBefore.getVariable() && theDataEdges.size() == 1) {
+
+                    aExpression.replaceIncomingDataEdgeRecursive(theVarLocal.getValue(), theVarBefore.getValue());
+
+                    aExpressionList.remove(theBefore);
+                    aGraph.getProgram().deleteVariable(theVarBefore.getVariable());
                 }
             }
         }
