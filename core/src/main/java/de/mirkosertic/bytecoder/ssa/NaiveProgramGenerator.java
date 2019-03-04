@@ -495,7 +495,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionCHECKCAST) {
                 final BytecodeInstructionCHECKCAST theINS = (BytecodeInstructionCHECKCAST) theInstruction;
                 final Value theValue = aHelper.peek();
-                aTargetBlock.getExpressions().add(new CheckCastExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theINS.getTypeCheck()));
+
+                // Completely ignored
+                //aTargetBlock.getExpressions().add(new CheckCastExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theINS.getTypeCheck()));
             } else if (theInstruction instanceof BytecodeInstructionPOP) {
                 final BytecodeInstructionPOP theINS = (BytecodeInstructionPOP) theInstruction;
                 aHelper.pop();
