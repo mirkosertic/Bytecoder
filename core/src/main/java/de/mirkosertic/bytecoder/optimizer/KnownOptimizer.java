@@ -40,6 +40,7 @@ public enum KnownOptimizer implements Optimizer {
                     new RedundantVariablesOptimizerStage(),
                     new InvokeVirtualOptimizerStage(),
                     new DirectAssignmentOptimizerStage(),
+                    new RedundantVariablesForIfOptimizerStage(),
             }));
             run(aGraph, aLinkerContext, theOptimizer);
         }
