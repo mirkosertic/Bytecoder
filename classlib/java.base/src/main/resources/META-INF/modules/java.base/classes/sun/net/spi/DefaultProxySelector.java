@@ -53,7 +53,6 @@ import static java.util.stream.Collectors.toList;
  *
  * Supports http/https/ftp.proxyHost, http/https/ftp.proxyPort,
  * proxyHost, proxyPort, and http/https/ftp.nonProxyHost, and socks.
- * NOTE: need to do gopher as well
  */
 public class DefaultProxySelector extends ProxySelector {
 
@@ -82,7 +81,6 @@ public class DefaultProxySelector extends ProxySelector {
         {"http", "http.proxy", "proxy", "socksProxy"},
         {"https", "https.proxy", "proxy", "socksProxy"},
         {"ftp", "ftp.proxy", "ftpProxy", "proxy", "socksProxy"},
-        {"gopher", "gopherProxy", "socksProxy"},
         {"socket", "socksProxy"}
     };
 
@@ -240,7 +238,7 @@ public class DefaultProxySelector extends ProxySelector {
                                 if (phost != null && phost.length() != 0)
                                     break;
                             }
-                            if (phost == null || phost.length() == 0) {
+                            if (phost == null || phost.isEmpty()) {
                                 /**
                                  * No system property defined for that
                                  * protocol. Let's check System Proxy
@@ -269,7 +267,7 @@ public class DefaultProxySelector extends ProxySelector {
                                             nprop.hostsSource = null;
                                             nprop.pattern = null;
                                         }
-                                    } else if (nphosts.length() != 0) {
+                                    } else if (!nphosts.isEmpty()) {
                                         // add the required default patterns
                                         // but only if property no set. If it
                                         // is empty, leave empty.
@@ -350,8 +348,6 @@ public class DefaultProxySelector extends ProxySelector {
             return 80;
         } else if ("socket".equalsIgnoreCase(protocol)) {
             return 1080;
-        } else if ("gopher".equalsIgnoreCase(protocol)) {
-            return 80;
         } else {
             return -1;
         }

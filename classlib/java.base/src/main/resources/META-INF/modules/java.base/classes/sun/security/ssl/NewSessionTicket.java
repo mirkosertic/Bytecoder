@@ -86,7 +86,7 @@ final class NewSessionTicket {
             //     Extension extensions<0..2^16-2>;
             // } NewSessionTicket;
             if (m.remaining() < 14) {
-                context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                throw context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
                     "Invalid NewSessionTicket message: no sufficient data");
             }
 
@@ -95,18 +95,18 @@ final class NewSessionTicket {
             this.ticketNonce = Record.getBytes8(m);
 
             if (m.remaining() < 5) {
-                context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                throw context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
                     "Invalid NewSessionTicket message: no sufficient data");
             }
 
             this.ticket = Record.getBytes16(m);
             if (ticket.length == 0) {
-                context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                throw context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
                     "No ticket in the NewSessionTicket handshake message");
             }
 
             if (m.remaining() < 2) {
-                context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                throw context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
                     "Invalid NewSessionTicket message: no sufficient data");
             }
 
@@ -260,9 +260,8 @@ final class NewSessionTicket {
             // create and cache the new session
             // The new session must be a child of the existing session so
             // they will be invalidated together, etc.
-            SSLSessionImpl sessionCopy = new SSLSessionImpl(shc,
-                    shc.handshakeSession.getSuite(), newId,
-                    shc.handshakeSession.getCreationTime());
+            SSLSessionImpl sessionCopy =
+                    new SSLSessionImpl(shc.handshakeSession, newId);
             shc.handshakeSession.addChild(sessionCopy);
             sessionCopy.setPreSharedKey(psk);
             sessionCopy.setPskIdentity(newId.getId());
@@ -375,9 +374,8 @@ final class NewSessionTicket {
             // they will be invalidated together, etc.
             SessionId newId =
                 new SessionId(true, hc.sslContext.getSecureRandom());
-            SSLSessionImpl sessionCopy = new SSLSessionImpl(
-                    hc, sessionToSave.getSuite(), newId,
-                    sessionToSave.getCreationTime());
+            SSLSessionImpl sessionCopy = new SSLSessionImpl(sessionToSave,
+                    newId);
             sessionToSave.addChild(sessionCopy);
             sessionCopy.setPreSharedKey(psk);
             sessionCopy.setTicketAgeAdd(nstm.ticketAgeAdd);

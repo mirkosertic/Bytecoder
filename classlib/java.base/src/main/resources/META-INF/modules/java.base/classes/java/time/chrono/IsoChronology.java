@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -669,7 +669,6 @@ public final class IsoChronology extends AbstractChronology implements Serializa
      * @param years  the number of years, may be negative
      * @param months  the number of years, may be negative
      * @param days  the number of years, may be negative
-     * @return the period in terms of this chronology, not null
      * @return the ISO period, not null
      */
     @Override  // override with covariant return type
@@ -680,7 +679,7 @@ public final class IsoChronology extends AbstractChronology implements Serializa
     //-----------------------------------------------------------------------
     /**
      * Writes the Chronology using a
-     * <a href="../../../serialized-form.html#java.time.chrono.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.chrono.Ser">dedicated serialized form</a>.
      * @serialData
      * <pre>
      *  out.writeByte(1);     // identifies a Chronology

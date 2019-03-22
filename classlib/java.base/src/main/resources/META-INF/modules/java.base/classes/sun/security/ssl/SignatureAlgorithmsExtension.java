@@ -238,8 +238,7 @@ final class SignatureAlgorithmsExtension {
             try {
                 spec = new SignatureSchemesSpec(buffer);
             } catch (IOException ioe) {
-                shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
-                return;     // fatal() always throws, make the compiler happy.
+                throw shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
             }
 
             // Update the context.
@@ -329,7 +328,7 @@ final class SignatureAlgorithmsExtension {
             // We may support the server authentication other than X.509
             // certificate later.
             if (shc.negotiatedProtocol.useTLS13PlusSpec()) {
-                shc.conContext.fatal(Alert.MISSING_EXTENSION,
+                throw shc.conContext.fatal(Alert.MISSING_EXTENSION,
                     "No mandatory signature_algorithms extension in the " +
                     "received CertificateRequest handshake message");
             }
@@ -403,25 +402,22 @@ final class SignatureAlgorithmsExtension {
             // handshake message in TLS 1.3.
             if (!shc.sslConfig.isAvailable(
                     SSLExtension.CR_SIGNATURE_ALGORITHMS)) {
-                shc.conContext.fatal(Alert.MISSING_EXTENSION,
+                throw shc.conContext.fatal(Alert.MISSING_EXTENSION,
                         "No available signature_algorithms extension " +
                         "for client certificate authentication");
-                return null;    // make the compiler happy
             }
 
             // Produce the extension.
-            if (shc.localSupportedSignAlgs == null) {
-                shc.localSupportedSignAlgs =
+            List<SignatureScheme> sigAlgs =
                     SignatureScheme.getSupportedAlgorithms(
-                            shc.algorithmConstraints, shc.activeProtocols);
-            }
+                            shc.algorithmConstraints,
+                            List.of(shc.negotiatedProtocol));
 
-            int vectorLen = SignatureScheme.sizeInRecord() *
-                    shc.localSupportedSignAlgs.size();
+            int vectorLen = SignatureScheme.sizeInRecord() * sigAlgs.size();
             byte[] extData = new byte[vectorLen + 2];
             ByteBuffer m = ByteBuffer.wrap(extData);
             Record.putInt16(m, vectorLen);
-            for (SignatureScheme ss : shc.localSupportedSignAlgs) {
+            for (SignatureScheme ss : sigAlgs) {
                 Record.putInt16(m, ss.id);
             }
 
@@ -456,10 +452,9 @@ final class SignatureAlgorithmsExtension {
             // handshake message in TLS 1.3.
             if (!chc.sslConfig.isAvailable(
                     SSLExtension.CR_SIGNATURE_ALGORITHMS)) {
-                chc.conContext.fatal(Alert.HANDSHAKE_FAILURE,
+                throw chc.conContext.fatal(Alert.HANDSHAKE_FAILURE,
                         "No available signature_algorithms extension " +
                         "for client certificate authentication");
-                return;     // make the compiler happy
             }
 
             // Parse the extension.
@@ -467,8 +462,7 @@ final class SignatureAlgorithmsExtension {
             try {
                 spec = new SignatureSchemesSpec(buffer);
             } catch (IOException ioe) {
-                chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
-                return;     // fatal() always throws, make the compiler happy.
+                throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
             }
 
             List<SignatureScheme> knownSignatureSchemes = new LinkedList<>();
@@ -525,7 +519,7 @@ final class SignatureAlgorithmsExtension {
             // signatures appearing in certificates.
             SignatureSchemesSpec certSpec =
                     (SignatureSchemesSpec)chc.handshakeExtensions.get(
-                            SSLExtension.CH_SIGNATURE_ALGORITHMS_CERT);
+                            SSLExtension.CR_SIGNATURE_ALGORITHMS_CERT);
             if (certSpec == null) {
                 chc.peerRequestedCertSignSchemes = sss;
                 chc.handshakeSession.setPeerSupportedSignatureAlgorithms(sss);
@@ -547,7 +541,7 @@ final class SignatureAlgorithmsExtension {
 
             // This is a mandatory extension for CertificateRequest handshake
             // message in TLS 1.3.
-            chc.conContext.fatal(Alert.MISSING_EXTENSION,
+            throw chc.conContext.fatal(Alert.MISSING_EXTENSION,
                     "No mandatory signature_algorithms extension in the " +
                     "received CertificateRequest handshake message");
         }

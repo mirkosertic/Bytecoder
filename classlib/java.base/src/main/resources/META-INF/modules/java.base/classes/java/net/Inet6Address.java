@@ -415,7 +415,7 @@ class Inet6Address extends InetAddress {
      * set to the value corresponding to the given interface for the address
      * type specified in {@code addr}. The call will fail with an
      * UnknownHostException if the given interface does not have a numeric
-     * scope_id assigned for the given address type (eg. link-local or site-local).
+     * scope_id assigned for the given address type (e.g. link-local or site-local).
      * See <a href="Inet6Address.html#scoped">here</a> for a description of IPv6
      * scoped addresses.
      *
@@ -433,7 +433,7 @@ class Inet6Address extends InetAddress {
                                             NetworkInterface nif)
         throws UnknownHostException
     {
-        if (host != null && host.length() > 0 && host.charAt(0) == '[') {
+        if (host != null && !host.isEmpty() && host.charAt(0) == '[') {
             if (host.charAt(host.length()-1) == ']') {
                 host = host.substring(1, host.length() -1);
             }
@@ -466,7 +466,7 @@ class Inet6Address extends InetAddress {
                                             int scope_id)
         throws UnknownHostException
     {
-        if (host != null && host.length() > 0 && host.charAt(0) == '[') {
+        if (host != null && !host.isEmpty() && host.charAt(0) == '[') {
             if (host.charAt(host.length()-1) == ']') {
                 host = host.substring(1, host.length() -1);
             }
@@ -507,7 +507,7 @@ class Inet6Address extends InetAddress {
 
     /* check the two Ipv6 addresses and return false if they are both
      * non global address types, but not the same.
-     * (ie. one is sitelocal and the other linklocal)
+     * (i.e. one is site-local and the other link-local)
      * return true otherwise.
      */
 
@@ -601,7 +601,7 @@ class Inet6Address extends InetAddress {
         boolean scope_ifname_set = gf.get("scope_ifname_set", false);
         String ifname = (String)gf.get("ifname", null);
 
-        if (ifname != null && !"".equals (ifname)) {
+        if (ifname != null && !ifname.isEmpty()) {
             try {
                 scope_ifname = NetworkInterface.getByName(ifname);
                 if (scope_ifname == null) {
@@ -641,7 +641,7 @@ class Inet6Address extends InetAddress {
             ipaddress, scope_id, scope_id_set, scope_ifname, scope_ifname_set
         );
 
-        UNSAFE.putObject(this, FIELDS_OFFSET, h);
+        UNSAFE.putReference(this, FIELDS_OFFSET, h);
     }
 
     /**
@@ -683,7 +683,7 @@ class Inet6Address extends InetAddress {
     /**
      * Utility routine to check if the InetAddress is a wildcard address.
      *
-     * @return a {@code boolean} indicating if the Inetaddress is
+     * @return a {@code boolean} indicating if the InetAddress is
      *         a wildcard address.
      */
     @Override
@@ -821,7 +821,7 @@ class Inet6Address extends InetAddress {
 
     /**
      * Returns the scoped interface, if this instance was created with
-     * with a scoped interface.
+     * a scoped interface.
      *
      * @return the scoped interface, or null if not set.
      * @since 1.5

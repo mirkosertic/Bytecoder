@@ -66,12 +66,14 @@ import jdk.internal.module.ServicesCatalog;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.HotSpotIntrinsicCandidate;
-import jdk.internal.misc.JavaLangAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.VM;
 import jdk.internal.logger.LoggerFinderLoader;
 import jdk.internal.logger.LazyLoggers;
 import jdk.internal.logger.LocalizedLoggerWrapper;
+import jdk.internal.util.SystemProps;
+import jdk.internal.vm.annotation.Stable;
 import sun.reflect.annotation.AnnotationType;
 import sun.nio.ch.Interruptible;
 import sun.security.util.SecurityConstants;
@@ -154,9 +156,18 @@ public final class System {
      */
     public static final PrintStream err = null;
 
-    /* The security manager for the system.
-     */
-    private static volatile SecurityManager security;
+    // indicates if a security manager is possible
+    private static final int NEVER = 1;
+    private static final int MAYBE = 2;
+    private static @Stable int allowSecurityManager;
+
+    // current security manager
+    private static volatile SecurityManager security;   // read by VM
+
+    // return true if a security manager is allowed
+    private static boolean allowSecurityManager() {
+        return (allowSecurityManager != NEVER);
+    }
 
     /**
      * Reassigns the "standard" input stream.
@@ -231,6 +242,7 @@ public final class System {
     }
 
     private static volatile Console cons;
+
     /**
      * Returns the unique {@link java.io.Console Console} object associated
      * with the current Java virtual machine, if any.
@@ -292,7 +304,7 @@ public final class System {
     private static native void setErr0(PrintStream err);
 
     /**
-     * Sets the System security.
+     * Sets the system-wide security manager.
      *
      * If there is a security manager already installed, this method first
      * calls the security manager's {@code checkPermission} method
@@ -306,27 +318,46 @@ public final class System {
      * security manager has been established, then no action is taken and
      * the method simply returns.
      *
-     * @param      s   the security manager.
-     * @throws     SecurityException  if the security manager has already
-     *             been set and its {@code checkPermission} method
-     *             doesn't allow it to be replaced.
+     * @implNote In the JDK implementation, if the Java virtual machine is
+     * started with the system property {@code java.security.manager} set to
+     * the special token "{@code disallow}" then the {@code setSecurityManager}
+     * method cannot be used to set a security manager.
+     *
+     * @param  sm the security manager or {@code null}
+     * @throws SecurityException
+     *         if the security manager has already been set and its {@code
+     *         checkPermission} method doesn't allow it to be replaced
+     * @throws UnsupportedOperationException
+     *         if {@code sm} is non-null and a security manager is not allowed
+     *         to be set dynamically
      * @see #getSecurityManager
      * @see SecurityManager#checkPermission
      * @see java.lang.RuntimePermission
      */
-    public static void setSecurityManager(final SecurityManager s) {
-        if (security == null) {
-            // ensure image reader is initialized
-            Object.class.getResource("java/lang/ANY");
-        }
-        if (s != null) {
-            try {
-                s.checkPackageAccess("java.lang");
-            } catch (Exception e) {
-                // no-op
+    public static void setSecurityManager(SecurityManager sm) {
+        if (allowSecurityManager()) {
+            if (security == null) {
+                // ensure image reader is initialized
+                Object.class.getResource("java/lang/ANY");
+            }
+            if (sm != null) {
+                try {
+                    // pre-populates the SecurityManager.packageAccess cache
+                    // to avoid recursive permission checking issues with custom
+                    // SecurityManager implementations
+                    sm.checkPackageAccess("java.lang");
+                } catch (Exception e) {
+                    // no-op
+                }
+            }
+            setSecurityManager0(sm);
+        } else {
+            // security manager not allowed
+            if (sm != null) {
+                throw new UnsupportedOperationException(
+                    "Runtime configured to disallow security manager");
             }
         }
-        setSecurityManager0(s);
     }
 
     private static synchronized
@@ -335,13 +366,12 @@ public final class System {
         if (sm != null) {
             // ask the currently installed security manager if we
             // can replace it.
-            sm.checkPermission(new RuntimePermission
-                                     ("setSecurityManager"));
+            sm.checkPermission(new RuntimePermission("setSecurityManager"));
         }
 
         if ((s != null) && (s.getClass().getClassLoader() != null)) {
             // New security manager class is not on bootstrap classpath.
-            // Cause policy to get initialized before we install the new
+            // Force policy to get initialized before we install the new
             // security manager, in order to prevent infinite loops when
             // trying to initialize the policy (which usually involves
             // accessing some security and/or system properties, which in turn
@@ -361,7 +391,7 @@ public final class System {
     }
 
     /**
-     * Gets the system security interface.
+     * Gets the system-wide security manager.
      *
      * @return  if a security manager has already been established for the
      *          current application, then that security manager is returned;
@@ -369,7 +399,11 @@ public final class System {
      * @see     #setSecurityManager
      */
     public static SecurityManager getSecurityManager() {
-        return security;
+        if (allowSecurityManager()) {
+            return security;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -572,7 +606,6 @@ public final class System {
      */
 
     private static Properties props;
-    private static native Properties initProperties(Properties props);
 
     /**
      * Determines the current system properties.
@@ -594,72 +627,72 @@ public final class System {
      *     <th scope="col">Description of Associated Value</th></tr>
      * </thead>
      * <tbody>
-     * <tr><th scope="row">{@code java.version}</th>
+     * <tr><th scope="row">{@systemProperty java.version}</th>
      *     <td>Java Runtime Environment version, which may be interpreted
      *     as a {@link Runtime.Version}</td></tr>
-     * <tr><th scope="row">{@code java.version.date}</th>
+     * <tr><th scope="row">{@systemProperty java.version.date}</th>
      *     <td>Java Runtime Environment version date, in ISO-8601 YYYY-MM-DD
      *     format, which may be interpreted as a {@link
      *     java.time.LocalDate}</td></tr>
-     * <tr><th scope="row">{@code java.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.vendor}</th>
      *     <td>Java Runtime Environment vendor</td></tr>
-     * <tr><th scope="row">{@code java.vendor.url}</th>
+     * <tr><th scope="row">{@systemProperty java.vendor.url}</th>
      *     <td>Java vendor URL</td></tr>
-     * <tr><th scope="row">{@code java.vendor.version}</th>
+     * <tr><th scope="row">{@systemProperty java.vendor.version}</th>
      *     <td>Java vendor version</td></tr>
-     * <tr><th scope="row">{@code java.home}</th>
+     * <tr><th scope="row">{@systemProperty java.home}</th>
      *     <td>Java installation directory</td></tr>
-     * <tr><th scope="row">{@code java.vm.specification.version}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.specification.version}</th>
      *     <td>Java Virtual Machine specification version, whose value is the
      *     {@linkplain Runtime.Version#feature feature} element of the
      *     {@linkplain Runtime#version() runtime version}</td></tr>
-     * <tr><th scope="row">{@code java.vm.specification.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.specification.vendor}</th>
      *     <td>Java Virtual Machine specification vendor</td></tr>
-     * <tr><th scope="row">{@code java.vm.specification.name}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.specification.name}</th>
      *     <td>Java Virtual Machine specification name</td></tr>
-     * <tr><th scope="row">{@code java.vm.version}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.version}</th>
      *     <td>Java Virtual Machine implementation version which may be
      *     interpreted as a {@link Runtime.Version}</td></tr>
-     * <tr><th scope="row">{@code java.vm.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.vendor}</th>
      *     <td>Java Virtual Machine implementation vendor</td></tr>
-     * <tr><th scope="row">{@code java.vm.name}</th>
+     * <tr><th scope="row">{@systemProperty java.vm.name}</th>
      *     <td>Java Virtual Machine implementation name</td></tr>
-     * <tr><th scope="row">{@code java.specification.version}</th>
+     * <tr><th scope="row">{@systemProperty java.specification.version}</th>
      *     <td>Java Runtime Environment specification version, whose value is
      *     the {@linkplain Runtime.Version#feature feature} element of the
      *     {@linkplain Runtime#version() runtime version}</td></tr>
-     * <tr><th scope="row">{@code java.specification.vendor}</th>
+     * <tr><th scope="row">{@systemProperty java.specification.vendor}</th>
      *     <td>Java Runtime Environment specification  vendor</td></tr>
-     * <tr><th scope="row">{@code java.specification.name}</th>
+     * <tr><th scope="row">{@systemProperty java.specification.name}</th>
      *     <td>Java Runtime Environment specification  name</td></tr>
-     * <tr><th scope="row">{@code java.class.version}</th>
+     * <tr><th scope="row">{@systemProperty java.class.version}</th>
      *     <td>Java class format version number</td></tr>
-     * <tr><th scope="row">{@code java.class.path}</th>
+     * <tr><th scope="row">{@systemProperty java.class.path}</th>
      *     <td>Java class path  (refer to
      *        {@link ClassLoader#getSystemClassLoader()} for details)</td></tr>
-     * <tr><th scope="row">{@code java.library.path}</th>
+     * <tr><th scope="row">{@systemProperty java.library.path}</th>
      *     <td>List of paths to search when loading libraries</td></tr>
-     * <tr><th scope="row">{@code java.io.tmpdir}</th>
+     * <tr><th scope="row">{@systemProperty java.io.tmpdir}</th>
      *     <td>Default temp file path</td></tr>
-     * <tr><th scope="row">{@code java.compiler}</th>
+     * <tr><th scope="row">{@systemProperty java.compiler}</th>
      *     <td>Name of JIT compiler to use</td></tr>
-     * <tr><th scope="row">{@code os.name}</th>
+     * <tr><th scope="row">{@systemProperty os.name}</th>
      *     <td>Operating system name</td></tr>
-     * <tr><th scope="row">{@code os.arch}</th>
+     * <tr><th scope="row">{@systemProperty os.arch}</th>
      *     <td>Operating system architecture</td></tr>
-     * <tr><th scope="row">{@code os.version}</th>
+     * <tr><th scope="row">{@systemProperty os.version}</th>
      *     <td>Operating system version</td></tr>
-     * <tr><th scope="row">{@code file.separator}</th>
+     * <tr><th scope="row">{@systemProperty file.separator}</th>
      *     <td>File separator ("/" on UNIX)</td></tr>
-     * <tr><th scope="row">{@code path.separator}</th>
+     * <tr><th scope="row">{@systemProperty path.separator}</th>
      *     <td>Path separator (":" on UNIX)</td></tr>
-     * <tr><th scope="row">{@code line.separator}</th>
+     * <tr><th scope="row">{@systemProperty line.separator}</th>
      *     <td>Line separator ("\n" on UNIX)</td></tr>
-     * <tr><th scope="row">{@code user.name}</th>
+     * <tr><th scope="row">{@systemProperty user.name}</th>
      *     <td>User's account name</td></tr>
-     * <tr><th scope="row">{@code user.home}</th>
+     * <tr><th scope="row">{@systemProperty user.home}</th>
      *     <td>User's home directory</td></tr>
-     * <tr><th scope="row">{@code user.dir}</th>
+     * <tr><th scope="row">{@systemProperty user.dir}</th>
      *     <td>User's current working directory</td></tr>
      * </tbody>
      * </table>
@@ -689,13 +722,13 @@ public final class System {
      *     <th scope="col">Description of Associated Value</th></tr>
      * </thead>
      * <tbody>
-     * <tr><th scope="row">{@code jdk.module.path}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.path}</th>
      *     <td>The application module path</td></tr>
-     * <tr><th scope="row">{@code jdk.module.upgrade.path}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.upgrade.path}</th>
      *     <td>The upgrade module path</td></tr>
-     * <tr><th scope="row">{@code jdk.module.main}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.main}</th>
      *     <td>The module name of the initial/main module</td></tr>
-     * <tr><th scope="row">{@code jdk.module.main.class}</th>
+     * <tr><th scope="row">{@systemProperty jdk.module.main.class}</th>
      *     <td>The main class name of the initial module</td></tr>
      * </tbody>
      * </table>
@@ -766,9 +799,11 @@ public final class System {
         if (sm != null) {
             sm.checkPropertiesAccess();
         }
+
         if (props == null) {
-            props = new Properties();
-            initProperties(props);
+            Map<String, String> tempProps = SystemProps.initProperties();
+            VersionProps.init(tempProps);
+            props = createProperties(tempProps);
         }
         System.props = props;
     }
@@ -936,7 +971,7 @@ public final class System {
         if (key == null) {
             throw new NullPointerException("key can't be null");
         }
-        if (key.equals("")) {
+        if (key.isEmpty()) {
             throw new IllegalArgumentException("key can't be empty");
         }
     }
@@ -1926,20 +1961,41 @@ public final class System {
     }
 
     /**
+     * Create the Properties object from a map - masking out system properties
+     * that are not intended for public access.
+     */
+    private static Properties createProperties(Map<String, String> initialProps) {
+        Properties properties = new Properties(initialProps.size());
+        for (var entry : initialProps.entrySet()) {
+            String prop = entry.getKey();
+            switch (prop) {
+                // Do not add private system properties to the Properties
+                case "sun.nio.MaxDirectMemorySize":
+                case "sun.nio.PageAlignDirectMemory":
+                    // used by java.lang.Integer.IntegerCache
+                case "java.lang.Integer.IntegerCache.high":
+                    // used by sun.launcher.LauncherHelper
+                case "sun.java.launcher.diag":
+                    // used by jdk.internal.loader.ClassLoaders
+                case "jdk.boot.class.path.append":
+                    break;
+                default:
+                    properties.put(prop, entry.getValue());
+            }
+        }
+        return properties;
+    }
+
+    /**
      * Initialize the system class.  Called after thread initialization.
      */
     private static void initPhase1() {
-
         // VM might invoke JNU_NewStringPlatform() to set those encoding
         // sensitive properties (user.home, user.name, boot.class.path, etc.)
-        // during "props" initialization, in which it may need access, via
-        // System.getProperty(), to the related system encoding property that
-        // have been initialized (put into "props") at early stage of the
-        // initialization. So make sure the "props" is available at the
-        // very beginning of the initialization and all system properties to
-        // be put into it directly.
-        props = new Properties(84);
-        initProperties(props);  // initialized by the VM
+        // during "props" initialization.
+        // The charset is initialized in System.c and does not depend on the Properties.
+        Map<String, String> tempProps = SystemProps.initProperties();
+        VersionProps.init(tempProps);
 
         // There are certain system configurations that may be controlled by
         // VM options such as the maximum amount of direct memory and
@@ -1947,19 +2003,16 @@ public final class System {
         // of autoboxing.  Typically, the library will obtain these values
         // from the properties set by the VM.  If the properties are for
         // internal implementation use only, these properties should be
-        // removed from the system properties.
-        //
-        // See java.lang.Integer.IntegerCache and the
-        // VM.saveAndRemoveProperties method for example.
+        // masked from the system properties.
         //
         // Save a private copy of the system properties object that
-        // can only be accessed by the internal implementation.  Remove
-        // certain system properties that are not intended for public access.
-        VM.saveAndRemoveProperties(props);
+        // can only be accessed by the internal implementation.
+        VM.saveProperties(tempProps);
+        props = createProperties(tempProps);
+
+        StaticProperty.javaHome();          // Load StaticProperty to cache the property values
 
         lineSeparator = props.getProperty("line.separator");
-        StaticProperty.javaHome();          // Load StaticProperty to cache the property values
-        VersionProps.init();
 
         FileInputStream fdIn = new FileInputStream(FileDescriptor.in);
         FileOutputStream fdOut = new FileOutputStream(FileDescriptor.out);
@@ -2028,35 +2081,48 @@ public final class System {
      * 3. set TCCL
      *
      * This method must be called after the module system initialization.
-     * The security manager and system class loader may be custom class from
+     * The security manager and system class loader may be a custom class from
      * the application classpath or modulepath.
      */
     private static void initPhase3() {
-        // set security manager
-        String cn = System.getProperty("java.security.manager");
-        if (cn != null) {
-            if (cn.isEmpty() || "default".equals(cn)) {
-                System.setSecurityManager(new SecurityManager());
-            } else {
-                try {
-                    Class<?> c = Class.forName(cn, false, ClassLoader.getBuiltinAppClassLoader());
-                    Constructor<?> ctor = c.getConstructor();
-                    // Must be a public subclass of SecurityManager with
-                    // a public no-arg constructor
-                    if (!SecurityManager.class.isAssignableFrom(c) ||
+        String smProp = System.getProperty("java.security.manager");
+        if (smProp != null) {
+            switch (smProp) {
+                case "disallow":
+                    allowSecurityManager = NEVER;
+                    break;
+                case "allow":
+                    allowSecurityManager = MAYBE;
+                    break;
+                case "":
+                case "default":
+                    setSecurityManager(new SecurityManager());
+                    allowSecurityManager = MAYBE;
+                    break;
+                default:
+                    try {
+                        ClassLoader cl = ClassLoader.getBuiltinAppClassLoader();
+                        Class<?> c = Class.forName(smProp, false, cl);
+                        Constructor<?> ctor = c.getConstructor();
+                        // Must be a public subclass of SecurityManager with
+                        // a public no-arg constructor
+                        if (!SecurityManager.class.isAssignableFrom(c) ||
                             !Modifier.isPublic(c.getModifiers()) ||
                             !Modifier.isPublic(ctor.getModifiers())) {
-                        throw new Error("Could not create SecurityManager: " + ctor.toString());
+                            throw new Error("Could not create SecurityManager: "
+                                             + ctor.toString());
+                        }
+                        // custom security manager may be in non-exported package
+                        ctor.setAccessible(true);
+                        SecurityManager sm = (SecurityManager) ctor.newInstance();
+                        setSecurityManager(sm);
+                    } catch (Exception e) {
+                        throw new InternalError("Could not create SecurityManager", e);
                     }
-                    // custom security manager implementation may be in unnamed module
-                    // or a named module but non-exported package
-                    ctor.setAccessible(true);
-                    SecurityManager sm = (SecurityManager) ctor.newInstance();
-                    System.setSecurityManager(sm);
-                } catch (Exception e) {
-                    throw new Error("Could not create SecurityManager", e);
-                }
+                    allowSecurityManager = MAYBE;
             }
+        } else {
+            allowSecurityManager = MAYBE;
         }
 
         // initializing the system class loader
@@ -2201,6 +2267,9 @@ public final class System {
                 return StringCoding.getBytesUTF8NoRepl(s);
             }
 
+            public void setCause(Throwable t, Throwable cause) {
+                t.setCause(cause);
+            }
         });
     }
 }

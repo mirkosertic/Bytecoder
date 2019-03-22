@@ -372,7 +372,7 @@ public abstract class ZoneId implements Serializable {
     public static ZoneId ofOffset(String prefix, ZoneOffset offset) {
         Objects.requireNonNull(prefix, "prefix");
         Objects.requireNonNull(offset, "offset");
-        if (prefix.length() == 0) {
+        if (prefix.isEmpty()) {
             return offset;
         }
 
@@ -641,7 +641,7 @@ public abstract class ZoneId implements Serializable {
     //-----------------------------------------------------------------------
     /**
      * Writes the object using a
-     * <a href="../../serialized-form.html#java.time.Ser">dedicated serialized form</a>.
+     * <a href="{@docRoot}/serialized-form.html#java.time.Ser">dedicated serialized form</a>.
      * @serialData
      * <pre>
      *  out.writeByte(7);  // identifies a ZoneId (not ZoneOffset)

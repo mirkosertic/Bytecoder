@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -437,7 +437,7 @@ class JarVerifier {
                        InputStream is,
                        JarVerifier jv) throws IOException
         {
-            this.is = is;
+            this.is = Objects.requireNonNull(is);
             this.jv = jv;
             this.mev = new ManifestEntryVerifier(man);
             this.jv.beginEntry(je, mev);
@@ -448,6 +448,7 @@ class JarVerifier {
 
         public int read() throws IOException
         {
+            ensureOpen();
             if (numLeft > 0) {
                 int b = is.read();
                 jv.update(b, mev);
@@ -461,6 +462,7 @@ class JarVerifier {
         }
 
         public int read(byte b[], int off, int len) throws IOException {
+            ensureOpen();
             if ((numLeft > 0) && (numLeft < len)) {
                 len = (int)numLeft;
             }
@@ -488,9 +490,15 @@ class JarVerifier {
         }
 
         public int available() throws IOException {
+            ensureOpen();
             return is.available();
         }
 
+        private void ensureOpen() throws IOException {
+            if (is == null) {
+                throw new IOException("stream closed");
+            }
+        }
     }
 
     // Extended JavaUtilJarAccess CodeSource API Support
@@ -857,5 +865,25 @@ class JarVerifier {
 
     static CodeSource getUnsignedCS(URL url) {
         return new VerifierCodeSource(null, url, (java.security.cert.Certificate[]) null);
+    }
+
+    /**
+     * Returns whether the name is trusted. Used by
+     * {@link Manifest#getTrustedAttributes(String)}.
+     */
+    boolean isTrustedManifestEntry(String name) {
+        // How many signers? MANIFEST.MF is always verified
+        CodeSigner[] forMan = verifiedSigners.get(JarFile.MANIFEST_NAME);
+        if (forMan == null) {
+            return true;
+        }
+        // Check sigFileSigners first, because we are mainly dealing with
+        // non-file entries which will stay in sigFileSigners forever.
+        CodeSigner[] forName = sigFileSigners.get(name);
+        if (forName == null) {
+            forName = verifiedSigners.get(name);
+        }
+        // Returns trusted if all signers sign the entry
+        return forName != null && forName.length == forMan.length;
     }
 }

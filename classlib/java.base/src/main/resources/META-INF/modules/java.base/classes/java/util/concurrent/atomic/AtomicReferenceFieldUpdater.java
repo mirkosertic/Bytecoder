@@ -143,9 +143,9 @@ public abstract class AtomicReferenceFieldUpdater<T,V> {
      * other calls to {@code compareAndSet} and {@code set}, but not
      * necessarily with respect to other changes in the field.
      *
-     * <p><a href="package-summary.html#weakCompareAndSet">May fail
-     * spuriously and does not provide ordering guarantees</a>, so is
-     * only rarely an appropriate alternative to {@code compareAndSet}.
+     * <p>This operation may fail spuriously and does not provide
+     * ordering guarantees, so is only rarely an appropriate
+     * alternative to {@code compareAndSet}.
      *
      * @param obj An object whose field to conditionally set
      * @param expect the expected value
@@ -439,39 +439,39 @@ public abstract class AtomicReferenceFieldUpdater<T,V> {
         public final boolean compareAndSet(T obj, V expect, V update) {
             accessCheck(obj);
             valueCheck(update);
-            return U.compareAndSetObject(obj, offset, expect, update);
+            return U.compareAndSetReference(obj, offset, expect, update);
         }
 
         public final boolean weakCompareAndSet(T obj, V expect, V update) {
             // same implementation as strong form for now
             accessCheck(obj);
             valueCheck(update);
-            return U.compareAndSetObject(obj, offset, expect, update);
+            return U.compareAndSetReference(obj, offset, expect, update);
         }
 
         public final void set(T obj, V newValue) {
             accessCheck(obj);
             valueCheck(newValue);
-            U.putObjectVolatile(obj, offset, newValue);
+            U.putReferenceVolatile(obj, offset, newValue);
         }
 
         public final void lazySet(T obj, V newValue) {
             accessCheck(obj);
             valueCheck(newValue);
-            U.putObjectRelease(obj, offset, newValue);
+            U.putReferenceRelease(obj, offset, newValue);
         }
 
         @SuppressWarnings("unchecked")
         public final V get(T obj) {
             accessCheck(obj);
-            return (V)U.getObjectVolatile(obj, offset);
+            return (V)U.getReferenceVolatile(obj, offset);
         }
 
         @SuppressWarnings("unchecked")
         public final V getAndSet(T obj, V newValue) {
             accessCheck(obj);
             valueCheck(newValue);
-            return (V)U.getAndSetObject(obj, offset, newValue);
+            return (V)U.getAndSetReference(obj, offset, newValue);
         }
     }
 }

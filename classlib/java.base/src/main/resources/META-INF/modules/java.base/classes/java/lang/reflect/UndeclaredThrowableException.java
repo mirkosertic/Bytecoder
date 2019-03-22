@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,12 @@
  */
 
 package java.lang.reflect;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * Thrown by a method invocation on a proxy instance if its invocation
@@ -59,12 +65,6 @@ public class UndeclaredThrowableException extends RuntimeException {
     static final long serialVersionUID = 330127114055056639L;
 
     /**
-     * the undeclared checked exception that was thrown
-     * @serial
-     */
-    private Throwable undeclaredThrowable;
-
-    /**
      * Constructs an {@code UndeclaredThrowableException} with the
      * specified {@code Throwable}.
      *
@@ -72,8 +72,7 @@ public class UndeclaredThrowableException extends RuntimeException {
      *          that was thrown
      */
     public UndeclaredThrowableException(Throwable undeclaredThrowable) {
-        super((Throwable) null);  // Disallow initCause
-        this.undeclaredThrowable = undeclaredThrowable;
+        super(null, undeclaredThrowable);  // Disallow initCause
     }
 
     /**
@@ -87,8 +86,7 @@ public class UndeclaredThrowableException extends RuntimeException {
     public UndeclaredThrowableException(Throwable undeclaredThrowable,
                                         String s)
     {
-        super(s, null);  // Disallow initCause
-        this.undeclaredThrowable = undeclaredThrowable;
+        super(s, undeclaredThrowable);  // Disallow initCause
     }
 
     /**
@@ -102,18 +100,38 @@ public class UndeclaredThrowableException extends RuntimeException {
      * @return the undeclared checked exception that was thrown
      */
     public Throwable getUndeclaredThrowable() {
-        return undeclaredThrowable;
+        return super.getCause();
     }
 
     /**
-     * Returns the cause of this exception (the {@code Throwable}
-     * instance wrapped in this {@code UndeclaredThrowableException},
-     * which may be {@code null}).
+     * Serializable fields for UndeclaredThrowableException.
      *
-     * @return  the cause of this exception.
-     * @since   1.4
+     * @serialField undeclaredThrowable Throwable
      */
-    public Throwable getCause() {
-        return undeclaredThrowable;
+    private static final ObjectStreamField[] serialPersistentFields = {
+        new ObjectStreamField("undeclaredThrowable", Throwable.class)
+    };
+
+    /*
+     * Reconstitutes the UndeclaredThrowableException instance from a stream
+     * and initialize the cause properly when deserializing from an older
+     * version.
+     */
+    private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+        ObjectInputStream.GetField fields = s.readFields();
+        Throwable exception = (Throwable) fields.get("undeclaredThrowable", null);
+        if (exception != null) {
+            SharedSecrets.getJavaLangAccess().setCause(this, exception);
+        }
+    }
+
+    /*
+     * To maintain compatibility with older implementation, write a serial
+     * "ex" field with the cause as the value.
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        ObjectOutputStream.PutField fields = out.putFields();
+        fields.put("undeclaredThrowable", super.getCause());
+        out.writeFields();
     }
 }

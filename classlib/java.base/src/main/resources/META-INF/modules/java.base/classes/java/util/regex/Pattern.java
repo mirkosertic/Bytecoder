@@ -1290,7 +1290,7 @@ public final class Pattern
         // Construct result
         int resultSize = matchList.size();
         if (limit == 0)
-            while (resultSize > 0 && matchList.get(resultSize-1).equals(""))
+            while (resultSize > 0 && matchList.get(resultSize-1).isEmpty())
                 resultSize--;
         String[] result = new String[resultSize];
         return matchList.subList(0, resultSize).toArray(result);
@@ -1390,7 +1390,7 @@ public final class Pattern
         localTCNCount = 0;
 
         // if length > 0, the Pattern is lazily compiled
-        if (pattern.length() == 0) {
+        if (pattern.isEmpty()) {
             root = new Start(lastAccept);
             matchRoot = lastAccept;
             compiled = true;
@@ -1423,7 +1423,7 @@ public final class Pattern
         localCount = 0;
         localTCNCount = 0;
 
-        if (pattern.length() > 0) {
+        if (!pattern.isEmpty()) {
             compile();
         } else {
             root = new Start(lastAccept);
@@ -1433,10 +1433,10 @@ public final class Pattern
 
     /**
      * The pattern is converted to normalized form ({@link
-     * java.text.Normalizer.Form.NFC NFC}, canonical decomposition,
+     * java.text.Normalizer.Form#NFC NFC}, canonical decomposition,
      * followed by canonical composition for the character class
-     * part, and {@link java.text.Normalizer.Form.NFD NFD},
-     * canonical decomposition) for the rest), and then a pure
+     * part, and {@link java.text.Normalizer.Form#NFD NFD},
+     * canonical decomposition for the rest), and then a pure
      * group is constructed to match canonical equivalences of the
      * characters.
      */

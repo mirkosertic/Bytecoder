@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,21 +25,30 @@
 
 package java.lang.invoke;
 
-import jdk.internal.vm.annotation.Stable;
-import sun.invoke.util.Wrapper;
-import java.lang.ref.WeakReference;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.Constable;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Stream;
+
+import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.BytecodeDescriptor;
-import static java.lang.invoke.MethodHandleStatics.*;
 import sun.invoke.util.VerifyType;
+import sun.invoke.util.Wrapper;
+
+import static java.lang.invoke.MethodHandleStatics.UNSAFE;
+import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
 
 /**
  * A method type represents the arguments and return type accepted and
@@ -91,7 +100,10 @@ import sun.invoke.util.VerifyType;
  * @since 1.7
  */
 public final
-class MethodType implements java.io.Serializable {
+class MethodType
+        implements Constable,
+                   TypeDescriptor.OfMethod<Class<?>, MethodType>,
+                   java.io.Serializable {
     private static final long serialVersionUID = 292L;  // {rtype, {ptype...}}
 
     // The rtype and ptypes fields define the structural identity of the method type:
@@ -786,9 +798,25 @@ class MethodType implements java.io.Serializable {
      * @param x object to compare
      * @see Object#equals(Object)
      */
+    // This implementation may also return true if x is a WeakEntry containing
+    // a method type that is equal to this. This is an internal implementation
+    // detail to allow for faster method type lookups.
+    // See ConcurrentWeakInternSet.WeakEntry#equals(Object)
     @Override
     public boolean equals(Object x) {
-        return this == x || x instanceof MethodType && equals((MethodType)x);
+        if (this == x) {
+            return true;
+        }
+        if (x instanceof MethodType) {
+            return equals((MethodType)x);
+        }
+        if (x instanceof ConcurrentWeakInternSet.WeakEntry) {
+            Object o = ((ConcurrentWeakInternSet.WeakEntry)x).get();
+            if (o instanceof MethodType) {
+                return equals((MethodType)o);
+            }
+        }
+        return false;
     }
 
     private boolean equals(MethodType that) {
@@ -808,10 +836,10 @@ class MethodType implements java.io.Serializable {
      */
     @Override
     public int hashCode() {
-      int hashCode = 31 + rtype.hashCode();
-      for (Class<?> ptype : ptypes)
-          hashCode = 31*hashCode + ptype.hashCode();
-      return hashCode;
+        int hashCode = 31 + rtype.hashCode();
+        for (Class<?> ptype : ptypes)
+            hashCode = 31 * hashCode + ptype.hashCode();
+        return hashCode;
     }
 
     /**
@@ -1159,8 +1187,41 @@ class MethodType implements java.io.Serializable {
         return desc;
     }
 
+    /**
+     * Return a field type descriptor string for this type
+     *
+     * @return the descriptor string
+     * @jvms 4.3.2 Field Descriptors
+     * @since 12
+     */
+    @Override
+    public String descriptorString() {
+        return toMethodDescriptorString();
+    }
+
     /*non-public*/ static String toFieldDescriptorString(Class<?> cls) {
         return BytecodeDescriptor.unparse(cls);
+    }
+
+    /**
+     * Return a nominal descriptor for this instance, if one can be
+     * constructed, or an empty {@link Optional} if one cannot be.
+     *
+     * @return An {@link Optional} containing the resulting nominal descriptor,
+     * or an empty {@link Optional} if one cannot be constructed.
+     * @since 12
+     */
+    @Override
+    public Optional<MethodTypeDesc> describeConstable() {
+        try {
+            return Optional.of(MethodTypeDesc.of(returnType().describeConstable().orElseThrow(),
+                                                 Stream.of(parameterArray())
+                                                      .map(p -> p.describeConstable().orElseThrow())
+                                                      .toArray(ClassDesc[]::new)));
+        }
+        catch (NoSuchElementException e) {
+            return Optional.empty();
+        }
     }
 
     /// Serialization.
@@ -1229,8 +1290,8 @@ s.writeObject(this.parameterArray());
         // store them into the implementation-specific final fields.
         checkRtype(rtype);
         checkPtypes(ptypes);
-        UNSAFE.putObject(this, OffsetHolder.rtypeOffset, rtype);
-        UNSAFE.putObject(this, OffsetHolder.ptypesOffset, ptypes);
+        UNSAFE.putReference(this, OffsetHolder.rtypeOffset, rtype);
+        UNSAFE.putReference(this, OffsetHolder.ptypesOffset, ptypes);
     }
 
     // Support for resetting final fields while deserializing. Implement Holder
@@ -1286,7 +1347,7 @@ s.writeObject(this.parameterArray());
             if (elem == null) throw new NullPointerException();
             expungeStaleElements();
 
-            WeakEntry<T> value = map.get(new WeakEntry<>(elem));
+            WeakEntry<T> value = map.get(elem);
             if (value != null) {
                 T res = value.get();
                 if (res != null) {
@@ -1338,19 +1399,25 @@ s.writeObject(this.parameterArray());
                 hashcode = key.hashCode();
             }
 
-            public WeakEntry(T key) {
-                super(key);
-                hashcode = key.hashCode();
-            }
-
+            /**
+             * This implementation returns {@code true} if {@code obj} is another
+             * {@code WeakEntry} whose referent is equals to this referent, or
+             * if {@code obj} is equals to the referent of this. This allows
+             * lookups to be made without wrapping in a {@code WeakEntry}.
+             *
+             * @param obj the object to compare
+             * @return true if {@code obj} is equals to this or the referent of this
+             * @see MethodType#equals(Object)
+             * @see Object#equals(Object)
+             */
             @Override
             public boolean equals(Object obj) {
+                Object mine = get();
                 if (obj instanceof WeakEntry) {
                     Object that = ((WeakEntry) obj).get();
-                    Object mine = get();
                     return (that == null || mine == null) ? (this == obj) : mine.equals(that);
                 }
-                return false;
+                return (mine == null) ? (obj == null) : mine.equals(obj);
             }
 
             @Override

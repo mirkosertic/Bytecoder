@@ -37,8 +37,7 @@ package java.util;
 import java.io.Serializable;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * Resizable-array implementation of the {@link Deque} interface.  Array
@@ -180,7 +179,7 @@ public class ArrayDeque<E> extends AbstractCollection<E>
      * sufficient to hold 16 elements.
      */
     public ArrayDeque() {
-        elements = new Object[16];
+        elements = new Object[16 + 1];
     }
 
     /**

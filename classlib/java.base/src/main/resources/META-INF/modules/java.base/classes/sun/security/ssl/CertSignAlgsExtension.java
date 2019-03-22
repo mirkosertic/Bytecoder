@@ -153,8 +153,7 @@ final class CertSignAlgsExtension {
             try {
                 spec = new SignatureSchemesSpec(buffer);
             } catch (IOException ioe) {
-                shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
-                return;     // fatal() always throws, make the compiler happy.
+                throw shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
             }
 
             // Update the context.
@@ -243,18 +242,16 @@ final class CertSignAlgsExtension {
             }
 
             // Produce the extension.
-            if (shc.localSupportedSignAlgs == null) {
-                shc.localSupportedSignAlgs =
+            List<SignatureScheme> sigAlgs =
                     SignatureScheme.getSupportedAlgorithms(
-                            shc.algorithmConstraints, shc.activeProtocols);
-            }
+                            shc.algorithmConstraints,
+                            List.of(shc.negotiatedProtocol));
 
-            int vectorLen = SignatureScheme.sizeInRecord() *
-                    shc.localSupportedSignAlgs.size();
+            int vectorLen = SignatureScheme.sizeInRecord() * sigAlgs.size();
             byte[] extData = new byte[vectorLen + 2];
             ByteBuffer m = ByteBuffer.wrap(extData);
             Record.putInt16(m, vectorLen);
-            for (SignatureScheme ss : shc.localSupportedSignAlgs) {
+            for (SignatureScheme ss : sigAlgs) {
                 Record.putInt16(m, ss.id);
             }
 
@@ -299,8 +296,7 @@ final class CertSignAlgsExtension {
             try {
                 spec = new SignatureSchemesSpec(buffer);
             } catch (IOException ioe) {
-                chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
-                return;     // fatal() always throws, make the compiler happy.
+                throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
             }
 
             // Update the context.

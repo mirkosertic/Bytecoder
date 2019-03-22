@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -64,9 +64,8 @@ public class AVA implements DerEncoder {
     // See CR 6391482: if enabled this flag preserves the old but incorrect
     // PrintableString encoding for DomainComponent. It may need to be set to
     // avoid breaking preexisting certificates generated with sun.security APIs.
-    private static final boolean PRESERVE_OLD_DC_ENCODING =
-        AccessController.doPrivileged(new GetBooleanAction
-            ("com.sun.security.preserveOldDCEncoding"));
+    private static final boolean PRESERVE_OLD_DC_ENCODING = GetBooleanAction
+            .privilegedGetProperty("com.sun.security.preserveOldDCEncoding");
 
     /**
      * DEFAULT format allows both RFC1779 and RFC2253 syntax and
@@ -1046,7 +1045,7 @@ public class AVA implements DerEncoder {
 
             if (valStr == null) {
 
-                // rfc1779 specifies that attribute values associated
+                // RFC 1779 specifies that attribute values associated
                 // with non-standard keyword attributes may be represented
                 // using the hex format below.  This will be used only
                 // when the value is not a string type
@@ -1246,7 +1245,7 @@ class AVAKeyword {
         }
 
         boolean number = false;
-        if (keyword.length() != 0) {
+        if (!keyword.isEmpty()) {
             char ch = keyword.charAt(0);
             if ((ch >= '0') && (ch <= '9')) {
                 number = true;
@@ -1286,7 +1285,7 @@ class AVAKeyword {
                 return ak.keyword;
             }
         } else {
-            if (keywordString.length() == 0) {
+            if (keywordString.isEmpty()) {
                 throw new IllegalArgumentException("keyword cannot be empty");
             }
             keywordString = keywordString.trim();

@@ -41,9 +41,9 @@ import java.io.FilePermission;
 import java.net.SocketPermission;
 import java.net.NetPermission;
 import java.util.concurrent.ConcurrentHashMap;
-import jdk.internal.misc.JavaSecurityAccess;
-import static jdk.internal.misc.JavaSecurityAccess.ProtectionDomainCache;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaSecurityAccess;
+import static jdk.internal.access.JavaSecurityAccess.ProtectionDomainCache;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.StaticProperty;
 import sun.security.util.*;
 import sun.net.www.ParseUtil;
@@ -1608,7 +1608,7 @@ public class PolicyFile extends java.security.Policy {
             if (u.getProtocol().equals("file")) {
                 boolean isLocalFile = false;
                 String host = u.getHost();
-                isLocalFile = (host == null || host.equals("") ||
+                isLocalFile = (host == null || host.isEmpty() ||
                     host.equals("~") || host.equalsIgnoreCase("localhost"));
 
                 if (isLocalFile) {

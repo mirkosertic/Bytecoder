@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,7 +30,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
 import java.net.URL;
 
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.event.EventHelper;
+import jdk.internal.event.SecurityPropertyModificationEvent;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.StaticProperty;
 import sun.security.util.Debug;
 import sun.security.util.PropertyExpander;
@@ -422,7 +424,7 @@ public final class Security {
      * method is called with the string {@code "removeProvider."+name}
      * to see if it's ok to remove the provider.
      * If the default implementation of {@code checkSecurityAccess}
-     * is used (i.e., that method is not overriden), then this will result in
+     * is used (i.e., that method is not overridden), then this will result in
      * a call to the security manager's {@code checkPermission} method
      * with a {@code SecurityPermission("removeProvider."+name)}
      * permission.
@@ -647,7 +649,7 @@ public final class Security {
             }
         }
 
-        if ((candidates == null) || (candidates.isEmpty()))
+        if (candidates == null || candidates.isEmpty())
             return null;
 
         Object[] candidatesArray = candidates.toArray();
@@ -792,9 +794,19 @@ public final class Security {
      * @see java.security.SecurityPermission
      */
     public static void setProperty(String key, String datum) {
-        check("setProperty."+key);
+        check("setProperty." + key);
         props.put(key, datum);
         invalidateSMCache(key);  /* See below. */
+
+        SecurityPropertyModificationEvent spe = new SecurityPropertyModificationEvent();
+        // following is a no-op if event is disabled
+        spe.key = key;
+        spe.value = datum;
+        spe.commit();
+
+        if (EventHelper.isLoggingSecurity()) {
+            EventHelper.logSecurityPropertyEvent(key, datum);
+        }
     }
 
     /*
@@ -993,11 +1005,11 @@ public final class Security {
         String algName = null;
         String attrName = null;
 
-        if (filterValue.length() == 0) {
+        if (filterValue.isEmpty()) {
             // The filterValue is an empty string. So the filterKey
             // should be in the format of <crypto_service>.<algorithm_or_type>.
             algName = filterKey.substring(algIndex + 1).trim();
-            if (algName.length() == 0) {
+            if (algName.isEmpty()) {
                 // There must be a algorithm or type name.
                 throw new InvalidParameterException("Invalid filter");
             }
@@ -1012,7 +1024,7 @@ public final class Security {
                 throw new InvalidParameterException("Invalid filter");
             } else {
                 attrName = filterKey.substring(attrIndex + 1).trim();
-                if (attrName.length() == 0) {
+                if (attrName.isEmpty()) {
                     // There is no attribute name in the filter.
                     throw new InvalidParameterException("Invalid filter");
                 }
@@ -1058,7 +1070,7 @@ public final class Security {
      **/
     public static Set<String> getAlgorithms(String serviceName) {
 
-        if ((serviceName == null) || (serviceName.length() == 0) ||
+        if ((serviceName == null) || (serviceName.isEmpty()) ||
             (serviceName.endsWith("."))) {
             return Collections.emptySet();
         }

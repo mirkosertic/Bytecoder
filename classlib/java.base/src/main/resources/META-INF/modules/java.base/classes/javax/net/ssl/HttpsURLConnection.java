@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@ import java.net.URL;
 import java.net.HttpURLConnection;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
+import java.util.Optional;
 
 /**
  * <code>HttpsURLConnection</code> extends <code>HttpURLConnection</code>
@@ -46,15 +47,13 @@ import java.security.cert.X509Certificate;
  * However, the implementations can be replaced on a per-class (static) or
  * per-instance basis.  All new <code>HttpsURLConnection</code>s instances
  * will be assigned
- * the "default" static values at instance creation, but they can be overriden
+ * the "default" static values at instance creation, but they can be overridden
  * by calling the appropriate per-instance set method(s) before
  * <code>connect</code>ing.
  *
  * @since 1.4
  */
-public abstract
-class HttpsURLConnection extends HttpURLConnection
-{
+public abstract class HttpsURLConnection extends HttpURLConnection {
     /**
      * Creates an <code>HttpsURLConnection</code> using the
      * URL specified.
@@ -377,5 +376,30 @@ class HttpsURLConnection extends HttpURLConnection
      */
     public SSLSocketFactory getSSLSocketFactory() {
         return sslSocketFactory;
+    }
+
+    /**
+     * Returns an {@link Optional} containing the {@code SSLSession} in
+     * use on this connection.  Returns an empty {@code Optional} if the
+     * underlying implementation does not support this method.
+     *
+     * @implSpec For compatibility, the default implementation of this
+     *           method returns an empty {@code Optional}.  Subclasses
+     *           should override this method with an appropriate
+     *           implementation since an application may need to access
+     *           additional parameters associated with the SSL session.
+     *
+     * @return   an {@link Optional} containing the {@code SSLSession} in
+     *           use on this connection.
+     *
+     * @throws   IllegalStateException if this method is called before
+     *           the connection has been established
+     *
+     * @see SSLSession
+     *
+     * @since 12
+     */
+    public Optional<SSLSession> getSSLSession() {
+        return Optional.empty();
     }
 }
