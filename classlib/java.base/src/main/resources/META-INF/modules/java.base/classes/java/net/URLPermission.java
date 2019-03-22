@@ -41,7 +41,7 @@ import java.security.Permission;
  * <p><b>The url</b><p>
  * The url string has the following expected structure.
  * <pre>
- *     scheme : // authority [ / path ]
+ *     scheme : // authority [ / path ] [ ignored-query-or-fragment ]
  * </pre>
  * <i>scheme</i> will typically be http or https, but is not restricted by this
  * class.
@@ -51,13 +51,13 @@ import java.security.Permission;
  *     portrange = portnumber | -portnumber | portnumber-[portnumber] | *
  *     hostrange = ([*.] dnsname) | IPv4address | IPv6address
  * </pre>
- * <i>dnsname</i> is a standard DNS host or domain name, ie. one or more labels
+ * <i>dnsname</i> is a standard DNS host or domain name, i.e. one or more labels
  * separated by ".". <i>IPv4address</i> is a standard literal IPv4 address and
  * <i>IPv6address</i> is as defined in <a href="http://www.ietf.org/rfc/rfc2732.txt">
  * RFC 2732</a>. Literal IPv6 addresses must however, be enclosed in '[]' characters.
  * The <i>dnsname</i> specification can be preceded by "*." which means
  * the name will match any hostname whose right-most domain labels are the same as
- * this name. For example, "*.oracle.com" matches "foo.bar.oracle.com"
+ * this name. For example, "*.example.com" matches "foo.bar.example.com"
  * <p>
  * <i>portrange</i> is used to specify a port number, or a bounded or unbounded range of ports
  * that this permission applies to. If portrange is absent or invalid, then a default
@@ -78,18 +78,18 @@ import java.security.Permission;
  * <tr><th scope="col">Example url</th><th scope="col">Description</th></tr>
  * </thead>
  * <tbody style="text-align:left">
- * <tr><th scope="row" style="white-space:nowrap;">http://www.oracle.com/a/b/c.html</th>
+ * <tr><th scope="row" style="white-space:nowrap;">http://www.example.com/a/b/c.html</th>
  *   <td>A url which identifies a specific (single) resource</td>
  * </tr>
- * <tr><th scope="row">http://www.oracle.com/a/b/*</th>
+ * <tr><th scope="row">http://www.example.com/a/b/*</th>
  *   <td>The '*' character refers to all resources in the same "directory" - in
  *       other words all resources with the same number of path components, and
  *       which only differ in the final path component, represented by the '*'.
  *   </td>
  * </tr>
- * <tr><th scope="row">http://www.oracle.com/a/b/-</th>
+ * <tr><th scope="row">http://www.example.com/a/b/-</th>
  *   <td>The '-' character refers to all resources recursively below the
- *       preceding path (eg. http://www.oracle.com/a/b/c/d/e.html matches this
+ *       preceding path (e.g. http://www.example.com/a/b/c/d/e.html matches this
  *       example).
  *   </td>
  * </tr>
@@ -108,6 +108,16 @@ import java.security.Permission;
  * {@link #hashCode()} and {@link #implies(Permission)} are case insensitive with respect
  * to these components. If the <i>authority</i> contains a literal IP address,
  * then the address is normalized for comparison. The path component is case sensitive.
+ * <p>
+ * <i>ignored-query-or-fragment</i> refers to any query or fragment which appears after the
+ * path component, and which is ignored by the constructors of this class. It is defined as:
+ * <pre>
+ *     ignored-query-or-fragment = [ ? query ] [ # fragment ]
+ * </pre>
+ * where <i>query</i> and <i>fragment</i> are as defined in
+ * <a href="http://www.ietf.org/rfc/rfc2296.txt">RFC2396</a>. {@link #getName() getName()} therefore returns
+ * only the <i>scheme</i>, <i>authority</i> and <i>path</i> components of the url string that
+ * the permission was created with.
  * <p><b>The actions string</b><p>
  * The actions string of a URLPermission is a concatenation of the <i>method list</i>
  * and the <i>request headers list</i>. These are lists of the permitted request
@@ -167,8 +177,24 @@ public final class URLPermission extends Permission {
      * @exception IllegalArgumentException if url is invalid or if actions contains white-space.
      */
     public URLPermission(String url, String actions) {
-        super(url);
+        super(normalize(url));
         init(actions);
+    }
+
+    /**
+     * Remove any query or fragment from url string
+     */
+    private static String normalize(String url) {
+        int index = url.indexOf('?');
+        if (index >= 0) {
+            url = url.substring(0, index);
+        } else {
+            index = url.indexOf('#');
+            if (index >= 0) {
+                url = url.substring(0, index);
+            }
+        }
+        return url;
     }
 
     private void init(String actions) {
@@ -241,9 +267,9 @@ public final class URLPermission extends Permission {
      * <li>if this's url scheme is not equal to p's url scheme return false</li>
      * <li>if the scheme specific part of this's url is '*' return true</li>
      * <li>if the set of hosts defined by p's url hostrange is not a subset of
-     *     this's url hostrange then return false. For example, "*.foo.oracle.com"
-     *     is a subset of "*.oracle.com". "foo.bar.oracle.com" is not
-     *     a subset of "*.foo.oracle.com"</li>
+     *     this's url hostrange then return false. For example, "*.foo.example.com"
+     *     is a subset of "*.example.com". "foo.bar.example.com" is not
+     *     a subset of "*.foo.example.com"</li>
      * <li>if the portrange defined by p's url is not a subset of the
      *     portrange defined by this's url then return false.
      * <li>if the path or paths specified by p's url are contained in the
@@ -383,7 +409,7 @@ public final class URLPermission extends Permission {
             char c = methods.charAt(i);
             if (c == ',') {
                 String s = b.toString();
-                if (s.length() > 0)
+                if (!s.isEmpty())
                     l.add(s);
                 b = new StringBuilder();
             } else if (c == ' ' || c == '\t') {
@@ -397,7 +423,7 @@ public final class URLPermission extends Permission {
             }
         }
         String s = b.toString();
-        if (s.length() > 0)
+        if (!s.isEmpty())
             l.add(s);
         return l;
     }
@@ -422,7 +448,7 @@ public final class URLPermission extends Permission {
                 b.append(c);
             } else if (c == ',') {
                 String s = b.toString();
-                if (s.length() > 0)
+                if (!s.isEmpty())
                     l.add(s);
                 b = new StringBuilder();
                 capitalizeNext = true;
@@ -432,7 +458,7 @@ public final class URLPermission extends Permission {
             }
         }
         String s = b.toString();
-        if (s.length() > 0)
+        if (!s.isEmpty())
             l.add(s);
         return l;
     }
@@ -507,11 +533,11 @@ public final class URLPermission extends Permission {
             String thishost = this.p.hostname();
             String thathost = that.p.hostname();
 
-            if (p.wildcard() && thishost.equals("")) {
+            if (p.wildcard() && thishost.isEmpty()) {
                 // this "*" implies all others
                 return true;
             }
-            if (that.p.wildcard() && thathost.equals("")) {
+            if (that.p.wildcard() && thathost.isEmpty()) {
                 // that "*" can only be implied by this "*"
                 return false;
             }

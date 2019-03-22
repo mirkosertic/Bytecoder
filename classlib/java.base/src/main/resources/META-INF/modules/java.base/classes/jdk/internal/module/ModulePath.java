@@ -45,7 +45,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -217,7 +216,7 @@ public class ModulePath implements ModuleFinder {
         try {
             attrs = Files.readAttributes(entry, BasicFileAttributes.class);
         } catch (NoSuchFileException e) {
-            return Collections.emptyMap();
+            return Map.of();
         } catch (IOException ioe) {
             throw new FindException(ioe);
         }
@@ -236,7 +235,7 @@ public class ModulePath implements ModuleFinder {
             ModuleReference mref = readModule(entry, attrs);
             if (mref != null) {
                 String name = mref.descriptor().name();
-                return Collections.singletonMap(name, mref);
+                return Map.of(name, mref);
             }
 
             // not recognized
@@ -547,7 +546,7 @@ public class ModulePath implements ModuleFinder {
                     = new BufferedReader(new InputStreamReader(in, "UTF-8"));
                 String cn;
                 while ((cn = nextLine(reader)) != null) {
-                    if (cn.length() > 0) {
+                    if (!cn.isEmpty()) {
                         String pn = packageName(cn);
                         if (!packages.contains(pn)) {
                             String msg = "Provider class " + cn + " not in module";
@@ -600,7 +599,7 @@ public class ModulePath implements ModuleFinder {
         mn = Patterns.REPEATING_DOTS.matcher(mn).replaceAll(".");
 
         // drop leading dots
-        if (mn.length() > 0 && mn.charAt(0) == '.')
+        if (!mn.isEmpty() && mn.charAt(0) == '.')
             mn = Patterns.LEADING_DOTS.matcher(mn).replaceAll("");
 
         // drop trailing dots

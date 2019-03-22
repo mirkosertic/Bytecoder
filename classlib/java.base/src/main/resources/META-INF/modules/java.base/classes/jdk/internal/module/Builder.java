@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,12 +30,11 @@ import java.lang.module.ModuleDescriptor.Opens;
 import java.lang.module.ModuleDescriptor.Provides;
 import java.lang.module.ModuleDescriptor.Requires;
 import java.lang.module.ModuleDescriptor.Version;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import jdk.internal.misc.JavaLangModuleAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaLangModuleAccess;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * This builder is optimized for reconstituting the {@code ModuleDescriptor}s
@@ -148,11 +147,11 @@ final class Builder {
 
     Builder(String name) {
         this.name = name;
-        this.requires = Collections.emptySet();
-        this.exports = Collections.emptySet();
-        this.opens = Collections.emptySet();
-        this.provides = Collections.emptySet();
-        this.uses = Collections.emptySet();
+        this.requires = Set.of();
+        this.exports = Set.of();
+        this.opens = Set.of();
+        this.provides = Set.of();
+        this.uses = Set.of();
     }
 
     Builder open(boolean value) {
@@ -253,7 +252,7 @@ final class Builder {
         if (synthetic) n++;
         if (mandated) n++;
         if (n == 0) {
-            return Collections.emptySet();
+            return Set.of();
         } else {
             ModuleDescriptor.Modifier[] mods = new ModuleDescriptor.Modifier[n];
             if (open) mods[--n] = ModuleDescriptor.Modifier.OPEN;

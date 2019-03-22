@@ -26,7 +26,12 @@
 package java.lang;
 
 import java.lang.annotation.Native;
+import java.lang.invoke.MethodHandles;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import java.util.Objects;
+import java.util.Optional;
+
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.misc.VM;
 
@@ -56,7 +61,8 @@ import static java.lang.String.UTF16;
  * @author  Joseph D. Darcy
  * @since 1.0
  */
-public final class Integer extends Number implements Comparable<Integer> {
+public final class Integer extends Number
+        implements Comparable<Integer>, Constable, ConstantDesc {
     /**
      * A constant holding the minimum value an {@code int} can
      * have, -2<sup>31</sup>.
@@ -635,11 +641,11 @@ public final class Integer extends Number implements Comparable<Integer> {
                     negative = true;
                     limit = Integer.MIN_VALUE;
                 } else if (firstChar != '+') {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
 
                 if (len == 1) { // Cannot have lone "+" or "-"
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 i++;
             }
@@ -649,17 +655,17 @@ public final class Integer extends Number implements Comparable<Integer> {
                 // Accumulating negatively avoids surprises near MAX_VALUE
                 int digit = Character.digit(s.charAt(i++), radix);
                 if (digit < 0 || result < multmin) {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 result *= radix;
                 if (result < limit + digit) {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 result -= digit;
             }
             return negative ? result : -result;
         } else {
-            throw NumberFormatException.forInputString(s);
+            throw NumberFormatException.forInputString(s, radix);
         }
     }
 
@@ -745,7 +751,7 @@ public final class Integer extends Number implements Comparable<Integer> {
             }
             return negative ? result : -result;
         } else {
-            throw NumberFormatException.forInputString("");
+            throw NumberFormatException.forInputString("", radix);
         }
     }
 
@@ -842,7 +848,7 @@ public final class Integer extends Number implements Comparable<Integer> {
                 }
             }
         } else {
-            throw NumberFormatException.forInputString(s);
+            throw NumberFormatException.forInputString(s, radix);
         }
     }
 
@@ -992,12 +998,19 @@ public final class Integer extends Number implements Comparable<Integer> {
      * During VM initialization, java.lang.Integer.IntegerCache.high property
      * may be set and saved in the private system properties in the
      * jdk.internal.misc.VM class.
+     *
+     * WARNING: The cache is archived with CDS and reloaded from the shared
+     * archive at runtime. The archived cache (Integer[]) and Integer objects
+     * reside in the closed archive heap regions. Care should be taken when
+     * changing the implementation and the cache array should not be assigned
+     * with new Integer object(s) after initialization.
      */
 
     private static class IntegerCache {
         static final int low = -128;
         static final int high;
-        static final Integer cache[];
+        static final Integer[] cache;
+        static Integer[] archivedCache;
 
         static {
             // high value may be configured by property
@@ -1006,21 +1019,29 @@ public final class Integer extends Number implements Comparable<Integer> {
                 VM.getSavedProperty("java.lang.Integer.IntegerCache.high");
             if (integerCacheHighPropValue != null) {
                 try {
-                    int i = parseInt(integerCacheHighPropValue);
-                    i = Math.max(i, 127);
+                    h = Math.max(parseInt(integerCacheHighPropValue), 127);
                     // Maximum array size is Integer.MAX_VALUE
-                    h = Math.min(i, Integer.MAX_VALUE - (-low) -1);
+                    h = Math.min(h, Integer.MAX_VALUE - (-low) -1);
                 } catch( NumberFormatException nfe) {
                     // If the property cannot be parsed into an int, ignore it.
                 }
             }
             high = h;
 
-            cache = new Integer[(high - low) + 1];
-            int j = low;
-            for(int k = 0; k < cache.length; k++)
-                cache[k] = new Integer(j++);
+            // Load IntegerCache.archivedCache from archive, if possible
+            VM.initializeFromArchive(IntegerCache.class);
+            int size = (high - low) + 1;
 
+            // Use the archived cache if it exists and is large enough
+            if (archivedCache == null || size > archivedCache.length) {
+                Integer[] c = new Integer[size];
+                int j = low;
+                for(int i = 0; i < c.length; i++) {
+                    c[i] = new Integer(j++);
+                }
+                archivedCache = c;
+            }
+            cache = archivedCache;
             // range [-128, 127] must be interned (JLS7 5.1.7)
             assert IntegerCache.high >= 127;
         }
@@ -1388,7 +1409,7 @@ public final class Integer extends Number implements Comparable<Integer> {
         boolean negative = false;
         Integer result;
 
-        if (nm.length() == 0)
+        if (nm.isEmpty())
             throw new NumberFormatException("Zero length string");
         char firstChar = nm.charAt(0);
         // Handle sign, if present
@@ -1645,15 +1666,15 @@ public final class Integer extends Number implements Comparable<Integer> {
      */
     @HotSpotIntrinsicCandidate
     public static int numberOfTrailingZeros(int i) {
-        // HD, Figure 5-14
-        int y;
-        if (i == 0) return 32;
-        int n = 31;
-        y = i <<16; if (y != 0) { n = n -16; i = y; }
-        y = i << 8; if (y != 0) { n = n - 8; i = y; }
-        y = i << 4; if (y != 0) { n = n - 4; i = y; }
-        y = i << 2; if (y != 0) { n = n - 2; i = y; }
-        return n - ((i << 1) >>> 31);
+        // HD, Count trailing 0's
+        i = ~i & (i - 1);
+        if (i <= 0) return i & 32;
+        int n = 1;
+        if (i > 1 << 16) { n += 16; i >>>= 16; }
+        if (i > 1 <<  8) { n +=  8; i >>>=  8; }
+        if (i > 1 <<  4) { n +=  4; i >>>=  4; }
+        if (i > 1 <<  2) { n +=  2; i >>>=  2; }
+        return n + (i >>> 1);
     }
 
     /**
@@ -1814,6 +1835,31 @@ public final class Integer extends Number implements Comparable<Integer> {
      */
     public static int min(int a, int b) {
         return Math.min(a, b);
+    }
+
+    /**
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance, which is the instance itself.
+     *
+     * @return an {@link Optional} describing the {@linkplain Integer} instance
+     * @since 12
+     */
+    @Override
+    public Optional<Integer> describeConstable() {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolves this instance as a {@link ConstantDesc}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain Integer} instance
+     * @since 12
+     */
+    @Override
+    public Integer resolveConstantDesc(MethodHandles.Lookup lookup) {
+        return this;
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,8 +26,8 @@
 package java.nio;
 
 import jdk.internal.HotSpotIntrinsicCandidate;
-import jdk.internal.misc.JavaNioAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNioAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.Unsafe;
 
 import java.util.Spliterator;
@@ -693,13 +693,6 @@ public abstract class Buffer {
         return mark;
     }
 
-    final void truncate() {                             // package-private
-        mark = -1;
-        position = 0;
-        limit = 0;
-        capacity = 0;
-    }
-
     final void discardMark() {                          // package-private
         mark = -1;
     }
@@ -716,14 +709,6 @@ public abstract class Buffer {
                 @Override
                 public JavaNioAccess.BufferPool getDirectBufferPool() {
                     return Bits.BUFFER_POOL;
-                }
-                @Override
-                public ByteBuffer newDirectByteBuffer(long addr, int cap, Object ob) {
-                    return new DirectByteBuffer(addr, cap, ob);
-                }
-                @Override
-                public void truncate(Buffer buf) {
-                    buf.truncate();
                 }
             });
     }

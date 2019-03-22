@@ -60,7 +60,7 @@ class HostPortrange {
     HostPortrange(String scheme, String str) {
         // Parse the host name.  A name has up to three components, the
         // hostname, a port number, or two numbers representing a port
-        // range.   "www.sun.com:8080-9090" is a valid host name.
+        // range.   "www.example.com:8080-9090" is a valid host name.
 
         // With IPv6 an address can be 2010:836B:4179::836B:4179
         // An IPv6 address needs to be enclose in []
@@ -241,7 +241,7 @@ class HostPortrange {
     int[] parsePort(String port)
     {
 
-        if (port == null || port.equals("")) {
+        if (port == null || port.isEmpty()) {
             return defaultPort();
         }
 
@@ -260,13 +260,13 @@ class HostPortrange {
                 String high = port.substring(dash+1);
                 int l,h;
 
-                if (low.equals("")) {
+                if (low.isEmpty()) {
                     l = PORT_MIN;
                 } else {
                     l = Integer.parseInt(low);
                 }
 
-                if (high.equals("")) {
+                if (high.isEmpty()) {
                     h = PORT_MAX;
                 } else {
                     h = Integer.parseInt(high);

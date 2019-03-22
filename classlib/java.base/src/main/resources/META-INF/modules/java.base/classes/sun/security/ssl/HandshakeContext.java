@@ -43,6 +43,7 @@ import java.util.Queue;
 import javax.crypto.SecretKey;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLHandshakeException;
+import javax.security.auth.x500.X500Principal;
 import sun.security.ssl.SupportedGroupsExtension.NamedGroup;
 import sun.security.ssl.SupportedGroupsExtension.NamedGroupType;
 import static sun.security.ssl.SupportedGroupsExtension.NamedGroupType.*;
@@ -135,6 +136,9 @@ abstract class HandshakeContext implements ConnectionContext {
     List<SignatureScheme>                   localSupportedSignAlgs;
     List<SignatureScheme>                   peerRequestedSignatureSchemes;
     List<SignatureScheme>                   peerRequestedCertSignSchemes;
+
+    // Known authorities
+    X500Principal[]                         peerSupportedAuthorities = null;
 
     // SupportedGroups
     List<NamedGroup>                        clientRequestedNamedGroups;
@@ -361,26 +365,20 @@ abstract class HandshakeContext implements ConnectionContext {
         //     } Handshake;
 
         if (plaintext.contentType != ContentType.HANDSHAKE.id) {
-            conContext.fatal(Alert.INTERNAL_ERROR,
+            throw conContext.fatal(Alert.INTERNAL_ERROR,
                 "Unexpected operation for record: " + plaintext.contentType);
-
-            return 0;
         }
 
         if (plaintext.fragment == null || plaintext.fragment.remaining() < 4) {
-            conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+            throw conContext.fatal(Alert.UNEXPECTED_MESSAGE,
                     "Invalid handshake message: insufficient data");
-
-            return 0;
         }
 
         byte handshakeType = (byte)Record.getInt8(plaintext.fragment);
         int handshakeLen = Record.getInt24(plaintext.fragment);
         if (handshakeLen != plaintext.fragment.remaining()) {
-            conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+            throw conContext.fatal(Alert.UNEXPECTED_MESSAGE,
                     "Invalid handshake message: insufficient handshake body");
-
-            return 0;
         }
 
         return handshakeType;
@@ -434,16 +432,15 @@ abstract class HandshakeContext implements ConnectionContext {
         }
 
         if (consumer == null) {
-            conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+            throw conContext.fatal(Alert.UNEXPECTED_MESSAGE,
                     "Unexpected handshake message: " +
                     SSLHandshake.nameOf(handshakeType));
-            return;
         }
 
         try {
             consumer.consume(this, fragment);
         } catch (UnsupportedOperationException unsoe) {
-            conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+            throw conContext.fatal(Alert.UNEXPECTED_MESSAGE,
                     "Unsupported handshake message: " +
                     SSLHandshake.nameOf(handshakeType), unsoe);
         }

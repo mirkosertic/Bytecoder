@@ -59,8 +59,8 @@ import java.util.stream.StreamSupport;
 import jdk.internal.jimage.ImageLocation;
 import jdk.internal.jimage.ImageReader;
 import jdk.internal.jimage.ImageReaderFactory;
-import jdk.internal.misc.JavaNetUriAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetUriAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.StaticProperty;
 import jdk.internal.module.ModuleHashes.HashSupplier;
 
@@ -83,7 +83,7 @@ public final class SystemModuleFinders {
         if (value == null) {
             USE_FAST_PATH = true;
         } else {
-            USE_FAST_PATH = (value.length() > 0) && !Boolean.parseBoolean(value);
+            USE_FAST_PATH = !value.isEmpty() && !Boolean.parseBoolean(value);
         }
     }
 
@@ -282,8 +282,8 @@ public final class SystemModuleFinders {
 
         SystemModuleFinder(Set<ModuleReference> mrefs,
                            Map<String, ModuleReference> nameToModule) {
-            this.mrefs = Collections.unmodifiableSet(mrefs);
-            this.nameToModule = Collections.unmodifiableMap(nameToModule);
+            this.mrefs = Set.copyOf(mrefs);
+            this.nameToModule = Map.copyOf(nameToModule);
         }
 
         @Override
@@ -353,7 +353,7 @@ public final class SystemModuleFinders {
                 }
             }
         }
-        return (nameToHash != null) ? nameToHash : Collections.emptyMap();
+        return (nameToHash != null) ? nameToHash : Map.of();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2232,7 +2232,7 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
         if (strings != null) {
             Map<String,Integer> names = new HashMap<>();
             for (int i = 0; i < strings.length; i++) {
-                if (strings[i].length() == 0) {
+                if (strings[i].isEmpty()) {
                     continue;
                 }
                 names.put(strings[i], i);
@@ -3326,7 +3326,9 @@ public abstract class Calendar implements Serializable, Cloneable, Comparable<Ca
                 other.stamp[i] = stamp[i];
                 other.isSet[i] = isSet[i];
             }
-            other.zone = (TimeZone) zone.clone();
+            if (!sharedZone) {
+                other.zone = (TimeZone) zone.clone();
+            }
             return other;
         }
         catch (CloneNotSupportedException e) {

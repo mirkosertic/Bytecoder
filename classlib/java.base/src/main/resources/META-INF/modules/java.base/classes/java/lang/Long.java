@@ -26,9 +26,15 @@
 package java.lang;
 
 import java.lang.annotation.Native;
+import java.lang.invoke.MethodHandles;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import java.math.*;
 import java.util.Objects;
+import java.util.Optional;
+
 import jdk.internal.HotSpotIntrinsicCandidate;
+import jdk.internal.misc.VM;
 
 import static java.lang.String.COMPACT_STRINGS;
 import static java.lang.String.LATIN1;
@@ -56,7 +62,8 @@ import static java.lang.String.UTF16;
  * @author  Joseph D. Darcy
  * @since   1.0
  */
-public final class Long extends Number implements Comparable<Long> {
+public final class Long extends Number
+        implements Comparable<Long>, Constable, ConstantDesc {
     /**
      * A constant holding the minimum value a {@code long} can
      * have, -2<sup>63</sup>.
@@ -675,11 +682,11 @@ public final class Long extends Number implements Comparable<Long> {
                     negative = true;
                     limit = Long.MIN_VALUE;
                 } else if (firstChar != '+') {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
 
                 if (len == 1) { // Cannot have lone "+" or "-"
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 i++;
             }
@@ -689,17 +696,17 @@ public final class Long extends Number implements Comparable<Long> {
                 // Accumulating negatively avoids surprises near MAX_VALUE
                 int digit = Character.digit(s.charAt(i++),radix);
                 if (digit < 0 || result < multmin) {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 result *= radix;
                 if (result < limit + digit) {
-                    throw NumberFormatException.forInputString(s);
+                    throw NumberFormatException.forInputString(s, radix);
                 }
                 result -= digit;
             }
             return negative ? result : -result;
         } else {
-            throw NumberFormatException.forInputString(s);
+            throw NumberFormatException.forInputString(s, radix);
         }
     }
 
@@ -945,7 +952,7 @@ public final class Long extends Number implements Comparable<Long> {
                 return result;
             }
         } else {
-            throw NumberFormatException.forInputString(s);
+            throw NumberFormatException.forInputString(s, radix);
         }
     }
 
@@ -1063,7 +1070,7 @@ public final class Long extends Number implements Comparable<Long> {
                 return result;
             }
         } else {
-            throw NumberFormatException.forInputString("");
+            throw NumberFormatException.forInputString("", radix);
         }
     }
 
@@ -1145,13 +1152,25 @@ public final class Long extends Number implements Comparable<Long> {
     }
 
     private static class LongCache {
-        private LongCache(){}
+        private LongCache() {}
 
-        static final Long cache[] = new Long[-(-128) + 127 + 1];
+        static final Long[] cache;
+        static Long[] archivedCache;
 
         static {
-            for(int i = 0; i < cache.length; i++)
-                cache[i] = new Long(i - 128);
+            int size = -(-128) + 127 + 1;
+
+            // Load and use the archived cache if it exists
+            VM.initializeFromArchive(LongCache.class);
+            if (archivedCache == null || archivedCache.length != size) {
+                Long[] c = new Long[size];
+                long value = -128;
+                for(int i = 0; i < size; i++) {
+                    c[i] = new Long(value++);
+                }
+                archivedCache = c;
+            }
+            cache = archivedCache;
         }
     }
 
@@ -1229,7 +1248,7 @@ public final class Long extends Number implements Comparable<Long> {
         boolean negative = false;
         Long result;
 
-        if (nm.length() == 0)
+        if (nm.isEmpty())
             throw new NumberFormatException("Zero length string");
         char firstChar = nm.charAt(0);
         // Handle sign, if present
@@ -1782,16 +1801,9 @@ public final class Long extends Number implements Comparable<Long> {
      */
     @HotSpotIntrinsicCandidate
     public static int numberOfTrailingZeros(long i) {
-        // HD, Figure 5-14
-        int x, y;
-        if (i == 0) return 64;
-        int n = 63;
-        y = (int)i; if (y != 0) { n = n -32; x = y; } else x = (int)(i>>>32);
-        y = x <<16; if (y != 0) { n = n -16; x = y; }
-        y = x << 8; if (y != 0) { n = n - 8; x = y; }
-        y = x << 4; if (y != 0) { n = n - 4; x = y; }
-        y = x << 2; if (y != 0) { n = n - 2; x = y; }
-        return n - ((x << 1) >>> 31);
+        int x = (int)i;
+        return x == 0 ? 32 + Integer.numberOfTrailingZeros((int)(i >>> 32))
+                : Integer.numberOfTrailingZeros(x);
     }
 
     /**
@@ -1952,6 +1964,31 @@ public final class Long extends Number implements Comparable<Long> {
      */
     public static long min(long a, long b) {
         return Math.min(a, b);
+    }
+
+    /**
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance, which is the instance itself.
+     *
+     * @return an {@link Optional} describing the {@linkplain Long} instance
+     * @since 12
+     */
+    @Override
+    public Optional<Long> describeConstable() {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolves this instance as a {@link ConstantDesc}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain Long} instance
+     * @since 12
+     */
+    @Override
+    public Long resolveConstantDesc(MethodHandles.Lookup lookup) {
+        return this;
     }
 
     /** use serialVersionUID from JDK 1.0.2 for interoperability */

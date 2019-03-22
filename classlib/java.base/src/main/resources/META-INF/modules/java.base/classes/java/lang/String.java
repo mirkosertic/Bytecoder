@@ -28,6 +28,9 @@ package java.lang;
 import java.io.ObjectStreamField;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Native;
+import java.lang.invoke.MethodHandles;
+import java.lang.constant.Constable;
+import java.lang.constant.ConstantDesc;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,16 +38,21 @@ import java.util.Comparator;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.StringJoiner;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
+
+import static java.util.function.Predicate.not;
 
 /**
  * The {@code String} class represents character strings. All
@@ -123,7 +131,8 @@ import jdk.internal.vm.annotation.Stable;
  */
 
 public final class String
-    implements java.io.Serializable, Comparable<String>, CharSequence {
+    implements java.io.Serializable, Comparable<String>, CharSequence,
+               Constable, ConstantDesc {
 
     /**
      * The value is used for character storage.
@@ -1934,8 +1943,7 @@ public final class String
      *          characters followed by the string argument's characters.
      */
     public String concat(String str) {
-        int olen = str.length();
-        if (olen == 0) {
+        if (str.isEmpty()) {
             return this;
         }
         if (coder() == str.coder()) {
@@ -1947,6 +1955,7 @@ public final class String
             return new String(buf, coder);
         }
         int len = length();
+        int olen = str.length();
         byte[] buf = StringUTF16.newBytesFor(len + olen);
         getBytes(buf, 0, UTF16);
         str.getBytes(buf, len, UTF16);
@@ -2307,7 +2316,7 @@ public final class String
             // Construct result
             int resultSize = list.size();
             if (limit == 0) {
-                while (resultSize > 0 && list.get(resultSize - 1).length() == 0) {
+                while (resultSize > 0 && list.get(resultSize - 1).isEmpty()) {
                     resultSize--;
                 }
             }
@@ -2755,12 +2764,9 @@ public final class String
         return indexOfNonWhitespace() == length();
     }
 
-    private int indexOfNonWhitespace() {
-        if (isLatin1()) {
-            return StringLatin1.indexOfNonWhitespace(value);
-        } else {
-            return StringUTF16.indexOfNonWhitespace(value);
-        }
+    private Stream<String> lines(int maxLeading, int maxTrailing) {
+        return isLatin1() ? StringLatin1.lines(value, maxLeading, maxTrailing)
+                          : StringUTF16.lines(value, maxLeading, maxTrailing);
     }
 
     /**
@@ -2794,8 +2800,93 @@ public final class String
      * @since 11
      */
     public Stream<String> lines() {
-        return isLatin1() ? StringLatin1.lines(value)
-                          : StringUTF16.lines(value);
+        return lines(0, 0);
+    }
+
+    /**
+     * Adjusts the indentation of each line of this string based on the value of
+     * {@code n}, and normalizes line termination characters.
+     * <p>
+     * This string is conceptually separated into lines using
+     * {@link String#lines()}. Each line is then adjusted as described below
+     * and then suffixed with a line feed {@code "\n"} (U+000A). The resulting
+     * lines are then concatenated and returned.
+     * <p>
+     * If {@code n > 0} then {@code n} spaces (U+0020) are inserted at the
+     * beginning of each line.
+     * <p>
+     * If {@code n < 0} then up to {@code n}
+     * {@link Character#isWhitespace(int) white space characters} are removed
+     * from the beginning of each line. If a given line does not contain
+     * sufficient white space then all leading
+     * {@link Character#isWhitespace(int) white space characters} are removed.
+     * Each white space character is treated as a single character. In
+     * particular, the tab character {@code "\t"} (U+0009) is considered a
+     * single character; it is not expanded.
+     * <p>
+     * If {@code n == 0} then the line remains unchanged. However, line
+     * terminators are still normalized.
+     *
+     * @param n  number of leading
+     *           {@link Character#isWhitespace(int) white space characters}
+     *           to add or remove
+     *
+     * @return string with indentation adjusted and line endings normalized
+     *
+     * @see String#lines()
+     * @see String#isBlank()
+     * @see Character#isWhitespace(int)
+     *
+     * @since 12
+     */
+    public String indent(int n) {
+        return isEmpty() ? "" :  indent(n, false);
+    }
+
+    private String indent(int n, boolean removeBlanks) {
+        Stream<String> stream = removeBlanks ? lines(Integer.MAX_VALUE, Integer.MAX_VALUE)
+                                             : lines();
+        if (n > 0) {
+            final String spaces = " ".repeat(n);
+            stream = stream.map(s -> spaces + s);
+        } else if (n == Integer.MIN_VALUE) {
+            stream = stream.map(s -> s.stripLeading());
+        } else if (n < 0) {
+            stream = stream.map(s -> s.substring(Math.min(-n, s.indexOfNonWhitespace())));
+        }
+        return stream.collect(Collectors.joining("\n", "", "\n"));
+    }
+
+    private int indexOfNonWhitespace() {
+        return isLatin1() ? StringLatin1.indexOfNonWhitespace(value)
+                          : StringUTF16.indexOfNonWhitespace(value);
+    }
+
+    private int lastIndexOfNonWhitespace() {
+        return isLatin1() ? StringLatin1.lastIndexOfNonWhitespace(value)
+                          : StringUTF16.lastIndexOfNonWhitespace(value);
+    }
+
+    /**
+     * This method allows the application of a function to {@code this}
+     * string. The function should expect a single String argument
+     * and produce an {@code R} result.
+     * <p>
+     * Any exception thrown by {@code f()} will be propagated to the
+     * caller.
+     *
+     * @param f    functional interface to a apply
+     *
+     * @param <R>  class of the result
+     *
+     * @return     the result of applying the function to this string
+     *
+     * @see java.util.function.Function
+     *
+     * @since 12
+     */
+    public <R> R transform(Function<? super String, ? extends R> f) {
+        return f.apply(this);
     }
 
     /**
@@ -3344,4 +3435,30 @@ public final class String
         throw new IllegalArgumentException(
             format("Not a valid Unicode code point: 0x%X", codePoint));
     }
+
+    /**
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance, which is the instance itself.
+     *
+     * @return an {@link Optional} describing the {@linkplain String} instance
+     * @since 12
+     */
+    @Override
+    public Optional<String> describeConstable() {
+        return Optional.of(this);
+    }
+
+    /**
+     * Resolves this instance as a {@link ConstantDesc}, the result of which is
+     * the instance itself.
+     *
+     * @param lookup ignored
+     * @return the {@linkplain String} instance
+     * @since 12
+     */
+    @Override
+    public String resolveConstantDesc(MethodHandles.Lookup lookup) {
+        return this;
+    }
+
 }

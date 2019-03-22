@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@
 package com.sun.crypto.provider;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.AlgorithmParametersSpi;
 import java.security.spec.AlgorithmParameterSpec;
@@ -264,7 +263,20 @@ abstract class PBES2Parameters extends AlgorithmParametersSpi {
             throw new IOException("PBE parameter parsing error: "
                 + "not an ASN.1 SEQUENCE tag");
         }
-        kdfAlgo = parseKDF(pBES2_params.data.getDerValue());
+        DerValue kdf = pBES2_params.data.getDerValue();
+
+        // Before JDK-8202837, PBES2-params was mistakenly encoded like
+        // an AlgorithmId which is a sequence of its own OID and the real
+        // PBES2-params. If the first DerValue is an OID instead of a
+        // PBES2-KDFs (which should be a SEQUENCE), we are likely to be
+        // dealing with this buggy encoding. Skip the OID and treat the
+        // next DerValue as the real PBES2-params.
+        if (kdf.getTag() == DerValue.tag_ObjectId) {
+            pBES2_params = pBES2_params.data.getDerValue();
+            kdf = pBES2_params.data.getDerValue();
+        }
+
+        kdfAlgo = parseKDF(kdf);
 
         if (pBES2_params.tag != DerValue.tag_Sequence) {
             throw new IOException("PBE parameter parsing error: "
@@ -302,41 +314,48 @@ abstract class PBES2Parameters extends AlgorithmParametersSpi {
                 + "not an ASN.1 OCTET STRING tag");
         }
         iCount = pBKDF2_params.data.getInteger();
+
+        DerValue prf = null;
         // keyLength INTEGER (1..MAX) OPTIONAL,
         if (pBKDF2_params.data.available() > 0) {
             DerValue keyLength = pBKDF2_params.data.getDerValue();
             if (keyLength.tag == DerValue.tag_Integer) {
                 keysize = keyLength.getInteger() * 8; // keysize (in bits)
+            } else {
+                // Should be the prf
+                prf = keyLength;
             }
         }
         // prf AlgorithmIdentifier {{PBKDF2-PRFs}} DEFAULT algid-hmacWithSHA1
         String kdfAlgo = "HmacSHA1";
-        if (pBKDF2_params.data.available() > 0) {
-            if (pBKDF2_params.tag == DerValue.tag_Sequence) {
-                DerValue prf = pBKDF2_params.data.getDerValue();
-                kdfAlgo_OID = prf.data.getOID();
-                if (hmacWithSHA1_OID.equals(kdfAlgo_OID)) {
-                    kdfAlgo = "HmacSHA1";
-                } else if (hmacWithSHA224_OID.equals(kdfAlgo_OID)) {
-                    kdfAlgo = "HmacSHA224";
-                } else if (hmacWithSHA256_OID.equals(kdfAlgo_OID)) {
-                    kdfAlgo = "HmacSHA256";
-                } else if (hmacWithSHA384_OID.equals(kdfAlgo_OID)) {
-                    kdfAlgo = "HmacSHA384";
-                } else if (hmacWithSHA512_OID.equals(kdfAlgo_OID)) {
-                    kdfAlgo = "HmacSHA512";
-                } else {
+        if (prf == null) {
+            if (pBKDF2_params.data.available() > 0) {
+                prf = pBKDF2_params.data.getDerValue();
+            }
+        }
+        if (prf != null) {
+            kdfAlgo_OID = prf.data.getOID();
+            if (hmacWithSHA1_OID.equals(kdfAlgo_OID)) {
+                kdfAlgo = "HmacSHA1";
+            } else if (hmacWithSHA224_OID.equals(kdfAlgo_OID)) {
+                kdfAlgo = "HmacSHA224";
+            } else if (hmacWithSHA256_OID.equals(kdfAlgo_OID)) {
+                kdfAlgo = "HmacSHA256";
+            } else if (hmacWithSHA384_OID.equals(kdfAlgo_OID)) {
+                kdfAlgo = "HmacSHA384";
+            } else if (hmacWithSHA512_OID.equals(kdfAlgo_OID)) {
+                kdfAlgo = "HmacSHA512";
+            } else {
+                throw new IOException("PBE parameter parsing error: "
+                        + "expecting the object identifier for a HmacSHA key "
+                        + "derivation function");
+            }
+            if (prf.data.available() != 0) {
+                // parameter is 'NULL' for all HmacSHA KDFs
+                DerValue parameter = prf.data.getDerValue();
+                if (parameter.tag != DerValue.tag_Null) {
                     throw new IOException("PBE parameter parsing error: "
-                            + "expecting the object identifier for a HmacSHA key "
-                            + "derivation function");
-                }
-                if (prf.data.available() != 0) {
-                    // parameter is 'NULL' for all HmacSHA KDFs
-                    DerValue parameter = prf.data.getDerValue();
-                    if (parameter.tag != DerValue.tag_Null) {
-                        throw new IOException("PBE parameter parsing error: "
-                                + "not an ASN.1 NULL tag");
-                    }
+                            + "not an ASN.1 NULL tag");
                 }
             }
         }

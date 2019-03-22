@@ -35,7 +35,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.misc.VM;
 import jdk.internal.vm.annotation.Stable;
 
 /**
@@ -409,7 +410,15 @@ class ImmutableCollections {
     static final class ListN<E> extends AbstractImmutableList<E>
             implements Serializable {
 
-        static final List<?> EMPTY_LIST = new ListN<>();
+        // EMPTY_LIST may be initialized from the CDS archive.
+        static @Stable List<?> EMPTY_LIST;
+
+        static {
+            VM.initializeFromArchive(ListN.class);
+            if (EMPTY_LIST == null) {
+                EMPTY_LIST = new ListN<>();
+            }
+        }
 
         @Stable
         private final E[] elements;
@@ -567,7 +576,15 @@ class ImmutableCollections {
     static final class SetN<E> extends AbstractImmutableSet<E>
             implements Serializable {
 
-        static final Set<?> EMPTY_SET = new SetN<>();
+        // EMPTY_SET may be initialized from the CDS archive.
+        static @Stable Set<?> EMPTY_SET;
+
+        static {
+            VM.initializeFromArchive(SetN.class);
+            if (EMPTY_SET == null) {
+                EMPTY_SET = new SetN<>();
+            }
+        }
 
         @Stable
         final E[] elements;
@@ -772,7 +789,15 @@ class ImmutableCollections {
      */
     static final class MapN<K,V> extends AbstractImmutableMap<K,V> {
 
-        static final Map<?,?> EMPTY_MAP = new MapN<>();
+        // EMPTY_MAP may be initialized from the CDS archive.
+        static @Stable Map<?,?> EMPTY_MAP;
+
+        static {
+            VM.initializeFromArchive(MapN.class);
+            if (EMPTY_MAP == null) {
+                EMPTY_MAP = new MapN<>();
+            }
+        }
 
         @Stable
         final Object[] table; // pairs of key, value
@@ -1066,9 +1091,9 @@ final class CollSer implements Serializable {
      * Creates and returns an immutable collection from this proxy class.
      * The instance returned is created as if by calling one of the
      * static factory methods for
-     * <a href="List.html#immutable">List</a>,
-     * <a href="Map.html#immutable">Map</a>, or
-     * <a href="Set.html#immutable">Set</a>.
+     * <a href="List.html#unmodifiable">List</a>,
+     * <a href="Map.html#unmodifiable">Map</a>, or
+     * <a href="Set.html#unmodifiable">Set</a>.
      * This proxy class is the serial form for all immutable collection instances,
      * regardless of implementation type. This is necessary to ensure that the
      * existence of any particular implementation type is kept out of the

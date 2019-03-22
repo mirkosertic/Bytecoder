@@ -802,7 +802,13 @@ public final class DateTimeFormatterBuilder {
                 return store.getText(value, style);
             }
             @Override
-            public Iterator<Entry<String, Long>> getTextIterator(TemporalField field, TextStyle style, Locale locale) {
+            public Iterator<Entry<String, Long>> getTextIterator(Chronology chrono,
+                    TemporalField field, TextStyle style, Locale locale) {
+                return store.getTextIterator(style);
+            }
+            @Override
+            public Iterator<Entry<String, Long>> getTextIterator(TemporalField field,
+                    TextStyle style, Locale locale) {
                 return store.getTextIterator(style);
             }
         };
@@ -830,6 +836,10 @@ public final class DateTimeFormatterBuilder {
      * The end-of-day time of '24:00' is handled as midnight at the start of the following day.
      * The leap-second time of '23:59:59' is handled to some degree, see
      * {@link DateTimeFormatter#parsedLeapSecond()} for full details.
+     * <p>
+     * When formatting, the instant will always be suffixed by 'Z' to indicate UTC.
+     * When parsing, the behaviour of {@link DateTimeFormatterBuilder#appendOffsetId()}
+     * will be used to parse the offset, converting the instant to UTC as necessary.
      * <p>
      * An alternative to this method is to format/parse the instant as a single
      * epoch-seconds value. That is achieved using {@code appendValue(INSTANT_SECONDS)}.
@@ -1429,7 +1439,7 @@ public final class DateTimeFormatterBuilder {
      */
     public DateTimeFormatterBuilder appendLiteral(String literal) {
         Objects.requireNonNull(literal, "literal");
-        if (literal.length() > 0) {
+        if (!literal.isEmpty()) {
             if (literal.length() == 1) {
                 appendInternal(new CharLiteralPrinterParser(literal.charAt(0)));
             } else {
@@ -1822,7 +1832,7 @@ public final class DateTimeFormatterBuilder {
                     throw new IllegalArgumentException("Pattern ends with an incomplete string literal: " + pattern);
                 }
                 String str = pattern.substring(start + 1, pos);
-                if (str.length() == 0) {
+                if (str.isEmpty()) {
                     appendLiteral('\'');
                 } else {
                     appendLiteral(str.replace("''", "'"));
@@ -3462,7 +3472,7 @@ public final class DateTimeFormatterBuilder {
                     .appendValue(MINUTE_OF_HOUR, 2).appendLiteral(':')
                     .appendValue(SECOND_OF_MINUTE, 2)
                     .appendFraction(NANO_OF_SECOND, minDigits, maxDigits, true)
-                    .appendLiteral('Z')
+                    .appendOffsetId()
                     .toFormatter().toPrinterParser(false);
             DateTimeParseContext newContext = context.copy();
             int pos = parser.parse(newContext, text, position);
@@ -3480,6 +3490,7 @@ public final class DateTimeFormatterBuilder {
             Long nanoVal = newContext.getParsed(NANO_OF_SECOND);
             int sec = (secVal != null ? secVal.intValue() : 0);
             int nano = (nanoVal != null ? nanoVal.intValue() : 0);
+            int offset = newContext.getParsed(OFFSET_SECONDS).intValue();
             int days = 0;
             if (hour == 24 && min == 0 && sec == 0 && nano == 0) {
                 hour = 0;
@@ -3492,7 +3503,7 @@ public final class DateTimeFormatterBuilder {
             long instantSecs;
             try {
                 LocalDateTime ldt = LocalDateTime.of(year, month, day, hour, min, sec, 0).plusDays(days);
-                instantSecs = ldt.toEpochSecond(ZoneOffset.UTC);
+                instantSecs = ldt.toEpochSecond(ZoneOffset.ofTotalSeconds(offset));
                 instantSecs += Math.multiplyExact(yearParsed / 10_000L, SECONDS_PER_10000_YEARS);
             } catch (RuntimeException ex) {
                 return ~position;
@@ -4321,7 +4332,7 @@ public final class DateTimeFormatterBuilder {
             this.key = k;
             this.value = v;
             this.child = child;
-            if (k.length() == 0){
+            if (k.isEmpty()) {
                 c0 = 0xffff;
             } else {
                 c0 = key.charAt(0);

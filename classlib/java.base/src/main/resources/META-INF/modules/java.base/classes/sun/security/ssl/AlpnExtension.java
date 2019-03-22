@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,143 +26,492 @@
 package sun.security.ssl;
 
 import java.io.IOException;
-import java.nio.charset.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLProtocolException;
+import javax.net.ssl.SSLSocket;
+import sun.security.ssl.SSLExtension.ExtensionConsumer;
+import sun.security.ssl.SSLExtension.SSLExtensionSpec;
+import sun.security.ssl.SSLHandshake.HandshakeMessage;
 
-import javax.net.ssl.*;
-
-/*
- * [RFC 7301]
- * This TLS extension facilitates the negotiation of application-layer protocols
- * within the TLS handshake. Clients MAY include an extension of type
- * "application_layer_protocol_negotiation" in the (extended) ClientHello
- * message. The "extension_data" field of this extension SHALL contain a
- * "ProtocolNameList" value:
- *
- *     enum {
- *         application_layer_protocol_negotiation(16), (65535)
- *     } ExtensionType;
- *
- *     opaque ProtocolName<1..2^8-1>;
- *
- *     struct {
- *         ProtocolName protocol_name_list<2..2^16-1>
- *     } ProtocolNameList;
+/**
+ * Pack of the "application_layer_protocol_negotiation" extensions [RFC 7301].
  */
-final class ALPNExtension extends HelloExtension {
+final class AlpnExtension {
+    static final HandshakeProducer chNetworkProducer = new CHAlpnProducer();
+    static final ExtensionConsumer chOnLoadConsumer = new CHAlpnConsumer();
+    static final HandshakeAbsence chOnLoadAbsence = new CHAlpnAbsence();
 
-    final static int ALPN_HEADER_LENGTH = 1;
-    final static int MAX_APPLICATION_PROTOCOL_LENGTH = 255;
-    final static int MAX_APPLICATION_PROTOCOL_LIST_LENGTH = 65535;
-    private int listLength = 0;     // ProtocolNameList length
-    private List<String> protocolNames = null;
+    static final HandshakeProducer shNetworkProducer = new SHAlpnProducer();
+    static final ExtensionConsumer shOnLoadConsumer = new SHAlpnConsumer();
+    static final HandshakeAbsence shOnLoadAbsence = new SHAlpnAbsence();
 
-    // constructor for ServerHello
-    ALPNExtension(String protocolName) throws SSLException {
-        this(new String[]{ protocolName });
-    }
+    // Note: we reuse ServerHello operations for EncryptedExtensions for now.
+    // Please be careful about any code or specification changes in the future.
+    static final HandshakeProducer eeNetworkProducer = new SHAlpnProducer();
+    static final ExtensionConsumer eeOnLoadConsumer = new SHAlpnConsumer();
+    static final HandshakeAbsence eeOnLoadAbsence = new SHAlpnAbsence();
 
-    // constructor for ClientHello
-    ALPNExtension(String[] protocolNames) throws SSLException {
-        super(ExtensionType.EXT_ALPN);
-        if (protocolNames.length == 0) { // never null, never empty
-            throw new IllegalArgumentException(
-                "The list of application protocols cannot be empty");
-        }
-        this.protocolNames = Arrays.asList(protocolNames);
-        for (String p : protocolNames) {
-            int length = p.getBytes(StandardCharsets.UTF_8).length;
-            if (length == 0) {
-                throw new SSLProtocolException(
-                    "Application protocol name is empty");
-            }
-            if (length <= MAX_APPLICATION_PROTOCOL_LENGTH) {
-                listLength += length + ALPN_HEADER_LENGTH;
-            } else {
-                throw new SSLProtocolException(
-                    "Application protocol name is too long: " + p);
-            }
-            if (listLength > MAX_APPLICATION_PROTOCOL_LIST_LENGTH) {
-                throw new SSLProtocolException(
-                    "Application protocol name list is too long");
-            }
-        }
-    }
+    static final SSLStringizer alpnStringizer = new AlpnStringizer();
 
-    // constructor for ServerHello for parsing ALPN extension
-    ALPNExtension(HandshakeInStream s, int len) throws IOException {
-        super(ExtensionType.EXT_ALPN);
-
-        if (len >= 2) {
-            listLength = s.getInt16(); // list length
-            if (listLength < 2 || listLength + 2 != len) {
-                throw new SSLProtocolException(
-                    "Invalid " + type + " extension: incorrect list length " +
-                    "(length=" + listLength + ")");
-            }
-        } else {
-            throw new SSLProtocolException(
-                "Invalid " + type + " extension: insufficient data " +
-                "(length=" + len + ")");
-        }
-
-        int remaining = listLength;
-        this.protocolNames = new ArrayList<>();
-        while (remaining > 0) {
-            // opaque ProtocolName<1..2^8-1>; // RFC 7301
-            byte[] bytes = s.getBytes8();
-            if (bytes.length == 0) {
-                throw new SSLProtocolException("Invalid " + type +
-                    " extension: empty application protocol name");
-            }
-            String p =
-                new String(bytes, StandardCharsets.UTF_8); // app protocol
-            protocolNames.add(p);
-            remaining -= bytes.length + ALPN_HEADER_LENGTH;
-        }
-
-        if (remaining != 0) {
-            throw new SSLProtocolException(
-                "Invalid " + type + " extension: extra data " +
-                "(length=" + remaining + ")");
-        }
-    }
-
-    List<String> getPeerAPs() {
-        return protocolNames;
-    }
-
-    /*
-     * Return the length in bytes, including extension type and length fields.
+    /**
+     * The "application_layer_protocol_negotiation" extension.
+     *
+     * See RFC 7301 for the specification of this extension.
      */
-    @Override
-    int length() {
-        return 6 + listLength;
-    }
+    static final class AlpnSpec implements SSLExtensionSpec {
+        final List<String> applicationProtocols;
 
-    @Override
-    void send(HandshakeOutStream s) throws IOException {
-        s.putInt16(type.id);
-        s.putInt16(listLength + 2); // length of extension_data
-        s.putInt16(listLength);     // length of ProtocolNameList
+        private AlpnSpec(String[] applicationProtocols) {
+            this.applicationProtocols = Collections.unmodifiableList(
+                    Arrays.asList(applicationProtocols));
+        }
 
-        for (String p : protocolNames) {
-            s.putBytes8(p.getBytes(StandardCharsets.UTF_8));
+        private AlpnSpec(ByteBuffer buffer) throws IOException {
+            // ProtocolName protocol_name_list<2..2^16-1>, RFC 7301.
+            if (buffer.remaining() < 2) {
+                throw new SSLProtocolException(
+                    "Invalid application_layer_protocol_negotiation: " +
+                    "insufficient data (length=" + buffer.remaining() + ")");
+            }
+
+            int listLen = Record.getInt16(buffer);
+            if (listLen < 2 || listLen != buffer.remaining()) {
+                throw new SSLProtocolException(
+                    "Invalid application_layer_protocol_negotiation: " +
+                    "incorrect list length (length=" + listLen + ")");
+            }
+
+            List<String> protocolNames = new LinkedList<>();
+            while (buffer.hasRemaining()) {
+                // opaque ProtocolName<1..2^8-1>, RFC 7301.
+                byte[] bytes = Record.getBytes8(buffer);
+                if (bytes.length == 0) {
+                    throw new SSLProtocolException(
+                        "Invalid application_layer_protocol_negotiation " +
+                        "extension: empty application protocol name");
+                }
+
+                String appProtocol = new String(bytes, StandardCharsets.UTF_8);
+                protocolNames.add(appProtocol);
+            }
+
+            this.applicationProtocols =
+                    Collections.unmodifiableList(protocolNames);
+        }
+
+        @Override
+        public String toString() {
+            return applicationProtocols.toString();
         }
     }
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        if (protocolNames == null || protocolNames.isEmpty()) {
-            sb.append("<empty>");
-        } else {
-            for (String protocolName : protocolNames) {
-                sb.append("[" + protocolName + "]");
+    private static final class AlpnStringizer implements SSLStringizer {
+        @Override
+        public String toString(ByteBuffer buffer) {
+            try {
+                return (new AlpnSpec(buffer)).toString();
+            } catch (IOException ioe) {
+                // For debug logging only, so please swallow exceptions.
+                return ioe.getMessage();
             }
         }
+    }
 
-        return "Extension " + type +
-            ", protocol names: " + sb;
+    /**
+     * Network data producer of the extension in a ClientHello
+     * handshake message.
+     */
+    private static final class CHAlpnProducer implements HandshakeProducer {
+        static final int MAX_AP_LENGTH = 255;
+        static final int MAX_AP_LIST_LENGTH = 65535;
+
+        // Prevent instantiation of this class.
+        private CHAlpnProducer() {
+            // blank
+        }
+
+        @Override
+        public byte[] produce(ConnectionContext context,
+                HandshakeMessage message) throws IOException {
+            // The producing happens in client side only.
+            ClientHandshakeContext chc = (ClientHandshakeContext)context;
+
+            // Is it a supported and enabled extension?
+            if (!chc.sslConfig.isAvailable(SSLExtension.CH_ALPN)) {
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.info(
+                            "Ignore client unavailable extension: " +
+                            SSLExtension.CH_ALPN.name);
+                }
+
+                chc.applicationProtocol = "";
+                chc.conContext.applicationProtocol = "";
+                return null;
+            }
+
+            String[] laps = chc.sslConfig.applicationProtocols;
+            if ((laps == null) || (laps.length == 0)) {
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.info(
+                            "No available application protocols");
+                }
+                return null;
+            }
+
+            // Produce the extension.
+            int listLength = 0;     // ProtocolNameList length
+            for (String ap : laps) {
+                int length = ap.getBytes(StandardCharsets.UTF_8).length;
+                if (length == 0) {
+                    // log the configuration problem
+                    if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                        SSLLogger.severe(
+                                "Application protocol name cannot be empty");
+                    }
+
+                    throw chc.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                            "Application protocol name cannot be empty");
+                }
+
+                if (length <= MAX_AP_LENGTH) {
+                    // opaque ProtocolName<1..2^8-1>, RFC 7301.
+                    listLength += (length + 1);
+                } else {
+                    // log the configuration problem
+                    if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                        SSLLogger.severe(
+                                "Application protocol name (" + ap +
+                                ") exceeds the size limit (" +
+                                MAX_AP_LENGTH + " bytes)");
+                    }
+
+                    throw chc.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                                "Application protocol name (" + ap +
+                                ") exceeds the size limit (" +
+                                MAX_AP_LENGTH + " bytes)");
+                }
+
+                if (listLength > MAX_AP_LIST_LENGTH) {
+                    // log the configuration problem
+                    if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                        SSLLogger.severe(
+                                "The configured application protocols (" +
+                                Arrays.toString(laps) +
+                                ") exceed the size limit (" +
+                                MAX_AP_LIST_LENGTH + " bytes)");
+                    }
+
+                    throw chc.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                                "The configured application protocols (" +
+                                Arrays.toString(laps) +
+                                ") exceed the size limit (" +
+                                MAX_AP_LIST_LENGTH + " bytes)");
+                }
+            }
+
+            // ProtocolName protocol_name_list<2..2^16-1>, RFC 7301.
+            byte[] extData = new byte[listLength + 2];
+            ByteBuffer m = ByteBuffer.wrap(extData);
+            Record.putInt16(m, listLength);
+            for (String ap : laps) {
+                Record.putBytes8(m, ap.getBytes(StandardCharsets.UTF_8));
+            }
+
+            // Update the context.
+            chc.handshakeExtensions.put(SSLExtension.CH_ALPN,
+                    new AlpnSpec(chc.sslConfig.applicationProtocols));
+
+            return extData;
+        }
+    }
+
+    /**
+     * Network data consumer of the extension in a ClientHello
+     * handshake message.
+     */
+    private static final class CHAlpnConsumer implements ExtensionConsumer {
+        // Prevent instantiation of this class.
+        private CHAlpnConsumer() {
+            // blank
+        }
+
+        @Override
+        public void consume(ConnectionContext context,
+            HandshakeMessage message, ByteBuffer buffer) throws IOException {
+            // The consuming happens in server side only.
+            ServerHandshakeContext shc = (ServerHandshakeContext)context;
+
+            // Is it a supported and enabled extension?
+            if (!shc.sslConfig.isAvailable(SSLExtension.CH_ALPN)) {
+                shc.applicationProtocol = "";
+                shc.conContext.applicationProtocol = "";
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.info(
+                            "Ignore server unavailable extension: " +
+                            SSLExtension.CH_ALPN.name);
+                }
+                return;     // ignore the extension
+            }
+
+            // Is the extension enabled?
+            boolean noAPSelector;
+            if (shc.conContext.transport instanceof SSLEngine) {
+                noAPSelector = (shc.sslConfig.engineAPSelector == null);
+            } else {
+                noAPSelector = (shc.sslConfig.socketAPSelector == null);
+            }
+
+            boolean noAlpnProtocols =
+                    shc.sslConfig.applicationProtocols == null ||
+                    shc.sslConfig.applicationProtocols.length == 0;
+            if (noAPSelector && noAlpnProtocols) {
+                shc.applicationProtocol = "";
+                shc.conContext.applicationProtocol = "";
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.fine(
+                            "Ignore server unenabled extension: " +
+                            SSLExtension.CH_ALPN.name);
+                }
+                return;     // ignore the extension
+            }
+
+            // Parse the extension.
+            AlpnSpec spec;
+            try {
+                spec = new AlpnSpec(buffer);
+            } catch (IOException ioe) {
+                throw shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
+            }
+
+            // Update the context.
+            if (noAPSelector) {     // noAlpnProtocols is false
+                List<String> protocolNames = spec.applicationProtocols;
+                boolean matched = false;
+                // Use server application protocol preference order.
+                for (String ap : shc.sslConfig.applicationProtocols) {
+                    if (protocolNames.contains(ap)) {
+                        shc.applicationProtocol = ap;
+                        shc.conContext.applicationProtocol = ap;
+                        matched = true;
+                        break;
+                    }
+                }
+
+                if (!matched) {
+                    throw shc.conContext.fatal(Alert.NO_APPLICATION_PROTOCOL,
+                            "No matching application layer protocol values");
+                }
+            }   // Otherwise, applicationProtocol will be set by the
+                // application selector callback later.
+
+            shc.handshakeExtensions.put(SSLExtension.CH_ALPN, spec);
+
+            // No impact on session resumption.
+            //
+            // [RFC 7301] Unlike many other TLS extensions, this extension
+            // does not establish properties of the session, only of the
+            // connection.  When session resumption or session tickets are
+            // used, the previous contents of this extension are irrelevant,
+            // and only the values in the new handshake messages are
+            // considered.
+        }
+    }
+
+    /**
+     * The absence processing if the extension is not present in
+     * a ClientHello handshake message.
+     */
+    private static final class CHAlpnAbsence implements HandshakeAbsence {
+        @Override
+        public void absent(ConnectionContext context,
+                HandshakeMessage message) throws IOException {
+            // The producing happens in server side only.
+            ServerHandshakeContext shc = (ServerHandshakeContext)context;
+
+            // Please don't use the previous negotiated application protocol.
+            shc.applicationProtocol = "";
+            shc.conContext.applicationProtocol = "";
+        }
+    }
+
+    /**
+     * Network data producer of the extension in the ServerHello
+     * handshake message.
+     */
+    private static final class SHAlpnProducer implements HandshakeProducer {
+        // Prevent instantiation of this class.
+        private SHAlpnProducer() {
+            // blank
+        }
+
+        @Override
+        public byte[] produce(ConnectionContext context,
+                HandshakeMessage message) throws IOException {
+            // The producing happens in client side only.
+            ServerHandshakeContext shc = (ServerHandshakeContext)context;
+
+            // In response to ALPN request only
+            AlpnSpec requestedAlps =
+                    (AlpnSpec)shc.handshakeExtensions.get(SSLExtension.CH_ALPN);
+            if (requestedAlps == null) {
+                // Ignore, this extension was not requested and accepted.
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.fine(
+                            "Ignore unavailable extension: " +
+                            SSLExtension.SH_ALPN.name);
+                }
+
+                shc.applicationProtocol = "";
+                shc.conContext.applicationProtocol = "";
+                return null;
+            }
+
+            List<String> alps = requestedAlps.applicationProtocols;
+            if (shc.conContext.transport instanceof SSLEngine) {
+                if (shc.sslConfig.engineAPSelector != null) {
+                    SSLEngine engine = (SSLEngine)shc.conContext.transport;
+                    shc.applicationProtocol =
+                        shc.sslConfig.engineAPSelector.apply(engine, alps);
+                    if ((shc.applicationProtocol == null) ||
+                            (!shc.applicationProtocol.isEmpty() &&
+                            !alps.contains(shc.applicationProtocol))) {
+                        throw shc.conContext.fatal(
+                            Alert.NO_APPLICATION_PROTOCOL,
+                            "No matching application layer protocol values");
+                    }
+                }
+            } else {
+                if (shc.sslConfig.socketAPSelector != null) {
+                    SSLSocket socket = (SSLSocket)shc.conContext.transport;
+                    shc.applicationProtocol =
+                        shc.sslConfig.socketAPSelector.apply(socket, alps);
+                    if ((shc.applicationProtocol == null) ||
+                            (!shc.applicationProtocol.isEmpty() &&
+                            !alps.contains(shc.applicationProtocol))) {
+                        throw shc.conContext.fatal(
+                            Alert.NO_APPLICATION_PROTOCOL,
+                            "No matching application layer protocol values");
+                    }
+                }
+            }
+
+            if ((shc.applicationProtocol == null) ||
+                    (shc.applicationProtocol.isEmpty())) {
+                // Ignore, no negotiated application layer protocol.
+                shc.applicationProtocol = "";
+                shc.conContext.applicationProtocol = "";
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.warning(
+                        "Ignore, no negotiated application layer protocol");
+                }
+
+                return null;
+            }
+
+            // opaque ProtocolName<1..2^8-1>, RFC 7301.
+            int listLen = shc.applicationProtocol.length() + 1;
+                                                        // 1: length byte
+            // ProtocolName protocol_name_list<2..2^16-1>, RFC 7301.
+            byte[] extData = new byte[listLen + 2];     // 2: list length
+            ByteBuffer m = ByteBuffer.wrap(extData);
+            Record.putInt16(m, listLen);
+            Record.putBytes8(m,
+                    shc.applicationProtocol.getBytes(StandardCharsets.UTF_8));
+
+            // Update the context.
+            shc.conContext.applicationProtocol = shc.applicationProtocol;
+
+            // Clean or register the extension
+            //
+            // No further use of the request and respond extension any more.
+            shc.handshakeExtensions.remove(SSLExtension.CH_ALPN);
+
+            return extData;
+        }
+    }
+
+    /**
+     * Network data consumer of the extension in the ServerHello
+     * handshake message.
+     */
+    private static final class SHAlpnConsumer implements ExtensionConsumer {
+        // Prevent instantiation of this class.
+        private SHAlpnConsumer() {
+            // blank
+        }
+
+        @Override
+        public void consume(ConnectionContext context,
+            HandshakeMessage message, ByteBuffer buffer) throws IOException {
+            // The producing happens in client side only.
+            ClientHandshakeContext chc = (ClientHandshakeContext)context;
+
+            // In response to ALPN request only
+            AlpnSpec requestedAlps =
+                    (AlpnSpec)chc.handshakeExtensions.get(SSLExtension.CH_ALPN);
+            if (requestedAlps == null ||
+                    requestedAlps.applicationProtocols == null ||
+                    requestedAlps.applicationProtocols.isEmpty()) {
+                throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+                    "Unexpected " + SSLExtension.CH_ALPN.name + " extension");
+            }
+
+            // Parse the extension.
+            AlpnSpec spec;
+            try {
+                spec = new AlpnSpec(buffer);
+            } catch (IOException ioe) {
+                throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE, ioe);
+            }
+
+            // Only one application protocol is allowed.
+            if (spec.applicationProtocols.size() != 1) {
+                throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+                    "Invalid " + SSLExtension.CH_ALPN.name + " extension: " +
+                    "Only one application protocol name " +
+                    "is allowed in ServerHello message");
+            }
+
+            // The respond application protocol must be one of the requested.
+            if (!requestedAlps.applicationProtocols.containsAll(
+                    spec.applicationProtocols)) {
+                throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+                    "Invalid " + SSLExtension.CH_ALPN.name + " extension: " +
+                    "Only client specified application protocol " +
+                    "is allowed in ServerHello message");
+            }
+
+            // Update the context.
+            chc.applicationProtocol = spec.applicationProtocols.get(0);
+            chc.conContext.applicationProtocol = chc.applicationProtocol;
+
+            // Clean or register the extension
+            //
+            // No further use of the request and respond extension any more.
+            chc.handshakeExtensions.remove(SSLExtension.CH_ALPN);
+        }
+    }
+
+    /**
+     * The absence processing if the extension is not present in
+     * the ServerHello handshake message.
+     */
+    private static final class SHAlpnAbsence implements HandshakeAbsence {
+        @Override
+        public void absent(ConnectionContext context,
+                HandshakeMessage message) throws IOException {
+            // The producing happens in client side only.
+            ClientHandshakeContext chc = (ClientHandshakeContext)context;
+
+            // Please don't use the previous negotiated application protocol.
+            chc.applicationProtocol = "";
+            chc.conContext.applicationProtocol = "";
+        }
     }
 }

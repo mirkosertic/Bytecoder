@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ import sun.invoke.util.Wrapper;
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.invoke.LambdaForm.*;
@@ -85,7 +87,9 @@ class LambdaFormEditor {
                 PERMUTE_ARGS = 13,
                 LOCAL_TYPES = 14,
                 FOLD_SELECT_ARGS = 15,
-                FOLD_SELECT_ARGS_TO_VOID = 16;
+                FOLD_SELECT_ARGS_TO_VOID = 16,
+                FILTER_SELECT_ARGS = 17,
+                REPEAT_FILTER_ARGS = 18;
 
         private static final boolean STRESS_TEST = false; // turn on to disable most packing
         private static final int
@@ -640,6 +644,104 @@ class LambdaFormEditor {
         return putInCache(key, form);
     }
 
+    /**
+     * This creates a LF that will repeatedly invoke some unary filter function
+     * at each of the given positions. This allows fewer LFs and BMH species
+     * classes to be generated in typical cases compared to building up the form
+     * by reapplying of {@code filterArgumentForm(int,BasicType)}, and should do
+     * no worse in the worst case.
+     */
+    LambdaForm filterRepeatedArgumentForm(BasicType newType, int... argPositions) {
+        assert (argPositions.length > 1);
+        byte[] keyArgs = new byte[argPositions.length + 2];
+        keyArgs[0] = Transform.REPEAT_FILTER_ARGS;
+        keyArgs[argPositions.length + 1] = (byte)newType.ordinal();
+        for (int i = 0; i < argPositions.length; i++) {
+            keyArgs[i + 1] = (byte)argPositions[i];
+        }
+        Transform key = new Transform(keyArgs);
+        LambdaForm form = getInCache(key);
+        if (form != null) {
+            assert(form.arity == lambdaForm.arity &&
+                    formParametersMatch(form, newType, argPositions));
+            return form;
+        }
+        BasicType oldType = lambdaForm.parameterType(argPositions[0]);
+        MethodType filterType = MethodType.methodType(oldType.basicTypeClass(),
+                newType.basicTypeClass());
+        form = makeRepeatedFilterForm(filterType, argPositions);
+        assert (formParametersMatch(form, newType, argPositions));
+        return putInCache(key, form);
+    }
+
+    private boolean formParametersMatch(LambdaForm form, BasicType newType, int... argPositions) {
+        for (int i : argPositions) {
+            if (form.parameterType(i) != newType) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private LambdaForm makeRepeatedFilterForm(MethodType combinerType, int... positions) {
+        assert (combinerType.parameterCount() == 1 &&
+                combinerType == combinerType.basicType() &&
+                combinerType.returnType() != void.class);
+        LambdaFormBuffer buf = buffer();
+        buf.startEdit();
+
+        BoundMethodHandle.SpeciesData oldData = oldSpeciesData();
+        BoundMethodHandle.SpeciesData newData = newSpeciesData(L_TYPE);
+
+        // The newly created LF will run with a different BMH.
+        // Switch over any pre-existing BMH field references to the new BMH class.
+        Name oldBaseAddress = lambdaForm.parameter(0);  // BMH holding the values
+        buf.replaceFunctions(oldData.getterFunctions(), newData.getterFunctions(), oldBaseAddress);
+        Name newBaseAddress = oldBaseAddress.withConstraint(newData);
+        buf.renameParameter(0, newBaseAddress);
+
+        // Insert the new expressions at the end
+        int exprPos = lambdaForm.arity();
+        Name getCombiner = new Name(newData.getterFunction(oldData.fieldCount()), newBaseAddress);
+        buf.insertExpression(exprPos++, getCombiner);
+
+        // After inserting expressions, we insert parameters in order
+        // from lowest to highest, simplifying the calculation of where parameters
+        // and expressions are
+        var newParameters = new TreeMap<Name, Integer>(new Comparator<>() {
+            public int compare(Name n1, Name n2) {
+                return n1.index - n2.index;
+            }
+        });
+
+        // Insert combiner expressions in reverse order so that the invocation of
+        // the resulting form will invoke the combiners in left-to-right order
+        for (int i = positions.length - 1; i >= 0; --i) {
+            int pos = positions[i];
+            assert (pos > 0 && pos <= MethodType.MAX_JVM_ARITY && pos < lambdaForm.arity);
+
+            Name newParameter = new Name(pos, basicType(combinerType.parameterType(0)));
+            Object[] combinerArgs = {getCombiner, newParameter};
+
+            Name callCombiner = new Name(combinerType, combinerArgs);
+            buf.insertExpression(exprPos++, callCombiner);
+            newParameters.put(newParameter, exprPos);
+        }
+
+        // Mix in new parameters from left to right in the buffer (this doesn't change
+        // execution order
+        int offset = 0;
+        for (var entry : newParameters.entrySet()) {
+            Name newParameter = entry.getKey();
+            int from = entry.getValue();
+            buf.insertParameter(newParameter.index() + 1 + offset, newParameter);
+            buf.replaceParameterByCopy(newParameter.index() + offset, from + offset);
+            offset++;
+        }
+        return buf.endEdit();
+    }
+
+
     private LambdaForm makeArgumentCombinationForm(int pos,
                                                    MethodType combinerType,
                                                    boolean keepArguments, boolean dropResult) {
@@ -730,21 +832,23 @@ class LambdaFormEditor {
         Name getCombiner = new Name(newData.getterFunction(oldData.fieldCount()), newBaseAddress);
         Object[] combinerArgs = new Object[1 + combinerArity];
         combinerArgs[0] = getCombiner;
-        Name[] newParams;
+        Name newParam = null;
         if (keepArguments) {
-            newParams = new Name[0];
             for (int i = 0; i < combinerArity; i++) {
                 combinerArgs[i + 1] = lambdaForm.parameter(1 + argPositions[i]);
                 assert (basicType(combinerType.parameterType(i)) == lambdaForm.parameterType(1 + argPositions[i]));
             }
         } else {
-            newParams = new Name[combinerArity];
-            for (int i = 0; i < newParams.length; i++) {
-                newParams[i] = lambdaForm.parameter(1 + argPositions[i]);
+            newParam = new Name(pos, BasicType.basicType(combinerType.returnType()));
+            for (int i = 0; i < combinerArity; i++) {
+                int argPos = 1 + argPositions[i];
+                if (argPos == pos) {
+                    combinerArgs[i + 1] = newParam;
+                } else {
+                    combinerArgs[i + 1] = lambdaForm.parameter(argPos);
+                }
                 assert (basicType(combinerType.parameterType(i)) == lambdaForm.parameterType(1 + argPositions[i]));
             }
-            System.arraycopy(newParams, 0,
-                             combinerArgs, 1, combinerArity);
         }
         Name callCombiner = new Name(combinerType, combinerArgs);
 
@@ -755,12 +859,13 @@ class LambdaFormEditor {
 
         // insert new arguments, if needed
         int argPos = pos + resultArity;  // skip result parameter
-        for (Name newParam : newParams) {
+        if (newParam != null) {
             buf.insertParameter(argPos++, newParam);
+            exprPos++;
         }
-        assert(buf.lastIndexOf(callCombiner) == exprPos+1+newParams.length);
+        assert(buf.lastIndexOf(callCombiner) == exprPos+1);
         if (!dropResult) {
-            buf.replaceParameterByCopy(pos, exprPos+1+newParams.length);
+            buf.replaceParameterByCopy(pos, exprPos+1);
         }
 
         return buf.endEdit();
@@ -842,6 +947,20 @@ class LambdaFormEditor {
             return form;
         }
         form = makeArgumentCombinationForm(foldPos, combinerType, argPositions, true, dropResult);
+        return putInCache(key, form);
+    }
+
+    LambdaForm filterArgumentsForm(int filterPos, MethodType combinerType, int ... argPositions) {
+        byte kind = Transform.FILTER_SELECT_ARGS;
+        int[] keyArgs = Arrays.copyOf(argPositions, argPositions.length + 1);
+        keyArgs[argPositions.length] = filterPos;
+        Transform key = Transform.of(kind, keyArgs);
+        LambdaForm form = getInCache(key);
+        if (form != null) {
+            assert(form.arity == lambdaForm.arity);
+            return form;
+        }
+        form = makeArgumentCombinationForm(filterPos, combinerType, argPositions, false, false);
         return putInCache(key, form);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,11 @@
 
 package java.net;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.spi.URLStreamHandlerProvider;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Hashtable;
@@ -41,8 +43,8 @@ import java.util.NoSuchElementException;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
-import jdk.internal.misc.JavaNetURLAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetURLAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.security.util.SecurityConstants;
 import sun.security.action.GetPropertyAction;
 
@@ -95,7 +97,7 @@ import sun.security.action.GetPropertyAction;
  * as a "ref" or a "reference". The fragment is indicated by the sharp
  * sign character "#" followed by more characters. For example,
  * <blockquote><pre>
- *     http://java.sun.com/index.html#chapter1
+ *     http://www.example.com/index.html#chapter1
  * </pre></blockquote>
  * <p>
  * This fragment is not technically part of the URL. Rather, it
@@ -109,7 +111,7 @@ import sun.security.action.GetPropertyAction;
  * relative to another URL. Relative URLs are frequently used within
  * HTML pages. For example, if the contents of the URL:
  * <blockquote><pre>
- *     http://java.sun.com/index.html
+ *     http://www.example.com/index.html
  * </pre></blockquote>
  * contained within it the relative URL:
  * <blockquote><pre>
@@ -117,7 +119,7 @@ import sun.security.action.GetPropertyAction;
  * </pre></blockquote>
  * it would be a shorthand for:
  * <blockquote><pre>
- *     http://java.sun.com/FAQ.html
+ *     http://www.example.com/FAQ.html
  * </pre></blockquote>
  * <p>
  * The relative URL need not specify all the components of a URL. If
@@ -144,6 +146,27 @@ import sun.security.action.GetPropertyAction;
  * The {@link URLEncoder} and {@link URLDecoder} classes can also be
  * used, but only for HTML form encoding, which is not the same
  * as the encoding scheme defined in RFC2396.
+ *
+ * @apiNote
+ *
+ * Applications working with file paths and file URIs should take great
+ * care to use the appropriate methods to convert between the two.
+ * The {@link Path#of(URI)} factory method and the {@link File#File(URI)}
+ * constructor can be used to create {@link Path} or {@link File}
+ * objects from a file URI. {@link Path#toUri()} and {@link File#toURI()}
+ * can be used to create a {@link URI} from a file path, which can be
+ * converted to URL using {@link URI#toURL()}.
+ * Applications should never try to {@linkplain #URL(String, String, String)
+ * construct} or {@linkplain #URL(String) parse} a {@code URL}
+ * from the direct string representation of a {@code File} or {@code Path}
+ * instance.
+ * <p>
+ * Some components of a URL or URI, such as <i>userinfo</i>, may
+ * be abused to construct misleading URLs or URIs. Applications
+ * that deal with URLs or URIs should take into account
+ * the recommendations advised in <a
+ * href="https://tools.ietf.org/html/rfc3986#section-7">RFC3986,
+ * Section 7, Security Considerations</a>.
  *
  * @author  James Gosling
  * @since 1.0
@@ -281,7 +304,7 @@ public final class URL implements java.io.Serializable {
      *     or all providers have been exhausted.
      * <li>If the previous step fails to find a protocol handler, the
      *     constructor reads the value of the system property:
-     *     <blockquote>{@code
+     *     <blockquote>{@systemProperty
      *         java.protocol.handler.pkgs
      *     }</blockquote>
      *     If the value of that system property is not {@code null},
@@ -1009,7 +1032,7 @@ public final class URL implements java.io.Serializable {
      * can not be converted to a URI.
      *
      * @exception URISyntaxException if this URL is not formatted strictly according to
-     *            to RFC2396 and cannot be converted to a URI.
+     *            RFC2396 and cannot be converted to a URI.
      *
      * @return    a URI instance equivalent to this URL.
      * @since 1.5
@@ -1054,7 +1077,7 @@ public final class URL implements java.io.Serializable {
     /**
      * Same as {@link #openConnection()}, except that the connection will be
      * made through the specified proxy; Protocol handlers that do not
-     * support proxing will ignore the proxy parameter and make a
+     * support proxying will ignore the proxy parameter and make a
      * normal connection.
      *
      * Invoking this method preempts the system's default
@@ -1393,33 +1416,33 @@ public final class URL implements java.io.Serializable {
             }
         }
 
+        if (handler == null) {
+            // Try the built-in protocol handler
+            handler = defaultFactory.createURLStreamHandler(protocol);
+        }
+
         synchronized (streamHandlerLock) {
-            if (handler == null) {
-                // Try the built-in protocol handler
-                handler = defaultFactory.createURLStreamHandler(protocol);
-            } else {
-                URLStreamHandler handler2 = null;
+            URLStreamHandler handler2 = null;
 
-                // Check again with hashtable just in case another
-                // thread created a handler since we last checked
-                handler2 = handlers.get(protocol);
+            // Check again with hashtable just in case another
+            // thread created a handler since we last checked
+            handler2 = handlers.get(protocol);
 
-                if (handler2 != null) {
-                    return handler2;
-                }
+            if (handler2 != null) {
+                return handler2;
+            }
 
-                // Check with factory if another thread set a
-                // factory since our last check
-                if (!checkedWithFactory && (fac = factory) != null) {
-                    handler2 = fac.createURLStreamHandler(protocol);
-                }
+            // Check with factory if another thread set a
+            // factory since our last check
+            if (!checkedWithFactory && (fac = factory) != null) {
+                handler2 = fac.createURLStreamHandler(protocol);
+            }
 
-                if (handler2 != null) {
-                    // The handler from the factory must be given more
-                    // importance. Discard the default handler that
-                    // this thread created.
-                    handler = handler2;
-                }
+            if (handler2 != null) {
+                // The handler from the factory must be given more
+                // importance. Discard the default handler that
+                // this thread created.
+                handler = handler2;
             }
 
             // Insert this handler into the hashtable
@@ -1427,7 +1450,6 @@ public final class URL implements java.io.Serializable {
                 handlers.put(protocol, handler);
             }
         }
-
         return handler;
     }
 
@@ -1491,7 +1513,7 @@ public final class URL implements java.io.Serializable {
         String ref = (String)gf.get("ref", null);
         int hashCode = gf.get("hashCode", -1);
         if (authority == null
-                && ((host != null && host.length() > 0) || port != -1)) {
+                && ((host != null && !host.isEmpty()) || port != -1)) {
             if (host == null)
                 host = "";
             authority = (port == -1) ? host : host + ":" + port;
@@ -1538,7 +1560,7 @@ public final class URL implements java.io.Serializable {
 
         // Construct authority part
         if (authority == null
-            && ((host != null && host.length() > 0) || port != -1)) {
+            && ((host != null && !host.isEmpty()) || port != -1)) {
             if (host == null)
                 host = "";
             authority = (port == -1) ? host : host + ":" + port;
@@ -1694,7 +1716,7 @@ final class UrlDeserializedState {
 
         // pre-compute length of StringBuffer
         int len = protocol.length() + 1;
-        if (authority != null && authority.length() > 0)
+        if (authority != null && !authority.isEmpty())
             len += 2 + authority.length();
         if (file != null) {
             len += file.length();
@@ -1704,7 +1726,7 @@ final class UrlDeserializedState {
         StringBuilder result = new StringBuilder(len);
         result.append(protocol);
         result.append(":");
-        if (authority != null && authority.length() > 0) {
+        if (authority != null && !authority.isEmpty()) {
             result.append("//");
             result.append(authority);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package java.net;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -36,9 +37,10 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.CharacterCodingException;
+import java.nio.file.Path;
 import java.text.Normalizer;
-import jdk.internal.misc.JavaNetUriAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetUriAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.nio.cs.ThreadLocalCoders;
 
 import java.lang.Character;             // for javadoc
@@ -83,7 +85,7 @@ import java.lang.NullPointerException;  // for javadoc
  * subject to further parsing.  Some examples of opaque URIs are:
  *
  * <blockquote><ul style="list-style-type:none">
- * <li>{@code mailto:java-net@java.sun.com}</li>
+ * <li>{@code mailto:java-net@www.example.com}</li>
  * <li>{@code news:comp.lang.java}</li>
  * <li>{@code urn:isbn:096139210x}</li>
  * </ul></blockquote>
@@ -399,7 +401,7 @@ import java.lang.NullPointerException;  // for javadoc
  * For any URI <i>u</i> that does not contain redundant syntax such as two
  * slashes before an empty authority (as in {@code file:///tmp/}&nbsp;) or a
  * colon following a host name but no port (as in
- * {@code http://java.sun.com:}&nbsp;), and that does not encode characters
+ * {@code http://www.example.com:}&nbsp;), and that does not encode characters
  * except those that must be quoted, the following identities also hold:
  * <pre>
  *     new URI(<i>u</i>.getScheme(),
@@ -458,6 +460,27 @@ import java.lang.NullPointerException;  // for javadoc
  * resolution as well as the network I/O operations of looking up the host and
  * opening a connection to the specified resource.
  *
+ * @apiNote
+ *
+ * Applications working with file paths and file URIs should take great
+ * care to use the appropriate methods to convert between the two.
+ * The {@link Path#of(URI)} factory method and the {@link File#File(URI)}
+ * constructor can be used to create {@link Path} or {@link File}
+ * objects from a file URI. {@link Path#toUri()} and {@link File#toURI()}
+ * can be used to create a {@link URI} from a file path.
+ * Applications should never try to {@linkplain
+ * #URI(String, String, String, int, String, String, String)
+ * construct}, {@linkplain #URI(String) parse}, or
+ * {@linkplain #resolve(String) resolve} a {@code URI}
+ * from the direct string representation of a {@code File} or {@code Path}
+ * instance.
+ * <p>
+ * Some components of a URL or URI, such as <i>userinfo</i>, may
+ * be abused to construct misleading URLs or URIs. Applications
+ * that deal with URLs or URIs should take into account
+ * the recommendations advised in <a
+ * href="https://tools.ietf.org/html/rfc3986#section-7">RFC3986,
+ * Section 7, Security Considerations</a>.
  *
  * @author Mark Reinhold
  * @since 1.4
@@ -861,9 +884,9 @@ public final class URI
      *
      * <p> This method is provided for use in situations where it is known that
      * the given string is a legal URI, for example for URI constants declared
-     * within in a program, and so it would be considered a programming error
+     * within a program, and so it would be considered a programming error
      * for the string not to parse as such.  The constructors, which throw
-     * {@link URISyntaxException} directly, should be used situations where a
+     * {@link URISyntaxException} directly, should be used in situations where a
      * URI is being constructed from user input or from some other source that
      * may be prone to errors.  </p>
      *
@@ -1936,10 +1959,8 @@ public final class URI
         throws URISyntaxException
     {
         if (scheme != null) {
-            if ((path != null)
-                && ((path.length() > 0) && (path.charAt(0) != '/')))
-                throw new URISyntaxException(s,
-                                             "Relative path in absolute URI");
+            if (path != null && !path.isEmpty() && path.charAt(0) != '/')
+                throw new URISyntaxException(s, "Relative path in absolute URI");
         }
     }
 
@@ -2140,7 +2161,7 @@ public final class URI
             ru.port = base.port;
 
             String cp = (child.path == null) ? "" : child.path;
-            if ((cp.length() > 0) && (cp.charAt(0) == '/')) {
+            if (!cp.isEmpty() && cp.charAt(0) == '/') {
                 // 5.2 (5): Child path is absolute
                 ru.path = child.path;
             } else {
@@ -2164,7 +2185,7 @@ public final class URI
     // o.w., return a new URI containing the normalized path.
     //
     private static URI normalize(URI u) {
-        if (u.isOpaque() || (u.path == null) || (u.path.length() == 0))
+        if (u.isOpaque() || u.path == null || u.path.isEmpty())
             return u;
 
         String np = normalize(u.path);

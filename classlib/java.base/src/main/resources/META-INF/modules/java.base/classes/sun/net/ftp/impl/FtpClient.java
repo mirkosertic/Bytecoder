@@ -154,7 +154,7 @@ public class FtpClient extends sun.net.ftp.FtpClient {
      * the NetworkClients will not work correctly in EBCDIC based systems.
      * However, we cannot just use ASCII or ISO8859_1 universally, because in
      * Asian locales, non-ASCII characters may be embedded in otherwise
-     * ASCII based protocols (eg. HTTP). The specifications (RFC2616, 2398)
+     * ASCII based protocols (e.g. HTTP). The specifications (RFC2616, 2398)
      * are a little ambiguous in this matter. For instance, RFC2398 [part 2.1]
      * says that the HTTP request URI should be escaped using a defined
      * mechanism, but there is no way to specify in the escaped string what
@@ -433,7 +433,7 @@ public class FtpClient extends sun.net.ftp.FtpClient {
                 logger.finest("Server [" + serverAddr + "] --> " + response);
             }
 
-            if (response.length() == 0) {
+            if (response.isEmpty()) {
                 code = -1;
             } else {
                 try {
@@ -1049,7 +1049,7 @@ public class FtpClient extends sun.net.ftp.FtpClient {
         if (!isConnected()) {
             throw new sun.net.ftp.FtpProtocolException("Not connected yet", FtpReplyCode.BAD_SEQUENCE);
         }
-        if (user == null || user.length() == 0) {
+        if (user == null || user.isEmpty()) {
             throw new IllegalArgumentException("User name can't be null or empty");
         }
         tryLogin(user, password);
@@ -1088,7 +1088,7 @@ public class FtpClient extends sun.net.ftp.FtpClient {
         if (!isConnected()) {
             throw new sun.net.ftp.FtpProtocolException("Not connected yet", FtpReplyCode.BAD_SEQUENCE);
         }
-        if (user == null || user.length() == 0) {
+        if (user == null || user.isEmpty()) {
             throw new IllegalArgumentException("User name can't be null or empty");
         }
         tryLogin(user, password);
@@ -1152,7 +1152,7 @@ public class FtpClient extends sun.net.ftp.FtpClient {
      * @exception <code>FtpProtocolException</code>
      */
     public sun.net.ftp.FtpClient changeDirectory(String remoteDirectory) throws sun.net.ftp.FtpProtocolException, IOException {
-        if (remoteDirectory == null || "".equals(remoteDirectory)) {
+        if (remoteDirectory == null || remoteDirectory.isEmpty()) {
             throw new IllegalArgumentException("directory can't be null or empty");
         }
 
@@ -1738,7 +1738,7 @@ public class FtpClient extends sun.net.ftp.FtpClient {
      * @throws IOException if an error occurs during the transmission.
      */
     public long getSize(String path) throws sun.net.ftp.FtpProtocolException, IOException {
-        if (path == null || path.length() == 0) {
+        if (path == null || path.isEmpty()) {
             throw new IllegalArgumentException("path can't be null or empty");
         }
         issueCommandCheck("SIZE " + path);

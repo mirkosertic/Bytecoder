@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,8 @@ package java.io;
 
 import java.util.*;
 import java.nio.charset.Charset;
-import jdk.internal.misc.JavaIOAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaIOAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.nio.cs.StreamDecoder;
 import sun.nio.cs.StreamEncoder;
 
@@ -247,7 +247,7 @@ public final class Console implements Flushable
         String line = null;
         synchronized (writeLock) {
             synchronized(readLock) {
-                if (fmt.length() != 0)
+                if (!fmt.isEmpty())
                     pw.format(fmt, args);
                 try {
                     char[] ca = readline(false);
@@ -319,7 +319,7 @@ public final class Console implements Flushable
                 }
                 IOError ioe = null;
                 try {
-                    if (fmt.length() != 0)
+                    if (!fmt.isEmpty())
                         pw.format(fmt, args);
                     passwd = readline(true);
                 } catch (IOException x) {

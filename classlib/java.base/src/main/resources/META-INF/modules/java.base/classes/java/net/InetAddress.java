@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ import java.io.FileNotFoundException;
 import java.io.ObjectStreamException;
 import java.io.ObjectStreamField;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectInputStream.GetField;
 import java.io.ObjectOutputStream;
@@ -45,8 +46,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jdk.internal.misc.JavaNetInetAddressAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetInetAddressAccess;
+import jdk.internal.access.SharedSecrets;
 import sun.security.action.*;
 import sun.net.InetAddressCachePolicy;
 import sun.net.util.IPAddressUtil;
@@ -376,7 +377,7 @@ class InetAddress implements java.io.Serializable {
 
     /**
      * Utility routine to check if the InetAddress is a wildcard address.
-     * @return a {@code boolean} indicating if the Inetaddress is
+     * @return a {@code boolean} indicating if the InetAddress is
      *         a wildcard address.
      * @since 1.4
      */
@@ -1008,7 +1009,7 @@ class InetAddress implements java.io.Serializable {
                         + " not found ");
             }
 
-            if ((host == null) || (host.equals("")) || (host.equals(" "))) {
+            if ((host == null) || (host.isEmpty()) || (host.equals(" "))) {
                 throw new UnknownHostException("Requested address "
                         + addrString
                         + " resolves to an invalid entry in hosts file "
@@ -1021,7 +1022,7 @@ class InetAddress implements java.io.Serializable {
          * <p>Lookup a host mapping by name. Retrieve the IP addresses
          * associated with a host.
          *
-         * <p>Search the configured hosts file for the addresses assocaited with
+         * <p>Search the configured hosts file for the addresses associated
          * with the specified host name.
          *
          * @param host the specified hostname
@@ -1037,7 +1038,7 @@ class InetAddress implements java.io.Serializable {
             byte addr[] = new byte[4];
             ArrayList<InetAddress> inetAddresses = null;
 
-            // lookup the file and create a list InetAddress for the specfied host
+            // lookup the file and create a list InetAddress for the specified host
             try (Scanner hostsFileScanner = new Scanner(new File(hostsFile), "UTF-8")) {
                 while (hostsFileScanner.hasNextLine()) {
                     hostEntry = hostsFileScanner.nextLine();
@@ -1045,7 +1046,7 @@ class InetAddress implements java.io.Serializable {
                         hostEntry = removeComments(hostEntry);
                         if (hostEntry.contains(host)) {
                             addrStr = extractHostAddr(hostEntry, host);
-                            if ((addrStr != null) && (!addrStr.equals(""))) {
+                            if ((addrStr != null) && (!addrStr.isEmpty())) {
                                 addr = createAddressByteArray(addrStr);
                                 if (inetAddresses == null) {
                                     inetAddresses = new ArrayList<>(1);
@@ -1167,7 +1168,7 @@ class InetAddress implements java.io.Serializable {
      * No name service is checked for the validity of the address.
      *
      * <p> The host name can either be a machine name, such as
-     * "{@code java.sun.com}", or a textual representation of its IP
+     * "{@code www.example.com}", or a textual representation of its IP
      * address.
      * <p> No validity checking is done on the host name either.
      *
@@ -1186,7 +1187,7 @@ class InetAddress implements java.io.Serializable {
      */
     public static InetAddress getByAddress(String host, byte[] addr)
         throws UnknownHostException {
-        if (host != null && host.length() > 0 && host.charAt(0) == '[') {
+        if (host != null && !host.isEmpty() && host.charAt(0) == '[') {
             if (host.charAt(host.length()-1) == ']') {
                 host = host.substring(1, host.length() -1);
             }
@@ -1212,7 +1213,7 @@ class InetAddress implements java.io.Serializable {
      * Determines the IP address of a host, given the host's name.
      *
      * <p> The host name can either be a machine name, such as
-     * "{@code java.sun.com}", or a textual representation of its
+     * "{@code www.example.com}", or a textual representation of its
      * IP address. If a literal IP address is supplied, only the
      * validity of the address format is checked.
      *
@@ -1258,7 +1259,7 @@ class InetAddress implements java.io.Serializable {
      * based on the configured name service on the system.
      *
      * <p> The host name can either be a machine name, such as
-     * "{@code java.sun.com}", or a textual representation of its IP
+     * "{@code www.example.com}", or a textual representation of its IP
      * address. If a literal IP address is supplied, only the
      * validity of the address format is checked.
      *
@@ -1300,7 +1301,7 @@ class InetAddress implements java.io.Serializable {
     private static InetAddress[] getAllByName(String host, InetAddress reqAddr)
         throws UnknownHostException {
 
-        if (host == null || host.length() == 0) {
+        if (host == null || host.isEmpty()) {
             InetAddress[] ret = new InetAddress[1];
             ret[0] = impl.loopbackAddress();
             return ret;
@@ -1340,7 +1341,7 @@ class InetAddress implements java.io.Serializable {
                     throw new UnknownHostException(host + ": invalid IPv6 address");
                 }
             } else if (ipv6Expected) {
-                // Means an IPv4 litteral between brackets!
+                // Means an IPv4 literal between brackets!
                 throw new UnknownHostException("["+host+"]");
             }
             InetAddress[] ret = new InetAddress[1];
@@ -1357,7 +1358,7 @@ class InetAddress implements java.io.Serializable {
                 return ret;
             }
         } else if (ipv6Expected) {
-            // We were expecting an IPv6 Litteral, but got something else
+            // We were expecting an IPv6 Literal, but got something else
             throw new UnknownHostException("["+host+"]");
         }
         return getAllByName0(host, reqAddr, true, true);
@@ -1709,8 +1710,7 @@ class InetAddress implements java.io.Serializable {
         return (InetAddressImpl) impl;
     }
 
-    private void readObjectNoData () throws
-                         IOException, ClassNotFoundException {
+    private void readObjectNoData () {
         if (getClass().getClassLoader() != null) {
             throw new SecurityException ("invalid address type");
         }
@@ -1728,10 +1728,13 @@ class InetAddress implements java.io.Serializable {
         }
         GetField gf = s.readFields();
         String host = (String)gf.get("hostName", null);
-        int address= gf.get("address", 0);
-        int family= gf.get("family", 0);
+        int address = gf.get("address", 0);
+        int family = gf.get("family", 0);
+        if (family != IPv4 && family != IPv6) {
+            throw new InvalidObjectException("invalid address family type: " + family);
+        }
         InetAddressHolder h = new InetAddressHolder(host, address, family);
-        UNSAFE.putObject(this, FIELDS_OFFSET, h);
+        UNSAFE.putReference(this, FIELDS_OFFSET, h);
     }
 
     /* needed because the serializable fields no longer exist */

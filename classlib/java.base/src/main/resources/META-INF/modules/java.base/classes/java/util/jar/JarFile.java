@@ -25,8 +25,8 @@
 
 package java.util.jar;
 
-import jdk.internal.misc.SharedSecrets;
-import jdk.internal.misc.JavaUtilZipFileAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.access.JavaUtilZipFileAccess;
 import sun.security.action.GetPropertyAction;
 import sun.security.util.ManifestEntryVerifier;
 import sun.security.util.SignatureFileVerifier;
@@ -172,7 +172,7 @@ class JarFile extends ZipFile {
         // Set up JavaUtilJarAccess in SharedSecrets
         SharedSecrets.setJavaUtilJarAccess(new JavaUtilJarAccessImpl());
         // Get JavaUtilZipFileAccess from SharedSecrets
-        JUZFA = jdk.internal.misc.SharedSecrets.getJavaUtilZipFileAccess();
+        JUZFA = SharedSecrets.getJavaUtilZipFileAccess();
         // multi-release jar file versions >= 9
         BASE_VERSION = Runtime.Version.parse(Integer.toString(8));
         BASE_VERSION_FEATURE = BASE_VERSION.feature();
@@ -417,12 +417,12 @@ class JarFile extends ZipFile {
             if (manEntry != null) {
                 if (verify) {
                     byte[] b = getBytes(manEntry);
-                    man = new Manifest(new ByteArrayInputStream(b));
                     if (!jvInitialized) {
                         jv = new JarVerifier(b);
                     }
+                    man = new Manifest(jv, new ByteArrayInputStream(b), getName());
                 } else {
-                    man = new Manifest(super.getInputStream(manEntry));
+                    man = new Manifest(super.getInputStream(manEntry), getName());
                 }
                 manRef = new SoftReference<>(man);
             }
@@ -556,7 +556,8 @@ class JarFile extends ZipFile {
             return JUZFA.entryNameStream(this).map(this::getBasename)
                                               .filter(Objects::nonNull)
                                               .distinct()
-                                              .map(this::getJarEntry);
+                                              .map(this::getJarEntry)
+                                              .filter(Objects::nonNull);
         }
         return stream();
     }
@@ -1010,29 +1011,13 @@ class JarFile extends ZipFile {
                     int i = match(MULTIRELEASE_CHARS, b, MULTIRELEASE_LASTOCC,
                             MULTIRELEASE_OPTOSFT);
                     if (i != -1) {
-                        i += MULTIRELEASE_CHARS.length;
-                        if (i < b.length) {
-                            byte c = b[i++];
-                            // Check that the value is followed by a newline
-                            // and does not have a continuation
-                            if (c == '\n' &&
-                                    (i == b.length || b[i] != ' ')) {
-                                isMultiRelease = true;
-                            } else if (c == '\r') {
-                                if (i == b.length) {
-                                    isMultiRelease = true;
-                                } else {
-                                    c = b[i++];
-                                    if (c == '\n') {
-                                        if (i == b.length || b[i] != ' ') {
-                                            isMultiRelease = true;
-                                        }
-                                    } else if (c != ' ') {
-                                        isMultiRelease = true;
-                                    }
-                                }
-                            }
-                        }
+                        // Read the main attributes of the manifest
+                        byte[] lbuf = new byte[512];
+                        Attributes attr = new Attributes();
+                        attr.read(new Manifest.FastInputStream(
+                            new ByteArrayInputStream(b)), lbuf);
+                        isMultiRelease = Boolean.parseBoolean(
+                            attr.getValue(Attributes.Name.MULTI_RELEASE));
                     }
                 }
             }
@@ -1040,7 +1025,7 @@ class JarFile extends ZipFile {
         }
     }
 
-    private synchronized void ensureInitialization() {
+    synchronized void ensureInitialization() {
         try {
             maybeInstantiateVerifier();
         } catch (IOException e) {

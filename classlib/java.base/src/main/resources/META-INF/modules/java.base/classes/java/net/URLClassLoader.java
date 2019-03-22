@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,8 +52,8 @@ import java.util.jar.Manifest;
 
 import jdk.internal.loader.Resource;
 import jdk.internal.loader.URLClassPath;
-import jdk.internal.misc.JavaNetURLClassLoaderAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetURLClassLoaderAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.perf.PerfCounter;
 import sun.net.www.ParseUtil;
 import sun.security.util.SecurityConstants;
@@ -111,11 +111,6 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      */
     public URLClassLoader(URL[] urls, ClassLoader parent) {
         super(parent);
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, acc);
     }
@@ -123,11 +118,6 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     URLClassLoader(String name, URL[] urls, ClassLoader parent,
                    AccessControlContext acc) {
         super(name, parent);
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = acc;
         this.ucp = new URLClassPath(urls, acc);
     }
@@ -156,22 +146,12 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      */
     public URLClassLoader(URL[] urls) {
         super();
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, acc);
     }
 
     URLClassLoader(URL[] urls, AccessControlContext acc) {
         super();
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = acc;
         this.ucp = new URLClassPath(urls, acc);
     }
@@ -201,11 +181,6 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     public URLClassLoader(URL[] urls, ClassLoader parent,
                           URLStreamHandlerFactory factory) {
         super(parent);
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, factory, acc);
     }
@@ -238,11 +213,6 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
                           URL[] urls,
                           ClassLoader parent) {
         super(name, parent);
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, acc);
     }
@@ -273,11 +243,6 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     public URLClassLoader(String name, URL[] urls, ClassLoader parent,
                           URLStreamHandlerFactory factory) {
         super(name, parent);
-        // this is to make the stack depth consistent with 1.1
-        SecurityManager security = System.getSecurityManager();
-        if (security != null) {
-            security.checkCreateClassLoader();
-        }
         this.acc = AccessController.getContext();
         this.ucp = new URLClassPath(urls, factory, acc);
     }
@@ -570,13 +535,13 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
      * @spec JPMS
      */
     protected Package definePackage(String name, Manifest man, URL url) {
-        String path = name.replace('.', '/').concat("/");
         String specTitle = null, specVersion = null, specVendor = null;
         String implTitle = null, implVersion = null, implVendor = null;
         String sealed = null;
         URL sealBase = null;
 
-        Attributes attr = man.getAttributes(path);
+        Attributes attr = SharedSecrets.javaUtilJarAccess()
+                .getTrustedAttributes(man, name.replace('.', '/').concat("/"));
         if (attr != null) {
             specTitle   = attr.getValue(Name.SPECIFICATION_TITLE);
             specVersion = attr.getValue(Name.SPECIFICATION_VERSION);
@@ -620,10 +585,12 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
     /*
      * Returns true if the specified package name is sealed according to the
      * given manifest.
+     *
+     * @throws SecurityException if the package name is untrusted in the manifest
      */
     private boolean isSealed(String name, Manifest man) {
-        String path = name.replace('.', '/').concat("/");
-        Attributes attr = man.getAttributes(path);
+        Attributes attr = SharedSecrets.javaUtilJarAccess()
+                .getTrustedAttributes(man, name.replace('.', '/').concat("/"));
         String sealed = null;
         if (attr != null) {
             sealed = attr.getValue(Name.SEALED);
@@ -776,7 +743,7 @@ public class URLClassLoader extends SecureClassLoader implements Closeable {
                 locUrl = ((JarURLConnection)urlConnection).getJarFileURL();
             }
             String host = locUrl.getHost();
-            if (host != null && (host.length() > 0))
+            if (host != null && !host.isEmpty())
                 p = new SocketPermission(host,
                                          SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION);
         }

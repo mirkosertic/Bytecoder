@@ -47,8 +47,8 @@ import javax.net.ssl.SSLProtocolException;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
-import jdk.internal.misc.JavaNetInetAddressAccess;
-import jdk.internal.misc.SharedSecrets;
+import jdk.internal.access.JavaNetInetAddressAccess;
+import jdk.internal.access.SharedSecrets;
 
 /**
  * Implementation of an SSL socket.
@@ -402,7 +402,7 @@ public final class SSLSocketImpl
                     readHandshakeRecord();
                 }
             } catch (IOException ioe) {
-                conContext.fatal(Alert.HANDSHAKE_FAILURE,
+                throw conContext.fatal(Alert.HANDSHAKE_FAILURE,
                     "Couldn't kickstart handshaking", ioe);
             } catch (Exception oe) {    // including RuntimeException
                 handleException(oe);
@@ -608,7 +608,12 @@ public final class SSLSocketImpl
             }
         } else {
             if (!conContext.isInboundClosed()) {
-                conContext.inputRecord.close();
+                try (conContext.inputRecord) {
+                    // Try the best to use up the input records and close the
+                    // socket gracefully, without impact the performance too
+                    // much.
+                    appInput.deplete();
+                }
             }
 
             if ((autoClose || !isLayered()) && !super.isInputShutdown()) {
@@ -642,7 +647,7 @@ public final class SSLSocketImpl
         if (checkCloseNotify && !conContext.isInputCloseNotified &&
             (conContext.isNegotiated || conContext.handshakeContext != null)) {
 
-            conContext.fatal(Alert.INTERNAL_ERROR,
+            throw conContext.fatal(Alert.INTERNAL_ERROR,
                     "closing inbound before receiving peer's close_notify");
         }
 
@@ -849,8 +854,7 @@ public final class SSLSocketImpl
          *
          * This implementation is somewhat less efficient than possible, but
          * not badly so (redundant copy).  We reuse the read() code to keep
-         * things simpler. Note that SKIP_ARRAY is static and may garbled by
-         * concurrent use, but we are not interested in the data anyway.
+         * things simpler.
          */
         @Override
         public synchronized long skip(long n) throws IOException {
@@ -907,6 +911,30 @@ public final class SSLSocketImpl
             }
 
             return false;
+        }
+
+        /**
+         * Try the best to use up the input records so as to close the
+         * socket gracefully, without impact the performance too much.
+         */
+        private synchronized void deplete() {
+            if (!conContext.isInboundClosed()) {
+                if (!(conContext.inputRecord instanceof SSLSocketInputRecord)) {
+                    return;
+                }
+
+                SSLSocketInputRecord socketInputRecord =
+                        (SSLSocketInputRecord)conContext.inputRecord;
+                try {
+                    socketInputRecord.deplete(
+                        conContext.isNegotiated && (getSoTimeout() > 0));
+                } catch (IOException ioe) {
+                    if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                        SSLLogger.warning(
+                            "input stream close depletion failed", ioe);
+                    }
+                }
+            }
         }
     }
 
@@ -983,9 +1011,9 @@ public final class SSLSocketImpl
                 conContext.outputRecord.deliver(b, off, len);
             } catch (SSLHandshakeException she) {
                 // may be record sequence number overflow
-                conContext.fatal(Alert.HANDSHAKE_FAILURE, she);
+                throw conContext.fatal(Alert.HANDSHAKE_FAILURE, she);
             } catch (IOException e) {
-                conContext.fatal(Alert.UNEXPECTED_MESSAGE, e);
+                throw conContext.fatal(Alert.UNEXPECTED_MESSAGE, e);
             }
 
             // Is the sequence number is nearly overflow, or has the key usage
@@ -1204,7 +1232,7 @@ public final class SSLSocketImpl
     synchronized void doneConnect() throws IOException {
         // In server mode, it is not necessary to set host and serverNames.
         // Otherwise, would require a reverse DNS lookup to get the hostname.
-        if ((peerHost == null) || (peerHost.length() == 0)) {
+        if (peerHost == null || peerHost.isEmpty()) {
             boolean useNameService =
                     trustNameService && conContext.sslConfig.isClientMode;
             useImplicitHost(useNameService);
@@ -1230,7 +1258,7 @@ public final class SSLSocketImpl
         // identification.  Use the application original specified
         // hostname or IP address instead.
 
-        // Get the original hostname via jdk.internal.misc.SharedSecrets
+        // Get the original hostname via jdk.internal.access.SharedSecrets
         InetAddress inetAddress = getInetAddress();
         if (inetAddress == null) {      // not connected
             return;
@@ -1239,8 +1267,7 @@ public final class SSLSocketImpl
         JavaNetInetAddressAccess jna =
                 SharedSecrets.getJavaNetInetAddressAccess();
         String originalHostname = jna.getOriginalHostName(inetAddress);
-        if ((originalHostname != null) &&
-                (originalHostname.length() != 0)) {
+        if (originalHostname != null && !originalHostname.isEmpty()) {
 
             this.peerHost = originalHostname;
             if (conContext.sslConfig.serverNames.isEmpty() &&
@@ -1311,7 +1338,8 @@ public final class SSLSocketImpl
                 alert = Alert.INTERNAL_ERROR;
             }
         }
-        conContext.fatal(alert, cause);
+
+        throw conContext.fatal(alert, cause);
     }
 
     private Plaintext handleEOF(EOFException eofe) throws IOException {

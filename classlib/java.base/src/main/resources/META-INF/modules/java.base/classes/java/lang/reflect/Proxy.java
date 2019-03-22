@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,12 +39,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.module.Modules;
-import jdk.internal.misc.Unsafe;
 import jdk.internal.misc.VM;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
@@ -468,7 +467,7 @@ public class Proxy implements java.io.Serializable {
      * in which the proxy class will be defined.
      */
     private static final class ProxyBuilder {
-        private static final Unsafe UNSAFE = Unsafe.getUnsafe();
+        private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
         // prefix for all proxy class names
         private static final String proxyClassNamePrefix = "$Proxy";
@@ -535,9 +534,8 @@ public class Proxy implements java.io.Serializable {
             byte[] proxyClassFile = ProxyGenerator.generateProxyClass(
                     proxyName, interfaces.toArray(EMPTY_CLASS_ARRAY), accessFlags);
             try {
-                Class<?> pc = UNSAFE.defineClass(proxyName, proxyClassFile,
-                                                 0, proxyClassFile.length,
-                                                 loader, null);
+                Class<?> pc = JLA.defineClass(loader, proxyName, proxyClassFile,
+                                              null, "__dynamic_proxy__");
                 reverseProxyCache.sub(pc).putIfAbsent(loader, Boolean.TRUE);
                 return pc;
             } catch (ClassFormatError e) {

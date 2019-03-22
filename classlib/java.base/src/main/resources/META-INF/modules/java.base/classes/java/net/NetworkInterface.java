@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -170,7 +170,7 @@ public final class NetworkInterface {
      * a SecurityException will be returned in the List.
      *
      * @return a {@code List} object with all or a subset of the
-     *         InterfaceAddresss of this network interface
+     *         InterfaceAddress of this network interface
      * @since 1.6
      */
     public java.util.List<InterfaceAddress> getInterfaceAddresses() {
@@ -321,8 +321,20 @@ public final class NetworkInterface {
         if (addr == null) {
             throw new NullPointerException();
         }
-        if (!(addr instanceof Inet4Address || addr instanceof Inet6Address)) {
-            throw new IllegalArgumentException ("invalid address type");
+        if (addr instanceof Inet4Address) {
+            Inet4Address inet4Address = (Inet4Address) addr;
+            if (inet4Address.holder.family != InetAddress.IPv4) {
+                throw new IllegalArgumentException("invalid family type: "
+                        + inet4Address.holder.family);
+            }
+        } else if (addr instanceof Inet6Address) {
+            Inet6Address inet6Address = (Inet6Address) addr;
+            if (inet6Address.holder.family != InetAddress.IPv6) {
+                throw new IllegalArgumentException("invalid family type: "
+                        + inet6Address.holder.family);
+            }
+        } else {
+            throw new IllegalArgumentException("invalid address type: " + addr);
         }
         return getByInetAddress0(addr);
     }

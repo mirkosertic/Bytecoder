@@ -141,7 +141,7 @@ public class LockSupport {
 
     private static void setBlocker(Thread t, Object arg) {
         // Even though volatile, hotspot doesn't need a write barrier here.
-        U.putObject(t, PARKBLOCKER, arg);
+        U.putReference(t, PARKBLOCKER, arg);
     }
 
     /**
@@ -199,10 +199,11 @@ public class LockSupport {
      * Disables the current thread for thread scheduling purposes, for up to
      * the specified waiting time, unless the permit is available.
      *
-     * <p>If the permit is available then it is consumed and the call
-     * returns immediately; otherwise the current thread becomes disabled
-     * for thread scheduling purposes and lies dormant until one of four
-     * things happens:
+     * <p>If the specified waiting time is zero or negative, the
+     * method does nothing. Otherwise, if the permit is available then
+     * it is consumed and the call returns immediately; otherwise the
+     * current thread becomes disabled for thread scheduling purposes
+     * and lies dormant until one of four things happens:
      *
      * <ul>
      * <li>Some other thread invokes {@link #unpark unpark} with the
@@ -291,7 +292,7 @@ public class LockSupport {
     public static Object getBlocker(Thread t) {
         if (t == null)
             throw new NullPointerException();
-        return U.getObjectVolatile(t, PARKBLOCKER);
+        return U.getReferenceVolatile(t, PARKBLOCKER);
     }
 
     /**
@@ -327,10 +328,11 @@ public class LockSupport {
      * Disables the current thread for thread scheduling purposes, for up to
      * the specified waiting time, unless the permit is available.
      *
-     * <p>If the permit is available then it is consumed and the call
-     * returns immediately; otherwise the current thread becomes disabled
-     * for thread scheduling purposes and lies dormant until one of four
-     * things happens:
+     * <p>If the specified waiting time is zero or negative, the
+     * method does nothing. Otherwise, if the permit is available then
+     * it is consumed and the call returns immediately; otherwise the
+     * current thread becomes disabled for thread scheduling purposes
+     * and lies dormant until one of four things happens:
      *
      * <ul>
      * <li>Some other thread invokes {@link #unpark unpark} with the
