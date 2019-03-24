@@ -35,15 +35,13 @@
 
     function quantile(array, percentile) {
         array.sort(sortNumber);
-        index = percentile/100. * (array.length-1);
+        var index = percentile/100. * (array.length-1);
         if (Math.floor(index) == index) {
-            result = array[index];
-        } else {
-            i = Math.floor(index)
-            fraction = index - i;
-            result = array[i] + (array[i+1] - array[i]) * fraction;
+            return array[index];
         }
-        return result;
+        var i = Math.floor(index);
+        var fraction = index - i;
+        return array[i] + (array[i+1] - array[i]) * fraction;
     }
 
     var stats = new Stats();

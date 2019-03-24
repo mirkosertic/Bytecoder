@@ -15,15 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
@@ -65,6 +56,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -95,6 +87,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -259,15 +260,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         params.add(param("p" + (i + 1), WASMSSAASTWriter.toType(TypeRef.toType(theParamType))));
                     }
 
-                    final Function imported;
                     if (!theSignature.getReturnType().isVoid()) {
-                        imported = module.getImports().importFunction(
+                        module.getImports().importFunction(
                                 importReference,
                                 methodName,
                                 params,
                                 WASMSSAASTWriter.toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
                     } else {
-                        imported = module.getImports().importFunction(
+                        module.getImports().importFunction(
                                 importReference,
                                 methodName,
                                 params).toTable();
@@ -439,7 +439,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 return;
             }
 
-            final Set<BytecodeObjectTypeRef> theStaticReferences = new HashSet<>();
             final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
             final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
 
@@ -612,8 +611,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     instanceFunction.exportAs(theExport.getElementValueByName("value").stringValue());
                 }
 
-                theStaticReferences.addAll(theSSAProgram.getStaticReferences());
-
                 // Try to reloop it!
                 try {
                     final Relooper theRelooper = new Relooper(aOptions);
@@ -701,7 +698,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                                 if (theImplementationSignature.getReturnType().isVoid()) {
 
-                                    ExportableFunction theAdapterFunction= theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
+                                    final ExportableFunction theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
                                             theParams).toTable();
 
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
@@ -949,11 +946,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         // We need to generate
-        aLinkerContext.linkedClasses().map(t -> t.targetNode()).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
+        aLinkerContext.linkedClasses().map(Edge::targetNode).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
 
             final BytecodeResolvedMethods theMethods = t.resolvedMethods();
             final List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(x -> !x.getValue().isConstructor() && !x.getValue().isClassInitializer()
-                    && x.getProvidingClass() == t).map(x -> x.getValue()).collect(Collectors.toList());
+                    && x.getProvidingClass() == t).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
 
             if (availableCallbacks.size() > 0) {
 
@@ -1344,7 +1341,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     theWriter.print(")");
                                 } else if (theLinkedClass.isCallback()) {
 
-                                    final List<BytecodeMethod> theCallbackMethods = theLinkedClass.resolvedMethods().stream().filter(x -> x.getProvidingClass() == theLinkedClass).map(x -> x.getValue()).collect(Collectors.toList());
+                                    final List<BytecodeMethod> theCallbackMethods = theLinkedClass.resolvedMethods().stream().filter(x -> x.getProvidingClass() == theLinkedClass).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
                                     if (theCallbackMethods.size() != 1) {
                                         throw new IllegalStateException("Wrong number of callback methods in " + theLinkedClass.getClassName().name() + ", expected 1, got " + theCallbackMethods.size());
                                     }

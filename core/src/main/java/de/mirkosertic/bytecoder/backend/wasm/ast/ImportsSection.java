@@ -113,7 +113,7 @@ public class ImportsSection extends ModuleSection {
                     sectionWriter.writeUnsignedLeb128(getModule().getTypes().indexOf(f.getFunctionType()));
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
-                    sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
+                    sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
                 } else if (value instanceof WASMException) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
                     sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WASMException) value));
