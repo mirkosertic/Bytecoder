@@ -33,13 +33,11 @@ import java.util.function.Consumer;
 
 public class ControlFlowGraph {
 
-    private final List<RegionNode> dominatedNodes;
     private final List<RegionNode> knownNodes;
     private final Program program;
 
     public ControlFlowGraph(final Program aProgram) {
         program = aProgram;
-        dominatedNodes = new ArrayList<>();
         knownNodes = new ArrayList<>();
     }
 
@@ -99,7 +97,6 @@ public class ControlFlowGraph {
     }
 
     public void addDominatedNode(final RegionNode aGraphNode) {
-        dominatedNodes.add(aGraphNode);
         knownNodes.add(aGraphNode);
     }
 

@@ -739,8 +739,7 @@ public class Relooper {
                         theInnerEntries.add(theNext);
                     }
                 }
-                final Set<RegionNode> theInnerStart = new HashSet<>();
-                theInnerStart.add(aEntry);
+
                 final Block theTryInner = new SimpleBlock(theInnerEntries, aEntry, reloop(aGraph, theInnerEntries, theInnerNodes));
 
                 // We finally need to compute the catchBlocks

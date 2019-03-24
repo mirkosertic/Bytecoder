@@ -15,9 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,14 +44,12 @@ public class Program {
     private final DebugInformation debugInformation;
     private final ControlFlowGraph controlFlowGraph;
     private final List<Variable> variables;
-    private final Set<Variable> globals;
     private final List<Argument> arguments;
     private BytecodeProgram.FlowInformation flowInformation;
 
     public Program(final DebugInformation aDebugInformation) {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
-        globals = new HashSet<>();
         arguments = new ArrayList<>();
         debugInformation = aDebugInformation;
     }
@@ -72,7 +68,6 @@ public class Program {
 
     public void addArgument(final LocalVariableDescription aVariableDescription, final Variable aVariable) {
         arguments.add(new Argument(aVariableDescription, aVariable));
-        globals.add(aVariable);
     }
 
     public List<Argument> getArguments() {
@@ -131,71 +126,7 @@ public class Program {
         return theNewVariable;
     }
 
-    public Set<BytecodeObjectTypeRef> getStaticReferences() {
-        final Set<BytecodeObjectTypeRef> theResult = new HashSet<>();
-        for (final RegionNode theNode : controlFlowGraph.getKnownNodes()) {
-            for (final Expression theExpression : theNode.getExpressions().toList()) {
-                if (theExpression instanceof PutStaticExpression) {
-                    final PutStaticExpression theE = (PutStaticExpression) theExpression;
-                    theResult.add(BytecodeObjectTypeRef
-                            .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
-                }
-                for (final Value theIncoming : theExpression.incomingDataFlows()) {
-                    if (theIncoming instanceof GetStaticExpression) {
-                        final GetStaticExpression theGet = (GetStaticExpression) theIncoming;
-                        theResult.add(BytecodeObjectTypeRef
-                                .fromUtf8Constant(theGet.getField().getClassIndex().getClassConstant().getConstant()));
-                    }
-                }
-                if (theExpression instanceof PutStaticExpression) {
-                    final PutStaticExpression theE = (PutStaticExpression) theExpression;
-                    theResult.add(BytecodeObjectTypeRef
-                            .fromUtf8Constant(theE.getField().getClassIndex().getClassConstant().getConstant()));
-                }
-            }
-        }
-
-        for (final Variable theVariable : variables) {
-            for (final Value theValue : theVariable.incomingDataFlows()) {
-                if (theValue instanceof InvokeStaticMethodExpression) {
-                    final InvokeStaticMethodExpression theInvokeStatic = (InvokeStaticMethodExpression) theValue;
-                    theResult.add(theInvokeStatic.getClassName());
-                }
-                if (theValue instanceof GetStaticExpression) {
-                    final GetStaticExpression theStaticValue = (GetStaticExpression) theValue;
-                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theStaticValue.getField().getClassIndex().getClassConstant().getConstant()));
-                }
-                if (theValue instanceof StringValue) {
-                    theResult.add(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
-                }
-                if (theValue instanceof ClassReferenceValue) {
-                    final ClassReferenceValue theClassRef = (ClassReferenceValue) theValue;
-                    theResult.add(theClassRef.getType());
-                }
-                if (theValue instanceof NewArrayExpression) {
-                    final NewArrayExpression theNewArray = (NewArrayExpression) theValue;
-                    if (theNewArray.getType() instanceof BytecodeObjectTypeRef) {
-                        theResult.add((BytecodeObjectTypeRef) theNewArray.getType());
-                    }
-                }
-                if (theValue instanceof NewMultiArrayExpression) {
-                    final NewMultiArrayExpression theNewArray = (NewMultiArrayExpression) theValue;
-                    final BytecodeTypeRef theTypeRef = theNewArray.getType();
-                    if (theTypeRef instanceof BytecodeObjectTypeRef) {
-                        theResult.add((BytecodeObjectTypeRef) theTypeRef);
-                    }
-                }
-                if (theValue instanceof NewObjectExpression) {
-                    final NewObjectExpression theNewObjectValue = (NewObjectExpression) theValue;
-                    theResult.add(BytecodeObjectTypeRef.fromUtf8Constant(theNewObjectValue.getType().getConstant()));
-                }
-            }
-        }
-        return theResult;
-    }
-
     public void deleteVariable(final Variable aVariable) {
         variables.remove(aVariable);
-        globals.remove(aVariable);
     }
 }

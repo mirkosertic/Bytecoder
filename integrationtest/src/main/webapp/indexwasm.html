@@ -35,15 +35,13 @@
 
             function quantile(array, percentile) {
                 array.sort(sortNumber);
-                index = percentile/100. * (array.length-1);
+                var index = percentile/100. * (array.length-1);
                 if (Math.floor(index) == index) {
-                    result = array[index];
-                } else {
-                    i = Math.floor(index)
-                    fraction = index - i;
-                    result = array[i] + (array[i+1] - array[i]) * fraction;
+                    return array[index];
                 }
-                return result;
+                var i = Math.floor(index);
+                var fraction = index - i;
+                return array[i] + (array[i+1] - array[i]) * fraction;
             }
 
             var stats = new Stats();
@@ -95,7 +93,7 @@
             WebAssembly.instantiateStreaming(fetch('bytecoder.wasm'), bytecoder.imports)
                 .then(instantiated)
                 .catch(function(error) {
-                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!")
+                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
                     var request = new XMLHttpRequest();
                     request.open('GET', 'bytecoder.wasm');
                     request.responseType = 'arraybuffer';
