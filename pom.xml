@@ -44,6 +44,7 @@
         <module>core</module>
         <module>maven</module>
         <module>integrationtest</module>
+        <module>cli</module>
     </modules>
 
     <properties>
