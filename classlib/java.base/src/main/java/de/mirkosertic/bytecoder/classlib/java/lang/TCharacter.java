@@ -20,7 +20,55 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TCharacter {
 
-    public static boolean isDigit(char aChar) {
+    public static final int MIN_RADIX = 2;
+    public static final int MAX_RADIX = 36;
+
+    public static int digit(final char ch, final int radix) {
+        switch (ch) {
+        case '0':
+            return 0;
+        case '1':
+            return 1;
+        case '2':
+            return 2;
+        case '3':
+            return 3;
+        case '4':
+            return 4;
+        case '5':
+            return 5;
+        case '6':
+            return 6;
+        case '7':
+            return 7;
+        case '8':
+            return 8;
+        case '9':
+            return 9;
+        case 'A':
+        case 'a':
+            return 10;
+        case 'B':
+        case 'b':
+            return 11;
+        case 'C':
+        case 'c':
+            return 12;
+        case 'D':
+        case 'd':
+            return 13;
+        case 'E':
+        case 'e':
+            return 14;
+        case 'F':
+        case 'f':
+            return 15;
+        default:
+            throw new IllegalArgumentException("Not supported character : " + ch);
+        }
+    }
+
+    public static boolean isDigit(final char aChar) {
         switch (aChar) {
         case '0':
             return true;
@@ -47,7 +95,7 @@ public class TCharacter {
         }
     }
 
-    public static boolean isLowerCase(char aChar) {
+    public static boolean isLowerCase(final char aChar) {
         switch (aChar) {
         case 'A':
             return false;
@@ -106,7 +154,7 @@ public class TCharacter {
         }
     }
 
-    public static boolean isUpperCase(char aChar) {
+    public static boolean isUpperCase(final char aChar) {
         switch (aChar) {
         case 'A':
             return true;
@@ -165,7 +213,7 @@ public class TCharacter {
         }
     }
 
-    public static char toLowerCase(char aChar) {
+    public static char toLowerCase(final char aChar) {
         switch (aChar) {
         case 'A':
             return 'a';

@@ -15,19 +15,19 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class IntegerTest {
 
     @Test
     public void testEquals() throws Exception {
-        Integer theInteger = new Integer((int) 10);
+        final Integer theInteger = new Integer((int) 10);
         assertEquals(theInteger,theInteger);
         assertNotEquals(theInteger, new Integer((int) 11));
         assertNotEquals(theInteger, null);
@@ -97,5 +97,17 @@ public class IntegerTest {
     @Test
     public void testToHexString() {
         assertEquals("3039", Integer.toHexString(12345));
+    }
+
+    @Test
+    public void parseIntRadix16() {
+        final int value = Integer.parseInt("1F", 16);
+        assertEquals(31, value);
+    }
+
+    @Test
+    public void parseIntRadix10() {
+        final int value = Integer.parseInt("10", 10);
+        assertEquals(10, value);
     }
 }

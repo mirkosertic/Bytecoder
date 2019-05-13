@@ -27,7 +27,7 @@ public class TInteger extends Number {
     private final int integerValue;
 
     @NoExceptionCheck
-    public TInteger(int aIntegerValue) {
+    public TInteger(final int aIntegerValue) {
         integerValue = aIntegerValue;
     }
 
@@ -52,7 +52,7 @@ public class TInteger extends Number {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -60,7 +60,7 @@ public class TInteger extends Number {
             return false;
         }
 
-        TInteger theOtherInteger = (TInteger) o;
+        final TInteger theOtherInteger = (TInteger) o;
 
         return integerValue == theOtherInteger.integerValue;
     }
@@ -75,29 +75,93 @@ public class TInteger extends Number {
         return toString(integerValue);
     }
 
-    public static Integer valueOf(int aValue) {
+    public static Integer valueOf(final int aValue) {
         return new Integer(aValue);
     }
 
-    public static Integer valueOf(String aValue) {
+    public static Integer valueOf(final String aValue) {
         return new Integer((int) VM.stringToLong(aValue));
     }
 
-    public static int parseInt(String aString) {
+    public static int parseInt(final String aString) {
         return (int) VM.stringToLong(aString);
     }
 
-    public static String toString(int aValue) {
-        StringBuilder theBuffer = new StringBuilder();
+    public static String toString(final int aValue) {
+        final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
 
-    public static String toHexString(int aValue) {
+    public static String toHexString(final int aValue) {
         return VM.longToHex(aValue);
     }
 
-    public static int numberOfLeadingZeros(int aValue) {
+    public static int numberOfLeadingZeros(final int aValue) {
         return 0;
     }
+
+    public static int parseInt(final String s, final int radix)
+            throws NumberFormatException
+    {
+        /*
+         * WARNING: This method may be invoked early during VM initialization
+         * before IntegerCache is initialized. Care must be taken to not use
+         * the valueOf method.
+         */
+
+        if (s == null) {
+            throw new NumberFormatException("null");
+        }
+
+        if (radix < Character.MIN_RADIX) {
+            throw new NumberFormatException("radix " + radix +
+                    " less than Character.MIN_RADIX");
+        }
+
+        if (radix > Character.MAX_RADIX) {
+            throw new NumberFormatException("radix " + radix +
+                    " greater than Character.MAX_RADIX");
+        }
+
+        boolean negative = false;
+        int i = 0;
+        final int len = s.length();
+        int limit = -Integer.MAX_VALUE;
+
+        if (len > 0) {
+            final char firstChar = s.charAt(0);
+            if (firstChar < '0') { // Possible leading "+" or "-"
+                if (firstChar == '-') {
+                    negative = true;
+                    limit = Integer.MIN_VALUE;
+                } else if (firstChar != '+') {
+                    throw new NumberFormatException(s);
+                }
+
+                if (len == 1) { // Cannot have lone "+" or "-"
+                    throw new NumberFormatException(s);
+                }
+                i++;
+            }
+            final int multmin = limit / radix;
+            int result = 0;
+            while (i < len) {
+                // Accumulating negatively avoids surprises near MAX_VALUE
+                final int digit = Character.digit(s.charAt(i++), radix);
+                if (digit < 0 || result < multmin) {
+                    throw new NumberFormatException(s);
+                }
+                result *= radix;
+                if (result < limit + digit) {
+                    throw new NumberFormatException(s);
+                }
+                result -= digit;
+            }
+            return negative ? result : -result;
+        } else {
+            throw new NumberFormatException(s);
+        }
+    }
+
 }
