@@ -21,31 +21,27 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 public class TString implements java.io.Serializable, Comparable<String> {
 
     private int computedHash;
-    private final byte[] data;
+    private final char[] data;
 
     public TString(final int aSize) {
-        data = new byte[aSize];
+        data = new char[aSize];
         for (int i=0;i<aSize;i++) {
             data[i] = 0;
         }
     }
 
     public TString(final char[] aData) {
-        data = new byte[aData.length];
+        data = new char[aData.length];
         for (int i=0;i<aData.length;i++) {
-            data[i] = (byte) aData[i];
+            data[i] = aData[i];
         }
     }
 
     public TString(final char[] value, final int offset, final int count) {
-        data = new byte[count];
+        data = new char[count];
         for (int i=0;i<count;i++) {
-            data[i] = (byte) value[offset + i];
+            data[i] = value[offset + i];
         }
-    }
-
-    public void setCharAt(final int aIndex, final byte aChar) {
-        data[aIndex] = aChar;
     }
 
     @Override
@@ -55,7 +51,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public TString(final byte[] aData) {
-        data = aData;
+        data = new char[aData.length];
+        for (int i=0;i<aData.length;i++) {
+            data[i] = (char) aData[i];
+        }
     }
 
     public TString(final TString aOtherString) {
@@ -63,15 +62,19 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public TString() {
-        data = new byte[0];
+        data = new char[0];
     }
 
     public byte[] getBytes() {
-        return data;
+        final byte[] result = new byte[data.length];
+        for (int i=0;i<data.length;i++) {
+            result[i] = (byte) data[i];
+        }
+        return result;
     }
 
     public char charAt(final int aIndex) {
-        return (char) data[aIndex];
+        return data[aIndex];
     }
 
     @Override
@@ -150,7 +153,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     public String substring(final int aStart) {
         final int theLength = data.length - aStart;
-        final byte[] theNewData = new byte[theLength];
+        final char[] theNewData = new char[theLength];
         for (int i=0;i<theLength;i++) {
             theNewData[i] = data[i + aStart];
         }
@@ -159,7 +162,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     public String substring(final int aStart, final int aEnd) {
         final int theLength = aEnd - aStart;
-        final byte[] theNewData = new byte[theLength];
+        final char[] theNewData = new char[theLength];
         for (int i=0;i<theLength;i++) {
             theNewData[i] = data[i + aStart];
         }
@@ -167,11 +170,11 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public String replace(final char aOldChar, final char aNewChar) {
-        final byte[] theNewData = new byte[data.length];
+        final char[] theNewData = new char[data.length];
         for (int i=0;i<data.length;i++) {
-            byte theData = data[i];
+            char theData = data[i];
             if (theData == aOldChar) {
-                theData = (byte) aNewChar;
+                theData = aNewChar;
             }
             theNewData[i] = theData;
         }
@@ -246,7 +249,11 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     public void getChars(final int srcBegin, final int srcEnd, final char[] dst, int dstBegin) {
         for (int i=srcBegin;i<srcEnd;i++) {
-            dst[dstBegin++]=(char) data[i];
+            dst[dstBegin++]=data[i];
         }
+    }
+
+    public static String valueOf(final char[] data) {
+        return new String(data);
     }
 }
