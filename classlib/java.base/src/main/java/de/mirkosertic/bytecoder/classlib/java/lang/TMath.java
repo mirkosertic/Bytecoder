@@ -115,4 +115,6 @@ public class TMath {
         }
         return exp;
     }
+
+    public static native double log(double aValue1);
 }
