@@ -417,19 +417,11 @@ public class JSSSAWriter {
     }
 
     private void print(final LongValue aValue) {
-        if (aValue.getLongValue() < 0) {
-            writer.text(" " + aValue.getLongValue());
-        } else {
-            writer.text("" + aValue.getLongValue());
-        }
+        writer.text("" + aValue.getLongValue());
     }
 
     private void print(final ShortValue aValue) {
-        if (aValue.getShortValue() < 0) {
-            writer.text(" " + aValue.getShortValue());
-        } else {
-            writer.text("" + aValue.getShortValue());
-        }
+        writer.text("" + aValue.getShortValue());
     }
 
     private void print(final NegatedExpression aValue) {
@@ -467,11 +459,7 @@ public class JSSSAWriter {
     }
 
     private void print(final IntegerValue aValue) {
-        if (aValue.getIntValue() < 0) {
-            writer.text(" " + aValue.getIntValue());
-        } else {
-            writer.text("" + aValue.getIntValue());
-        }
+        writer.text("" + aValue.getIntValue());
     }
 
     private void print(final FloatValue aValue) {
