@@ -174,6 +174,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("imports").colon().text("{").newLine();
+        theWriter.tab(2).text("stringutf16").colon().text("{").newLine();
+        theWriter.tab(3).text("isBigEndian").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("return 1;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("},").newLine();
+
         theWriter.tab(2).text("system").colon().text("{").newLine();
         theWriter.tab(3).text("currentTimeMillis").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now();").newLine();
