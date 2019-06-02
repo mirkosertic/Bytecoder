@@ -1096,9 +1096,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println();
 
             theWriter.println("     imports: {");
-            theWriter.println("         stringutf16: {");
-            theWriter.println("             isBigEndian: function() {return 1;},");
-            theWriter.println("         },");
             theWriter.println("         system: {");
             theWriter.println("             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
@@ -1107,6 +1104,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         },");
             theWriter.println("         vm: {");
             theWriter.println("             newRuntimeGeneratedTypeMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("             initialize: function() {},");
+            theWriter.println("             initializeFromArchiveClass: function() {},");
             theWriter.println("         },");
             theWriter.println("         tsystem: {");
             theWriter.println("             logDebugObject: function(caller, value) {bytecoder.logDebug(caller, value);},");

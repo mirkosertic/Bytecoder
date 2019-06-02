@@ -20,8 +20,6 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TString implements java.io.Serializable, Comparable<String> {
 
-    private static final boolean COMPACT_STRINGS = false;
-
     private int computedHash;
     private final char[] data;
 
@@ -46,12 +44,17 @@ public class TString implements java.io.Serializable, Comparable<String> {
         }
     }
 
-    public TString(final byte[] value, final byte coder) {
-        data = UTFHelper.toChars(value);
+    @Override
+    public String toString() {
+        final Object a = this;
+        return (String) a;
     }
 
     public TString(final byte[] aData) {
-        data = UTFHelper.toChars(aData);
+        data = new char[aData.length];
+        for (int i=0;i<aData.length;i++) {
+            data[i] = (char) aData[i];
+        }
     }
 
     public TString(final TString aOtherString) {
@@ -62,14 +65,12 @@ public class TString implements java.io.Serializable, Comparable<String> {
         data = new char[0];
     }
 
-    @Override
-    public String toString() {
-        final Object a = this;
-        return (String) a;
-    }
-
     public byte[] getBytes() {
-        return UTFHelper.toBytes(data, 0, data.length);
+        final byte[] result = new byte[data.length];
+        for (int i=0;i<data.length;i++) {
+            result[i] = (byte) data[i];
+        }
+        return result;
     }
 
     public char charAt(final int aIndex) {
@@ -204,14 +205,6 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return new String(new byte[] {(byte) aValue});
     }
 
-    public static String valueOf(final char[] data) {
-        return new String(data);
-    }
-
-    public static String valueOf(final long data) {
-        return Long.toString(data);
-    }
-
     public static String format(final String aPattern, final Object[] aValues) {
         return aPattern;
     }
@@ -258,5 +251,9 @@ public class TString implements java.io.Serializable, Comparable<String> {
         for (int i=srcBegin;i<srcEnd;i++) {
             dst[dstBegin++]=data[i];
         }
+    }
+
+    public static String valueOf(final char[] data) {
+        return new String(data);
     }
 }

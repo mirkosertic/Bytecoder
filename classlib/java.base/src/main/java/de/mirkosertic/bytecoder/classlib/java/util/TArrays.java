@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
@@ -50,51 +50,11 @@ public class TArrays {
         return theResult;
     }
 
-    public static int[] copyOf(final int[] original, final int newLength) {
-        final int l = Math.max(newLength, original.length);
-        final int[] theResult = new int[l];
-        for (int i=0;i<l;i++) {
-            theResult[i] = original[i];
-        }
-        return theResult;
-    }
-
     public static <T> T[] copyOfRange(final T[] original, final int from, final int to, final Class aType) {
         final T[] theResult = (T[]) new Object[to - from];
         for (int i=from;i<to;i++) {
             theResult[i-from] = original[i];
         }
         return theResult;
-    }
-
-    public static int[] copyOfRange(final int[] original, final int from, final int to) {
-        final int[] theResult = new int[to - from];
-        for (int i=from;i<to;i++) {
-            theResult[i-from] = original[i];
-        }
-        return theResult;
-    }
-
-    public static byte[] copyOfRange(final byte[] original, final int from, final int to) {
-        final byte[] theResult = new byte[to - from];
-        for (int i=from;i<to;i++) {
-            theResult[i-from] = original[i];
-        }
-        return theResult;
-    }
-
-    public static void fill(final char[] a, final int fromIndex, final int toIndex, final char val) {
-        for (int i = fromIndex; i < toIndex; i++)
-            a[i] = val;
-    }
-
-    public static void fill(final int[] a, final int fromIndex, final int toIndex, final int val) {
-        for (int i = fromIndex; i < toIndex; i++)
-            a[i] = val;
-    }
-
-    public static void fill(final int[] a, final int val) {
-        for (int i = 0, len = a.length; i < len; i++)
-            a[i] = val;
     }
 }
