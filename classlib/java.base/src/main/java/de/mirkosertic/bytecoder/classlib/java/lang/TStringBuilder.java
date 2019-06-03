@@ -30,6 +30,10 @@ public class TStringBuilder {
         byteData = new byte[0];
     }
 
+    public TStringBuilder(final int capacity) {
+        byteData = new byte[0];
+    }
+
     public TStringBuilder(final String aOtherString) {
         final byte[] other = aOtherString.getBytes();
         byteData = new byte[other.length];

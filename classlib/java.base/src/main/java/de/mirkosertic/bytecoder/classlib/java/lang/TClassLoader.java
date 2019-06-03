@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.security;
-
-import java.security.Permission;
-import java.security.PrivilegedAction;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TAccessController {
+public class TClassLoader {
 
-    public static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        return action.run();
-    }
-
-    public static void checkPermission(final Permission p) {
+    public static ClassLoader getPlatformClassLoader() {
+        throw new IllegalStateException();
     }
 }

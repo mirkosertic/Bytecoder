@@ -15,6 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
@@ -47,11 +52,16 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public TString(final byte[] value, final byte coder) {
-        data = UTFHelper.toChars(value);
+        this(value, Charset.defaultCharset());
     }
 
     public TString(final byte[] aData) {
-        data = UTFHelper.toChars(aData);
+        this(aData, Charset.defaultCharset());
+    }
+
+    public TString(final byte[] value, final Charset charset) {
+        final CharBuffer cb  = charset.decode(ByteBuffer.wrap(value));
+        data = cb.array();
     }
 
     public TString(final TString aOtherString) {
@@ -68,8 +78,14 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return (String) a;
     }
 
+    public byte[] getBytes(final Charset charset) {
+        final CharBuffer cb = CharBuffer.wrap(data);
+        final ByteBuffer bb = charset.encode(cb);
+        return Arrays.copyOf(bb.array(), bb.limit());
+    }
+
     public byte[] getBytes() {
-        return UTFHelper.toBytes(data, 0, data.length);
+        return getBytes(Charset.defaultCharset());
     }
 
     public char charAt(final int aIndex) {

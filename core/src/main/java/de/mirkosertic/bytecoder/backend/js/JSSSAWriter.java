@@ -15,6 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.lang.reflect.Array;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
@@ -104,12 +110,6 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-
-import java.lang.reflect.Array;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class JSSSAWriter {
 
@@ -512,6 +512,15 @@ public class JSSSAWriter {
         final TypeRef theTargetType = aValue.resolveType();
         final Value theValue = aValue.incomingDataFlows().get(0);
         switch (theTargetType.resolve()) {
+            case BYTE:
+                writer.text("((");
+                print(theValue);
+                writer.text(")");
+                writer.space();
+                writer.text("&");
+                writer.space();
+                writer.text("0xff)");
+                break;
             case FLOAT:
                 print(theValue);
                 break;

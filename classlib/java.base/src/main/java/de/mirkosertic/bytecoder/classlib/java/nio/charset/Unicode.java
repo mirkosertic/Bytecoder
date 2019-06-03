@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.security;
+package de.mirkosertic.bytecoder.classlib.java.nio.charset;
 
-import java.security.Permission;
-import java.security.PrivilegedAction;
+import java.nio.charset.Charset;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
-@SubstitutesInClass(completeReplace = true)
-public class TAccessController {
-
-    public static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        return action.run();
+abstract class Unicode extends Charset
+{
+    public Unicode(final String name, final String[] aliases) {
+        super(name, aliases);
     }
 
-    public static void checkPermission(final Permission p) {
+    public boolean contains(final Charset cs) {
+        return cs instanceof UTF_8;
     }
 }

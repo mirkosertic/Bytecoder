@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.jdk.internal.misc;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TVM {

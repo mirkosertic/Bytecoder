@@ -56,7 +56,7 @@ public class TClass {
         return null;
     }
 
-    public static Class<?> getPrimitiveClass(String aName) {
+    public static Class<?> getPrimitiveClass(final String aName) {
         if ("byte".equals(aName)) {
             return Byte.class;
         }
@@ -82,5 +82,9 @@ public class TClass {
             return Boolean.class;
         }
         throw new RuntimeException(aName);
+    }
+
+    public static Class forName(final String name, final boolean initialize, final ClassLoader classLoader) throws ClassNotFoundException {
+        throw new ClassNotFoundException(name);
     }
 }

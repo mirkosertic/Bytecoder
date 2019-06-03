@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.security;
+package de.mirkosertic.bytecoder.core;
 
-import java.security.Permission;
-import java.security.PrivilegedAction;
+import java.nio.ByteBuffer;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-@SubstitutesInClass(completeReplace = true)
-public class TAccessController {
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
-    public static <T> T doPrivileged(final PrivilegedAction<T> action) {
-        return action.run();
-    }
+@RunWith(BytecoderUnitTestRunner.class)
+public class ByteBufferTest {
 
-    public static void checkPermission(final Permission p) {
+    @Test
+    public void testCreate() {
+        final ByteBuffer buffer = ByteBuffer.wrap(new byte[] {10, 20, 30});
     }
 }

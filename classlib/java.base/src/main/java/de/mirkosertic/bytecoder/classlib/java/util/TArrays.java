@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
@@ -39,21 +39,24 @@ public class TArrays {
     }
 
     public static <T> T[] copyOf(final T[] original, final int newLength, final Class aType) {
-        int theMax = original.length;
-        if (newLength < theMax) {
-            theMax = newLength;
-        }
         final T[] theResult = (T[]) new Object[newLength];
-        for (int i=0;i<theMax;i++) {
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
             theResult[i] = original[i];
         }
         return theResult;
     }
 
     public static int[] copyOf(final int[] original, final int newLength) {
-        final int l = Math.max(newLength, original.length);
-        final int[] theResult = new int[l];
-        for (int i=0;i<l;i++) {
+        final int[] theResult = new int[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static byte[] copyOf(final byte[] original, final int newLength) {
+        final byte[] theResult = new byte[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
             theResult[i] = original[i];
         }
         return theResult;
