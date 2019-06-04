@@ -65,6 +65,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
         this(value, Charset.forName("UTF-16"));
     }
 
+    public TString(final byte[] value, int offset, int length) {
+        this(Arrays.copyOfRange(value, offset, offset + length), Charset.forName("UTF-16"));
+    }
+
     public TString(final byte[] aData) {
         this(aData, Charset.defaultCharset());
     }
