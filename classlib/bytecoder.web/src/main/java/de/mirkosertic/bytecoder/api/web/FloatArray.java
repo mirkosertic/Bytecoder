@@ -21,10 +21,10 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 public abstract class FloatArray implements TypedArray {
 
     @OpaqueIndexed
-    public abstract float get(int aIndex);
+    public abstract float getFloat(int aIndex);
 
     @OpaqueIndexed
-    public abstract void set(int aIndex, float aValue);
+    public abstract void setFloat(int aIndex, float aValue);
 
     @OpaqueProperty("length")
     public abstract int floatArrayLength();

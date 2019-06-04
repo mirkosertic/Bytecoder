@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -94,5 +95,15 @@ public class StringBuilderTest {
         assertEquals("1", theBuilder.toString());
         theBuilder.append("");
         assertEquals("1", theBuilder.toString());
+    }
+
+    @Test
+    public void testUnicode() {
+        final StringBuilder theBuilder = new StringBuilder("M");
+        theBuilder.append('ü');
+        theBuilder.append("nster");
+        final String theResult = theBuilder.toString();
+        System.out.println(theResult);
+        Assert.assertEquals("Münster", theResult);
     }
 }

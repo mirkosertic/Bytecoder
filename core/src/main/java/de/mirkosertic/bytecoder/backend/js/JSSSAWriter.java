@@ -344,7 +344,7 @@ public class JSSSAWriter {
     }
 
     private void print(final FloorExpression aValue) {
-        writer.text("Math.floor(");
+        writer.text("Math.trunc(");
         print(aValue.incomingDataFlows().get(0));
         writer.text(")");
     }
@@ -517,9 +517,13 @@ public class JSSSAWriter {
                 print(theValue);
                 writer.text(")");
                 writer.space();
-                writer.text("&");
+                writer.text("<<");
                 writer.space();
-                writer.text("0xff)");
+                writer.text("24");
+                writer.space();
+                writer.text(">>");
+                writer.space();
+                writer.text("24)");
                 break;
             case FLOAT:
                 print(theValue);
@@ -528,7 +532,7 @@ public class JSSSAWriter {
                 print(theValue);
                 break;
             default:
-                writer.text("Math.floor(");
+                writer.text("Math.trunc(");
                 print(theValue);
                 writer.text(")");
                 break;

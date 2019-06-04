@@ -837,9 +837,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final StringValue theConstantInPool = thePoolValues.get(i);
                 final String theData = theConstantInPool.getStringValue();
                 final int l = theData.length();
-                final int[] theDataBytes = new int[l];
+                final int[] theDataCharacters = new int[l];
                 for (int j=0;j<l;j++) {
-                    theDataBytes[j] = theData.charAt(j);
+                    theDataCharacters[j] = theData.charAt(j);
                 }
 
                 final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
@@ -852,16 +852,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 final List<WASMValue> theMallocArguments = new ArrayList<>();
                 theMallocArguments.add(i32.c(0, null));
-                theMallocArguments.add(i32.c(theDataBytes.length, null));
+                theMallocArguments.add(i32.c(theDataCharacters.length, null));
                 theMallocArguments.add(call(weakFunctionReference(WASMWriterUtils.toClassName(theArrayClass.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX, null), Collections.emptyList(), null));
                 final Function theVtableFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theArrayClass.getClassName())+ WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
                 theMallocArguments.add(i32.c(module.getTables().funcTable().indexOf(theVtableFunction), null));
                 bootstrap.flow.setGlobal(theStringPoolData, call(module.functionIndex().firstByLabel(theMethodName), theMallocArguments, null), null);
                 // Set array value
-                for (int j=0; j< theDataBytes.length;j++) {
+                for (int j=0; j< theDataCharacters.length;j++) {
                     //
                     final int offset = 20 + j * 4;
-                    bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData, null), i32.c(theDataBytes[j], null), null);
+                    bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData, null), i32.c(theDataCharacters[j], null), null);
                 }
 
                 final Function theMallocFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_dmbcAddressnewObjectINTINTINT");

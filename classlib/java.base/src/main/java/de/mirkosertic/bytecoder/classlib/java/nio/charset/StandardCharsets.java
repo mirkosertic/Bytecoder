@@ -25,6 +25,10 @@ public class StandardCharsets extends CharsetProvider {
         return new String[] {"UTF8","unicode-1-1-utf-8",};
     }
 
+    static String[] aliases_UTF_16() {
+        return new String[] {"UTF_16","utf16","unicode","UnicodeBig",};
+    }
+
     public StandardCharsets() {
     }
 
@@ -36,13 +40,20 @@ public class StandardCharsets extends CharsetProvider {
 
             @Override
             public boolean hasNext() {
-                return c == 0;
+                return c < 2 ;
             }
 
             @Override
             public Charset next() {
                 c++;
-                return UTF_8.INSTANCE;
+                if (c == 1) {
+                    return UTF_8.INSTANCE;
+                }
+                if (c == 2) {
+                    return UTF_16.INSTANCE;
+                }
+
+                throw new IllegalStateException("EOL");
             }
         };
     }
@@ -53,6 +64,17 @@ public class StandardCharsets extends CharsetProvider {
             if (name.equalsIgnoreCase(charsetName)) {
                 return UTF_8.INSTANCE;
             }
+        }
+        for (final String name : aliases_UTF_16()) {
+            if (name.equalsIgnoreCase(charsetName)) {
+                return UTF_16.INSTANCE;
+            }
+        }
+        if (charsetName.equals(UTF_8.INSTANCE.name())) {
+            return UTF_8.INSTANCE;
+        }
+        if (charsetName.equals(UTF_16.INSTANCE.name())) {
+            return UTF_16.INSTANCE;
         }
         return null;
     }

@@ -62,6 +62,14 @@ public class TArrays {
         return theResult;
     }
 
+    public static char[] copyOf(final char[] original, final int newLength) {
+        final char[] theResult = new char[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
     public static <T> T[] copyOfRange(final T[] original, final int from, final int to, final Class aType) {
         final T[] theResult = (T[]) new Object[to - from];
         for (int i=from;i<to;i++) {

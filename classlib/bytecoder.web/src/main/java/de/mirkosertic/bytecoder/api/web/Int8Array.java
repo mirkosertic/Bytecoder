@@ -21,10 +21,10 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 public abstract class Int8Array implements TypedArray {
 
     @OpaqueIndexed
-    public abstract byte get(int aIndex);
+    public abstract byte getByte(int aIndex);
 
     @OpaqueIndexed
-    public abstract void set(int aIndex, byte aValue);
+    public abstract void setByte(int aIndex, byte aValue);
 
     @OpaqueProperty("length")
     public abstract int byteArrayLength();

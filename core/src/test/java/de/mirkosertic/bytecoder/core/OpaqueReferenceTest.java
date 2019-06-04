@@ -72,15 +72,15 @@ public class OpaqueReferenceTest {
     @Test
     public void testIntArray() {
         final IntArray a = OpaqueArrays.createIntArray(10);
-        a.set(1, 99);
-        Assert.assertEquals(99, a.get(1), 0);
+        a.setInt(1, 99);
+        Assert.assertEquals(99, a.getInt(1), 0);
     }
 
     @Test
     public void testFloatArray() {
         final FloatArray a = OpaqueArrays.createFloatArray(10);
-        a.set(1, 99f);
-        Assert.assertEquals(99f, a.get(1), 0);
+        a.setFloat(1, 99f);
+        Assert.assertEquals(99f, a.getFloat(1), 0);
     }
 
     @Test
@@ -127,7 +127,7 @@ public class OpaqueReferenceTest {
     @Test
     public void testInt8Array() {
         final Int8Array a = OpaqueArrays.createInt8Array(10);
-        a.set(1, (byte) 99);
-        Assert.assertEquals((byte) 99, a.get(1), 0);
+        a.setByte(1, (byte) 99);
+        Assert.assertEquals((byte) 99, a.getByte(1), 0);
     }
 }

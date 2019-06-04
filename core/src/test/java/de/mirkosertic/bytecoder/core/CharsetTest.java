@@ -50,9 +50,6 @@ public class CharsetTest {
             System.out.println(result[i] & 0xff);
         }
 
-        System.out.println(cs.decode(ByteBuffer.wrap(result)));
-        System.out.println(cs.decode(ByteBuffer.wrap(result)).length());
-
         Assert.assertEquals(8, result.length);
         Assert.assertEquals(77, result[0] & 0xff);
         Assert.assertEquals(195, result[1] & 0xff);
@@ -91,7 +88,7 @@ public class CharsetTest {
         final UTF_8 cs = UTF_8.INSTANCE;
         final CharsetEncoder encoder = cs.newEncoder();
         final ByteBuffer bb = encoder.encode(CharBuffer.wrap(new char[] {'M','ü','n'}));
-        byte[] arr = bb.array();
+        final byte[] arr = bb.array();
         Assert.assertEquals(77, arr[0]);
         Assert.assertEquals(-61, arr[1]);
         Assert.assertEquals(-68, arr[2]);

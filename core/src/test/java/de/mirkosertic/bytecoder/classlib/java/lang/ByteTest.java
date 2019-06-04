@@ -27,7 +27,7 @@ public class ByteTest {
 
     @Test
     public void testEquals() throws Exception {
-        Byte theByte = new Byte((byte) 10);
+        final Byte theByte = new Byte((byte) 10);
         assertEquals(theByte,theByte);
         assertNotEquals(theByte, new Short((short) 11));
         assertNotEquals(theByte, null);
@@ -72,7 +72,15 @@ public class ByteTest {
 
     @Test
     public void testToString() {
+        System.out.println(new Byte((byte) 123).toString());
         assertEquals("123", new Byte((byte) 123).toString());
+    }
+
+    @Test
+    public void testToString2() {
+        final String str = Byte.toString((byte) 123);
+        System.out.println(str);
+        assertEquals("123", str);
     }
 
     @Test

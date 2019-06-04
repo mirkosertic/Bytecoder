@@ -25,7 +25,17 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TString implements java.io.Serializable, Comparable<String> {
 
-    private static final boolean COMPACT_STRINGS = false;
+    static void checkBoundsOffCount(final int offset, final int count, final int length) {
+        if (offset < 0 || count < 0 || offset > length - count) {
+            throw new StringIndexOutOfBoundsException(
+                    "offset " + offset + ", count " + count + ", length " + length);
+        }
+    }
+
+    static final byte LATIN1 = 0;
+    static final byte UTF16  = 1;
+
+    static final boolean COMPACT_STRINGS = false;
 
     private int computedHash;
     private final char[] data;
@@ -52,7 +62,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public TString(final byte[] value, final byte coder) {
-        this(value, Charset.defaultCharset());
+        this(value, Charset.forName("UTF-16"));
     }
 
     public TString(final byte[] aData) {
@@ -61,7 +71,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     public TString(final byte[] value, final Charset charset) {
         final CharBuffer cb  = charset.decode(ByteBuffer.wrap(value));
-        data = cb.array();
+        data = Arrays.copyOf(cb.array(), cb.limit());
     }
 
     public TString(final TString aOtherString) {
@@ -110,12 +120,14 @@ public class TString implements java.io.Serializable, Comparable<String> {
             return false;
         }
         final String theOtherString = (String) aOtherObject;
-        if (!(theOtherString.length() == data.length)) {
+        final byte[] theOtherData = theOtherString.getBytes();
+        final byte[] thisData = this.getBytes();
+        if (thisData.length != theOtherData.length) {
             return false;
         }
-        final byte[] theOtherData = theOtherString.getBytes();
-        for (int i=0;i<data.length;i++) {
-            if (data[i] != theOtherData[i]) {
+
+        for (int i=0;i<thisData.length;i++) {
+            if (thisData[i] != theOtherData[i]) {
                 return false;
             }
         }
@@ -133,8 +145,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
             return false;
         }
         for (int i=0;i<data.length;i++) {
-            final byte[] theOtherData = ((String)aOtherObject).getBytes();
-            if (Character.toLowerCase((char)data[i]) != Character.toLowerCase((char) theOtherData[i])) {
+            if (Character.toLowerCase((char)data[i]) != Character.toLowerCase(aOtherObject.charAt(i))) {
                 return false;
             }
         }
