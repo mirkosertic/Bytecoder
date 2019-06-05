@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
+package de.mirkosertic.bytecoder.classlib.java.nio.charset;
 
-import java.io.IOException;
+import java.nio.charset.Charset;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
-@SubstitutesInClass(completeReplace = true)
-public abstract class TOutputStream {
-
-    public void write(byte[] aBytes) throws IOException {
-        write(aBytes, 0, aBytes.length);
+abstract class Unicode extends Charset
+{
+    public Unicode(final String name, final String[] aliases) {
+        super(name, aliases);
     }
 
-    public abstract void write(byte b[], int off, int len) throws IOException;
-
-    public abstract void write(int aValue) throws IOException;
-
-    public abstract void close() throws IOException;
+    public boolean contains(final Charset cs) {
+        return cs instanceof UTF_8;
+    }
 }

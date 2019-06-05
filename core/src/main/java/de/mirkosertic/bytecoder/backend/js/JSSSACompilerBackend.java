@@ -15,6 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.StringWriter;
+import java.lang.reflect.Array;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -41,13 +48,6 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.StringWriter;
-import java.lang.reflect.Array;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -94,13 +94,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
 
         final BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)});
+                new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)});
 
         // Construct a String
-        theWriter.tab().text("newString").colon().text("function(aByteArray)").space().text("{").newLine();
+        theWriter.tab().text("newString").colon().text("function(aCharArray)").space().text("{").newLine();
         theWriter.tab(2).text("var theNewString").assign().text("new ").text(theMinifier.toClassName(theStringTypeRef)).text(".C();").newLine();
         theWriter.tab(2).text("var theBytes").assign().text("new ").text(theMinifier.toClassName(theArrayTypeRef)).text(".C();").newLine();
-        theWriter.tab(2).text("theBytes.data").assign().text("aByteArray;").newLine();
+        theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
         theWriter.tab(2).text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("init", theStringConstructorSignature)).text("(theNewString,theBytes);").newLine();
         theWriter.tab(2).text("return theNewString;").newLine();
         theWriter.tab().text("},").newLine();
@@ -174,6 +174,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("imports").colon().text("{").newLine();
+        theWriter.tab(2).text("stringutf16").colon().text("{").newLine();
+        theWriter.tab(3).text("isBigEndian").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("return 1;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("},").newLine();
+
         theWriter.tab(2).text("system").colon().text("{").newLine();
         theWriter.tab(3).text("currentTimeMillis").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now();").newLine();
@@ -579,7 +585,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final List<StringValue> theValues = thePool.stringValues();
         for (int i=0; i<theValues.size(); i++) {
             final StringValue theValue = theValues.get(i);
-            theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue().getBytes())).text(");").newLine();
+            theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
         }
 
         aLinkerContext.linkedClasses().forEach(aEntry -> {
@@ -616,13 +622,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js.map", theSourceMapWriter.toSourceMap(aOptions.getFilenamePrefix() + ".js")));
     }
 
-    public String toArray(final byte[] aData) {
+    public String toArray(final String aData) {
         final StringBuilder theResult = new StringBuilder("[");
-        for (int i=0;i<aData.length;i++) {
+        for (int i=0;i<aData.length();i++) {
             if (i>0) {
                 theResult.append(",");
             }
-            theResult.append(aData[i]);
+            theResult.append((int) aData.charAt(i));
         }
         theResult.append("]");
         return theResult.toString();

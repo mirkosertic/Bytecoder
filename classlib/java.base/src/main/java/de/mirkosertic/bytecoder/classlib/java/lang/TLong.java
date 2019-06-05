@@ -99,4 +99,14 @@ public class TLong extends Number {
     public static String toHexString(long aValue) {
         return VM.longToHex(aValue);
     }
+
+    public static int numberOfLeadingZeros(long i) {
+        int x = (int)(i >>> 32);
+        return x == 0 ? 32 + Integer.numberOfLeadingZeros((int)i) : Integer.numberOfLeadingZeros(x);
+    }
+
+    public static int numberOfTrailingZeros(long i) {
+        int x = (int)i;
+        return x == 0 ? 32 + Integer.numberOfTrailingZeros((int)(i >>> 32)) : Integer.numberOfTrailingZeros(x);
+    }
 }

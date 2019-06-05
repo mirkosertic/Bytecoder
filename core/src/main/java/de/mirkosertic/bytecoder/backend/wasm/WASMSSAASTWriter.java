@@ -956,7 +956,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue floorValue(final FloorExpression aValue) {
-        return i32.trunc_sF32(f32.floor(toValue(aValue.incomingDataFlows().get(0)), aValue), aValue);
+        return i32.trunc_sF32(toValue(aValue.incomingDataFlows().get(0)), aValue);
     }
 
     private WASMExpression invokeVirtualValue(final InvokeVirtualMethodExpression aValue) {

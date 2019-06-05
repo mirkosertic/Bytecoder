@@ -15,10 +15,27 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TString implements java.io.Serializable, Comparable<String> {
+
+    static void checkBoundsOffCount(final int offset, final int count, final int length) {
+        if (offset < 0 || count < 0 || offset > length - count) {
+            throw new StringIndexOutOfBoundsException(
+                    "offset " + offset + ", count " + count + ", length " + length);
+        }
+    }
+
+    static final byte LATIN1 = 0;
+    static final byte UTF16  = 1;
+
+    static final boolean COMPACT_STRINGS = false;
 
     private int computedHash;
     private final char[] data;
@@ -44,17 +61,21 @@ public class TString implements java.io.Serializable, Comparable<String> {
         }
     }
 
-    @Override
-    public String toString() {
-        final Object a = this;
-        return (String) a;
+    public TString(final byte[] value, final byte coder) {
+        this(value, Charset.forName("UTF-16"));
+    }
+
+    public TString(final byte[] value, int offset, int length) {
+        this(Arrays.copyOfRange(value, offset, offset + length), Charset.forName("UTF-16"));
     }
 
     public TString(final byte[] aData) {
-        data = new char[aData.length];
-        for (int i=0;i<aData.length;i++) {
-            data[i] = (char) aData[i];
-        }
+        this(aData, Charset.defaultCharset());
+    }
+
+    public TString(final byte[] value, final Charset charset) {
+        final CharBuffer cb  = charset.decode(ByteBuffer.wrap(value));
+        data = Arrays.copyOf(cb.array(), cb.limit());
     }
 
     public TString(final TString aOtherString) {
@@ -65,12 +86,20 @@ public class TString implements java.io.Serializable, Comparable<String> {
         data = new char[0];
     }
 
+    @Override
+    public String toString() {
+        final Object a = this;
+        return (String) a;
+    }
+
+    public byte[] getBytes(final Charset charset) {
+        final CharBuffer cb = CharBuffer.wrap(data);
+        final ByteBuffer bb = charset.encode(cb);
+        return Arrays.copyOf(bb.array(), bb.limit());
+    }
+
     public byte[] getBytes() {
-        final byte[] result = new byte[data.length];
-        for (int i=0;i<data.length;i++) {
-            result[i] = (byte) data[i];
-        }
-        return result;
+        return getBytes(Charset.defaultCharset());
     }
 
     public char charAt(final int aIndex) {
@@ -95,12 +124,14 @@ public class TString implements java.io.Serializable, Comparable<String> {
             return false;
         }
         final String theOtherString = (String) aOtherObject;
-        if (!(theOtherString.length() == data.length)) {
+        final byte[] theOtherData = theOtherString.getBytes();
+        final byte[] thisData = this.getBytes();
+        if (thisData.length != theOtherData.length) {
             return false;
         }
-        final byte[] theOtherData = theOtherString.getBytes();
-        for (int i=0;i<data.length;i++) {
-            if (data[i] != theOtherData[i]) {
+
+        for (int i=0;i<thisData.length;i++) {
+            if (thisData[i] != theOtherData[i]) {
                 return false;
             }
         }
@@ -118,8 +149,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
             return false;
         }
         for (int i=0;i<data.length;i++) {
-            final byte[] theOtherData = ((String)aOtherObject).getBytes();
-            if (Character.toLowerCase((char)data[i]) != Character.toLowerCase((char) theOtherData[i])) {
+            if (Character.toLowerCase((char)data[i]) != Character.toLowerCase(aOtherObject.charAt(i))) {
                 return false;
             }
         }
@@ -205,6 +235,14 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return new String(new byte[] {(byte) aValue});
     }
 
+    public static String valueOf(final char[] data) {
+        return new String(data);
+    }
+
+    public static String valueOf(final long data) {
+        return Long.toString(data);
+    }
+
     public static String format(final String aPattern, final Object[] aValues) {
         return aPattern;
     }
@@ -251,9 +289,5 @@ public class TString implements java.io.Serializable, Comparable<String> {
         for (int i=srcBegin;i<srcEnd;i++) {
             dst[dstBegin++]=data[i];
         }
-    }
-
-    public static String valueOf(final char[] data) {
-        return new String(data);
     }
 }

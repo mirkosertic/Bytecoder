@@ -39,12 +39,32 @@ public class TArrays {
     }
 
     public static <T> T[] copyOf(final T[] original, final int newLength, final Class aType) {
-        int theMax = original.length;
-        if (newLength < theMax) {
-            theMax = newLength;
-        }
         final T[] theResult = (T[]) new Object[newLength];
-        for (int i=0;i<theMax;i++) {
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static int[] copyOf(final int[] original, final int newLength) {
+        final int[] theResult = new int[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static byte[] copyOf(final byte[] original, final int newLength) {
+        final byte[] theResult = new byte[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static char[] copyOf(final char[] original, final int newLength) {
+        final char[] theResult = new char[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
             theResult[i] = original[i];
         }
         return theResult;
@@ -56,5 +76,36 @@ public class TArrays {
             theResult[i-from] = original[i];
         }
         return theResult;
+    }
+
+    public static int[] copyOfRange(final int[] original, final int from, final int to) {
+        final int[] theResult = new int[to - from];
+        for (int i=from;i<to;i++) {
+            theResult[i-from] = original[i];
+        }
+        return theResult;
+    }
+
+    public static byte[] copyOfRange(final byte[] original, final int from, final int to) {
+        final byte[] theResult = new byte[to - from];
+        for (int i=from;i<to;i++) {
+            theResult[i-from] = original[i];
+        }
+        return theResult;
+    }
+
+    public static void fill(final char[] a, final int fromIndex, final int toIndex, final char val) {
+        for (int i = fromIndex; i < toIndex; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final int[] a, final int fromIndex, final int toIndex, final int val) {
+        for (int i = fromIndex; i < toIndex; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final int[] a, final int val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
     }
 }

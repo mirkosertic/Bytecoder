@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.security;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
+import java.security.Permission;
 import java.security.PrivilegedAction;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TAccessController {
 
-    public static <T> T doPrivileged(PrivilegedAction<T> action) {
+    public static <T> T doPrivileged(final PrivilegedAction<T> action) {
         return action.run();
+    }
+
+    public static void checkPermission(final Permission p) {
     }
 }

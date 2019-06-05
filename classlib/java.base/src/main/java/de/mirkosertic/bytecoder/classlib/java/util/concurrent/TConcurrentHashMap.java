@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
 
-import de.mirkosertic.bytecoder.api.OpaqueIndexed;
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import java.util.HashMap;
 
-public abstract class Int8Array implements TypedArray {
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-    @OpaqueIndexed
-    public abstract byte getByte(int aIndex);
-
-    @OpaqueIndexed
-    public abstract void setByte(int aIndex, byte aValue);
-
-    @OpaqueProperty("length")
-    public abstract int byteArrayLength();
+@SubstitutesInClass(completeReplace = true)
+public class TConcurrentHashMap<K,V> extends HashMap<K,V> {
 }

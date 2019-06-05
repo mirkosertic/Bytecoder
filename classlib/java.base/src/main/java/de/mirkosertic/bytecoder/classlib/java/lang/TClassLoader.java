@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
-
-import java.io.IOException;
-import java.io.OutputStream;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TByteArrayOutputStream extends OutputStream {
+public class TClassLoader {
 
-    @Override
-    public void write(int aValue) throws IOException {
-    }
-
-    @Override
-    public void close() throws IOException {
-    }
-
-    public byte[] toByteArray() throws IOException {
-        return null;
+    public static ClassLoader getPlatformClassLoader() {
+        throw new IllegalStateException();
     }
 }
