@@ -16,8 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
-import de.mirkosertic.bytecoder.unittest.JSOnly;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -25,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@JSAndWASMOnly
 public class LongTest {
 
     @Test
@@ -105,6 +102,6 @@ public class LongTest {
     public void testToHexString() {
         String theHexString = Long.toHexString(12345L);
         System.out.println(theHexString);
-        assertEquals("000000003039", theHexString);
+        assertEquals("3039", theHexString);
     }
 }
