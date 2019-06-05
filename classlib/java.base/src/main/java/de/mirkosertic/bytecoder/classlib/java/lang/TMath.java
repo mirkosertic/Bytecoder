@@ -115,4 +115,19 @@ public class TMath {
         }
         return exp;
     }
+
+    public static native double log(double aValue1);
+
+    public static int floorMod(final int x, final int y) {
+        return x - floorDiv(x, y) * y;
+    }
+
+    public static int floorDiv(final int x, final int y) {
+        int r = x / y;
+        // if the signs are different and modulo not zero, round down
+        if ((x ^ y) < 0 && (r * y != x)) {
+            r--;
+        }
+        return r;
+    }
 }

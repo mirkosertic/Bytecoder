@@ -15,6 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.lang.reflect.Array;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
@@ -104,12 +110,6 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-
-import java.lang.reflect.Array;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class JSSSAWriter {
 
@@ -344,7 +344,7 @@ public class JSSSAWriter {
     }
 
     private void print(final FloorExpression aValue) {
-        writer.text("Math.floor(");
+        writer.text("Math.trunc(");
         print(aValue.incomingDataFlows().get(0));
         writer.text(")");
     }
@@ -417,11 +417,19 @@ public class JSSSAWriter {
     }
 
     private void print(final LongValue aValue) {
-        writer.text("" + aValue.getLongValue());
+        if (aValue.getLongValue() < 0) {
+            writer.text(" " + aValue.getLongValue());
+        } else {
+            writer.text("" + aValue.getLongValue());
+        }
     }
 
     private void print(final ShortValue aValue) {
-        writer.text("" + aValue.getShortValue());
+        if (aValue.getShortValue() < 0) {
+            writer.text(" " + aValue.getShortValue());
+        } else {
+            writer.text("" + aValue.getShortValue());
+        }
     }
 
     private void print(final NegatedExpression aValue) {
@@ -459,7 +467,11 @@ public class JSSSAWriter {
     }
 
     private void print(final IntegerValue aValue) {
-        writer.text("" + aValue.getIntValue());
+        if (aValue.getIntValue() < 0) {
+            writer.text(" " + aValue.getIntValue());
+        } else {
+            writer.text("" + aValue.getIntValue());
+        }
     }
 
     private void print(final FloatValue aValue) {
@@ -500,6 +512,19 @@ public class JSSSAWriter {
         final TypeRef theTargetType = aValue.resolveType();
         final Value theValue = aValue.incomingDataFlows().get(0);
         switch (theTargetType.resolve()) {
+            case BYTE:
+                writer.text("((");
+                print(theValue);
+                writer.text(")");
+                writer.space();
+                writer.text("<<");
+                writer.space();
+                writer.text("24");
+                writer.space();
+                writer.text(">>");
+                writer.space();
+                writer.text("24)");
+                break;
             case FLOAT:
                 print(theValue);
                 break;
@@ -507,7 +532,7 @@ public class JSSSAWriter {
                 print(theValue);
                 break;
             default:
-                writer.text("Math.floor(");
+                writer.text("Math.trunc(");
                 print(theValue);
                 writer.text(")");
                 break;

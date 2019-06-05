@@ -15,6 +15,32 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
@@ -70,32 +96,6 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.LambdaMetafactory;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -162,7 +162,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         theMemoryManagerClass.resolveStaticMethod("newString", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
         theMemoryManagerClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
 
@@ -836,7 +836,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 final StringValue theConstantInPool = thePoolValues.get(i);
                 final String theData = theConstantInPool.getStringValue();
-                final byte[] theDataBytes = theData.getBytes();
+                final int l = theData.length();
+                final int[] theDataCharacters = new int[l];
+                for (int j=0;j<l;j++) {
+                    theDataCharacters[j] = theData.charAt(j);
+                }
 
                 final Global theStringPool = module.getGlobals().globalsIndex().globalByLabel("stringPool" + i);
                 final Global theStringPoolData = module.getGlobals().newMutableGlobal("stringPool" + i + "__array", PrimitiveType.i32, i32.c(-1, null));
@@ -848,16 +852,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 final List<WASMValue> theMallocArguments = new ArrayList<>();
                 theMallocArguments.add(i32.c(0, null));
-                theMallocArguments.add(i32.c(theDataBytes.length, null));
+                theMallocArguments.add(i32.c(theDataCharacters.length, null));
                 theMallocArguments.add(call(weakFunctionReference(WASMWriterUtils.toClassName(theArrayClass.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX, null), Collections.emptyList(), null));
                 final Function theVtableFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theArrayClass.getClassName())+ WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
                 theMallocArguments.add(i32.c(module.getTables().funcTable().indexOf(theVtableFunction), null));
                 bootstrap.flow.setGlobal(theStringPoolData, call(module.functionIndex().firstByLabel(theMethodName), theMallocArguments, null), null);
                 // Set array value
-                for (int j=0; j< theDataBytes.length;j++) {
+                for (int j=0; j< theDataCharacters.length;j++) {
                     //
                     final int offset = 20 + j * 4;
-                    bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData, null), i32.c(theDataBytes[j], null), null);
+                    bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData, null), i32.c(theDataCharacters[j], null), null);
                 }
 
                 final Function theMallocFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_dmbcAddressnewObjectINTINTINT");
@@ -868,7 +872,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 i32.c(theStringClass.getUniqueId(), null),
                                 i32.c(module.getTables().funcTable().indexOf(theStringVTable), null)), null), null);
 
-                final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1BYTE");
+                final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1CHAR");
                 bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool, null), getGlobal(theStringPoolData, null)), null);
             }
 
@@ -1096,6 +1100,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println();
 
             theWriter.println("     imports: {");
+            theWriter.println("         stringutf16: {");
+            theWriter.println("             isBigEndian: function() {return 1;},");
+            theWriter.println("         },");
             theWriter.println("         system: {");
             theWriter.println("             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
@@ -1104,8 +1111,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         },");
             theWriter.println("         vm: {");
             theWriter.println("             newRuntimeGeneratedTypeMethodTypeMethodHandleObject: function() {},");
-            theWriter.println("             initialize: function() {},");
-            theWriter.println("             initializeFromArchiveClass: function() {},");
             theWriter.println("         },");
             theWriter.println("         tsystem: {");
             theWriter.println("             logDebugObject: function(caller, value) {bytecoder.logDebug(caller, value);},");

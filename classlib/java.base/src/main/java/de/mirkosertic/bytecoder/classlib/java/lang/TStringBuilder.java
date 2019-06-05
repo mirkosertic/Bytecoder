@@ -24,75 +24,78 @@ public class TStringBuilder {
 
     private static final DecimalFormatSymbols FORMAT_SYMBOLS = new DecimalFormatSymbols();
 
-    private byte[] byteData;
+    private static char[] toCharArray(final CharSequence seq) {
+        final int len = seq.length();
+        final char[] charData = new char[len];
+        for (int i=0;i<len;i++) {
+            charData[i] = seq.charAt(i);
+        }
+        return charData;
+    }
+
+    private char[] charData;
 
     public TStringBuilder() {
-        byteData = new byte[0];
+        charData = new char[0];
+    }
+
+    public TStringBuilder(final int capacity) {
+        charData = new char[0];
     }
 
     public TStringBuilder(final String aOtherString) {
-        final byte[] other = aOtherString.getBytes();
-        byteData = new byte[other.length];
-        for (int i=0;i<other.length;i++) {
-            byteData[i] = other[i];
-        }
-    }
-
-    public TStringBuilder(final byte[] aData) {
-        byteData = aData;
+        charData = toCharArray(aOtherString);
     }
 
     public int length() {
-        return byteData.length;
+        return charData.length;
     }
 
     public char charAt(final int aIndex) {
-        return (char) byteData[aIndex];
+        return charData[aIndex];
     }
 
-    public void internalAdd(final byte[] aOtherData) {
-        final byte[] theNewData = new byte[byteData.length + aOtherData.length];
+    public void internalAdd(final char[] aOtherData) {
+        final char[] theNewData = new char[charData.length + aOtherData.length];
         int offset = 0;
-        for (int i = 0; i< byteData.length; i++) {
-            theNewData[offset++] = byteData[i];
+        for (int i = 0; i< charData.length; i++) {
+            theNewData[offset++] = charData[i];
         }
         for (int i=0;i<aOtherData.length;i++) {
             theNewData[offset++] = aOtherData[i];
         }
-        byteData = theNewData;
+        charData = theNewData;
     }
 
     public TStringBuilder reverse() {
-        final byte[] theReversed = new byte[byteData.length];
-        for (int i=0;i<byteData.length;i++) {
-            theReversed[byteData.length -1 -i] = byteData[i];
+        final char[] theReversed = new char[charData.length];
+        for (int i=0;i<charData.length;i++) {
+            theReversed[charData.length -1 -i] = charData[i];
         }
-        byteData = theReversed;
+        charData = theReversed;
         return this;
     }
 
     public TStringBuilder append(final CharSequence aCharSequence) {
         if (aCharSequence == null) {
-            internalAdd("null".getBytes());
+            internalAdd(toCharArray("null"));
             return this;
         }
-        final byte[] theOtherData = ((TString) aCharSequence).getBytes();
-        internalAdd(theOtherData);
+        internalAdd(toCharArray(aCharSequence));
         return this;
     }
 
     public TStringBuilder append(final String aString) {
         if (aString == null) {
-            internalAdd("null".getBytes());
+            internalAdd(toCharArray("null"));
             return this;
         }
-        final byte[] theOtherData = aString.getBytes();
-        internalAdd(theOtherData);
+        internalAdd(toCharArray(aString));
         return this;
     }
 
     public TStringBuilder append(final char aValue) {
-        internalAdd(new byte[] {(byte) aValue});
+        internalAdd(new char[] {aValue});
         return this;
     }
 
@@ -142,26 +145,26 @@ public class TStringBuilder {
             isNegative = true;
             aValue=-aValue;
         }
-        final byte[] theBytes = new byte[20];
+        final char[] theBytes = new char[20];
         int theOffset = 0;
         do {
             final int theRemainder = (int) aValue % 10;
-            theBytes[theOffset++] = (byte) theRemainder;
+            theBytes[theOffset++] = Character.forDigit(theRemainder, 10);
             aValue = aValue / 10;
         } while (aValue > 0);
 
-        final byte[] theNewData;
+        final char[] theNewData;
         final int theStart;
         if (isNegative) {
-            theNewData = new byte[theOffset + 1];
+            theNewData = new char[theOffset + 1];
             theNewData[0] = '-';
             theStart = 1;
         } else {
-            theNewData = new byte[theOffset];
+            theNewData = new char[theOffset];
             theStart = 0;
         }
         for (int i=0;i<theOffset;i++) {
-            theNewData[theStart + i] = (byte) (48 + theBytes[theOffset - 1 - i]);
+            theNewData[theStart + i] = theBytes[theOffset - 1 - i];
         }
 
         internalAdd(theNewData);
@@ -174,11 +177,11 @@ public class TStringBuilder {
 
     public TStringBuilder append(final Object aObject) {
         if (aObject == null) {
-            internalAdd("null".getBytes());
+            internalAdd(toCharArray("null"));
             return this;
         }
         if (aObject instanceof String) {
-            internalAdd(((String) aObject).getBytes());
+            internalAdd(toCharArray((String) aObject));
             return this;
         }
         if (aObject instanceof Long) {
@@ -198,16 +201,15 @@ public class TStringBuilder {
             return this;
         }
 
-        final byte[] theOtherData = aObject.toString().getBytes();
-        internalAdd(theOtherData);
+        internalAdd(toCharArray(aObject.toString()));
         return this;
     }
 
     public byte[] getBytes() {
-        return byteData;
+        return toString().getBytes();
     }
 
     public String toString() {
-        return new String(byteData);
+        return new String(charData);
     }
 }

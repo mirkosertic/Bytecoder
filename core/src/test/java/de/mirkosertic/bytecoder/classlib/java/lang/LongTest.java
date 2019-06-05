@@ -81,12 +81,16 @@ public class LongTest {
 
     @Test
     public void testValueOfString() {
-        assertEquals(123, Long.valueOf("123").intValue(), 0);
+        Long theValue = Long.valueOf("123");
+        System.out.println(theValue.intValue());
+        assertEquals(123, theValue.intValue(), 0);
     }
 
     @Test
     public void testValueOfNegativeString() {
-        assertEquals(-123, Long.valueOf("-123").intValue(), 0);
+        Long theValue = Long.valueOf("-123");
+        System.out.println(theValue.intValue());
+        assertEquals(-123, theValue.intValue(), 0);
     }
 
     @Test
@@ -96,6 +100,8 @@ public class LongTest {
 
     @Test
     public void testToHexString() {
-        assertEquals("3039", Long.toHexString(12345));
+        String theHexString = Long.toHexString(12345L);
+        System.out.println(theHexString);
+        assertEquals("3039", theHexString);
     }
 }
