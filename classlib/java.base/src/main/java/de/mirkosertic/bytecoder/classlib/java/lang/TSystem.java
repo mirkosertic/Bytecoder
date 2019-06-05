@@ -15,69 +15,51 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 
 @SubstitutesInClass(completeReplace = true)
 public class TSystem {
 
-    public static final PrintStream out = new PrintStream(new OutputStream() {
+    public static final class ConsoleOutputStream extends OutputStream {
 
-        @Import(module = "system", name = "writeByteArrayToConsole")
-        public native void writeByteArrayToConsole(byte[] aBytes);
+        private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+        @Import(module = "system", name = "writeCharArrayToConsole")
+        public native void writeCharArrayToConsole(char[] aBytes);
 
         @Override
-        public void write(final int b) throws IOException {
-            final byte[] theData = new byte[1];
-            theData[0] = (byte) b;
-            write(theData);
+        public void write(final int b) {
+            if (b != '\n') {
+                bos.write(b);
+            } else {
+                final byte[] toData = bos.toByteArray();
+                final String theString = new String(toData);
+                final char[] theChars = new char[theString.length()];
+                for (int i=0;i<theString.length();i++) {
+                    theChars[i] = theString.charAt(i);
+                }
+                writeCharArrayToConsole(theChars);
+                bos.reset();
+            }
         }
 
         @Override
-        public void write(final byte[] b, final int off, final int len) throws IOException {
-            writeByteArrayToConsole(b);
+        public void close() {
         }
+    }
 
-        @Override
-        public void close() throws IOException {
-        }
-    });
+    public static final PrintStream out = new PrintStream(new ConsoleOutputStream());
 
-    public static final PrintStream err = new PrintStream(new OutputStream() {
-
-        @Import(module = "system", name = "writeByteArrayToConsole")
-        public native void writeByteArrayToConsole(byte[] aBytes);
-
-        @Override
-        public void write(final int b) throws IOException {
-            final byte[] theData = new byte[1];
-            theData[0] = (byte) b;
-            write(theData);
-        }
-
-        @Override
-        public void write(final byte[] b, final int off, final int len) throws IOException {
-            writeByteArrayToConsole(b);
-        }
-
-        @Override
-        public void close() throws IOException {
-        }
-    });
+    public static final PrintStream err = new PrintStream(new ConsoleOutputStream());
 
     public static native long nanoTime();
 
     public static native long currentTimeMillis();
-
-    public static native void logDebug(long aValue);
-
-    public static native void logDebug(Object aValue);
 
     public static void arraycopy(final Object aSource, final int aSourcePos, final Object aTarget, final int aTargetPos, final int aLength) {
         final Object[] theSource = (Object[]) aSource;
@@ -95,7 +77,7 @@ public class TSystem {
         return null;
     }
 
-    public static String getProperty(String aProperty) {
+    public static String getProperty(final String aProperty) {
         return null;
     }
 }
