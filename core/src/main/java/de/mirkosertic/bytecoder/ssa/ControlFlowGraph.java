@@ -63,12 +63,6 @@ public class ControlFlowGraph {
 
     public void calculateReachabilityAndMarkBackEdges() {
         calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
-        // We have to do the same for finally nodes
-        for (final RegionNode theNode : knownNodes) {
-            if (theNode.getType() == RegionNode.BlockType.FINALLY) {
-                calculateReachabilityAndMarkBackEdges(new GraphNodePath(), theNode);
-            }
-        }
     }
 
     private void calculateReachabilityAndMarkBackEdges(final GraphNodePath aPath, final RegionNode aNode) {

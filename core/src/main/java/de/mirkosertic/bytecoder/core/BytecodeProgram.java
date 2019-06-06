@@ -167,16 +167,14 @@ public class BytecodeProgram {
 
         // Now, we add the implicit exceptional control flows here
         for (final BytecodeExceptionTableEntry theHandler : exceptionHandlers) {
-            if (!theHandler.isFinally()) {
-                final BytecodeBasicBlock theHandlerBlock = theKnownBlocks.get(theHandler.getHandlerPc());
-                if (theHandlerBlock == null) {
-                    throw new IllegalStateException("No exception handler at " + theHandler.getHandlerPc() + " found !");
-                }
-                for (final Map.Entry<BytecodeOpcodeAddress, BytecodeBasicBlock> theEntry : theKnownBlocks.entrySet()) {
-                    if (theHandler.coveres(theEntry.getKey())) {
-                        // We add an exceptional edge here
-                        theEntry.getValue().addSuccessor(theHandlerBlock);
-                    }
+            final BytecodeBasicBlock theHandlerBlock = theKnownBlocks.get(theHandler.getHandlerPc());
+            if (theHandlerBlock == null) {
+                throw new IllegalStateException("No exception handler at " + theHandler.getHandlerPc() + " found !");
+            }
+            for (final Map.Entry<BytecodeOpcodeAddress, BytecodeBasicBlock> theEntry : theKnownBlocks.entrySet()) {
+                if (theHandler.coveres(theEntry.getKey())) {
+                    // We add an exceptional edge here
+                    theEntry.getValue().addSuccessor(theHandlerBlock);
                 }
             }
         }
@@ -191,8 +189,7 @@ public class BytecodeProgram {
         // Calculate the program flow for exception handlers
         // till their merging with the regular control flow
         for (final BytecodeBasicBlock theBlock : theKnownBlocks.values()) {
-            if (theBlock.getType() == BytecodeBasicBlock.Type.EXCEPTION_HANDLER ||
-                    theBlock.getType() == BytecodeBasicBlock.Type.FINALLY) {
+            if (theBlock.getType() == BytecodeBasicBlock.Type.EXCEPTION_HANDLER) {
                 final Set<BytecodeBasicBlock> theAlreadyVisited = new HashSet<>(theRegularBlocks);
                 generateEdges(theAlreadyVisited, theBlock, new Stack<>(), theKnownBlocks);
                 theAlreadyVisited.removeAll(theRegularBlocks);
@@ -233,6 +230,12 @@ public class BytecodeProgram {
                 final BytecodeBasicBlock theNextBlock = aBlocks.get(theNext.getOpcodeAddress());
                 aBlock.addSuccessor(theNextBlock);
                 generateEdges(aVisited, theNextBlock, aNestingStack, aBlocks);
+            }
+
+            for (final BytecodeBasicBlock theBlock : aBlock.getSuccessors()) {
+                if (theBlock.getType() != BytecodeBasicBlock.Type.NORMAL) {
+                    generateEdges(aVisited, theBlock, aNestingStack, aBlocks);
+                }
             }
         }
 
