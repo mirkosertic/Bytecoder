@@ -400,8 +400,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab(2).text("return ").text(theJSClassName).text(";").newLine();
                 theWriter.tab().text("},").newLine();
 
-                theWriter.tab().text(theGetNameMethodName).colon().text("function()").space().text("{").newLine();
-                theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
+                theWriter.tab().text(theGetNameMethodName).colon().text("function(_tr)").space().text("{").newLine();
+                if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
+                    theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
+                } else {
+                    theWriter.tab(2).text("return _tr.").text(theGetNameMethodName).text("();").newLine();
+                }
                 theWriter.tab().text("},").newLine();
 
                 theWriter.tab().text(theDesiredAssertionStatusMethodName).colon().text("function()").space().text("{").newLine();
