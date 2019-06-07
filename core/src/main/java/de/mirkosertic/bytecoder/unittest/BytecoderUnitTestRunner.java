@@ -43,12 +43,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -242,7 +237,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         }
     }
 
-    private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
+    private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, boolean aWABTCompileTest) {
         final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " WASM AST Backend ");
         aRunNotifier.fireTestStarted(theDescription);
 
@@ -306,12 +301,15 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                     "                        'multi_value' : true,\n" +
                     "                        'tail_call' : true,\n" +
                     "                    };");
-            theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText, features);");
-            theWriter.println("                    module.resolveNames();");
-            theWriter.println("                    module.validate(features);");
 
-            theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
-            theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
+            if (aWABTCompileTest) {
+                theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText, features);");
+                theWriter.println("                    module.resolveNames();");
+                theWriter.println("                    module.validate(features);");
+
+                theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
+                theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
+            }
 
             theWriter.println();
             theWriter.print("                    var binaryBuffer = new Uint8Array([");
@@ -476,8 +474,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     @Override
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
+        final boolean wabtCompileTest = Boolean.parseBoolean(System.getProperty("WABTCOMPILETEST", Boolean.FALSE.toString()));
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
-            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
         } else if (null != getDescription().getAnnotation(JSOnly.class)) {
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
@@ -488,12 +487,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         } else if (null != getDescription().getAnnotation(JSAndWASMOnly.class)) {
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
-            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
         } else {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
             testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
-            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
         }
     }
 }

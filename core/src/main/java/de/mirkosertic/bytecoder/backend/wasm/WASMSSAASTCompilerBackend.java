@@ -465,7 +465,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     final BytecodeMethod theMethod = aMethodMapEntry.getValue();
 
                     if (!theMethod.getAccessFlags().isStatic() &&
-                            !theMethod.getAccessFlags().isPrivate() &&
                             !theMethod.isConstructor() &&
                             !theMethod.getAccessFlags().isAbstract() &&
                             (theMethod != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER)) {
