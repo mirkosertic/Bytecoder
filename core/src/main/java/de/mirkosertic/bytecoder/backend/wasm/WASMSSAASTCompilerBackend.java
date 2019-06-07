@@ -1154,6 +1154,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                 return p1 * (180 / Math.PI);");
             theWriter.println("             },");
             theWriter.println("             random: function(thisref) { return Math.random();},");
+            theWriter.println("             logDOUBLE: function (thisref, p1) {return Math.log(p1);},");
             theWriter.println("         },");
             theWriter.println("         strictmath: {");
             theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");

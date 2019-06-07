@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -26,7 +27,7 @@ import org.junit.runner.RunWith;
 public class IntegerTest {
 
     @Test
-    public void testEquals() throws Exception {
+    public void testEquals() {
         final Integer theInteger = new Integer((int) 10);
         assertEquals(theInteger,theInteger);
         assertNotEquals(theInteger, new Integer((int) 11));
@@ -35,37 +36,37 @@ public class IntegerTest {
     }
 
     @Test
-    public void testHashCode() throws Exception {
+    public void testHashCode() {
         assertEquals(new Integer((int) 10).hashCode(), new Integer((int) 10).hashCode(), 0);
     }
 
     @Test
-    public void testIntValue() throws Exception {
+    public void testIntValue() {
         assertEquals(10, new Integer((int) 10).intValue(), 0);
     }
 
     @Test
-    public void testByteValue() throws Exception {
+    public void testByteValue() {
         assertEquals(10, new Integer((int) 10).byteValue(), 0);
     }
 
     @Test
-    public void testShortValue() throws Exception {
+    public void testShortValue() {
         assertEquals(10, new Integer((int) 10).shortValue(), 0);
     }
 
     @Test
-    public void testFloatValue() throws Exception {
+    public void testFloatValue() {
         assertEquals(10, new Integer((int) 10).floatValue(), 0);
     }
 
     @Test
-    public void testLongValue() throws Exception {
+    public void testLongValue() {
         assertEquals(10, new Integer((int) 10).longValue(), 0);
     }
 
     @Test
-    public void testDoubleValue() throws Exception {
+    public void testDoubleValue() {
         assertEquals(10, new Integer((int) 10).doubleValue(), 0);
     }
 
@@ -109,5 +110,23 @@ public class IntegerTest {
     public void parseIntRadix10() {
         final int value = Integer.parseInt("10", 10);
         assertEquals(10, value);
+    }
+
+    @Test
+    public void testBitCount() {
+        final int count = Integer.bitCount(1234);
+        Assert.assertEquals(5, count, 0);
+    }
+
+    @Test
+    public void testNumberOfTrailingZeros() {
+        final int count = Integer.numberOfTrailingZeros(1234);
+        Assert.assertEquals(1, count, 0);
+    }
+
+    @Test
+    public void testNumberOfLeadingZeros() {
+        final int count = Integer.numberOfLeadingZeros(1234);
+        Assert.assertEquals(21, count, 0);
     }
 }

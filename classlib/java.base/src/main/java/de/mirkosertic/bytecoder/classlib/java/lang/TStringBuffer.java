@@ -26,6 +26,10 @@ public class TStringBuffer {
         builder = new StringBuilder();
     }
 
+    public TStringBuffer(final String aString) {
+        builder = new StringBuilder(aString);
+    }
+
     public StringBuffer append(final String aString) {
         builder.append(aString);
         final Object o = this;
