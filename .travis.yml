@@ -8,7 +8,7 @@ addons:
 language: java
 
 jdk:
-  - openjdk11
+  - openjdk12
 
 env:
   - CHROMEDRIVER_BINARY=~/chromedriver
