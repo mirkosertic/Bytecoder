@@ -145,11 +145,11 @@ public class TStringBuilder {
             isNegative = true;
             aValue=-aValue;
         }
-        final char[] theBytes = new char[20];
+        final char[] theCharacters = new char[20];
         int theOffset = 0;
         do {
             final int theRemainder = (int) aValue % 10;
-            theBytes[theOffset++] = Character.forDigit(theRemainder, 10);
+            theCharacters[theOffset++] = Character.forDigit(theRemainder, 10);
             aValue = aValue / 10;
         } while (aValue > 0);
 
@@ -164,7 +164,7 @@ public class TStringBuilder {
             theStart = 0;
         }
         for (int i=0;i<theOffset;i++) {
-            theNewData[theStart + i] = theBytes[theOffset - 1 - i];
+            theNewData[theStart + i] = theCharacters[theOffset - 1 - i];
         }
 
         internalAdd(theNewData);

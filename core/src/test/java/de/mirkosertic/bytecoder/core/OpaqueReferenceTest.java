@@ -28,7 +28,6 @@ import de.mirkosertic.bytecoder.api.web.Promise;
 import de.mirkosertic.bytecoder.api.web.Response;
 import de.mirkosertic.bytecoder.api.web.StringPromise;
 import de.mirkosertic.bytecoder.api.web.Window;
-import de.mirkosertic.bytecoder.classlib.java.lang.TSystem;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
 import org.junit.Assert;
@@ -45,8 +44,6 @@ public class OpaqueReferenceTest {
         //final String currentTitle = currentDocument.getTitle();
 
         final String theABC = "Bytecoder";
-        TSystem.logDebug(theABC);
-        TSystem.logDebug(theABC.getBytes());
         currentDocument.title(theABC);
         Assert.assertEquals("Bytecoder", currentDocument.title());
     }

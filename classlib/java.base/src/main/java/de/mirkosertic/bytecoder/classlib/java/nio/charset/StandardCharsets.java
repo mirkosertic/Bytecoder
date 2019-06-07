@@ -16,10 +16,9 @@
 package de.mirkosertic.bytecoder.classlib.java.nio.charset;
 
 import java.nio.charset.Charset;
-import java.nio.charset.spi.CharsetProvider;
 import java.util.Iterator;
 
-public class StandardCharsets extends CharsetProvider {
+public class StandardCharsets {
 
     static String[] aliases_UTF_8() {
         return new String[] {"UTF8","unicode-1-1-utf-8",};
@@ -32,7 +31,6 @@ public class StandardCharsets extends CharsetProvider {
     public StandardCharsets() {
     }
 
-    @Override
     public Iterator<Charset> charsets() {
         return new Iterator<Charset>() {
 
@@ -58,7 +56,6 @@ public class StandardCharsets extends CharsetProvider {
         };
     }
 
-    @Override
     public Charset charsetForName(final String charsetName) {
         for (final String name : aliases_UTF_8()) {
             if (name.equalsIgnoreCase(charsetName)) {

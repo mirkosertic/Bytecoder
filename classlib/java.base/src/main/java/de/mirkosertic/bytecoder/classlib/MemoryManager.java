@@ -166,7 +166,7 @@ public class MemoryManager {
 
     public static native void logExceptionText(String aMessage);
 
-    public static void logException(final Exception e) throws Exception {
+    public static void logException(final Exception e) {
         logExceptionText(e.getMessage());
     }
 
@@ -345,17 +345,17 @@ public class MemoryManager {
     }
 
     @Export("newString")
-    public static TString newString(final byte[] aData) {
+    public static TString newString(final char[] aData) {
         return new TString(aData);
     }
 
-    @Export("newByteArray")
-    public static byte[] newByteArray(final int length) {
-        return new byte[length];
+    @Export("newCharArray")
+    public static char[] newCharArray(final int length) {
+        return new char[length];
     }
 
-    @Export("setByteArrayEntry")
-    public static void setByteArrayEntry(final byte[] aArray, final int aIndex, final byte aValue) {
+    @Export("setCharArrayEntry")
+    public static void setCharArrayEntry(final char[] aArray, final int aIndex, final char aValue) {
         aArray[aIndex] = aValue;
     }
 }

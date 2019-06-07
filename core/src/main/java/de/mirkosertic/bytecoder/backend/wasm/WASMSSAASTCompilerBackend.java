@@ -163,8 +163,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         theMemoryManagerClass.resolveStaticMethod("newString", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
-        theMemoryManagerClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+        theMemoryManagerClass.resolveStaticMethod("newCharArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theMemoryManagerClass.resolveStaticMethod("setCharArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
@@ -465,7 +465,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     final BytecodeMethod theMethod = aMethodMapEntry.getValue();
 
                     if (!theMethod.getAccessFlags().isStatic() &&
-                            !theMethod.getAccessFlags().isPrivate() &&
                             !theMethod.isConstructor() &&
                             !theMethod.getAccessFlags().isAbstract() &&
                             (theMethod != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER)) {
@@ -1051,13 +1050,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             theWriter.println();
             theWriter.println("     toJSString: function(value) {");
-            theWriter.println("         var theByteArray = bytecoder.intInMemory(value + 8);");
-            theWriter.println("         var theData = bytecoder.byteArraytoJSString(theByteArray);");
+            theWriter.println("         var theCharArray = bytecoder.intInMemory(value + 8);");
+            theWriter.println("         var theData = bytecoder.charArraytoJSString(theCharArray);");
             theWriter.println("         return theData;");
             theWriter.println("     },");
             theWriter.println();
 
-            theWriter.println("     byteArraytoJSString: function(value) {");
+            theWriter.println("     charArraytoJSString: function(value) {");
             theWriter.println("         var theLength = bytecoder.intInMemory(value + 16);");
             theWriter.println("         var theData = '';");
             theWriter.println("         value = value + 20;");
@@ -1086,16 +1085,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println();
 
             theWriter.println("     toBytecoderString: function(value) {");
-            theWriter.println("         var newArray = bytecoder.exports.newByteArray(0, value.length);");
+            theWriter.println("         var newArray = bytecoder.exports.newCharArray(0, value.length);");
             theWriter.println("         for (var i=0;i<value.length;i++) {");
-            theWriter.println("             bytecoder.exports.setByteArrayEntry(0,newArray,i,value.charCodeAt(i));");
+            theWriter.println("             bytecoder.exports.setCharArrayEntry(0,newArray,i,value.charCodeAt(i));");
             theWriter.println("         }");
             theWriter.println("         return bytecoder.exports.newString(0, newArray);");
-            theWriter.println("     },");
-            theWriter.println();
-
-            theWriter.println("     logDebug: function(caller,value) {");
-            theWriter.println("         console.log(value);");
             theWriter.println("     },");
             theWriter.println();
 
@@ -1107,7 +1101,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
             theWriter.println("             logDebugObject: function(caller, value) {bytecoder.logDebug(caller, value);},");
-            theWriter.println("             writeByteArrayToConsole: function(caller, value) {bytecoder.byteArraytoJSString(caller, value);},");
+            theWriter.println("             writeCharArrayToConsole: function(caller, value) {console.log(bytecoder.charArraytoJSString(value));},");
             theWriter.println("         },");
             theWriter.println("         vm: {");
             theWriter.println("             newRuntimeGeneratedTypeMethodTypeMethodHandleObject: function() {},");
