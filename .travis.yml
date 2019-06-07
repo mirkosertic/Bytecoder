@@ -26,7 +26,7 @@ before_install:
 script:
   - whereis google-chrome-stable
   - whereis chromedriver
-  - mvn clean install -DskipTests=true
+  - mvn clean install
 
 after_success:
   - codecov
