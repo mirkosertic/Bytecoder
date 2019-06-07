@@ -79,10 +79,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.text("var bytecoder").assign().text("{").newLine();
 
-        theWriter.tab().text("logDebug").colon().text("function(aValue)").space().text("{").newLine();
-        theWriter.tab(2).text("console.log(aValue);").newLine();
-        theWriter.tab().text("},").newLine();
-        theWriter.tab().text("logByteArrayAsString").colon().text("function(aArray)").space().text("{").newLine();
+        theWriter.tab().text("logCharArrayAsString").colon().text("function(aArray)").space().text("{").newLine();
         theWriter.tab(2).text("var theResult").assign().text("'';").newLine();
         theWriter.tab(2).text("for").space().text("(var i=0;i<aArray.data.length;i++)").space().text("{").newLine();
         theWriter.tab(2).tab().text("theResult").space().text("+=").space().text("String.fromCharCode(aArray.data[i]);").newLine();
@@ -187,8 +184,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("nanoTime").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now() * 1000000;").newLine();
         theWriter.tab(3).text("},").newLine();
-        theWriter.tab(3).text("writeByteArrayToConsole").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
-        theWriter.tab(4).text("bytecoder.logByteArrayAsString(p1);").newLine();
+        theWriter.tab(3).text("writeCharArrayToConsole").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
+        theWriter.tab(4).text("bytecoder.logCharArrayAsString(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("logDebugObject").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.logDebug(p1);").newLine();
@@ -403,8 +400,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab(2).text("return ").text(theJSClassName).text(";").newLine();
                 theWriter.tab().text("},").newLine();
 
-                theWriter.tab().text(theGetNameMethodName).colon().text("function()").space().text("{").newLine();
-                theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
+                theWriter.tab().text(theGetNameMethodName).colon().text("function(_tr)").space().text("{").newLine();
+                if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
+                    theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
+                } else {
+                    theWriter.tab(2).text("return _tr.").text(theGetNameMethodName).text("();").newLine();
+                }
                 theWriter.tab().text("},").newLine();
 
                 theWriter.tab().text(theDesiredAssertionStatusMethodName).colon().text("function()").space().text("{").newLine();

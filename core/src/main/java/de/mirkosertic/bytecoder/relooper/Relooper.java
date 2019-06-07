@@ -711,7 +711,7 @@ public class Relooper {
                             }
                         }
                     } else {
-                        if (theEntry.isFinally() && theEntry.coveres(aEntry.getStartAddress())) {
+                        if (theEntry.isFinally() && theEntry.getStartPC().equals(aEntry.getStartAddress())) {
                             theFinallyHandlers.add(theEntry.getHandlerPc());
                         }
                     }

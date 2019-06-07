@@ -25,9 +25,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.IllegalCharsetNameException;
-import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
-import java.nio.charset.spi.CharsetProvider;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -61,8 +59,8 @@ public abstract class TCharset
         }
     }
 
-    private static final CharsetProvider standardProvider
-            = new de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets();
+    private static final StandardCharsets standardProvider
+            = new StandardCharsets();
 
     private static final String[] zeroAliases = new String[0];
 

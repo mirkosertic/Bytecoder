@@ -27,7 +27,7 @@ public class LongTest {
 
     @Test
     public void testEquals() throws Exception {
-        Long theLong = new Long((int) 10);
+        final Long theLong = new Long((int) 10);
         assertEquals(theLong,theLong);
         assertNotEquals(theLong, new Long((int) 11));
         assertNotEquals(theLong, null);
@@ -81,14 +81,14 @@ public class LongTest {
 
     @Test
     public void testValueOfString() {
-        Long theValue = Long.valueOf("123");
+        final Long theValue = Long.valueOf("123");
         System.out.println(theValue.intValue());
         assertEquals(123, theValue.intValue(), 0);
     }
 
     @Test
     public void testValueOfNegativeString() {
-        Long theValue = Long.valueOf("-123");
+        final Long theValue = Long.valueOf("-123");
         System.out.println(theValue.intValue());
         assertEquals(-123, theValue.intValue(), 0);
     }
@@ -100,8 +100,15 @@ public class LongTest {
 
     @Test
     public void testToHexString() {
-        String theHexString = Long.toHexString(12345L);
+        final String theHexString = Long.toHexString(12345L);
         System.out.println(theHexString);
         assertEquals("3039", theHexString);
+    }
+
+    @Test
+    public void testPrintLong() {
+        final long l = 1000l;
+        System.out.println("Long value");
+        System.out.println(l);
     }
 }

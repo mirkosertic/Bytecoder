@@ -21,6 +21,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.OutputStream;
+
 @RunWith(BytecoderUnitTestRunner.class)
 @JSAndJVMOnly
 public class ExceptionTest {
@@ -121,6 +123,23 @@ public class ExceptionTest {
             return;
         }
         return;
+    }
+
+    public void writeExceptionTestMethod(final int b) {
+        try {
+            synchronized (this) {
+            }
+        }
+        catch (final RuntimeException x) {
+        }
+    }
+
+    private boolean autoFlush;
+    private OutputStream out;
+
+    @Test
+    public void testExceptionWithNestedSynchronized() {
+        writeExceptionTestMethod(10);
     }
 
     private boolean computeMultiple() {
