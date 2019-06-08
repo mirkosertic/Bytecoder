@@ -221,6 +221,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
+            if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Array.class))) {
+                return;
+            }
 
             final BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
             theMethodMap.stream().forEach(aMethodMapEntry -> {

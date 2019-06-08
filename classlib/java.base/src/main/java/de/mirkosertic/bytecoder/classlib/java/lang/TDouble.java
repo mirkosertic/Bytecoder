@@ -144,4 +144,9 @@ public class TDouble extends Number {
     public static double longBitsToDouble(final long aValue) {
         return 0d;
     }
+
+    public static long doubleToRawLongBits(final double value) {
+        return doubleToLongBits(value);
+    }
+
 }
