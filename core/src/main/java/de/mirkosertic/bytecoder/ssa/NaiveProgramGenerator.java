@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -125,7 +126,6 @@ import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1405,6 +1405,16 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                         final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theArray, theIndex);
                         final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theValue);
+                        aHelper.push(theNewVariable);
+
+                    } else if ("newArray".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
+                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
+
+                        final Value theType = theArguments.get(0);
+                        final Value theLength = theArguments.get(1);
+
+                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(),
+                                TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(), BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theLength));
                         aHelper.push(theNewVariable);
 
                     } else {

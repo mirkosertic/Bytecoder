@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +26,7 @@ import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -673,7 +673,7 @@ public class JSSSAWriter {
 
                 final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
                 final List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(t -> !t.getValue().isConstructor() && !t.getValue().isClassInitializer()
-                        && !t.getProvidingClass().getClassName().name().equals(Object.class.getName())).map(t -> t.getValue()).collect(Collectors.toList());
+                        && !t.getProvidingClass().getClassName().name().equals(Object.class.getName())).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
                 if (availableCallbacks.size() != 1) {
                     throw new IllegalStateException("Invalid number of callback methods available for type " + theLinkedClass.getClassName().name() + ", expected 1, got " + availableCallbacks.size());
                 }
@@ -931,7 +931,7 @@ public class JSSSAWriter {
             }
         }
 
-        if (!theClasses.stream().filter(t -> t.isOpaqueType()).collect(Collectors.toList()).isEmpty()) {
+        if (!theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).collect(Collectors.toList()).isEmpty()) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 

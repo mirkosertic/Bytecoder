@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend.wasm;
 
 import de.mirkosertic.bytecoder.backend.Minifier;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -23,10 +24,9 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-import java.lang.reflect.Array;
-
 public class WASMMinifier implements Minifier {
 
+    @Override
     public String toClassName(final BytecodeObjectTypeRef aTypeRef) {
         if (aTypeRef.name().endsWith(";")) {
             // This seems to be an array
@@ -35,6 +35,7 @@ public class WASMMinifier implements Minifier {
         return toClassNameInternal(aTypeRef.name());
     }
 
+    @Override
     public String toClassName(final BytecodeClassinfoConstant aTypeRef) {
         return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/", "."));
     }
@@ -57,6 +58,7 @@ public class WASMMinifier implements Minifier {
         return theResult.append(theSimpleName).toString();
     }
 
+    @Override
     public String toMethodName(final String aMethodName, final BytecodeMethodSignature aSignature) {
         String theName = typeRefToString(aSignature.getReturnType());
         theName += aMethodName.replace("<", "").replace(">", "");
@@ -67,6 +69,7 @@ public class WASMMinifier implements Minifier {
         return theName;
     }
 
+    @Override
     public String typeRefToString(final BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;

@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.lang.reflect.Array;
+import de.mirkosertic.bytecoder.classlib.Array;
 
 public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
 
@@ -23,7 +23,7 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
     private final BytecodeConstantPool constantPool;
     private final int dimensions;
 
-    public BytecodeInstructionNEWMULTIARRAY(BytecodeOpcodeAddress aOpcodeIndex, int aTypeIndex, int aDimensions, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionNEWMULTIARRAY(final BytecodeOpcodeAddress aOpcodeIndex, final int aTypeIndex, final int aDimensions, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         typeIndex = aTypeIndex;
         constantPool = aConstantPool;
@@ -43,13 +43,13 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
         aLinkerContext.resolveClass(getObjectType());
 
-        BytecodeClassinfoConstant theConstant = getTypeConstant();
-        String theClassName = theConstant.getConstant().stringValue();
+        final BytecodeClassinfoConstant theConstant = getTypeConstant();
+        final String theClassName = theConstant.getConstant().stringValue();
 
-        BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
+        final BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
         aLinkerContext.resolveTypeRef(theTypes[0]);
     }
 }

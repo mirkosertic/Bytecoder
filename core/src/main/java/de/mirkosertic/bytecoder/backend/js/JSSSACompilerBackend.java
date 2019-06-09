@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.StringWriter;
-import java.lang.reflect.Array;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +27,7 @@ import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
