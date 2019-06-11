@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.backend.opencl;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 
-public interface ProgramGeneratorFactory {
-
-    ProgramGenerator createFor(BytecodeLinkerContext aLinkerContext, Intrinsics aIntrinsics);
+public class OpenCLIntrinsics extends Intrinsics {
 }

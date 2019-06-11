@@ -17,25 +17,9 @@ package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
-import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.*;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -74,7 +58,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         final BytecodeMethod theKernelMethod = theKernelClass.getBytecodeClass().methodByNameAndSignatureOrNull("processWorkItem", new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
-        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
+        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new OpenCLIntrinsics());
         final Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theKernelMethod);
 
         //Run optimizer

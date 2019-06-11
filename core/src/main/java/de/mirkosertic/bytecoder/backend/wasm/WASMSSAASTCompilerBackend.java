@@ -15,87 +15,30 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+import de.mirkosertic.bytecoder.api.*;
+import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.ConstantPool;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
+import de.mirkosertic.bytecoder.backend.wasm.ast.*;
+import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.ExceptionManager;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.LambdaMetafactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.api.OpaqueIndexed;
-import de.mirkosertic.bytecoder.api.OpaqueMethod;
-import de.mirkosertic.bytecoder.api.OpaqueProperty;
-import de.mirkosertic.bytecoder.backend.CompileBackend;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.ConstantPool;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
-import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ImportReference;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
-import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
-import de.mirkosertic.bytecoder.classlib.Address;
-import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.classlib.ExceptionManager;
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.graph.Edge;
-import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
-import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -575,7 +518,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     return;
                 }
 
-                final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext);
+                final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new WASMIntrinsics());
                 final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer

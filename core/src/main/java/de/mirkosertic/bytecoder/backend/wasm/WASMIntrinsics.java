@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 
-public interface ProgramGeneratorFactory {
-
-    ProgramGenerator createFor(BytecodeLinkerContext aLinkerContext, Intrinsics aIntrinsics);
+public class WASMIntrinsics extends Intrinsics {
 }
