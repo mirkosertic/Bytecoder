@@ -17,8 +17,6 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -125,6 +123,7 @@ import de.mirkosertic.bytecoder.core.BytecodeSourceFileAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -142,9 +141,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
     public final static ProgramGeneratorFactory FACTORY = NaiveProgramGenerator::new;
 
     private final BytecodeLinkerContext linkerContext;
+    private final Intrinsics intrinsics;
 
-    private NaiveProgramGenerator(final BytecodeLinkerContext aLinkerContext) {
+    private NaiveProgramGenerator(
+            final BytecodeLinkerContext aLinkerContext,
+            final Intrinsics aIntrinsics) {
         linkerContext = aLinkerContext;
+        intrinsics = aIntrinsics;
     }
 
     private DebugInformation debugInformationFor(final BytecodeClass aOwningClass, final BytecodeCodeAttributeInfo aCode) {
@@ -1001,31 +1004,26 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 Collections.reverse(theArguments);
 
                 final Variable theTarget = (Variable) aHelper.pop();
+
+                final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType()
+                        .getNameIndex().getName().stringValue();
+
                 final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef
                         .fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                if (Objects.equals(theType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                    theTarget.initializeWith(theArguments.get(0));
-                    aTargetBlock.getExpressions().add(new VariableAssignmentExpression(aProgram, theInstruction.getOpcodeAddress(), theTarget, theArguments.get(0)));
-                } else {
-                    final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType()
-                            .getNameIndex().getName().stringValue();
-                    if ("getClass".equals(theMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE
-                            .matchesExactlyTo(theSignature)) {
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), new TypeOfExpression(aProgram, theInstruction.getOpcodeAddress(), theTarget));
-                        aHelper.push(theNewVariable);
+
+                if (!intrinsics.intrinsify(aProgram, theINS, theType, theArguments, theTarget, aTargetBlock, aHelper)) {
+
+                    final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
+                            theMethodName, theSignature, theTarget, theArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.getExpressions().add(theExpression);
                     } else {
-                        final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
-                                theMethodName, theSignature, theTarget, theArguments);
-                        if (theSignature.getReturnType().isVoid()) {
-                            aTargetBlock.getExpressions().add(theExpression);
-                        } else {
-                            final Variable theNewVariable = aTargetBlock
-                                    .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
-                            aHelper.push(theNewVariable);
-                        }
+                        final Variable theNewVariable = aTargetBlock
+                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        aHelper.push(theNewVariable);
                     }
                 }
+
             } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                 final BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
                 final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
@@ -1085,350 +1083,24 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final BytecodeClassinfoConstant theTargetClass = theINS.getMethodReference().getClassIndex().getClassConstant();
                 final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theTargetClass.getConstant());
-                if (Objects.equals(theObjectType.name(), VM.class.getName()) && "newRuntimeGeneratedType".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
-                    final RuntimeGeneratedTypeExpression theValue = new RuntimeGeneratedTypeExpression(aProgram, theInstruction.getOpcodeAddress(), theArguments.get(0), theArguments.get(1), theArguments.get(2));
-                    final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
-                    aHelper.push(theNewVariable);
-                } else if (Objects.equals(theObjectType.name(), MemoryManager.class.getName()) && "initTestMemory".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
-                    // This invocation can be skipped!!!
-                } else if (Objects.equals(theObjectType.name(), Address.class.getName())) {
-                    final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex()
-                            .getName().stringValue();
-                    switch (theMethodName) {
-                    case "setIntValue": {
 
-                        final Value theTarget = theArguments.get(0);
-                        final Value theOffset = theArguments.get(1);
-                        final Value theNewValue = theArguments.get(2);
-
-                        final ComputedMemoryLocationWriteExpression theLocation = new ComputedMemoryLocationWriteExpression(aProgram, theInstruction.getOpcodeAddress(), theTarget, theOffset);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, theLocation);
-                        aTargetBlock.getExpressions().add(new SetMemoryLocationExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable, theNewValue));
-                        break;
-                    }
-                    case "getStart": {
-
-                        final Value theTarget = theArguments.get(0);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, theTarget);
-
-                        aHelper.push(theNewVariable);
-                        break;
-                    }
-                    case "getStackTop": {
-
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, new StackTopExpression(aProgram, theInstruction.getOpcodeAddress()));
-
-                        aHelper.push(theNewVariable);
-                        break;
-                    }
-                    case "getMemorySize": {
-
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, new MemorySizeExpression(aProgram, theInstruction.getOpcodeAddress()));
-
-                        aHelper.push(theNewVariable);
-                        break;
-                    }
-                    case "getIntValue": {
-
-                        final Value theTarget = theArguments.get(0);
-                        final Value theOffset = theArguments.get(1);
-
-                        final ComputedMemoryLocationReadExpression theLocation = new ComputedMemoryLocationReadExpression(aProgram, theInstruction.getOpcodeAddress(), theTarget, theOffset);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, theLocation);
-                        aHelper.push(theNewVariable);
-
-                        break;
-                    }
-                    case "unreachable": {
-                        aTargetBlock.getExpressions().add(new UnreachableExpression(aProgram, theInstruction.getOpcodeAddress()));
-                        break;
-                    }
-                    default:
-                        throw new IllegalStateException("Not implemented : " + theMethodName);
-                    }
-                } else {
+                if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theObjectType, aTargetBlock, aHelper)) {
                     final BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
                     linkerContext.resolveClass(theClassToInvoke)
                             .resolveStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                     theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
 
                     final BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
-
-                    if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
-                        final Value theValue = new SqrtExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theCalledSignature.getReturnType()),
-                                theArguments.get(0));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("sqrt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                                && "java.lang.Math".equals(theClassToInvoke.name())) {
-                        final Value theValue = new SqrtExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theCalledSignature.getReturnType()),
-                                theArguments.get(0));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("floor".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.Math".equals(theClassToInvoke.name())) {
-                        final Value theValue = new FloatingPointFloorExpression(aProgram, theInstruction.getOpcodeAddress(), theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("floor".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
-                        final Value theValue = new FloatingPointFloorExpression(aProgram, theInstruction.getOpcodeAddress(), theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("ceil".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.Math".equals(theClassToInvoke.name())) {
-                        final Value theValue = new FloatingPointCeilExpression(aProgram, theInstruction.getOpcodeAddress(), theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("ceil".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
-                        final Value theValue = new FloatingPointCeilExpression(aProgram, theInstruction.getOpcodeAddress(), theArguments.get(0), TypeRef.toType(theCalledSignature.getReturnType()));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("min".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.Math".equals(theClassToInvoke.name())) {
-                        final Value theValue = new MinExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theCalledSignature.getReturnType()),
-                                theArguments.get(0), theArguments.get(1));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("min".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
-                        final Value theValue = new MinExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theCalledSignature.getReturnType()),
-                                theArguments.get(0), theArguments.get(1));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("max".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.Math".equals(theClassToInvoke.name())) {
-                        final Value theValue = new MaxExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theCalledSignature.getReturnType()),
-                                theArguments.get(0), theArguments.get(1));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("max".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.StrictMath".equals(theClassToInvoke.name())) {
-                        final Value theValue = new MaxExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theCalledSignature.getReturnType()),
-                                theArguments.get(0), theArguments.get(1));
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("newInstance".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                                && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArrayType = theArguments.get(0);
-                        final Value theArraySize = theArguments.get(1);
-
-                        final Value theValue = new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(), BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theArraySize);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("getLength".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-
-                        final Value theValue = new ArrayLengthExpression(aProgram, theInstruction.getOpcodeAddress(), theArray);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("setBoolean".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.BOOLEAN, theArray, theIndex, theValue));
-                    } else if ("getBoolean".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.BOOLEAN, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.BOOLEAN, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("setByte".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.BYTE, theArray, theIndex, theValue));
-                    } else if ("getByte".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.BYTE, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.BYTE, theValue);
-                        aHelper.push(theNewVariable);
-                    } else if ("setChar".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.CHAR, theArray, theIndex, theValue));
-                    } else if ("getChar".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.CHAR, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.CHAR, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("setDouble".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.DOUBLE, theArray, theIndex, theValue));
-                    } else if ("getDouble".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.DOUBLE, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.DOUBLE, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("setFloat".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.FLOAT, theArray, theIndex, theValue));
-                    } else if ("getFloat".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.FLOAT, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.FLOAT, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("setInt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.INT, theArray, theIndex, theValue));
-                    } else if ("getInt".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.INT, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.INT, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("setLong".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.LONG, theArray, theIndex, theValue));
-                    } else if ("getLong".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.LONG, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.LONG, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("setShort".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.Native.SHORT, theArray, theIndex, theValue));
-                    } else if ("getShort".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.SHORT, theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.SHORT, theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("set".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-                        final Value theValue = theArguments.get(2);
-
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theINS.getOpcodeAddress(),
-                                TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theArray, theIndex, theValue));
-                    } else if ("get".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theArray = theArguments.get(0);
-                        final Value theIndex = theArguments.get(1);
-
-                        final Value theValue = new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theArray, theIndex);
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theValue);
-                        aHelper.push(theNewVariable);
-
-                    } else if ("newArray".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())
-                            && "java.lang.reflect.Array".equals(theClassToInvoke.name())) {
-
-                        final Value theType = theArguments.get(0);
-                        final Value theLength = theArguments.get(1);
-
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(),
-                                TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(), BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theLength));
-                        aHelper.push(theNewVariable);
-
+                    final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
+                            theClassToInvoke,
+                            theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                            theCalledSignature,
+                            theArguments);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.getExpressions().add(theExpression);
                     } else {
-                        final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
-                                theClassToInvoke,
-                                theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                                theCalledSignature,
-                                theArguments);
-                        if (theSignature.getReturnType().isVoid()) {
-                            aTargetBlock.getExpressions().add(theExpression);
-                        } else {
-                            final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
-                            aHelper.push(theNewVariable);
-                        }
+                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        aHelper.push(theNewVariable);
                     }
                 }
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
