@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.lang.reflect.Array;
+import de.mirkosertic.bytecoder.classlib.Array;
 
 public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGenericInvoke {
 

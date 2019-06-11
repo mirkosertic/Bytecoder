@@ -130,4 +130,26 @@ public class TMath {
         }
         return r;
     }
+
+    public static long floorDiv(final long x, final long y) {
+        long r = x / y;
+        // if the signs are different and modulo not zero, round down
+        if ((x ^ y) < 0 && (r * y != x)) {
+            r--;
+        }
+        return r;
+    }
+
+    public static long floorDiv(final long x, final int y) {
+        return floorDiv(x, (long)y);
+    }
+
+    public static int floorMod(final long x, final int y) {
+        // Result cannot overflow the range of int.
+        return (int)(x - floorDiv(x, y) * y);
+    }
+
+    public static long floorMod(final long x, final long y) {
+        return x - floorDiv(x, y) * y;
+    }
 }
