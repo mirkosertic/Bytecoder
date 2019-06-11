@@ -50,6 +50,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -130,7 +131,6 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -985,7 +985,7 @@ public class WASMSSAASTWriter {
             }
         }
 
-        if (!theClasses.stream().filter(t -> t.isOpaqueType()).collect(Collectors.toList()).isEmpty()) {
+        if (!theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).collect(Collectors.toList()).isEmpty()) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 

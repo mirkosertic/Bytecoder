@@ -106,4 +106,10 @@ public class StringBuilderTest {
         System.out.println(theResult);
         Assert.assertEquals("Münster", theResult);
     }
+
+    @Test
+    public void testCapacity() {
+        final StringBuilder theBuilder = new StringBuilder(10);
+        Assert.assertEquals("", theBuilder.toString());
+    }
 }

@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.backend.js;
 
 import java.io.StringWriter;
-import java.lang.reflect.Array;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +27,7 @@ import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
@@ -276,6 +276,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("random").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Math.random();").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("logDOUBLE").colon().text("function(p1)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.log(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 

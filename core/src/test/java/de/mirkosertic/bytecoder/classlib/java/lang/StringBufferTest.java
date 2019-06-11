@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,37 +15,23 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-
 @RunWith(BytecoderUnitTestRunner.class)
-public class MathTest {
+public class StringBufferTest {
 
     @Test
-    public void testMin() {
-        Assert.assertEquals(10, Math.min(20, 10));
+    public void testCreate() {
+        final StringBuffer buffer = new StringBuffer("");
+        Assert.assertEquals("", buffer.toString());
     }
 
     @Test
-    public void testMax() {
-        Assert.assertEquals(20, Math.max(20, 10));
-    }
-
-    @Test
-    public void testLog() {
-        final double l = Math.log(1234.0);
-    }
-
-    @Test
-    public void testFloorModInt() {
-        Math.floorMod(10, 10);
-    }
-
-    @Test
-    public void testFloorModLong() {
-        Math.floorMod(10L, 10L);
+    public void testCreateWithCapacity() {
+        final StringBuffer buffer = new StringBuffer(10);
+        Assert.assertEquals("", buffer.toString());
     }
 }

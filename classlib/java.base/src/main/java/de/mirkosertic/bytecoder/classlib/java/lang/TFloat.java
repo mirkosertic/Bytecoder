@@ -147,7 +147,7 @@ public class TFloat extends Number {
         } else if (isNaN(value)) {
             return 0x7FC00000;
         }
-        final float abs = de.mirkosertic.bytecoder.classlib.java.lang.TMath.abs(value);
+        final float abs = Math.abs(value);
         int exp = Math.getExponent(abs);
         int negExp = -exp + 23;
         if (exp < -126) {

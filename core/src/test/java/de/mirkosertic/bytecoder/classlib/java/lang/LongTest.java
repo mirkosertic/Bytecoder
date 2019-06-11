@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertNotEquals;
 public class LongTest {
 
     @Test
-    public void testEquals() throws Exception {
+    public void testEquals() {
         final Long theLong = new Long((int) 10);
         assertEquals(theLong,theLong);
         assertNotEquals(theLong, new Long((int) 11));
@@ -35,37 +36,37 @@ public class LongTest {
     }
 
     @Test
-    public void testHashCode() throws Exception {
+    public void testHashCode() {
         assertEquals(new Long((int) 10), new Long((int) 10));
     }
 
     @Test
-    public void testIntValue() throws Exception {
+    public void testIntValue() {
         assertEquals(10, new Long((int) 10).intValue(), 0);
     }
 
     @Test
-    public void testByteValue() throws Exception {
+    public void testByteValue() {
         assertEquals(10, new Long((int) 10).byteValue(), 0);
     }
 
     @Test
-    public void testShortValue() throws Exception {
+    public void testShortValue() {
         assertEquals(10, new Long((int) 10).shortValue(), 0);
     }
 
     @Test
-    public void testFloatValue() throws Exception {
+    public void testFloatValue() {
         assertEquals(10, new Long((int) 10).floatValue(), 0);
     }
 
     @Test
-    public void testLongValue() throws Exception {
+    public void testLongValue() {
         assertEquals(10, new Long((int) 10).longValue(), 0);
     }
 
     @Test
-    public void testDoubleValue() throws Exception {
+    public void testDoubleValue() {
         assertEquals(10, new Long((int) 10).doubleValue(), 0);
     }
 
@@ -107,8 +108,26 @@ public class LongTest {
 
     @Test
     public void testPrintLong() {
-        final long l = 1000l;
+        final long l = 1000L;
         System.out.println("Long value");
         System.out.println(l);
+    }
+
+    @Test
+    public void testBitCount() {
+        final int count = Long.bitCount(1234L);
+        Assert.assertEquals(5, count, 0);
+    }
+
+    @Test
+    public void testNumberOfTrailingZeros() {
+        final int count = Long.numberOfTrailingZeros(1234L);
+        Assert.assertEquals(1, count, 0);
+    }
+
+    @Test
+    public void testNumberOfLeadingZeros() {
+        final int count = Long.numberOfLeadingZeros(1234L);
+        Assert.assertEquals(53, count, 0);
     }
 }
