@@ -38,4 +38,14 @@ public class MathTest {
     public void testLog() {
         final double l = Math.log(1234.0);
     }
+
+    @Test
+    public void testFloorModInt() {
+        Math.floorMod(10, 10);
+    }
+
+    @Test
+    public void testFloorModLong() {
+        Math.floorMod(10L, 10L);
+    }
 }

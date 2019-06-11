@@ -26,6 +26,10 @@ public class TStringBuffer {
         builder = new StringBuilder();
     }
 
+    public TStringBuffer(final int aCapacity) {
+        builder = new StringBuilder(aCapacity);
+    }
+
     public TStringBuffer(final String aString) {
         builder = new StringBuilder(aString);
     }

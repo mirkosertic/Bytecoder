@@ -25,7 +25,13 @@ public class StringBufferTest {
 
     @Test
     public void testCreate() {
-        final StringBuffer buffer = new StringBuffer((""));
+        final StringBuffer buffer = new StringBuffer("");
+        Assert.assertEquals("", buffer.toString());
+    }
+
+    @Test
+    public void testCreateWithCapacity() {
+        final StringBuffer buffer = new StringBuffer(10);
         Assert.assertEquals("", buffer.toString());
     }
 }

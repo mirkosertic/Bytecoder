@@ -96,4 +96,10 @@ public class ArrayTest {
         Assert.assertEquals(42, Array.get(array, 0));
         Assert.assertEquals(1, Array.getLength(array));
     }
+
+    @Test
+    public void testCreateArrayTest() {
+        final Object[] array = (Object[]) Array.newInstance(Object.class, 10);
+        Assert.assertEquals(10, Array.getLength(array));
+    }
 }
