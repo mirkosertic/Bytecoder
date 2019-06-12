@@ -9,8 +9,8 @@ language: java
 
 jdk:
   - openjdk8
-  - openjdk12
   - openjdk11
+  - openjdk12
 
 env:
   - CHROMEDRIVER_BINARY=~/chromedriver
@@ -28,7 +28,7 @@ before_install:
 script:
   - whereis google-chrome-stable
   - whereis chromedriver
-  - mvn clean install javadoc:javadoc -DskipTests=true
+  - mvn clean install -DskipTests=true
 
 after_success:
   - codecov
