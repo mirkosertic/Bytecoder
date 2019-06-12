@@ -134,30 +134,14 @@ public class TVM {
     /* Peak count of objects pending for finalization */
     private static volatile int peakFinalRefCount;
 
-    /*
-     * Gets the number of objects pending for finalization.
-     *
-     * @return the number of objects pending for finalization.
-     */
     public static int getFinalRefCount() {
         return finalRefCount;
     }
 
-    /*
-     * Gets the peak number of objects pending for finalization.
-     *
-     * @return the peak number of objects pending for finalization.
-     */
     public static int getPeakFinalRefCount() {
         return peakFinalRefCount;
     }
 
-    /*
-     * Add {@code n} to the objects pending for finalization count.
-     *
-     * @param n an integer value to be added to the objects pending
-     * for finalization count
-     */
     public static void addFinalRefCount(final int n) {
         // The caller must hold lock to synchronize the update.
 
@@ -167,31 +151,14 @@ public class TVM {
         }
     }
 
-    /*
-     * Returns the first user-defined class loader up the execution stack,
-     * or the platform class loader if only code from the platform or
-     * bootstrap class loader is on the stack.
-     */
     public static ClassLoader latestUserDefinedLoader() {
         return null;
     }
 
-    /*
-     * Returns the first user-defined class loader up the execution stack,
-     * or null if only code from the platform or bootstrap class loader is
-     * on the stack.  VM does not keep a reference of platform loader and so
-     * it returns null.
-     *
-     * This method should be replaced with StackWalker::walk and then we can
-     * remove the logic in the VM.
-     */
     private static ClassLoader latestUserDefinedLoader0() {
         return null;
     }
 
-    /**
-     * Returns {@code true} if we are in a set UID program.
-     */
     public static boolean isSetUID() {
         final long uid = getuid();
         final long euid = geteuid();
@@ -200,88 +167,22 @@ public class TVM {
         return uid != euid  || gid != egid;
     }
 
-    /**
-     * Returns the real user ID of the calling process,
-     * or -1 if the value is not available.
-     */
     public static native long getuid();
 
-    /**
-     * Returns the effective user ID of the calling process,
-     * or -1 if the value is not available.
-     */
     public static native long geteuid();
 
-    /**
-     * Returns the real group ID of the calling process,
-     * or -1 if the value is not available.
-     */
     public static native long getgid();
 
-    /**
-     * Returns the effective group ID of the calling process,
-     * or -1 if the value is not available.
-     */
     public static native long getegid();
 
-    /**
-     * Get a nanosecond time stamp adjustment in the form of a single long.
-     *
-     * This value can be used to create an instant using
-     * {@link java.time.Instant#ofEpochSecond(long, long)
-     *  java.time.Instant.ofEpochSecond(offsetInSeconds,
-     *  getNanoTimeAdjustment(offsetInSeconds))}.
-     * <p>
-     * The value returned has the best resolution available to the JVM on
-     * the current system.
-     * This is usually down to microseconds - or tenth of microseconds -
-     * depending on the OS/Hardware and the JVM implementation.
-     *
-     * @param offsetInSeconds The offset in seconds from which the nanosecond
-     *        time stamp should be computed.
-     *
-     * @apiNote The offset should be recent enough - so that
-     *         {@code offsetInSeconds} is within {@code +/- 2^32} seconds of the
-     *         current UTC time. If the offset is too far off, {@code -1} will be
-     *         returned. As such, {@code -1} must not be considered as a valid
-     *         nano time adjustment, but as an exception value indicating
-     *         that an offset closer to the current time should be used.
-     *
-     * @return A nanosecond time stamp adjustment in the form of a single long.
-     *     If the offset is too far off the current time, this method returns -1.
-     *     In that case, the caller should call this method again, passing a
-     *     more accurate offset.
-     */
     public static native long getNanoTimeAdjustment(long offsetInSeconds);
 
-    /**
-     * Returns the VM arguments for this runtime environment.
-     *
-     * @implNote
-     * The HotSpot JVM processes the input arguments from multiple sources
-     * in the following order:
-     * 1. JAVA_TOOL_OPTIONS environment variable
-     * 2. Options from JNI Invocation API
-     * 3. _JAVA_OPTIONS environment variable
-     *
-     * If VM options file is specified via -XX:VMOptionsFile, the vm options
-     * file is read and expanded in place of -XX:VMOptionFile option.
-     */
     public static native String[] getRuntimeArguments();
 
     static {
         saveProperties(new HashMap<>());
     }
 
-    /**
-     * Initialize archived static fields in the given Class using archived
-     * values from CDS dump time. Also initialize the classes of objects in
-     * the archived graph referenced by those fields.
-     *
-     * Those static fields remain as uninitialized if there is no mapped CDS
-     * java heap data or there is any error during initialization of the
-     * object class in the archived graph.
-     */
     public static void initializeFromArchive(final Class<?> c) {
     }
 }
