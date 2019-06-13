@@ -35,4 +35,28 @@ public class IfThenElseTest {
         }
         y = 6;
     }
+
+    private static boolean floatIsDifferent(float f1, float f2, float delta) {
+        if (Float.compare(f1, f2) == 0) {
+            return false;
+        } else {
+            return Math.abs(f1 - f2) > delta;
+        }
+    }
+
+    private void failNotEquals(String message, float expected, float actual) {
+        throw new AssertionError();
+    }
+
+    @Test
+    public void testIf() {
+        String message = "Message";
+        float expected = 10f;
+        float actual = 10f;
+        float delta = 0;
+        if (floatIsDifferent(expected, actual, delta)) {
+            failNotEquals(message, expected, actual);
+        }
+    }
+
 }
