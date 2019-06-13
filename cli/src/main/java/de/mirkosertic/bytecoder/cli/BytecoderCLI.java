@@ -34,6 +34,8 @@ import picocli.CommandLine.Option;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 public class BytecoderCLI {
 
@@ -41,6 +43,9 @@ public class BytecoderCLI {
 
     @Command(name = "Bytecoder")
     public static class CLIOptions {
+
+        @Option(names = "-classpath", required = true, description = "Die Directory containing the JVM class files to be compiled.")
+        protected String classpath;
 
         @Option(names = "-mainclass", required = true, description = "Name of the class that contains the main() method")
         protected String mainClass;
@@ -73,7 +78,7 @@ public class BytecoderCLI {
         protected boolean minifyCompileResult = true;
     }
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException {
+    public static void main(final String[] args) throws IOException, ClassNotFoundException {
 
         final CLIOptions theCLIOptions = new CLIOptions();
         try {
@@ -93,9 +98,11 @@ public class BytecoderCLI {
         theBytecoderDirectory.mkdirs();
 
         final ClassLoader theLoader = BytecoderCLI.class.getClassLoader();
-        final Class theTargetClass = theLoader.loadClass(theCLIOptions.mainClass);
+        final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(theCLIOptions.classpath).toURI().toURL()}, theLoader);
 
-        final CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(theCLIOptions.backend));
+        final Class theTargetClass = classLoader.loadClass(theCLIOptions.mainClass);
+
+        final CompileTarget theCompileTarget = new CompileTarget(classLoader, CompileTarget.BackendType.valueOf(theCLIOptions.backend));
 
         final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });

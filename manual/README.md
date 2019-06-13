@@ -20,7 +20,68 @@ The *WebAssembly* backend transforms the intermediate representation into WebAss
 The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
 existing programs running on the JVM to utilize the vast power of modern GPUs.
 
-## Hello World!
+## Jump-Start using the Command-Line Interface
+
+Lets assume we have the following Java class, and we want to compile it to JavaScript and run it in the Browser:
+
+```
+package bytecodertest;
+
+public class HelloWorld {
+
+    public static void main(String[] args) {
+        System.out.println("Hello World!");
+    }
+}
+```
+
+First of all, we need to compile the Java sources to a JVM class file. This is done by using the `javac` tool from the JDK:
+
+```
+javac HelloWorld.java
+```
+
+Now, we have the compiled .class files. Now we can use the Bytecoder CLI to compile it to JavaScript!
+
+Step 1: Download the CLI from Maven central:
+
+``` 
+wget http://central.maven.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/2019-06-13/bytecoder-cli-2019-06-13-executable.jar
+```
+
+Step 2: Invoke the CLI:
+
+```
+java -jar bytecoder-cli-2019-06-13-executable.jar -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=. -backend=js -minify=false
+```
+
+Step 3: Create an embedding HTML document
+
+Now we have a `bytecoder.js` file, which needs to be embedded into a HTML document. Here is a sample
+HTML file embedding the Bytecoder JavaScript and invoking it:
+
+```
+<html>
+    <head>
+        <title>Bytecoder Test</title>
+    </head>
+    <body>
+        <script type="text/javascript" src="bytecoder.js"></script>
+        <script type="text/javascript">
+
+            console.log("Init");
+            bytecoder.bootstrap();
+
+            bytecoder.exports.main();
+            console.log("Done");
+        </script>
+    </body>
+</html>
+```
+
+After opening this HTML file in a Browser you will see the "Hello World!" output in the JavaScript console log.
+
+## Hello World, extended edition!
 
 Let's see how a simple Java program can be written that changes the document title in the Browser. Here it is:
 
@@ -271,7 +332,7 @@ __kernel void BytecoderKernel(__global const float* val$theA,
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-03-22</version>
+            <version>2019-06-13</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
@@ -303,7 +364,7 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-03-22</version>
+            <version>2019-06-13</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>wasm</backend>
