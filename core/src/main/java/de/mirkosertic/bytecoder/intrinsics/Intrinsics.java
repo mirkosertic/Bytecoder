@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.intrinsics;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.*;
 
 import java.util.ArrayList;
@@ -78,4 +75,25 @@ public class Intrinsics {
         return false;
     }
 
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        final String theFieldName = aInstruction.getConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        final BytecodeObjectTypeRef theTargetType = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getConstant().getClassIndex().getClassConstant().getConstant());
+        for (final Intrinsic intrinsic : intrinsics) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theFieldName, theTargetType, aTargetBlock, aHelper)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        final String theFieldName = aInstruction.getConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        final BytecodeObjectTypeRef theTargetType = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getConstant().getClassIndex().getClassConstant().getConstant());
+        for (final Intrinsic intrinsic : intrinsics) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theFieldName, theTargetType, aValue, aTargetBlock, aHelper)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

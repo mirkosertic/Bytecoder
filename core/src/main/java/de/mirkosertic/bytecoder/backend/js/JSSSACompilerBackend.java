@@ -340,16 +340,18 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
             theStaticFields.streamForStaticFields().forEach(
                     aFieldEntry -> {
-                        final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
-                        if (theFieldType.isPrimitive()) {
-                            final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
-                            if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("false,").newLine();
+                        if (!"$assertionsDisabled".equals(aFieldEntry.getValue().getName().stringValue())) {
+                            final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
+                            if (theFieldType.isPrimitive()) {
+                                final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
+                                if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
+                                    theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("false,").newLine();
+                                } else {
+                                    theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("0,").newLine();
+                                }
                             } else {
-                                theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("0,").newLine();
+                                theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("null,").newLine();
                             }
-                        } else {
-                            theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("null,").newLine();
                         }
                     });
 

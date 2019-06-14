@@ -53,4 +53,21 @@ public class RuntimeClassIntrinsic extends Intrinsic {
         }
         return false;
     }
+
+    @Override
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        if ("$assertionsDisabled".equals(aFieldName)) {
+            aHelper.push(new IntegerValue(1));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        if ("$assertionsDisabled".equals(aFieldName)) {
+            return true;
+        }
+        return false;
+    }
 }

@@ -582,9 +582,11 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 final BytecodeInstructionGETSTATIC theINS = (BytecodeInstructionGETSTATIC) theInstruction;
-                final GetStaticExpression theValue = new GetStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant());
-                final Variable theVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getConstant().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType()), theValue);
-                aHelper.push(theVariable);
+                if (!intrinsics.intrinsify(aProgram, theINS, aTargetBlock, aHelper)) {
+                    final GetStaticExpression theValue = new GetStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant());
+                    final Variable theVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getConstant().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType()), theValue);
+                    aHelper.push(theVariable);
+                }
             } else if (theInstruction instanceof BytecodeInstructionASTORE) {
                 final BytecodeInstructionASTORE theINS = (BytecodeInstructionASTORE) theInstruction;
                 final Value theValue = aHelper.pop();
@@ -644,7 +646,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionPUTSTATIC) {
                 final BytecodeInstructionPUTSTATIC theINS = (BytecodeInstructionPUTSTATIC) theInstruction;
                 final Value theValue = aHelper.pop();
-                aTargetBlock.getExpressions().add(new PutStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant(), theValue));
+                if (!intrinsics.intrinsify(aProgram, theINS, theValue, aTargetBlock, aHelper)) {
+                    aTargetBlock.getExpressions().add(new PutStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant(), theValue));
+                }
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                 final BytecodeInstructionGenericLDC theINS = (BytecodeInstructionGenericLDC) theInstruction;
                 final BytecodeConstant theConstant = theINS.constant();
