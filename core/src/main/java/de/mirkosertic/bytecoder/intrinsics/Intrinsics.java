@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.*;
 
@@ -59,6 +60,18 @@ public class Intrinsics {
         final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         for (final Intrinsic intrinsic : intrinsics) {
             if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aType, aArguments, aTarget, aTargetBlock, aHelper)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction,
+                              final List<Value> aArguments,
+                              final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        for (final Intrinsic intrinsic : intrinsics) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aArguments, aTarget, aTargetBlock, aHelper)) {
                 return true;
             }
         }

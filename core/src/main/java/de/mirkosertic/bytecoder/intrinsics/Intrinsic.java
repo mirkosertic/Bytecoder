@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.*;
 
@@ -35,4 +36,9 @@ public class Intrinsic {
         return false;
     }
 
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction, final String aMethodName,
+                              final List<Value> aArguments,
+                              final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        return false;
+    }
 }

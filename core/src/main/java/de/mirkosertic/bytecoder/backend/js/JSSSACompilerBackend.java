@@ -306,9 +306,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.text("};").newLine();
 
-        final String theGetClassMethodName = theMinifier.toMethodName("getClass", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]));
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
-        final String theDesiredAssertionStatusMethodName = theMinifier.toMethodName("desiredAssertionStatus", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]));
         final String theGetEnumConstantsMethodName = theMinifier.toMethodName("getEnumConstants", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),1), new BytecodeTypeRef[0]));
 
         final ConstantPool thePool = new ConstantPool();
@@ -383,20 +381,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab(2).text("return ").text(theJSClassName).text(".__implementedTypes.includes(aType.__typeId);").newLine();
                 theWriter.tab().text("},").newLine();
 
-                theWriter.tab().text(theGetClassMethodName).colon().text("function()").space().text("{").newLine();
-                theWriter.tab(2).text("return ").text(theJSClassName).text(";").newLine();
-                theWriter.tab().text("},").newLine();
-
                 theWriter.tab().text(theGetNameMethodName).colon().text("function(_tr)").space().text("{").newLine();
                 if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
                     theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
                 } else {
                     theWriter.tab(2).text("return _tr.").text(theGetNameMethodName).text("();").newLine();
                 }
-                theWriter.tab().text("},").newLine();
-
-                theWriter.tab().text(theDesiredAssertionStatusMethodName).colon().text("function()").space().text("{").newLine();
-                theWriter.tab(2).text("return false;").newLine();
                 theWriter.tab().text("},").newLine();
 
                 theWriter.tab().text(theGetEnumConstantsMethodName).colon().text("function(aClazz)").space().text("{").newLine();
@@ -542,7 +532,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // Only in case this class can be instantiated of course
                 theWriter.tab(2).text("var p").assign().text(theJSClassName).text(".C.prototype;").newLine();
                 theWriter.tab(2).text("p.iof").assign().text(theJSClassName).text(".iof;").newLine();
-                theWriter.tab(2).text("p.").text(theGetClassMethodName).assign().text(theJSClassName).text(".").text(theGetClassMethodName).text(";").newLine();
+                theWriter.tab(2).text("p.clz").assign().text(theJSClassName).text(";").newLine();
 
                 final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethods.stream().collect(Collectors.toList());
                 final Set<String> theVisitedMethods = new HashSet<>();
@@ -555,7 +545,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     if (!theMethod.getAccessFlags().isStatic() &&
                             !theMethod.getAccessFlags().isAbstract() &&
                             !theMethod.isConstructor() &&
-                            !theMethod.isClassInitializer()) {
+                            !theMethod.isClassInitializer() &&
+                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
+                            !"getClass".equals(theMethod.getName().stringValue())) {
 
                         if (theVisitedMethods.add(theMethodName)) {
                             theWriter.tab(2).text("p.").text(theMethodName).assign().text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMethodName).text(";").newLine();

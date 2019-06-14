@@ -104,7 +104,6 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLineNumberTableAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableEntry;
@@ -1028,13 +1027,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
                 final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
-                if (theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE) && "getClass".equals(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
-                    final Value theValue = new TypeOfExpression(aProgram, theInstruction.getOpcodeAddress(), aHelper.pop());
-                    final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                    aHelper.push(theNewVariable);
-                    continue;
-                }
-
                 final List<Value> theArguments = new ArrayList<>();
                 final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
                 for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
@@ -1043,13 +1035,17 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 Collections.reverse(theArguments);
 
                 final Value theTarget = aHelper.pop();
-                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false);
-                if (theSignature.getReturnType().isVoid()) {
-                    aTargetBlock.getExpressions().add(theExpression);
-                } else {
-                    final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
-                    aHelper.push(theNewVariable);
+
+                if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theTarget, aTargetBlock, aHelper)) {
+                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.getExpressions().add(theExpression);
+                    } else {
+                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        aHelper.push(theNewVariable);
+                    }
                 }
+
             } else if (theInstruction instanceof BytecodeInstructionINVOKEINTERFACE) {
                 final BytecodeInstructionINVOKEINTERFACE theINS = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
                 final BytecodeMethodSignature theSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
