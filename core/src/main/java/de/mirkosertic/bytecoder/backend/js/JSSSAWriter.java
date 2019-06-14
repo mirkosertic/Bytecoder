@@ -15,11 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
@@ -27,89 +22,14 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
-import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
-import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
-import de.mirkosertic.bytecoder.ssa.BinaryExpression;
-import de.mirkosertic.bytecoder.ssa.BreakExpression;
-import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
-import de.mirkosertic.bytecoder.ssa.CompareExpression;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
-import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
-import de.mirkosertic.bytecoder.ssa.ContinueExpression;
-import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
-import de.mirkosertic.bytecoder.ssa.DebugPosition;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
-import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
-import de.mirkosertic.bytecoder.ssa.FloatValue;
-import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
-import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
-import de.mirkosertic.bytecoder.ssa.FloorExpression;
-import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
-import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
-import de.mirkosertic.bytecoder.ssa.GotoExpression;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.LongValue;
-import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.MaxExpression;
-import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
-import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
-import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
-import de.mirkosertic.bytecoder.ssa.MinExpression;
-import de.mirkosertic.bytecoder.ssa.NegatedExpression;
-import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
-import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnExpression;
-import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
-import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
-import de.mirkosertic.bytecoder.ssa.ShortValue;
-import de.mirkosertic.bytecoder.ssa.SqrtExpression;
-import de.mirkosertic.bytecoder.ssa.StackTopExpression;
-import de.mirkosertic.bytecoder.ssa.StringValue;
-import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
-import de.mirkosertic.bytecoder.ssa.ThrowExpression;
-import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
-import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.UnknownExpression;
-import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
-import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+import de.mirkosertic.bytecoder.ssa.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class JSSSAWriter {
 
@@ -269,7 +189,7 @@ public class JSSSAWriter {
 
     private void print(final TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
-        writer.text(".").text(minifier.toMethodName("getClass", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]))).text("()");
+        writer.text(".").text("clz");
     }
 
     private void print(final StackTopExpression aValue) {

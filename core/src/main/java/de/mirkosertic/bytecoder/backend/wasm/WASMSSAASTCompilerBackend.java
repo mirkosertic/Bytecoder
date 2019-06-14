@@ -235,9 +235,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             classGetName.flow.ret(call(weakFunctionReference("STRINGPOOL_GLOBAL_BY_INDEX", null), theGetArguments, null), null);
         }
 
-        final ExportableFunction classDesiredAssertionStatus = module.getFunctions().newFunction("jlClass_BOOLEANdesiredAssertionStatus", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        classDesiredAssertionStatus.flow.ret(i32.c(0, null), null);
-
         final ConstantPool theConstantPool = new ConstantPool();
 
         final Map<String, WASMSSAASTCompilerBackend.CallSite> theCallsites = new HashMap<>();
@@ -288,8 +285,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         block.flow.unreachable(null);
                     } else if (Objects.equals("hashCode", theMethod.getName().stringValue())) {
                         block.flow.unreachable(null);
-                    } else if (Objects.equals("desiredAssertionStatus", theMethod.getName().stringValue())) {
-                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classDesiredAssertionStatus), null), null);
                     } else if (Objects.equals("getEnumConstants", theMethod.getName().stringValue())) {
                         block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetEnumConstants), null), null);
                     } else {
@@ -413,7 +408,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     if (!theMethod.getAccessFlags().isStatic() &&
                             !theMethod.isConstructor() &&
                             !theMethod.getAccessFlags().isAbstract() &&
-                            (theMethod != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER)) {
+                            (theMethod != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) &&
+                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue())) {
 
                         final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                 .identifierFor(theMethod);
