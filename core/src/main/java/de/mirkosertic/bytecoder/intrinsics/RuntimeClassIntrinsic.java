@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.intrinsics;
 
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.ssa.*;
 
 import java.util.List;
@@ -35,6 +32,40 @@ public class RuntimeClassIntrinsic extends Intrinsic {
                     .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
             aHelper.push(theNewVariable);
 
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction, final String aMethodName, final List<Value> aArguments, final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+        if (theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE) && "getClass".equals(aMethodName)) {
+            final Value theValue = new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
+            final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
+            aHelper.push(theNewVariable);
+            return true;
+        }
+        if (theSignature.matchesExactlyTo(BytecodeLinkedClass.DESIRED_ASSERTION_STATUS_SIGNATURE) && "desiredAssertionStatus".equals(aMethodName)) {
+            // Status is always false
+            aHelper.push(new IntegerValue(0));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        if ("$assertionsDisabled".equals(aFieldName)) {
+            aHelper.push(new IntegerValue(1));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        if ("$assertionsDisabled".equals(aFieldName)) {
             return true;
         }
         return false;

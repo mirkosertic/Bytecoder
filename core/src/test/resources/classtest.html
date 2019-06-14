@@ -1,0 +1,54 @@
+<html>
+    <body>
+        <script>
+            var jlObject = function() {
+
+                var constructor = function() {
+                };
+
+                constructor.prototype.clone = function() {
+                    return this;
+                };
+                constructor.prototype.getClass = function() {
+                    return jlObject;
+                };
+                constructor.getName = function() {
+                    return 'java.lang.Object';
+                };
+
+                return constructor;
+            }();
+
+
+            var jlMath = function() {
+                var constructor = function() {
+                };
+
+                constructor.prototype = Object.create(jlObject.prototype);
+                constructor.prototype.constructor = constructor;
+                constructor.prototype.add = function(a, b) {
+                    return a + b;
+                };
+                constructor.prototype.getClass = function() {
+                    return jlMath;
+                };
+                constructor.getName = function() {
+                    return "java.lang.Math";
+                };
+
+                return constructor;
+            }();
+
+            var obj = new jlObject();
+            var math = new jlMath();
+            var cl = math.clone();
+
+            console.log(obj);
+            console.log(math);
+            console.log(cl);
+            console.log(math.add(10,20));
+            console.log(obj.getClass().getName());
+            console.log(math.getClass().getName());
+        </script>
+    </body>
+</html>
