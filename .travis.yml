@@ -40,7 +40,7 @@ stages:
 jobs:
   include:
     - stage: prepare cache
-      script: true;
+      script: true
     - stage: compile
       script: mvn clean install -P notest
     - stage test
