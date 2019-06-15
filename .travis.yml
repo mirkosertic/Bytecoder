@@ -32,8 +32,8 @@ before_install:
   - whereis google-chrome-stable
   - whereis chromedriver
   - wget -N https://raw.githubusercontent.com/KhronosGroup/SyclParallelSTL/master/.travis/install_intel_opencl.sh -P ~/
-  - chmod 755 install_intel_opencl.sh
-  - sudo ./install_intel_opencl.sh
+  - chmod 755 ~/install_intel_opencl.sh
+  - sudo ~/install_intel_opencl.sh
 
 stages:
   - compile
