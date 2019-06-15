@@ -307,7 +307,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.text("};").newLine();
 
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
-        final String theGetEnumConstantsMethodName = theMinifier.toMethodName("getEnumConstants", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),1), new BytecodeTypeRef[0]));
 
         final ConstantPool thePool = new ConstantPool();
 
@@ -389,10 +388,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 } else {
                     theWriter.tab(2).text("return _tr.").text(theGetNameMethodName).text("();").newLine();
                 }
-                theWriter.tab().text("},").newLine();
-
-                theWriter.tab().text(theGetEnumConstantsMethodName).colon().text("function(aClazz)").space().text("{").newLine();
-                theWriter.tab(2).text("return aClazz.").symbol("$VALUES", null).text(";").newLine();
                 theWriter.tab().text("},").newLine();
             }
 
@@ -549,7 +544,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             !theMethod.isConstructor() &&
                             !theMethod.isClassInitializer() &&
                             !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
-                            !"getClass".equals(theMethod.getName().stringValue())) {
+                            !"getClass".equals(theMethod.getName().stringValue()) &&
+                            !"getEnumConstants".equals(theMethod.getName().stringValue())) {
 
                         if (theVisitedMethods.add(theMethodName)) {
                             theWriter.tab(2).text("p.").text(theMethodName).assign().text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMethodName).text(";").newLine();
