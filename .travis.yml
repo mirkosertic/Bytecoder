@@ -31,7 +31,7 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
-  - whet https://raw.githubusercontent.com/KhronosGroup/SyclParallelSTL/master/.travis/install_intel_opencl.sh ~/
+  - wget -N https://raw.githubusercontent.com/KhronosGroup/SyclParallelSTL/master/.travis/install_intel_opencl.sh -P ~/
   - chmod 755 install_intel_opencl.sh
   - ./install_intel_opencl.sh
 
