@@ -160,9 +160,17 @@ public class JSSSAWriter {
             print((FloatingPointFloorExpression) aValue);
         } else if (aValue instanceof FloatingPointCeilExpression) {
             print((FloatingPointCeilExpression) aValue);
+        } else if (aValue instanceof EnumConstantsExpression) {
+            print((EnumConstantsExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final EnumConstantsExpression aValue) {
+        print(aValue.incomingDataFlows().get(0));
+        writer.text(".");
+        writer.text(minifier.toSymbol("$VALUES"));
     }
 
     private void print(final MaxExpression aValue) {
@@ -1126,6 +1134,15 @@ public class JSSSAWriter {
                     startLine().text("__l").assign().text("" + theContinue.jumpTarget().getAddress()).text(";").newLine();
                 }
                 startLine().text("continue $").text(theContinue.labelToReturnTo().name()).text(";").newLine();
+            } else if (theExpression instanceof SetEnumConstantsExpression) {
+                final SetEnumConstantsExpression theSet = (SetEnumConstantsExpression) theExpression;
+                startLine();
+
+                print(theSet.incomingDataFlows().get(0));
+                writer.print(".").text(minifier.toSymbol("$VALUES")).assign();
+                print(theSet.incomingDataFlows().get(1));
+
+                writer.text(";").newLine();
             } else {
                 throw new IllegalStateException("Not implemented : " + theExpression);
             }

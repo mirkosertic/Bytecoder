@@ -34,10 +34,7 @@ public class Intrinsics {
         intrinsics.add(new JavaLangMathIntrinsic());
         intrinsics.add(new RuntimeClassIntrinsic());
         intrinsics.add(new ObjectConstructorCallIntrinsic());
-    }
-
-    public void add(final Intrinsic aIntrinsic) {
-        intrinsics.add(aIntrinsic);
+        intrinsics.add(new JavaLangEnumIntrinsic());
     }
 
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final List<Value> aArguments,

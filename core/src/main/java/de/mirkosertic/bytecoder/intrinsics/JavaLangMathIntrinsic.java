@@ -28,7 +28,7 @@ public class JavaLangMathIntrinsic extends Intrinsic {
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
         if (Math.class.getName().equals(aTargetClass.name())) {
             final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
-            if ("sqrt".equals(aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue())) {
+            if ("sqrt".equals(aMethodName)) {
                 final Value theValue = new SqrtExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()),
                         aArguments.get(0));
                 final Variable theNewVariable = aTargetBlock

@@ -225,9 +225,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ExportableFunction lambdaResolvevtableindex = module.getFunctions().newFunction("LAMBDA" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         lambdaResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaResolvevtableindex.localByLabel("thisRef"), null), null), null);
 
-        final ExportableFunction classGetEnumConstants = module.getFunctions().newFunction("jlClass_A1jlObjectgetEnumConstants", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        classGetEnumConstants.flow.ret(i32.load(0, i32.load(12, getLocal(classGetEnumConstants.localByLabel("thisRef"), null), null), null), null);
-
         final ExportableFunction classGetName = module.getFunctions().newFunction("jlClass_jlStringgetName", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
             final List<WASMValue> theGetArguments = new ArrayList<>();
@@ -285,8 +282,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         block.flow.unreachable(null);
                     } else if (Objects.equals("hashCode", theMethod.getName().stringValue())) {
                         block.flow.unreachable(null);
-                    } else if (Objects.equals("getEnumConstants", theMethod.getName().stringValue())) {
-                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetEnumConstants), null), null);
                     } else {
                         block.flow.unreachable(null);
                     }
@@ -408,8 +403,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     if (!theMethod.getAccessFlags().isStatic() &&
                             !theMethod.isConstructor() &&
                             !theMethod.getAccessFlags().isAbstract() &&
-                            (theMethod != BytecodeLinkedClass.GET_CLASS_PLACEHOLDER) &&
-                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue())) {
+                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
+                            !"getEnumConstants".equals(theMethod.getName().stringValue())) {
 
                         final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                 .identifierFor(theMethod);
