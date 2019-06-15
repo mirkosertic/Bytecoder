@@ -43,7 +43,7 @@ jobs:
       script: true
     - stage: compile
       script: mvn clean install -P notest
-    - stage test
+    - stage: test
       script: mvn test -P jvmtestsonly
 
 
