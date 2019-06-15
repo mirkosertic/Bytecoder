@@ -29,11 +29,22 @@ before_install:
   - unzip ~/chromedriver_linux64.zip -d ~/
   - rm ~/chromedriver_linux64.zip
   - sudo chmod +x ~/chromedriver
-
-script:
   - whereis google-chrome-stable
   - whereis chromedriver
-  - mvn clean install -P jvmtestsonly
+
+stages:
+  - prepare cache
+  - compile
+  - test
+
+jobs:
+  include:
+    - stage: prepare cache
+      script: true;
+    - stage: compile
+      script: mvn clean install -P notest
+    - stage test
+      script: mvn test -P jvmtestsonly
 
 after_success:
   - codecov
