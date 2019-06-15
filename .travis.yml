@@ -31,16 +31,16 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
+  - whet https://raw.githubusercontent.com/KhronosGroup/SyclParallelSTL/master/.travis/install_intel_opencl.sh ~/
+  - chmod 755 install_intel_opencl.sh
+  - ./install_intel_opencl.sh
 
 stages:
-  - prepare cache
   - compile
   - test
 
 jobs:
   include:
-    - stage: prepare cache
-      script: false
     - stage: compile
       script: mvn clean install -P notest
     - stage: test
