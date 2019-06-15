@@ -24,6 +24,7 @@ python:
   - 2.7
 
 before_install:
+  - sudo apt install ocl-icd-opencl-dev
   - pip install --user codecov
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
@@ -31,9 +32,6 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
-  - wget -N https://raw.githubusercontent.com/KhronosGroup/SyclParallelSTL/master/.travis/install_intel_opencl.sh -P ~/
-  - chmod 755 ~/install_intel_opencl.sh
-  - sudo ~/install_intel_opencl.sh
 
 stages:
   - compile
