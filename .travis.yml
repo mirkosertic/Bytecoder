@@ -15,6 +15,10 @@ jdk:
 env:
   - CHROMEDRIVER_BINARY=~/chromedriver
 
+cache:
+  directories:
+    - $HOME/.m2
+
 python:
   - 2.7
 
