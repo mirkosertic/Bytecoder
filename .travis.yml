@@ -33,7 +33,7 @@ before_install:
   - whereis chromedriver
   - wget -N https://raw.githubusercontent.com/KhronosGroup/SyclParallelSTL/master/.travis/install_intel_opencl.sh -P ~/
   - chmod 755 install_intel_opencl.sh
-  - ./install_intel_opencl.sh
+  - sudo ./install_intel_opencl.sh
 
 stages:
   - compile
