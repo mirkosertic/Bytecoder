@@ -36,16 +36,9 @@ before_install:
 script:
   - mvn clean install -P jvmtestsonly
 
-stages:
-  - test
-  - jstarget
-
 jobs:
   include:
-    - stage: test
-      name: "Compile- and Unittests"
     - stage: jstarget
-      name: "Integration tests"
       script: jdk_switcher use openjdk8 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
     - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
     - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
