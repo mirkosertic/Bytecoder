@@ -32,6 +32,7 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
+  - sudo chmod +x sdkman.sh
 
 script:
   - mvn clean install -P jvmtestsonly
@@ -40,16 +41,16 @@ jobs:
   include:
     - stage: "Compiler Target Tests"
       name: "JS Target OpenJDK 8"
-      script: jdk_switcher use 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: jdk_switcher use 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+      script: ./sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ./sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 11"
-    - script: jdk_switcher use 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ./sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 12"
-    - script: jdk_switcher use 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 8"
-    - script: jdk_switcher use 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 11"
-    - script: jdk_switcher use 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 12"
 
 after_success:
