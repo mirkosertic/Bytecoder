@@ -27,6 +27,7 @@ python:
   - 2.7
 
 before_install:
+  - find / | grep "install-jdk.sh"
   - pwd
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
@@ -34,7 +35,6 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
-  - sudo chmod +x sdkman.sh
   - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
   - sudo chmod +x ~/install-jdk.sh
 
