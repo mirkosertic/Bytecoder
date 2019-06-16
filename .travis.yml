@@ -36,12 +36,16 @@ before_install:
 script:
   - mvn clean install -P notest
 
+stages:
+  - test
+
 jobs:
   include:
-    - script: mvn test -P jvmtestsonly
-    - script: mvn test -P jstestsonly
-
-
+    - stage: test
+      name: "Unit tests"
+      script: mvn -pl '!bytecoder-integrationtest' test -P jvmtestsonly
+    - script: mvn -pl '!bytecoder-integrationtest' test -P jstestsonly
+    - script: mvn -pl '!bytecoder-integrationtest' test -P wasmtestsonly
 
 after_success:
   - codecov
