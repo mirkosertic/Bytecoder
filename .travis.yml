@@ -39,10 +39,6 @@ script:
 jobs:
   include:
     - stage: "JavaScript Target Tests"
-      env:
-        - JDK=openjdk8
-        - JDK=openjdk11
-        - JDK=openjdk12
       script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
     - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
     - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
