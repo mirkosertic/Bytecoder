@@ -42,7 +42,6 @@ stages:
 jobs:
   include:
     - stage: test
-      name: "Unit tests"
       script: mvn -pl '!bytecoder-integrationtest' test -P jvmtestsonly
 
 after_success:
