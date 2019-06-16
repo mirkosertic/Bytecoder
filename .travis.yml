@@ -39,9 +39,9 @@ script:
 jobs:
   include:
     - stage: "JavaScript Target Tests"
-      script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
-    - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
-    - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
+      script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
 
 after_success:
   - codecov
