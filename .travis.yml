@@ -36,10 +36,6 @@ before_install:
 script:
   - mvn clean install -P notest
 
-stages:
-  - compile
-  - test
-
 jobs:
   include:
     - stage: test
