@@ -38,8 +38,8 @@ script:
 
 jobs:
   include:
-    - stage: jstarget
-      script: jdk_switcher use openjdk8 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
+    - stage: "JavaScript Target Tests"
+      script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
     - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
     - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
