@@ -33,14 +33,15 @@ before_install:
   - whereis google-chrome-stable
   - whereis chromedriver
 
+script:
+  - mvn clean install -P notest
+
 stages:
   - compile
   - test
 
 jobs:
   include:
-    - stage: compile
-      script: mvn clean install -P notest
     - stage: test
       script: mvn test -P jvmtestsonly
 
