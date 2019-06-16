@@ -26,6 +26,7 @@ python:
 
 before_install:
   - pwd
+  - ls -la
   - pip install --user codecov
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
@@ -33,7 +34,7 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
-  - sudo chmod +x ~/sdkman.sh
+  - sudo chmod +x sdkman.sh
 
 install: true
 
@@ -45,15 +46,15 @@ jobs:
     - stage: "Compiler Target Tests"
       name: "JS Target OpenJDK 8"
       script: ./sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: /sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ./sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 11"
-    - script: /sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ./sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 12"
-    - script: /sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 8"
-    - script: /sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 11"
-    - script: /sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 12"
 
 after_success:
