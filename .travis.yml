@@ -4,6 +4,7 @@ addons:
   apt:
     packages:
       - google-chrome-stable
+      - ocl-icd-opencl-dev
 
 language: java
 
@@ -24,7 +25,6 @@ python:
   - 2.7
 
 before_install:
-  - sudo apt install ocl-icd-opencl-dev
   - pip install --user codecov
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
