@@ -29,6 +29,7 @@ python:
 before_install:
   - pwd
   - ls -la
+  - ls -la /usr/lib/jvm/*
   - pip install --user codecov
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
