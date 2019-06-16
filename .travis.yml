@@ -34,6 +34,8 @@ before_install:
   - whereis chromedriver
   - sudo chmod +x sdkman.sh
 
+install: true
+
 script:
   - mvn clean install -P jvmtestsonly
 
