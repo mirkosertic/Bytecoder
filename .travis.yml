@@ -28,9 +28,6 @@ python:
 
 before_install:
   - pwd
-  - ls -la
-  - ls -la /usr/lib/jvm/*
-  - pip install --user codecov
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
   - rm ~/chromedriver_linux64.zip
@@ -38,6 +35,8 @@ before_install:
   - whereis google-chrome-stable
   - whereis chromedriver
   - sudo chmod +x sdkman.sh
+  - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
+  - sudo chmod +x ~/install-jdk.sh
 
 install: true
 
@@ -48,17 +47,14 @@ jobs:
   include:
     - stage: "Compiler Target Tests"
       name: "JS Target OpenJDK 8"
-      script: ./sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: ./sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+      script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ~/install-jdk.sh -F 11 -L GPL && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 11"
-    - script: ./sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ~/install-jdk.sh -F 12 -L GPL && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 12"
-    - script: ./sdkman.sh 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 8"
-    - script: ./sdkman.sh 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ~/install-jdk.sh -F 11 -L GPL && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 11"
-    - script: ./sdkman.sh 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ~/install-jdk.sh -F 12 -L GPL && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 12"
-
-after_success:
-  - codecov
