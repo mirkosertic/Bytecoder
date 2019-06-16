@@ -32,7 +32,7 @@ before_install:
   - whereis chromedriver
 
 script:
-  - mvn -clean install -P jvmtestsonly
+  - mvn clean install -P jvmtestsonly
 
 stages:
   - test
