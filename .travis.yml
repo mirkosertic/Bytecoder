@@ -34,7 +34,7 @@ before_install:
   - whereis chromedriver
 
 script:
-  - mvn clean install -P notest
+  - ls
 
 stages:
   - test
@@ -43,7 +43,7 @@ jobs:
   include:
     - stage: test
       name: "Unit tests"
-      script: mvn -pl '!bytecoder-integrationtest' test -P jvmtestsonly
+      script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
 after_success:
   - codecov
