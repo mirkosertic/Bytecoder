@@ -365,13 +365,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 theWriter.println("                                 console.log(\"Starting main method\")");
                 theWriter.println("                                 bytecoder.exports.main(theTest);");
                 theWriter.println("                                 console.log(\"Main finished\")");
-                theWriter.println("                                 bytecoder.exports.logMemoryLayout(0);");
-                theWriter.println("                                 wasmHexDump(bytecoder.runningInstanceMemory);");
+                theWriter.println("                                 // bytecoder.exports.logMemoryLayout(0);");
+                theWriter.println("                                 // wasmHexDump(bytecoder.runningInstanceMemory);");
                 theWriter.println("                                 console.log(\"Test finished OK\")");
                 theWriter.println("                             } catch (e) {");
                 theWriter.println("                                 console.log(\"Test threw error\")");
-                theWriter.println("                                 bytecoder.exports.logMemoryLayout(0);");
-                theWriter.println("                                 wasmHexDump(bytecoder.runningInstanceMemory);");
+                theWriter.println("                                 // bytecoder.exports.logMemoryLayout(0);");
+                theWriter.println("                                 // wasmHexDump(bytecoder.runningInstanceMemory);");
                 theWriter.println("                                 throw e;");
                 theWriter.println("                             }");
                 theWriter.println("                         },");
@@ -385,8 +385,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 theWriter.println("                    console.log(e.toString());");
                 theWriter.println("                    console.log(e.stack);");
                 theWriter.println("                    if (bytecoder.runningInstance) {");
-                theWriter.println("                         bytecoder.exports.logMemoryLayout(0);");
-                theWriter.println("                         wasmHexDump(bytecoder.runningInstanceMemory);");
+                theWriter.println("                         // bytecoder.exports.logMemoryLayout(0);");
+                theWriter.println("                         // wasmHexDump(bytecoder.runningInstanceMemory);");
                 theWriter.println("                    }");
                 theWriter.println("                }");
                 theWriter.println("            }");
