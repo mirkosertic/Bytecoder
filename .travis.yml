@@ -40,9 +40,7 @@ stages:
 jobs:
   include:
     - stage: test
-      jdk:
-        - openjdk11
-        - openjdk12
+      jdk: openjdk12
       name: "Unit tests"
       script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
