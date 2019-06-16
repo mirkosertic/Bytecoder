@@ -14,12 +14,14 @@ jdk:
   - openjdk12
 
 env:
-  - CHROMEDRIVER_BINARY=~/chromedriver
+  global:
+    - CHROMEDRIVER_BINARY=~/chromedriver
 
 cache:
   directories:
     - $HOME/.m2
     - $HOME/cache/pip
+    - $HOME/cache/install-jdk
 
 python:
   - 2.7
