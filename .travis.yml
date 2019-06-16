@@ -38,8 +38,9 @@ script:
 
 jobs:
   include:
-    - stage: test
-      script: mvn test -P jvmtestsonly
+    - script: mvn test -P jvmtestsonly
+    - script: mvn test -P jstestsonly
+
 
 
 after_success:
