@@ -23,8 +23,6 @@ cache:
     - $HOME/cache/install-jdk
 
 before_install:
-  - find / | grep "install-jdk.sh"
-  - pwd
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
   - unzip ~/chromedriver_linux64.zip -d ~/
   - rm ~/chromedriver_linux64.zip
