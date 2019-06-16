@@ -38,12 +38,15 @@ script:
 
 stages:
   - test
-  - integrationtest
+  - jstarget
 
 jobs:
   include:
-    - stage: integrationtest
-      jdk: openjdk12
+    - stage: jstarget
+      jdk:
+        - openjdk8
+        - openjdk11
+        - openjdk12
       name: "Integration tests"
       script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
