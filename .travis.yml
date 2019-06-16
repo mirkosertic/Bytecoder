@@ -39,12 +39,18 @@ script:
 jobs:
   include:
     - stage: "Compiler Target Tests"
+      name: "JS Target OpenJDK 8"
       script: jdk_switcher use 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
     - script: jdk_switcher use 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+      name: "JS Target OpenJDK 11"
     - script: jdk_switcher use 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+      name: "JS Target OpenJDK 12"
     - script: jdk_switcher use 'openjdk8' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      name: "WASM Target OpenJDK 8"
     - script: jdk_switcher use 'openjdk11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      name: "WASM Target OpenJDK 11"
     - script: jdk_switcher use 'openjdk12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      name: "WASM Target OpenJDK 12"
 
 after_success:
   - codecov
