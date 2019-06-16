@@ -43,13 +43,13 @@ jobs:
     - stage: "Compiler Target Tests"
       name: "JS Target OpenJDK 8"
       script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: ./jdkman.sh 'openjdk11' '11' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ./jdkman.sh openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 11"
-    - script: ./jdkman.sh 'openjdk12' '12' && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: ./jdkman.sh openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       name: "JS Target OpenJDK 12"
     - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 8"
-    - script: ./jdkman.sh 'openjdk11' '11' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./jdkman.sh openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 11"
-    - script: ./jdkman.sh 'openjdk12' '12' && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+    - script: ./jdkman.sh openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 12"
