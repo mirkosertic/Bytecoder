@@ -10,11 +10,12 @@ language: java
 
 jdk:
   - openjdk8
-  - openjdk11
-  - openjdk12
 
 env:
   - CHROMEDRIVER_BINARY=~/chromedriver
+  - JDK=openjdk8
+  - JDK=openjdk11
+  - JDK=openjdk12
 
 cache:
   directories:
@@ -32,6 +33,7 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
+  - jdk_switcher use $JDK
 
 script:
   - mvn clean install -P jvmtestsonly
@@ -39,12 +41,30 @@ script:
 jobs:
   include:
     - stage: "Compiler Target Tests"
-      script: jdk_switcher use openjdk8 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
-    - script: jdk_switcher use openjdk8 && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
-    - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
-    - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      env:
+        - CHROMEDRIVER_BINARY=~/chromedriver
+        - JDK=openjdk8
+      script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+    - script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+      env:
+        - CHROMEDRIVER_BINARY=~/chromedriver
+        - JDK=openjdk11
+    - script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
+      env:
+        - CHROMEDRIVER_BINARY=~/chromedriver
+        - JDK=openjdk12
+    - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      env:
+        - CHROMEDRIVER_BINARY=~/chromedriver
+        - JDK=openjdk8
+    - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      env:
+        - CHROMEDRIVER_BINARY=~/chromedriver
+        - JDK=openjdk11
+    - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
+      env:
+        - CHROMEDRIVER_BINARY=~/chromedriver
+        - JDK=openjdk112
 
 after_success:
   - codecov
