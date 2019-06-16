@@ -10,6 +10,8 @@ language: java
 
 jdk:
   - openjdk8
+  - openjdk11
+  - openjdk12
 
 env:
   - CHROMEDRIVER_BINARY=~/chromedriver
@@ -40,7 +42,9 @@ stages:
 jobs:
   include:
     - stage: test
-      jdk: openjdk12
+      jdk:
+        - openjdk11
+        - openjdk12
       name: "Unit tests"
       script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
