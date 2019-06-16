@@ -32,6 +32,8 @@ before_install:
   - whereis google-chrome-stable
   - whereis chromedriver
   - sudo chmod +x jdkman.sh
+  - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
+  - sudo chmod +x ~/install-jdk.sh
 
 install: true
 
