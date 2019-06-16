@@ -42,13 +42,13 @@ stages:
 
 jobs:
   include:
+    - stage: test
+      name: "Compile- and Unittests"
     - stage: jstarget
-      jdk:
-        - openjdk8
-        - openjdk11
-        - openjdk12
       name: "Integration tests"
-      script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
+      script: jdk_switcher use openjdk8 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
+    - script: jdk_switcher use openjdk11 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
+    - script: jdk_switcher use openjdk12 && mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
 after_success:
   - codecov
