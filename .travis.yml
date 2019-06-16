@@ -34,16 +34,17 @@ before_install:
   - whereis chromedriver
 
 script:
-  - mvn clean install -P notest
+  - mvn clean install -P jvmtestsonly
 
 stages:
   - test
+  - integrationtest
 
 jobs:
   include:
-    - stage: test
+    - stage: integrationtest
       jdk: openjdk12
-      name: "Unit tests"
+      name: "Integration tests"
       script: mvn -pl '!:bytecoder-integrationtest' test -P jvmtestsonly
 
 after_success:
