@@ -43,9 +43,9 @@ jobs:
   include:
     - stage: test
       name: "Unit tests"
-      script: mvn -pl '!bytecoder-integrationtest' test -P jvmtestsonly
-    - script: mvn -pl '!bytecoder-integrationtest' test -P jstestsonly
-    - script: mvn -pl '!bytecoder-integrationtest' test -P wasmtestsonly
+      - script: mvn -pl '!bytecoder-integrationtest' test -P jvmtestsonly
+      - script: mvn -pl '!bytecoder-integrationtest' test -P jstestsonly
+      - script: mvn -pl '!bytecoder-integrationtest' test -P wasmtestsonly
 
 after_success:
   - codecov
