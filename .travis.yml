@@ -13,9 +13,9 @@ jdk:
 
 env:
   - CHROMEDRIVER_BINARY=~/chromedriver
-  - JDK=openjdk8
-  - JDK=openjdk11
-  - JDK=openjdk12
+  - BUILDJDK=openjdk8
+  - BUILDJDK=openjdk11
+  - BUILDJDK=openjdk12
 
 cache:
   directories:
@@ -33,7 +33,7 @@ before_install:
   - sudo chmod +x ~/chromedriver
   - whereis google-chrome-stable
   - whereis chromedriver
-  - jdk_switcher use $JDK
+  - jdk_switcher use $BUILDJDK
 
 script:
   - mvn clean install -P jvmtestsonly
@@ -43,28 +43,28 @@ jobs:
     - stage: "Compiler Target Tests"
       env:
         - CHROMEDRIVER_BINARY=~/chromedriver
-        - JDK=openjdk8
+        - BUILDJDK=openjdk8
       script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
     - script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       env:
         - CHROMEDRIVER_BINARY=~/chromedriver
-        - JDK=openjdk11
+        - BUILDJDK=openjdk11
     - script: mvn -pl '!:bytecoder-integrationtest' test -P jstestsonly
       env:
         - CHROMEDRIVER_BINARY=~/chromedriver
-        - JDK=openjdk12
+        - BUILDJDK=openjdk12
     - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       env:
         - CHROMEDRIVER_BINARY=~/chromedriver
-        - JDK=openjdk8
+        - BUILDJDK=openjdk8
     - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       env:
         - CHROMEDRIVER_BINARY=~/chromedriver
-        - JDK=openjdk11
+        - BUILDJDK=openjdk11
     - script: mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       env:
         - CHROMEDRIVER_BINARY=~/chromedriver
-        - JDK=openjdk112
+        - BUILDJDK=openjdk112
 
 after_success:
   - codecov
