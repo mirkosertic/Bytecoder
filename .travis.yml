@@ -46,7 +46,6 @@ deploy:
     skip_cleanup: true
     on:
       repo: mirkosertic/Bytecoder
-      branch: '#171'
       jdk: openjdk8
   - provider: script
     script: .travis/deploy.sh
