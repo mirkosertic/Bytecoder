@@ -281,10 +281,8 @@
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
-                                    <configuration>
-                                        <keyname>mirko@mirkosertic.de</keyname>
-                                        <passphraseServerId>mirko@mirkosertic.de</passphraseServerId>
-                                    </configuration>
+                                    <keyname>mirko@mirkosertic.de</keyname>
+                                    <passphraseServerId>mirko@mirkosertic.de</passphraseServerId>
                                 </configuration>
                             </execution>
                         </executions>
