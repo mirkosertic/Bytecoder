@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -96,6 +97,7 @@ public class OpaqueReferenceTest {
     }
 
     @Test
+    @Ignore
     public void testFetchAPI() {
         final Window w = Window.window();
         final Console c = Console.console();
