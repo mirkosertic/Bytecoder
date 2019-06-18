@@ -36,7 +36,7 @@ before_install:
 install: true
 
 script:
-  - mvn clean install -P jvmtestsonly -P signed
+  - mvn clean install -P jvmtestsonly
 
 jobs:
   include:
