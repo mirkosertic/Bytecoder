@@ -280,10 +280,6 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
-                                <configuration>
-                                    <keyname>mirko@mirkosertic.de</keyname>
-                                    <passphraseServerId>mirko@mirkosertic.de</passphraseServerId>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

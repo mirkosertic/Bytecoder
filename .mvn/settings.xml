@@ -19,5 +19,28 @@
             <id>0D9F1DB8</id>
             <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
         </server>
+
+        <server>
+            <id>mirko@mirkosertic.de</id>
+            <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
+        </server>
+
+        <server>
+            <id>gpg.passphrase</id>
+            <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
+        </server>
     </servers>
+
+    <profiles>
+        <profile>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <id>signed-release</id>
+            <properties>
+                <gpg.keyname>0D9F1DB8</gpg.keyname>
+            </properties>
+        </profile>
+    </profiles>
+
 </settings>
