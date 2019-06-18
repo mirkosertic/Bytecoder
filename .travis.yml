@@ -32,8 +32,8 @@ before_install:
   - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
   - sudo chmod +x ~/install-jdk.sh
   - sudo chmod +x .travis/deploy.sh
-  - if [ ! -z "$GPG_SECRET_KEYS" ]; then echo $GPG_SECRET_KEYS | base64 --decode | gpg --import; fi
-  - if [ ! -z "$GPG_OWNERTRUST" ]; then echo $GPG_OWNERTRUST | base64 --decode | gpg --import-ownertrust; fi
+  - openssl aes-256-cbc -K  -iv  -in ./travis/gpg.all.enc -out ./gpg.all -d
+  - gpg --import ./all.gpg
 
 install: true
 
