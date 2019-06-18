@@ -20,7 +20,7 @@ env:
 cache:
   directories:
     - $HOME/.m2
-    - $HOME/cache/install-jdk
+    - $HOME/.cache/install-jdk
 
 before_install:
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/

@@ -16,7 +16,7 @@
         </server>
 
         <server>
-            <id>mirko@mirkosertic.de</id>
+            <id>0D9F1DB8</id>
             <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
         </server>
     </servers>
