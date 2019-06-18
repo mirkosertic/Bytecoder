@@ -11,4 +11,4 @@ else
     echo "not on a tag -> keep snapshot version in pom.xml"
 fi
 
-mvn clean deploy --settings .mvn/settings.xml -P notest -P signed
+mvn --settings .mvn/settings.xml clean deploy -P notest -P signed
