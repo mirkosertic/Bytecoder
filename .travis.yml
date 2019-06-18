@@ -32,13 +32,11 @@ before_install:
   - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
   - sudo chmod +x ~/install-jdk.sh
   - sudo chmod +x .travis/deploy.sh
-  - openssl aes-256-cbc -K $encrypted_41bc8c83cf90_key -iv $encrypted_41bc8c83cf90_iv -in .travis/gpg.all.enc -out ./all.gpg -d
-  - gpg --import ./all.gpg
 
 install: true
 
 script:
-  - mvn --settings .mvn/settings.xml clean install -P jvmtestsonly -P signed
+  - mvn clean install -P jvmtestsonly -P signed
 
 jobs:
   include:
