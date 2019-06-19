@@ -82,7 +82,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("var theNewString").assign().text("new ").text(theMinifier.toClassName(theStringTypeRef)).text(".C();").newLine();
         theWriter.tab(2).text("var theBytes").assign().text("new ").text(theMinifier.toClassName(theArrayTypeRef)).text(".C();").newLine();
         theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
-        theWriter.tab(2).text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("init", theStringConstructorSignature)).text("(theNewString,theBytes);").newLine();
+        theWriter.tab(2).text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("init", theStringConstructorSignature)).text(".call(theNewString,theBytes);").newLine();
         theWriter.tab(2).text("return theNewString;").newLine();
         theWriter.tab().text("},").newLine();
 
@@ -139,7 +139,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("get").colon().text("function(target,name)").space().text("{").newLine();
         theWriter.tab(4).text("return function()").space().text("{").newLine();
         theWriter.tab(5).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(5).text("return aFunction.apply(target,staticArguments.data.concat(args.splice(1)));").newLine();
+        theWriter.tab(5).text("return aFunction.apply(target,args);").newLine();
         theWriter.tab(4).text("}").newLine();
         theWriter.tab(3).text("}").newLine();
         theWriter.tab(2).text("});").newLine();
@@ -168,11 +168,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("nanoTime").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now() * 1000000;").newLine();
         theWriter.tab(3).text("},").newLine();
-        theWriter.tab(3).text("writeCharArrayToConsole").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
+        theWriter.tab(3).text("writeCharArrayToConsole").colon().text("function(p1)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.logCharArrayAsString(p1);").newLine();
-        theWriter.tab(3).text("},").newLine();
-        theWriter.tab(3).text("logDebugObject").colon().text("function(").text(Variable.THISREF_NAME).text(",p1)").space().text("{").newLine();
-        theWriter.tab(4).text("bytecoder.logDebug(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
@@ -382,11 +379,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab(2).text("return ").text(theJSClassName).text(".__implementedTypes.includes(aType.__typeId);").newLine();
                 theWriter.tab().text("},").newLine();
 
-                theWriter.tab().text(theGetNameMethodName).colon().text("function(_tr)").space().text("{").newLine();
+                theWriter.tab().text(theGetNameMethodName).colon().text("function()").space().text("{").newLine();
                 if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
                     theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
                 } else {
-                    theWriter.tab(2).text("return _tr.").text(theGetNameMethodName).text("();").newLine();
+                    theWriter.tab(2).text("return this.").text(theGetNameMethodName).text("();").newLine();
                 }
                 theWriter.tab().text("},").newLine();
             }
@@ -441,11 +438,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                 final StringBuilder theArguments = new StringBuilder();
+                boolean first = true;
                 for (final Program.Argument theArgument : theSSAProgram.getArguments()) {
-                    if (0 < theArguments.length()) {
-                        theArguments.append(',');
+                    if (!Variable.THISREF_NAME.equals(theArgument.getVariable().getName())) {
+                        if (!first) {
+                            theArguments.append(',');
+                        }
+                        theArguments.append(theMinifier.toVariableName(theArgument.getVariable().getName()));
+                        first = false;
                     }
-                    theArguments.append(theMinifier.toVariableName(theArgument.getVariable().getName()));
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {
