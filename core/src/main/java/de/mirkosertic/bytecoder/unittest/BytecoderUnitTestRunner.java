@@ -184,7 +184,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 theCodeWriter.println("bytecoder.bootstrap();");
                 theCodeWriter.println("var theTestInstance = new " + result.getMinifier().toClassName(theTypeRef) + ".C();");
                 theCodeWriter.println("try {");
-                theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "(theTestInstance);");
+                theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "();");
                 theCodeWriter.println("     console.log(\"Test finished OK\");");
                 theCodeWriter.println("} catch (e) {");
                 theCodeWriter.println("     if (e.exception) {");
