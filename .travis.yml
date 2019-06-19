@@ -20,7 +20,7 @@ env:
 cache:
   directories:
     - $HOME/.m2
-    - $HOME/cache/install-jdk
+    - $HOME/.cache/install-jdk
 
 before_install:
   - wget -N http://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip -P ~/
@@ -31,6 +31,7 @@ before_install:
   - whereis chromedriver
   - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
   - sudo chmod +x ~/install-jdk.sh
+  - sudo chmod +x .travis/deploy.sh
 
 install: true
 
@@ -52,3 +53,20 @@ jobs:
       name: "WASM Target OpenJDK 11"
     - script: ~/install-jdk.sh -W /home/travis/openjdk12 -F 12 -L GPL && mvn -pl '!:bytecoder-integrationtest' test -P wasmtestsonly
       name: "WASM Target OpenJDK 12"
+    - stage: "Deploy to Maven Central"
+      script: skip
+      deploy:
+        - provider: script
+          script: bash .travis/deploy.sh
+          skip_cleanup: true
+          on:
+            repo: mirkosertic/Bytecoder
+            branch: master
+            jdk: openjdk8
+        - provider: script
+          script: .travis/deploy.sh
+          skip_cleanup: true
+          on:
+            repo: mirkosertic/Bytecoder
+            tags: true
+            jdk: openjdk8
