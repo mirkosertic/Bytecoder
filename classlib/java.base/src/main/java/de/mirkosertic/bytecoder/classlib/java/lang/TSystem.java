@@ -30,7 +30,7 @@ public class TSystem {
         private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         @Import(module = "system", name = "writeCharArrayToConsole")
-        public native void writeCharArrayToConsole(char[] aBytes);
+        public static native void writeCharArrayToConsole(char[] aBytes);
 
         @Override
         public void write(final int b) {

@@ -721,7 +721,7 @@ public class JSSSAWriter {
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
                 writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
             }
-            writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+            writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
 
             print(theTarget);
 
@@ -870,9 +870,13 @@ public class JSSSAWriter {
             writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
         }
 
-        print(theTarget);
+        boolean first = true;
         for (final Value theArgument : theArguments) {
-            writer.text(",");
+            if (!first) {
+                writer.text(",");
+            } else {
+                first = false;
+            }
             print(theArgument);
         }
         writer.text(")");
@@ -887,7 +891,11 @@ public class JSSSAWriter {
     }
 
     private void printVariableName(final Variable aVariable) {
-        writer.text(minifier.toVariableName(aVariable.getName()));
+        if (Variable.THISREF_NAME.equals(aVariable.getName())) {
+            writer.text("this");
+        } else {
+            writer.text(minifier.toVariableName(aVariable.getName()));
+        }
     }
 
     private void printStaticFieldReference(final BytecodeFieldRefConstant aField, final DebugPosition aPosition) {
