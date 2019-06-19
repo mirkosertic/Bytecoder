@@ -53,7 +53,7 @@
 
     // dynamic linking
     bytecoder.imports.debug = {
-        logRuntime : function(aClass, a) {
+        logRuntime : function(a) {
             lastRuntimeTimeSeries.push(a);
             if (lastRuntimeTimeSeries.length > 500) {
                 lastRuntimeTimeSeries.shift();
