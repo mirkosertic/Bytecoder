@@ -96,7 +96,7 @@ public class OpaqueReferenceTest {
         Assert.assertSame(w, w2);
     }
 
-/*    @Test
+    @Test
     @Ignore
     public void testFetchAPI() {
         final Window w = Window.window();
@@ -121,7 +121,7 @@ public class OpaqueReferenceTest {
         while(fetched[0] == null && counter++ < 1000) {
             c.log("Waiting");
         }
-    }*/
+    }
 
     @Test
     public void testInt8Array() {
