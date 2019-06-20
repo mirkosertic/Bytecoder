@@ -78,6 +78,14 @@ public class TArrays {
         return theResult;
     }
 
+    public static Object[] copyOfRange(final Object[] original, final int from, final int to) {
+        final Object[] theResult = new Object[to - from];
+        for (int i=from;i<to;i++) {
+            theResult[i-from] = original[i];
+        }
+        return theResult;
+    }
+
     public static int[] copyOfRange(final int[] original, final int from, final int to) {
         final int[] theResult = new int[to - from];
         for (int i=from;i<to;i++) {
