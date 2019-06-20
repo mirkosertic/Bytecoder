@@ -74,7 +74,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                     || Modifier.isAbstract(modifiers)) {
                 continue;
             }
-            if (classMethod.getAnnotation(Ignore.class) == null) {
+            if (!classMethod.isAnnotationPresent(Ignore.class)) {
                 final String methodName = classMethod.getName();
                 if (methodName.toUpperCase().startsWith("TEST")
                         || null != classMethod.getAnnotation(Test.class)) {
