@@ -1,45 +1,92 @@
 <html>
     <body>
         <script>
+            var InitProxyHandler = function() {
+                var C = function(selfRef) {
+                    this.selfRef = selfRef;
+                    this.initialized = false;
+                };
+                C.prototype.construct =  function() {
+                    if (!this.initialized) {
+                        this.initialized = true;
+                        this.selfRef.initialize();
+                    }
+                    return new this.selfRef();
+                };
+                C.prototype.get = function(target, prop, receiver) {
+                    if (!this.initialized) {
+                        this.initialized = true;
+                        this.selfRef.initialize();
+                    }
+                    return this.selfRef[prop];
+                };
+                C.prototype.set = function(obj, prop, value) {
+                    if (!this.initialized) {
+                        this.initialized = true;
+                        this.selfRef.initialize();
+                    }
+                    this.selfRef[prop] = value;
+                };
+                return C;
+            }();
+
             var jlObject = function() {
 
-                var constructor = function() {
+                var C = function() {
+                    this.property1 = 'Defaultvalue1';
+                };
+                C.STATICMEMBER = 10;
+                C.VOIDinit = function() {
                 };
 
-                constructor.prototype.clone = function() {
+                C.prototype.constructor = C;
+                C.prototype.clone = function() {
                     return this;
                 };
-                constructor.prototype.getClass = function() {
-                    return jlObject;
-                };
-                constructor.getName = function() {
+
+                C.getName = function() {
                     return 'java.lang.Object';
                 };
 
-                return constructor;
+                C.initialize = function() {
+                    console.log("Initialized " + C.getName());
+                };
+
+                return new Proxy(C, new InitProxyHandler(C));
             }();
 
-
             var jlMath = function() {
-                var constructor = function() {
+                var C = function() {
+                    jlObject.prototype.constructor.call(this);
+                    this.property2 = 'Defaultvalue2';
+                };
+                C.VOIDinit = function() {
+                    jlObject.VOIDinit.call(this);
                 };
 
-                constructor.prototype = Object.create(jlObject.prototype);
-                constructor.prototype.constructor = constructor;
-                constructor.prototype.add = function(a, b) {
+                C.prototype = Object.create(jlObject.prototype);
+                C.prototype.constructor = C;
+                C.prototype.add = function(a, b) {
                     return a + b;
                 };
-                constructor.prototype.getClass = function() {
-                    return jlMath;
-                };
-                constructor.getName = function() {
-                    return "java.lang.Math";
+
+                C.getName = function() {
+                    return 'java.lang.Math';
                 };
 
-                return constructor;
+                C.initialize = function() {
+                    console.log("Initialized " + C.getName());
+                };
+
+                return new Proxy(C, new InitProxyHandler(C));
             }();
 
             var obj = new jlObject();
+            jlObject.VOIDinit.call(obj);
+            console.log(jlObject.STATICMEMBER);
+            jlObject.STATICMEMBER = 33;
+            console.log(jlObject.STATICMEMBER);
+
             var math = new jlMath();
             var cl = math.clone();
 
@@ -47,8 +94,9 @@
             console.log(math);
             console.log(cl);
             console.log(math.add(10,20));
-            console.log(obj.getClass().getName());
-            console.log(math.getClass().getName());
+            console.log(obj.constructor.getName());
+            console.log(math.constructor.getName());
+            console.log(math);
         </script>
     </body>
 </html>
