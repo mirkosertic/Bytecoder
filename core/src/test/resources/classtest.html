@@ -33,7 +33,6 @@
             var jlObject = function() {
 
                 var C = function() {
-                    this.property1 = 'Defaultvalue1';
                 };
                 C.STATICMEMBER = 10;
                 C.VOIDinit = function() {
@@ -43,6 +42,7 @@
                 C.prototype.clone = function() {
                     return this;
                 };
+                C.prototype.property1 = 'Defaultvalue1';
 
                 C.getName = function() {
                     return 'java.lang.Object';
@@ -57,8 +57,6 @@
 
             var jlMath = function() {
                 var C = function() {
-                    jlObject.prototype.constructor.call(this);
-                    this.property2 = 'Defaultvalue2';
                 };
                 C.VOIDinit = function() {
                     jlObject.VOIDinit.call(this);
@@ -69,6 +67,7 @@
                 C.prototype.add = function(a, b) {
                     return a + b;
                 };
+                C.prototype.property2 = 'Defaultvalue2';
 
                 C.getName = function() {
                     return 'java.lang.Math';
@@ -97,6 +96,11 @@
             console.log(obj.constructor.getName());
             console.log(math.constructor.getName());
             console.log(math);
+            console.log(obj.property1);
+            console.log(math.property1);
+            obj.property1 = 'Test';
+            console.log(obj.property1);
+            console.log(math.property1);
         </script>
     </body>
 </html>
