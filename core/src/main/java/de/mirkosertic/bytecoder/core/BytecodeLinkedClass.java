@@ -122,9 +122,11 @@ public class BytecodeLinkedClass extends Node {
             final BytecodeLinkedClass theLinkedClass = (BytecodeLinkedClass) edge.targetNode();
             theResult.addAll(theLinkedClass.getImplementingTypes());
         });
-        final BytecodeLinkedClass theSuperClass = getSuperClass();
-        if (theSuperClass != null && aIncludeSuperClass) {
-            theResult.addAll(theSuperClass.getImplementingTypes());
+        if (aIncludeSuperClass) {
+            final BytecodeLinkedClass theSuperClass = getSuperClass();
+            if (theSuperClass != null) {
+                theResult.addAll(theSuperClass.getImplementingTypes());
+            }
         }
         return theResult;
     }

@@ -307,12 +307,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final ConstantPool thePool = new ConstantPool();
 
-        aLinkerContext.linkedClasses().forEach(theEntry -> {
+        final BytecodeTopologicOrder theOrderedClasses = new BytecodeTopologicOrder(aLinkerContext);
 
-            final BytecodeLinkedClass theLinkedClass = theEntry.targetNode();
+        theOrderedClasses.getClasses().stream().forEach(theEntry -> {
+
+            final BytecodeLinkedClass theLinkedClass = theEntry;
             final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
 
-            final String theJSClassName = theMinifier.toClassName(theEntry.edgeType().objectTypeRef());
+            final String theJSClassName = theMinifier.toClassName(theEntry.getClassName());
             theWriter.text("var ").text(theJSClassName).assign().text("{").newLine();
 
             // First of all, we add static fields required by the framework
@@ -567,11 +569,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
         }
 
-        aLinkerContext.linkedClasses().forEach(aEntry -> {
-            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.tab().text(theMinifier.toClassName(aEntry.edgeType().objectTypeRef())).text(".link();").newLine();
+        theOrderedClasses.getClasses().forEach(aEntry -> {
+            if (!aEntry.getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.tab().text(theMinifier.toClassName(aEntry.getClassName())).text(".link();").newLine();
             }
-            final BytecodeResolvedMethods theMethods = aEntry.targetNode().resolvedMethods();
+            final BytecodeResolvedMethods theMethods = aEntry.resolvedMethods();
             theMethods.stream().forEach(eMethod -> {
                 final BytecodeMethod theMethod = eMethod.getValue();
                 final BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
@@ -579,12 +581,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // If the method is provided by the runtime, we do not need to generate the implementation
                 final BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                 if (theAnnotation != null) {
-                    theWriter.tab().text("bytecoder.exports.").text(theAnnotation.getElementValueByName("value").stringValue()).assign().text(theMinifier.toClassName(aEntry.targetNode().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                    theWriter.tab().text("bytecoder.exports.").text(theAnnotation.getElementValueByName("value").stringValue()).assign().text(theMinifier.toClassName(aEntry.getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                 } else {
                     // If the method is the main method and not exported by annotation, it is
                     // exported by default name "main".
-                    if (aEntry.targetNode().getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName)) {
-                        theWriter.tab().text("bytecoder.exports.main").assign().text(theMinifier.toClassName(aEntry.targetNode().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                    if (aEntry.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName)) {
+                        theWriter.tab().text("bytecoder.exports.main").assign().text(theMinifier.toClassName(aEntry.getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                     }
                 }
             });
