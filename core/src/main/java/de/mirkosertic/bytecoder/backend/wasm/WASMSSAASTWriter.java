@@ -1165,7 +1165,7 @@ public class WASMSSAASTWriter {
             return call(function, arguments, aValue);
         }
 
-        if ("<init>".equals(theMethodName)) {
+        if (theMethod.isConstructor()) {
 
             final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
 
