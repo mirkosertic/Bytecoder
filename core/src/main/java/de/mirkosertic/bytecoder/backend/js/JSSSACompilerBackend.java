@@ -462,24 +462,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     // But include static methods, as they are inherited from the base classes
                     if (aEntry.getValue().getAccessFlags().isStatic() && !aEntry.getValue().isClassInitializer()) {
 
-                        final StringBuilder theArguments = new StringBuilder();
-                        for (int i=0;i<theCurrentMethodSignature.getArguments().length;i++) {
-                            if (0 < i) {
-                                theArguments.append(',');
-                            }
-                            theArguments.append('p');
-                            theArguments.append(i);
-                        }
-
                         // Static methods will just delegate to the implementation in the class
-                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
-                        if (!theCurrentMethodSignature.getReturnType().isVoid()) {
-                            theWriter.tab(2).text("return ");
-                        } else {
-                            theWriter.tab(2);
-                        }
-                        theWriter.text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text("(").text(theArguments.toString()).text(");").newLine();
-                        theWriter.tab().text("};").newLine();
+                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).assign()
+                            .text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                    }
+                    if (aEntry.getProvidingClass().getBytecodeClass().getAccessFlags().isInterface()) {
+                        // Default method inherited from interface
+                        // Static methods will just delegate to the implementation in the class
+                        theWriter.tab().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).assign()
+                                .text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                     }
                     return;
                 }
