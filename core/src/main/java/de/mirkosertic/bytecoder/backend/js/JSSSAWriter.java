@@ -699,7 +699,7 @@ public class JSSSAWriter {
 
                 writer.text("function() {").text("var v = ");
                 print(aValue);
-                writer.text(";var args = Array.prototype.slice.call(arguments);v").text(".").text(theMethodName).text("(v");
+                writer.text(";var args = Array.prototype.slice.call(arguments);v").text(".").text(theMethodName).text(".call(v");
                 final BytecodeTypeRef[] theArguments = theCallbackMethod.getSignature().getArguments();
                 for (int i=0;i<theArguments.length;i++) {
                     writer.text(",");
