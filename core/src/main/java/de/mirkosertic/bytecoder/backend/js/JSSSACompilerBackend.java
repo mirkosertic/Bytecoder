@@ -153,7 +153,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("get").colon().text("function(target,name)").space().text("{").newLine();
         theWriter.tab(4).text("return function()").space().text("{").newLine();
         theWriter.tab(5).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(5).text("return aFunction.apply(target,staticArguments.data.concat(args));").newLine();
+        //theWriter.tab(5).text("return aFunction.apply(target,staticArguments.data.concat(args));").newLine();
+        theWriter.tab(5).text("return aFunction.apply(target,args);").newLine();
         theWriter.tab(4).text("}").newLine();
         theWriter.tab(3).text("}").newLine();
         theWriter.tab(2).text("});").newLine();
@@ -559,6 +560,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 theWriter.tab().text("};").newLine();
+
+                if (theMethod.isConstructor() || theMethod.getAccessFlags().isStatic()) {
+                } else {
+                    theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                        .assign().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                }
+
             });
 
             theWriter.tab().text("return C;").newLine();

@@ -352,11 +352,7 @@ public class JSSSAWriter {
         final BytecodeMethodSignature theSignature = aValue.getSignature();
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
         final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-        if (theMethod.getAccessFlags().isStatic()) {
-            writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
-        } else {
-            writer.text(minifier.toClassName(aValue.getClassName())).text(".prototype.").text(minifier.toMethodName(theMethodName, theSignature));
-        }
+        writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
     }
 
     private void print(final FloorExpression aValue) {
@@ -807,15 +803,7 @@ public class JSSSAWriter {
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-                if (theEntry.getValue().getAccessFlags().isStatic()) {
-                    writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
-                } else {
-                    if (theEntry.getProvidingClass().getClassName().name().equals(Class.class.getName())) {
-                        writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
-                    } else {
-                        writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName())).text(".prototype");
-                    }
-                }
+                writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
             }
             writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
 
