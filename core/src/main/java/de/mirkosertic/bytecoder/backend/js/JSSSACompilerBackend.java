@@ -160,10 +160,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("resolveStaticCallSiteObject").colon().text("function(aWhere,aKey,aProducerFunction)").space().text("{").newLine();
-        theWriter.tab(2).text("var resolvedCallsiteObject").assign().text("aWhere.__staticCallSites[aKey];").newLine();
+        theWriter.tab(2).text("var resolvedCallsiteObject").assign().text("aWhere.").text(theMinifier.toSymbol("__staticCallSites")).text("[aKey];").newLine();
         theWriter.tab(2).text("if").space().text("(resolvedCallsiteObject").space().text("==").space().text("null)").space().text("{").newLine();
         theWriter.tab(3).text("resolvedCallsiteObject").assign().text("aProducerFunction();").newLine();
-        theWriter.tab(3).text("aWhere.__staticCallSites[aKey]").assign().text("resolvedCallsiteObject;").newLine();
+        theWriter.tab(3).text("aWhere.").text(theMinifier.toSymbol("__staticCallSites")).text("[aKey]").assign().text("resolvedCallsiteObject;").newLine();
         theWriter.tab(2).text("}").newLine();
         theWriter.tab(2).text("return resolvedCallsiteObject;").newLine();
         theWriter.tab().text("},").newLine();
@@ -341,7 +341,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             // Framework-Specific methods
             theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
-            theWriter.tab().text("var ").text("__implementedTypes").assign().text("[");
+            theWriter.tab().text("var ").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
             {
                 boolean first = true;
                 for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
@@ -354,7 +354,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             }
             theWriter.text("];").newLine();
             theWriter.tab().text("C.").text("__typeId").assign().text("" + theLinkedClass.getUniqueId()).text(";").newLine();
-            theWriter.tab().text("C.").text("__staticCallSites").assign().text("[];").newLine();
+            theWriter.tab().text("C.").text(theMinifier.toSymbol("__staticCallSites")).assign().text("[];").newLine();
 
             // Init function
             theWriter.tab().text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
@@ -431,7 +431,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theWriter.tab().text("C.prototype.").text("iof").assign().text("function(aType)").space().text("{").newLine();
-                theWriter.tab(2).text("return ").text("__implementedTypes.includes(aType.__typeId);").newLine();
+                theWriter.tab(2).text("return ").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(aType.__typeId);").newLine();
                 theWriter.tab().text("};").newLine();
 
                 theWriter.tab().text("C.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
