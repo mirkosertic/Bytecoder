@@ -350,7 +350,13 @@ public class JSSSAWriter {
     private void print(final MethodRefExpression aValue) {
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
-        writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
+        final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+        if (theMethod.getAccessFlags().isStatic()) {
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
+        } else {
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".prototype.").text(minifier.toMethodName(theMethodName, theSignature));
+        }
     }
 
     private void print(final FloorExpression aValue) {
@@ -793,15 +799,15 @@ public class JSSSAWriter {
 
         final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
 
-        if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
+        if (theTargetClass.isOpaqueType() && !"<init>".equals(theMethodName)) {
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
-            if (theMethod.isConstructor()) {
+            if ("<init>".equals(theMethodName)) {
                 writer.text(minifier.toClassName(aValue.getClazz()));
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-                if (theMethod.getAccessFlags().isStatic()) {
+                if (theEntry.getValue().getAccessFlags().isStatic()) {
                     writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
                 } else {
                     if (theEntry.getProvidingClass().getClassName().name().equals(Class.class.getName())) {
