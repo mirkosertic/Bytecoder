@@ -153,8 +153,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("get").colon().text("function(target,name)").space().text("{").newLine();
         theWriter.tab(4).text("return function()").space().text("{").newLine();
         theWriter.tab(5).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        //theWriter.tab(5).text("return aFunction.apply(target,staticArguments.data.concat(args));").newLine();
-        theWriter.tab(5).text("return aFunction.apply(target,args);").newLine();
+        theWriter.tab(5).text("if (aFunction.static)").space().text("{").newLine();
+        theWriter.tab(6).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
+        theWriter.tab(6).text("return aFunction.apply(target,concated);").newLine();
+        theWriter.tab(5).text("}").newLine();
+        theWriter.tab(5).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
+        theWriter.tab(5).text("return aFunction.apply(target,concated);").newLine();
         theWriter.tab(4).text("}").newLine();
         theWriter.tab(3).text("}").newLine();
         theWriter.tab(2).text("});").newLine();
@@ -562,6 +566,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab().text("};").newLine();
 
                 if (theMethod.isConstructor() || theMethod.getAccessFlags().isStatic()) {
+                    if (theMethod.getAccessFlags().isStatic()) {
+                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
+                    }
                 } else {
                     theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
                         .assign().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
