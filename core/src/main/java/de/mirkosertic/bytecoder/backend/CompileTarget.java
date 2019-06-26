@@ -80,6 +80,9 @@ public class CompileTarget {
 
         final BytecodeLinkedClass theClass = theLinkerContext.resolveClass(theTypeRef);
         final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+        if (theMethod == null) {
+            throw new IllegalStateException("No method named " + aMethodName + " with signature " + aSignature + "found in " + theClass.getClassName().name());
+        }
         if (theMethod.getAccessFlags().isStatic()) {
             theClass.resolveStaticMethod(aMethodName, aSignature);
         } else {
