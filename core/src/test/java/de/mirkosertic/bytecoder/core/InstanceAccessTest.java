@@ -30,9 +30,15 @@ public class InstanceAccessTest {
 
     @Test
     public void testInstanceGetAndSet() {
-        StaticClassWithStuffInside theInstance = new StaticClassWithStuffInside();
+        final StaticClassWithStuffInside theInstance = new StaticClassWithStuffInside();
         theInstance.member = 12;
-        int theResult = theInstance.member;
+        final StaticClassWithStuffInside theInstance2 = new StaticClassWithStuffInside();
+        theInstance2.member = 14;
+
+        final int theResult = theInstance.member;
         Assert.assertEquals(12, theResult, 0);
+
+        final int theResult2 = theInstance2.member;
+        Assert.assertEquals(14, theResult2, 0);
     }
 }

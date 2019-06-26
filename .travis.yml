@@ -64,10 +64,11 @@ jobs:
             branch: master
             jdk: openjdk8
         - provider: script
-          script: .travis/deploy.sh
+          script: bash .travis/deploy.sh
           skip_cleanup: true
           on:
             repo: mirkosertic/Bytecoder
+            branch: master
             tags: true
             jdk: openjdk8
     - stage: "Deploy GitHub Pages"

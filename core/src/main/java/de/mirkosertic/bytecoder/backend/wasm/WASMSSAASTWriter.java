@@ -1151,9 +1151,7 @@ public class WASMSSAASTWriter {
         final Value theTarget = theIncomingData.get(0);
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
-        final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-
-        if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
+        if (theTargetClass.isOpaqueType() && !theMethodName.equals("<init>")) {
             final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
@@ -1165,7 +1163,7 @@ public class WASMSSAASTWriter {
             return call(function, arguments, aValue);
         }
 
-        if ("<init>".equals(theMethodName)) {
+        if (theMethodName.equals("<init>")) {
 
             final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
 

@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
-import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,12 +47,14 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
-import java.io.*;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
+import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
@@ -184,7 +190,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
                 theCodeWriter.println("console.log(\"Starting test\");");
                 theCodeWriter.println("bytecoder.bootstrap();");
-                theCodeWriter.println("var theTestInstance = new " + result.getMinifier().toClassName(theTypeRef) + ".C();");
+                theCodeWriter.println("var theTestInstance = " + result.getMinifier().toClassName(theTypeRef) + "." + result.getMinifier().toSymbol("newInstance") + "();");
                 theCodeWriter.println("try {");
                 theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "();");
                 theCodeWriter.println("     console.log(\"Test finished OK\");");
