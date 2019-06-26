@@ -57,7 +57,6 @@
     </dependencies>
 
     <build>
-        <finalName>bytecoder-integrationtest</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
