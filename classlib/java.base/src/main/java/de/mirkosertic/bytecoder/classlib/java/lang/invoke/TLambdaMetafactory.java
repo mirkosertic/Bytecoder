@@ -27,7 +27,7 @@ import java.lang.invoke.MethodType;
 public class TLambdaMetafactory {
 
     public static CallSite metafactory(final MethodHandles.Lookup aCaller,
-                                       final String aName,
+                                       final String aMethodName,
                                        final MethodType aInvokedType,
                                        final MethodType aSamMethodType,
                                        final MethodHandle aImplMethod,
@@ -36,7 +36,7 @@ public class TLambdaMetafactory {
         return new VM.ImplementingCallsite(null) {
             @Override
             public Object invokeExact(final Object... args) throws Throwable {
-                return VM.newRuntimeGeneratedType(aInvokedType, aImplMethod, args);
+                return VM.newRuntimeGeneratedType(aMethodName, aInvokedType, aImplMethod, args);
             }
         };
     }

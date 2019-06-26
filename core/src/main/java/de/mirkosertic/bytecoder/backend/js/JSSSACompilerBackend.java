@@ -148,7 +148,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("return theResult;").newLine();
         theWriter.tab().text("},").newLine();
 
-        theWriter.tab().text("dynamicType").colon().text("function(aFunction,staticArguments)").space().text("{").newLine();
+        theWriter.tab().text("methodType").colon().text("function(ret,args)").space().text("{").newLine();
+        theWriter.tab(2).text("return {returntype: ret, arguments:args};").newLine();
+        theWriter.tab().text("},").newLine();
+
+        theWriter.tab().text("dynamicType").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
         theWriter.tab(2).text("return new Proxy({},{").newLine();
         theWriter.tab(3).text("get").colon().text("function(target,name)").space().text("{").newLine();
         theWriter.tab(4).text("return function()").space().text("{").newLine();
