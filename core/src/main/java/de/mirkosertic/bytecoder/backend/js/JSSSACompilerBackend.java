@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.StringWriter;
+import java.util.List;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -23,15 +26,26 @@ import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTopologicOrder;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.*;
-
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -79,8 +93,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         // Construct a String
         theWriter.tab().text("newString").colon().text("function(aCharArray)").space().text("{").newLine();
-        theWriter.tab(2).text("var theNewString").assign().text("new ").text(theMinifier.toClassName(theStringTypeRef)).text(".C();").newLine();
-        theWriter.tab(2).text("var theBytes").assign().text("new ").text(theMinifier.toClassName(theArrayTypeRef)).text(".C();").newLine();
+        theWriter.tab(2).text("var theNewString").assign().text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
+        theWriter.tab(2).text("var theBytes").assign().text(theMinifier.toClassName(theArrayTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
         theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
         theWriter.tab(2).text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("init", theStringConstructorSignature)).text(".call(theNewString,theBytes);").newLine();
         theWriter.tab(2).text("return theNewString;").newLine();
@@ -101,7 +115,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final BytecodeObjectTypeRef theArrayType = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
         theWriter.tab().text("newArray").colon().text("function(aLength,aDefault)").space().text("{").newLine();
-        theWriter.tab(2).text("var theInstance").assign().text("new ").text(theMinifier.toClassName(theArrayType)).text(".C();").newLine();
+        theWriter.tab(2).text("var theInstance").assign().text(theMinifier.toClassName(theArrayType)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
         theWriter.tab(2).text("theInstance.data").assign().text("[];").newLine();
         theWriter.tab(2).text("theInstance.data.length").assign().text("aLength;").newLine();
         theWriter.tab(2).text("for").space().text("(var i=0;i<aLength;i++)").space().text("{").newLine();
@@ -139,17 +153,22 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("get").colon().text("function(target,name)").space().text("{").newLine();
         theWriter.tab(4).text("return function()").space().text("{").newLine();
         theWriter.tab(5).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(5).text("return aFunction.apply(target,args);").newLine();
+        theWriter.tab(5).text("if (aFunction.static)").space().text("{").newLine();
+        theWriter.tab(6).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
+        theWriter.tab(6).text("return aFunction.apply(target,concated);").newLine();
+        theWriter.tab(5).text("}").newLine();
+        theWriter.tab(5).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
+        theWriter.tab(5).text("return aFunction.apply(target,concated);").newLine();
         theWriter.tab(4).text("}").newLine();
         theWriter.tab(3).text("}").newLine();
         theWriter.tab(2).text("});").newLine();
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("resolveStaticCallSiteObject").colon().text("function(aWhere,aKey,aProducerFunction)").space().text("{").newLine();
-        theWriter.tab(2).text("var resolvedCallsiteObject").assign().text("aWhere.__staticCallSites[aKey];").newLine();
+        theWriter.tab(2).text("var resolvedCallsiteObject").assign().text("aWhere.").text(theMinifier.toSymbol("__staticCallSites")).text("[aKey];").newLine();
         theWriter.tab(2).text("if").space().text("(resolvedCallsiteObject").space().text("==").space().text("null)").space().text("{").newLine();
         theWriter.tab(3).text("resolvedCallsiteObject").assign().text("aProducerFunction();").newLine();
-        theWriter.tab(3).text("aWhere.__staticCallSites[aKey]").assign().text("resolvedCallsiteObject;").newLine();
+        theWriter.tab(3).text("aWhere.").text(theMinifier.toSymbol("__staticCallSites")).text("[aKey]").assign().text("resolvedCallsiteObject;").newLine();
         theWriter.tab(2).text("}").newLine();
         theWriter.tab(2).text("return resolvedCallsiteObject;").newLine();
         theWriter.tab().text("},").newLine();
@@ -307,19 +326,27 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final ConstantPool thePool = new ConstantPool();
 
-        aLinkerContext.linkedClasses().forEach(theEntry -> {
+        final BytecodeTopologicOrder theOrderedClasses = new BytecodeTopologicOrder(aLinkerContext);
 
-            final BytecodeLinkedClass theLinkedClass = theEntry.targetNode();
+        theOrderedClasses.getClasses().stream().forEach(theEntry -> {
+
+            final BytecodeLinkedClass theLinkedClass = theEntry;
             final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
 
-            final String theJSClassName = theMinifier.toClassName(theEntry.edgeType().objectTypeRef());
-            theWriter.text("var ").text(theJSClassName).assign().text("{").newLine();
+            final String theJSClassName = theMinifier.toClassName(theEntry.getClassName());
+            theWriter.text("var ").text(theJSClassName).assign().text("function()").space().text("{").newLine();
 
-            // First of all, we add static fields required by the framework
-            theWriter.tab().text("__").symbol("initialized", null).colon().text("false,").newLine();
-            theWriter.tab().text("__staticCallSites").colon().text("[],").newLine();
-            theWriter.tab().text("__typeId").colon().text("" + theLinkedClass.getUniqueId()).text(",").newLine();
-            theWriter.tab().text("__implementedTypes").colon().text("[");
+            // Constructor function
+            theWriter.tab().text("var C").assign().text("function()").space().text("{").newLine();
+            theWriter.tab().text("};").newLine();
+
+            if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                theWriter.tab().text("C.prototype").assign().text("Object.create(").text(theMinifier.toClassName(theLinkedClass.getSuperClass().getClassName())).text(".prototype);").newLine();
+            }
+
+            // Framework-Specific methods
+            theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
+            theWriter.tab().text("var ").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
             {
                 boolean first = true;
                 for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
@@ -330,7 +357,43 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     theWriter.print("" + theType.getUniqueId());
                 }
             }
-            theWriter.text("],").newLine();
+            theWriter.text("];").newLine();
+            theWriter.tab().text("C.").text("__typeId").assign().text("" + theLinkedClass.getUniqueId()).text(";").newLine();
+            theWriter.tab().text("C.").text(theMinifier.toSymbol("__staticCallSites")).assign().text("[];").newLine();
+
+            // Init function
+            theWriter.tab().text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
+            theWriter.tab(2).text("if").space().text("(!").text(theMinifier.toSymbol("$INITIALIZED")).text(")").space().text("{").newLine();
+            theWriter.tab(3).text(theMinifier.toSymbol("$INITIALIZED")).assign().text("true;").newLine();
+            theWriter.tab(3).text("C.").text(theMinifier.toSymbol("newInstance")).assign().text("function()").space().text("{").newLine();
+            theWriter.tab(4).text("return new C();").newLine();
+            theWriter.tab(3).text("};").newLine();
+            theWriter.tab(3).text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
+            theWriter.tab(4).text("return C;").newLine();
+            theWriter.tab(3).text("};").newLine();
+
+            if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
+                final String theSuperJSName = theMinifier.toClassName(theSuper.getClassName());
+
+                theWriter.tab(3).text(theSuperJSName).text(".").text(theMinifier.toSymbol("init")).text("();").newLine();
+            }
+
+            if (theLinkedClass.hasClassInitializer()) {
+                theWriter.tab(3).text(theJSClassName).text(".").text(theMinifier.toMethodName("clinit", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]))).text("();").newLine();
+            }
+
+
+            theWriter.tab().tab().text("}").newLine();
+            theWriter.tab().tab().text("return C;").newLine();
+            theWriter.tab().text("};").newLine();
+
+            // NewInstance function
+            theWriter.tab().text("C.").text(theMinifier.toSymbol("newInstance")).assign().text("function()").space().text("{").newLine();
+            theWriter.tab(2).text("C.").text(theMinifier.toSymbol("init")).text("();").newLine();
+            theWriter.tab(2).text("return new C();").newLine();
+            theWriter.tab().text("};").newLine();
+            theWriter.tab().text("C.prototype.constructor").assign().text("C").space().text(";").newLine();
 
             // then we add class specific static fields
             final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
@@ -341,12 +404,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             if (theFieldType.isPrimitive()) {
                                 final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
                                 if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                    theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("false,").newLine();
+                                    theWriter.tab().text("C.").symbol(aFieldEntry.getValue().getName().stringValue(), null).assign().text("false;").newLine();
                                 } else {
-                                    theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("0,").newLine();
+                                    theWriter.tab().text("C.").symbol(aFieldEntry.getValue().getName().stringValue(), null).assign().text("0;").newLine();
                                 }
                             } else {
-                                theWriter.tab().symbol(aFieldEntry.getValue().getName().stringValue(), null).colon().text("null,").newLine();
+                                theWriter.tab().text("C.").symbol(aFieldEntry.getValue().getName().stringValue(), null).assign().text("null;").newLine();
                             }
                         }
                     });
@@ -355,37 +418,34 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // The Constructor function initializes all object members with null
                 // Only non abstract classes can be instantiated
                 final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
-                theWriter.tab().text("C").colon().text("function()").space().text("{").newLine();
-                theWriter.tab(2).text(theJSClassName).text(".i();").newLine();
                 theInstanceFields.streamForInstanceFields().forEach(
                         aFieldEntry -> {
                             final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
                             if (theFieldType.isPrimitive()) {
                                 final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) theFieldType;
                                 if (thePrimitive == BytecodePrimitiveTypeRef.BOOLEAN) {
-                                    theWriter.tab(2).text("this.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("false;").newLine();
+                                    theWriter.tab().text("C.prototype.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("false;").newLine();
                                 } else {
-                                    theWriter.tab(2).text("this.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("0;").newLine();
+                                    theWriter.tab().text("C.prototype.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("0;").newLine();
                                 }
                             } else {
-                                theWriter.tab(2).text("this.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("null;").newLine();
+                                theWriter.tab().text("C.prototype.").text(theMinifier.toSymbol(aFieldEntry.getValue().getName().stringValue())).assign().text("null;").newLine();
                             }
                         });
-                theWriter.tab().text("},").newLine();
             }
 
             if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.tab().text("iof").colon().text("function(aType)").space().text("{").newLine();
-                theWriter.tab(2).text("return ").text(theJSClassName).text(".__implementedTypes.includes(aType.__typeId);").newLine();
-                theWriter.tab().text("},").newLine();
+                theWriter.tab().text("C.prototype.").text("iof").assign().text("function(aType)").space().text("{").newLine();
+                theWriter.tab(2).text("return ").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(aType.__typeId);").newLine();
+                theWriter.tab().text("};").newLine();
 
-                theWriter.tab().text(theGetNameMethodName).colon().text("function()").space().text("{").newLine();
+                theWriter.tab().text("C.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
                 if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
                     theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
                 } else {
                     theWriter.tab(2).text("return this.").text(theGetNameMethodName).text("();").newLine();
                 }
-                theWriter.tab().text("},").newLine();
+                theWriter.tab().text("};").newLine();
             }
 
             theMethods.stream().forEach(aEntry -> {
@@ -407,24 +467,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     // But include static methods, as they are inherited from the base classes
                     if (aEntry.getValue().getAccessFlags().isStatic() && !aEntry.getValue().isClassInitializer()) {
 
-                        final StringBuilder theArguments = new StringBuilder();
-                        for (int i=0;i<theCurrentMethodSignature.getArguments().length;i++) {
-                            if (0 < i) {
-                                theArguments.append(',');
-                            }
-                            theArguments.append('p');
-                            theArguments.append(i);
-                        }
-
                         // Static methods will just delegate to the implementation in the class
-                        theWriter.tab().text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).colon().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
-                        if (!theCurrentMethodSignature.getReturnType().isVoid()) {
-                            theWriter.tab(2).text("return ");
-                        } else {
-                            theWriter.tab(2);
-                        }
-                        theWriter.text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text("(").text(theArguments.toString()).text(");").newLine();
-                        theWriter.tab().text("},").newLine();
+                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).assign()
+                            .text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                    }
+                    if (aEntry.getProvidingClass().getBytecodeClass().getAccessFlags().isInterface()) {
+                        // Default method inherited from interface
+                        // Static methods will just delegate to the implementation in the class
+                        theWriter.tab().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).assign()
+                                .text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                     }
                     return;
                 }
@@ -457,16 +508,29 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                     final BytecodeImportedLink theLink = theLinkedClass.linkfor(theMethod);
 
-                    theWriter.tab().text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).colon().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
+                    if (theMethod.getAccessFlags().isStatic()) {
+                        theWriter.tab().text("C.");
+                    } else {
+                        theWriter.tab().text("C.prototype.");
+                    }
+                    theWriter.text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                            .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
+
                     theWriter.tab(2).text("return bytecoder.imports.").text(theLink.getModuleName()).text(".").text(theLink.getLinkName()).text("(").text(theArguments.toString()).text(");").newLine();
-                    theWriter.tab().text("},").newLine();
+                    theWriter.tab().text("};").newLine();
                     return;
                 }
 
                 theWriter.assignSymbolToSourceFile(theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue(), theSSAProgram.getDebugInformation().debugPositionFor(
                         BytecodeOpcodeAddress.START_AT_ZERO));
 
-                theWriter.tab().text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).colon().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
+                if (theMethod.isConstructor() || theMethod.getAccessFlags().isStatic()) {
+                    theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                            .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
+                } else {
+                    theWriter.tab().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                            .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
+                }
 
                 if (aOptions.isDebugOutput()) {
                     theWriter.tab(2).text("/**").newLine();
@@ -499,65 +563,22 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             + theMethod.getName().stringValue(), e);
                 }
 
-                theWriter.tab().text("},").newLine();
+                theWriter.tab().text("};").newLine();
+
+                if (theMethod.isConstructor() || theMethod.getAccessFlags().isStatic()) {
+                    if (theMethod.getAccessFlags().isStatic()) {
+                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
+                    }
+                } else {
+                    theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                        .assign().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                }
+
             });
 
+            theWriter.tab().text("return C;").newLine();
 
-            theWriter.tab().text("i").colon().text("function()").space().text("{").newLine();
-            theWriter.tab(2).text("if").space ().text("(!").text(theJSClassName).text(".__").symbol("initialized", null).text(")").space().text("{").newLine();
-
-            theWriter.tab(3).text(theJSClassName).text(".__").symbol("initialized", null).assign().text("true;").newLine();
-
-            if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
-                final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
-                final String theSuperJSName = theMinifier.toClassName(theSuper.getClassName());
-
-                theWriter.tab(3).text(theSuperJSName).text(".i();").newLine();
-            }
-
-            if (theLinkedClass.hasClassInitializer()) {
-                theWriter.tab(3).text(theJSClassName).text(".").text(theMinifier.toMethodName("clinit", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]))).text("();").newLine();
-            }
-
-            theWriter.tab(2).text("}").newLine();
-            theWriter.tab(2).text("return ").text(theJSClassName).text(";").newLine();
-            theWriter.tab(1).text("},").newLine();
-
-            theWriter.tab(1).text("link").colon().text("function()").space().text("{").newLine();
-
-            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
-                // Now we have to setup the prototype
-                // Only in case this class can be instantiated of course
-                theWriter.tab(2).text("var p").assign().text(theJSClassName).text(".C.prototype;").newLine();
-                theWriter.tab(2).text("p.iof").assign().text(theJSClassName).text(".iof;").newLine();
-                theWriter.tab(2).text("p.clz").assign().text(theJSClassName).text(";").newLine();
-
-                final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethods.stream().collect(Collectors.toList());
-                final Set<String> theVisitedMethods = new HashSet<>();
-
-                for (int i = theEntries.size()-1; 0 <= i; i--) {
-                    final BytecodeResolvedMethods.MethodEntry aEntry = theEntries.get(i);
-                    final BytecodeMethod theMethod = aEntry.getValue();
-
-                    final String theMethodName = theMinifier.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature());
-                    if (!theMethod.getAccessFlags().isStatic() &&
-                            !theMethod.getAccessFlags().isAbstract() &&
-                            !theMethod.isConstructor() &&
-                            !theMethod.isClassInitializer() &&
-                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
-                            !"getClass".equals(theMethod.getName().stringValue()) &&
-                            !"getEnumConstants".equals(theMethod.getName().stringValue())) {
-
-                        if (theVisitedMethods.add(theMethodName)) {
-                            theWriter.tab(2).text("p.").text(theMethodName).assign().text(theMinifier.toClassName(aEntry.getProvidingClass().getClassName())).text(".").text(theMethodName).text(";").newLine();
-                        }
-                    }
-                }
-            }
-
-            theWriter.tab(1).text("},").newLine();
-
-            theWriter.text("};").newLine();
+            theWriter.text("}();").newLine();
         });
 
         theWriter.text("bytecoder.bootstrap").assign().text("function()").space().text("{").newLine();
@@ -567,11 +588,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
         }
 
-        aLinkerContext.linkedClasses().forEach(aEntry -> {
-            if (!aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.tab().text(theMinifier.toClassName(aEntry.edgeType().objectTypeRef())).text(".link();").newLine();
-            }
-            final BytecodeResolvedMethods theMethods = aEntry.targetNode().resolvedMethods();
+        theOrderedClasses.getClasses().forEach(aEntry -> {
+            final BytecodeResolvedMethods theMethods = aEntry.resolvedMethods();
             theMethods.stream().forEach(eMethod -> {
                 final BytecodeMethod theMethod = eMethod.getValue();
                 final BytecodeMethodSignature theCurrentMethodSignature = theMethod.getSignature();
@@ -579,12 +597,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // If the method is provided by the runtime, we do not need to generate the implementation
                 final BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                 if (theAnnotation != null) {
-                    theWriter.tab().text("bytecoder.exports.").text(theAnnotation.getElementValueByName("value").stringValue()).assign().text(theMinifier.toClassName(aEntry.targetNode().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                    theWriter.tab().text("bytecoder.exports.").text(theAnnotation.getElementValueByName("value").stringValue()).assign().text(theMinifier.toClassName(aEntry.getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                 } else {
                     // If the method is the main method and not exported by annotation, it is
                     // exported by default name "main".
-                    if (aEntry.targetNode().getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName)) {
-                        theWriter.tab().text("bytecoder.exports.main").assign().text(theMinifier.toClassName(aEntry.targetNode().getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                    if (aEntry.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName)) {
+                        theWriter.tab().text("bytecoder.exports.main").assign().text(theMinifier.toClassName(aEntry.getClassName())).text(".").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                     }
                 }
             });
