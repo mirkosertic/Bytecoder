@@ -52,5 +52,13 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
                 aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
             }
         }
+        if (theConstant instanceof BytecodeMethodTypeConstant) {
+            final BytecodeMethodTypeConstant m = (BytecodeMethodTypeConstant) theConstant;
+            final BytecodeMethodSignature theSignature = m.getDescriptorIndex().methodSignature();
+            aLinkerContext.resolveTypeRef(theSignature.getReturnType());
+            for (final BytecodeTypeRef ref : theSignature.getArguments()) {
+                aLinkerContext.resolveTypeRef(ref);
+            }
+        }
     }
 }

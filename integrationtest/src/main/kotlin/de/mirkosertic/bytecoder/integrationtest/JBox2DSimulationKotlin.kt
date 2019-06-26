@@ -196,12 +196,15 @@ object JBox2DSimulationKotlin {
     }
 
     @Import(module = "debug", name = "logRuntime")
+    @JvmStatic
     external fun logRuntime(aValue: Int)
 
     @Import(module = "stats", name = "begin")
+    @JvmStatic
     external fun statsBegin()
 
     @Import(module = "stats", name = "end")
+    @JvmStatic
     external fun statsEnd()
 
     private fun render() {
