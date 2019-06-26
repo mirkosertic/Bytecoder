@@ -70,3 +70,15 @@ jobs:
             repo: mirkosertic/Bytecoder
             tags: true
             jdk: openjdk8
+    - stage: "Deploy GitHub Pages"
+      script: mvn clean install -P notest
+      deploy:
+        - provider: pages
+          skip-cleanup: true
+          github-token: $GITHUB_TOKEN
+          keep-history: false
+          local-dir: integrationtest/bytecoder-integrationtest
+          on:
+            repo: mirkosertic/Bytecoder
+            branch: master
+            jdk: openjdk8
