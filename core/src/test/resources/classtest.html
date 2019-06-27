@@ -1,106 +1,69 @@
 <html>
     <body>
         <script>
-            var InitProxyHandler = function() {
-                var C = function(selfRef) {
-                    this.selfRef = selfRef;
-                    this.initialized = false;
-                };
-                C.prototype.construct =  function() {
-                    if (!this.initialized) {
-                        this.initialized = true;
-                        this.selfRef.initialize();
-                    }
-                    return new this.selfRef();
-                };
-                C.prototype.get = function(target, prop, receiver) {
-                    if (!this.initialized) {
-                        this.initialized = true;
-                        this.selfRef.initialize();
-                    }
-                    return this.selfRef[prop];
-                };
-                C.prototype.set = function(obj, prop, value) {
-                    if (!this.initialized) {
-                        this.initialized = true;
-                        this.selfRef.initialize();
-                    }
-                    this.selfRef[prop] = value;
-                };
-                return C;
-            }();
-
             var jlObject = function() {
-
                 var C = function() {
                 };
-                C.STATICMEMBER = 10;
+                var $INITIALIZED = false;
+                var __implementedTypes = [1];
+                C.__typeId = 1;
+                C.__staticCallSites = [];
+                C.init = function() {
+                    if (!$INITIALIZED) {
+                        $INITIALIZED = true;
+                        C.newInstance = function() {
+                            return new C();
+                        };
+                        C.init = function() {
+                            return C;
+                        };
+                    }
+                    return C;
+                };
+                C.newInstance = function() {
+                    C.init();
+                    return new C();
+                };
+                C.prototype.constructor = C ;
+                C.prototype.iof = function(aType) {
+                    return __implementedTypes.includes(aType.__typeId);
+                };
+                C.jlStringgetName = function() {
+                    return bytecoder.stringpool[0];
+                };
                 C.VOIDinit = function() {
+                    return;
                 };
-
-                C.prototype.constructor = C;
-                C.prototype.clone = function() {
-                    return this;
+                C.prototype.jlStringtoString = function() {
+                    return bytecoder.stringpool[1];
                 };
-                C.prototype.property1 = 'Defaultvalue1';
-
-                C.getName = function() {
-                    return 'java.lang.Object';
+                C.jlStringtoString = C.prototype.jlStringtoString;
+                C.prototype.BOOLEANequalsjlObject = function(_aObject) {
+                    var var0 = null; // type is INT # of inits = 2
+                    $IF_0 : {
+                        if ((this != _aObject)) {
+                            var0 = 0; // type is INT value type is INT
+                            break $IF_0;
+                        } else {
+                            var0 = 1; // type is INT value type is INT
+                            break $IF_0;
+                        }
+                    }
+                    return var0;
                 };
-
-                C.initialize = function() {
-                    console.log("Initialized " + C.getName());
+                C.BOOLEANequalsjlObject = C.prototype.BOOLEANequalsjlObject;
+                C.prototype.INThashCode = function() {
+                    return 0;
                 };
-
-                return new Proxy(C, new InitProxyHandler(C));
-            }();
-
-            var jlMath = function() {
-                var C = function() {
-                };
-                C.VOIDinit = function() {
-                    jlObject.VOIDinit.call(this);
-                };
-
-                C.prototype = Object.create(jlObject.prototype);
-                C.prototype.constructor = C;
-                C.prototype.add = function(a, b) {
-                    return a + b;
-                };
-                C.prototype.property2 = 'Defaultvalue2';
-
-                C.getName = function() {
-                    return 'java.lang.Math';
-                };
-
-                C.initialize = function() {
-                    console.log("Initialized " + C.getName());
-                };
-
-                return new Proxy(C, new InitProxyHandler(C));
+                C.INThashCode = C.prototype.INThashCode;
+                return C;
             }();
 
             var obj = new jlObject();
             jlObject.VOIDinit.call(obj);
-            console.log(jlObject.STATICMEMBER);
-            jlObject.STATICMEMBER = 33;
-            console.log(jlObject.STATICMEMBER);
-
-            var math = new jlMath();
-            var cl = math.clone();
+            var hashcode = obj.INThashCode();
 
             console.log(obj);
-            console.log(math);
-            console.log(cl);
-            console.log(math.add(10,20));
-            console.log(obj.constructor.getName());
-            console.log(math.constructor.getName());
-            console.log(math);
-            console.log(obj.property1);
-            console.log(math.property1);
-            obj.property1 = 'Test';
-            console.log(obj.property1);
-            console.log(math.property1);
         </script>
     </body>
 </html>

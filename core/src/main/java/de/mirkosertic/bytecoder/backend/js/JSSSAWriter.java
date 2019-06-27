@@ -741,21 +741,33 @@ public class JSSSAWriter {
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
             if ("<init>".equals(theMethodName)) {
-                writer.text(minifier.toClassName(aValue.getClazz()));
+                print(theTarget);
+                writer.text(".").text("$").text(Integer.toString(theTargetClass.getUniqueId())).text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+                boolean first = true;
+                for (final Value theArgument : theArguments) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        writer.text(",");
+                    }
+                    print(theArgument);
+                }
+                writer.text(")");
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
                 writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
-            }
-            writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
 
-            print(theTarget);
+                writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
 
-            for (final Value theArgument : theArguments) {
-                writer.text(",");
-                print(theArgument);
+                print(theTarget);
+
+                for (final Value theArgument : theArguments) {
+                    writer.text(",");
+                    print(theArgument);
+                }
+                writer.text(")");
             }
-            writer.text(")");
         }
     }
 

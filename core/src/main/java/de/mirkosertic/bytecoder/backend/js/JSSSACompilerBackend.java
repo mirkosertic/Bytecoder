@@ -91,12 +91,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)});
 
+        final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(theStringTypeRef);
+
         // Construct a String
         theWriter.tab().text("newString").colon().text("function(aCharArray)").space().text("{").newLine();
         theWriter.tab(2).text("var theNewString").assign().text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
         theWriter.tab(2).text("var theBytes").assign().text(theMinifier.toClassName(theArrayTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
         theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
-        theWriter.tab(2).text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("init", theStringConstructorSignature)).text(".call(theNewString,theBytes);").newLine();
+        theWriter.tab(2).text("theNewString.").text("$").text(Integer.toString(theStringClass.getUniqueId())).text(theMinifier.toMethodName("init", theStringConstructorSignature)).text("(theBytes);").newLine();
         theWriter.tab(2).text("return theNewString;").newLine();
         theWriter.tab().text("},").newLine();
 
@@ -538,9 +540,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.assignSymbolToSourceFile(theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue(), theSSAProgram.getDebugInformation().debugPositionFor(
                         BytecodeOpcodeAddress.START_AT_ZERO));
-
-                if (theMethod.isConstructor() || theMethod.getAccessFlags().isStatic()) {
+                if (theMethod.getAccessFlags().isStatic()) {
                     theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                            .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
+                } else if (theMethod.isConstructor()) {
+                    theWriter.tab().text("C.prototype.").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
                             .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
                 } else {
                     theWriter.tab().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
