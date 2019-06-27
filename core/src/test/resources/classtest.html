@@ -31,13 +31,10 @@
                 C.jlStringgetName = function() {
                     return bytecoder.stringpool[0];
                 };
-                C.VOIDinit = function() {
+                C.prototype.$1VOIDinit = function() {
                     return;
                 };
-                C.prototype.jlStringtoString = function() {
-                    return bytecoder.stringpool[1];
-                };
-                C.jlStringtoString = C.prototype.jlStringtoString;
+                C.$1VOIDinit = C.prototype.$1VOIDinit;
                 C.prototype.BOOLEANequalsjlObject = function(_aObject) {
                     var var0 = null; // type is INT # of inits = 2
                     $IF_0 : {
@@ -59,8 +56,8 @@
                 return C;
             }();
 
-            var obj = new jlObject();
-            jlObject.VOIDinit.call(obj);
+            var obj = jlObject.newInstance();
+            jlObject.$1VOIDinit.call(obj);
             var hashcode = obj.INThashCode();
 
             console.log(obj);

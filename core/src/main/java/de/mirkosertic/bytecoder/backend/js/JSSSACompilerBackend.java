@@ -543,11 +543,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 if (theMethod.getAccessFlags().isStatic()) {
                     theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
                             .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
-                } else if (theMethod.isConstructor()) {
-                    theWriter.tab().text("C.prototype.").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
-                            .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
                 } else {
-                    theWriter.tab().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                    theWriter.tab().text("C.prototype.").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
                             .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
                 }
 
@@ -589,8 +586,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
                     }
                 } else {
+                    theWriter.tab().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                        .assign().text("C.prototype.").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                     theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
-                        .assign().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                            .assign().text("C.prototype.").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                 }
 
             });
