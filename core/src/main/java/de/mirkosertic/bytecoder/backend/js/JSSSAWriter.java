@@ -735,16 +735,14 @@ public class JSSSAWriter {
         final Value theTarget = theIncomingData.get(0);
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
+        final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+
         if (theTargetClass.isOpaqueType() && !"<init>".equals(theMethodName)) {
-            final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
-            final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
-            final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
-
-            if (theEntry.getValue().getAccessFlags().isStatic()) {
-                writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
-                writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+            if ("<init>".equals(theMethodName)) {
+                print(theTarget);
+                writer.text(".").text("$").text(Integer.toString(theTargetClass.getUniqueId())).text(minifier.toMethodName(theMethodName, theSignature)).text("(");
                 boolean first = true;
                 for (final Value theArgument : theArguments) {
                     if (first) {
@@ -756,15 +754,16 @@ public class JSSSAWriter {
                 }
                 writer.text(")");
             } else {
+                final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+                final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
+                writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
+
+                writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
+
                 print(theTarget);
-                writer.text(".").text("$").text(Integer.toString(theTargetClass.getUniqueId())).text(minifier.toMethodName(theMethodName, theSignature)).text("(");
-                boolean first = true;
+
                 for (final Value theArgument : theArguments) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        writer.text(",");
-                    }
+                    writer.text(",");
                     print(theArgument);
                 }
                 writer.text(")");
