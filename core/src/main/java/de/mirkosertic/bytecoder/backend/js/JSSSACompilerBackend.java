@@ -155,12 +155,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("dynamicType").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
+
+        theWriter.tab(2).text("if").space().text("(aFunction.static)").space().text("{").newLine();
+
+        theWriter.tab(3).text("var handler").assign().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
+        theWriter.tab(5).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
+        theWriter.tab(5).text("return aFunction.apply(this,concated);").newLine();
+        theWriter.tab(3).text("};").newLine();
+        theWriter.tab(3).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
+
+        theWriter.tab(2).text("}").newLine();
+
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(3).text("if (aFunction.static)").space().text("{").newLine();
-        theWriter.tab(4).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
-        theWriter.tab(4).text("return aFunction.apply(this,concated);").newLine();
-        theWriter.tab(3).text("}").newLine();
         theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
         theWriter.tab(3).text("return aFunction.apply(this,concated);").newLine();
         theWriter.tab(2).text("};").newLine();
@@ -345,6 +353,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
                 theWriter.tab().text("C.prototype").assign().text("Object.create(").text(theMinifier.toClassName(theLinkedClass.getSuperClass().getClassName())).text(".prototype);").newLine();
+            } else {
+                theWriter.tab().text("C.prototype").assign().text("Object.create(null);").newLine();
             }
 
             // Framework-Specific methods
