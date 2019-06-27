@@ -26,14 +26,18 @@ public class BytecodeConstantPool {
         constants = new ArrayList<>();
     }
 
-    public void registerConstant(BytecodeConstant aConstant) {
+    public void registerConstant(final BytecodeConstant aConstant) {
         constants.add(aConstant);
     }
 
-    public BytecodeConstant constantByIndex(int aIndex) {
+    public BytecodeConstant constantByIndex(final int aIndex) {
         if (aIndex < 0) {
             throw new IllegalStateException("Invalid index : " + aIndex);
         }
         return constants.get(aIndex);
+    }
+
+    public List<BytecodeConstant> constants() {
+        return constants;
     }
 }

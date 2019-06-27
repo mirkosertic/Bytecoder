@@ -30,7 +30,7 @@ public class VM {
         public abstract Object invokeExact(Object... args) throws Throwable;
     }
 
-    public static native Object newRuntimeGeneratedType(MethodType aType, MethodHandle aHandle, Object... staticArguments);
+    public static native Object newRuntimeGeneratedType(String methodName, MethodType aType, MethodHandle aHandle, Object... staticArguments);
 
     public static final char NEWLINE = '\n';
 

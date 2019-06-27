@@ -19,11 +19,12 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class RuntimeGeneratedTypeExpression extends Expression {
 
-    public RuntimeGeneratedTypeExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value methodRef, final Value staticArguments) {
+    public RuntimeGeneratedTypeExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value methodRef, final Value staticArguments, final Value name) {
         super(aProgram, aAddress);
         receivesDataFrom(type);
         receivesDataFrom(methodRef);
         receivesDataFrom(staticArguments);
+        receivesDataFrom(name);
     }
 
     @Override
@@ -41,6 +42,10 @@ public class RuntimeGeneratedTypeExpression extends Expression {
 
     public Value getStaticArguments() {
         return incomingDataFlows().get(2);
+    }
+
+    public Value getName() {
+        return incomingDataFlows().get(3);
     }
 
 }

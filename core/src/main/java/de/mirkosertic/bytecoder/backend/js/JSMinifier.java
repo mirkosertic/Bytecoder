@@ -91,7 +91,6 @@ public class JSMinifier implements Minifier {
     public String toMethodName(final String aMethodName, final BytecodeMethodSignature aSignature) {
         String theName = typeRefToString(aSignature.getReturnType());
         theName += aMethodName.replace("<", "").replace(">", "");
-
         for (final BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
             theName += typeRefToString(theTypeRef);
         }
