@@ -1040,7 +1040,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             writeCharArrayToConsole: function(caller, value) {console.log(bytecoder.charArraytoJSString(value));},");
             theWriter.println("         },");
             theWriter.println("         vm: {");
-            theWriter.println("             newRuntimeGeneratedTypeMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("             newRuntimeGeneratedTypeStringMethodTypeMethodHandleObject: function() {},");
             theWriter.println("         },");
             theWriter.println("         printstream: {");
             theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller,value);},");

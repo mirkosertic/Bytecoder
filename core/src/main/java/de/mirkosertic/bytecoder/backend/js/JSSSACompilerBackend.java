@@ -148,20 +148,21 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("return theResult;").newLine();
         theWriter.tab().text("},").newLine();
 
-        theWriter.tab().text("dynamicType").colon().text("function(aFunction,staticArguments)").space().text("{").newLine();
-        theWriter.tab(2).text("return new Proxy({},{").newLine();
-        theWriter.tab(3).text("get").colon().text("function(target,name)").space().text("{").newLine();
-        theWriter.tab(4).text("return function()").space().text("{").newLine();
-        theWriter.tab(5).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(5).text("if (aFunction.static)").space().text("{").newLine();
-        theWriter.tab(6).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
-        theWriter.tab(6).text("return aFunction.apply(target,concated);").newLine();
-        theWriter.tab(5).text("}").newLine();
-        theWriter.tab(5).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
-        theWriter.tab(5).text("return aFunction.apply(target,concated);").newLine();
-        theWriter.tab(4).text("}").newLine();
+        theWriter.tab().text("methodType").colon().text("function(ret,args)").space().text("{").newLine();
+        theWriter.tab(2).text("return {returntype: ret, arguments:args};").newLine();
+        theWriter.tab().text("},").newLine();
+
+        theWriter.tab().text("dynamicType").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
+        theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
+        theWriter.tab(3).text("if (aFunction.static)").space().text("{").newLine();
+        theWriter.tab(4).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
+        theWriter.tab(4).text("return aFunction.apply(this,concated);").newLine();
         theWriter.tab(3).text("}").newLine();
-        theWriter.tab(2).text("});").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
+        theWriter.tab(3).text("return aFunction.apply(this,concated);").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("resolveStaticCallSiteObject").colon().text("function(aWhere,aKey,aProducerFunction)").space().text("{").newLine();
@@ -394,6 +395,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab(2).text("return new C();").newLine();
             theWriter.tab().text("};").newLine();
             theWriter.tab().text("C.prototype.constructor").assign().text("C").space().text(";").newLine();
+
+            // NewLamndaInstance function
+            if (theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.tab().text("C.").text(theMinifier.toSymbol("newLambdaInstance")).assign().text("function(impl)").space().text("{").newLine();
+                theWriter.tab(2).text("var l").assign().text("C.").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
+                for (final BytecodeMethod theMethod : theLinkedClass.getBytecodeClass().getMethods()) {
+                    if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
+                        theWriter.tab(2).text("l.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature())).assign().text("impl.bind(l);").newLine();
+                    }
+                }
+                theWriter.tab(2).text("return l;").newLine();
+
+                theWriter.tab().text("};").newLine();
+            }
 
             // then we add class specific static fields
             final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();

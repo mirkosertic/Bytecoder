@@ -1149,7 +1149,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeInvokeDynamicConstant theConstant = theINS.getCallSite();
                 final BytecodeMethodSignature theInitSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
-
                 final BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
                 final BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
 

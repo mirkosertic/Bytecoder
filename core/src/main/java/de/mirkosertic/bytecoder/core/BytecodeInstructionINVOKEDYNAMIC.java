@@ -20,7 +20,7 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
     private final int index;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKEDYNAMIC(BytecodeOpcodeAddress aIndex, int aConstantIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINVOKEDYNAMIC(final BytecodeOpcodeAddress aIndex, final int aConstantIndex, final BytecodeConstantPool aConstantPool) {
         super(aIndex);
         index = aConstantIndex;
         constantPool = aConstantPool;
@@ -30,13 +30,13 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
         return (BytecodeInvokeDynamicConstant) constantPool.constantByIndex(index - 1);
     }
 
-    private void link(BytecodeLinkerContext aLinkerContext, BytecodeReferenceKind aKind, BytecodeConstant aReference) {
+    private void link(final BytecodeLinkerContext aLinkerContext, final BytecodeReferenceKind aKind, final BytecodeConstant aReference) {
         switch (aKind) {
             case REF_invokeStatic:
-                BytecodeMethodRefConstant theStaticReference = (BytecodeMethodRefConstant) aReference;
+                final BytecodeMethodRefConstant theStaticReference = (BytecodeMethodRefConstant) aReference;
 
-                BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theStaticReference.getClassIndex().getClassConstant().getConstant()));
-                BytecodeNameAndTypeConstant theNameAndType = theStaticReference.getNameAndTypeIndex().getNameAndType();
+                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theStaticReference.getClassIndex().getClassConstant().getConstant()));
+                final BytecodeNameAndTypeConstant theNameAndType = theStaticReference.getNameAndTypeIndex().getNameAndType();
                 theLinkedClass.resolveVirtualMethod(theNameAndType.getNameIndex().getName().stringValue(),
                         theNameAndType.getDescriptorIndex().methodSignature());
                 break;
@@ -46,16 +46,33 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
 
     }
 
+    private void linkSignature(final BytecodeMethodSignature signature, final BytecodeLinkerContext context) {
+        context.resolveTypeRef(signature.getReturnType());
+        for (final BytecodeTypeRef ref : signature.getArguments()) {
+            context.resolveTypeRef(ref);
+        }
+    }
+
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
 
-        BytecodeInvokeDynamicConstant theConstant = getCallSite();
+        final BytecodeInvokeDynamicConstant theConstant = getCallSite();
 
-        BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
-        BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
+        final BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
+        final BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
+        for (final BytecodeConstant constant : theBootstrapMethod.getArguments()) {
+            if (constant instanceof BytecodeMethodTypeConstant) {
+                final BytecodeMethodTypeConstant m = (BytecodeMethodTypeConstant) constant;
+                final BytecodeMethodSignature theSignature = m.getDescriptorIndex().methodSignature();
+                linkSignature(theSignature, aLinkerContext);
+            }
+        }
 
-        BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
-        BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
+        final BytecodeMethodSignature theInitSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+        linkSignature(theInitSignature, aLinkerContext);
+
+        final BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
+        final BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
 
         switch (theMethodRef.getReferenceKind()) {
             case REF_invokeStatic: {
@@ -66,14 +83,14 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
 
                 // in this case we assume that the invoke dynamic can be replaced by an invokestatic
                 // to the implementing method, but only indirectly using a callsite object aka function pointer
-                for (BytecodeConstant theBootstrapArgument : theBootstrapMethod.getArguments()) {
+                for (final BytecodeConstant theBootstrapArgument : theBootstrapMethod.getArguments()) {
                     if (theBootstrapArgument instanceof BytecodeMethodHandleConstant) {
-                        BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapArgument;
-                        BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
+                        final BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapArgument;
+                        final BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
 
-                        BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
-                        BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theClass);
-                        BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(
+                        final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
+                        final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theClass);
+                        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(
                                 theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                 theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature()
                         );
