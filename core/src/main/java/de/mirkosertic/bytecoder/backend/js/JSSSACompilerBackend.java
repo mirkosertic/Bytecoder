@@ -357,11 +357,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.print(",");
                     }
                     first = false;
-                    theWriter.print("" + theType.getUniqueId());
+                    if (theType.getUniqueId() == theLinkedClass.getUniqueId()) {
+                        theWriter.print("C");
+                    } else {
+                        theWriter.print(theMinifier.toClassName(theType.getClassName()));
+                    }
                 }
             }
             theWriter.text("];").newLine();
-            theWriter.tab().text("C.").text("__typeId").assign().text("" + theLinkedClass.getUniqueId()).text(";").newLine();
             theWriter.tab().text("C.").text(theMinifier.toSymbol("__staticCallSites")).assign().text("[];").newLine();
 
             // Init function
@@ -453,7 +456,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theWriter.tab().text("C.prototype.").text("iof").assign().text("function(aType)").space().text("{").newLine();
-                theWriter.tab(2).text("return ").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(aType.__typeId);").newLine();
+                theWriter.tab(2).text("return ").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(aType);").newLine();
                 theWriter.tab().text("};").newLine();
 
                 theWriter.tab().text("C.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
