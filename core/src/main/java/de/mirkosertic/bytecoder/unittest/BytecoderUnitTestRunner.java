@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -173,7 +175,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
 
-                final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
+                final BytecodeObjectTypeRef theTestClass = new BytecodeObjectTypeRef(testClass.getName());
+                final BytecodeMethodSignature theTestClassConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]);
 
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
@@ -184,13 +187,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
                 theCodeWriter.println(content.asString());
 
-                final String theFilename = result.getMinifier().toClassName(theTypeRef) + "." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
+                final String theFilename = result.getMinifier().toClassName(theTestClass) + "." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_js.html";
 
                 theCodeWriter.println();
 
                 theCodeWriter.println("console.log(\"Starting test\");");
                 theCodeWriter.println("bytecoder.bootstrap();");
-                theCodeWriter.println("var theTestInstance = " + result.getMinifier().toClassName(theTypeRef) + "." + result.getMinifier().toSymbol("newInstance") + "();");
+                theCodeWriter.println("var theTestInstance = " + result.getMinifier().toClassName(theTestClass) + "." + result.getMinifier().toMethodName("$newInstance", theTestClassConstructorSignature) + "();");
                 theCodeWriter.println("try {");
                 theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "();");
                 theCodeWriter.println("     console.log(\"Test finished OK\");");

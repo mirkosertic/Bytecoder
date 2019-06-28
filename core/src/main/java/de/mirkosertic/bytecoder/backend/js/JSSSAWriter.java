@@ -162,9 +162,23 @@ public class JSSSAWriter {
             print((FloatingPointCeilExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             print((EnumConstantsExpression) aValue);
+        } else if (aValue instanceof NewObjectAndConstructExpression) {
+            print((NewObjectAndConstructExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final NewObjectAndConstructExpression aValue) {
+        writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
+        final List<Value> theArguments = aValue.incomingDataFlows();
+        for (int i=0;i<theArguments.size();i++) {
+            if (i>0) {
+                writer.text(",");
+            }
+            print(theArguments.get(i));
+        }
+        writer.text(")");
     }
 
     private void print(final EnumConstantsExpression aValue) {
@@ -741,21 +755,33 @@ public class JSSSAWriter {
             writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
         } else {
             if ("<init>".equals(theMethodName)) {
-                writer.text(minifier.toClassName(aValue.getClazz()));
+                print(theTarget);
+                writer.text(".").text("$").text(Integer.toString(theTargetClass.getUniqueId())).text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+                boolean first = true;
+                for (final Value theArgument : theArguments) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        writer.text(",");
+                    }
+                    print(theArgument);
+                }
+                writer.text(")");
             } else {
                 final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
                 writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
-            }
-            writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
 
-            print(theTarget);
+                writer.text(".").text(minifier.toMethodName(theMethodName, theSignature)).text(".call(");
 
-            for (final Value theArgument : theArguments) {
-                writer.text(",");
-                print(theArgument);
+                print(theTarget);
+
+                for (final Value theArgument : theArguments) {
+                    writer.text(",");
+                    print(theArgument);
+                }
+                writer.text(")");
             }
-            writer.text(")");
         }
     }
 
