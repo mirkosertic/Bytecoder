@@ -509,6 +509,46 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     return;
                 }
 
+                // We need to create a newInstance function in case this is a constructor
+                if (theMethod.isConstructor()) {
+
+                    final String theMethodName = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), "$newInstance", theMethod.getSignature());
+                    final List<Param> theParams = new ArrayList<>();
+                    for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                        theParams.add(param("p" + i, WASMSSAASTWriter.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i]))));
+                    }
+                    final ExportableFunction theCreateFunction = module.getFunctions().newFunction(
+                            theMethodName, theParams, PrimitiveType.i32
+                    );
+                    final Local newInstance = theCreateFunction.newLocal("newInstance", PrimitiveType.i32);
+
+                    final WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(theLinkedClass.getClassName());
+
+                    final String theNewObjectMethodName = WASMWriterUtils.toMethodName(
+                            BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                            "newObject",
+                            new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                                    Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+                    final String theClassNameToCreate = WASMWriterUtils.toClassName(theLinkedClass.getClassName());
+                    final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassNameToCreate + WASMSSAASTWriter.CLASSINITSUFFIX, null);
+                    final WeakFunctionReferenceCallable theFunction = weakFunctionReference(theNewObjectMethodName, null);
+
+                    theCreateFunction.flow.setLocal(newInstance, call(theFunction, Arrays.asList(i32.c(0, null), i32.c(theLayout.instanceSize(), null), call(theClassInit, Collections.emptyList(), null), weakFunctionTableReference(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, null)), null), null);
+
+                    final String theConstructorMethod = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theMethod.getSignature());
+                    final WeakFunctionReferenceCallable theConsRef = weakFunctionReference(theConstructorMethod, null);
+
+                    final List<WASMValue> theArguments = new ArrayList<>();
+                    theArguments.add(getLocal(newInstance, null));
+                    for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                        theArguments.add(getLocal(theCreateFunction.localByLabel("p" + i), null));
+                    }
+                    theCreateFunction.flow.voidCall(theConsRef, theArguments, null);
+
+                    theCreateFunction.flow.ret(getLocal(newInstance, null), null);
+                }
+
                 final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new WASMIntrinsics());
                 final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 

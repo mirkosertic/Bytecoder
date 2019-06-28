@@ -162,9 +162,23 @@ public class JSSSAWriter {
             print((FloatingPointCeilExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             print((EnumConstantsExpression) aValue);
+        } else if (aValue instanceof NewObjectAndConstructExpression) {
+            print((NewObjectAndConstructExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final NewObjectAndConstructExpression aValue) {
+        writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
+        final List<Value> theArguments = aValue.incomingDataFlows();
+        for (int i=0;i<theArguments.size();i++) {
+            if (i>0) {
+                writer.text(",");
+            }
+            print(theArguments.get(i));
+        }
+        writer.text(")");
     }
 
     private void print(final EnumConstantsExpression aValue) {

@@ -15,64 +15,21 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
 import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
-import de.mirkosertic.bytecoder.backend.wasm.ast.I32Const;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
-import de.mirkosertic.bytecoder.backend.wasm.ast.LabeledContainer;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
-import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Return;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ReturnValue;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Unreachable;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMExpression;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
-import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
+import de.mirkosertic.bytecoder.backend.wasm.ast.*;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
 
 public class WASMSSAASTWriter {
 
@@ -199,8 +156,7 @@ public class WASMSSAASTWriter {
     private BytecodeResolvedFields.FieldEntry implementingClassForStaticField(final BytecodeObjectTypeRef aClass, final String aFieldName) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass);
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
-        final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aFieldName);
-        return theField;
+        return theFields.fieldByName(aFieldName);
     }
 
     private int stackOffsetFor(final Variable aVariable) {
@@ -676,7 +632,23 @@ public class WASMSSAASTWriter {
         if (aValue instanceof EnumConstantsExpression) {
             return enumConstants((EnumConstantsExpression) aValue);
         }
+        if (aValue instanceof NewObjectAndConstructExpression) {
+            return newObjectAndConstruct((NewObjectAndConstructExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue newObjectAndConstruct(final NewObjectAndConstructExpression aValue) {
+
+        final String theMethodName = WASMWriterUtils.toMethodName(aValue.getClazz(), "$newInstance", aValue.getSignature());
+        final WeakFunctionReferenceCallable theFunction = weakFunctionReference(theMethodName, aValue);
+
+        final List<WASMValue> theArguments = new ArrayList<>();
+        for (final Value theValue : aValue.incomingDataFlows()) {
+            theArguments.add(toValue(theValue));
+        }
+
+        return call(theFunction, theArguments, aValue);
     }
 
     private WASMValue enumConstants(final EnumConstantsExpression aValue) {

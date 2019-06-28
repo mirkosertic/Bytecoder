@@ -95,11 +95,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         // Construct a String
         theWriter.tab().text("newString").colon().text("function(aCharArray)").space().text("{").newLine();
-        theWriter.tab(2).text("var theNewString").assign().text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
         theWriter.tab(2).text("var theBytes").assign().text(theMinifier.toClassName(theArrayTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
         theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
-        theWriter.tab(2).text("theNewString.").text("$").text(Integer.toString(theStringClass.getUniqueId())).text(theMinifier.toMethodName("init", theStringConstructorSignature)).text("(theBytes);").newLine();
-        theWriter.tab(2).text("return theNewString;").newLine();
+        theWriter.tab(2).text("return ").text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("$newInstance", theStringConstructorSignature)).text("(theBytes);").newLine();
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("newMultiArray").colon().text("function(aDimensions,aDefault)").space().text("{").newLine();
@@ -381,9 +379,38 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
             theWriter.tab(2).text("if").space().text("(!").text(theMinifier.toSymbol("$INITIALIZED")).text(")").space().text("{").newLine();
             theWriter.tab(3).text(theMinifier.toSymbol("$INITIALIZED")).assign().text("true;").newLine();
+
+            // Constructors
+            theMethods.stream().forEach(aEntry -> {
+                final BytecodeMethod theMethod = aEntry.getValue();
+                if (theMethod.isConstructor() && aEntry.getProvidingClass() == theLinkedClass) {
+
+                    final StringBuilder theSignature = new StringBuilder();
+                    for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                        if (i>0) {
+                            theSignature.append(",");
+                        }
+                        theSignature.append("p");
+                        theSignature.append(i);
+                    }
+
+                    theWriter.tab(3).text("C.").text(theMinifier.toMethodName("$newInstance", theMethod.getSignature())).assign().text("function(").text(theSignature.toString()).text(")").space().text("{").newLine();
+                    theWriter.tab(4).text("var ").text(theMinifier.toSymbol("instance")).assign().text("new C();").newLine();
+
+                    theWriter.tab(4).text(theMinifier.toSymbol("instance")).text(".").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature()))
+                            .text("(").text(theSignature.toString()).text(");").newLine();
+
+
+                    theWriter.tab(4).text("return ").text(theMinifier.toSymbol("instance")).text(";").newLine();
+                    theWriter.tab(3).text("};").newLine();
+                }
+            });
+
+            // NewInstance function
             theWriter.tab(3).text("C.").text(theMinifier.toSymbol("newInstance")).assign().text("function()").space().text("{").newLine();
             theWriter.tab(4).text("return new C();").newLine();
             theWriter.tab(3).text("};").newLine();
+
             theWriter.tab(3).text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
             theWriter.tab(4).text("return C;").newLine();
             theWriter.tab(3).text("};").newLine();
@@ -399,7 +426,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab(3).text(theJSClassName).text(".").text(theMinifier.toMethodName("clinit", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]))).text("();").newLine();
             }
 
-
             theWriter.tab().tab().text("}").newLine();
             theWriter.tab().tab().text("return C;").newLine();
             theWriter.tab().text("};").newLine();
@@ -411,7 +437,38 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("};").newLine();
             theWriter.tab().text("C.prototype.constructor").assign().text("C").space().text(";").newLine();
 
-            // NewLamndaInstance function
+            // Constructors
+            theMethods.stream().forEach(aEntry -> {
+
+                final BytecodeMethod theMethod = aEntry.getValue();
+
+                if (theMethod.isConstructor() && aEntry.getProvidingClass() == theLinkedClass) {
+
+                    final StringBuilder theSignature = new StringBuilder();
+                    for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                        if (i>0) {
+                            theSignature.append(",");
+                        }
+                        theSignature.append("p");
+                        theSignature.append(i);
+                    }
+                    theWriter.tab().text("C.").text(theMinifier.toMethodName("$newInstance", theMethod.getSignature())).assign().text("function(").text(theSignature.toString()).text(")").space().text("{").newLine();
+                    theWriter.tab(2).text("C.").text(theMinifier.toSymbol("init")).text("();").newLine();
+                    theWriter.tab(2).text("var ").text(theMinifier.toSymbol("instance")).assign().text("new C();").newLine();
+
+                    theWriter.tab(2).text(theMinifier.toSymbol("instance")).text(".").text("$").text(Integer.toString(theLinkedClass.getUniqueId())).text(theMinifier.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature()))
+                            .text("(").text(theSignature.toString()).text(");").newLine();
+
+
+                    theWriter.tab(2).text("return ").text(theMinifier.toSymbol("instance")).text(";").newLine();
+                    theWriter.tab().text("};").newLine();
+                }
+
+            });
+
+            theWriter.tab().text("C.prototype.constructor").assign().text("C").space().text(";").newLine();
+
+            // NewLambdaInstance function
             if (theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theWriter.tab().text("C.").text(theMinifier.toSymbol("newLambdaInstance")).assign().text("function(impl)").space().text("{").newLine();
                 theWriter.tab(2).text("var l").assign().text("C.").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
