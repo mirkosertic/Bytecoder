@@ -1016,14 +1016,51 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 if (!intrinsics.intrinsify(aProgram, theINS, theType, theArguments, theTarget, aTargetBlock, aHelper)) {
 
-                    final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
-                            theMethodName, theSignature, theTarget, theArguments);
-                    if (theSignature.getReturnType().isVoid()) {
-                        aTargetBlock.getExpressions().add(theExpression);
-                    } else {
-                        final Variable theNewVariable = aTargetBlock
-                                .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
-                        aHelper.push(theNewVariable);
+                    // Check if we are constructing a new object here
+                    guard: {
+                        if ("<init>".equals(theMethodName)) {
+                            final List<Value> theInconingEdges = theTarget.incomingDataFlows();
+                            if (theInconingEdges.size() == 1 && theInconingEdges.get(0) instanceof NewObjectExpression) {
+
+                                final Set<RegionNode> thePath = new HashSet<>();
+                                thePath.add(aTargetBlock);
+                                for (final GraphNodePath path : aTargetBlock.getReachableBy()) {
+                                    thePath.addAll(path.getNodes());
+                                }
+
+                                for (final RegionNode theNode : thePath) {
+                                    for (final Expression theExpression : theNode.getExpressions().toList()) {
+                                        if (theExpression instanceof VariableAssignmentExpression) {
+                                            final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theExpression;
+                                            if (theAssignment.getVariable().getName().equals(theTarget.getName()) &&
+                                                    theAssignment.getValue() instanceof NewObjectExpression) {
+                                                // We have a candidate!
+                                                aTargetBlock.getExpressions().remove(theAssignment);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                aTargetBlock.getExpressions().add(
+                                        new VariableAssignmentExpression(aProgram, theINS.getOpcodeAddress(),
+                                                theTarget, new NewObjectAndConstructExpression(
+                                                aProgram, theInstruction.getOpcodeAddress(),
+                                                theType, theSignature, theArguments)
+                                        ));
+                                break guard;
+                            }
+
+                        }
+
+                        final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
+                                theMethodName, theSignature, theTarget, theArguments);
+                        if (theSignature.getReturnType().isVoid()) {
+                            aTargetBlock.getExpressions().add(theExpression);
+                        } else {
+                            final Variable theNewVariable = aTargetBlock
+                                    .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                            aHelper.push(theNewVariable);
+                        }
                     }
                 }
 
