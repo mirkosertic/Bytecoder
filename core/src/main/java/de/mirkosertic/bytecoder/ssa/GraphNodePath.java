@@ -51,4 +51,8 @@ public class GraphNodePath {
     public boolean contains(final RegionNode aNode) {
         return nodes.contains(aNode);
     }
+
+    public List<RegionNode> getNodes() {
+        return nodes;
+    }
 }
