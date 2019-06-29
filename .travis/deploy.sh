@@ -11,4 +11,4 @@ else
     echo "not on a tag -> keep snapshot version in pom.xml"
 fi
 
-mvn --settings .mvn/settings.xml clean javadoc:javadoc deploy -P notest -P signed
+mvn --settings .mvn/settings.xml clean javadoc:jar deploy -P notest -P signed
