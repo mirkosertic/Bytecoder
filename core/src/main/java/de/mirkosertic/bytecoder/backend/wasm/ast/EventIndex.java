@@ -19,11 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ExceptionIndex {
+public class EventIndex {
 
     private final List<WASMException> events;
 
-    ExceptionIndex() {
+    EventIndex() {
         events = new ArrayList<>();
     }
 

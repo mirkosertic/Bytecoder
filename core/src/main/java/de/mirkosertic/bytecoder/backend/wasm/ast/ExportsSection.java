@@ -48,7 +48,7 @@ public class ExportsSection extends ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter, final List<Memory> memoryIndex) throws IOException {
         final FunctionIndex functionIndex = getModule().functionIndex();
-        final ExceptionIndex eventIndex = getModule().exceptionIndex();
+        final EventIndex eventIndex = getModule().eventIndex();
         try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
             exportWriter.writeUnsignedLeb128(exports.size());
             for (final Map.Entry<String, Exportable> entry : exports.entrySet()) {

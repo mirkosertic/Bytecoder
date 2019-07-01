@@ -372,7 +372,7 @@ public class WASMSSAASTWriter {
             final Value theException = aExpression.incomingDataFlows().get(0);
             final WASMValue theValue = toValue(theException);
             stackExit();
-            flow.throwException(module.getExceptions().exceptionIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue), aExpression);
+            flow.throwException(module.getEvents().eventIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue), aExpression);
         } else {
             final Value theException = aExpression.incomingDataFlows().get(0);
             final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), "logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)})), aExpression);

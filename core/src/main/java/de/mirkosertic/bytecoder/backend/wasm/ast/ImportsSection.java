@@ -97,7 +97,7 @@ public class ImportsSection extends ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter,
             final List<Memory> memoryIndex) throws IOException {
-        final ExceptionIndex exceptionIndex = getModule().exceptionIndex();
+        final EventIndex exceptionIndex = getModule().eventIndex();
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.importsSection()) {
             sectionWriter.writeUnsignedLeb128(imports.size());
             for (final ImportEntry entry : imports) {

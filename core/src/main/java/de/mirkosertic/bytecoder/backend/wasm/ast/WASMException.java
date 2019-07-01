@@ -16,18 +16,17 @@
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.List;
 
 public class WASMException implements Exportable {
 
-    private final ExceptionsSection exceptionSection;
-    private final List<PrimitiveType> arguments;
+    private final WASMType type;
     private final String label;
+    private final TypesSection typesSection;
 
-    protected WASMException(final ExceptionsSection exceptionsSection, final String label, final List<PrimitiveType> argument) {
-        this.exceptionSection = exceptionsSection;
+    protected WASMException(final TypesSection typesSection, final String label, final WASMType type) {
         this.label = label;
-        this.arguments = argument;
+        this.type = type;
+        this.typesSection = typesSection;
     }
 
     public String getLabel() {
@@ -35,21 +34,17 @@ public class WASMException implements Exportable {
     }
 
     public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
-        sectionWriter.writeUnsignedLeb128(arguments.size());
-        for (final PrimitiveType type : arguments) {
-            type.writeTo(sectionWriter);
-        }
+        sectionWriter.writeUnsignedLeb128(0);
+        sectionWriter.writeUnsignedLeb128(typesSection.indexOf(type));
     }
 
     public void writeTo(final TextWriter textWriter) throws IOException {
         textWriter.opening();
-        textWriter.write("except");
+        textWriter.write("event");
         textWriter.space();
         textWriter.writeLabel(label);
-        for (final PrimitiveType type : arguments) {
-            textWriter.space();
-            type.writeTo(textWriter);
-        }
+        textWriter.space();
+        type.writeRefTo(textWriter);
         textWriter.closing();
         textWriter.newLine();
     }
@@ -57,7 +52,7 @@ public class WASMException implements Exportable {
     @Override
     public void writeRefTo(final TextWriter textWriter) throws IOException {
         textWriter.opening();
-        textWriter.write("except");
+        textWriter.write("event");
         textWriter.space();
         textWriter.writeLabel(label);
         textWriter.closing();

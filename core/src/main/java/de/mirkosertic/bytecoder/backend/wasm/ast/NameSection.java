@@ -66,7 +66,7 @@ public class NameSection extends ModuleSection {
                     }
                 }
             }
-            final ExceptionIndex eventIndex = getModule().exceptionIndex();
+            final EventIndex eventIndex = getModule().eventIndex();
             if (!eventIndex.isEmpty()) {
                 try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 3)) {
                     functionSection.writeUnsignedLeb128(eventIndex.size());

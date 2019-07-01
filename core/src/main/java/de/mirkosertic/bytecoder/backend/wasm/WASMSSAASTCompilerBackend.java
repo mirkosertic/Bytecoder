@@ -129,7 +129,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         // Exception handling
         if (aOptions.isEnableExceptions()) {
-            module.getExceptions().newException(WASMSSAASTWriter.EXCEPTION_NAME, Collections.singletonList(PrimitiveType.i32));
+            module.getEvents().newException(WASMSSAASTWriter.EXCEPTION_NAME, Collections.singletonList(PrimitiveType.i32));
         }
 
         final Global stackTop = module.getGlobals().newMutableGlobal(WASMSSAASTWriter.STACKTOP, PrimitiveType.i32, i32.c(-1, null));
