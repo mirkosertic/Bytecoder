@@ -1484,7 +1484,15 @@ public class WASMSSAASTWriter {
     }
 
     private void writeTryBlock(final Relooper.TryBlock aTryBlock) {
-        writeReloopedInternal(aTryBlock.inner());
-        writeReloopedInternal(aTryBlock.next());
+        if (compileOptions.isEnableExceptions()) {
+            WASMSSAASTWriter inner = Try(aTryBlock.label().name(), null);
+            inner.writeReloopedInternal(aTryBlock.inner());
+
+            // Write catch blocks
+        } else {
+            writeReloopedInternal(aTryBlock.inner());
+            writeReloopedInternal(aTryBlock.next());
+        }
+
     }
 }
