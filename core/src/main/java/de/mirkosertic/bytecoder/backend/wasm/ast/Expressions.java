@@ -92,7 +92,13 @@ public class Expressions {
     }
 
     public Block block(final String label, final Expression expression) {
-        final Block block = new Block(label, parent, expression);
+        final Block block = new Block(label, parent, expression, PrimitiveType.empty_pseudo_block);
+        parent.addChild(block);
+        return block;
+    }
+
+    public Block block(final String label, PrimitiveType blockType, final Expression expression) {
+        final Block block = new Block(label, parent, expression, blockType);
         parent.addChild(block);
         return block;
     }
