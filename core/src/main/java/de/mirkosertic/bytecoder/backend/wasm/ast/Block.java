@@ -23,7 +23,7 @@ public class Block extends LabeledContainer implements WASMExpression {
 
     private final PrimitiveType blockType;
 
-    Block(final String label, final Container parent, final Expression expression, PrimitiveType blockType) {
+    Block(final String label, final Container parent, final Expression expression, final PrimitiveType blockType) {
         super(parent, label, expression);
         this.blockType = blockType;
     }
@@ -33,6 +33,7 @@ public class Block extends LabeledContainer implements WASMExpression {
         textWriter.opening();
         textWriter.write("block");
         textWriter.space();
+        textWriter.writeLabel(getLabel());
         if (blockType != PrimitiveType.empty_pseudo_block) {
             textWriter.space();
             textWriter.opening();
@@ -41,7 +42,6 @@ public class Block extends LabeledContainer implements WASMExpression {
             blockType.writeTo(textWriter);
             textWriter.closing();
         }
-        textWriter.writeLabel(getLabel());
         if (hasChildren()) {
             textWriter.newLine();
             for (final WASMValue child : getChildren()) {

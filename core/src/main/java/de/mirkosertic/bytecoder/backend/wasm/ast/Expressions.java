@@ -97,7 +97,7 @@ public class Expressions {
         return block;
     }
 
-    public Block block(final String label, PrimitiveType blockType, final Expression expression) {
+    public Block block(final String label, final PrimitiveType blockType, final Expression expression) {
         final Block block = new Block(label, parent, expression, blockType);
         parent.addChild(block);
         return block;
@@ -139,6 +139,11 @@ public class Expressions {
         parent.addChild(new Unreachable(expression));
     }
 
+    public void setLocal(final Local local, final Expression expression) {
+        final SetLocal setLocal = new SetLocal(local, null, expression);
+        parent.addChild(setLocal);
+    }
+
     public void setLocal(final Local local, final WASMValue value, final Expression expression) {
         final SetLocal setLocal = new SetLocal(local, value, expression);
         parent.addChild(setLocal);
@@ -150,7 +155,13 @@ public class Expressions {
     }
 
     public Try Try(final String label, final Expression expression) {
-        final Try t = new Try(parent, label, expression);
+        final Try t = new Try(parent, null, label, expression);
+        parent.addChild(t);
+        return t;
+    }
+
+    public Try Try(final String label, final PrimitiveType blockType, final Expression expression) {
+        final Try t = new Try(parent, blockType, label, expression);
         parent.addChild(t);
         return t;
     }
@@ -161,7 +172,17 @@ public class Expressions {
     }
 
     public void rethrowException(final Expression expression) {
-        final RethrowException r  = new RethrowException(expression);
+        final RethrowException r  = new RethrowException(null, expression);
         parent.addChild(r);
+    }
+
+    public void rethrowException(final WASMValue value, final Expression expression) {
+        final RethrowException r  = new RethrowException(value, expression);
+        parent.addChild(r);
+    }
+
+    public void branchOnException(final LabeledContainer branchContainer, final WASMException exceptionType, final Expression expression) {
+        final BranchOnException b = new BranchOnException(branchContainer, exceptionType, expression);
+        parent.addChild(b);
     }
 }

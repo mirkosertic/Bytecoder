@@ -25,6 +25,7 @@ public enum PrimitiveType {
     anyfunc("anyfunc", (byte) 0x70),
     func("func", (byte) 0x60),
     empty_pseudo_block("pseudo", (byte) 0x40),
+    anyref("anyref", (byte) 0x6f),
     except_ref("except_ref", (byte) -0x18);
 
     private final String text;

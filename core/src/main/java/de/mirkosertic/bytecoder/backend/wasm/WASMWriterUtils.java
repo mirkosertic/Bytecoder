@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -27,8 +26,7 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 
 public class WASMWriterUtils {
 
-
-    public static String typeRefToString(final BytecodeTypeRef aTypeRef) {
+    private static String typeRefToString(final BytecodeTypeRef aTypeRef) {
         if (aTypeRef.isPrimitive()) {
             final BytecodePrimitiveTypeRef thePrimitive = (BytecodePrimitiveTypeRef) aTypeRef;
             return thePrimitive.name();
@@ -40,19 +38,6 @@ public class WASMWriterUtils {
         final BytecodeObjectTypeRef theObjectRef = (BytecodeObjectTypeRef) aTypeRef;
         return toClassName(theObjectRef);
     }
-
-    public static String toMethodSignature(final BytecodeMethodSignature aSignature, final boolean aIsStatic) {
-        String theName = typeRefToString(aSignature.getReturnType()) + "_";
-        if (!aIsStatic) {
-            theName += "THISREF";
-        }
-
-        for (final BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
-            theName += typeRefToString(theTypeRef);
-        }
-        return theName.replace("(", "").replace(")", "");
-    }
-
 
     public static String toMethodName(final String aMethodName, final BytecodeMethodSignature aSignature) {
         String theName = typeRefToString(aSignature.getReturnType());
@@ -72,7 +57,7 @@ public class WASMWriterUtils {
         return toClassName(aClassName) + "_" + toMethodName(aConstant.stringValue(), aSignature);
     }
 
-    public static String toClassNameInternal(final String aClassName) {
+    private static String toClassNameInternal(final String aClassName) {
         final int p = aClassName.lastIndexOf(".");
         final String theSimpleName = aClassName.substring(p + 1);
         String thePackageName = aClassName.substring(0, p);
@@ -98,10 +83,6 @@ public class WASMWriterUtils {
         return toClassNameInternal(aTypeRef.name());
     }
 
-    public static String toClassName(final BytecodeClassinfoConstant aTypeRef) {
-        return toClassNameInternal(aTypeRef.getConstant().stringValue().replace("/","."));
-    }
-
     public static String toType(final TypeRef aType) {
         switch (aType.resolve()) {
             case DOUBLE:
@@ -111,28 +92,5 @@ public class WASMWriterUtils {
             default:
                 return "i32";
         }
-    }
-
-    public static String toWASMMethodSignature(final BytecodeMethodSignature aSignatutre) {
-        String theTypeDefinition = "(func";
-
-        theTypeDefinition+= " (param ";
-        theTypeDefinition+= WASMWriterUtils.toType(TypeRef.Native.REFERENCE);
-        theTypeDefinition+=")";
-
-        for (int i=0;i<aSignatutre.getArguments().length;i++) {
-            final BytecodeTypeRef theParamType = aSignatutre.getArguments()[i];
-            theTypeDefinition+= " (param ";
-            theTypeDefinition+=WASMWriterUtils.toType(TypeRef.toType(theParamType));
-            theTypeDefinition+= ")";
-        }
-
-        if (!aSignatutre.getReturnType().isVoid()) {
-            theTypeDefinition+= " (result "; // result
-            theTypeDefinition+=WASMWriterUtils.toType(TypeRef.toType(aSignatutre.getReturnType()));
-            theTypeDefinition+=")";
-        }
-        theTypeDefinition+= ")";
-        return theTypeDefinition;
     }
 }

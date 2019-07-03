@@ -37,15 +37,19 @@ public class SetLocal implements WASMExpression {
         textWriter.write("set_local");
         textWriter.space();
         textWriter.writeLabel(local.getLabel());
-        textWriter.space();
-        value.writeTo(textWriter, context);
+        if (value != null) {
+            textWriter.space();
+            value.writeTo(textWriter, context);
+        }
         textWriter.closing();
         textWriter.newLine();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        value.writeTo(codeWriter, context);
+        if (value != null) {
+            value.writeTo(codeWriter, context);
+        }
         codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x21);
         codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));

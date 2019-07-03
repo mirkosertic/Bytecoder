@@ -319,6 +319,10 @@ public class ConstExpressions {
         return new TeeLocal(local, value, expression);
     }
 
+    public static TeeLocal teeLocal(final Local local, final Expression expression) {
+        return new TeeLocal(local, null, expression);
+    }
+
     public static GetGlobal getGlobal(final Global global, final Expression expression) {
         return new GetGlobal(global, expression);
     }

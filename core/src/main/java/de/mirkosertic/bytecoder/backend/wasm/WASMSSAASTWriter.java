@@ -27,7 +27,6 @@ import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
 
@@ -112,6 +111,11 @@ public class WASMSSAASTWriter {
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
     }
 
+    private WASMSSAASTWriter block(final String label, final PrimitiveType blockType, final Expression expression) {
+        final Block block = flow.block(label, blockType, expression);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+    }
+
     private class IFCondition {
 
         private final WASMSSAASTWriter trueWriter;
@@ -132,6 +136,11 @@ public class WASMSSAASTWriter {
 
     private WASMSSAASTWriter Try(final String label, final Expression expression) {
         final Try block = flow.Try(label, expression);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+    }
+
+    private WASMSSAASTWriter Try(final String label, final PrimitiveType blockType, final Expression expression) {
+        final Try block = flow.Try(label, blockType, expression);
         return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
     }
 
@@ -371,7 +380,6 @@ public class WASMSSAASTWriter {
         if (compileOptions.isEnableExceptions()) {
             final Value theException = aExpression.incomingDataFlows().get(0);
             final WASMValue theValue = toValue(theException);
-            stackExit();
             flow.throwException(module.getEvents().eventIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue), aExpression);
         } else {
             final Value theException = aExpression.incomingDataFlows().get(0);
@@ -380,7 +388,6 @@ public class WASMSSAASTWriter {
             arguments.add(i32.c(0, aExpression));
             arguments.add(toValue(theException));
             flow.voidCall(function, arguments, aExpression);
-            stackExit();
             flow.unreachable(aExpression);
         }
     }
@@ -904,7 +911,7 @@ public class WASMSSAASTWriter {
             }
         }
 
-        if (!theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).collect(Collectors.toList()).isEmpty()) {
+        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1360,20 +1367,45 @@ public class WASMSSAASTWriter {
         if (labelRequired) {
             function.newLocal(LABEL_LOCAL, PrimitiveType.i32);
         }
+
         stackEnter();
-        writeReloopedInternal(aBlock);
 
-        final List<WASMExpression> theExpressions = container.getChildren();
-        if (!theExpressions.isEmpty()) {
-            final WASMExpression theLast = theExpressions.get(theExpressions.size() - 1);
-            if (theLast instanceof Return || theLast instanceof ReturnValue ||
-                    theLast instanceof Unreachable) {
-                // Does not make sense to add an unreachable
-                return;
+        if (compileOptions.isEnableExceptions()) {
+
+            final WASMSSAASTWriter theGlobalTry;
+            if (function.getFunctionType().isVoid()) {
+                theGlobalTry = Try("globalTry", null);
+            } else {
+                theGlobalTry = Try("globalTry", function.getFunctionType().getResultType(), null);
             }
-        }
 
-        flow.unreachable(null);
+            theGlobalTry.writeReloopedInternal(aBlock);
+            theGlobalTry.container.flow.unreachable(null);
+
+            final Try theGlobal = (Try) theGlobalTry.container;
+
+            final int theStackSize = stackSize();
+            if (theStackSize > 0) {
+                theGlobal.catchBlock.flow.setGlobal(module.getGlobals().globalsIndex().globalByLabel(STACKTOP), getLocal(function.localByLabel(OLDSP), null), null);
+            }
+
+            theGlobal.catchBlock.flow.rethrowException(null);
+
+        } else {
+            writeReloopedInternal(aBlock);
+
+            final List<WASMExpression> theExpressions = container.getChildren();
+            if (!theExpressions.isEmpty()) {
+                final WASMExpression theLast = theExpressions.get(theExpressions.size() - 1);
+                if (theLast instanceof Return || theLast instanceof ReturnValue ||
+                        theLast instanceof Unreachable) {
+                    // Does not make sense to add an unreachable
+                    return;
+                }
+            }
+
+            flow.unreachable(null);
+        }
     }
 
     private void writeReloopedInternal(final Relooper.Block aBlock) {
@@ -1406,21 +1438,11 @@ public class WASMSSAASTWriter {
     private void writeSimpleBlock(final Relooper.SimpleBlock aSimpleBlock) {
         WASMSSAASTWriter theWriter = this;
 
-        final boolean canThrowExeption = aSimpleBlock.internalLabel().canThrowException() && compileOptions.isEnableExceptions();
-        if (canThrowExeption) {
-            theWriter = Try(aSimpleBlock.label().name(), null);
-            theWriter.writeExpressionList(aSimpleBlock.expressions());
-
-            final Try theTry = (Try) theWriter.container;
-
-            theTry.catchBlock.flow.rethrowException(null);
-        } else {
-            if (aSimpleBlock.isLabelRequired()) {
-                theWriter = block(aSimpleBlock.label().name(), null);
-            }
-
-            theWriter.writeExpressionList(aSimpleBlock.expressions());
+        if (aSimpleBlock.isLabelRequired()) {
+            theWriter = block(aSimpleBlock.label().name(), null);
         }
+
+        theWriter.writeExpressionList(aSimpleBlock.expressions());
 
         writeReloopedInternal(aSimpleBlock.next());
     }
@@ -1485,10 +1507,48 @@ public class WASMSSAASTWriter {
 
     private void writeTryBlock(final Relooper.TryBlock aTryBlock) {
         if (compileOptions.isEnableExceptions()) {
-            WASMSSAASTWriter inner = Try(aTryBlock.label().name(), null);
-            inner.writeReloopedInternal(aTryBlock.inner());
+
+            final WASMSSAASTWriter outer = block(aTryBlock.label().name(), null);
+            final WASMSSAASTWriter handler = outer.block("handler", PrimitiveType.i32, null);
+            final WASMSSAASTWriter tryblock = handler.Try("inner", null);
+
+            final Try t = (Try) tryblock.container;
+            tryblock.writeReloopedInternal(aTryBlock.inner());
+
+            t.catchBlock.flow.branchOnException((LabeledContainer) handler.container, module.getEvents().eventIndex().byLabel(EXCEPTION_NAME), null);
+            t.catchBlock.flow.rethrowException(null);
+            handler.flow.branch((LabeledContainer) outer.container, null);
 
             // Write catch blocks
+
+            // Also we need to JVM Exception data as this is the original Exception object
+            Local currentVMException = null;
+            try {
+                currentVMException = function.localByLabel("CURRENT_JAVA_EXCEPTION");
+            } catch (final Exception e) {
+                currentVMException = function.newLocal("CURRENT_JAVA_EXCEPTION", PrimitiveType.i32);
+            }
+            outer.flow.setLocal(currentVMException, null);
+
+            final List<Relooper.TryBlock.CatchBlock> theCatches = aTryBlock.getCatchBlocks();
+            for (final Relooper.TryBlock.CatchBlock c : theCatches) {
+                for (final BytecodeUtf8Constant theCatchedException : c.getCaughtExceptions()) {
+                    final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theCatchedException));
+                    final WASMSSAASTWriter catchHandler = outer.block("c" + theLinkedClass.getUniqueId(), null);
+
+                    // Check for exceptions here
+                    final Function theFunction = module.functionIndex().firstByLabel("INSTANCEOF_CHECK");
+                    final WASMValue theInstanceOfValue = call(theFunction, Arrays.asList(getLocal(currentVMException, null), i32.c(theLinkedClass.getUniqueId(), null)), null);
+                    catchHandler.flow.branchIff((LabeledContainer) catchHandler.container, i32.ne(i32.c(1, null), theInstanceOfValue, null), null);
+
+                    catchHandler.writeReloopedInternal(c.getHandler());
+                }
+            }
+
+            // TODO: We create a new exception here, but we should throw the old one to keep the stack trace?
+            outer.flow.throwException(module.getEvents().eventIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(getLocal(currentVMException, null)), null);
+
+            writeReloopedInternal(aTryBlock.next());
         } else {
             writeReloopedInternal(aTryBlock.inner());
             writeReloopedInternal(aTryBlock.next());

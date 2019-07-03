@@ -19,34 +19,36 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 
 import java.io.IOException;
 
-public class RethrowException implements WASMExpression {
+public class BranchOnException implements WASMExpression {
 
-    private final WASMValue value;
+    private final LabeledContainer targetContainer;
+    private final WASMException exceptionType;
     private final Expression expression;
 
-    RethrowException(final WASMValue value, final Expression expression) {
-        this.value = value;
+    BranchOnException(final LabeledContainer targetContainer, final WASMException exceptionType, final Expression expression) {
+        this.targetContainer = targetContainer;
+        this.exceptionType = exceptionType;
         this.expression = expression;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
-        textWriter.write("rethrow");
-        if (value != null) {
-            textWriter.space();
-            value.writeTo(textWriter, context);
-        }
+        textWriter.write("br_on_exn");
+        textWriter.space();
+        textWriter.writeLabel(targetContainer.getLabel());
+        textWriter.space();
+        textWriter.writeLabel(exceptionType.getLabel());
         textWriter.closing();
         textWriter.newLine();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        if (value != null) {
-            value.writeTo(codeWriter, context);
-        }
+        final int relativeDepth = context.owningContainer().relativeDepthTo(targetContainer);
         codeWriter.registerDebugInformationFor(expression);
-        codeWriter.writeByte((byte) 0x09);
+        codeWriter.writeByte((byte) 0x0a);
+        codeWriter.writeUnsignedLeb128(relativeDepth);
+        codeWriter.writeUnsignedLeb128(context.eventIndex().indexOf(exceptionType));
     }
 }
