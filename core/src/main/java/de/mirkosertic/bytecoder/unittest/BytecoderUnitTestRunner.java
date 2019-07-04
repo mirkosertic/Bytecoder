@@ -46,7 +46,6 @@ import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -64,15 +63,23 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     private static ChromeDriverService DRIVERSERVICE;
 
-    private final List<FrameworkMethod> testMethods;
-    private final TestClass testClass;
-
     public BytecoderUnitTestRunner(final Class aClass) throws InitializationError {
         super(aClass);
-        testClass = new TestClass(aClass);
-        testMethods = new ArrayList<>();
+    }
 
-        final Method[] classMethods = aClass.getDeclaredMethods();
+    @Override
+    public Description getDescription() {
+        final TestClass testClass = getTestClass();
+        return Description.createSuiteDescription(testClass.getName(),
+                testClass.getJavaClass().getAnnotations());
+    }
+
+    @Override
+    protected List<FrameworkMethod> getChildren() {
+        final List<FrameworkMethod> testMethods = new ArrayList<>();
+
+        final TestClass testClass = getTestClass();
+        final Method[] classMethods = testClass.getJavaClass().getDeclaredMethods();
         for (final Method classMethod : classMethods) {
             final Class retClass = classMethod.getReturnType();
             final int length = classMethod.getParameterTypes().length;
@@ -93,26 +100,19 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 }
             }
         }
-    }
 
-    @Override
-    public Description getDescription() {
-        return Description.createSuiteDescription(testClass.getName(),
-                testClass.getJavaClass().getAnnotations());
-    }
-
-    @Override
-    protected List<FrameworkMethod> getChildren() {
         return testMethods;
     }
 
     @Override
     protected Description describeChild(final FrameworkMethod frameworkMethod) {
+        final TestClass testClass = getTestClass();
         return Description.createTestDescription(testClass.getJavaClass(), frameworkMethod.getName());
     }
 
     private void testJVMBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_JVMTESTS", ""))) {
+            final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JVM Target");
             aRunNotifier.fireTestStarted(theDescription);
             try {
@@ -156,15 +156,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
 
-        final DesiredCapabilities theCapabilities = DesiredCapabilities.chrome();
-        theCapabilities.setCapability(ChromeOptions.CAPABILITY, theOptions);
-
-        return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theCapabilities);
+        return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
     }
 
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final boolean aMinify) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
-
+            final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend Minify = " + aMinify);
             aRunNotifier.fireTestStarted(theDescription);
 
@@ -255,6 +252,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
 
     private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final boolean aWABTCompileTest) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS", ""))) {
+            final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " WASM AST Backend ");
             aRunNotifier.fireTestStarted(theDescription);
 
