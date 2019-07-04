@@ -95,9 +95,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                         || null != classMethod.getAnnotation(Test.class)) {
                     testMethods.add(new FrameworkMethod(classMethod));
                 }
-                if (null != classMethod.getAnnotation(Ignore.class)) {
-                    testMethods.remove(classMethod);
-                }
             }
         }
 
