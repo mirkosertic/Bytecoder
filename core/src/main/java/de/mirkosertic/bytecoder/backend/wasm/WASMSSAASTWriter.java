@@ -1370,7 +1370,7 @@ public class WASMSSAASTWriter {
 
         stackEnter();
 
-        if (compileOptions.isEnableExceptions()) {
+        if (compileOptions.isEnableExceptions() && stackSize() > 0) {
 
             final WASMSSAASTWriter theGlobalTry;
             if (function.getFunctionType().isVoid()) {
