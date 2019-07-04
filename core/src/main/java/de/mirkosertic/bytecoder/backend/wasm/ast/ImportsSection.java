@@ -114,9 +114,9 @@ public class ImportsSection extends ModuleSection {
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
-                } else if (value instanceof WASMException) {
+                } else if (value instanceof WASMEvent) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
-                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WASMException) value));
+                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WASMEvent) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

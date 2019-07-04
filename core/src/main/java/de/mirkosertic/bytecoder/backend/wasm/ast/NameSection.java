@@ -71,7 +71,7 @@ public class NameSection extends ModuleSection {
                 try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 3)) {
                     functionSection.writeUnsignedLeb128(eventIndex.size());
                     for (int i = 0; i < eventIndex.size(); i++) {
-                        final WASMException f = eventIndex.get(i);
+                        final WASMEvent f = eventIndex.get(i);
                         functionSection.writeUnsignedLeb128(i);
                         functionSection.writeUTF8(f.getLabel());
                     }

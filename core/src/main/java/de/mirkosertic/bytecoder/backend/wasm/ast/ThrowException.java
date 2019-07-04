@@ -22,11 +22,11 @@ import java.util.List;
 
 public class ThrowException implements WASMExpression {
 
-    private final WASMException exception;
+    private final WASMEvent exception;
     private final List<WASMValue> arguments;
     private final Expression expression;
 
-    public ThrowException(final WASMException exception, final List<WASMValue> arguments, final Expression expression) {
+    public ThrowException(final WASMEvent exception, final List<WASMValue> arguments, final Expression expression) {
         this.exception = exception;
         this.arguments = arguments;
         this.expression = expression;

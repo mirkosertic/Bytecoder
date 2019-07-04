@@ -166,7 +166,7 @@ public class Expressions {
         return t;
     }
 
-    public void throwException(final WASMException exception, final List<WASMValue> arguments, final Expression expression) {
+    public void throwException(final WASMEvent exception, final List<WASMValue> arguments, final Expression expression) {
         final ThrowException t = new ThrowException(exception, arguments, expression);
         parent.addChild(t);
     }
@@ -181,7 +181,7 @@ public class Expressions {
         parent.addChild(r);
     }
 
-    public void branchOnException(final LabeledContainer branchContainer, final WASMException exceptionType, final Expression expression) {
+    public void branchOnException(final LabeledContainer branchContainer, final WASMEvent exceptionType, final Expression expression) {
         final BranchOnException b = new BranchOnException(branchContainer, exceptionType, expression);
         parent.addChild(b);
     }

@@ -22,10 +22,10 @@ import java.io.IOException;
 public class BranchOnException implements WASMExpression {
 
     private final LabeledContainer targetContainer;
-    private final WASMException exceptionType;
+    private final WASMEvent exceptionType;
     private final Expression expression;
 
-    BranchOnException(final LabeledContainer targetContainer, final WASMException exceptionType, final Expression expression) {
+    BranchOnException(final LabeledContainer targetContainer, final WASMEvent exceptionType, final Expression expression) {
         this.targetContainer = targetContainer;
         this.exceptionType = exceptionType;
         this.expression = expression;

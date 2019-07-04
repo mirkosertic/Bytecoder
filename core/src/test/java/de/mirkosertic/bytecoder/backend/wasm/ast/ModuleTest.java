@@ -1402,7 +1402,7 @@ public class ModuleTest {
 
         module.getMems().newMemory(512, 512);
 
-        final WASMException exception = module.getEvents().newException("except", Collections.singletonList(PrimitiveType.i32));
+        final WASMEvent exception = module.getEvents().newException("except", Collections.singletonList(PrimitiveType.i32));
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
         final Try t = testFunction.flow.Try("tr",null);
@@ -1442,7 +1442,7 @@ public class ModuleTest {
         module.getMems().newMemory(512, 512);
 
         final WASMType singleArgumentType = module.getTypes().typeFor(Collections.singletonList(PrimitiveType.i32));
-        final WASMException exception = module.getEvents().newException("except", Collections.singletonList(PrimitiveType.i32));
+        final WASMEvent exception = module.getEvents().newException("except", Collections.singletonList(PrimitiveType.i32));
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
         final Try t = testFunction.flow.Try("tr",null);
