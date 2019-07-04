@@ -52,6 +52,10 @@ public class WASMType {
         return resultType == null;
     }
 
+    public PrimitiveType getResultType() {
+        return resultType;
+    }
+
     public void writeTo(final TextWriter writer) {
         writer.opening();
         writer.write("type");

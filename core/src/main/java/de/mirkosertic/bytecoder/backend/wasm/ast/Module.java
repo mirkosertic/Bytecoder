@@ -31,7 +31,7 @@ public class Module {
     private final ImportsSection imports;
     private final ExportsSection exports;
     private final NameSection names;
-    private final ExceptionsSection exceptions;
+    private final EventSection events;
     private final SourceMapSection sourceMapSection;
 
     public Module(final String label, final String sourcemapFileName) {
@@ -47,7 +47,7 @@ public class Module {
         final StartSection start = new StartSection(this);
         imports = new ImportsSection(this);
         names = new NameSection(this);
-        exceptions = new ExceptionsSection(this);
+        events = new EventSection(this);
         sourceMapSection = new SourceMapSection(this, sourcemapFileName);
     }
 
@@ -62,7 +62,7 @@ public class Module {
         imports.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
-        exceptions.writeCodeTo(writer);
+        events.writeCodeTo(writer);
         tables.writeTo(writer);
         elements.writeTo(writer);
         functions.writeTo(writer);
@@ -78,8 +78,8 @@ public class Module {
         return globals.globalsIndex();
     }
 
-    public ExceptionIndex exceptionIndex() {
-        return exceptions.exceptionIndex();
+    public EventIndex eventIndex() {
+        return events.eventIndex();
     }
 
     public FunctionIndex functionIndex() {
@@ -103,7 +103,7 @@ public class Module {
         tables.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
-        exceptions.writeCodeTo(writer);
+        events.writeCodeTo(writer);
         exports.writeTo(writer, memoryIndex);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
@@ -141,7 +141,7 @@ public class Module {
         return tables;
     }
 
-    public ExceptionsSection getExceptions() {
-        return exceptions;
+    public EventSection getEvents() {
+        return events;
     }
 }

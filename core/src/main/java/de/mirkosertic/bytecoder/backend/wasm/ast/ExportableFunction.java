@@ -66,8 +66,8 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public ExceptionIndex eventIndex() {
-            return getModule().exceptionIndex();
+        public EventIndex eventIndex() {
+            return getModule().eventIndex();
         }
     }
 

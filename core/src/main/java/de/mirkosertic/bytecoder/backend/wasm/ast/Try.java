@@ -21,10 +21,12 @@ import java.io.IOException;
 
 public class Try extends LabeledContainer implements WASMExpression {
 
+    private final PrimitiveType blockType;
     public final Catch catchBlock;
 
-    Try(final Container parent, final String label, final Expression expression) {
+    Try(final Container parent, final PrimitiveType blockType, final String label, final Expression expression) {
         super(parent, label, expression);
+        this.blockType = blockType;
         catchBlock = new Catch(this);
     }
 
@@ -34,6 +36,14 @@ public class Try extends LabeledContainer implements WASMExpression {
         textWriter.write("try");
         textWriter.space();
         textWriter.writeLabel(getLabel());
+        if (blockType != null) {
+            textWriter.space();
+            textWriter.opening();
+            textWriter.write("result");
+            textWriter.space();
+            blockType.writeTo(textWriter);
+            textWriter.closing();
+        }
         textWriter.newLine();
 
         for (final WASMExpression e : getChildren()) {
@@ -49,7 +59,11 @@ public class Try extends LabeledContainer implements WASMExpression {
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x06);
-        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        if (blockType != null) {
+            blockType.writeTo(codeWriter);
+        } else {
+            PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        }
         for (final WASMExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }

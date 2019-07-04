@@ -15,6 +15,19 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm.ast;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
@@ -24,20 +37,6 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
 
 public class ModuleTest {
 
@@ -1403,7 +1402,7 @@ public class ModuleTest {
 
         module.getMems().newMemory(512, 512);
 
-        final WASMException exception = module.getExceptions().newException("except", Collections.singletonList(PrimitiveType.i32));
+        final WASMEvent exception = module.getEvents().newException("except", Collections.singletonList(PrimitiveType.i32));
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
         final Try t = testFunction.flow.Try("tr",null);
@@ -1419,20 +1418,21 @@ public class ModuleTest {
         final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, new PrintWriter(sw));
 
-        Assert.assertEquals("(module $mod" + System.lineSeparator()
-                + "    (type $t0 (func (result i32)))" + System.lineSeparator()
-                + "    (memory $mem0 512 512)" + System.lineSeparator()
-                + "    (except $except i32)" + System.lineSeparator()
-                + "    (func $testFunction (type $t0) (result i32)" + System.lineSeparator()
-                + "        (try $tr" + System.lineSeparator()
-                + "            (throw $except (i32.const 42))" + System.lineSeparator()
-                + "            (return (i32.const 1))" + System.lineSeparator()
-                + "            (catch" + System.lineSeparator()
-                + "                (return (i32.const 3))" + System.lineSeparator()
-                + "                )" + System.lineSeparator()
-                + "            )" + System.lineSeparator()
-                + "        (unreachable))" + System.lineSeparator()
-                + "    )", sw.toString());
+        Assert.assertEquals("(module $mod" + System.lineSeparator() +
+                "    (type $t0 (func (param i32)))" + System.lineSeparator() +
+                "    (type $t1 (func (result i32)))" + System.lineSeparator() +
+                "    (memory $mem0 512 512)" + System.lineSeparator() +
+                "    (event $except (type $t0))" + System.lineSeparator() +
+                "    (func $testFunction (type $t1) (result i32)" + System.lineSeparator() +
+                "        (try $tr" + System.lineSeparator() +
+                "            (throw $except (i32.const 42))" + System.lineSeparator() +
+                "            (return (i32.const 1))" + System.lineSeparator() +
+                "            (catch" + System.lineSeparator() +
+                "                (return (i32.const 3))" + System.lineSeparator() +
+                "                )" + System.lineSeparator() +
+                "            )" + System.lineSeparator() +
+                "        (unreachable))" + System.lineSeparator() +
+                "    )", sw.toString());
     }
 
     @Test
@@ -1442,7 +1442,7 @@ public class ModuleTest {
         module.getMems().newMemory(512, 512);
 
         final WASMType singleArgumentType = module.getTypes().typeFor(Collections.singletonList(PrimitiveType.i32));
-        final WASMException exception = module.getExceptions().newException("except", Collections.singletonList(PrimitiveType.i32));
+        final WASMEvent exception = module.getEvents().newException("except", Collections.singletonList(PrimitiveType.i32));
 
         final ExportableFunction testFunction = module.getFunctions().newFunction("testFunction", PrimitiveType.i32);
         final Try t = testFunction.flow.Try("tr",null);
@@ -1459,7 +1459,7 @@ public class ModuleTest {
         final Exporter exporter = new Exporter(debugOptions());
         exporter.export(module, bos, theSourceMap);
 
-        //try (final FileOutputStream fos = new FileOutputStream("/home/sertic/Development/Projects/Bytecoder/core/src/test/resources/de/mirkosertic/bytecoder/backend/wasm/ast/testExceptionModule.wasm")) {
+        //try (final FileOutputStream fos = new FileOutputStream("D:\\IdeaProjects\\Bytecoder\\core\\src\\test\\resources\\de\\mirkosertic\\bytecoder\\backend\\wasm\\ast\\testExceptionModule.wasm")) {
         //    exporter.export(module, fos, theSourceMap);
         //}
 
@@ -1468,4 +1468,6 @@ public class ModuleTest {
 
         Assert.assertEquals("{\"version\":3,\"file\":\"mod.wasm\",\"sourceRoot\":\"\",\"names\":[],\"sources\":[],\"mappings\":\"\"}", theSourceMap.toString());
     }
+
+
 }

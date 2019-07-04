@@ -18,41 +18,37 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import de.mirkosertic.bytecoder.ssa.Expression;
 
 import java.io.IOException;
-import java.util.List;
 
-public class ThrowException implements WASMExpression {
+public class BranchOnException implements WASMExpression {
 
-    private final WASMEvent exception;
-    private final List<WASMValue> arguments;
+    private final LabeledContainer targetContainer;
+    private final WASMEvent exceptionType;
     private final Expression expression;
 
-    public ThrowException(final WASMEvent exception, final List<WASMValue> arguments, final Expression expression) {
-        this.exception = exception;
-        this.arguments = arguments;
+    BranchOnException(final LabeledContainer targetContainer, final WASMEvent exceptionType, final Expression expression) {
+        this.targetContainer = targetContainer;
+        this.exceptionType = exceptionType;
         this.expression = expression;
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
-        textWriter.write("throw");
+        textWriter.write("br_on_exn");
         textWriter.space();
-        textWriter.writeLabel(exception.getLabel());
-        for (final WASMValue argument : arguments) {
-            textWriter.space();
-            argument.writeTo(textWriter, context);
-        }
+        textWriter.writeLabel(targetContainer.getLabel());
+        textWriter.space();
+        textWriter.writeLabel(exceptionType.getLabel());
         textWriter.closing();
         textWriter.newLine();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        for (final WASMValue value : arguments) {
-            value.writeTo(codeWriter, context);
-        }
+        final int relativeDepth = context.owningContainer().relativeDepthTo(targetContainer);
         codeWriter.registerDebugInformationFor(expression);
-        codeWriter.writeByte((byte) 0x08);
-        codeWriter.writeSignedLeb128(context.eventIndex().indexOf(exception));
+        codeWriter.writeByte((byte) 0x0a);
+        codeWriter.writeUnsignedLeb128(relativeDepth);
+        codeWriter.writeUnsignedLeb128(context.eventIndex().indexOf(exceptionType));
     }
 }
