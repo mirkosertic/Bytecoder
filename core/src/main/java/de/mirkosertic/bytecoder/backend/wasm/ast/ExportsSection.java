@@ -48,7 +48,7 @@ public class ExportsSection extends ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter, final List<Memory> memoryIndex) throws IOException {
         final FunctionIndex functionIndex = getModule().functionIndex();
-        final ExceptionIndex eventIndex = getModule().exceptionIndex();
+        final EventIndex eventIndex = getModule().eventIndex();
         try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
             exportWriter.writeUnsignedLeb128(exports.size());
             for (final Map.Entry<String, Exportable> entry : exports.entrySet()) {
@@ -60,9 +60,9 @@ public class ExportsSection extends ModuleSection {
                 } else if (value instanceof Memory) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     exportWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
-                } else if (value instanceof WASMException) {
+                } else if (value instanceof WASMEvent) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
-                    exportWriter.writeUnsignedLeb128(eventIndex.indexOf((WASMException) value));
+                    exportWriter.writeUnsignedLeb128(eventIndex.indexOf((WASMEvent) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

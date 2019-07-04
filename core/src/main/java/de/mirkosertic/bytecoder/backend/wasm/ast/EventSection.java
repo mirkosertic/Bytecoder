@@ -18,32 +18,34 @@ package de.mirkosertic.bytecoder.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class ExceptionsSection extends ModuleSection {
+public class EventSection extends ModuleSection {
 
-    private final ExceptionIndex exceptionIndex;
+    private final EventIndex eventIndex;
 
-    public ExceptionsSection(final Module module) {
+    public EventSection(final Module module) {
         super(module);
-        exceptionIndex = new ExceptionIndex();
+        eventIndex = new EventIndex();
     }
 
-    public ExceptionIndex exceptionIndex() {
-        return exceptionIndex;
+    public EventIndex eventIndex() {
+        return eventIndex;
     }
 
-    public WASMException newException(final String label, final List<PrimitiveType> arguments) {
-        final WASMException e = new WASMException(this, label, arguments);
-        exceptionIndex.add(e);
+    public WASMEvent newException(final String label, final List<PrimitiveType> arguments) {
+        final WASMType type = getModule().getTypes().typeFor(arguments);
+
+        final WASMEvent e = new WASMEvent(getModule().getTypes(), label, type);
+        eventIndex.add(e);
         return e;
     }
 
     public void writeCodeTo(final BinaryWriter writer) throws IOException {
-        if (!exceptionIndex.isEmpty()) {
-            try (final BinaryWriter.SectionWriter sectionWriter = writer.customSection()) {
-                sectionWriter.writeUTF8("exception");
-                sectionWriter.writeUnsignedLeb128(exceptionIndex.size());
-                for (int i = 0; i< exceptionIndex.size(); i++) {
-                    final WASMException event = exceptionIndex.get(i);
+        if (!eventIndex.isEmpty()) {
+            try (final BinaryWriter.SectionWriter sectionWriter = writer.eventSection()) {
+                sectionWriter.writeUTF8("event");
+                sectionWriter.writeUnsignedLeb128(eventIndex.size());
+                for (int i = 0; i< eventIndex.size(); i++) {
+                    final WASMEvent event = eventIndex.get(i);
                     event.writeTo(sectionWriter);
                 }
             }
@@ -51,8 +53,8 @@ public class ExceptionsSection extends ModuleSection {
     }
 
     public void writeCodeTo(final TextWriter writer) throws IOException {
-        for (int i = 0; i< exceptionIndex.size(); i++) {
-            final WASMException event = exceptionIndex.get(i);
+        for (int i = 0; i< eventIndex.size(); i++) {
+            final WASMEvent event = eventIndex.get(i);
             event.writeTo(writer);
         }
     }

@@ -60,17 +60,6 @@
         <finalName>bytecoder-integrationtest</finalName>
         <plugins>
             <plugin>
-                <artifactId>maven-war-plugin</artifactId>
-                <configuration>
-                    <webResources>
-                        <resource>
-                            <filtering>true</filtering>
-                            <directory>src/main/webresources/</directory>
-                        </resource>
-                    </webResources>
-                </configuration>
-            </plugin>
-            <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <version>${kotlin.version}</version>
@@ -253,6 +242,10 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
                     <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webresources/</directory>
+                        </resource>
                         <webResource>
                             <directory>${project.build.directory}/bytecoder</directory>
                         </webResource>

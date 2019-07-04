@@ -31,7 +31,7 @@ public interface WASMValue {
 
         LocalIndex localIndex();
 
-        ExceptionIndex eventIndex();
+        EventIndex eventIndex();
 
         ExportContext subWith(Container container);
 

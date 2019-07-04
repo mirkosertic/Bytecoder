@@ -37,14 +37,18 @@ public class TeeLocal implements WASMExpression {
         textWriter.write("tee_local");
         textWriter.space();
         textWriter.writeLabel(local.getLabel());
-        textWriter.space();
-        value.writeTo(textWriter, context);
+        if (value != null) {
+            textWriter.space();
+            value.writeTo(textWriter, context);
+        }
         textWriter.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        value.writeTo(codeWriter, context);
+        if (value != null) {
+            value.writeTo(codeWriter, context);
+        }
         codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x22);
         codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));

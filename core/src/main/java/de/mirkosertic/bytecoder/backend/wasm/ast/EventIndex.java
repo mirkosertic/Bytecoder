@@ -19,20 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ExceptionIndex {
+public class EventIndex {
 
-    private final List<WASMException> events;
+    private final List<WASMEvent> events;
 
-    ExceptionIndex() {
+    EventIndex() {
         events = new ArrayList<>();
     }
 
-    public void add(final WASMException event) {
+    public void add(final WASMEvent event) {
         events.add(event);
     }
 
-    public WASMException byLabel(final String eventName) {
-        for (final WASMException g : events) {
+    public WASMEvent byLabel(final String eventName) {
+        for (final WASMEvent g : events) {
             if (Objects.equals(eventName, g.getLabel())) {
                 return g;
             }
@@ -44,11 +44,11 @@ public class ExceptionIndex {
         return events.size();
     }
 
-    public WASMException get(final int i) {
+    public WASMEvent get(final int i) {
         return events.get(i);
     }
 
-    public int indexOf(final WASMException event) {
+    public int indexOf(final WASMEvent event) {
         return events.indexOf(event);
     }
 
