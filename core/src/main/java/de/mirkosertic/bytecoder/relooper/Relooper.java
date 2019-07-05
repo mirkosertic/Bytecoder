@@ -504,6 +504,7 @@ public class Relooper {
             if (theExpression instanceof GotoExpression) {
                 final GotoExpression theGoto = (GotoExpression) theExpression;
                 boolean theGotoFound = false;
+
                 // We search the successor edge
                 for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : aLabel.getSuccessors().entrySet()) {
                     if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.getJumpTarget())) {
@@ -514,30 +515,28 @@ public class Relooper {
                             // We can only branch to the next block
                             // We search the whole hiararchy to find the right block to break out
 
-                            boolean theSomethingFound = false;
-                            for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
-                                final Block theNestingBlock = aTraversalStack.get(i);
-                                if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
-                                    theNestingBlock.requireLabel();
-                                    final BreakExpression theBreak = new BreakExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
-                                    aList.replace(theGoto, theBreak);
+                            guard: {
+                                for (int i = aTraversalStack.size() - 1; i >= 0; i--) {
+                                    final Block theNestingBlock = aTraversalStack.get(i);
+                                    if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
+                                        theNestingBlock.requireLabel();
+                                        final BreakExpression theBreak = new BreakExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
+                                        aList.replace(theGoto, theBreak);
 
-                                    if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
-                                        theBreak.noSetRequired();
+                                        if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
+                                            theBreak.noSetRequired();
+                                        }
+
+                                        break guard;
+                                    } else if (theNestingBlock.entries().contains(theTarget)) {
+                                        theNestingBlock.requireLabel();
+                                        final ContinueExpression theContinue = new ContinueExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
+                                        aList.replace(theGoto, theContinue);
+
+                                        break guard;
                                     }
-
-                                    theSomethingFound = true;
-                                    break;
-                                } else if (theNestingBlock.entries().contains(theTarget)) {
-                                    theNestingBlock.requireLabel();
-                                    final ContinueExpression theContinue = new ContinueExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
-                                    aList.replace(theGoto, theContinue);
-                                    theSomethingFound = true;
-                                    break;
                                 }
-                            }
 
-                            if (!theSomethingFound) {
                                 throw new IllegalStateException("Failed to jump to " + theTarget.getStartAddress().getAddress() + " from " + aCurrent.label().name() + " : no matching entry found!");
                             }
 
@@ -876,6 +875,13 @@ public class Relooper {
 
                             return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
                                     theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
+                        } else if (theTrueBranch.isStrictlyDominatedBy(aEntry)) {
+
+                            // TODO:
+
+                        } else if (theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+
+                            // TODO:
                         }
                     }
                 }

@@ -357,8 +357,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             // Framework-Specific methods
             theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
-            theWriter.tab().text("var ").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
-            {
+
+            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
+                theWriter.tab().text("var ").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
                 boolean first = true;
                 for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
                     if (!first) {
@@ -371,8 +372,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.print(theMinifier.toClassName(theType.getClassName()));
                     }
                 }
+                theWriter.text("];").newLine();
             }
-            theWriter.text("];").newLine();
             theWriter.tab().text("C.").text(theMinifier.toSymbol("__staticCallSites")).assign().text("[];").newLine();
 
             // Init function
