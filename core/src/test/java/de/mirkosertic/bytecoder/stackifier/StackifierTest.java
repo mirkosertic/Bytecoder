@@ -38,6 +38,7 @@ public class StackifierTest {
         final Sequence s = stackifier.stackify(g);
         final String output = DebugOutput.toString(s);
 
+        System.out.println(output);
         assertEquals("$0:" + System.lineSeparator(), output);
     }
 }
