@@ -15,11 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class MathTest {
@@ -47,5 +46,15 @@ public class MathTest {
     @Test
     public void testFloorModLong() {
         Math.floorMod(10L, 10L);
+    }
+
+    @Test
+    public void testAddExactLong() {
+        Assert.assertEquals(42L, Math.addExact(21L, 21L));
+    }
+
+    @Test
+    public void testAddExactInt() {
+        Assert.assertEquals(42, Math.addExact(21, 21));
     }
 }
