@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-import static org.junit.Assert.*;
-
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DebugInformation;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class StackifierTest {
 
@@ -40,5 +40,28 @@ public class StackifierTest {
 
         System.out.println(output);
         assertEquals("$0:" + System.lineSeparator(), output);
+    }
+
+    @Test
+    public void testSimpleSequence() {
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        startNode.addSuccessor(node1);
+        node1.addSuccessor(node2);
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier();
+
+        final Sequence s = stackifier.stackify(g);
+        final String output = DebugOutput.toString(s);
+
+        System.out.println(output);
+        assertEquals("$0:" + System.lineSeparator() +
+                "$10:" + System.lineSeparator() +
+                "$20:" + System.lineSeparator(), output);
+
     }
 }
