@@ -50,7 +50,7 @@ public class ControlFlowGraph {
         for (final RegionNode theNode : knownNodes) {
             final Set<RegionNode> theSuccessors = new HashSet<>();
             for (final Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
-                if (theSuccessor.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                if (theSuccessor.getKey().getType() == EdgeType.forward) {
                     theSuccessors.add(theSuccessor.getValue());
                 }
             }
@@ -72,7 +72,7 @@ public class ControlFlowGraph {
             theChildPath.addToPath(aNode);
             if (aPath.contains(theEdge.getValue())) {
                 // This is a back edge
-                theEdge.getKey().changeTo(RegionNode.EdgeType.BACK);
+                theEdge.getKey().changeTo(EdgeType.back);
                 theEdge.getValue().addReachablePath(theChildPath);
                 // We have already visited the back edge, so we do not to continue here
                 // As this would lead to an endless loop

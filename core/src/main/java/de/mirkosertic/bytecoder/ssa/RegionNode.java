@@ -86,10 +86,6 @@ public class RegionNode {
         FINALLY,
     }
 
-    public enum EdgeType {
-        NORMAL, BACK
-    }
-
     public static class Edge {
 
         private EdgeType type;
@@ -158,7 +154,7 @@ public class RegionNode {
 
     public boolean hasBackEdgeTo(final RegionNode aNode) {
         for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
-            if (theEntry.getKey().getType() == EdgeType.BACK) {
+            if (theEntry.getKey().getType() == EdgeType.back) {
                 if (theEntry.getValue() == aNode) {
                     return true;
                 }
@@ -187,7 +183,7 @@ public class RegionNode {
 
     public void addSuccessor(final RegionNode aBlock) {
         if (!successors.values().contains(aBlock)) {
-            successors.put(new Edge(EdgeType.NORMAL), aBlock);
+            successors.put(new Edge(EdgeType.forward), aBlock);
         }
     }
 
@@ -319,7 +315,7 @@ public class RegionNode {
     private static void forwardReachableNodes(final Set<RegionNode> aResult, final RegionNode aNode) {
         if (aResult.add(aNode)) {
             for (final Map.Entry<Edge,RegionNode> theSuc : aNode.successors.entrySet()) {
-                if (theSuc.getKey().type == EdgeType.NORMAL) {
+                if (theSuc.getKey().type == EdgeType.forward) {
                     forwardReachableNodes(aResult, theSuc.getValue());
                 }
             }

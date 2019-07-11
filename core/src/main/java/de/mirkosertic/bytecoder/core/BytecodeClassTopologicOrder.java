@@ -19,13 +19,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class BytecodeTopologicOrder {
+public class BytecodeClassTopologicOrder {
 
     private static final BytecodeObjectTypeRef OBJECT = BytecodeObjectTypeRef.fromRuntimeClass(Object.class);
 
     private final List<BytecodeLinkedClass> knownClasses;
 
-    public BytecodeTopologicOrder(final BytecodeLinkerContext linkerContext) {
+    public BytecodeClassTopologicOrder(final BytecodeLinkerContext linkerContext) {
         knownClasses = new ArrayList<>();
         linkerContext.linkedClasses().forEach(t -> knownClasses.add(t.targetNode()));
         knownClasses.sort(Comparator.comparingInt(this::topo).thenComparing(o -> o.getClassName().name()));
@@ -42,7 +42,7 @@ public class BytecodeTopologicOrder {
         return theTopo + 1;
     }
 
-    public List<BytecodeLinkedClass> getClasses() {
+    public List<BytecodeLinkedClass> getClassesInOrder() {
         return knownClasses;
     }
 }

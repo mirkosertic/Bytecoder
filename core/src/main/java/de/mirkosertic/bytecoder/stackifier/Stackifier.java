@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.EdgeType;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public class Stackifier {
             final ControlFlowGraph controlFlowGraph, final Sequence sequence, final BlockStack currentStack, final RegionNode currentNode) {
         final Map<RegionNode.Edge, RegionNode> theSuccessors = currentNode.getSuccessors();
         final List<RegionNode> theImmediateDominated = theSuccessors.entrySet().stream()
-                .filter(t -> t.getKey().getType() == RegionNode.EdgeType.NORMAL)
+                .filter(t -> t.getKey().getType() == EdgeType.forward)
                 .filter(t -> t.getValue().isStrictlyDominatedBy(currentNode))
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());

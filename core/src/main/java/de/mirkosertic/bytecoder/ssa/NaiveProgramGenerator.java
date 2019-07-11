@@ -322,7 +322,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                 for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : theNode.getSuccessors().entrySet()) {
-                    if (theEdge.getKey().getType() == RegionNode.EdgeType.BACK) {
+                    if (theEdge.getKey().getType() == EdgeType.back) {
                         final RegionNode theReceiving = theEdge.getValue();
                         final BlockState theReceivingState = theReceiving.toStartState();
                         for (final Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {

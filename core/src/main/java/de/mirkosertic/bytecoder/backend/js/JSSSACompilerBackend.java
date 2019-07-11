@@ -15,9 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.StringWriter;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -28,6 +25,7 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClassTopologicOrder;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -38,7 +36,6 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
-import de.mirkosertic.bytecoder.core.BytecodeTopologicOrder;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -46,6 +43,9 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
+
+import java.io.StringWriter;
+import java.util.List;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -335,9 +335,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final ConstantPool thePool = new ConstantPool();
 
-        final BytecodeTopologicOrder theOrderedClasses = new BytecodeTopologicOrder(aLinkerContext);
+        final BytecodeClassTopologicOrder theOrderedClasses = new BytecodeClassTopologicOrder(aLinkerContext);
 
-        theOrderedClasses.getClasses().stream().forEach(theEntry -> {
+        theOrderedClasses.getClassesInOrder().stream().forEach(theEntry -> {
 
             final BytecodeLinkedClass theLinkedClass = theEntry;
             final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
@@ -678,7 +678,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
         }
 
-        theOrderedClasses.getClasses().forEach(aEntry -> {
+        theOrderedClasses.getClassesInOrder().forEach(aEntry -> {
             final BytecodeResolvedMethods theMethods = aEntry.resolvedMethods();
             theMethods.stream().forEach(eMethod -> {
                 final BytecodeMethod theMethod = eMethod.getValue();
