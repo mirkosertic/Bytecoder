@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.stackifier;
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Stack;
 
 public class JumpArrowStack {
 
@@ -30,5 +32,54 @@ public class JumpArrowStack {
 
     public void add(final EdgeType edgeType, final int source, final int destination) {
         knownJumpArrows.add(new JumpArrow(edgeType, source, destination));
+    }
+
+    private List<JumpArrow> forwardArrowsWithHead(final int head) {
+        final List<JumpArrow> forwardArrows = new ArrayList<>();
+        for (final JumpArrow f : knownJumpArrows) {
+            if (f.getEdgeType() == EdgeType.forward && f.getHead() == head) {
+                forwardArrows.add(f);
+            }
+        }
+        Collections.sort(forwardArrows, (o1, o2) -> Integer.compare(o2.getTail(), o1.getTail()));
+        return forwardArrows;
+    }
+
+    private List<JumpArrow> backwardArrowsWithHead(final int head) {
+        final List<JumpArrow> backwardArrows = new ArrayList<>();
+        for (final JumpArrow f : knownJumpArrows) {
+            if (f.getEdgeType() == EdgeType.back && f.getHead() == head) {
+                backwardArrows.add(f);
+            }
+        }
+        return backwardArrows;
+    }
+
+    public void stackify(final List<Integer> nodesInOrder) {
+        final Stack<Integer> s = new Stack<>();
+        for (final int v : nodesInOrder) {
+            for (final JumpArrow forward: forwardArrowsWithHead(v)) {
+                if (!s.isEmpty()) {
+                    while (forward.getTail() < s.peek()) {
+                        final int w = s.pop();
+                        for (final JumpArrow backward : backwardArrowsWithHead(w)) {
+                            if (backward.getTail() > v) {
+                                throw new IllegalArgumentException("" + v + "," + backward + " are head-to-head");
+                            } else {
+                                backward.setNewTail(v);
+                            }
+                        }
+                    }
+                    forward.setNewTail(s.peek());
+                }
+            }
+            s.push(v);
+        }
+        while (!s.isEmpty()) {
+            final int w = s.pop();
+            for (final JumpArrow backward : backwardArrowsWithHead(w)) {
+                backward.setNewTail(nodesInOrder.get(nodesInOrder.size() - 1));
+            }
+        }
     }
 }

@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.stackifier;
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 public class JumpArrowStackTest {
 
     @Test
@@ -27,6 +29,7 @@ public class JumpArrowStackTest {
         stack.add(EdgeType.forward, 1, 2);
         stack.add(EdgeType.forward, 2, 3);
         stack.add(EdgeType.back, 2, 1);
+        stack.stackify(Arrays.asList(0, 1, 2, 3));
     }
 
     @Test
@@ -37,7 +40,8 @@ public class JumpArrowStackTest {
         stack.add(EdgeType.forward, 2, 3);
         stack.add(EdgeType.forward, 3, 4);
         stack.add(EdgeType.forward, 2, 5);
-        stack.add(EdgeType.back, 3, 1);
+        stack.add(EdgeType.back, 4, 1);
+        stack.stackify(Arrays.asList(0,1, 2, 3, 4, 5));
     }
 
     @Test
@@ -51,5 +55,7 @@ public class JumpArrowStackTest {
         stack.add(EdgeType.forward, 4, 5);
         stack.add(EdgeType.back, 2, 1);
         stack.add(EdgeType.back, 4, 3);
+        stack.stackify(Arrays.asList(0, 1, 2, 3, 4, 5));
+        System.out.println(stack);
     }
 }

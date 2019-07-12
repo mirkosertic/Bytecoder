@@ -20,12 +20,34 @@ import de.mirkosertic.bytecoder.ssa.EdgeType;
 public class JumpArrow {
 
     private final EdgeType edgeType;
-    private final int source;
-    private final int destination;
+    private final int head;
+    private final int tail;
+    private int newTail;
 
-    public JumpArrow(final EdgeType edgeType, final int source, final int destination) {
+    public JumpArrow(final EdgeType edgeType, final int tail, final int head) {
         this.edgeType = edgeType;
-        this.source = source;
-        this.destination = destination;
+        this.head = head;
+        this.tail = tail;
+        this.newTail = tail;
+    }
+
+    public void setNewTail(final int newTail) {
+        this.newTail = newTail;
+    }
+
+    public EdgeType getEdgeType() {
+        return edgeType;
+    }
+
+    public int getHead() {
+        return head;
+    }
+
+    public int getTail() {
+        return tail;
+    }
+
+    public int getNewTail() {
+        return newTail;
     }
 }
