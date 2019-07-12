@@ -17,21 +17,20 @@ package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 
-public class JumpArrowStack {
+public class GotoGraph {
 
     private final List<JumpArrow> knownJumpArrows;
+    private final List<Integer> nodesInOrder;
 
-    public JumpArrowStack() {
-        knownJumpArrows = new ArrayList<>();
-    }
-
-    public void add(final EdgeType edgeType, final int source, final int destination) {
-        knownJumpArrows.add(new JumpArrow(edgeType, source, destination));
+    GotoGraph(final List<JumpArrow> knownJumpArrows, final List<Integer> nodesInOrder) {
+        this.knownJumpArrows = knownJumpArrows;
+        this.nodesInOrder = nodesInOrder;
     }
 
     private List<JumpArrow> forwardArrowsWithHead(final int head) {
@@ -41,7 +40,13 @@ public class JumpArrowStack {
                 forwardArrows.add(f);
             }
         }
-        Collections.sort(forwardArrows, (o1, o2) -> Integer.compare(o2.getTail(), o1.getTail()));
+        forwardArrows.sort((o1, o2) -> Integer.compare(o2.getTail(), o1.getTail()));
+        return forwardArrows;
+    }
+
+    private List<JumpArrow> jumpArrowsSortedByTail() {
+        final List<JumpArrow> forwardArrows = new ArrayList<>(knownJumpArrows);
+        forwardArrows.sort(Comparator.comparingInt(JumpArrow::getTail));
         return forwardArrows;
     }
 
@@ -55,7 +60,7 @@ public class JumpArrowStack {
         return backwardArrows;
     }
 
-    public void stackify(final List<Integer> nodesInOrder) {
+    void stackify() {
         final Stack<Integer> s = new Stack<>();
         for (final int v : nodesInOrder) {
             for (final JumpArrow forward: forwardArrowsWithHead(v)) {
@@ -64,7 +69,7 @@ public class JumpArrowStack {
                         final int w = s.pop();
                         for (final JumpArrow backward : backwardArrowsWithHead(w)) {
                             if (backward.getTail() > v) {
-                                throw new IllegalArgumentException("" + v + "," + backward + " are head-to-head");
+                                throw new IllegalArgumentException(String.format("{%d,%d} are head to head", v, backward.getTail()));
                             } else {
                                 backward.setNewTail(v);
                             }
@@ -82,4 +87,47 @@ public class JumpArrowStack {
             }
         }
     }
+
+    public void printDebug(final PrintStream pw) {
+        pw.println("Original:");
+        printDebug(pw, false);
+        pw.println();
+        pw.println("Stackified:");
+        printDebug(pw, true);
+    }
+
+    private void printDebug(final PrintStream pw, final boolean newTail) {
+        pw.print("        ");
+        for (Integer integer : nodesInOrder) {
+            pw.print(String.format("%3d", integer));
+            pw.print(" ");
+        }
+        pw.println();
+        for (final JumpArrow arrow : jumpArrowsSortedByTail()) {
+            pw.print(String.format("%3d-%3d ", arrow.getTail(),arrow.getHead()));
+            final int tail = newTail ? arrow.getNewTail() : arrow.getTail();
+            final int head = arrow.getHead();
+            if (arrow.getEdgeType() == EdgeType.forward) {
+                for (int i=0;i<tail;i++) {
+                    pw.print("    ");
+                }
+                pw.print("  ");
+                for (int i=tail;i<head;i++) {
+                    pw.print("----");
+                }
+                pw.print(">");
+            } else {
+                for (int i=0;i<head;i++) {
+                    pw.print("    ");
+                }
+                pw.print("  <-");
+                for (int i=tail;i<head-1;i++) {
+                    pw.print("----");
+                }
+                pw.print("---");
+            }
+            pw.println();
+        }
+    }
+
 }
