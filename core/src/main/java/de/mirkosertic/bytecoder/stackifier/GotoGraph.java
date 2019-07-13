@@ -143,10 +143,20 @@ public class GotoGraph {
         stream.println("Program structure");
         int level = 0;
         for (final int node : nodesInOrder) {
+            final List<JumpArrow> forwardEdgesStartingFromHere = new ArrayList<>();
+            final List<JumpArrow> forwardEdgesEndingHere = new ArrayList<>();
             final List<JumpArrow> backedgesJumpingToHere = new ArrayList<>();
             final List<JumpArrow> backedgesJumpingFromHere = new ArrayList<>();
             for (final JumpArrow arrow : knownJumpArrows) {
                 switch (arrow.getEdgeType()) {
+                    case forward:
+                        if (arrow.getTail() == node) {
+                            forwardEdgesStartingFromHere.add(arrow);
+                        }
+                        if (arrow.getHead() == node) {
+                            forwardEdgesEndingHere.add(arrow);
+                        }
+                        break;
                     case back:
                         if (arrow.getHead() == node) {
                             backedgesJumpingToHere.add(arrow);
@@ -157,14 +167,31 @@ public class GotoGraph {
                         break;
                 }
             }
-            for (int i=0;i<backedgesJumpingToHere.size();i++) {
+
+            for (int i=0;i<forwardEdgesEndingHere.size();i++) {
+                level--;
+                stream.print(indent(level));
+                stream.println("}");
+            }
+
+            for (JumpArrow arrow : backedgesJumpingToHere) {
                 stream.print(indent(level));
                 stream.print("LOOP: {");
                 stream.print("; Arrow ");
-                stream.print(knownJumpArrows.indexOf(backedgesJumpingToHere.get(i)));
+                stream.print(knownJumpArrows.indexOf(arrow));
                 stream.println();
                 level++;
             }
+
+            for (JumpArrow jumpArrow : forwardEdgesStartingFromHere) {
+                stream.print(indent(level));
+                stream.print("BLOCK: {");
+                stream.print("; Arrow ");
+                stream.print(knownJumpArrows.indexOf(jumpArrow));
+                stream.println();
+                level++;
+            }
+
             stream.print(indent(level));
             stream.print(String.format("Node %d", node));
             stream.println();
@@ -174,6 +201,9 @@ public class GotoGraph {
                 stream.print(indent(level));
                 stream.println("}");
             }
+        }
+        if (level != 0) {
+            throw new IllegalStateException("Indentation must be zero at the end of output!");
         }
     }
 }
