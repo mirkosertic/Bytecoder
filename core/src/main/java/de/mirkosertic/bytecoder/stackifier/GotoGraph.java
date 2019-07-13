@@ -94,40 +94,86 @@ public class GotoGraph {
         pw.println();
         pw.println("Stackified:");
         printDebug(pw, true);
+        pw.println();
     }
 
-    private void printDebug(final PrintStream pw, final boolean newTail) {
-        pw.print("        ");
-        for (Integer integer : nodesInOrder) {
-            pw.print(String.format("%3d", integer));
-            pw.print(" ");
+    private void printDebug(final PrintStream stream, final boolean newTail) {
+        stream.print("        ");
+        for (final Integer integer : nodesInOrder) {
+            stream.print(String.format("%3d", integer));
+            stream.print(" ");
         }
-        pw.println();
+        stream.println();
         for (final JumpArrow arrow : jumpArrowsSortedByTail()) {
-            pw.print(String.format("%3d-%3d ", arrow.getTail(),arrow.getHead()));
+            stream.print(String.format("%3d-%3d ", arrow.getTail(),arrow.getHead()));
             final int tail = newTail ? arrow.getNewTail() : arrow.getTail();
             final int head = arrow.getHead();
             if (arrow.getEdgeType() == EdgeType.forward) {
                 for (int i=0;i<tail;i++) {
-                    pw.print("    ");
+                    stream.print("    ");
                 }
-                pw.print("  ");
+                stream.print("  ");
                 for (int i=tail;i<head;i++) {
-                    pw.print("----");
+                    stream.print("----");
                 }
-                pw.print(">");
+                stream.print(">");
             } else {
                 for (int i=0;i<head;i++) {
-                    pw.print("    ");
+                    stream.print("    ");
                 }
-                pw.print("  <-");
+                stream.print("  <-");
                 for (int i=tail;i<head-1;i++) {
-                    pw.print("----");
+                    stream.print("----");
                 }
-                pw.print("---");
+                stream.print("---");
             }
-            pw.println();
+            stream.println();
         }
     }
 
+    private String indent(final int l) {
+        final StringBuilder b = new StringBuilder();
+        for (int i=0;i<l;i++) {
+            b.append("    ");
+        }
+        return b.toString();
+    }
+
+    public void printStructurePseudoCode(final PrintStream stream) {
+        stream.println("Program structure");
+        int level = 0;
+        for (final int node : nodesInOrder) {
+            final List<JumpArrow> backedgesJumpingToHere = new ArrayList<>();
+            final List<JumpArrow> backedgesJumpingFromHere = new ArrayList<>();
+            for (final JumpArrow arrow : knownJumpArrows) {
+                switch (arrow.getEdgeType()) {
+                    case back:
+                        if (arrow.getHead() == node) {
+                            backedgesJumpingToHere.add(arrow);
+                        }
+                        if (arrow.getTail() == node) {
+                            backedgesJumpingFromHere.add(arrow);
+                        }
+                        break;
+                }
+            }
+            for (int i=0;i<backedgesJumpingToHere.size();i++) {
+                stream.print(indent(level));
+                stream.print("LOOP: {");
+                stream.print("; Arrow ");
+                stream.print(knownJumpArrows.indexOf(backedgesJumpingToHere.get(i)));
+                stream.println();
+                level++;
+            }
+            stream.print(indent(level));
+            stream.print(String.format("Node %d", node));
+            stream.println();
+
+            for (int i=0;i<backedgesJumpingFromHere.size();i++) {
+                level--;
+                stream.print(indent(level));
+                stream.println("}");
+            }
+        }
+    }
 }

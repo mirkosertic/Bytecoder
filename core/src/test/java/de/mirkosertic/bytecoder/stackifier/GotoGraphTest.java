@@ -34,21 +34,22 @@ public class GotoGraphTest {
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 2, 3);
         builder.add(EdgeType.back, 2, 1);
-        final GotoGraph stack = builder.build();
-        stack.printDebug(System.out);
+        final GotoGraph graph = builder.build();
+        graph.printDebug(System.out);
+        graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testAdvancedLoop() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0,1, 2, 3, 4, 5));
+        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0,1, 2, 3, 4));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 2, 3);
-        builder.add(EdgeType.forward, 3, 4);
-        builder.add(EdgeType.back, 4, 1);
-        builder.add(EdgeType.forward, 2, 5);
-        final GotoGraph stack = builder.build();
-        stack.printDebug(System.out);
+        builder.add(EdgeType.back, 3, 1);
+        builder.add(EdgeType.forward, 2, 4);
+        final GotoGraph graph = builder.build();
+        graph.printDebug(System.out);
+        graph.printStructurePseudoCode(System.out);
     }
 
     @Test
@@ -62,8 +63,9 @@ public class GotoGraphTest {
         builder.add(EdgeType.back, 4, 3);
         builder.add(EdgeType.forward, 2, 5);
         builder.add(EdgeType.forward, 4, 5);
-        final GotoGraph stack = builder.build();
-        stack.printDebug(System.out);
+        final GotoGraph graph = builder.build();
+        graph.printDebug(System.out);
+        graph.printStructurePseudoCode(System.out);
     }
 
     @Test
@@ -74,7 +76,7 @@ public class GotoGraphTest {
         final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward,0, 2);
         builder.add(EdgeType.back, 3, 1);
-        final GotoGraph stack = builder.build();
-        stack.printDebug(System.out);
+        final GotoGraph graph = builder.build();
+        graph.printDebug(System.out);
     }
 }
