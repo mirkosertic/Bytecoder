@@ -141,6 +141,7 @@ public class GotoGraph {
 
     public void printStructurePseudoCode(final PrintStream stream) {
         stream.println("Program structure");
+        stream.println();
         int level = 0;
         for (final int node : nodesInOrder) {
             final List<JumpArrow> forwardEdgesStartingFromHere = new ArrayList<>();
@@ -174,7 +175,7 @@ public class GotoGraph {
                 stream.println("}");
             }
 
-            for (JumpArrow arrow : backedgesJumpingToHere) {
+            for (final JumpArrow arrow : backedgesJumpingToHere) {
                 stream.print(indent(level));
                 stream.print("LOOP: {");
                 stream.print("; Arrow ");
@@ -183,7 +184,7 @@ public class GotoGraph {
                 level++;
             }
 
-            for (JumpArrow jumpArrow : forwardEdgesStartingFromHere) {
+            for (final JumpArrow jumpArrow : forwardEdgesStartingFromHere) {
                 stream.print(indent(level));
                 stream.print("BLOCK: {");
                 stream.print("; Arrow ");
