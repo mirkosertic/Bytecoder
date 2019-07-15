@@ -258,15 +258,6 @@ public class RegionNode {
         return theVariable;
     }
 
-    public boolean canThrowException() {
-        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
-            if (theEntry.getValue().getType() == BlockType.EXCEPTION_HANDLER) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public void addToExportedList(final Value aValue, final VariableDescription aDescription) {
         exported.put(aDescription, aValue);
     }
@@ -320,5 +311,12 @@ public class RegionNode {
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RegionNode{" +
+                "startAddress=" + startAddress +
+                '}';
     }
 }
