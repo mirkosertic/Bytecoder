@@ -23,76 +23,76 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.Collections;
 
-public class GotoGraphTest {
+public class StructuredControlFlowTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void testSingleNode() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Collections.singletonList(0));
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testSimpleSequence() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testDoubleExit() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 0, 3);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testSimpleLoop() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 2, 3);
         builder.add(EdgeType.back, 2, 1);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testGlobalLoop() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 2, 3);
         builder.add(EdgeType.back, 2, 0);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testSingleNodeLoop() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Collections.singletonList(0));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
         builder.add(EdgeType.back, 0, 0);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testNestedLoop() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3, 4));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 2, 3);
@@ -100,27 +100,27 @@ public class GotoGraphTest {
         builder.add(EdgeType.back, 3, 1);
         builder.add(EdgeType.back, 4, 0);
 
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testAdvancedLoop() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0,1, 2, 3, 4));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 2, 3);
         builder.add(EdgeType.back, 3, 1);
         builder.add(EdgeType.forward, 2, 4);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
 
     @Test
     public void testTwoDominatedLoops() {
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3, 4, 5));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4, 5));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.back, 2, 1);
@@ -129,7 +129,7 @@ public class GotoGraphTest {
         builder.add(EdgeType.back, 4, 3);
         builder.add(EdgeType.forward, 2, 5);
         builder.add(EdgeType.forward, 4, 5);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow graph = builder.build();
         graph.printDebug(System.out);
         graph.printStructurePseudoCode(System.out);
     }
@@ -139,10 +139,10 @@ public class GotoGraphTest {
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("{2,3} are head to head");
 
-        final GotoGraphBuilder builder = new GotoGraphBuilder(Arrays.asList(0, 1, 2, 3));
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward,0, 2);
         builder.add(EdgeType.back, 3, 1);
-        final GotoGraph graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
     }
 }

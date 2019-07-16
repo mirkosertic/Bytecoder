@@ -15,22 +15,28 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
+import de.mirkosertic.bytecoder.ssa.EdgeType;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class Sequence {
+public class StructuredControlFlowBuilder<T> {
 
-    private final List<Element> elements;
+    private final List<JumpArrow<T>> knownJumpArrows;
+    private final List<T> nodesInOrder;
 
-    public Sequence() {
-        elements = new ArrayList<>();
+    public StructuredControlFlowBuilder(final List<T> nodesInOrder) {
+        this.nodesInOrder = nodesInOrder;
+        this.knownJumpArrows = new ArrayList<>();
     }
 
-    public void append(final Element e) {
-        elements.add(e);
+    public void add(final EdgeType edgeType, final T source, final T destination) {
+        knownJumpArrows.add(new JumpArrow<>(edgeType, source, destination));
     }
 
-    public List<Element> getElements() {
-        return elements;
+    public StructuredControlFlow<T> build() {
+        final StructuredControlFlow<T> stack = new StructuredControlFlow<>(knownJumpArrows, nodesInOrder);
+        stack.stackify();
+        return stack;
     }
 }

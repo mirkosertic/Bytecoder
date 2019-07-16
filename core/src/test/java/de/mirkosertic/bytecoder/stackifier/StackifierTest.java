@@ -22,8 +22,6 @@ import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public class StackifierTest {
 
     @Test
@@ -34,12 +32,8 @@ public class StackifierTest {
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier();
-
-        final Sequence s = stackifier.stackify(g);
-        final String output = DebugOutput.toString(s);
-
-        System.out.println(output);
-        assertEquals("$0:" + System.lineSeparator(), output);
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        graph.printStructurePseudoCode(System.out);
     }
 
     @Test
@@ -55,13 +49,7 @@ public class StackifierTest {
 
         final Stackifier stackifier = new Stackifier();
 
-        final Sequence s = stackifier.stackify(g);
-        final String output = DebugOutput.toString(s);
-
-        System.out.println(output);
-        assertEquals("$0:" + System.lineSeparator() +
-                "$10:" + System.lineSeparator() +
-                "$20:" + System.lineSeparator(), output);
-
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        graph.printStructurePseudoCode(System.out);
     }
 }

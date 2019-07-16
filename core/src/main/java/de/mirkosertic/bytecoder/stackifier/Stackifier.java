@@ -16,35 +16,36 @@
 package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraphRegionNodeTopologicOrder;
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Stackifier {
 
-    public Sequence stackify(final ControlFlowGraph controlFlowGraph) {
-        final Sequence sequence = new Sequence();
-        final BlockStack currentStack = new BlockStack();
-        sequence.append(currentStack);
-        stackify(controlFlowGraph, sequence, currentStack, controlFlowGraph.startNode());
-        return sequence;
-    }
-
-    private void stackify(
-            final ControlFlowGraph controlFlowGraph, final Sequence sequence, final BlockStack currentStack, final RegionNode currentNode) {
-        final Map<RegionNode.Edge, RegionNode> theSuccessors = currentNode.getSuccessors();
-        final List<RegionNode> theImmediateDominated = theSuccessors.entrySet().stream()
-                .filter(t -> t.getKey().getType() == EdgeType.forward)
-                .filter(t -> t.getValue().isStrictlyDominatedBy(currentNode))
-                .map(Map.Entry::getValue)
-                .collect(Collectors.toList());
-
-        currentStack.append(new RegionNodeElement(currentNode));
-        if (theImmediateDominated.size() == 1) {
-            stackify(controlFlowGraph, sequence, currentStack, theImmediateDominated.get(0));
+    public StructuredControlFlow<RegionNode> stackify(final ControlFlowGraph controlFlowGraph) {
+        final List<RegionNode> sorted = new ControlFlowGraphRegionNodeTopologicOrder(controlFlowGraph).getNodesInOrder();
+        final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);
+        for (final RegionNode node : sorted) {
+            for (final Map.Entry<RegionNode.Edge, RegionNode> succ : node.getSuccessors().entrySet()) {
+                switch (succ.getKey().getType()) {
+                    case forward:
+                        if (sorted.contains(succ.getValue())) {
+                            builder.add(EdgeType.forward, node, succ.getValue());
+                        }
+                        break;
+                    case back:
+                        if (sorted.contains(succ.getValue())) {
+                            builder.add(EdgeType.back, node, succ.getValue());
+                        }
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
+            }
         }
+        return builder.build();
     }
 }

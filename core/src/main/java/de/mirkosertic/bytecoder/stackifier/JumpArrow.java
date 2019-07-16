@@ -17,21 +17,21 @@ package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 
-public class JumpArrow {
+class JumpArrow<T> {
 
     private final EdgeType edgeType;
-    private final int head;
-    private final int tail;
-    private int newTail;
+    private final T head;
+    private final T tail;
+    private T newTail;
 
-    public JumpArrow(final EdgeType edgeType, final int tail, final int head) {
+    public JumpArrow(final EdgeType edgeType, final T tail, final T head) {
         this.edgeType = edgeType;
         this.head = head;
         this.tail = tail;
         this.newTail = tail;
     }
 
-    public void setNewTail(final int newTail) {
+    void setNewTail(final T newTail) {
         this.newTail = newTail;
     }
 
@@ -39,15 +39,15 @@ public class JumpArrow {
         return edgeType;
     }
 
-    public int getHead() {
+    public T getHead() {
         return head;
     }
 
-    public int getTail() {
+    public T getTail() {
         return tail;
     }
 
-    public int getNewTail() {
+    public T getNewTail() {
         return newTail;
     }
 }

@@ -23,37 +23,41 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 
-public class GotoGraph {
+public class StructuredControlFlow<T> {
 
-    private final List<JumpArrow> knownJumpArrows;
-    private final List<Integer> nodesInOrder;
+    private final List<JumpArrow<T>> knownJumpArrows;
+    private final List<T> nodesInOrder;
 
-    GotoGraph(final List<JumpArrow> knownJumpArrows, final List<Integer> nodesInOrder) {
+    StructuredControlFlow(final List<JumpArrow<T>> knownJumpArrows, final List<T> nodesInOrder) {
         this.knownJumpArrows = knownJumpArrows;
         this.nodesInOrder = nodesInOrder;
     }
 
-    private List<JumpArrow> forwardArrowsWithHead(final int head) {
-        final List<JumpArrow> forwardArrows = new ArrayList<>();
-        for (final JumpArrow f : knownJumpArrows) {
+    private int indexOf(final T aValue) {
+        return nodesInOrder.indexOf(aValue);
+    }
+
+    private List<JumpArrow<T>> forwardArrowsWithHead(final T head) {
+        final List<JumpArrow<T>> forwardArrows = new ArrayList<>();
+        for (final JumpArrow<T> f : knownJumpArrows) {
             if (f.getEdgeType() == EdgeType.forward && f.getHead() == head) {
                 forwardArrows.add(f);
             }
         }
-        forwardArrows.sort((o1, o2) -> Integer.compare(o2.getTail(), o1.getTail()));
+        forwardArrows.sort((o1, o2) -> Integer.compare(indexOf(o2.getTail()), indexOf(o1.getTail())));
         return forwardArrows;
     }
 
-    private List<JumpArrow> jumpArrowsSortedByTail() {
-        final List<JumpArrow> forwardArrows = new ArrayList<>(knownJumpArrows);
-        forwardArrows.sort(Comparator.comparingInt(JumpArrow::getTail));
+    private List<JumpArrow<T>> jumpArrowsSortedByTail() {
+        final List<JumpArrow<T>> forwardArrows = new ArrayList<>(knownJumpArrows);
+        forwardArrows.sort(Comparator.comparingInt(value -> indexOf(value.getTail())));
         return forwardArrows;
     }
 
-    private List<JumpArrow> backwardArrowsWithHead(final int head) {
-        final List<JumpArrow> backwardArrows = new ArrayList<>();
-        for (final JumpArrow f : knownJumpArrows) {
-            if (f.getEdgeType() == EdgeType.back && f.getHead() == head) {
+    private List<JumpArrow<T>> backwardArrowsWithHead(final T head) {
+        final List<JumpArrow<T>> backwardArrows = new ArrayList<>();
+        for (final JumpArrow<T> f : knownJumpArrows) {
+            if (f.getEdgeType() == EdgeType.back && indexOf(f.getHead()) == indexOf(head)) {
                 backwardArrows.add(f);
             }
         }
@@ -61,15 +65,15 @@ public class GotoGraph {
     }
 
     void stackify() {
-        final Stack<Integer> s = new Stack<>();
-        for (final int v : nodesInOrder) {
-            for (final JumpArrow forward: forwardArrowsWithHead(v)) {
+        final Stack<T> s = new Stack<>();
+        for (final T v : nodesInOrder) {
+            for (final JumpArrow<T> forward: forwardArrowsWithHead(v)) {
                 if (!s.isEmpty()) {
-                    while (forward.getTail() < s.peek()) {
-                        final int w = s.pop();
-                        for (final JumpArrow backward : backwardArrowsWithHead(w)) {
-                            if (backward.getTail() > v) {
-                                throw new IllegalArgumentException(String.format("{%d,%d} are head to head", v, backward.getTail()));
+                    while (indexOf(forward.getTail()) < indexOf(s.peek())) {
+                        final T w = s.pop();
+                        for (final JumpArrow<T> backward : backwardArrowsWithHead(w)) {
+                            if (indexOf(backward.getTail()) > indexOf(v)) {
+                                throw new IllegalArgumentException(String.format("{%d,%d} are head to head", indexOf(v), indexOf(backward.getTail())));
                             } else {
                                 backward.setNewTail(v);
                             }
@@ -81,8 +85,8 @@ public class GotoGraph {
             s.push(v);
         }
         while (!s.isEmpty()) {
-            final int w = s.pop();
-            for (final JumpArrow backward : backwardArrowsWithHead(w)) {
+            final T w = s.pop();
+            for (final JumpArrow<T> backward : backwardArrowsWithHead(w)) {
                 backward.setNewTail(nodesInOrder.get(nodesInOrder.size() - 1));
             }
         }
@@ -99,30 +103,30 @@ public class GotoGraph {
 
     private void printDebug(final PrintStream stream, final boolean newTail) {
         stream.print("        ");
-        for (final Integer integer : nodesInOrder) {
-            stream.print(String.format("%3d", integer));
+        for (final T v : nodesInOrder) {
+            stream.print(String.format("%3d", indexOf(v)));
             stream.print(" ");
         }
         stream.println();
-        for (final JumpArrow arrow : jumpArrowsSortedByTail()) {
-            stream.print(String.format("%3d-%3d ", arrow.getTail(),arrow.getHead()));
-            final int tail = newTail ? arrow.getNewTail() : arrow.getTail();
-            final int head = arrow.getHead();
+        for (final JumpArrow<T> arrow : jumpArrowsSortedByTail()) {
+            stream.print(String.format("%3d-%3d ", indexOf(arrow.getTail()) ,indexOf(arrow.getHead())));
+            final T tail = newTail ? arrow.getNewTail() : arrow.getTail();
+            final T head = arrow.getHead();
             if (arrow.getEdgeType() == EdgeType.forward) {
-                for (int i=0;i<tail;i++) {
+                for (int i=0;i<indexOf(tail);i++) {
                     stream.print("    ");
                 }
                 stream.print("  ");
-                for (int i=tail;i<head;i++) {
+                for (int i=indexOf(tail);i<indexOf(head);i++) {
                     stream.print("----");
                 }
                 stream.print(">");
             } else {
-                for (int i=0;i<head;i++) {
+                for (int i=0;i<indexOf(head);i++) {
                     stream.print("    ");
                 }
                 stream.print("  <-");
-                for (int i=tail;i<head-1;i++) {
+                for (int i=indexOf(tail);i<indexOf(head)-1;i++) {
                     stream.print("----");
                 }
                 stream.print("---");
@@ -143,7 +147,7 @@ public class GotoGraph {
         stream.println("Program structure");
         stream.println();
         int level = 0;
-        for (final int node : nodesInOrder) {
+        for (final T node : nodesInOrder) {
             final List<JumpArrow> forwardEdgesStartingFromHere = new ArrayList<>();
             final List<JumpArrow> forwardEdgesEndingHere = new ArrayList<>();
             final List<JumpArrow> backedgesJumpingToHere = new ArrayList<>();
@@ -194,7 +198,7 @@ public class GotoGraph {
             }
 
             stream.print(indent(level));
-            stream.print(String.format("Node %d", node));
+            stream.print(String.format("Node %d", indexOf(node)));
             stream.println();
 
             for (int i=0;i<backedgesJumpingFromHere.size();i++) {
