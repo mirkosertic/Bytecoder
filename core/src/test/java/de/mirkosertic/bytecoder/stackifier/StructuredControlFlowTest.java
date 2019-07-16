@@ -33,7 +33,7 @@ public class StructuredControlFlowTest {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -43,7 +43,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 1, 2);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -54,7 +54,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 0, 3);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -66,7 +66,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.back, 2, 1);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -78,7 +78,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.back, 2, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -87,7 +87,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.back, 0, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -102,7 +102,7 @@ public class StructuredControlFlowTest {
 
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -115,7 +115,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 2, 4);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -129,9 +129,9 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.back, 4, 3);
         builder.add(EdgeType.forward, 2, 5);
         builder.add(EdgeType.forward, 4, 5);
-        final StructuredControlFlow graph = builder.build();
+        final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
     }
 
     @Test

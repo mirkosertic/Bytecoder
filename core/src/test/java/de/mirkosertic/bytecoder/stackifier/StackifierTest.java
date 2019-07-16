@@ -33,7 +33,7 @@ public class StackifierTest {
 
         final Stackifier stackifier = new Stackifier();
         final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(System.out));
     }
 
     @Test
@@ -50,6 +50,6 @@ public class StackifierTest {
         final Stackifier stackifier = new Stackifier();
 
         final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-        graph.printStructurePseudoCode(System.out);
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(System.out));
     }
 }

@@ -135,24 +135,17 @@ public class StructuredControlFlow<T> {
         }
     }
 
-    private String indent(final int l) {
-        final StringBuilder b = new StringBuilder();
-        for (int i=0;i<l;i++) {
-            b.append("    ");
-        }
-        return b.toString();
-    }
+    public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer) {
 
-    public void printStructurePseudoCode(final PrintStream stream) {
-        stream.println("Program structure");
-        stream.println();
-        int level = 0;
+        // TODO: Filter single jumps to dominated nodes here
+
+        writer.begin();
         for (final T node : nodesInOrder) {
-            final List<JumpArrow> forwardEdgesStartingFromHere = new ArrayList<>();
-            final List<JumpArrow> forwardEdgesEndingHere = new ArrayList<>();
-            final List<JumpArrow> backedgesJumpingToHere = new ArrayList<>();
-            final List<JumpArrow> backedgesJumpingFromHere = new ArrayList<>();
-            for (final JumpArrow arrow : knownJumpArrows) {
+            final List<JumpArrow<T>> forwardEdgesStartingFromHere = new ArrayList<>();
+            final List<JumpArrow<T>> forwardEdgesEndingHere = new ArrayList<>();
+            final List<JumpArrow<T>> backedgesJumpingToHere = new ArrayList<>();
+            final List<JumpArrow<T>> backedgesJumpingFromHere = new ArrayList<>();
+            for (final JumpArrow<T> arrow : knownJumpArrows) {
                 switch (arrow.getEdgeType()) {
                     case forward:
                         if (arrow.getTail() == node) {
@@ -174,41 +167,23 @@ public class StructuredControlFlow<T> {
             }
 
             for (int i=0;i<forwardEdgesEndingHere.size();i++) {
-                level--;
-                stream.print(indent(level));
-                stream.println("}");
+                writer.closeBlock();
             }
 
-            for (final JumpArrow arrow : backedgesJumpingToHere) {
-                stream.print(indent(level));
-                stream.print("LOOP: {");
-                stream.print("; Arrow ");
-                stream.print(knownJumpArrows.indexOf(arrow));
-                stream.println();
-                level++;
+            for (final JumpArrow<T> arrow : backedgesJumpingToHere) {
+                writer.beginLoopFor(arrow);
             }
 
-            for (final JumpArrow jumpArrow : forwardEdgesStartingFromHere) {
-                stream.print(indent(level));
-                stream.print("BLOCK: {");
-                stream.print("; Arrow ");
-                stream.print(knownJumpArrows.indexOf(jumpArrow));
-                stream.println();
-                level++;
+            for (final JumpArrow<T> jumpArrow : forwardEdgesStartingFromHere) {
+                writer.beginBlockFor(jumpArrow);
             }
 
-            stream.print(indent(level));
-            stream.print(String.format("Node %d", indexOf(node)));
-            stream.println();
+            writer.write(node);
 
             for (int i=0;i<backedgesJumpingFromHere.size();i++) {
-                level--;
-                stream.print(indent(level));
-                stream.println("}");
+                writer.closeBlock();
             }
         }
-        if (level != 0) {
-            throw new IllegalStateException("Indentation must be zero at the end of output!");
-        }
+        writer.end();
     }
 }

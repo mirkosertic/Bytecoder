@@ -1,0 +1,66 @@
+/*
+ * Copyright 2019 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.mirkosertic.bytecoder.stackifier;
+
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+
+import java.io.PrintStream;
+
+public class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<RegionNode> {
+
+    private final PrintStream stream;
+
+    public DebugStructurecControlFlowWriter(final PrintStream stream) {
+        this.stream = stream;
+    }
+
+    private String indent(final int l) {
+        final StringBuilder b = new StringBuilder();
+        for (int i=0;i<l;i++) {
+            b.append("    ");
+        }
+        return b.toString();
+    }
+
+    @Override
+    public void beginLoopFor(final JumpArrow<RegionNode> arrow) {
+        stream.print(indent(hierarchy.size()));
+        stream.print("LOOP: {");
+        stream.println();
+        super.beginLoopFor(arrow);
+    }
+
+    @Override
+    public void beginBlockFor(final JumpArrow<RegionNode> jumpArrow) {
+        stream.print(indent(hierarchy.size()));
+        stream.print("BLOCK: {");
+        stream.println();
+        super.beginBlockFor(jumpArrow);
+    }
+
+    @Override
+    public void write(final RegionNode node) {
+        stream.print(indent(hierarchy.size()));
+        stream.println(node);
+    }
+
+    @Override
+    public void closeBlock() {
+        super.closeBlock();
+        stream.print(indent(hierarchy.size()));
+        stream.println("}");
+    }
+}
