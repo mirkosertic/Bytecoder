@@ -151,9 +151,21 @@ public class StructuredControlFlow<T> {
         }
     }
 
+    private static class Block<T> {
+        private final JumpArrow<T> arrow;
+        private final int endsBefore;
+
+        public Block(final JumpArrow<T> arrow, final int endsBefore) {
+            this.arrow = arrow;
+            this.endsBefore = endsBefore;
+        }
+    }
+
     public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer) {
 
         // TODO: Filter single jumps to dominated nodes here
+
+        final Stack<Block<T>> blockStack = new Stack<>();
 
         writer.begin();
         for (final T node : nodesInOrder) {
@@ -161,52 +173,57 @@ public class StructuredControlFlow<T> {
             // We need all starting blocks from here
             // Sorted by their head in descending order
             // So we can build a stack of blocks correctly
-            final List<JumpArrow<T>> forwardEdgesStartingFromHere = knownJumpArrows.stream()
+            final List<Block<T>> blocksStartingFromHere = knownJumpArrows.stream()
                     .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
-                    .sorted((o1, o2) -> Integer.compare(indexOf(o2.getHead()), indexOf(o1.getHead()))).collect(Collectors.toList());
+                    .map(t -> new Block<>(t, indexOf(t.getHead())))
+                    .collect(Collectors.toList());
 
-            // TODO: Create block stack
-            // TODO: Labels are also handled by this algorithm
+            // Back-Edges form loops, so we have to collect them
+            // and sort them correctly to place them at the right
+            // position onto the stack
+            final List<JumpArrow<T>> backEdgesToHere =  knownJumpArrows.stream()
+                    .filter(t -> t.getEdgeType() == EdgeType.back && t.getHead() == node)
+                    .collect(Collectors.toList());
 
-            final List<JumpArrow<T>> forwardEdgesEndingHere = new ArrayList<>();
-            final List<JumpArrow<T>> backedgesJumpingToHere = new ArrayList<>();
-            final List<JumpArrow<T>> backedgesJumpingFromHere = new ArrayList<>();
-            for (final JumpArrow<T> arrow : knownJumpArrows) {
-                switch (arrow.getEdgeType()) {
-                    case forward:
-                        if (arrow.getHead() == node) {
-                            forwardEdgesEndingHere.add(arrow);
-                        }
-                        break;
-                    case back:
-                        if (arrow.getHead() == node) {
-                            backedgesJumpingToHere.add(arrow);
-                        }
-                        if (arrow.getNewTail() == node) {
-                            backedgesJumpingFromHere.add(arrow);
-                        }
-                        break;
+            if (!backEdgesToHere.isEmpty()) {
+                // TODO: We have to join back edges to the same head
+                for (final JumpArrow<T> back : backEdgesToHere) {
+                    blocksStartingFromHere.add(new Block<>(back, indexOf(back.getNewTail())));
                 }
             }
 
-            for (int i=0;i<forwardEdgesEndingHere.size();i++) {
+            // We sort the blocks by their closing position
+            // we get sorted blocks from widest to smallest
+            // We have top place the blocks in this exact order
+            blocksStartingFromHere.sort((o1, o2) -> Integer.compare(o2.endsBefore, o1.endsBefore));
+
+            while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node))) {
                 writer.closeBlock();
+                blockStack.pop();
             }
 
-            for (final JumpArrow<T> arrow : backedgesJumpingToHere) {
-                writer.beginLoopFor(arrow);
-            }
-
-            for (final JumpArrow<T> jumpArrow : forwardEdgesStartingFromHere) {
-                writer.beginBlockFor(jumpArrow);
+            for (final Block<T> block : blocksStartingFromHere) {
+                switch (block.arrow.getEdgeType()) {
+                    case forward:
+                        writer.beginBlockFor(block.arrow);
+                        break;
+                    case back:
+                        writer.beginLoopFor(block.arrow);
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
+                blockStack.push(block);
             }
 
             writer.write(node);
-
-            for (int i=0;i<backedgesJumpingFromHere.size();i++) {
-                writer.closeBlock();
-            }
         }
+
+        while (!blockStack.isEmpty()) {
+            writer.closeBlock();
+            blockStack.pop();
+        }
+
         writer.end();
     }
 }
