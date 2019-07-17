@@ -163,8 +163,28 @@ public class StructuredControlFlow<T> {
 
     public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer) {
 
-        // TODO: Filter single jumps to dominated nodes here
+        // Filter single jumps to dominated nodes here
+        final List<JumpArrow<T>> filteredJumpArrows = knownJumpArrows.stream()
+                .filter(arrow -> {
+                    switch (arrow.getEdgeType()) {
+                        case back:
+                            return true;
+                        case forward:
+                            if (indexOf(arrow.getTail()) + 1 == indexOf(arrow.getHead())) {
+                                if (knownJumpArrows.stream().filter(
+                                        t -> t.getEdgeType() == EdgeType.forward && t.getHead() == arrow.getHead()).count() == 1) {
+                                    return false;
+                                }
+                                return true;
+                            }
+                            return true;
+                        default:
+                            throw new IllegalStateException();
+                    }
+                })
+                .collect(Collectors.toList());
 
+        // We need this stack to keep track of currently active blocks and loops
         final Stack<Block<T>> blockStack = new Stack<>();
 
         writer.begin();
@@ -173,7 +193,7 @@ public class StructuredControlFlow<T> {
             // We need all starting blocks from here
             // Sorted by their head in descending order
             // So we can build a stack of blocks correctly
-            final List<Block<T>> blocksStartingFromHere = knownJumpArrows.stream()
+            final List<Block<T>> blocksStartingFromHere = filteredJumpArrows.stream()
                     .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
                     .map(t -> new Block<>(t, indexOf(t.getHead())))
                     .collect(Collectors.toList());
@@ -181,7 +201,7 @@ public class StructuredControlFlow<T> {
             // Back-Edges form loops, so we have to collect them
             // and sort them correctly to place them at the right
             // position onto the stack
-            final List<JumpArrow<T>> backEdgesToHere =  knownJumpArrows.stream()
+            final List<JumpArrow<T>> backEdgesToHere =  filteredJumpArrows.stream()
                     .filter(t -> t.getEdgeType() == EdgeType.back && t.getHead() == node)
                     .collect(Collectors.toList());
 
