@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class StructuredControlFlow<T> {
 
@@ -156,16 +157,23 @@ public class StructuredControlFlow<T> {
 
         writer.begin();
         for (final T node : nodesInOrder) {
-            final List<JumpArrow<T>> forwardEdgesStartingFromHere = new ArrayList<>();
+
+            // We need all starting blocks from here
+            // Sorted by their head in descending order
+            // So we can build a stack of blocks correctly
+            final List<JumpArrow<T>> forwardEdgesStartingFromHere = knownJumpArrows.stream()
+                    .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
+                    .sorted((o1, o2) -> Integer.compare(indexOf(o2.getHead()), indexOf(o1.getHead()))).collect(Collectors.toList());
+
+            // TODO: Create block stack
+            // TODO: Labels are also handled by this algorithm
+
             final List<JumpArrow<T>> forwardEdgesEndingHere = new ArrayList<>();
             final List<JumpArrow<T>> backedgesJumpingToHere = new ArrayList<>();
             final List<JumpArrow<T>> backedgesJumpingFromHere = new ArrayList<>();
             for (final JumpArrow<T> arrow : knownJumpArrows) {
                 switch (arrow.getEdgeType()) {
                     case forward:
-                        if (arrow.getNewTail() == node) {
-                            forwardEdgesStartingFromHere.add(arrow);
-                        }
                         if (arrow.getHead() == node) {
                             forwardEdgesEndingHere.add(arrow);
                         }
