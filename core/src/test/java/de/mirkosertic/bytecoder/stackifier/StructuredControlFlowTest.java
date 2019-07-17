@@ -145,4 +145,17 @@ public class StructuredControlFlowTest {
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(System.out);
     }
+
+    @Test
+    public void testIfThenElse() {
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
+        builder.add(EdgeType.forward, 0, 1);
+        builder.add(EdgeType.forward, 0, 2);
+        builder.add(EdgeType.forward, 1, 3);
+        builder.add(EdgeType.forward, 2, 3);
+        final StructuredControlFlow<Integer> graph = builder.build();
+        graph.printDebug(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
+    }
+
 }

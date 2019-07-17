@@ -156,7 +156,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
     }
 
-    private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final boolean aMinify) {
+    private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final boolean aMinify, final boolean aTryStackifier) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JS Backend Minify = " + aMinify);
@@ -175,7 +175,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, aMinify);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, aMinify, aTryStackifier);
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final JSCompileResult.JSContent content = result.getContent()[0];
 
@@ -261,7 +261,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, false);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, false, false);
                 final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
                 final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
@@ -491,20 +491,20 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
         if (null != getDescription().getAnnotation(WASMOnly.class)) {
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
         } else if (null != getDescription().getAnnotation(JSOnly.class)) {
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
         } else if (null != getDescription().getAnnotation(JSAndJVMOnly.class)) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
         } else if (null != getDescription().getAnnotation(JSAndWASMOnly.class)) {
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
         } else {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
+            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
             testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
         }
     }

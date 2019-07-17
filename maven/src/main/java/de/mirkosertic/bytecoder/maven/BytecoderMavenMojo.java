@@ -111,10 +111,16 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected int wasmMaximumPages;
 
     /**
-     * Shall the compile result be minified?.
+     * Shall the compile result be minified?
      */
     @Parameter(required = false, defaultValue = "true")
     protected boolean minifyCompileResult;
+
+    /**
+     * Shall the Stackifier be used and the Relooper as fallback?
+     */
+    @Parameter(required = false, defaultValue = "false")
+    protected boolean tryStackifier;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -131,7 +137,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult);
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, tryStackifier);
             final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

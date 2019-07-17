@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 
-class JumpArrow<T> {
+public class JumpArrow<T> {
 
     private final EdgeType edgeType;
     private final T head;

@@ -41,8 +41,11 @@ import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
 
 import java.io.StringWriter;
 import java.util.List;
@@ -630,7 +633,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.flush();
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier);
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, JSSSAWriter.RELOOPER_JUMPCODEGENERATOR);
                 for (final Variable theVariable : theSSAProgram.globalVariables()) {
                     if (!theVariable.isSynthetic()) {
                         final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");
@@ -641,12 +644,34 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     }
                 }
 
-                // Try to reloop it!
+                // Try to reloop it or stackify it!
                 try {
-                    final Relooper theRelooper = new Relooper(aOptions);
-                    final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+                    if (aOptions.isTryStackifierFirst()) {
+                        try {
+                            final Stackifier stackifier = new Stackifier();
+                            final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
 
-                    theVariablesWriter.printRelooped(theReloopedBlock);
+                            theVariablesWriter.printStackified(flow);
+                            aOptions.getLogger().info("Method %s successfully stackified ", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
+
+                        } catch (final Exception e) {
+
+                            // Stackifier has problems, we fallback to relooper instead
+                            aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
+
+                            final Relooper theRelooper = new Relooper(aOptions);
+                            final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                            theVariablesWriter.printRelooped(theReloopedBlock);
+                        }
+
+                    } else {
+
+                        final Relooper theRelooper = new Relooper(aOptions);
+                        final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                        theVariablesWriter.printRelooped(theReloopedBlock);
+                    }
                 } catch (final Exception e) {
                     System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
                     throw new IllegalStateException("Error relooping cfg for " + theLinkedClass.getClassName().name() + '.'

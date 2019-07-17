@@ -33,8 +33,16 @@ public class StructuredControlFlow<T> {
         this.nodesInOrder = nodesInOrder;
     }
 
-    private int indexOf(final T aValue) {
+    public List<T> getNodesInOrder() {
+        return nodesInOrder;
+    }
+
+    public int indexOf(final T aValue) {
         return nodesInOrder.indexOf(aValue);
+    }
+
+    public int indexOf(final JumpArrow<T> arrow) {
+        return knownJumpArrows.indexOf(arrow);
     }
 
     private List<JumpArrow<T>> forwardArrowsWithHead(final T head) {
@@ -73,7 +81,7 @@ public class StructuredControlFlow<T> {
                         final T w = s.pop();
                         for (final JumpArrow<T> backward : backwardArrowsWithHead(w)) {
                             if (indexOf(backward.getTail()) > indexOf(v)) {
-                                throw new IllegalArgumentException(String.format("{%d,%d} are head to head", indexOf(v), indexOf(backward.getTail())));
+                                throw new IllegalArgumentException(String.format("{%d,%d} are head to head, arrow %d ", indexOf(v), indexOf(backward.getTail()), knownJumpArrows.indexOf(backward)));
                             } else {
                                 backward.setNewTail(v);
                             }
@@ -99,6 +107,13 @@ public class StructuredControlFlow<T> {
         pw.println("Stackified:");
         printDebug(pw, true);
         pw.println();
+        pw.println("Data:");
+        for (int i=0;i<nodesInOrder.size();i++) {
+            pw.println(String.format(" %d %s", i, nodesInOrder.get(i)));
+        }
+        for (final JumpArrow<T> arrow : knownJumpArrows) {
+            pw.println(String.format(" %s %d -> %d", arrow.getEdgeType(), indexOf(arrow.getTail()), indexOf(arrow.getHead())));
+        }
     }
 
     private void printDebug(final PrintStream stream, final boolean newTail) {
@@ -148,7 +163,7 @@ public class StructuredControlFlow<T> {
             for (final JumpArrow<T> arrow : knownJumpArrows) {
                 switch (arrow.getEdgeType()) {
                     case forward:
-                        if (arrow.getTail() == node) {
+                        if (arrow.getNewTail() == node) {
                             forwardEdgesStartingFromHere.add(arrow);
                         }
                         if (arrow.getHead() == node) {
@@ -159,7 +174,7 @@ public class StructuredControlFlow<T> {
                         if (arrow.getHead() == node) {
                             backedgesJumpingToHere.add(arrow);
                         }
-                        if (arrow.getTail() == node) {
+                        if (arrow.getNewTail() == node) {
                             backedgesJumpingFromHere.add(arrow);
                         }
                         break;

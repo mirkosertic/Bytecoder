@@ -76,6 +76,10 @@ public class BytecoderCLI {
 
         @Option(names = "-minify", required = false, description = "Shall the generated code be minified? Defaults to 'true'.")
         protected boolean minifyCompileResult = true;
+
+        @Option(names = "-trystackify", required = false, description = "Shall the Stackifier be used in favor to Relooper? Defaults to 'false'.")
+        protected boolean tryStackifier = false;
+
     }
 
     public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -107,7 +111,7 @@ public class BytecoderCLI {
         final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.tryStackifier);
         final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
         for (final CompileResult.Content content : theCode.getContent()) {
             final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

@@ -22,16 +22,111 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DebugPosition;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
+import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MaxExpression;
+import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
+import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.MinExpression;
+import de.mirkosertic.bytecoder.ssa.NegatedExpression;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
+import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.SqrtExpression;
+import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.UnknownExpression;
+import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+import de.mirkosertic.bytecoder.stackifier.JumpArrow;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlowWriter;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class JSSSAWriter {
+
+    interface JumpCodeGenerator {
+        String generateJumpCodeFor(BytecodeOpcodeAddress jumpTarget);
+    }
+
+    public static final JumpCodeGenerator RELOOPER_JUMPCODEGENERATOR = aTarget -> "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
 
     protected final Program program;
     protected final BytecodeLinkerContext linkerContext;
@@ -41,9 +136,10 @@ public class JSSSAWriter {
     private boolean labelRequired;
     private final JSMinifier minifier;
     private final int indent;
+    private JumpCodeGenerator jumpCodeGenerator;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-            final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
+                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final JumpCodeGenerator codeGenerator) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -52,10 +148,11 @@ public class JSSSAWriter {
         labelRequired = aLabelRequired;
         minifier = aMinifier;
         indent = aIndent;
+        jumpCodeGenerator = codeGenerator;
     }
 
-    private JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier);
+    public JSSSAWriter withDeeperIndent() {
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, jumpCodeGenerator);
     }
 
     public JSPrintWriter startLine() {
@@ -961,10 +1058,6 @@ public class JSSSAWriter {
         writer.text(".").text(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
     }
 
-    private String generateJumpCodeFor(final BytecodeOpcodeAddress aTarget) {
-        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
-    }
-
     private void writeExpressionSourcemapInfo(final Expression aExpression) {
         final BytecodeOpcodeAddress theExpressionAddress = aExpression.getAddress();
         if (theExpressionAddress != null) {
@@ -1090,7 +1183,7 @@ public class JSSSAWriter {
 
             } else if (theExpression instanceof GotoExpression) {
                 final GotoExpression theE = (GotoExpression) theExpression;
-                startLine().text(generateJumpCodeFor(theE.getJumpTarget())).newLine();
+                startLine().text(jumpCodeGenerator.generateJumpCodeFor(theE.getJumpTarget())).newLine();
             } else if (theExpression instanceof ArrayStoreExpression) {
                 final ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
 
@@ -1387,5 +1480,103 @@ public class JSSSAWriter {
         startLine().text("}").newLine();
 
         print(aTryBlock.next());
+    }
+
+    public void printStackified(final StructuredControlFlow<RegionNode> controlFlow) {
+        final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses = new HashMap<>();
+        for (final RegionNode theNode : controlFlow.getNodesInOrder()) {
+            nodeAdresses.put(theNode.getStartAddress(), theNode);
+        }
+        final Stack<JSSSAWriter> writerStack = new Stack<>();
+        writerStack.push(this);
+        controlFlow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
+
+            private RegionNode currentNode;
+
+            public String toLabel(final JumpArrow<RegionNode> arrow) {
+                switch (arrow.getEdgeType()) {
+                    case forward:
+                        return String.format("$B_%d_%d", controlFlow.indexOf(arrow.getNewTail()), controlFlow.indexOf(arrow.getHead()));
+                    case back:
+                        return String.format("$L_%d_%d", controlFlow.indexOf(arrow.getHead()), controlFlow.indexOf(arrow.getNewTail()));
+                    default:
+                        throw new IllegalArgumentException();
+                }
+            }
+
+            @Override
+            public void begin() {
+                super.begin();
+                writerStack.peek().startLine().text("/* STACKIFIED */").newLine();
+                JSSSAWriter.this.jumpCodeGenerator = aTarget -> {
+                    final RegionNode theTargetNode = nodeAdresses.get(aTarget);
+                    final int currentIndex = controlFlow.indexOf(currentNode);
+                    final int targetIndex = controlFlow.indexOf(theTargetNode);
+                    if (targetIndex <= currentIndex) {
+                        // Back-Edge, we create a continue
+                        for (int i=hierarchy.size() - 1;i>=0;i--) {
+                            final JumpArrow<RegionNode> arrow = hierarchy.get(i);
+                            if (arrow.getEdgeType() == EdgeType.back) {
+                                if (arrow.getHead() == theTargetNode) {
+                                    return "continue " + toLabel(arrow) + ";";
+                                }
+                            }
+                        }
+                        return "UNDEFINED LOOP TO " + aTarget.getAddress();
+                    }
+                    // Normal edge, we create a break
+                    for (final JumpArrow<RegionNode> arrow : hierarchy) {
+                        if (arrow.getEdgeType() == EdgeType.forward) {
+                            if (arrow.getHead() == theTargetNode) {
+                                return "break " + toLabel(arrow) + ";";
+                            }
+                        }
+                    }
+                    // We break out of the complete hierarchy
+                    return "break " + toLabel(hierarchy.get(0)) + "/* Trying to jump to " + aTarget.getAddress() + " */;";
+                };
+            }
+
+            @Override
+            public void beginLoopFor(final JumpArrow<RegionNode> arrow) {
+                super.beginLoopFor(arrow);
+                final JSSSAWriter current = writerStack.peek();
+                current.startLine().text(toLabel(arrow))
+                        .text(":").space()
+                        .text("for(;;)").space().text("{").newLine();
+                final JSSSAWriter newLoopBlock = writerStack.peek().withDeeperIndent();
+                writerStack.push(newLoopBlock);
+            }
+
+            @Override
+            public void beginBlockFor(final JumpArrow<RegionNode> jumpArrow) {
+                super.beginBlockFor(jumpArrow);
+                final JSSSAWriter current = writerStack.peek();
+                current.startLine().text(toLabel(jumpArrow))
+                        .text(":").space().text("{").newLine();
+                final JSSSAWriter newSimpleBlock = writerStack.peek().withDeeperIndent();
+                writerStack.push(newSimpleBlock);
+            }
+
+            @Override
+            public void write(final RegionNode node) {
+                currentNode = node;
+                writerStack.peek().startLine().text("/* #").text(Integer.toString(controlFlow.indexOf(node))).text(" */").newLine();
+                writerStack.peek().writeExpressions(node.getExpressions());
+            }
+
+            @Override
+            public void closeBlock() {
+                writerStack.pop();
+                writerStack.peek().startLine().text("}").newLine();
+                super.closeBlock();
+            }
+
+            @Override
+            public void end() {
+                super.end();
+                writerStack.peek().startLine().text("/* STACKIFIED END */").newLine();
+            }
+        });
     }
 }
