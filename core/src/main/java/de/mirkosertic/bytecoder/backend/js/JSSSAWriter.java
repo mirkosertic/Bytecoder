@@ -1544,7 +1544,7 @@ public class JSSSAWriter {
                 current.startLine().text(toLabel(arrow))
                         .text(":").space()
                         .text("for(;;)").space().text("{").newLine();
-                final JSSSAWriter newLoopBlock = writerStack.peek().withDeeperIndent();
+                final JSSSAWriter newLoopBlock = current.withDeeperIndent();
                 writerStack.push(newLoopBlock);
             }
 
@@ -1554,7 +1554,7 @@ public class JSSSAWriter {
                 final JSSSAWriter current = writerStack.peek();
                 current.startLine().text(toLabel(jumpArrow))
                         .text(":").space().text("{").newLine();
-                final JSSSAWriter newSimpleBlock = writerStack.peek().withDeeperIndent();
+                final JSSSAWriter newSimpleBlock = current.withDeeperIndent();
                 writerStack.push(newSimpleBlock);
             }
 
@@ -1568,6 +1568,10 @@ public class JSSSAWriter {
             @Override
             public void closeBlock() {
                 writerStack.pop();
+                if (writerStack.isEmpty()) {
+                    controlFlow.printDebug(System.out);
+                    throw new IllegalStateException();
+                }
                 writerStack.peek().startLine().text("}").newLine();
                 super.closeBlock();
             }

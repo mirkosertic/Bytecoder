@@ -47,6 +47,14 @@ public class StructuredControlFlowTest {
     }
 
     @Test
+    public void testSimpleSequenceWithoutGotos() {
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2));
+        final StructuredControlFlow<Integer> graph = builder.build();
+        graph.printDebug(System.out);
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
+    }
+
+    @Test
     public void testDoubleExit() {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
