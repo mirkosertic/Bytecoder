@@ -91,8 +91,8 @@ public class Stackifier {
                 final int targetIndex = flow.indexOf(theTargetNode);
 
                 if (theTargetNode.isStrictlyDominatedBy(currentNode)) {
-                    // We are branching to the successor
-                    // The goto can be replaced
+                    // We are branching to the strictly dominated successor
+                    // The goto can be removed
                     aList.remove(theGoto);
                     continue;
                 }
