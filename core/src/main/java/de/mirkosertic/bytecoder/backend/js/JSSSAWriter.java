@@ -52,7 +52,6 @@ import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DebugPosition;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
-import de.mirkosertic.bytecoder.ssa.EdgeType;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -109,11 +108,10 @@ import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
-import de.mirkosertic.bytecoder.stackifier.JumpArrow;
+import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
 import de.mirkosertic.bytecoder.stackifier.StructuredControlFlowWriter;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -121,12 +119,6 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class JSSSAWriter {
-
-    interface JumpCodeGenerator {
-        String generateJumpCodeFor(BytecodeOpcodeAddress jumpTarget);
-    }
-
-    public static final JumpCodeGenerator RELOOPER_JUMPCODEGENERATOR = aTarget -> "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
 
     protected final Program program;
     protected final BytecodeLinkerContext linkerContext;
@@ -136,10 +128,9 @@ public class JSSSAWriter {
     private boolean labelRequired;
     private final JSMinifier minifier;
     private final int indent;
-    private JumpCodeGenerator jumpCodeGenerator;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final JumpCodeGenerator codeGenerator) {
+                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -148,11 +139,10 @@ public class JSSSAWriter {
         labelRequired = aLabelRequired;
         minifier = aMinifier;
         indent = aIndent;
-        jumpCodeGenerator = codeGenerator;
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, jumpCodeGenerator);
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier);
     }
 
     public JSPrintWriter startLine() {
@@ -1183,7 +1173,7 @@ public class JSSSAWriter {
 
             } else if (theExpression instanceof GotoExpression) {
                 final GotoExpression theE = (GotoExpression) theExpression;
-                startLine().text(jumpCodeGenerator.generateJumpCodeFor(theE.getJumpTarget())).newLine();
+                throw new IllegalStateException("JavaScript Backend does not support Goto-Expressions!");
             } else if (theExpression instanceof ArrayStoreExpression) {
                 final ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
 
@@ -1483,65 +1473,21 @@ public class JSSSAWriter {
     }
 
     public void printStackified(final StructuredControlFlow<RegionNode> controlFlow) {
-        final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses = new HashMap<>();
-        for (final RegionNode theNode : controlFlow.getNodesInOrder()) {
-            nodeAdresses.put(theNode.getStartAddress(), theNode);
-        }
         final Stack<JSSSAWriter> writerStack = new Stack<>();
         writerStack.push(this);
         controlFlow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
-
-            private RegionNode currentNode;
-
-            public String toLabel(final JumpArrow<RegionNode> arrow) {
-                switch (arrow.getEdgeType()) {
-                    case forward:
-                        return String.format("$B_%d_%d", controlFlow.indexOf(arrow.getNewTail()), controlFlow.indexOf(arrow.getHead()));
-                    case back:
-                        return String.format("$L_%d_%d", controlFlow.indexOf(arrow.getHead()), controlFlow.indexOf(arrow.getNewTail()));
-                    default:
-                        throw new IllegalArgumentException();
-                }
-            }
 
             @Override
             public void begin() {
                 super.begin();
                 writerStack.peek().startLine().text("/* STACKIFIED */").newLine();
-                JSSSAWriter.this.jumpCodeGenerator = aTarget -> {
-                    final RegionNode theTargetNode = nodeAdresses.get(aTarget);
-                    final int currentIndex = controlFlow.indexOf(currentNode);
-                    final int targetIndex = controlFlow.indexOf(theTargetNode);
-                    if (targetIndex <= currentIndex) {
-                        // Back-Edge, we create a continue
-                        for (int i=hierarchy.size() - 1;i>=0;i--) {
-                            final JumpArrow<RegionNode> arrow = hierarchy.get(i);
-                            if (arrow.getEdgeType() == EdgeType.back) {
-                                if (arrow.getHead() == theTargetNode) {
-                                    return "continue " + toLabel(arrow) + ";";
-                                }
-                            }
-                        }
-                        return "UNDEFINED LOOP TO " + aTarget.getAddress();
-                    }
-                    // Normal edge, we create a break
-                    for (final JumpArrow<RegionNode> arrow : hierarchy) {
-                        if (arrow.getEdgeType() == EdgeType.forward) {
-                            if (arrow.getHead() == theTargetNode) {
-                                return "break " + toLabel(arrow) + ";";
-                            }
-                        }
-                    }
-                    // We break out of the complete hierarchy
-                    return "break " + toLabel(hierarchy.get(0)) + "/* Trying to jump to " + aTarget.getAddress() + " */;";
-                };
             }
 
             @Override
-            public void beginLoopFor(final JumpArrow<RegionNode> arrow) {
-                super.beginLoopFor(arrow);
+            public void beginLoopFor(final Block<RegionNode> block) {
+                super.beginLoopFor(block);
                 final JSSSAWriter current = writerStack.peek();
-                current.startLine().text(toLabel(arrow))
+                current.startLine().text(block.getLabel().name())
                         .text(":").space()
                         .text("for(;;)").space().text("{").newLine();
                 final JSSSAWriter newLoopBlock = current.withDeeperIndent();
@@ -1549,10 +1495,10 @@ public class JSSSAWriter {
             }
 
             @Override
-            public void beginBlockFor(final JumpArrow<RegionNode> jumpArrow) {
-                super.beginBlockFor(jumpArrow);
+            public void beginBlockFor(final Block<RegionNode> block) {
+                super.beginBlockFor(block);
                 final JSSSAWriter current = writerStack.peek();
-                current.startLine().text(toLabel(jumpArrow))
+                current.startLine().text(block.getLabel().name())
                         .text(":").space().text("{").newLine();
                 final JSSSAWriter newSimpleBlock = current.withDeeperIndent();
                 writerStack.push(newSimpleBlock);
@@ -1560,7 +1506,6 @@ public class JSSSAWriter {
 
             @Override
             public void write(final RegionNode node) {
-                currentNode = node;
                 writerStack.peek().startLine().text("/* #").text(Integer.toString(controlFlow.indexOf(node))).text(" */").newLine();
                 writerStack.peek().writeExpressions(node.getExpressions());
             }
@@ -1568,10 +1513,6 @@ public class JSSSAWriter {
             @Override
             public void closeBlock() {
                 writerStack.pop();
-                if (writerStack.isEmpty()) {
-                    controlFlow.printDebug(System.out);
-                    throw new IllegalStateException();
-                }
                 writerStack.peek().startLine().text("}").newLine();
                 super.closeBlock();
             }

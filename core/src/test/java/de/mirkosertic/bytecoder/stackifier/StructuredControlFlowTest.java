@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.InOrder;
 
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -39,7 +40,7 @@ public class StructuredControlFlowTest {
     public void testSingleNode() {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
@@ -56,7 +57,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
@@ -73,7 +74,7 @@ public class StructuredControlFlowTest {
     public void testSimpleSequenceWithoutGotos() {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2));
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
@@ -93,14 +94,14 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 1, 2);
         builder.add(EdgeType.forward, 0, 3);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
-        order.verify(writerMock).beginBlockFor(any(JumpArrow.class));
+        order.verify(writerMock).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(0));
         order.verify(writerMock).write(eq(1));
         order.verify(writerMock).write(eq(2));
@@ -118,7 +119,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 2, 3);
         builder.add(EdgeType.back, 2, 1);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
@@ -126,7 +127,7 @@ public class StructuredControlFlowTest {
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
         order.verify(writerMock).write(eq(0));
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(1));
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock).closeBlock();
@@ -142,14 +143,14 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 2, 3);
         builder.add(EdgeType.back, 2, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(0));
         order.verify(writerMock).write(eq(1));
         order.verify(writerMock).write(eq(2));
@@ -163,14 +164,14 @@ public class StructuredControlFlowTest {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
         builder.add(EdgeType.back, 0, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(0));
         order.verify(writerMock).closeBlock();
         order.verify(writerMock).end();
@@ -187,16 +188,16 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.back, 4, 0);
 
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(0));
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(1));
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock).write(eq(3));
@@ -214,7 +215,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.back, 3, 1);
         builder.add(EdgeType.forward, 2, 4);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
@@ -222,9 +223,9 @@ public class StructuredControlFlowTest {
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
         order.verify(writerMock).write(eq(0));
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(1));
-        order.verify(writerMock).beginBlockFor(any(JumpArrow.class));
+        order.verify(writerMock).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock).write(eq(3));
         order.verify(writerMock, times(2)).closeBlock();
@@ -244,24 +245,23 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 2, 5);
         builder.add(EdgeType.forward, 4, 5);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
-        order.verify(writerMock, times(2)).beginBlockFor(any(JumpArrow.class));
+        order.verify(writerMock, times(2)).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(0));
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(1));
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock, times(2)).closeBlock();
-        order.verify(writerMock).beginLoopFor(any(JumpArrow.class));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
         order.verify(writerMock).write(eq(3));
-        order.verify(writerMock).beginBlockFor(any(JumpArrow.class));
         order.verify(writerMock).write(eq(4));
-        order.verify(writerMock, times(3)).closeBlock();
+        order.verify(writerMock, times(2)).closeBlock();
         order.verify(writerMock).write(eq(5));
         order.verify(writerMock).end();
     }
@@ -275,7 +275,7 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward,0, 2);
         builder.add(EdgeType.back, 3, 1);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
     }
 
     @Test
@@ -286,20 +286,45 @@ public class StructuredControlFlowTest {
         builder.add(EdgeType.forward, 1, 3);
         builder.add(EdgeType.forward, 2, 3);
         final StructuredControlFlow<Integer> graph = builder.build();
-        graph.printDebug(System.out);
+        graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
 
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
         order.verify(writerMock).begin();
-        order.verify(writerMock, times(2)).beginBlockFor(any(JumpArrow.class));
+        order.verify(writerMock, times(2)).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(0));
         order.verify(writerMock).write(eq(1));
         order.verify(writerMock).closeBlock();
-        order.verify(writerMock).beginBlockFor(any(JumpArrow.class));
+        order.verify(writerMock).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock, times(2)).closeBlock();
+        order.verify(writerMock).write(eq(3));
+        order.verify(writerMock).end();
+    }
+
+    @Test
+    public void testSimpleLoopMultipleExits() {
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
+        builder.add(EdgeType.forward, 0, 1);
+        builder.add(EdgeType.forward, 1, 2);
+        builder.add(EdgeType.forward, 1, 3);
+        builder.add(EdgeType.forward, 2, 3);
+        builder.add(EdgeType.back, 2, 1);
+        final StructuredControlFlow<Integer> graph = builder.build();
+        graph.printDebug(new PrintWriter(System.out));
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
+
+        final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
+        graph.writeStructuredControlFlow(writerMock);
+        final InOrder order = inOrder(writerMock);
+        order.verify(writerMock).begin();
+        order.verify(writerMock).write(eq(0));
+        order.verify(writerMock).beginLoopFor(any(Block.class));
+        order.verify(writerMock).write(eq(1));
+        order.verify(writerMock).write(eq(2));
+        order.verify(writerMock).closeBlock();
         order.verify(writerMock).write(eq(3));
         order.verify(writerMock).end();
     }

@@ -36,19 +36,19 @@ public class DebugStructurecControlFlowWriter extends StructuredControlFlowWrite
     }
 
     @Override
-    public void beginLoopFor(final JumpArrow<RegionNode> arrow) {
+    public void beginLoopFor(final Block<RegionNode> block) {
         stream.print(indent(hierarchy.size()));
         stream.print("LOOP: {");
         stream.println();
-        super.beginLoopFor(arrow);
+        super.beginLoopFor(block);
     }
 
     @Override
-    public void beginBlockFor(final JumpArrow<RegionNode> jumpArrow) {
+    public void beginBlockFor(final Block<RegionNode> block) {
         stream.print(indent(hierarchy.size()));
         stream.print("BLOCK: {");
         stream.println();
-        super.beginBlockFor(jumpArrow);
+        super.beginBlockFor(block);
     }
 
     @Override

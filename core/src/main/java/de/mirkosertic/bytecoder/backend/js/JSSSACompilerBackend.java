@@ -633,7 +633,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.flush();
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, JSSSAWriter.RELOOPER_JUMPCODEGENERATOR);
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier);
                 for (final Variable theVariable : theSSAProgram.globalVariables()) {
                     if (!theVariable.isSynthetic()) {
                         final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");

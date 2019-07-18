@@ -19,7 +19,7 @@ import java.util.Stack;
 
 public abstract class StructuredControlFlowWriter<T> {
 
-    protected final Stack<JumpArrow<T>> hierarchy;
+    protected final Stack<Block<T>> hierarchy;
 
     protected StructuredControlFlowWriter() {
         this.hierarchy = new Stack<>();
@@ -28,12 +28,12 @@ public abstract class StructuredControlFlowWriter<T> {
     public void begin() {
     }
 
-    public void beginLoopFor(final JumpArrow<T> arrow) {
-        hierarchy.push(arrow);
+    public void beginLoopFor(final Block<T> block) {
+        hierarchy.push(block);
     }
 
-    public void beginBlockFor(final JumpArrow<T> jumpArrow) {
-        hierarchy.push(jumpArrow);
+    public void beginBlockFor(final Block<T> block) {
+        hierarchy.push(block);
     }
 
     public abstract void write(T node);

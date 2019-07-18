@@ -16,8 +16,9 @@
 package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.Label;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -101,7 +102,7 @@ public class StructuredControlFlow<T> {
         }
     }
 
-    public void printDebug(final PrintStream pw) {
+    public void printDebug(final PrintWriter pw) {
         pw.println("Original:");
         printDebug(pw, false);
         pw.println();
@@ -115,49 +116,51 @@ public class StructuredControlFlow<T> {
         for (final JumpArrow<T> arrow : knownJumpArrows) {
             pw.println(String.format(" %s %d -> %d", arrow.getEdgeType(), indexOf(arrow.getTail()), indexOf(arrow.getHead())));
         }
+        pw.flush();
     }
 
-    private void printDebug(final PrintStream stream, final boolean newTail) {
-        stream.print("        ");
+    private void printDebug(final PrintWriter pw, final boolean newTail) {
+        pw.print("        ");
         for (final T v : nodesInOrder) {
-            stream.print(String.format("%3d", indexOf(v)));
-            stream.print(" ");
+            pw.print(String.format("%3d", indexOf(v)));
+            pw.print(" ");
         }
-        stream.println();
+        pw.println();
         for (final JumpArrow<T> arrow : jumpArrowsSortedByTail()) {
-            stream.print(String.format("%3d-%3d ", indexOf(arrow.getTail()) ,indexOf(arrow.getHead())));
+            pw.print(String.format("%3d-%3d ", indexOf(arrow.getTail()) ,indexOf(arrow.getHead())));
             final T tail = newTail ? arrow.getNewTail() : arrow.getTail();
             final T head = arrow.getHead();
             if (arrow.getEdgeType() == EdgeType.forward) {
                 for (int i=0;i<indexOf(tail);i++) {
-                    stream.print("    ");
+                    pw.print("    ");
                 }
-                stream.print("  ");
+                pw.print("  ");
                 for (int i=indexOf(tail);i<indexOf(head);i++) {
-                    stream.print("----");
+                    pw.print("----");
                 }
-                stream.print(">");
+                pw.print(">");
             } else {
                 for (int i=0;i<indexOf(head);i++) {
-                    stream.print("    ");
+                    pw.print("    ");
                 }
-                stream.print("  <-");
+                pw.print("  <-");
                 for (int i=indexOf(tail);i<indexOf(head)-1;i++) {
-                    stream.print("----");
+                    pw.print("----");
                 }
-                stream.print("---");
+                pw.print("---");
             }
-            stream.println();
+            pw.println();
         }
     }
 
-    private static class Block<T> {
-        private final JumpArrow<T> arrow;
-        private final int endsBefore;
-
-        public Block(final JumpArrow<T> arrow, final int endsBefore) {
-            this.arrow = arrow;
-            this.endsBefore = endsBefore;
+    private Label toLabel(final JumpArrow<T> arrow) {
+        switch (arrow.getEdgeType()) {
+            case forward:
+                return new Label(String.format("$B_%d_%d", indexOf(arrow.getNewTail()), indexOf(arrow.getHead())));
+            case back:
+                return new Label(String.format("$L_%d_%d", indexOf(arrow.getHead()), indexOf(arrow.getNewTail())));
+            default:
+                throw new IllegalArgumentException();
         }
     }
 
@@ -175,7 +178,19 @@ public class StructuredControlFlow<T> {
                                         t -> t.getEdgeType() == EdgeType.forward && t.getHead() == arrow.getHead()).count() == 1) {
                                     return false;
                                 }
+                                // Also forward jumps out of a loop do not create new blocks
+                                // As the loop can always be exited
+                                if (knownJumpArrows.stream().filter(
+                                        t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getHead()).count() == 1) {
+                                    return false;
+                                }
+
                                 return true;
+                            }
+                            // Jumps our of a loop to the loops direct successor also does not create a block
+                            if (knownJumpArrows.stream().filter(
+                                    t -> t.getEdgeType() == EdgeType.back && t.getHead() == arrow.getNewTail() && indexOf(t.getTail()) + 1 == indexOf(arrow.getHead())).count() == 1) {
+                                return false;
                             }
                             return true;
                         default:
@@ -195,7 +210,7 @@ public class StructuredControlFlow<T> {
             // So we can build a stack of blocks correctly
             final List<Block<T>> blocksStartingFromHere = filteredJumpArrows.stream()
                     .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
-                    .map(t -> new Block<>(t, indexOf(t.getHead())))
+                    .map(t -> new Block<>(toLabel(t), t, indexOf(t.getHead())))
                     .collect(Collectors.toList());
 
             // Back-Edges form loops, so we have to collect them
@@ -208,7 +223,7 @@ public class StructuredControlFlow<T> {
             if (!backEdgesToHere.isEmpty()) {
                 // TODO: We have to join back edges to the same head
                 for (final JumpArrow<T> back : backEdgesToHere) {
-                    blocksStartingFromHere.add(new Block<>(back, indexOf(back.getNewTail())));
+                    blocksStartingFromHere.add(new Block<>(toLabel(back), back, indexOf(back.getNewTail())));
                 }
             }
 
@@ -225,10 +240,10 @@ public class StructuredControlFlow<T> {
             for (final Block<T> block : blocksStartingFromHere) {
                 switch (block.arrow.getEdgeType()) {
                     case forward:
-                        writer.beginBlockFor(block.arrow);
+                        writer.beginBlockFor(block);
                         break;
                     case back:
-                        writer.beginLoopFor(block.arrow);
+                        writer.beginLoopFor(block);
                         break;
                     default:
                         throw new IllegalStateException();

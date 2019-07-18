@@ -34,19 +34,19 @@ public class IntegerDebugStructurecControlFlowWriter extends StructuredControlFl
     }
 
     @Override
-    public void beginLoopFor(final JumpArrow<Integer> arrow) {
+    public void beginLoopFor(final Block<Integer> block) {
         stream.print(indent(hierarchy.size()));
         stream.print("LOOP: {");
         stream.println();
-        super.beginLoopFor(arrow);
+        super.beginLoopFor(block);
     }
 
     @Override
-    public void beginBlockFor(final JumpArrow<Integer> jumpArrow) {
+    public void beginBlockFor(final Block<Integer> block) {
         stream.print(indent(hierarchy.size()));
         stream.print("BLOCK: {");
         stream.println();
-        super.beginBlockFor(jumpArrow);
+        super.beginBlockFor(block);
     }
 
     @Override

@@ -15,13 +15,22 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraphRegionNodeTopologicOrder;
 import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 public class Stackifier {
 
@@ -46,6 +55,82 @@ public class Stackifier {
                 }
             }
         }
-        return builder.build();
+        final StructuredControlFlow<RegionNode> flow = builder.build();
+
+        final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses = new HashMap<>();
+        for (final RegionNode theNode : flow.getNodesInOrder()) {
+            nodeAdresses.put(theNode.getStartAddress(), theNode);
+        }
+
+        // Now we have to replace all the gotos in the code
+        flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
+
+            @Override
+            public void write(final RegionNode node) {
+                replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy);
+            }
+        });
+
+        return flow;
+    }
+
+    private void replaceGotosIn(final StructuredControlFlow<RegionNode> flow, final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses, final RegionNode currentNode, final ExpressionList aList, final Stack<Block<RegionNode>> hierarchy) {
+        for (final Expression theExptession : aList.toList()) {
+            if (theExptession instanceof ExpressionListContainer) {
+                final ExpressionListContainer container = (ExpressionListContainer) theExptession;
+                for (final ExpressionList innerList : container.getExpressionLists()) {
+                    replaceGotosIn(flow, nodeAdresses, currentNode, innerList, hierarchy);
+                }
+            }
+            if (theExptession instanceof GotoExpression) {
+                final GotoExpression theGoto = (GotoExpression) theExptession;
+                final BytecodeOpcodeAddress theTarget = theGoto.getJumpTarget();
+
+                final RegionNode theTargetNode = nodeAdresses.get(theTarget);
+                final int currentIndex = flow.indexOf(currentNode);
+                final int targetIndex = flow.indexOf(theTargetNode);
+                if (targetIndex <= currentIndex) {
+                    // Back-Edge, we create a continue
+                    for (int i=hierarchy.size() - 1;i>=0;i--) {
+                        final Block<RegionNode> block = hierarchy.get(i);
+                        final JumpArrow<RegionNode> arrow = block.getArrow();
+                        if (arrow.getEdgeType() == EdgeType.back) {
+                            if (arrow.getHead() == theTargetNode) {
+                                // We create a continue here
+                                aList.replace(theGoto, new ContinueExpression(
+                                        theGoto.getProgram(),
+                                        theGoto.getAddress(),
+                                        block.getLabel(),
+                                        theTarget
+                                ));
+                            }
+                        }
+                    }
+                    throw new IllegalStateException("UNDEFINED LOOP TO " + theTarget.getAddress());
+                }
+                // Normal edge, we create a break
+                for (final Block<RegionNode> block : hierarchy) {
+                    final JumpArrow<RegionNode> arrow = block.getArrow();
+                    if (arrow.getEdgeType() == EdgeType.forward) {
+                        if (arrow.getHead() == theTargetNode) {
+                            aList.replace(theGoto, new BreakExpression(
+                                    theGoto.getProgram(),
+                                    theGoto.getAddress(),
+                                    block.getLabel(),
+                                    theTarget
+                            ));
+                        }
+                    }
+                }
+
+                // We break out of the complete hierarchy
+                aList.replace(theGoto, new BreakExpression(
+                        theGoto.getProgram(),
+                        theGoto.getAddress(),
+                        hierarchy.get(0).getLabel(),
+                        theTarget
+                ));
+            }
+        }
     }
 }
