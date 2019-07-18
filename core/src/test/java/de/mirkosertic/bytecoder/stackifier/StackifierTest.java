@@ -71,6 +71,28 @@ public class StackifierTest {
     }
 
     @Test
+    public void testSimpleSequenceWithoutGotos() {
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        startNode.addSuccessor(node1);
+        node1.addSuccessor(node2);
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier();
+
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final StringWriter sw = new StringWriter();
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+
+        assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
+                "RegionNode{startAddress=BytecodeOpcodeAddress{address=20}}" + System.lineSeparator(), sw.toString());
+    }
+
+    @Test
     public void testIfThenElse() {
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
