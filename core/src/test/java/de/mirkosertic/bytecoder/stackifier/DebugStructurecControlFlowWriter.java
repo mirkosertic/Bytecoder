@@ -15,16 +15,20 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
 
-public class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<RegionNode> {
+class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<RegionNode> {
 
-    private final PrintStream stream;
+    private final PrintWriter writer;
 
-    public DebugStructurecControlFlowWriter(final PrintStream stream) {
-        this.stream = stream;
+    public DebugStructurecControlFlowWriter(final PrintWriter writer) {
+        this.writer = writer;
     }
 
     private String indent(final int l) {
@@ -37,30 +41,47 @@ public class DebugStructurecControlFlowWriter extends StructuredControlFlowWrite
 
     @Override
     public void beginLoopFor(final Block<RegionNode> block) {
-        stream.print(indent(hierarchy.size()));
-        stream.print("LOOP: {");
-        stream.println();
+        writer.print(indent(hierarchy.size()));
+        writer.print(String.format("LOOP %s: {", block.getLabel().name()));
+        writer.println();
         super.beginLoopFor(block);
     }
 
     @Override
     public void beginBlockFor(final Block<RegionNode> block) {
-        stream.print(indent(hierarchy.size()));
-        stream.print("BLOCK: {");
-        stream.println();
+        writer.print(indent(hierarchy.size()));
+        writer.print(String.format("BLOCK %s: {", block.getLabel().name()));
+        writer.println();
         super.beginBlockFor(block);
     }
 
     @Override
     public void write(final RegionNode node) {
-        stream.print(indent(hierarchy.size()));
-        stream.println(node);
+        writer.print(indent(hierarchy.size()));
+        writer.println(node);
+        for (final Expression e : node.getExpressions().toList()) {
+            if (e instanceof GotoExpression) {
+                final GotoExpression g = (GotoExpression) e;
+                writer.print(indent(hierarchy.size()));
+                writer.println(String.format("goto %d", g.getJumpTarget().getAddress()));
+            } else if (e instanceof BreakExpression) {
+                final BreakExpression b = (BreakExpression) e;
+                writer.print(indent(hierarchy.size()));
+                writer.println(String.format("break %s", b.blockToBreak().name()));
+            } else if (e instanceof ContinueExpression) {
+                final ContinueExpression c = (ContinueExpression) e;
+                writer.print(indent(hierarchy.size()));
+                writer.println(String.format("break %s", c.labelToReturnTo().name()));
+            } else {
+                throw new IllegalArgumentException("Unsupported Expression : " + e);
+            }
+        }
     }
 
     @Override
     public void closeBlock() {
         super.closeBlock();
-        stream.print(indent(hierarchy.size()));
-        stream.println("}");
+        writer.print(indent(hierarchy.size()));
+        writer.println("}");
     }
 }

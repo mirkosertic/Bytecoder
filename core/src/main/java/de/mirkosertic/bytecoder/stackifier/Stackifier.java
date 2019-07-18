@@ -89,6 +89,14 @@ public class Stackifier {
                 final RegionNode theTargetNode = nodeAdresses.get(theTarget);
                 final int currentIndex = flow.indexOf(currentNode);
                 final int targetIndex = flow.indexOf(theTargetNode);
+
+                if (theTargetNode.isStrictlyDominatedBy(currentNode)) {
+                    // We are branching to the successor
+                    // The goto can be replaced
+                    aList.remove(theGoto);
+                    continue;
+                }
+
                 if (targetIndex <= currentIndex) {
                     // Back-Edge, we create a continue
                     for (int i=hierarchy.size() - 1;i>=0;i--) {
