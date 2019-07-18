@@ -44,6 +44,7 @@ import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
 
@@ -652,9 +653,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
 
                             theVariablesWriter.printStackified(flow);
-                            aOptions.getLogger().info("Method %s successfully stackified ", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
+                            aOptions.getLogger().debug("Method %s successfully stackified ", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
 
-                        } catch (final Exception e) {
+                        } catch (final IrreducibleControlFlowException e) {
 
                             // Stackifier has problems, we fallback to relooper instead
                             aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
@@ -664,7 +665,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                             theVariablesWriter.printRelooped(theReloopedBlock);
                         }
-
                     } else {
 
                         final Relooper theRelooper = new Relooper(aOptions);

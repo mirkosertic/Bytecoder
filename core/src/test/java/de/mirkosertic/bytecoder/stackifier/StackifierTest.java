@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class StackifierTest {
 
     @Test
-    public void testOnlyOneNode() {
+    public void testOnlyOneNode() throws IrreducibleControlFlowException {
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -47,7 +47,7 @@ public class StackifierTest {
     }
 
     @Test
-    public void testSimpleSequence() {
+    public void testSimpleSequence() throws IrreducibleControlFlowException {
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -71,7 +71,7 @@ public class StackifierTest {
     }
 
     @Test
-    public void testSimpleSequenceWithoutGotos() {
+    public void testSimpleSequenceWithoutGotos() throws IrreducibleControlFlowException {
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -93,7 +93,7 @@ public class StackifierTest {
     }
 
     @Test
-    public void testIfThenElse() {
+    public void testIfThenElse() throws IrreducibleControlFlowException {
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);

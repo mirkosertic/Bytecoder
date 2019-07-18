@@ -34,7 +34,7 @@ public class StructuredControlFlowBuilder<T> {
         knownJumpArrows.add(new JumpArrow<>(edgeType, source, destination));
     }
 
-    public StructuredControlFlow<T> build() {
+    public StructuredControlFlow<T> build() throws IrreducibleControlFlowException {
         final StructuredControlFlow<T> stack = new StructuredControlFlow<>(knownJumpArrows, nodesInOrder);
         stack.stackify();
         return stack;

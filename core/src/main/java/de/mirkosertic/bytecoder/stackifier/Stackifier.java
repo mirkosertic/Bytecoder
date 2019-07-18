@@ -34,7 +34,7 @@ import java.util.Stack;
 
 public class Stackifier {
 
-    public StructuredControlFlow<RegionNode> stackify(final ControlFlowGraph controlFlowGraph) {
+    public StructuredControlFlow<RegionNode> stackify(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
         final List<RegionNode> sorted = new ControlFlowGraphRegionNodeTopologicOrder(controlFlowGraph).getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);
         for (final RegionNode node : sorted) {
