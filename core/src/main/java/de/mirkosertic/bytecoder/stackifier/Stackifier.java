@@ -102,8 +102,6 @@ public class Stackifier {
                 final BytecodeOpcodeAddress theTarget = theGoto.getJumpTarget();
 
                 final RegionNode theTargetNode = nodeAdresses.get(theTarget);
-                final int currentIndex = flow.indexOf(currentNode);
-                final int targetIndex = flow.indexOf(theTargetNode);
 
                 if (flow.indexOf(theTargetNode) == flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThru(currentNode)) {
                     // We are branching to the strictly dominated successor
@@ -111,17 +109,27 @@ public class Stackifier {
                     if (!testMode) {
                         aList.remove(theGoto);
                     }
-                    continue;
+                    continue expressiontest;
                 }
 
-                if (targetIndex <= currentIndex) {
-                    // Back-Edge, we create a continue
-                    for (int i=hierarchy.size() - 1;i>=0;i--) {
-                        final Block<RegionNode> block = hierarchy.get(i);
-                        final JumpArrow<RegionNode> arrow = block.getArrow();
-                        if (arrow.getEdgeType() == EdgeType.back) {
-                            if (arrow.getHead() == theTargetNode) {
-                                // We create a continue here
+                for (final Block<RegionNode> block : hierarchy) {
+                    switch (block.getArrow().getEdgeType()) {
+                        case forward:
+                            if (theTargetNode == block.getArrow().getHead()) {
+                                if (!testMode) {
+                                    aList.replace(theGoto, new BreakExpression(
+                                            theGoto.getProgram(),
+                                            theGoto.getAddress(),
+                                            block.getLabel(),
+                                            theTarget
+                                    ));
+                                }
+
+                                continue expressiontest;
+                            }
+                            break;
+                        case back:
+                            if (theTargetNode == block.getArrow().getHead()) {
                                 if (!testMode) {
                                     aList.replace(theGoto, new ContinueExpression(
                                             theGoto.getProgram(),
@@ -130,48 +138,18 @@ public class Stackifier {
                                             theTarget
                                     ));
                                 }
+
                                 continue expressiontest;
                             }
-                        }
-                    }
-                    flow.printDebug(new PrintWriter(System.out));
-                    flow.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(System.out)));
-                    throw new IllegalStateException("UNDEFINED LOOP TO " + theTarget.getAddress());
-                }
-                // Normal edge, we create a break
-                for (final Block<RegionNode> block : hierarchy) {
-                    final JumpArrow<RegionNode> arrow = block.getArrow();
-                    if (arrow.getEdgeType() == EdgeType.forward) {
-                        if (arrow.getHead() == theTargetNode) {
-                            if (!testMode) {
-                                aList.replace(theGoto, new BreakExpression(
-                                        theGoto.getProgram(),
-                                        theGoto.getAddress(),
-                                        block.getLabel(),
-                                        theTarget
-                                ));
-                            }
-
-                            continue expressiontest;
-                        }
+                            break;
+                        default:
+                            throw new IllegalStateException();
                     }
                 }
 
-                if (!hierarchy.isEmpty()){
-                    // We break out of the complete hierarchy
-                    if (!testMode) {
-                        aList.replace(theGoto, new BreakExpression(
-                                theGoto.getProgram(),
-                                theGoto.getAddress(),
-                                hierarchy.get(0).getLabel(),
-                                theTarget
-                        ));
-                    }
-                } else {
-                    flow.printDebug(new PrintWriter(System.out));
-                    flow.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(System.out)));
-                    throw new IllegalStateException(String.format("Don't know how to handle Goto %s from %d to %d in %s", theTarget.getAddress(), flow.indexOf(currentNode), flow.indexOf(theTargetNode), currentNode.getStartAddress()));
-                }
+                flow.printDebug(new PrintWriter(System.out));
+                flow.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(System.out)));
+                throw new IllegalStateException(String.format("Don't know how to handle Goto %s from %d to %d in %s", theTarget.getAddress(), flow.indexOf(currentNode), flow.indexOf(theTargetNode), currentNode.getStartAddress()));
             }
         }
     }

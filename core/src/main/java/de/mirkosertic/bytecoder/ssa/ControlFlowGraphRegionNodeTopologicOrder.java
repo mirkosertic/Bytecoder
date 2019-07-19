@@ -61,7 +61,7 @@ public class ControlFlowGraphRegionNodeTopologicOrder {
         if (dominatedBy != null && dominatedBy.getSuccessors().size() > 1) {
             final List<RegionNode> dominatedSuccessors = new ArrayList<>(dominatedBy.getSuccessors().values());
             dominatedSuccessors.sort(Comparator.comparingInt(o -> o.getStartAddress().getAddress()));
-            return (max + 1) * 1000 * (dominatedSuccessors.indexOf(regionNode) + 1);
+            return (max + 1) * 200 * (dominatedSuccessors.indexOf(regionNode) + 1);
         }
         return max + 1;
     }
