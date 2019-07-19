@@ -78,9 +78,10 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
 
     @Override
     public void closeBlock() {
+        final Block<RegionNode> currentBlock = hierarchy.peek();
         super.closeBlock();
         writer.print(indent(hierarchy.size()));
-        writer.println("}");
+        writer.println(String.format("} ; Closing block %s", currentBlock.getLabel().name()));
     }
 
     @Override

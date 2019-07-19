@@ -228,7 +228,11 @@ public class StructuredControlFlow<T> {
             // We sort the blocks by their closing position
             // we get sorted blocks from widest to smallest
             // We have top place the blocks in this exact order
-            blocksStartingFromHere.sort((o1, o2) -> Integer.compare(o2.endsBefore, o1.endsBefore));
+            blocksStartingFromHere.sort((o1, o2) -> {
+                final int a = o1.getArrow().getEdgeType() == EdgeType.forward ? o1.endsBefore : o1.endsBefore + 1;
+                final int b = o2.getArrow().getEdgeType() == EdgeType.forward ? o2.endsBefore : o2.endsBefore + 1;
+                return Integer.compare(b, a);
+            });
 
             while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.forward)) {
                 writer.closeBlock();
