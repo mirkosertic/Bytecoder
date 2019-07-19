@@ -20,12 +20,10 @@ import de.mirkosertic.bytecoder.ssa.Label;
 public class Block<T> {
     private final Label label;
     final JumpArrow<T> arrow;
-    final int endsBefore;
 
-    public Block(final Label label, final JumpArrow<T> arrow, final int endsBefore) {
+    public Block(final Label label, final JumpArrow<T> arrow) {
         this.label = label;
         this.arrow = arrow;
-        this.endsBefore = endsBefore;
     }
 
     public Label getLabel() {
@@ -34,5 +32,15 @@ public class Block<T> {
 
     public JumpArrow<T> getArrow() {
         return arrow;
+    }
+
+    public T getEnding() {
+        switch (arrow.getEdgeType()) {
+            case forward:
+                return arrow.getHead();
+            case back:
+                return arrow.getNewTail();
+        }
+        throw new IllegalStateException();
     }
 }

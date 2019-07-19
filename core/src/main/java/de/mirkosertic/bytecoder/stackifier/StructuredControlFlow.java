@@ -210,7 +210,7 @@ public class StructuredControlFlow<T> {
             // So we can build a stack of blocks correctly
             final List<Block<T>> blocksStartingFromHere = filteredJumpArrows.stream()
                     .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
-                    .map(t -> new Block<>(toLabel(t), t, indexOf(t.getHead())))
+                    .map(t -> new Block<>(toLabel(t), t))
                     .collect(Collectors.toList());
 
             // Back-Edges form loops, so we have to collect them
@@ -222,28 +222,28 @@ public class StructuredControlFlow<T> {
 
             // TODO: We have to join back edges to the same head
             for (final JumpArrow<T> back : backEdgesToHere) {
-                blocksStartingFromHere.add(new Block<>(toLabel(back), back, indexOf(back.getNewTail())));
+                blocksStartingFromHere.add(new Block<>(toLabel(back), back));
             }
 
             // We sort the blocks by their closing position
             // we get sorted blocks from widest to smallest
             // We have top place the blocks in this exact order
             blocksStartingFromHere.sort((o1, o2) -> {
-                final int a = o1.getArrow().getEdgeType() == EdgeType.forward ? o1.endsBefore : o1.endsBefore + 1;
-                final int b = o2.getArrow().getEdgeType() == EdgeType.forward ? o2.endsBefore : o2.endsBefore + 1;
+                final int a = o1.getArrow().getEdgeType() == EdgeType.forward ? indexOf(o1.getEnding()) : indexOf(o1.getEnding()) + 1;
+                final int b = o2.getArrow().getEdgeType() == EdgeType.forward ? indexOf(o2.getEnding()) : indexOf(o2.getEnding()) + 1;
                 return Integer.compare(b, a);
             });
 
-            while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.forward)) {
+            while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.forward)) {
                 writer.closeBlock();
                 blockStack.pop();
             }
 
-            if (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+            if (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
 
                 writer.write(node);
 
-                while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+                while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
                     writer.closeBlock();
                     blockStack.pop();
                 }
