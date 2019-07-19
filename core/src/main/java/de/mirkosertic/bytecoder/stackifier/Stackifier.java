@@ -75,7 +75,7 @@ public class Stackifier {
     }
 
     private void replaceGotosIn(final StructuredControlFlow<RegionNode> flow, final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses, final RegionNode currentNode, final ExpressionList aList, final Stack<Block<RegionNode>> hierarchy) {
-        for (final Expression theExptession : aList.toList()) {
+        expressiontest: for (final Expression theExptession : aList.toList()) {
             if (theExptession instanceof ExpressionListContainer) {
                 final ExpressionListContainer container = (ExpressionListContainer) theExptession;
                 for (final ExpressionList innerList : container.getExpressionLists()) {
@@ -90,7 +90,7 @@ public class Stackifier {
                 final int currentIndex = flow.indexOf(currentNode);
                 final int targetIndex = flow.indexOf(theTargetNode);
 
-                if (theTargetNode.isStrictlyDominatedBy(currentNode)) {
+                if (theTargetNode.isStrictlyDominatedBy(currentNode) && flow.indexOf(theTargetNode) > flow.indexOf(currentNode)) {
                     // We are branching to the strictly dominated successor
                     // The goto can be removed
                     aList.remove(theGoto);
@@ -111,6 +111,7 @@ public class Stackifier {
                                         block.getLabel(),
                                         theTarget
                                 ));
+                                continue expressiontest;
                             }
                         }
                     }
@@ -127,6 +128,8 @@ public class Stackifier {
                                     block.getLabel(),
                                     theTarget
                             ));
+
+                            continue expressiontest;
                         }
                     }
                 }

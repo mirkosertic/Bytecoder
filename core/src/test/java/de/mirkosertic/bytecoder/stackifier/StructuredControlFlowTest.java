@@ -228,8 +228,9 @@ public class StructuredControlFlowTest {
         order.verify(writerMock).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock).write(eq(3));
-        order.verify(writerMock, times(2)).closeBlock();
+        order.verify(writerMock).closeBlock();
         order.verify(writerMock).write(eq(4));
+        order.verify(writerMock).closeBlock();
         order.verify(writerMock).end();
     }
 
@@ -326,6 +327,26 @@ public class StructuredControlFlowTest {
         order.verify(writerMock).write(eq(2));
         order.verify(writerMock).closeBlock();
         order.verify(writerMock).write(eq(3));
+        order.verify(writerMock).end();
+    }
+
+    @Test
+    public void testCompleteLoop() throws IrreducibleControlFlowException {
+        final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1));
+        builder.add(EdgeType.forward, 0, 1);
+        builder.add(EdgeType.back, 1, 0);
+        final StructuredControlFlow<Integer> graph = builder.build();
+        graph.printDebug(new PrintWriter(System.out));
+        graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
+
+        final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
+        graph.writeStructuredControlFlow(writerMock);
+        final InOrder order = inOrder(writerMock);
+        order.verify(writerMock).begin();
+        order.verify(writerMock).beginLoopFor(any(Block.class));
+        order.verify(writerMock).write(eq(0));
+        order.verify(writerMock).write(eq(1));
+        order.verify(writerMock).closeBlock();
         order.verify(writerMock).end();
     }
 }

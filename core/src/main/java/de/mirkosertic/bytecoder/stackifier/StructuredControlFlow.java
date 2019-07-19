@@ -220,11 +220,9 @@ public class StructuredControlFlow<T> {
                     .filter(t -> t.getEdgeType() == EdgeType.back && t.getHead() == node)
                     .collect(Collectors.toList());
 
-            if (!backEdgesToHere.isEmpty()) {
-                // TODO: We have to join back edges to the same head
-                for (final JumpArrow<T> back : backEdgesToHere) {
-                    blocksStartingFromHere.add(new Block<>(toLabel(back), back, indexOf(back.getNewTail())));
-                }
+            // TODO: We have to join back edges to the same head
+            for (final JumpArrow<T> back : backEdgesToHere) {
+                blocksStartingFromHere.add(new Block<>(toLabel(back), back, indexOf(back.getNewTail())));
             }
 
             // We sort the blocks by their closing position
@@ -232,26 +230,42 @@ public class StructuredControlFlow<T> {
             // We have top place the blocks in this exact order
             blocksStartingFromHere.sort((o1, o2) -> Integer.compare(o2.endsBefore, o1.endsBefore));
 
-            while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node))) {
+            while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.forward)) {
                 writer.closeBlock();
                 blockStack.pop();
             }
 
-            for (final Block<T> block : blocksStartingFromHere) {
-                switch (block.arrow.getEdgeType()) {
-                    case forward:
-                        writer.beginBlockFor(block);
-                        break;
-                    case back:
-                        writer.beginLoopFor(block);
-                        break;
-                    default:
-                        throw new IllegalStateException();
-                }
-                blockStack.push(block);
-            }
+            if (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
 
-            writer.write(node);
+                writer.write(node);
+
+                while (!blockStack.isEmpty() && (blockStack.peek().endsBefore == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+                    writer.closeBlock();
+                    blockStack.pop();
+                }
+
+                if (!blocksStartingFromHere.isEmpty()) {
+                    throw new IllegalStateException(String.format("Don't know what to do for node %s. Closing loop with starting blocks at the same place!", node));
+                }
+
+            } else {
+
+                for (final Block<T> block : blocksStartingFromHere) {
+                    switch (block.arrow.getEdgeType()) {
+                        case forward:
+                            writer.beginBlockFor(block);
+                            break;
+                        case back:
+                            writer.beginLoopFor(block);
+                            break;
+                        default:
+                            throw new IllegalStateException();
+                    }
+                    blockStack.push(block);
+                }
+
+                writer.write(node);
+            }
         }
 
         while (!blockStack.isEmpty()) {

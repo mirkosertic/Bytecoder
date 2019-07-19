@@ -128,4 +128,30 @@ public class StackifierTest {
                 "}" + System.lineSeparator() +
                 "RegionNode{startAddress=BytecodeOpcodeAddress{address=30}}" + System.lineSeparator(), sw.toString());
     }
+
+    @Test
+    public void testSimpleLoop() throws IrreducibleControlFlowException {
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
+        final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(0)));
+        startNode.addSuccessor(node1);
+        node1.addSuccessor(startNode);
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier();
+
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final StringWriter sw = new StringWriter();
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+
+        assertEquals("LOOP $L_0_1: {" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
+                "    continue $L_0_1" + System.lineSeparator() +
+                "}" + System.lineSeparator(), sw.toString());
+    }
+
 }
