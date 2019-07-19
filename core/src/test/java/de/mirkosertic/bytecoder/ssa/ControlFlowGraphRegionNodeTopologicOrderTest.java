@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-
-import java.util.List;
-
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import org.junit.Test;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import java.io.PrintWriter;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class ControlFlowGraphRegionNodeTopologicOrderTest {
 
@@ -36,7 +36,7 @@ public class ControlFlowGraphRegionNodeTopologicOrderTest {
         final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(graph);
         final List<RegionNode> nodes = order.getNodesInOrder();
 
-        order.printDebug(System.out);
+        order.printDebug(new PrintWriter(System.out));
 
         assertEquals(1, nodes.size());
         assertSame(startNode, nodes.get(0));
@@ -56,7 +56,7 @@ public class ControlFlowGraphRegionNodeTopologicOrderTest {
         final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(graph);
         final List<RegionNode> nodes = order.getNodesInOrder();
 
-        order.printDebug(System.out);
+        order.printDebug(new PrintWriter(System.out));
 
         assertEquals(3, nodes.size());
         assertSame(startNode, nodes.get(0));
@@ -81,7 +81,7 @@ public class ControlFlowGraphRegionNodeTopologicOrderTest {
         final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(graph);
         final List<RegionNode> nodes = order.getNodesInOrder();
 
-        order.printDebug(System.out);
+        order.printDebug(new PrintWriter(System.out));
 
         assertEquals(4, nodes.size());
         assertSame(startNode, nodes.get(0));

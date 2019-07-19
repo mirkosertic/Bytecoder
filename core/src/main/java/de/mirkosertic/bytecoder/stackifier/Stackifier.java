@@ -27,6 +27,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,8 @@ import java.util.Stack;
 public class Stackifier {
 
     public StructuredControlFlow<RegionNode> stackify(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
-        final List<RegionNode> sorted = new ControlFlowGraphRegionNodeTopologicOrder(controlFlowGraph).getNodesInOrder();
+        final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(controlFlowGraph);
+        final List<RegionNode> sorted = order.getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);
         for (final RegionNode node : sorted) {
             for (final Map.Entry<RegionNode.Edge, RegionNode> succ : node.getSuccessors().entrySet()) {
@@ -63,37 +65,52 @@ public class Stackifier {
         }
 
         // Now we have to replace all the gotos in the code
+        try {
+            flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
+
+                @Override
+                public void write(final RegionNode node) {
+                    replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy, true);
+                }
+            });
+        } catch (final RuntimeException e) {
+            order.printDebug(new PrintWriter(System.out));
+            throw e;
+        }
+
         flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
 
             @Override
             public void write(final RegionNode node) {
-                replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy);
+                replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy, false);
             }
         });
 
         return flow;
     }
 
-    private void replaceGotosIn(final StructuredControlFlow<RegionNode> flow, final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses, final RegionNode currentNode, final ExpressionList aList, final Stack<Block<RegionNode>> hierarchy) {
-        expressiontest: for (final Expression theExptession : aList.toList()) {
-            if (theExptession instanceof ExpressionListContainer) {
-                final ExpressionListContainer container = (ExpressionListContainer) theExptession;
+    private void replaceGotosIn(final StructuredControlFlow<RegionNode> flow, final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses, final RegionNode currentNode, final ExpressionList aList, final Stack<Block<RegionNode>> hierarchy, final boolean testMode) {
+        expressiontest: for (final Expression theExpression : aList.toList()) {
+            if (theExpression instanceof ExpressionListContainer) {
+                final ExpressionListContainer container = (ExpressionListContainer) theExpression;
                 for (final ExpressionList innerList : container.getExpressionLists()) {
-                    replaceGotosIn(flow, nodeAdresses, currentNode, innerList, hierarchy);
+                    replaceGotosIn(flow, nodeAdresses, currentNode, innerList, hierarchy, testMode);
                 }
             }
-            if (theExptession instanceof GotoExpression) {
-                final GotoExpression theGoto = (GotoExpression) theExptession;
+            if (theExpression instanceof GotoExpression) {
+                final GotoExpression theGoto = (GotoExpression) theExpression;
                 final BytecodeOpcodeAddress theTarget = theGoto.getJumpTarget();
 
                 final RegionNode theTargetNode = nodeAdresses.get(theTarget);
                 final int currentIndex = flow.indexOf(currentNode);
                 final int targetIndex = flow.indexOf(theTargetNode);
 
-                if (theTargetNode.isStrictlyDominatedBy(currentNode) && flow.indexOf(theTargetNode) > flow.indexOf(currentNode)) {
+                if (flow.indexOf(theTargetNode) == flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThru(currentNode)) {
                     // We are branching to the strictly dominated successor
                     // The goto can be removed
-                    aList.remove(theGoto);
+                    if (!testMode) {
+                        aList.remove(theGoto);
+                    }
                     continue;
                 }
 
@@ -105,16 +122,20 @@ public class Stackifier {
                         if (arrow.getEdgeType() == EdgeType.back) {
                             if (arrow.getHead() == theTargetNode) {
                                 // We create a continue here
-                                aList.replace(theGoto, new ContinueExpression(
-                                        theGoto.getProgram(),
-                                        theGoto.getAddress(),
-                                        block.getLabel(),
-                                        theTarget
-                                ));
+                                if (!testMode) {
+                                    aList.replace(theGoto, new ContinueExpression(
+                                            theGoto.getProgram(),
+                                            theGoto.getAddress(),
+                                            block.getLabel(),
+                                            theTarget
+                                    ));
+                                }
                                 continue expressiontest;
                             }
                         }
                     }
+                    flow.printDebug(new PrintWriter(System.out));
+                    flow.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(System.out)));
                     throw new IllegalStateException("UNDEFINED LOOP TO " + theTarget.getAddress());
                 }
                 // Normal edge, we create a break
@@ -122,25 +143,35 @@ public class Stackifier {
                     final JumpArrow<RegionNode> arrow = block.getArrow();
                     if (arrow.getEdgeType() == EdgeType.forward) {
                         if (arrow.getHead() == theTargetNode) {
-                            aList.replace(theGoto, new BreakExpression(
-                                    theGoto.getProgram(),
-                                    theGoto.getAddress(),
-                                    block.getLabel(),
-                                    theTarget
-                            ));
+                            if (!testMode) {
+                                aList.replace(theGoto, new BreakExpression(
+                                        theGoto.getProgram(),
+                                        theGoto.getAddress(),
+                                        block.getLabel(),
+                                        theTarget
+                                ));
+                            }
 
                             continue expressiontest;
                         }
                     }
                 }
 
-                // We break out of the complete hierarchy
-                aList.replace(theGoto, new BreakExpression(
-                        theGoto.getProgram(),
-                        theGoto.getAddress(),
-                        hierarchy.get(0).getLabel(),
-                        theTarget
-                ));
+                if (!hierarchy.isEmpty()){
+                    // We break out of the complete hierarchy
+                    if (!testMode) {
+                        aList.replace(theGoto, new BreakExpression(
+                                theGoto.getProgram(),
+                                theGoto.getAddress(),
+                                hierarchy.get(0).getLabel(),
+                                theTarget
+                        ));
+                    }
+                } else {
+                    flow.printDebug(new PrintWriter(System.out));
+                    flow.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(System.out)));
+                    throw new IllegalStateException(String.format("Don't know how to handle Goto %s from %d to %d in %s", theTarget.getAddress(), flow.indexOf(currentNode), flow.indexOf(theTargetNode), currentNode.getStartAddress()));
+                }
             }
         }
     }

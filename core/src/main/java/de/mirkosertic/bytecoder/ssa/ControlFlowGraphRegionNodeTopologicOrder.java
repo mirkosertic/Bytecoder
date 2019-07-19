@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,7 +30,7 @@ public class ControlFlowGraphRegionNodeTopologicOrder {
         this.nodes = new ArrayList<>();
         this.controlFlowGraph = graph;
         visit(graph.startNode());
-        nodes.sort(Comparator.comparingInt(this::topo));
+        nodes.sort(Comparator.comparingLong(this::topo));
     }
 
     private void visit(final RegionNode regionNode) {
@@ -46,11 +46,11 @@ public class ControlFlowGraphRegionNodeTopologicOrder {
         }
     }
 
-    private int topo(final RegionNode regionNode) {
+    private long topo(final RegionNode regionNode) {
         if (regionNode == controlFlowGraph.startNode()) {
             return 0;
         }
-        int max = 0;
+        long max = 0;
         RegionNode dominatedBy = null;
         for (final RegionNode pre : regionNode.getPredecessorsIgnoringBackEdges()) {
             if (regionNode.isStrictlyDominatedBy(pre)) {
@@ -61,7 +61,7 @@ public class ControlFlowGraphRegionNodeTopologicOrder {
         if (dominatedBy != null && dominatedBy.getSuccessors().size() > 1) {
             final List<RegionNode> dominatedSuccessors = new ArrayList<>(dominatedBy.getSuccessors().values());
             dominatedSuccessors.sort(Comparator.comparingInt(o -> o.getStartAddress().getAddress()));
-            return (max + 1) * 10000 * (dominatedSuccessors.indexOf(regionNode) + 1);
+            return (max + 1) * 1000 * (dominatedSuccessors.indexOf(regionNode) + 1);
         }
         return max + 1;
     }
@@ -70,14 +70,22 @@ public class ControlFlowGraphRegionNodeTopologicOrder {
         return nodes;
     }
 
-    public void printDebug(final PrintStream ps) {
+    public void printDebug(final PrintWriter pw) {
         System.out.println("Topologic order:");
         for (final RegionNode node : nodes) {
-            ps.print("    ");
-            ps.print(node.getStartAddress());
-            ps.print(" -> ");
-            ps.print(topo(node));
-            ps.println();
+            pw.print("    ");
+            pw.print(node.getStartAddress());
+            pw.print(" -> ");
+            pw.print(topo(node));
+            pw.print(" SUCC : ");
+            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : node.getSuccessors().entrySet()) {
+                pw.print(theEntry.getKey().getType());
+                pw.print(":");
+                pw.print(theEntry.getValue().getStartAddress());
+                pw.print(" ");
+            }
+            pw.println();
         }
+        pw.flush();
     }
 }

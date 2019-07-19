@@ -72,8 +72,6 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
                 final ContinueExpression c = (ContinueExpression) e;
                 writer.print(indent(hierarchy.size()));
                 writer.println(String.format("continue %s", c.labelToReturnTo().name()));
-            } else {
-                throw new IllegalArgumentException("Unsupported Expression : " + e);
             }
         }
     }
@@ -83,5 +81,11 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
         super.closeBlock();
         writer.print(indent(hierarchy.size()));
         writer.println("}");
+    }
+
+    @Override
+    public void end() {
+        super.end();
+        writer.flush();
     }
 }
