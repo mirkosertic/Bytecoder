@@ -19,7 +19,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraphRegionNodeTopologicOrder;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraphDFSOrder;
 import de.mirkosertic.bytecoder.ssa.EdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -36,7 +36,7 @@ import java.util.Stack;
 public class Stackifier {
 
     public StructuredControlFlow<RegionNode> stackify(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
-        final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(controlFlowGraph);
+        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(controlFlowGraph);
         final List<RegionNode> sorted = order.getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);
         for (final RegionNode node : sorted) {

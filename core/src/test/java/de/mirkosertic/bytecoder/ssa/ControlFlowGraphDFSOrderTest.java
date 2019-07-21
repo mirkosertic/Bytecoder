@@ -1,18 +1,3 @@
-/*
- * Copyright 2019 Mirko Sertic
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -24,7 +9,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
-public class ControlFlowGraphRegionNodeTopologicOrderTest {
+public class ControlFlowGraphDFSOrderTest {
 
     @Test
     public void testSimpleNode() {
@@ -33,7 +18,9 @@ public class ControlFlowGraphRegionNodeTopologicOrderTest {
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(graph);
+        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
+        order.printDebug(new PrintWriter(System.out));
+
         final List<RegionNode> nodes = order.getNodesInOrder();
 
         order.printDebug(new PrintWriter(System.out));
@@ -53,10 +40,10 @@ public class ControlFlowGraphRegionNodeTopologicOrderTest {
         node1.addSuccessor(node2);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(graph);
-        final List<RegionNode> nodes = order.getNodesInOrder();
-
+        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
         order.printDebug(new PrintWriter(System.out));
+
+        final List<RegionNode> nodes = order.getNodesInOrder();
 
         assertEquals(3, nodes.size());
         assertSame(startNode, nodes.get(0));
@@ -78,7 +65,9 @@ public class ControlFlowGraphRegionNodeTopologicOrderTest {
         node2.addSuccessor(node3);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphRegionNodeTopologicOrder order = new ControlFlowGraphRegionNodeTopologicOrder(graph);
+        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
+        order.printDebug(new PrintWriter(System.out));
+
         final List<RegionNode> nodes = order.getNodesInOrder();
 
         order.printDebug(new PrintWriter(System.out));
