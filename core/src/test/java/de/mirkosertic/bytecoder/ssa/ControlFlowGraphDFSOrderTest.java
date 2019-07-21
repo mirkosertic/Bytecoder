@@ -70,8 +70,6 @@ public class ControlFlowGraphDFSOrderTest {
 
         final List<RegionNode> nodes = order.getNodesInOrder();
 
-        order.printDebug(new PrintWriter(System.out));
-
         assertEquals(4, nodes.size());
         assertSame(startNode, nodes.get(0));
         assertSame(node1, nodes.get(1));

@@ -225,6 +225,8 @@ public class StructuredControlFlow<T> {
                 blocksStartingFromHere.add(new Block<>(toLabel(back), back));
             }
 
+            // TODO: And we also have to eliminate duplicates
+
             // We sort the blocks by their closing position
             // we get sorted blocks from widest to smallest
             // We have top place the blocks in this exact order
