@@ -105,16 +105,19 @@ public class StructuredControlFlow<T> {
     public void printDebug(final PrintWriter pw) {
         pw.println("Original:");
         printDebug(pw, false);
+        for (final JumpArrow<T> arrow : knownJumpArrows) {
+            pw.println(String.format(" %s %d -> %d", arrow.getEdgeType(), indexOf(arrow.getTail()), indexOf(arrow.getHead())));
+        }
         pw.println();
         pw.println("Stackified:");
         printDebug(pw, true);
+        for (final JumpArrow<T> arrow : knownJumpArrows) {
+            pw.println(String.format(" %s %d -> %d", arrow.getEdgeType(), indexOf(arrow.getNewTail()), indexOf(arrow.getHead())));
+        }
         pw.println();
         pw.println("Data:");
         for (int i=0;i<nodesInOrder.size();i++) {
             pw.println(String.format(" %d %s", i, nodesInOrder.get(i)));
-        }
-        for (final JumpArrow<T> arrow : knownJumpArrows) {
-            pw.println(String.format(" %s %d -> %d", arrow.getEdgeType(), indexOf(arrow.getTail()), indexOf(arrow.getHead())));
         }
         pw.flush();
     }
@@ -164,9 +167,27 @@ public class StructuredControlFlow<T> {
         }
     }
 
+    private boolean contains(final JumpArrow<T> loop, final JumpArrow<T> block) {
+        final int loopHeadIdx = indexOf(loop.getHead());
+        final int loopTailIdx = indexOf(loop.getNewTail());
+
+        final int blockHeadIdx = indexOf(block.getHead());
+        final int blockTailIdx = indexOf(block.getNewTail());
+
+        if (blockTailIdx >= loopHeadIdx &&
+            blockTailIdx <= loopTailIdx &&
+            blockHeadIdx >= loopHeadIdx &&
+            blockTailIdx <= loopTailIdx) {
+            return true;
+        }
+
+        return false;
+    }
+
     public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer) {
 
-        // Filter single jumps to dominated nodes here
+        // We have to filter some arrows to prevent confusion while
+        // generating the output
         final List<JumpArrow<T>> filteredJumpArrows = knownJumpArrows.stream()
                 .filter(arrow -> {
                     switch (arrow.getEdgeType()) {
@@ -187,11 +208,19 @@ public class StructuredControlFlow<T> {
 
                                 return true;
                             }
-                            // Jumps our of a loop to the loops direct successor also does not create a block
-                            if (knownJumpArrows.stream().filter(
-                                    t -> t.getEdgeType() == EdgeType.back && t.getHead() == arrow.getNewTail() && indexOf(t.getTail()) + 1 == indexOf(arrow.getHead())).count() == 1) {
-                                return false;
+
+                            // Jumps out of a loop to the loops direct successor also does not create a block
+                            // Those Jumps are always possible by breaking the loop
+                            for (JumpArrow<T> a : knownJumpArrows) {
+                                if (a.getEdgeType() == EdgeType.back &&
+                                    indexOf(arrow.getNewTail()) >= indexOf(a.getHead()) &&
+                                    indexOf(arrow.getNewTail()) <= indexOf(a.getNewTail()) &&
+                                    indexOf(arrow.getHead()) == indexOf(a.getNewTail()) + 1 &&
+                                    !contains(a, arrow)) {
+                                    return false;
+                                }
                             }
+
                             return true;
                         default:
                             throw new IllegalStateException();

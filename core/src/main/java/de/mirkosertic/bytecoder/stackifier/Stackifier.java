@@ -112,7 +112,9 @@ public class Stackifier {
                     continue expressiontest;
                 }
 
-                for (final Block<RegionNode> block : hierarchy) {
+                for (int i=hierarchy.size() - 1;i>=0;i--) {
+                    final Block<RegionNode> block = hierarchy.get(i);
+
                     switch (block.getArrow().getEdgeType()) {
                         case forward:
                             if (theTargetNode == block.getArrow().getHead()) {
@@ -141,6 +143,18 @@ public class Stackifier {
 
                                 continue expressiontest;
                             }
+                            if (theTargetNode == block.getArrow().getNewTail()) {
+                                if (!testMode) {
+                                    aList.replace(theGoto, new BreakExpression(
+                                            theGoto.getProgram(),
+                                            theGoto.getAddress(),
+                                            block.getLabel(),
+                                            theTarget
+                                    ));
+                                }
+
+                                continue expressiontest;
+                            }
                             break;
                         default:
                             throw new IllegalStateException();
@@ -149,7 +163,7 @@ public class Stackifier {
 
                 flow.printDebug(new PrintWriter(System.out));
                 flow.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(System.out)));
-                throw new IllegalStateException(String.format("Don't know how to handle Goto %s from %d to %d in %s", theTarget.getAddress(), flow.indexOf(currentNode), flow.indexOf(theTargetNode), currentNode.getStartAddress()));
+                throw new IllegalStateException(String.format("Don't know how to handle Goto %s from %d to %d in %s", theTarget, flow.indexOf(currentNode), flow.indexOf(theTargetNode), currentNode.getStartAddress()));
             }
         }
     }
