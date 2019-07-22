@@ -55,4 +55,13 @@ public class GraphNodePath {
     public List<RegionNode> getNodes() {
         return nodes;
     }
+
+    public boolean isRegularFlow() {
+        for (final RegionNode node : nodes) {
+            if (node.getType() == RegionNode.BlockType.EXCEPTION_HANDLER) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

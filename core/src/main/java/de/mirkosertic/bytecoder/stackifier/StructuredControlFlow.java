@@ -159,9 +159,9 @@ public class StructuredControlFlow<T> {
     private Label toLabel(final JumpArrow<T> arrow) {
         switch (arrow.getEdgeType()) {
             case forward:
-                return new Label(String.format("$B_%d_%d", indexOf(arrow.getNewTail()), indexOf(arrow.getHead())));
+                return new Label(String.format("B_%d_%d", indexOf(arrow.getNewTail()), indexOf(arrow.getHead())));
             case back:
-                return new Label(String.format("$L_%d_%d", indexOf(arrow.getHead()), indexOf(arrow.getNewTail())));
+                return new Label(String.format("L_%d_%d", indexOf(arrow.getHead()), indexOf(arrow.getNewTail())));
             default:
                 throw new IllegalArgumentException();
         }

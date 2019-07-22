@@ -42,7 +42,7 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
     @Override
     public void beginLoopFor(final Block<RegionNode> block) {
         writer.print(indent(hierarchy.size()));
-        writer.print(String.format("LOOP %s: {", block.getLabel().name()));
+        writer.print(String.format("LOOP $%s: {", block.getLabel().name()));
         writer.println();
         super.beginLoopFor(block);
     }
@@ -50,7 +50,7 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
     @Override
     public void beginBlockFor(final Block<RegionNode> block) {
         writer.print(indent(hierarchy.size()));
-        writer.print(String.format("BLOCK %s: {", block.getLabel().name()));
+        writer.print(String.format("BLOCK $%s: {", block.getLabel().name()));
         writer.println();
         super.beginBlockFor(block);
     }
@@ -67,11 +67,11 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
             } else if (e instanceof BreakExpression) {
                 final BreakExpression b = (BreakExpression) e;
                 writer.print(indent(hierarchy.size()));
-                writer.println(String.format("break %s", b.blockToBreak().name()));
+                writer.println(String.format("break $%s", b.blockToBreak().name()));
             } else if (e instanceof ContinueExpression) {
                 final ContinueExpression c = (ContinueExpression) e;
                 writer.print(indent(hierarchy.size()));
-                writer.println(String.format("continue %s", c.labelToReturnTo().name()));
+                writer.println(String.format("continue $%s", c.labelToReturnTo().name()));
             }
         }
     }
@@ -81,7 +81,7 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
         final Block<RegionNode> currentBlock = hierarchy.peek();
         super.closeBlock();
         writer.print(indent(hierarchy.size()));
-        writer.println(String.format("} ; Closing block %s", currentBlock.getLabel().name()));
+        writer.println(String.format("} ; Closing block $%s", currentBlock.getLabel().name()));
     }
 
     @Override

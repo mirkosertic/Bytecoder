@@ -293,6 +293,22 @@ public class RegionNode {
         return true;
     }
 
+    public boolean isOnlyReachableThruRegularFlow(final RegionNode aOtherNode) {
+        // Start nodes are not reachable by anything
+        if (reachableBy.isEmpty()) {
+            return false;
+        }
+        // All paths to this node must go thru aOtherNode
+        for (final GraphNodePath thePath : reachableBy) {
+            if (thePath.isRegularFlow()) {
+                if (!thePath.contains(aOtherNode)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public Set<RegionNode> forwardReachableNodes() {
         final Set<RegionNode> theNodes = new HashSet<>();
         forwardReachableNodes(theNodes, this);

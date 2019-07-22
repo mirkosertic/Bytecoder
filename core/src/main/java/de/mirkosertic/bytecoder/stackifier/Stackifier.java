@@ -65,36 +65,23 @@ public class Stackifier {
         }
 
         // Now we have to replace all the gotos in the code
-        try {
-            flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
-
-                @Override
-                public void write(final RegionNode node) {
-                    replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy, true);
-                }
-            });
-        } catch (final RuntimeException e) {
-            order.printDebug(new PrintWriter(System.out));
-            throw e;
-        }
-
         flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
 
             @Override
             public void write(final RegionNode node) {
-                replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy, false);
+                replaceGotosIn(flow, nodeAdresses, node, node.getExpressions(), hierarchy);
             }
         });
 
         return flow;
     }
 
-    private void replaceGotosIn(final StructuredControlFlow<RegionNode> flow, final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses, final RegionNode currentNode, final ExpressionList aList, final Stack<Block<RegionNode>> hierarchy, final boolean testMode) {
+    private void replaceGotosIn(final StructuredControlFlow<RegionNode> flow, final Map<BytecodeOpcodeAddress, RegionNode> nodeAdresses, final RegionNode currentNode, final ExpressionList aList, final Stack<Block<RegionNode>> hierarchy) {
         expressiontest: for (final Expression theExpression : aList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 final ExpressionListContainer container = (ExpressionListContainer) theExpression;
                 for (final ExpressionList innerList : container.getExpressionLists()) {
-                    replaceGotosIn(flow, nodeAdresses, currentNode, innerList, hierarchy, testMode);
+                    replaceGotosIn(flow, nodeAdresses, currentNode, innerList, hierarchy);
                 }
             }
             if (theExpression instanceof GotoExpression) {
@@ -103,12 +90,10 @@ public class Stackifier {
 
                 final RegionNode theTargetNode = nodeAdresses.get(theTarget);
 
-                if (flow.indexOf(theTargetNode) == flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThru(currentNode)) {
+                if (flow.indexOf(theTargetNode) == flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThruRegularFlow(currentNode)) {
                     // We are branching to the strictly dominated successor
                     // The goto can be removed
-                    if (!testMode) {
-                        aList.remove(theGoto);
-                    }
+                    aList.remove(theGoto);
                     continue expressiontest;
                 }
 
@@ -118,40 +103,34 @@ public class Stackifier {
                     switch (block.getArrow().getEdgeType()) {
                         case forward:
                             if (theTargetNode == block.getArrow().getHead()) {
-                                if (!testMode) {
-                                    aList.replace(theGoto, new BreakExpression(
-                                            theGoto.getProgram(),
-                                            theGoto.getAddress(),
-                                            block.getLabel(),
-                                            theTarget
-                                    ));
-                                }
+                                aList.replace(theGoto, new BreakExpression(
+                                        theGoto.getProgram(),
+                                        theGoto.getAddress(),
+                                        block.getLabel(),
+                                        theTarget
+                                ));
 
                                 continue expressiontest;
                             }
                             break;
                         case back:
                             if (theTargetNode == block.getArrow().getHead()) {
-                                if (!testMode) {
-                                    aList.replace(theGoto, new ContinueExpression(
-                                            theGoto.getProgram(),
-                                            theGoto.getAddress(),
-                                            block.getLabel(),
-                                            theTarget
-                                    ));
-                                }
+                                aList.replace(theGoto, new ContinueExpression(
+                                        theGoto.getProgram(),
+                                        theGoto.getAddress(),
+                                        block.getLabel(),
+                                        theTarget
+                                ));
 
                                 continue expressiontest;
                             }
                             if (theTargetNode == block.getArrow().getNewTail()) {
-                                if (!testMode) {
-                                    aList.replace(theGoto, new BreakExpression(
-                                            theGoto.getProgram(),
-                                            theGoto.getAddress(),
-                                            block.getLabel(),
-                                            theTarget
-                                    ));
-                                }
+                                aList.replace(theGoto, new BreakExpression(
+                                        theGoto.getProgram(),
+                                        theGoto.getAddress(),
+                                        block.getLabel(),
+                                        theTarget
+                                ));
 
                                 continue expressiontest;
                             }

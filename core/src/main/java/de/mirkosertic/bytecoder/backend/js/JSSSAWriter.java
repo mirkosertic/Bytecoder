@@ -1487,7 +1487,7 @@ public class JSSSAWriter {
             public void beginLoopFor(final Block<RegionNode> block) {
                 super.beginLoopFor(block);
                 final JSSSAWriter current = writerStack.peek();
-                current.startLine().text(block.getLabel().name())
+                current.startLine().text("$").text(block.getLabel().name())
                         .text(":").space()
                         .text("for(;;)").space().text("{").newLine();
                 final JSSSAWriter newLoopBlock = current.withDeeperIndent();
@@ -1498,7 +1498,7 @@ public class JSSSAWriter {
             public void beginBlockFor(final Block<RegionNode> block) {
                 super.beginBlockFor(block);
                 final JSSSAWriter current = writerStack.peek();
-                current.startLine().text(block.getLabel().name())
+                current.startLine().text("$").text(block.getLabel().name())
                         .text(":").space().text("{").newLine();
                 final JSSSAWriter newSimpleBlock = current.withDeeperIndent();
                 writerStack.push(newSimpleBlock);
