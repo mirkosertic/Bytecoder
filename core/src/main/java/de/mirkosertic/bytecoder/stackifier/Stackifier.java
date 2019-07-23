@@ -123,13 +123,6 @@ public class Stackifier {
                                 continue expressiontest;
                             }
                             break;
-                    }
-                }
-
-                for (int i=0;i<hierarchy.size();i++) {
-                    final Block<RegionNode> block = hierarchy.get(i);
-
-                    switch (block.getArrow().getEdgeType()) {
                         case forward:
                             if (theTargetNode == block.getArrow().getHead()) {
                                 aList.replace(theGoto, new BreakExpression(
@@ -142,6 +135,8 @@ public class Stackifier {
                                 continue expressiontest;
                             }
                             break;
+                        default:
+                            throw new IllegalArgumentException();
                     }
                 }
 
