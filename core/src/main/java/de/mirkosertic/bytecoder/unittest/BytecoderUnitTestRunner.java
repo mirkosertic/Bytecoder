@@ -527,28 +527,31 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     @Override
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         final boolean wabtCompileTest = Boolean.parseBoolean(System.getProperty("WABTCOMPILETEST", Boolean.FALSE.toString()));
-        final boolean stackifierEnabled = false;
 
         final List<TestOption> testOptions = new ArrayList<>();
         final BytecoderTestOptions declaredOptions = getTestClass().getJavaClass().getAnnotation(BytecoderTestOptions.class);
         if (declaredOptions != null) {
             if (declaredOptions.includeJVM()) {
-                testOptions.add(new TestOption(null, stackifierEnabled, false, false));
+                testOptions.add(new TestOption(null, false, false, false));
             }
             if (declaredOptions.value().length == 0 && declaredOptions.includeTestPermutations()) {
-                testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, true));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, stackifierEnabled, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
+
+                // testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
                     testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
                 }
             }
         } else {
-            testOptions.add(new TestOption(null, stackifierEnabled, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, true));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, stackifierEnabled, false, true));
+            testOptions.add(new TestOption(null, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
+
+            //testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
         }
 
         for (final TestOption o : testOptions) {
