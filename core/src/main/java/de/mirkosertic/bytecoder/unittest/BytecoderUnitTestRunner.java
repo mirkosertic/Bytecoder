@@ -92,7 +92,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 builder.append("_minify");
             }
             if (exceptionsEnabled) {
-                builder.append("exceptionsEnabled");
+                builder.append("_exceptionsEnabled");
             }
             return builder.toString();
         }
