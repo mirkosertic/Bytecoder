@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -177,7 +178,7 @@ public class StructuredControlFlow<T> {
         if (blockTailIdx >= loopHeadIdx &&
             blockTailIdx <= loopTailIdx &&
             blockHeadIdx >= loopHeadIdx &&
-            blockTailIdx <= loopTailIdx) {
+            blockHeadIdx <= loopTailIdx) {
             return true;
         }
 
@@ -237,10 +238,10 @@ public class StructuredControlFlow<T> {
             // We need all starting blocks from here
             // Sorted by their head in descending order
             // So we can build a stack of blocks correctly
-            final List<Block<T>> blocksStartingFromHere = filteredJumpArrows.stream()
+            final Set<Block<T>> uniqueBlocksStartingFromHere = filteredJumpArrows.stream()
                     .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
                     .map(t -> new Block<>(toLabel(t), t))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
 
             // Back-Edges form loops, so we have to collect them
             // and sort them correctly to place them at the right
@@ -251,10 +252,11 @@ public class StructuredControlFlow<T> {
 
             // TODO: We have to join back edges to the same head
             for (final JumpArrow<T> back : backEdgesToHere) {
-                blocksStartingFromHere.add(new Block<>(toLabel(back), back));
+                uniqueBlocksStartingFromHere.add(new Block<>(toLabel(back), back));
             }
 
-            // TODO: And we also have to eliminate duplicates
+            // We have a uniqze List of Blocks here, so we convert them to a list so we can sort them
+            final List<Block<T>> blocksStartingFromHere = new ArrayList<>(uniqueBlocksStartingFromHere);
 
             // We sort the blocks by their closing position
             // we get sorted blocks from widest to smallest

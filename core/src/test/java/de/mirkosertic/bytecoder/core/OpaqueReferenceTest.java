@@ -28,15 +28,15 @@ import de.mirkosertic.bytecoder.api.web.Promise;
 import de.mirkosertic.bytecoder.api.web.Response;
 import de.mirkosertic.bytecoder.api.web.StringPromise;
 import de.mirkosertic.bytecoder.api.web.Window;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@JSAndWASMOnly
+@BytecoderTestOptions(includeJVM = false)
 public class OpaqueReferenceTest {
 
     @Test

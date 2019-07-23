@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,22 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
+@Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface JSAndWASMOnly {
+public @interface BytecoderTestOption {
+
+    CompileTarget.BackendType backend();
+
+    boolean preferStackifier() default false;
+
+    boolean exceptionsEnabled() default false;
+
+    boolean minify() default false;
 }

@@ -101,18 +101,6 @@ public class Stackifier {
                     final Block<RegionNode> block = hierarchy.get(i);
 
                     switch (block.getArrow().getEdgeType()) {
-                        case forward:
-                            if (theTargetNode == block.getArrow().getHead()) {
-                                aList.replace(theGoto, new BreakExpression(
-                                        theGoto.getProgram(),
-                                        theGoto.getAddress(),
-                                        block.getLabel(),
-                                        theTarget
-                                ));
-
-                                continue expressiontest;
-                            }
-                            break;
                         case back:
                             if (theTargetNode == block.getArrow().getHead()) {
                                 aList.replace(theGoto, new ContinueExpression(
@@ -135,8 +123,25 @@ public class Stackifier {
                                 continue expressiontest;
                             }
                             break;
-                        default:
-                            throw new IllegalStateException();
+                    }
+                }
+
+                for (int i=0;i<hierarchy.size();i++) {
+                    final Block<RegionNode> block = hierarchy.get(i);
+
+                    switch (block.getArrow().getEdgeType()) {
+                        case forward:
+                            if (theTargetNode == block.getArrow().getHead()) {
+                                aList.replace(theGoto, new BreakExpression(
+                                        theGoto.getProgram(),
+                                        theGoto.getAddress(),
+                                        block.getLabel(),
+                                        theTarget
+                                ));
+
+                                continue expressiontest;
+                            }
+                            break;
                     }
                 }
 

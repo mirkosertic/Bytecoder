@@ -1480,7 +1480,6 @@ public class JSSSAWriter {
             @Override
             public void begin() {
                 super.begin();
-                writerStack.peek().startLine().text("/* STACKIFIED */").newLine();
             }
 
             @Override
@@ -1506,7 +1505,6 @@ public class JSSSAWriter {
 
             @Override
             public void write(final RegionNode node) {
-                writerStack.peek().startLine().text("/* #").text(Integer.toString(controlFlow.indexOf(node))).text(" */").newLine();
                 writerStack.peek().writeExpressions(node.getExpressions());
             }
 
@@ -1520,7 +1518,6 @@ public class JSSSAWriter {
             @Override
             public void end() {
                 super.end();
-                writerStack.peek().startLine().text("/* STACKIFIED END */").newLine();
             }
         });
     }

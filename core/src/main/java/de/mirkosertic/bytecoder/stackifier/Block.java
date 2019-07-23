@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.stackifier;
 
 import de.mirkosertic.bytecoder.ssa.Label;
 
+import java.util.Objects;
+
 public class Block<T> {
     private final Label label;
     final JumpArrow<T> arrow;
@@ -42,5 +44,18 @@ public class Block<T> {
                 return arrow.getNewTail();
         }
         throw new IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final Block<?> block = (Block<?>) o;
+        return label.equals(block.label);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(label);
     }
 }
