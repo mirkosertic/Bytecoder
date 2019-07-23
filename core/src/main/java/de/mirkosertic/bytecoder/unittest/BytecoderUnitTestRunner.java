@@ -527,24 +527,45 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     @Override
     protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
         final boolean wabtCompileTest = Boolean.parseBoolean(System.getProperty("WABTCOMPILETEST", Boolean.FALSE.toString()));
-        if (null != getDescription().getAnnotation(WASMOnly.class)) {
-            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
-        } else if (null != getDescription().getAnnotation(JSOnly.class)) {
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
-        } else if (null != getDescription().getAnnotation(JSAndJVMOnly.class)) {
-            testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
-        } else if (null != getDescription().getAnnotation(JSAndWASMOnly.class)) {
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
-            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
+        final boolean stackifierEnabled = false;
+
+        final List<TestOption> testOptions = new ArrayList<>();
+        final BytecoderTestOptions declaredOptions = getTestClass().getJavaClass().getAnnotation(BytecoderTestOptions.class);
+        if (declaredOptions != null) {
+            if (declaredOptions.includeJVM()) {
+                testOptions.add(new TestOption(null, stackifierEnabled, false, false));
+            }
+            if (declaredOptions.value().length == 0 && declaredOptions.includeTestPermutations()) {
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, stackifierEnabled, false, true));
+            } else {
+                for (final BytecoderTestOption o : declaredOptions.value()) {
+                    testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
+                }
+            }
         } else {
-            testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, false, false);
-            testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, true, false);
-            testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest);
+            testOptions.add(new TestOption(null, stackifierEnabled, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, stackifierEnabled, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, stackifierEnabled, false, true));
+        }
+
+        for (final TestOption o : testOptions) {
+            if (o.backendType == null) {
+                testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+            } else {
+                switch (o.backendType) {
+                    case js:
+                        testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
+                        break;
+                    case wasm:
+                        testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest, o);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported backend :" + o.backendType);
+                }
+            }
         }
     }
 }
