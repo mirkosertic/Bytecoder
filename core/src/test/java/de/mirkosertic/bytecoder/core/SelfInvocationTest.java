@@ -24,9 +24,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions({
+@BytecoderTestOptions(value = {
         @BytecoderTestOption(backend = CompileTarget.BackendType.wasm)
-})
+}, includeJVM = false)
 public class SelfInvocationTest {
 
     public static abstract class Stack {
