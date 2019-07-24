@@ -647,7 +647,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 // Try to reloop it or stackify it!
                 try {
-                    if (aOptions.isTryStackifierFirst()) {
+                    if (aOptions.isPreferStackifier()) {
                         try {
                             final Stackifier stackifier = new Stackifier();
                             final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
@@ -674,7 +674,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     }
                 } catch (final Exception e) {
                     System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
-                    throw new IllegalStateException("Error relooping cfg for " + theLinkedClass.getClassName().name() + '.'
+                    throw new IllegalStateException("General error while processing " + theLinkedClass.getClassName().name() + '.'
                             + theMethod.getName().stringValue(), e);
                 }
 
