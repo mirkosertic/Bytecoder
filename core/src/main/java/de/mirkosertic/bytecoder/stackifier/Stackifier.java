@@ -90,7 +90,8 @@ public class Stackifier {
 
                 final RegionNode theTargetNode = nodeAdresses.get(theTarget);
 
-                if (flow.indexOf(theTargetNode) == flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThruRegularFlow(currentNode)) {
+                if (flow.indexOf(theTargetNode) == flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThruRegularFlow(currentNode)
+                    && currentNode.getSuccessors().entrySet().stream().filter(t -> t.getValue().getType() == RegionNode.BlockType.NORMAL).count() == 1) {
                     // We are branching to the strictly dominated successor
                     // The goto can be removed
                     aList.remove(theGoto);

@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.stackifier;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 import java.io.PrintWriter;
@@ -55,25 +57,34 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
         super.beginBlockFor(block);
     }
 
+    private void writeExpressionList(final ExpressionList l, final int indent) {
+        for (final Expression e : l.toList()) {
+            if (e instanceof GotoExpression) {
+                final GotoExpression g = (GotoExpression) e;
+                writer.print(indent(indent));
+                writer.println(String.format("goto %d", g.getJumpTarget().getAddress()));
+            } else if (e instanceof BreakExpression) {
+                final BreakExpression b = (BreakExpression) e;
+                writer.print(indent(indent));
+                writer.println(String.format("break $%s", b.blockToBreak().name()));
+            } else if (e instanceof ContinueExpression) {
+                final ContinueExpression c = (ContinueExpression) e;
+                writer.print(indent(indent));
+                writer.println(String.format("continue $%s", c.labelToReturnTo().name()));
+            } else if (e instanceof IFExpression) {
+                final IFExpression i = (IFExpression) e;
+                writer.print(indent(indent));
+                writer.println("if ");
+                writeExpressionList(i.getExpressions(), indent + 1);
+            }
+        }
+    }
+
     @Override
     public void write(final RegionNode node) {
         writer.print(indent(hierarchy.size()));
         writer.println(node);
-        for (final Expression e : node.getExpressions().toList()) {
-            if (e instanceof GotoExpression) {
-                final GotoExpression g = (GotoExpression) e;
-                writer.print(indent(hierarchy.size()));
-                writer.println(String.format("goto %d", g.getJumpTarget().getAddress()));
-            } else if (e instanceof BreakExpression) {
-                final BreakExpression b = (BreakExpression) e;
-                writer.print(indent(hierarchy.size()));
-                writer.println(String.format("break $%s", b.blockToBreak().name()));
-            } else if (e instanceof ContinueExpression) {
-                final ContinueExpression c = (ContinueExpression) e;
-                writer.print(indent(hierarchy.size()));
-                writer.println(String.format("continue $%s", c.labelToReturnTo().name()));
-            }
-        }
+        writeExpressionList(node.getExpressions(), hierarchy.size());
     }
 
     @Override

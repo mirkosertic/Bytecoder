@@ -86,7 +86,7 @@ public class StructuredControlFlow<T> {
                             if (indexOf(backward.getTail()) > indexOf(v)) {
                                 throw new IrreducibleControlFlowException(String.format("{%d,%d} are head to head, arrow %d ", indexOf(v), indexOf(backward.getTail()), knownJumpArrows.indexOf(backward)));
                             } else {
-                                backward.setNewTail(v);
+                                backward.setNewTail(nodesInOrder.get(indexOf(v) - 1));
                             }
                         }
                     }
@@ -189,6 +189,8 @@ public class StructuredControlFlow<T> {
 
         // We have to filter some arrows to prevent confusion while
         // generating the output
+
+        // TODO: THis one is really ugly and should be replaced by real graph dominance tests
         final List<JumpArrow<T>> filteredJumpArrows = knownJumpArrows.stream()
                 .filter(arrow -> {
                     switch (arrow.getEdgeType()) {
@@ -196,14 +198,19 @@ public class StructuredControlFlow<T> {
                             return true;
                         case forward:
                             if (indexOf(arrow.getTail()) + 1 == indexOf(arrow.getHead())) {
-                                if (knownJumpArrows.stream().filter(
-                                        t -> t.getEdgeType() == EdgeType.forward && t.getHead() == arrow.getHead()).count() == 1) {
+                                // Forward jumps to a strictly dominated successor do not start a block
+                                if (knownJumpArrows.stream().filter(t -> t.getTail() == arrow.getTail()).count() == 1) {
                                     return false;
                                 }
                                 // Also forward jumps out of a loop do not create new blocks
                                 // As the loop can always be exited
                                 if (knownJumpArrows.stream().filter(
                                         t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getHead()).count() == 1) {
+                                    return false;
+                                }
+
+                                if (knownJumpArrows.stream().filter(
+                                        t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getNewTail()).count() == 1) {
                                     return false;
                                 }
 
@@ -272,11 +279,11 @@ public class StructuredControlFlow<T> {
                 blockStack.pop();
             }
 
-            if (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+            if (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
 
                 writer.write(node);
 
-                while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node) + 1) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+                while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
                     writer.closeBlock();
                     blockStack.pop();
                 }

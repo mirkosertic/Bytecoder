@@ -20,6 +20,9 @@ import static org.junit.Assert.assertEquals;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -122,15 +125,16 @@ public class StackifierTest {
 
         assertEquals("BLOCK $B_0_3: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
-                "        break $B_0_2" + System.lineSeparator() +
+                "        BLOCK $B_0_1: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "            break $B_0_1" + System.lineSeparator() +
+                "            break $B_0_2" + System.lineSeparator() +
+                "        } ; Closing block $B_0_1" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
                 "        break $B_0_3" + System.lineSeparator() +
                 "    } ; Closing block $B_0_2" + System.lineSeparator() +
-                "    BLOCK $B_2_3: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=20}}" + System.lineSeparator() +
-                "        break $B_2_3" + System.lineSeparator() +
-                "    } ; Closing block $B_2_3" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=20}}" + System.lineSeparator() +
+                "    break $B_0_3" + System.lineSeparator() +
                 "} ; Closing block $B_0_3" + System.lineSeparator() +
                 "RegionNode{startAddress=BytecodeOpcodeAddress{address=30}}" + System.lineSeparator(), sw.toString());
     }
@@ -186,8 +190,10 @@ public class StackifierTest {
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
-                "        break $B_0_2" + System.lineSeparator() +
+                "        BLOCK $B_0_1: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "            break $B_0_2" + System.lineSeparator() +
+                "        } ; Closing block $B_0_1" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
                 "        continue $L_0_2" + System.lineSeparator() +
                 "    } ; Closing block $B_0_2" + System.lineSeparator() +
@@ -218,8 +224,10 @@ public class StackifierTest {
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
-                "        continue $L_0_2" + System.lineSeparator() +
+                "        BLOCK $B_0_1: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "            continue $L_0_2" + System.lineSeparator() +
+                "        } ; Closing block $B_0_1" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
                 "        break $B_0_2" + System.lineSeparator() +
                 "    } ; Closing block $B_0_2" + System.lineSeparator() +
@@ -254,8 +262,10 @@ public class StackifierTest {
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
-                "        break $B_0_2" + System.lineSeparator() +
+                "        BLOCK $B_0_1: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "            break $B_0_2" + System.lineSeparator() +
+                "        } ; Closing block $B_0_1" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
                 "        break $B_0_2" + System.lineSeparator() +
                 "        continue $L_0_2" + System.lineSeparator() +
@@ -288,8 +298,10 @@ public class StackifierTest {
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
-                "        continue $L_0_2" + System.lineSeparator() +
+                "        BLOCK $B_0_1: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "            continue $L_0_2" + System.lineSeparator() +
+                "        } ; Closing block $B_0_1" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
                 "        break $B_0_2" + System.lineSeparator() +
                 "        continue $L_0_2" + System.lineSeparator() +
@@ -369,45 +381,63 @@ public class StackifierTest {
         final StringWriter sw = new StringWriter();
         graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
 
-        assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator()
-                + "LOOP $L_1_14: {" + System.lineSeparator()
-                + "    BLOCK $B_1_5: {" + System.lineSeparator()
-                + "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator()
-                + "        break $B_1_5" + System.lineSeparator()
-                + "        BLOCK $B_2_4: {" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=16}}" + System.lineSeparator()
-                + "            break $B_2_4" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=31}}" + System.lineSeparator()
-                + "        } ; Closing block $B_2_4" + System.lineSeparator()
-                + "        RegionNode{startAddress=BytecodeOpcodeAddress{address=35}}" + System.lineSeparator()
-                + "        continue $L_1_14" + System.lineSeparator()
-                + "    } ; Closing block $B_1_5" + System.lineSeparator()
-                + "    RegionNode{startAddress=BytecodeOpcodeAddress{address=41}}" + System.lineSeparator()
-                + "    LOOP $L_6_14: {" + System.lineSeparator()
-                + "        BLOCK $B_6_10: {" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=51}}" + System.lineSeparator()
-                + "            break $B_6_10" + System.lineSeparator()
-                + "            BLOCK $B_7_9: {" + System.lineSeparator()
-                + "                RegionNode{startAddress=BytecodeOpcodeAddress{address=57}}" + System.lineSeparator()
-                + "                break $B_7_9" + System.lineSeparator()
-                + "                RegionNode{startAddress=BytecodeOpcodeAddress{address=72}}" + System.lineSeparator()
-                + "            } ; Closing block $B_7_9" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=76}}" + System.lineSeparator()
-                + "            continue $L_6_14" + System.lineSeparator()
-                + "        } ; Closing block $B_6_10" + System.lineSeparator()
-                + "        BLOCK $B_10_12: {" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=82}}" + System.lineSeparator()
-                + "            break $B_10_12" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=95}}" + System.lineSeparator()
-                + "        } ; Closing block $B_10_12" + System.lineSeparator()
-                + "        BLOCK $B_12_14: {" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=99}}" + System.lineSeparator()
-                + "            break $B_12_14" + System.lineSeparator()
-                + "            RegionNode{startAddress=BytecodeOpcodeAddress{address=112}}" + System.lineSeparator()
-                + "        } ; Closing block $B_12_14" + System.lineSeparator()
-                + "        RegionNode{startAddress=BytecodeOpcodeAddress{address=116}}" + System.lineSeparator()
-                + "    } ; Closing block $L_6_14" + System.lineSeparator()
-                + "} ; Closing block $L_1_14" + System.lineSeparator(), sw.toString());
+        assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "LOOP $L_1_14: {" + System.lineSeparator() +
+                "    BLOCK $B_1_5: {" + System.lineSeparator() +
+                "        BLOCK $B_1_2: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
+                "            break $B_1_2" + System.lineSeparator() +
+                "            break $B_1_5" + System.lineSeparator() +
+                "        } ; Closing block $B_1_2" + System.lineSeparator() +
+                "        BLOCK $B_2_4: {" + System.lineSeparator() +
+                "            BLOCK $B_2_3: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=16}}" + System.lineSeparator() +
+                "                break $B_2_4" + System.lineSeparator() +
+                "                break $B_2_3" + System.lineSeparator() +
+                "            } ; Closing block $B_2_3" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=31}}" + System.lineSeparator() +
+                "        } ; Closing block $B_2_4" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=35}}" + System.lineSeparator() +
+                "        continue $L_1_14" + System.lineSeparator() +
+                "    } ; Closing block $B_1_5" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=41}}" + System.lineSeparator() +
+                "    LOOP $L_6_14: {" + System.lineSeparator() +
+                "        BLOCK $B_6_10: {" + System.lineSeparator() +
+                "            BLOCK $B_6_7: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=51}}" + System.lineSeparator() +
+                "                break $B_6_7" + System.lineSeparator() +
+                "                break $B_6_10" + System.lineSeparator() +
+                "            } ; Closing block $B_6_7" + System.lineSeparator() +
+                "            BLOCK $B_7_9: {" + System.lineSeparator() +
+                "                BLOCK $B_7_8: {" + System.lineSeparator() +
+                "                    RegionNode{startAddress=BytecodeOpcodeAddress{address=57}}" + System.lineSeparator() +
+                "                    break $B_7_8" + System.lineSeparator() +
+                "                    break $B_7_9" + System.lineSeparator() +
+                "                } ; Closing block $B_7_8" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=72}}" + System.lineSeparator() +
+                "            } ; Closing block $B_7_9" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=76}}" + System.lineSeparator() +
+                "            continue $L_6_14" + System.lineSeparator() +
+                "        } ; Closing block $B_6_10" + System.lineSeparator() +
+                "        BLOCK $B_10_12: {" + System.lineSeparator() +
+                "            BLOCK $B_10_11: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=82}}" + System.lineSeparator() +
+                "                break $B_10_11" + System.lineSeparator() +
+                "                break $B_10_12" + System.lineSeparator() +
+                "            } ; Closing block $B_10_11" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=95}}" + System.lineSeparator() +
+                "        } ; Closing block $B_10_12" + System.lineSeparator() +
+                "        BLOCK $B_12_14: {" + System.lineSeparator() +
+                "            BLOCK $B_12_13: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=99}}" + System.lineSeparator() +
+                "                break $B_12_13" + System.lineSeparator() +
+                "                break $B_12_14" + System.lineSeparator() +
+                "            } ; Closing block $B_12_13" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=112}}" + System.lineSeparator() +
+                "        } ; Closing block $B_12_14" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=116}}" + System.lineSeparator() +
+                "    } ; Closing block $L_6_14" + System.lineSeparator() +
+                "} ; Closing block $L_1_14" + System.lineSeparator(), sw.toString());
     }
 
     @Test
@@ -453,25 +483,33 @@ public class StackifierTest {
         graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
 
         assertEquals("BLOCK $B_0_6: {" + System.lineSeparator() +
-                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "    BLOCK $B_0_1: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "    } ; Closing block $B_0_1" + System.lineSeparator() +
                 "    BLOCK $B_1_3: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
+                "        BLOCK $B_1_2: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
+                "        } ; Closing block $B_1_2" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=23}}" + System.lineSeparator() +
                 "    } ; Closing block $B_1_3" + System.lineSeparator() +
                 "    BLOCK $B_3_5: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=25}}" + System.lineSeparator() +
+                "        BLOCK $B_3_4: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=25}}" + System.lineSeparator() +
+                "        } ; Closing block $B_3_4" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=62}}" + System.lineSeparator() +
                 "    } ; Closing block $B_3_5" + System.lineSeparator() +
-                "    BLOCK $B_5_6: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=65}}" + System.lineSeparator() +
-                "    } ; Closing block $B_5_6" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=65}}" + System.lineSeparator() +
                 "} ; Closing block $B_0_6" + System.lineSeparator() +
                 "LOOP $L_6_10: {" + System.lineSeparator() +
                 "    BLOCK $B_6_10: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=74}}" + System.lineSeparator() +
-                "        break $B_6_10" + System.lineSeparator() +
+                "        BLOCK $B_6_7: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=74}}" + System.lineSeparator() +
+                "            break $B_6_10" + System.lineSeparator() +
+                "        } ; Closing block $B_6_7" + System.lineSeparator() +
                 "        BLOCK $B_7_9: {" + System.lineSeparator() +
-                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=81}}" + System.lineSeparator() +
+                "            BLOCK $B_7_8: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=81}}" + System.lineSeparator() +
+                "            } ; Closing block $B_7_8" + System.lineSeparator() +
                 "            RegionNode{startAddress=BytecodeOpcodeAddress{address=100}}" + System.lineSeparator() +
                 "            continue $L_6_10" + System.lineSeparator() +
                 "        } ; Closing block $B_7_9" + System.lineSeparator() +
@@ -514,12 +552,134 @@ public class StackifierTest {
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
                 "LOOP $L_1_3: {" + System.lineSeparator() +
                 "    BLOCK $B_1_3: {" + System.lineSeparator() +
-                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=2}}" + System.lineSeparator() +
-                "        break $B_1_3" + System.lineSeparator() +
+                "        BLOCK $B_1_2: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=2}}" + System.lineSeparator() +
+                "            break $B_1_3" + System.lineSeparator() +
+                "            break $B_1_2" + System.lineSeparator() +
+                "        } ; Closing block $B_1_2" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=11}}" + System.lineSeparator() +
                 "    } ; Closing block $B_1_3" + System.lineSeparator() +
                 "    RegionNode{startAddress=BytecodeOpcodeAddress{address=13}}" + System.lineSeparator() +
                 "    continue $L_1_3" + System.lineSeparator() +
                 "} ; Closing block $L_1_3" + System.lineSeparator(), sw.toString());
+    }
+
+    @Test
+    public void testCondition() throws IrreducibleControlFlowException {
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
+        final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        final ExpressionList e = new ExpressionList();
+        e.add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(20)));
+        node1.getExpressions().add(new IFExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(20), new IntegerValue(0), e));
+        node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(30)));
+        final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        node2.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(30)));
+        final RegionNode node3 = g.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
+
+        startNode.addSuccessor(node1);
+        node1.addSuccessor(node2);
+        node1.addSuccessor(node3);
+        node2.addSuccessor(node3);
+
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier();
+
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+
+        graph.printDebug(new PrintWriter(System.out));
+
+        final StringWriter sw = new StringWriter();
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+
+        assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "BLOCK $B_1_3: {" + System.lineSeparator() +
+                "    BLOCK $B_1_2: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
+                "        if " + System.lineSeparator() +
+                "            break $B_1_2" + System.lineSeparator() +
+                "        break $B_1_3" + System.lineSeparator() +
+                "    } ; Closing block $B_1_2" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=20}}" + System.lineSeparator() +
+                "    break $B_1_3" + System.lineSeparator() +
+                "} ; Closing block $B_1_3" + System.lineSeparator() +
+                "RegionNode{startAddress=BytecodeOpcodeAddress{address=30}}" + System.lineSeparator(), sw.toString());
+    }
+
+    @Test
+    public void testCompletInitLoopBoundaries() throws IrreducibleControlFlowException {
+
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(13), RegionNode.BlockType.NORMAL);
+        final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(17), RegionNode.BlockType.NORMAL);
+        final RegionNode node3 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        final RegionNode node4 = g.createAt(new BytecodeOpcodeAddress(27), RegionNode.BlockType.NORMAL);
+        final RegionNode node5 = g.createAt(new BytecodeOpcodeAddress(33), RegionNode.BlockType.NORMAL);
+        final RegionNode node6 = g.createAt(new BytecodeOpcodeAddress(39), RegionNode.BlockType.NORMAL);
+        final RegionNode node7 = g.createAt(new BytecodeOpcodeAddress(46), RegionNode.BlockType.NORMAL);
+        final RegionNode node8 = g.createAt(new BytecodeOpcodeAddress(53), RegionNode.BlockType.NORMAL);
+        final RegionNode node9 = g.createAt(new BytecodeOpcodeAddress(66), RegionNode.BlockType.NORMAL);
+
+        node0.addSuccessor(node1);
+        node0.addSuccessor(node2);
+        node1.addSuccessor(node3);
+        node2.addSuccessor(node3);
+        node3.addSuccessor(node4);
+        node3.addSuccessor(node9);
+        node4.addSuccessor(node5);
+        node4.addSuccessor(node9);
+        node5.addSuccessor(node9);
+        node5.addSuccessor(node6);
+        node6.addSuccessor(node7);
+        node7.addSuccessor(node8);
+        node7.addSuccessor(node9);
+        node8.addSuccessor(node7);
+
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier();
+
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+
+        graph.printDebug(new PrintWriter(System.out));
+
+        final StringWriter sw = new StringWriter();
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+
+        assertEquals("BLOCK $B_0_3: {" + System.lineSeparator() +
+                "    BLOCK $B_0_2: {" + System.lineSeparator() +
+                "        BLOCK $B_0_1: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "        } ; Closing block $B_0_1" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=13}}" + System.lineSeparator() +
+                "    } ; Closing block $B_0_2" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=17}}" + System.lineSeparator() +
+                "} ; Closing block $B_0_3" + System.lineSeparator() +
+                "BLOCK $B_3_9: {" + System.lineSeparator() +
+                "    BLOCK $B_3_4: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=20}}" + System.lineSeparator() +
+                "    } ; Closing block $B_3_4" + System.lineSeparator() +
+                "    BLOCK $B_4_9: {" + System.lineSeparator() +
+                "        BLOCK $B_4_5: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=27}}" + System.lineSeparator() +
+                "        } ; Closing block $B_4_5" + System.lineSeparator() +
+                "        BLOCK $B_5_9: {" + System.lineSeparator() +
+                "            BLOCK $B_5_6: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=33}}" + System.lineSeparator() +
+                "            } ; Closing block $B_5_6" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=39}}" + System.lineSeparator() +
+                "            LOOP $L_7_8: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=46}}" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=53}}" + System.lineSeparator() +
+                "            } ; Closing block $L_7_8" + System.lineSeparator() +
+                "        } ; Closing block $B_5_9" + System.lineSeparator() +
+                "    } ; Closing block $B_4_9" + System.lineSeparator() +
+                "} ; Closing block $B_3_9" + System.lineSeparator() +
+                "RegionNode{startAddress=BytecodeOpcodeAddress{address=66}}" + System.lineSeparator(), sw.toString());
     }
 }
