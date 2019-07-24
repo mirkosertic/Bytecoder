@@ -610,7 +610,7 @@ public class StackifierTest {
     }
 
     @Test
-    public void testCompletInitLoopBoundaries() throws IrreducibleControlFlowException {
+    public void testCompleteInitLoopBoundaries() throws IrreducibleControlFlowException {
 
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
@@ -674,12 +674,186 @@ public class StackifierTest {
                 "            } ; Closing block $B_5_6" + System.lineSeparator() +
                 "            RegionNode{startAddress=BytecodeOpcodeAddress{address=39}}" + System.lineSeparator() +
                 "            LOOP $L_7_8: {" + System.lineSeparator() +
-                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=46}}" + System.lineSeparator() +
+                "                BLOCK $B_7_8: {" + System.lineSeparator() +
+                "                    RegionNode{startAddress=BytecodeOpcodeAddress{address=46}}" + System.lineSeparator() +
+                "                } ; Closing block $B_7_8" + System.lineSeparator() +
                 "                RegionNode{startAddress=BytecodeOpcodeAddress{address=53}}" + System.lineSeparator() +
                 "            } ; Closing block $L_7_8" + System.lineSeparator() +
                 "        } ; Closing block $B_5_9" + System.lineSeparator() +
                 "    } ; Closing block $B_4_9" + System.lineSeparator() +
                 "} ; Closing block $B_3_9" + System.lineSeparator() +
                 "RegionNode{startAddress=BytecodeOpcodeAddress{address=66}}" + System.lineSeparator(), sw.toString());
+    }
+
+    @Test
+    public void testIfShoulNotExitLoop() throws IrreducibleControlFlowException {
+
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(79), RegionNode.BlockType.NORMAL);
+        final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(90), RegionNode.BlockType.NORMAL);
+
+        final ExpressionList e = new ExpressionList();
+        e.add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(138)));
+        node2.getExpressions().add(new IFExpression(p, new BytecodeOpcodeAddress(90), new BytecodeOpcodeAddress(138), new IntegerValue(0), e));
+        node2.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(96)));
+
+
+        final RegionNode node3 = g.createAt(new BytecodeOpcodeAddress(96), RegionNode.BlockType.NORMAL);
+        final RegionNode node4 = g.createAt(new BytecodeOpcodeAddress(138), RegionNode.BlockType.NORMAL);
+        final RegionNode node5 = g.createAt(new BytecodeOpcodeAddress(147), RegionNode.BlockType.NORMAL);
+        final RegionNode node6 = g.createAt(new BytecodeOpcodeAddress(190), RegionNode.BlockType.NORMAL);
+        final RegionNode node7 = g.createAt(new BytecodeOpcodeAddress(197), RegionNode.BlockType.NORMAL);
+        final RegionNode node8 = g.createAt(new BytecodeOpcodeAddress(205), RegionNode.BlockType.NORMAL);
+        final RegionNode node9 = g.createAt(new BytecodeOpcodeAddress(219), RegionNode.BlockType.NORMAL);
+        final RegionNode node10 = g.createAt(new BytecodeOpcodeAddress(247), RegionNode.BlockType.NORMAL);
+
+        node0.addSuccessor(node1);
+        node0.addSuccessor(node4);
+        node1.addSuccessor(node2);
+        node2.addSuccessor(node3);
+        node2.addSuccessor(node4);
+        node3.addSuccessor(node2);
+        node4.addSuccessor(node5);
+        node4.addSuccessor(node10);
+        node5.addSuccessor(node6);
+        node6.addSuccessor(node10);
+        node6.addSuccessor(node7);
+        node7.addSuccessor(node9);
+        node7.addSuccessor(node8);
+        node8.addSuccessor(node9);
+        node9.addSuccessor(node6);
+
+
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier();
+
+        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+
+        graph.printDebug(new PrintWriter(System.out));
+
+        final StringWriter sw = new StringWriter();
+        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+
+        assertEquals("BLOCK $B_0_4: {" + System.lineSeparator() +
+                "    BLOCK $B_0_1: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "    } ; Closing block $B_0_1" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=79}}" + System.lineSeparator() +
+                "    LOOP $L_2_3: {" + System.lineSeparator() +
+                "        BLOCK $B_2_3: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=90}}" + System.lineSeparator() +
+                "            if " + System.lineSeparator() +
+                "                break $B_0_4" + System.lineSeparator() +
+                "            break $B_2_3" + System.lineSeparator() +
+                "        } ; Closing block $B_2_3" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=96}}" + System.lineSeparator() +
+                "    } ; Closing block $L_2_3" + System.lineSeparator() +
+                "} ; Closing block $B_0_4" + System.lineSeparator() +
+                "BLOCK $B_4_10: {" + System.lineSeparator() +
+                "    BLOCK $B_4_5: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=138}}" + System.lineSeparator() +
+                "    } ; Closing block $B_4_5" + System.lineSeparator() +
+                "    RegionNode{startAddress=BytecodeOpcodeAddress{address=147}}" + System.lineSeparator() +
+                "    LOOP $L_6_9: {" + System.lineSeparator() +
+                "        BLOCK $B_6_7: {" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=190}}" + System.lineSeparator() +
+                "        } ; Closing block $B_6_7" + System.lineSeparator() +
+                "        BLOCK $B_7_9: {" + System.lineSeparator() +
+                "            BLOCK $B_7_8: {" + System.lineSeparator() +
+                "                RegionNode{startAddress=BytecodeOpcodeAddress{address=197}}" + System.lineSeparator() +
+                "            } ; Closing block $B_7_8" + System.lineSeparator() +
+                "            RegionNode{startAddress=BytecodeOpcodeAddress{address=205}}" + System.lineSeparator() +
+                "        } ; Closing block $B_7_9" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=219}}" + System.lineSeparator() +
+                "    } ; Closing block $L_6_9" + System.lineSeparator() +
+                "} ; Closing block $B_4_10" + System.lineSeparator() +
+                "RegionNode{startAddress=BytecodeOpcodeAddress{address=247}}" + System.lineSeparator() , sw.toString());
+        /*
+
+
+Original:
+          0   1   2   3   4   5   6   7   8   9  10
+  0-  1   ---->
+  0-  4   ---------------->
+  1-  2       ---->
+  2-  3           ---->
+  2-  4           -------->
+  3-  2           <----
+  4-  5                   ---->
+  4- 10                   ------------------------>
+  5-  6                       ---->
+  6- 10                           ---------------->
+  6-  7                           ---->
+  7-  9                               -------->
+  7-  8                               ---->
+  8-  9                                   ---->
+  9-  6                           <----
+ forward 0 -> 1
+ forward 0 -> 4
+ forward 1 -> 2
+ forward 2 -> 3
+ forward 2 -> 4
+ back 3 -> 2
+ forward 4 -> 5
+ forward 4 -> 10
+ forward 5 -> 6
+ forward 6 -> 10
+ forward 6 -> 7
+ forward 7 -> 9
+ forward 7 -> 8
+ forward 8 -> 9
+ back 9 -> 6
+
+Stackified:
+          0   1   2   3   4   5   6   7   8   9  10
+  0-  1   ---->
+  0-  4   ---------------->
+  1-  2       ---->
+  2-  3           ---->
+  2-  4           -------->
+  3-  2           <----
+  4-  5                   ---->
+  4- 10                   ------------------------>
+  5-  6                       ---->
+  6- 10                           ---------------->
+  6-  7                           ---->
+  7-  9                               -------->
+  7-  8                               ---->
+  8-  9                                   ---->
+  9-  6                           <----
+ forward 0 -> 1
+ forward 0 -> 4
+ forward 1 -> 2
+ forward 2 -> 3
+ forward 2 -> 4
+ back 3 -> 2
+ forward 4 -> 5
+ forward 4 -> 10
+ forward 5 -> 6
+ forward 6 -> 10
+ forward 6 -> 7
+ forward 7 -> 9
+ forward 7 -> 8
+ forward 8 -> 9
+ back 9 -> 6
+
+Data:
+ 0 RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}
+ 1 RegionNode{startAddress=BytecodeOpcodeAddress{address=79}}
+ 2 RegionNode{startAddress=BytecodeOpcodeAddress{address=90}}
+ 3 RegionNode{startAddress=BytecodeOpcodeAddress{address=96}}
+ 4 RegionNode{startAddress=BytecodeOpcodeAddress{address=138}}
+ 5 RegionNode{startAddress=BytecodeOpcodeAddress{address=147}}
+ 6 RegionNode{startAddress=BytecodeOpcodeAddress{address=190}}
+ 7 RegionNode{startAddress=BytecodeOpcodeAddress{address=197}}
+ 8 RegionNode{startAddress=BytecodeOpcodeAddress{address=205}}
+ 9 RegionNode{startAddress=BytecodeOpcodeAddress{address=219}}
+ 10 RegionNode{startAddress=BytecodeOpcodeAddress{address=247}}
+
+
+         */
     }
 }

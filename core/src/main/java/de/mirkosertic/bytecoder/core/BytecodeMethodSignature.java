@@ -20,7 +20,7 @@ public class BytecodeMethodSignature {
     private final BytecodeTypeRef returnType;
     private final BytecodeTypeRef[] arguments;
 
-    public BytecodeMethodSignature(BytecodeTypeRef aReturnType, BytecodeTypeRef[] aArguments) {
+    public BytecodeMethodSignature(final BytecodeTypeRef aReturnType, final BytecodeTypeRef[] aArguments) {
         this.returnType = aReturnType;
         this.arguments = aArguments;
     }
@@ -33,12 +33,12 @@ public class BytecodeMethodSignature {
         return arguments;
     }
 
-    public boolean matchesExactlyTo(BytecodeMethodSignature aSignature) {
+    public boolean matchesExactlyTo(final BytecodeMethodSignature aSignature) {
         if (arguments.length != aSignature.arguments.length) {
             return false;
         }
 
-        boolean theMatch = returnType.matchesExactlyTo(aSignature.getReturnType());
+        final boolean theMatch = returnType.matchesExactlyTo(aSignature.getReturnType());
         if (!theMatch) {
             return false;
         }
@@ -53,10 +53,13 @@ public class BytecodeMethodSignature {
 
     @Override
     public String toString() {
-        StringBuilder theBuilder = new StringBuilder(returnType.name());
+        final StringBuilder theBuilder = new StringBuilder(returnType.name());
         theBuilder.append("(");
-        for (BytecodeTypeRef theArgument : arguments) {
-            theBuilder.append(theArgument.name());
+        for (int i=0;i<arguments.length;i++) {
+            if (i>0) {
+                theBuilder.append(",");
+            }
+            theBuilder.append(arguments[i].name());
         }
         theBuilder.append(")");
         return theBuilder.toString();

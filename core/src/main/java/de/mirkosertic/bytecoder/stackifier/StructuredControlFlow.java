@@ -205,11 +205,6 @@ public class StructuredControlFlow<T> {
                                 // Also forward jumps out of a loop do not create new blocks
                                 // As the loop can always be exited
                                 if (knownJumpArrows.stream().filter(
-                                        t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getHead()).count() == 1) {
-                                    return false;
-                                }
-
-                                if (knownJumpArrows.stream().filter(
                                         t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getNewTail()).count() == 1) {
                                     return false;
                                 }

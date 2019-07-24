@@ -1,3 +1,4 @@
 # TODOs
 
-* Write more tests 
+* Write more tests
+* Better IF/THEN/ELSE handling

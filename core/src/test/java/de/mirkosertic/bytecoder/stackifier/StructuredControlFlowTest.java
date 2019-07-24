@@ -327,9 +327,12 @@ public class StructuredControlFlowTest {
         order.verify(writerMock).begin();
         order.verify(writerMock).write(eq(0));
         order.verify(writerMock).beginLoopFor(any(Block.class));
+        order.verify(writerMock, times(2)).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(1));
-        order.verify(writerMock).write(eq(2));
         order.verify(writerMock).closeBlock();
+        order.verify(writerMock).beginBlockFor(any(Block.class));
+        order.verify(writerMock).write(eq(2));
+        order.verify(writerMock, times(2)).closeBlock();
         order.verify(writerMock).write(eq(3));
         order.verify(writerMock).end();
     }
