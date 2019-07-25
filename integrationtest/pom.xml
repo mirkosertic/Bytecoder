@@ -136,6 +136,20 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>javascript-stackified</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
+                            <backend>js</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
+                            <preferStackifier>true</preferStackifier>
+                            <minifyCompileResult>true</minifyCompileResult>
+                            <filenamePrefix>bytecoder-stackified</filenamePrefix>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>javascript-kotlin</id>
                         <goals>
                             <goal>compile</goal>
