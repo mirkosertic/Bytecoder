@@ -17,9 +17,28 @@ package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -73,10 +92,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         }
 
         // And then we ca pass it to the code generator to generate the kernel code
-        final OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, "", new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
-
-        // We use the relooper here
-        final Relooper theRelooper = new Relooper(aOptions);
+        final OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
 
         theMethodMap.stream().forEach(aMethodMapEntry -> {
             final BytecodeMethod theMethod = aMethodMapEntry.getValue();
@@ -94,9 +110,32 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 // Write the method to the output
                 // Try to reloop it!
                 try {
-                    final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram1.getControlFlowGraph());
+                    if (aOptions.isPreferStackifier()) {
+                        try {
+                            final Stackifier stackifier = new Stackifier();
+                            final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram1.getControlFlowGraph());
 
-                    theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock);
+                            theSSAWriter.printStackifiedInline(theMethod, theSSAProgram1, flow);
+
+                        } catch (final IrreducibleControlFlowException e) {
+
+                            // Stackifier has problems, we fallback to relooper instead
+                            aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", aMethodMapEntry.getProvidingClass().getClassName().name() + "." + aMethodMapEntry.getValue().getName().stringValue());
+
+                            final Relooper theRelooper = new Relooper(aOptions);
+                            final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                            theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock);
+                        }
+                    } else {
+
+                        final Relooper theRelooper = new Relooper(aOptions);
+                        final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                        theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock);
+
+                    }
+
                 } catch (final Exception e) {
                     throw new IllegalStateException("Error relooping cfg", e);
                 }
@@ -106,9 +145,32 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
         // Finally, we write the kernel method
         try {
-            final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+            if (aOptions.isPreferStackifier()) {
+                try {
+                    final Stackifier stackifier = new Stackifier();
+                    final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
 
-            theSSAWriter.printReloopedKernel(theSSAProgram, theReloopedBlock);
+                    theSSAWriter.printStackifiedKernel(theSSAProgram, flow);
+
+                } catch (final IrreducibleControlFlowException e) {
+
+                    // Stackifier has problems, we fallback to relooper instead
+                    aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", theKernelClass.getClassName().name() + "." + theKernelMethod.getName().stringValue());
+
+                    final Relooper theRelooper = new Relooper(aOptions);
+                    final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                    theSSAWriter.printReloopedKernel(theSSAProgram, theReloopedBlock);
+                }
+            } else {
+
+                final Relooper theRelooper = new Relooper(aOptions);
+                final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                theSSAWriter.printReloopedKernel(theSSAProgram, theReloopedBlock);
+
+            }
+
         } catch (final Exception e) {
             throw new IllegalStateException("Error relooping cfg", e);
         }

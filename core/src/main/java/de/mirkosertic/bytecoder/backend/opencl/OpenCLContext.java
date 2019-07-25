@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLOptions;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -47,7 +48,6 @@ import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_command_queue;
@@ -109,12 +109,12 @@ class OpenCLContext implements Context {
     private final Logger logger;
     private final OpenCLPlatform platform;
 
-    OpenCLContext(final OpenCLPlatform aPlatform, final Logger aLogger) {
+    OpenCLContext(final OpenCLPlatform aPlatform, final Logger aLogger, final OpenCLOptions aOptions) {
         logger = aLogger;
         platform = aPlatform;
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
-        compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false);
+        compileOptions = new CompileOptions(logger, false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, aOptions.isPreferStackifier());
 
         final cl_context_properties contextProperties = new cl_context_properties();
         contextProperties.addProperty(CL_CONTEXT_PLATFORM, aPlatform.selectedPlatform.id);

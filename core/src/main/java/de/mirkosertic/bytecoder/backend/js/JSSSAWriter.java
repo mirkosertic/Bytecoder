@@ -1478,11 +1478,6 @@ public class JSSSAWriter {
         controlFlow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
 
             @Override
-            public void begin() {
-                super.begin();
-            }
-
-            @Override
             public void beginLoopFor(final Block<RegionNode> block) {
                 super.beginLoopFor(block);
                 final JSSSAWriter current = writerStack.peek();
@@ -1513,11 +1508,6 @@ public class JSSSAWriter {
                 writerStack.pop();
                 writerStack.peek().startLine().text("}").newLine();
                 super.closeBlock();
-            }
-
-            @Override
-            public void end() {
-                super.end();
             }
         });
     }

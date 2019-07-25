@@ -257,8 +257,8 @@ An OpenCL environment can be obtained by the following code:
 import de.mirkosertic.bytecoder.api.opencl.PlatformFactory;
 import de.mirkosertic.bytecoder.api.opencl.Platform;
 
-PlatformFactory theFactory = new PlatformFactory();
-Platform thePlatform = theFactory.createPlatform();
+PlatformFactory theFactory = PlatformFactory.resolve();
+Platform thePlatform = theFactory.createPlatform(logger,options);
 ```
 
 The `Platform` instance must only be obtained once and can be cached.
@@ -282,8 +282,8 @@ by sub classing `de.mirkosertic.bytecoder.api.opencl.Kernel` and adding a single
 method to it. Here is a simple example of the whole workflow:
 
 ```
-PlatformFactory theFactory = new PlatformFactory();
-Platform thePlatform = theFactory.createPlatform();
+PlatformFactory theFactory = PlatformFactory.resolve();
+Platform thePlatform = theFactory.createPlatform(logger,options);
 
 final float[] theA = {10f, 20f, 30f, 40f};
 final float[] theB = {100f, 200f, 300f, 400f};
@@ -436,7 +436,6 @@ public void testSimpleLoop() {
 the following intermediate representation graph is generated (in its first, un optimized form):
 
 ![Intermediate representation graph](docassets/ir_loopexample.svg)
-
 
 This graph combines data flow analysis and control flow into one big graph. Using this graph makes data and
 control flow dependencies explicit and lays foundation for a variety of optimizations that can be performed on it to

@@ -15,16 +15,15 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import de.mirkosertic.bytecoder.api.Logger;
+public class OpenCLOptions {
 
-import java.util.ServiceLoader;
+    private final boolean preferStackifier;
 
-public abstract class PlatformFactory {
-
-    public static PlatformFactory resolve() {
-        final ServiceLoader<PlatformFactory> theLoader = ServiceLoader.load(PlatformFactory.class);
-        return theLoader.iterator().next();
+    public OpenCLOptions(final boolean preferStackifier) {
+        this.preferStackifier = preferStackifier;
     }
 
-    public abstract Platform createPlatform(Logger aLogger, OpenCLOptions aOptions);
+    public boolean isPreferStackifier() {
+        return preferStackifier;
+    }
 }

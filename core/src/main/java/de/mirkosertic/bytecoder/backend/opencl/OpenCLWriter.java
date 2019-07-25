@@ -46,6 +46,7 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
@@ -57,25 +58,42 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+import de.mirkosertic.bytecoder.stackifier.Block;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlowWriter;
 
 import java.io.PrintWriter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
     private final OpenCLInputOutputs inputOutputs;
     private final BytecodeLinkedClass kernelClass;
+    private final AtomicBoolean stackifierOutout;
+    private final Set<Label> recordedNextLabels;
 
     public OpenCLWriter(
-            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs) {
+            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs) {
+        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>());
+    }
+
+    private OpenCLWriter(
+            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs, final AtomicBoolean aStackifierOutout, final Set<Label> aRecordedNextLabels) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         inputOutputs = aInputOutputs;
         kernelClass = aKernelClass;
+        stackifierOutout = aStackifierOutout;
+        recordedNextLabels = aRecordedNextLabels;
     }
 
     public void printReloopedKernel(final Program aProgram, final Relooper.Block aBlock) {
+        stackifierOutout.set(false);
+
         print("__kernel void BytecoderKernel(");
 
         final List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
@@ -120,6 +138,8 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     public void printReloopedInline(final BytecodeMethod aMethod, final Program aProgram, final Relooper.Block aBlock) {
+
+        stackifierOutout.set(false);
 
         final BytecodeMethodSignature theSignature = aMethod.getSignature();
 
@@ -319,7 +339,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private OpenCLWriter withDeeperIndent() {
-        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs);
+        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels);
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -382,7 +402,7 @@ public class OpenCLWriter extends IndentSSAWriter {
                 println("}");
             } else if (theExpression instanceof BreakExpression) {
                 final BreakExpression theBreak = (BreakExpression) theExpression;
-                if (theBreak.isSetLabelRequired()) {
+                if (theBreak.isSetLabelRequired() && !stackifierOutout.get()) {
                     print("$__label__ = ");
                     print(theBreak.jumpTarget().getAddress());
                     println(";");
@@ -391,12 +411,16 @@ public class OpenCLWriter extends IndentSSAWriter {
                     print("goto $");
                     print(theBreak.blockToBreak().name());
                     println("_next;");
+
+                    recordedNextLabels.add(theBreak.blockToBreak());
                 }
             } else if (theExpression instanceof ContinueExpression) {
                 final ContinueExpression theContinue = (ContinueExpression) theExpression;
-                print("$__label__ = ");
-                print(theContinue.jumpTarget().getAddress());
-                println(";");
+                if (!stackifierOutout.get()) {
+                    print("$__label__ = ");
+                    print(theContinue.jumpTarget().getAddress());
+                    println(";");
+                }
                 print("goto $");
                 print(theContinue.labelToReturnTo().name());
                 println(";");
@@ -705,5 +729,234 @@ public class OpenCLWriter extends IndentSSAWriter {
         if (!theFound.get()) {
             throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
         }
+    }
+
+    public void printStackifiedKernel(final Program program, final StructuredControlFlow<RegionNode> flow) {
+
+        stackifierOutout.set(true);
+        recordedNextLabels.clear();
+
+        print("__kernel void BytecoderKernel(");
+
+        final List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
+        for (int i = 0; i<theArguments.size(); i++) {
+            if (i>0) {
+                print(", ");
+            }
+            final OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
+            final TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getValue().getTypeRef());
+            switch (theArgument.getType()) {
+                case INPUT:
+                    print("const ");
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument.getField().getValue().getName().stringValue());
+                    break;
+                case OUTPUT:
+                case INPUTOUTPUT:
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument.getField().getValue().getName().stringValue());
+                    break;
+            }
+        }
+
+        println(") {");
+        final OpenCLWriter theDeeper = withDeeperIndent();
+
+        for (final Variable theVariable : program.getVariables()) {
+            if (!theVariable.isSynthetic()) {
+                theDeeper.print(toType(theVariable.resolveType(), false));
+                theDeeper.print(" ");
+                theDeeper.print(theVariable.getName());
+                theDeeper.println(";");
+            }
+        }
+
+        final Stack<OpenCLWriter> writerStack = new Stack<>();
+        final Stack<Label> labels = new Stack<>();
+        writerStack.push(theDeeper);
+        flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
+
+            @Override
+            public void begin() {
+                super.begin();
+            }
+
+            @Override
+            public void beginLoopFor(final Block<RegionNode> block) {
+                super.beginLoopFor(block);
+                final OpenCLWriter current = writerStack.peek();
+
+                current.print("$");
+                current.print(block.getLabel().name());
+                current.println(":");
+
+                writerStack.push(current.withDeeperIndent());
+                labels.push(block.getLabel());
+            }
+
+            @Override
+            public void beginBlockFor(final Block<RegionNode> block) {
+                super.beginBlockFor(block);
+
+                final OpenCLWriter current = writerStack.peek();
+
+                current.print("$");
+                current.print(block.getLabel().name());
+                current.println(":");
+
+                writerStack.push(current.withDeeperIndent());
+                labels.push(block.getLabel());
+            }
+
+            @Override
+            public void write(final RegionNode node) {
+                writerStack.peek().writeExpressions(node.getExpressions());
+            }
+
+            @Override
+            public void closeBlock() {
+                writerStack.pop();
+                final OpenCLWriter current = writerStack.peek();
+                final Label currentLabel = labels.pop();
+
+                if (recordedNextLabels.contains(currentLabel)) {
+                    current.print("$");
+                    current.print(currentLabel.name());
+                    current.println("_next:");
+                }
+
+                super.closeBlock();
+            }
+        });
+
+        println("}");
+    }
+
+    public void printStackifiedInline(final BytecodeMethod method, final Program program, final StructuredControlFlow<RegionNode> flow) {
+
+        stackifierOutout.set(true);
+        recordedNextLabels.clear();
+
+        final BytecodeMethodSignature theSignature = method.getSignature();
+
+        print("__inline ");
+        print(toType(TypeRef.toType(theSignature.getReturnType())));
+        print(" ");
+        print(method.getName().stringValue());
+        print("(");
+
+        boolean theFirst = true;
+        final List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
+        for (final OpenCLInputOutputs.KernelArgument theArgument1 : theArguments) {
+            if (theFirst) {
+                theFirst = false;
+            } else {
+                print(", ");
+            }
+            final TypeRef theTypeRef = TypeRef.toType(theArgument1.getField().getValue().getTypeRef());
+            switch (theArgument1.getType()) {
+                case INPUT:
+                    print("const ");
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument1.getField().getValue().getName().stringValue());
+                    break;
+                case OUTPUT:
+                case INPUTOUTPUT:
+                    print(toType(theTypeRef));
+                    print(" ");
+                    print(theArgument1.getField().getValue().getName().stringValue());
+                    break;
+            }
+        }
+
+        final List<Program.Argument> theProgramArguments = program.getArguments();
+        for (int i=1;i<theProgramArguments.size();i++) {
+            final Program.Argument theArgument = theProgramArguments.get(i);
+            if (theFirst) {
+                theFirst = false;
+            } else {
+                print(", ");
+            }
+            print(toType(theArgument.getVariable().resolveType()));
+            print(" ");
+            print(theArgument.getVariable().getName());
+        }
+
+        println(") {");
+
+        final OpenCLWriter theDeeper = withDeeperIndent();
+
+        for (final Variable theVariable : program.getVariables()) {
+            if (!theVariable.isSynthetic()) {
+                theDeeper.print(toType(theVariable.resolveType(), false));
+                theDeeper.print(" ");
+                theDeeper.print(theVariable.getName());
+                theDeeper.println(";");
+            }
+        }
+
+        final Stack<OpenCLWriter> writerStack = new Stack<>();
+        final Stack<Label> labels = new Stack<>();
+        writerStack.push(theDeeper);
+        flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
+
+            @Override
+            public void begin() {
+                super.begin();
+            }
+
+            @Override
+            public void beginLoopFor(final Block<RegionNode> block) {
+                super.beginLoopFor(block);
+                final OpenCLWriter current = writerStack.peek();
+
+                current.print("$");
+                current.print(block.getLabel().name());
+                current.println(":");
+
+                writerStack.push(current.withDeeperIndent());
+                labels.push(block.getLabel());
+            }
+
+            @Override
+            public void beginBlockFor(final Block<RegionNode> block) {
+                super.beginBlockFor(block);
+
+                final OpenCLWriter current = writerStack.peek();
+
+                current.print("$");
+                current.print(block.getLabel().name());
+                current.println(":");
+
+                writerStack.push(current.withDeeperIndent());
+                labels.push(block.getLabel());
+            }
+
+            @Override
+            public void write(final RegionNode node) {
+                writerStack.peek().writeExpressions(node.getExpressions());
+            }
+
+            @Override
+            public void closeBlock() {
+                writerStack.pop();
+                final OpenCLWriter current = writerStack.peek();
+                final Label currentLabel = labels.pop();
+
+                if (recordedNextLabels.contains(currentLabel)) {
+                    current.print("$");
+                    current.print(currentLabel.name());
+                    current.println("_next:");
+                }
+
+                super.closeBlock();
+            }
+        });
+
+        println("}");
+
     }
 }
