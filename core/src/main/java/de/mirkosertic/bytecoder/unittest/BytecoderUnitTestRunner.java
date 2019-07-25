@@ -539,7 +539,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
 
-                //testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
                     testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
@@ -551,7 +551,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
 
-            //testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
         }
 
         for (final TestOption o : testOptions) {

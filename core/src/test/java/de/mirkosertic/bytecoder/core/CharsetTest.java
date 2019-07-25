@@ -33,8 +33,10 @@ import java.util.Arrays;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(value = {
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false),
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true)
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, preferStackifier = false),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, preferStackifier = false),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, preferStackifier = true),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, preferStackifier = true)
 })
 public class CharsetTest {
 

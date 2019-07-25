@@ -27,8 +27,8 @@ import java.io.OutputStream;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(value = {
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, exceptionsEnabled = true),
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, exceptionsEnabled = true)
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, exceptionsEnabled = true, preferStackifier = false),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, exceptionsEnabled = true, preferStackifier = false)
 })
 public class ExceptionTest {
 
