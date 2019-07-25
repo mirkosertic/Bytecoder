@@ -653,12 +653,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
 
                             theVariablesWriter.printStackified(flow);
-                            aOptions.getLogger().debug("Method %s successfully stackified ", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
+                            aOptions.getLogger().debug("Method {}.{} successfully stackified ", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
                         } catch (final IrreducibleControlFlowException e) {
 
                             // Stackifier has problems, we fallback to relooper instead
-                            aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", theLinkedClass.getClassName().name() + "." + theMethod.getName().stringValue());
+                            aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
                             final Relooper theRelooper = new Relooper(aOptions);
                             final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());

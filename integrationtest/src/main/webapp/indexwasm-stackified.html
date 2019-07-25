@@ -1,11 +1,10 @@
 <html>
     <head>
-        <title>Bytecoder JBox2D Performance Test</title>
+        <title>Bytecoder JBox2D WebAssembly Performance Test</title>
     </head>
     <body>
         <canvas id="benchmark-canvas" width="600" height="600"></canvas>
         <script type="text/javascript" src="stats.min.js"></script>
-        <script type="text/javascript" src="bytecoder-stackified.js"></script>
         <button id="button" value="Click me" style="display: none">Click Me</button>
         <div id="versioninfo"></div>
         <table border="1">
@@ -27,7 +26,7 @@
             </tr>
         </table>
         <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
-
+        <script src="bytecoder-stackified_wasmbindings.js"></script>
         <script type="text/javascript">
 
             function sortNumber(a,b) {
@@ -52,9 +51,8 @@
             var lastRuntime = 0;
             var lastRuntimeTimeSeries = [];
 
-            // dynamic linking
             bytecoder.imports.debug = {
-                logRuntime : function(a) {
+                logRuntime : function(acaller, a) {
                     lastRuntimeTimeSeries.push(a);
                     if (lastRuntimeTimeSeries.length > 500) {
                         lastRuntimeTimeSeries.shift();
@@ -78,13 +76,34 @@
                 }
             };
 
-            console.log("Init");
-            bytecoder.bootstrap();
+            var instantiated = function(result) {
+                bytecoder.init(result.instance);
 
-            bytecoder.exports.main();
-            console.log("Ready");
+                bytecoder.exports.initMemory(0);
+                console.log("Memory initialized");
+                bytecoder.exports.bootstrap(0);
+                console.log("Bootstrapped");
+                bytecoder.exports.main(0);
+                console.log("Ready for action!");
 
-            document.getElementById("button").style.display = "block";
+                document.getElementById("button").style.display = "block";
+            };
+
+            // Try to load the WASM file
+            WebAssembly.instantiateStreaming(fetch('bytecoder-stackified.wasm'), bytecoder.imports)
+                .then(instantiated)
+                .catch(function(error) {
+                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
+                    var request = new XMLHttpRequest();
+                    request.open('GET', 'bytecoder-stackified.wasm');
+                    request.responseType = 'arraybuffer';
+                    request.send();
+
+                    request.onload = function() {
+                        var bytes = request.response;
+                        WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
+                    };
+                });
         </script>
     </body>
 </html>

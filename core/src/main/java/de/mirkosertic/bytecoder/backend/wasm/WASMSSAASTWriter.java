@@ -25,8 +25,11 @@ import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlowWriter;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
 
@@ -71,6 +74,7 @@ public class WASMSSAASTWriter {
     private final List<Variable> stackVariables;
     private final WASMMemoryLayouter memoryLayouter;
     private boolean labelRequired;
+    private final AtomicBoolean stackifierEnabled;
 
     public WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction) {
@@ -89,11 +93,12 @@ public class WASMSSAASTWriter {
             }
         }
         labelRequired = false;
+        stackifierEnabled = new AtomicBoolean(false);
     }
 
     private WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Variable> aStackVariables, final boolean aLabelRequired, final Expressions aFlow) {
+            final List<Variable> aStackVariables, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -104,16 +109,17 @@ public class WASMSSAASTWriter {
         container = aContainer;
         flow = aFlow;
         labelRequired = aLabelRequired;
+        stackifierEnabled = aStackifierEnabled;
     }
 
     private WASMSSAASTWriter block(final String label, final Expression expression) {
         final Block block = flow.block(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private WASMSSAASTWriter block(final String label, final PrimitiveType blockType, final Expression expression) {
         final Block block = flow.block(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private class IFCondition {
@@ -129,24 +135,24 @@ public class WASMSSAASTWriter {
 
     private IFCondition iff(final String label, final WASMValue condition, final Expression expression) {
         final Iff block = flow.iff(label, condition, expression);
-        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
-        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow);
+        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
+        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow, stackifierEnabled);
         return new IFCondition(theTrueWriter, theFalseWriter);
     }
 
     private WASMSSAASTWriter Try(final String label, final Expression expression) {
         final Try block = flow.Try(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private WASMSSAASTWriter Try(final String label, final PrimitiveType blockType, final Expression expression) {
         final Try block = flow.Try(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private WASMSSAASTWriter loop(final String label, final Expression expression) {
         final Loop loop = flow.loop(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow, stackifierEnabled);
     }
 
     private int stackSize() {
@@ -255,26 +261,37 @@ public class WASMSSAASTWriter {
         }
         if (aExpression instanceof BreakExpression) {
             final BreakExpression theBreak = (BreakExpression) aExpression;
-            if (theBreak.isSetLabelRequired() && labelRequired) {
-                final Local label = function.localByLabel(LABEL_LOCAL);
-                flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress(), aExpression), aExpression);
-            }
-            if (!theBreak.isSilent()) {
+            if (stackifierEnabled.get()) {
                 final LabeledContainer target = container.findByLabelInHierarchy(theBreak.blockToBreak().name());
                 flow.branch(target, aExpression);
+            } else {
+                if (theBreak.isSetLabelRequired() && labelRequired) {
+                    final Local label = function.localByLabel(LABEL_LOCAL);
+                    flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress(), aExpression), aExpression);
+                }
+                if (!theBreak.isSilent()) {
+                    final LabeledContainer target = container.findByLabelInHierarchy(theBreak.blockToBreak().name());
+                    flow.branch(target, aExpression);
+                }
             }
             return;
         }
         if (aExpression instanceof ContinueExpression) {
             final ContinueExpression theContinue = (ContinueExpression) aExpression;
+            if (stackifierEnabled.get()) {
 
-            if (labelRequired) {
-                final Local label = function.localByLabel(LABEL_LOCAL);
-                flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress(), aExpression), aExpression);
+                final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
+                flow.branch(target, aExpression);
+
+            } else {
+                if (labelRequired) {
+                    final Local label = function.localByLabel(LABEL_LOCAL);
+                    flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress(), aExpression), aExpression);
+                }
+
+                final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
+                flow.branch(target, aExpression);
             }
-
-            final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
-            flow.branch(target, aExpression);
             return;
         }
         if (aExpression instanceof SetEnumConstantsExpression) {
@@ -911,7 +928,7 @@ public class WASMSSAASTWriter {
             }
         }
 
-        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
+        if (!(theClasses.stream().noneMatch(BytecodeLinkedClass::isOpaqueType))) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1362,6 +1379,8 @@ public class WASMSSAASTWriter {
     }
 
     public void writeRelooped(final Relooper.Block aBlock) {
+        stackifierEnabled.set(false);
+
         // We need the local label for structured control flow
         labelRequired = aBlock.containsMultipleBlock();
         if (labelRequired) {
@@ -1553,6 +1572,52 @@ public class WASMSSAASTWriter {
             writeReloopedInternal(aTryBlock.inner());
             writeReloopedInternal(aTryBlock.next());
         }
+    }
 
+    public void printStackified(final StructuredControlFlow<RegionNode> controlFlow) {
+        stackifierEnabled.set(true);
+
+        stackEnter();
+
+        final Stack<WASMSSAASTWriter> writerStack = new Stack<>();
+        writerStack.push(this);
+        controlFlow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
+
+            @Override
+            public void beginLoopFor(final de.mirkosertic.bytecoder.stackifier.Block<RegionNode> block) {
+                super.beginLoopFor(block);
+                final WASMSSAASTWriter current = writerStack.peek();
+                final WASMSSAASTWriter outerBlock = current.block(block.getLabel().name(), null);
+                writerStack.push(outerBlock);
+
+                final WASMSSAASTWriter loop = outerBlock.loop(block.getLabel().name() + "_inner", null);
+                writerStack.push(loop);
+            }
+
+            @Override
+            public void beginBlockFor(final de.mirkosertic.bytecoder.stackifier.Block<RegionNode> block) {
+                super.beginBlockFor(block);
+                final WASMSSAASTWriter current = writerStack.peek();
+                final WASMSSAASTWriter newSimpleBlock = current.block(block.getLabel().name(), null);
+                writerStack.push(newSimpleBlock);
+            }
+
+            @Override
+            public void write(final RegionNode node) {
+                writerStack.peek().writeExpressionList(node.getExpressions());
+            }
+
+            @Override
+            public void closeBlock() {
+                final WASMSSAASTWriter current = writerStack.pop();
+                if (current.container instanceof Loop) {
+                    // Also remove the outer block
+                    final WASMSSAASTWriter outer = writerStack.pop();
+                }
+                super.closeBlock();
+            }
+        });
+
+        flow.unreachable(null);
     }
 }

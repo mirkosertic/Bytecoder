@@ -29,6 +29,9 @@ import de.mirkosertic.bytecoder.core.*;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
+import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -587,13 +590,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     instanceFunction.exportAs(theExport.getElementValueByName("value").stringValue());
                 }
 
-                // Try to reloop it!
                 try {
-                    final Relooper theRelooper = new Relooper(aOptions);
-                    final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
-
-                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);
-
                     for (final Variable theVariable : theSSAProgram.getVariables()) {
                         if (!(theVariable.isSynthetic())) {
                             instanceFunction.newLocal(theVariable.getName(), WASMSSAASTWriter.toType(theVariable.resolveType()));
@@ -612,7 +609,33 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theParam.renameTo(theArgument.getVariable().getName());
                     }
 
-                    writer.writeRelooped(theReloopedBlock);
+                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);
+
+                    if (aOptions.isPreferStackifier()) {
+                        try {
+                            final Stackifier st = new Stackifier();
+                            final StructuredControlFlow<RegionNode> flow = st.stackify(theSSAProgram.getControlFlowGraph());
+
+                            writer.printStackified(flow);
+
+                            aOptions.getLogger().debug("Method {}.{} successfully stackified ", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
+
+                        } catch (final IrreducibleControlFlowException e) {
+
+                            // Stackifier has problems, we fallback to relooper instead
+                            aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
+
+                            final Relooper theRelooper = new Relooper(aOptions);
+                            final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                            writer.writeRelooped(theReloopedBlock);
+                        }
+                    } else {
+                        final Relooper theRelooper = new Relooper(aOptions);
+                        final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                        writer.writeRelooped(theReloopedBlock);
+                    }
                 } catch (final Exception e) {
                     throw new IllegalStateException("Error relooping cfg for " + aMethodMapEntry.getProvidingClass().getBytecodeClass().getThisInfo().getConstant().stringValue() + "." + theMethod.getName().stringValue() + " " + theMethod.getSignature() , e);
                 }

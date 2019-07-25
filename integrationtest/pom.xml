@@ -174,6 +174,19 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>wasm-stackified</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
+                            <backend>wasm</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
+                            <preferStackifier>true</preferStackifier>
+                            <filenamePrefix>bytecoder-stackified</filenamePrefix>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>wasm-kotlin</id>
                         <goals>
                             <goal>compile</goal>

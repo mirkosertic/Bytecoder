@@ -537,9 +537,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             if (declaredOptions.value().length == 0 && declaredOptions.includeTestPermutations()) {
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
                     testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
@@ -549,9 +549,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             testOptions.add(new TestOption(null, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-
             testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
         }
 
         for (final TestOption o : testOptions) {

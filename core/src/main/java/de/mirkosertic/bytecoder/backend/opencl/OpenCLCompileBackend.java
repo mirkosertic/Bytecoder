@@ -120,7 +120,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                         } catch (final IrreducibleControlFlowException e) {
 
                             // Stackifier has problems, we fallback to relooper instead
-                            aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", aMethodMapEntry.getProvidingClass().getClassName().name() + "." + aMethodMapEntry.getValue().getName().stringValue());
+                            aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", aMethodMapEntry.getProvidingClass().getClassName().name(), aMethodMapEntry.getValue().getName().stringValue());
 
                             final Relooper theRelooper = new Relooper(aOptions);
                             final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
