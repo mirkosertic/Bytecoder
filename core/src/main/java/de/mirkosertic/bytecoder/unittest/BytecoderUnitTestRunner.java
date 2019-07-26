@@ -276,6 +276,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     }
 
     private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
+        if (!"".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS_STACKIFY", "")) && aTestOption.isPreferStackifier()) {
+            return;
+        }
+        if (!"".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS_RELOOP", "")) && !aTestOption.isPreferStackifier()) {
+            return;
+        }
         if ("".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS", ""))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
