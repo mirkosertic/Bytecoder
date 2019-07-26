@@ -34,7 +34,6 @@ import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.ParentRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
-import org.junit.runners.model.RunnerScheduler;
 import org.junit.runners.model.TestClass;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
@@ -57,47 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
-
-    private static class TestOption {
-        private final CompileTarget.BackendType backendType;
-        private final boolean preferStackifier;
-        private final boolean exceptionsEnabled;
-        private final boolean minify;
-
-        public TestOption(final CompileTarget.BackendType backendType, final boolean preferStackifier, final boolean exceptionsEnabled, final boolean minify) {
-            this.backendType = backendType;
-            this.preferStackifier = preferStackifier;
-            this.exceptionsEnabled = exceptionsEnabled;
-            this.minify = minify;
-        }
-
-        public String toDescription() {
-            return "backend=" +
-                    backendType.toString() +
-                    " preferStackifier=" +
-                    preferStackifier +
-                    " minify=" +
-                    minify +
-                    " exceptionsEnabled=" +
-                    exceptionsEnabled;
-        }
-
-        public String toFilePrefix() {
-            final StringBuilder builder = new StringBuilder();
-            builder.append(backendType.toString());
-            if (preferStackifier) {
-                builder.append("_stackifier");
-            }
-            if (minify) {
-                builder.append("_minify");
-            }
-            if (exceptionsEnabled) {
-                builder.append("_exceptionsEnabled");
-            }
-            return builder.toString();
-        }
-    }
+public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> {
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
     private final List<TestOption> testOptions;
@@ -121,7 +80,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-//                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
                     testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
@@ -133,7 +92,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-//            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
         }
     }
 
@@ -145,8 +104,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     }
 
     @Override
-    protected List<FrameworkMethod> getChildren() {
-        final List<FrameworkMethod> testMethods = new ArrayList<>();
+    protected List<FrameworkMethodWithTestOption> getChildren() {
+        final List<FrameworkMethodWithTestOption> testMethods = new ArrayList<>();
 
         final TestClass testClass = getTestClass();
         final Method[] classMethods = testClass.getJavaClass().getDeclaredMethods();
@@ -163,7 +122,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 final String methodName = classMethod.getName();
                 if (methodName.toUpperCase().startsWith("TEST")
                         || null != classMethod.getAnnotation(Test.class)) {
-                    testMethods.add(new FrameworkMethod(classMethod));
+                    for (final TestOption o : testOptions) {
+                        testMethods.add(new FrameworkMethodWithTestOption(classMethod, o));
+                    }
                 }
             }
         }
@@ -172,7 +133,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     }
 
     @Override
-    protected Description describeChild(final FrameworkMethod frameworkMethod) {
+    protected Description describeChild(final FrameworkMethodWithTestOption frameworkMethod) {
         final TestClass testClass = getTestClass();
         return Description.createTestDescription(testClass.getJavaClass(), frameworkMethod.getName());
     }
@@ -245,7 +206,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, aTestOption.minify, aTestOption.preferStackifier);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier());
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final JSCompileResult.JSContent content = result.getContent()[0];
 
@@ -331,7 +292,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.minify, aTestOption.preferStackifier);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier());
                 final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
                 final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
@@ -556,21 +517,20 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethod> {
     }
 
     @Override
-    protected void runChild(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
-        for (final TestOption o : testOptions) {
-            if (o.backendType == null) {
-                testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
-            } else {
-                switch (o.backendType) {
-                    case js:
-                        testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
-                        break;
-                    case wasm:
-                        testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest, o);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported backend :" + o.backendType);
-                }
+    protected void runChild(final FrameworkMethodWithTestOption aFrameworkMethod, final RunNotifier aRunNotifier) {
+        final TestOption o = aFrameworkMethod.getTestOption();
+        if (o.getBackendType() == null) {
+            testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
+        } else {
+            switch (o.getBackendType()) {
+                case js:
+                    testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
+                    break;
+                case wasm:
+                    testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest, o);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported backend :" + o.getBackendType());
             }
         }
     }
