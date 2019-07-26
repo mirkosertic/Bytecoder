@@ -60,7 +60,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
     private final List<TestOption> testOptions;
-    private final boolean wabtCompileTest;
 
     private static ChromeDriverService DRIVERSERVICE;
 
@@ -68,8 +67,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         super(aClass);
 
         testOptions = new ArrayList<>();
-        wabtCompileTest = Boolean.parseBoolean(System.getProperty("WABTCOMPILETEST", Boolean.FALSE.toString()));
-
         final BytecoderTestOptions declaredOptions = getTestClass().getJavaClass().getAnnotation(BytecoderTestOptions.class);
         if (declaredOptions != null) {
             if (declaredOptions.includeJVM()) {
@@ -80,7 +77,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-                //testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
                     testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
@@ -92,7 +89,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-            //testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
         }
     }
 
@@ -156,7 +153,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         }
     }
 
-    private static void initializeSeleniumDriver() throws IOException {
+    private static synchronized void initializeSeleniumDriver() throws IOException {
         if (null == DRIVERSERVICE) {
 
             final String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
@@ -278,7 +275,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         }
     }
 
-    private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final boolean aWABTCompileTest, final TestOption aTestOption) {
+    private void testWASMASTBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS", ""))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
@@ -309,12 +306,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theGeneratedFilesDir.mkdirs();
                 final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
 
-                // Copy WABT Tools
-                final File theWABTFile = new File(theGeneratedFilesDir, "libwabt.js");
-                try (final FileOutputStream theOS = new FileOutputStream(theWABTFile)) {
-                    IOUtils.copy(getClass().getResourceAsStream("/libwabt.js"), theOS);
-                }
-
                 final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
                 theWriter.println("<html>");
                 theWriter.println("    <body>");
@@ -325,13 +316,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("        <h1>Compilation result</h1>");
                 theWriter.println("        <pre id=\"compileresult\">");
                 theWriter.println("        </pre>");
-                theWriter.println("        <script src=\"libwabt.js\">");
-                theWriter.println("        </script>");
                 theWriter.println("        <script>");
 
                 theWriter.println(jsContent.asString());
 
-                theWriter.println("            function compile(wabt) {");
+                theWriter.println("            function compile() {");
                 theWriter.println("                console.log('Test started');");
                 theWriter.println("                try {");
                 theWriter.println("                var features = {\n" +
@@ -344,15 +333,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                         "                        'multi_value' : true,\n" +
                         "                        'tail_call' : true,\n" +
                         "                    };");
-
-                if (aWABTCompileTest) {
-                    theWriter.println("                    var module = wabt.parseWat('test.wast', document.getElementById(\"modulecode\").innerText, features);");
-                    theWriter.println("                    module.resolveNames();");
-                    theWriter.println("                    module.validate(features);");
-
-                    theWriter.println("                    var binaryOutput = module.toBinary({log: true, write_debug_names:true});");
-                    theWriter.println("                    document.getElementById(\"compileresult\").innerText = binaryOutput.log;");
-                }
 
                 theWriter.println();
                 theWriter.print("                    var binaryBuffer = new Uint8Array([");
@@ -453,9 +433,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                console.log('DONE');");
                 theWriter.println("            }");
                 theWriter.println();
-                theWriter.println("            WabtModule().then(function(wabt) {");
-                theWriter.println("                 compile(wabt);");
-                theWriter.println("            });");
+                theWriter.println("            compile();");
                 theWriter.println("        </script>");
                 theWriter.println("    </body>");
                 theWriter.println("</html>");
@@ -527,7 +505,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
                     break;
                 case wasm:
-                    testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, wabtCompileTest, o);
+                    testWASMASTBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
                     break;
                 default:
                     throw new IllegalStateException("Unsupported backend :" + o.getBackendType());
