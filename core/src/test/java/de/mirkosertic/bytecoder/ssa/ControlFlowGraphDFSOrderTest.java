@@ -92,4 +92,34 @@ public class ControlFlowGraphDFSOrderTest {
         assertSame(node3, nodes.get(3));
 
     }
+
+    @Test
+    public void testJoiningFlowWithLoop() {
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph graph = new ControlFlowGraph(p);
+        final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        final RegionNode node3 = graph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
+        final RegionNode node4 = graph.createAt(new BytecodeOpcodeAddress(40), RegionNode.BlockType.NORMAL);
+        startNode.addSuccessor(node1);
+        node1.addSuccessor(node2);
+        startNode.addSuccessor(node3);
+        node3.addSuccessor(node4);
+        node2.addSuccessor(node4);
+        graph.calculateReachabilityAndMarkBackEdges();
+
+        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
+        order.printDebug(new PrintWriter(System.out));
+
+        final List<RegionNode> nodes = order.getNodesInOrder();
+
+        assertEquals(5, nodes.size());
+        assertSame(startNode, nodes.get(0));
+        assertSame(node1, nodes.get(1));
+        assertSame(node2, nodes.get(2));
+        assertSame(node3, nodes.get(3));
+        assertSame(node4, nodes.get(4));
+
+    }
 }

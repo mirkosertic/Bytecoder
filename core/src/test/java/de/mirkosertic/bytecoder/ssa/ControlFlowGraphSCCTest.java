@@ -136,4 +136,34 @@ public class ControlFlowGraphSCCTest {
         assertEquals(Arrays.asList(startNode, node1, node2), scc.getNodesInOrder());
     }
 
+    @Test
+    public void testLoop3Joining() {
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph graph = new ControlFlowGraph(p);
+        final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
+        final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
+        final RegionNode node3 = graph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
+        final RegionNode node4 = graph.createAt(new BytecodeOpcodeAddress(40), RegionNode.BlockType.NORMAL);
+        startNode.addSuccessor(node1);
+        node1.addSuccessor(node3);
+        node1.addSuccessor(node2);
+        node2.addSuccessor(node1);
+        node2.addSuccessor(node4);
+        node3.addSuccessor(node4);
+        graph.calculateReachabilityAndMarkBackEdges();
+
+        final ControlFlowGraphSCC scc = new ControlFlowGraphSCC(graph);
+        final List<List<RegionNode>> nodes = scc.getConnectedComponentList();
+
+        assertEquals(4, nodes.size());
+        assertEquals(Collections.singletonList(node4), nodes.get(0));
+        assertEquals(Collections.singletonList(node3), nodes.get(1));
+        assertEquals(Arrays.asList(node2, node1), nodes.get(2));
+        assertEquals(Collections.singletonList(startNode), nodes.get(3));
+
+        assertEquals(Arrays.asList(startNode, node1, node2, node3, node4), scc.getNodesInOrder());
+    }
+
+
 }

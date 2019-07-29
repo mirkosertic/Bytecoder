@@ -36,14 +36,6 @@ public class StructuredControlFlow<T> {
         this.nodesInOrder = nodesInOrder;
     }
 
-    public T nextOf(final T aValue) {
-        final int i = indexOf(aValue);
-        if (i<nodesInOrder.size() - 1) {
-            return nodesInOrder.get(i + 1);
-        }
-        return nodesInOrder.get(i);
-    }
-
     public int indexOf(final T aValue) {
         return nodesInOrder.indexOf(aValue);
     }
@@ -249,12 +241,6 @@ public class StructuredControlFlow<T> {
 
         for (final T node : nodes) {
 
-            // Skip already processed nodes
-            // Those nodes were inlined because they are dominated.
-            //if (writer.alreadyProcessed(node)) {
-            //    continue;
-            //}
-
             // We need all starting blocks from here
             // Sorted by their head in descending order
             // So we can build a stack of blocks correctly
@@ -296,8 +282,6 @@ public class StructuredControlFlow<T> {
 
                 writer.write(node);
 
-                //writer.markAsProcessed(node);
-
                 while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
                     writer.closeBlock();
                     blockStack.pop();
@@ -324,8 +308,6 @@ public class StructuredControlFlow<T> {
                 }
 
                 writer.write(node);
-
-                //writer.markAsProcessed(node);
             }
         }
 
@@ -333,13 +315,5 @@ public class StructuredControlFlow<T> {
             writer.closeBlock();
             blockStack.pop();
         }
-    }
-
-    public List<T> slice(final int minIndex, final int maxIndex) {
-        final List<T> theResult = new ArrayList<>();
-        for (int i=minIndex; i<=maxIndex;i++) {
-            theResult.add(nodesInOrder.get(i));
-        }
-        return theResult;
     }
 }

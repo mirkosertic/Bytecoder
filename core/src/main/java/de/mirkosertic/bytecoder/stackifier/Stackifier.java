@@ -15,10 +15,6 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
-
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
@@ -32,6 +28,10 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 public class Stackifier {
 
@@ -134,60 +134,6 @@ public class Stackifier {
                         writeExpression(currentNode, new IFElseExpression(ie.getProgram(), ie.getAddress(), ie, elsePart));
                         return;
                     }
-
-/*                    if (converted instanceof BreakExpression || converted instanceof GotoExpression) {
-                        final RegionNode theNextBlock;
-                        if (converted instanceof BreakExpression) {
-                            final BreakExpression b = (BreakExpression) converted;
-                            theNextBlock = stackifier.getControlFlowGraph().nodeStartingAt(b.jumpTarget());
-                        } else {
-                            final GotoExpression g = (GotoExpression) converted;
-                            theNextBlock = stackifier.getControlFlowGraph().nodeStartingAt(g.jumpTarget());
-                        }
-
-                        if (theNextBlock.isStrictlyDominatedBy(currentNode)) {
-                            final Set<RegionNode> dominatedSet = new HashSet<>();
-                            dominatedSet.add(theNextBlock);
-                            dominatedSet.addAll(theNextBlock.dominatedNodes());
-
-                            int minIndex = Integer.MAX_VALUE;
-                            int maxIndex = Integer.MIN_VALUE;
-                            for (final RegionNode dom : dominatedSet) {
-                                final int i = stackifier.flow.indexOf(dom);
-                                // Sanity check
-                                // Ignore nodes not known to stackifier
-                                // That might be exceptional control flow nodes
-                                // which are not visible to stackifier but
-                                // part of the domination set
-                                if (i>=0) {
-                                    minIndex = Math.min(minIndex, i);
-                                    maxIndex = Math.max(maxIndex, i);
-                                }
-                            }
-                            final List<RegionNode> toBeProcessed = stackifier.flow.slice(minIndex, maxIndex);
-
-                            beginBlockFor(new Block<>(new Label("lala"), new JumpArrow<RegionNode>(EdgeType.forward, toBeProcessed.get(0), stackifier.flow.nextOf(toBeProcessed.get(toBeProcessed.size() - 1)))));
-
-                            stackifier.flow.writeStructuredControlFlow(this, toBeProcessed);
-
-                            closeBlock();
-
-                            for (final RegionNode dom : dominatedSet) {
-                                markAsProcessed(dom);
-                            }
-
-                            return;
-                        }
-
-                        if (converted instanceof GotoExpression) {
-                            if (stackifier.flow.indexOf(theNextBlock) == stackifier.flow.indexOf(currentNode) + 1 && theNextBlock.isOnlyReachableThruRegularFlow(currentNode)
-                                    && currentNode.getSuccessors().entrySet().stream().filter(t -> t.getValue().getType() == RegionNode.BlockType.NORMAL).count() == 1) {
-                                // We are branching to the strictly dominated successor
-                                // The goto can be removed
-                                return;
-                            }
-                        }
-                    }*/
 
                     writeExpression(currentNode, converted);
                 }

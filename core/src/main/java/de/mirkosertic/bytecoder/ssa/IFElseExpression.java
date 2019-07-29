@@ -17,7 +17,10 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class IFElseExpression extends Expression {
+import java.util.Collections;
+import java.util.Set;
+
+public class IFElseExpression extends Expression implements ExpressionListContainer {
 
     private final IFExpression condition;
     private final ExpressionList elsePart;
@@ -35,5 +38,15 @@ public class IFElseExpression extends Expression {
 
     public ExpressionList getElsePart() {
         return elsePart;
+    }
+
+    @Override
+    public Set<ExpressionList> getExpressionLists() {
+        return Collections.singleton(elsePart);
+    }
+
+    @Override
+    public Expression deepCopy() {
+        return new IFElseExpression(getProgram(), getAddress(), (IFExpression) condition.deepCopy(), elsePart.deepCopy());
     }
 }
