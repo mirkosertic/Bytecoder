@@ -155,6 +155,7 @@ public class Stackifier {
 
     public Stackifier(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
         this.controlFlowGraph = controlFlowGraph;
+        // new InlineDominatedNodesOptimizer().optimize(this.controlFlowGraph, null);
         final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(controlFlowGraph);
         final List<RegionNode> sorted = order.getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);

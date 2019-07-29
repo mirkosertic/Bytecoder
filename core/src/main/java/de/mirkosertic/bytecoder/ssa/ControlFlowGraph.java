@@ -137,6 +137,18 @@ public class ControlFlowGraph {
         return theHandler;
     }
 
+    public void inlinedTo(final RegionNode aNode, final RegionNode aTarget) {
+        for (final RegionNode l : knownNodes) {
+            for (final GraphNodePath p : l.getReachableBy()) {
+                p.replace(aNode, aTarget);
+            }
+        }
+
+        knownNodes.remove(aNode);
+
+        aTarget.inlineSuccessors(aNode);
+    }
+
     private static class IDRegister {
 
         private final List<Object> objects;

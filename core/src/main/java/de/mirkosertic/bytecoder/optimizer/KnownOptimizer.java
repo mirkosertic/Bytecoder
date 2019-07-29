@@ -41,6 +41,7 @@ public enum KnownOptimizer implements Optimizer {
                     new DirectAssignmentOptimizerStage(),
                     new RedundantVariablesForIfOptimizerStage(),
             }));
+            //theOptimizer.add(new InlineDominatedNodesOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
     },

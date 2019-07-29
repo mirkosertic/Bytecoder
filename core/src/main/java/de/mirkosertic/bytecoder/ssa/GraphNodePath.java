@@ -64,4 +64,12 @@ public class GraphNodePath {
         }
         return true;
     }
+
+    public void replace(final RegionNode aNode, final RegionNode aTarget) {
+        final int p = nodes.indexOf(aNode);
+        if (p>=0) {
+            nodes.add(p, aTarget);
+            nodes.remove(aNode);
+        }
+    }
 }

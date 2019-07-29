@@ -126,6 +126,13 @@ public class RegionNode {
         expressions = new ExpressionList();
     }
 
+    public void inlineSuccessors(final RegionNode succ) {
+        for (final Edge key: successors.entrySet().stream().filter(t -> t.getValue() == succ).map(Map.Entry::getKey).collect(Collectors.toSet())) {
+            successors.remove(key);
+        }
+        successors.putAll(succ.getSuccessors());
+    }
+
     public List<GraphNodePath> getReachableBy() {
         return reachableBy;
     }
@@ -182,7 +189,7 @@ public class RegionNode {
     }
 
     public void addSuccessor(final RegionNode aBlock) {
-        if (!successors.values().contains(aBlock)) {
+        if (!successors.containsValue(aBlock)) {
             successors.put(new Edge(EdgeType.forward), aBlock);
         }
     }
