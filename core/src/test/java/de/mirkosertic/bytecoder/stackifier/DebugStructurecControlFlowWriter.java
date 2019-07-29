@@ -15,21 +15,22 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
+import java.io.PrintWriter;
+
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
-import java.io.PrintWriter;
-
-class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<RegionNode> {
+class DebugStructurecControlFlowWriter extends Stackifier.StackifierStructuredControlFlowWriter {
 
     private final PrintWriter writer;
 
-    public DebugStructurecControlFlowWriter(final PrintWriter writer) {
+    public DebugStructurecControlFlowWriter(final Stackifier st, final PrintWriter writer) {
+        super(st);
         this.writer = writer;
     }
 
@@ -57,26 +58,32 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
         super.beginBlockFor(block);
     }
 
-    private void writeExpressionList(final ExpressionList l, final int indent) {
-        for (final Expression e : l.toList()) {
-            if (e instanceof GotoExpression) {
-                final GotoExpression g = (GotoExpression) e;
-                writer.print(indent(indent));
-                writer.println(String.format("goto %d", g.getJumpTarget().getAddress()));
-            } else if (e instanceof BreakExpression) {
-                final BreakExpression b = (BreakExpression) e;
-                writer.print(indent(indent));
-                writer.println(String.format("break $%s", b.blockToBreak().name()));
-            } else if (e instanceof ContinueExpression) {
-                final ContinueExpression c = (ContinueExpression) e;
-                writer.print(indent(indent));
-                writer.println(String.format("continue $%s", c.labelToReturnTo().name()));
-            } else if (e instanceof IFExpression) {
-                final IFExpression i = (IFExpression) e;
-                writer.print(indent(indent));
-                writer.println("if ");
-                writeExpressionList(i.getExpressions(), indent + 1);
-            }
+    @Override
+    public void writeExpression(final RegionNode regionNode, final Expression e) {
+        final int indent = hierarchy.size();
+        if (e instanceof GotoExpression) {
+            final GotoExpression g = (GotoExpression) e;
+            writer.print(indent(indent));
+            writer.println(String.format("goto %d", g.jumpTarget().getAddress()));
+        } else if (e instanceof BreakExpression) {
+            final BreakExpression b = (BreakExpression) e;
+            writer.print(indent(indent));
+            writer.println(String.format("break $%s", b.blockToBreak().name()));
+        } else if (e instanceof ContinueExpression) {
+            final ContinueExpression c = (ContinueExpression) e;
+            writer.print(indent(indent));
+            writer.println(String.format("continue $%s", c.labelToReturnTo().name()));
+        } else if (e instanceof IFExpression) {
+            final IFExpression i = (IFExpression) e;
+            writer.print(indent(indent));
+            writer.println("if ");
+            writeExpressionList(regionNode, i.getExpressions());
+        } else if (e instanceof IFElseExpression) {
+            final IFElseExpression i = (IFElseExpression) e;
+            writeExpression(regionNode, i.getCondition());
+            writer.print(indent(indent));
+            writer.println("else ");
+            writeExpressionList(regionNode, i.getElsePart());
         }
     }
 
@@ -84,7 +91,7 @@ class DebugStructurecControlFlowWriter extends StructuredControlFlowWriter<Regio
     public void write(final RegionNode node) {
         writer.print(indent(hierarchy.size()));
         writer.println(node);
-        writeExpressionList(node.getExpressions(), hierarchy.size());
+        super.write(node);
     }
 
     @Override

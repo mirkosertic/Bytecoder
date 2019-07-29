@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,23 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class GotoExpression extends Expression {
+public class IFElseExpression extends Expression {
 
-    private final BytecodeOpcodeAddress jumpTarget;
+    private final IFExpression condition;
+    private final ExpressionList elsePart;
 
-    public GotoExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeOpcodeAddress aJumpTarget) {
-        super(aProgram, aAddress);
-        jumpTarget = aJumpTarget;
+    public IFElseExpression(final Program program, final BytecodeOpcodeAddress address,
+            final IFExpression condition, final ExpressionList elsePart) {
+        super(program, address);
+        this.condition = condition;
+        this.elsePart = elsePart;
     }
 
-    public BytecodeOpcodeAddress jumpTarget() {
-        return jumpTarget;
+    public IFExpression getCondition() {
+        return condition;
     }
 
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
+    public ExpressionList getElsePart() {
+        return elsePart;
     }
 }

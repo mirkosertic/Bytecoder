@@ -20,15 +20,15 @@ import static org.junit.Assert.assertEquals;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import de.mirkosertic.bytecoder.ssa.ExpressionList;
-import de.mirkosertic.bytecoder.ssa.IFExpression;
-import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DebugInformation;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
@@ -41,11 +41,9 @@ public class StackifierTest {
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator(), sw.toString());
     }
@@ -63,12 +61,9 @@ public class StackifierTest {
         node1.addSuccessor(node2);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.printDebug(new PrintWriter(System.out));
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
                 "RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
@@ -86,11 +81,9 @@ public class StackifierTest {
         node1.addSuccessor(node2);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
                 "RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
@@ -117,11 +110,9 @@ public class StackifierTest {
 
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("BLOCK $B_0_3: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
@@ -151,11 +142,9 @@ public class StackifierTest {
         node1.addSuccessor(startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("LOOP $L_0_1: {" + System.lineSeparator() +
                 "    RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
@@ -179,14 +168,9 @@ public class StackifierTest {
         node1.addSuccessor(startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-
-        graph.printDebug(new PrintWriter(System.out));
-
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
@@ -216,11 +200,9 @@ public class StackifierTest {
         node1.addSuccessor(startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
@@ -251,14 +233,9 @@ public class StackifierTest {
         node1.addSuccessor(startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-
-        graph.printDebug(new PrintWriter(System.out));
-
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
@@ -290,11 +267,9 @@ public class StackifierTest {
         node1.addSuccessor(startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("LOOP $L_0_2: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
@@ -374,12 +349,9 @@ public class StackifierTest {
         node99.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(100), new BytecodeOpcodeAddress(116)));
 
         g.calculateReachabilityAndMarkBackEdges();
-
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
                 "LOOP $L_1_14: {" + System.lineSeparator() +
@@ -473,14 +445,9 @@ public class StackifierTest {
 
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-
-        graph.printDebug(new PrintWriter(System.out));
-
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("BLOCK $B_0_6: {" + System.lineSeparator() +
                 "    BLOCK $B_0_1: {" + System.lineSeparator() +
@@ -543,11 +510,9 @@ public class StackifierTest {
 
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
                 "LOOP $L_1_3: {" + System.lineSeparator() +
@@ -586,21 +551,17 @@ public class StackifierTest {
 
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-
-        graph.printDebug(new PrintWriter(System.out));
-
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
                 "BLOCK $B_1_3: {" + System.lineSeparator() +
                 "    BLOCK $B_1_2: {" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=10}}" + System.lineSeparator() +
                 "        if " + System.lineSeparator() +
-                "            break $B_1_2" + System.lineSeparator() +
+                "        break $B_1_2" + System.lineSeparator() +
+                "        else " + System.lineSeparator() +
                 "        break $B_1_3" + System.lineSeparator() +
                 "    } ; Closing block $B_1_2" + System.lineSeparator() +
                 "    RegionNode{startAddress=BytecodeOpcodeAddress{address=20}}" + System.lineSeparator() +
@@ -642,14 +603,9 @@ public class StackifierTest {
 
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-
-        graph.printDebug(new PrintWriter(System.out));
-
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("BLOCK $B_0_3: {" + System.lineSeparator() +
                 "    BLOCK $B_0_2: {" + System.lineSeparator() +
@@ -725,17 +681,11 @@ public class StackifierTest {
         node8.addSuccessor(node9);
         node9.addSuccessor(node6);
 
-
         g.calculateReachabilityAndMarkBackEdges();
 
-        final Stackifier stackifier = new Stackifier();
-
-        final StructuredControlFlow<RegionNode> graph = stackifier.stackify(g);
-
-        graph.printDebug(new PrintWriter(System.out));
-
+        final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
-        graph.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(new PrintWriter(sw)));
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("BLOCK $B_0_4: {" + System.lineSeparator() +
                 "    BLOCK $B_0_1: {" + System.lineSeparator() +
@@ -746,7 +696,8 @@ public class StackifierTest {
                 "        BLOCK $B_2_3: {" + System.lineSeparator() +
                 "            RegionNode{startAddress=BytecodeOpcodeAddress{address=90}}" + System.lineSeparator() +
                 "            if " + System.lineSeparator() +
-                "                break $B_0_4" + System.lineSeparator() +
+                "            break $B_0_4" + System.lineSeparator() +
+                "            else " + System.lineSeparator() +
                 "            break $B_2_3" + System.lineSeparator() +
                 "        } ; Closing block $B_2_3" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=96}}" + System.lineSeparator() +

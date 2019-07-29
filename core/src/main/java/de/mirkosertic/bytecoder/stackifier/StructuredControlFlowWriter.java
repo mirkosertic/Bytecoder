@@ -15,14 +15,26 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 public abstract class StructuredControlFlowWriter<T> {
 
     protected final Stack<Block<T>> hierarchy;
+    private final Set<T> processed;
 
     protected StructuredControlFlowWriter() {
         this.hierarchy = new Stack<>();
+        this.processed = new HashSet<>();
+    }
+
+    public void markAsProcessed(final T node) {
+        processed.add(node);
+    }
+
+    public boolean alreadyProcessed(final T node) {
+        return processed.contains(node);
     }
 
     public void begin() {

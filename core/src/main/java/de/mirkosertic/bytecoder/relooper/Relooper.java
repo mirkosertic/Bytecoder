@@ -508,7 +508,7 @@ public class Relooper {
 
                 // We search the successor edge
                 for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : aLabel.getSuccessors().entrySet()) {
-                    if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.getJumpTarget())) {
+                    if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.jumpTarget())) {
                         theGotoFound = true;
                         final RegionNode theTarget = theSuc.getValue();
                         // We found the matching edge
@@ -563,7 +563,7 @@ public class Relooper {
                     }
                 }
                 if (!theGotoFound) {
-                    throw new IllegalStateException("No GOTO possible for " + theGoto.getJumpTarget().getAddress() + " in label " + aCurrent.label().name());
+                    throw new IllegalStateException("No GOTO possible for " + theGoto.jumpTarget().getAddress() + " in label " + aCurrent.label().name());
                 }
             }
         }
@@ -827,7 +827,7 @@ public class Relooper {
                     if (theLast instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) theLast;
                         final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
-                        final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.getJumpTarget());
+                        final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.jumpTarget());
                         if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
                             // We have a candidate!!
                             final Value theCondition = theIf.incomingDataFlows().get(0);

@@ -15,9 +15,6 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-import de.mirkosertic.bytecoder.ssa.EdgeType;
-import de.mirkosertic.bytecoder.ssa.Label;
-
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,6 +22,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
+
+import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.Label;
 
 public class StructuredControlFlow<T> {
 
@@ -36,8 +36,12 @@ public class StructuredControlFlow<T> {
         this.nodesInOrder = nodesInOrder;
     }
 
-    public List<T> getNodesInOrder() {
-        return nodesInOrder;
+    public T nextOf(final T aValue) {
+        final int i = indexOf(aValue);
+        if (i<nodesInOrder.size() - 1) {
+            return nodesInOrder.get(i + 1);
+        }
+        return nodesInOrder.get(i);
     }
 
     public int indexOf(final T aValue) {
@@ -187,46 +191,55 @@ public class StructuredControlFlow<T> {
 
     public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer) {
 
+        writer.begin();
+
+        writeStructuredControlFlow(writer, nodesInOrder);
+
+        writer.end();
+    }
+
+    public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer, final List<T> nodes) {
+
         // We have to filter some arrows to prevent confusion while
         // generating the output
 
-        // TODO: THis one is really ugly and should be replaced by real graph dominance tests
+        // TODO: This one is really ugly and should be replaced by real graph dominance tests
         final List<JumpArrow<T>> filteredJumpArrows = knownJumpArrows.stream()
                 .filter(arrow -> {
                     switch (arrow.getEdgeType()) {
-                        case back:
-                            return true;
-                        case forward:
-                            if (indexOf(arrow.getTail()) + 1 == indexOf(arrow.getHead())) {
-                                // Forward jumps to a strictly dominated successor do not start a block
-                                if (knownJumpArrows.stream().filter(t -> t.getTail() == arrow.getTail()).count() == 1) {
-                                    return false;
-                                }
-                                // Also forward jumps out of a loop do not create new blocks
-                                // As the loop can always be exited
-                                if (knownJumpArrows.stream().filter(
-                                        t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getNewTail()).count() == 1) {
-                                    return false;
-                                }
-
-                                return true;
+                    case back:
+                        return true;
+                    case forward:
+                        if (indexOf(arrow.getTail()) + 1 == indexOf(arrow.getHead())) {
+                            // Forward jumps to a strictly dominated successor do not start a block
+                            if (knownJumpArrows.stream().filter(t -> t.getTail() == arrow.getTail()).count() == 1) {
+                                return false;
+                            }
+                            // Also forward jumps out of a loop do not create new blocks
+                            // As the loop can always be exited
+                            if (knownJumpArrows.stream().filter(
+                                    t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getNewTail()).count() == 1) {
+                                return false;
                             }
 
-                            // Jumps out of a loop to the loops direct successor also does not create a block
-                            // Those Jumps are always possible by breaking the loop
-                            for (JumpArrow<T> a : knownJumpArrows) {
-                                if (a.getEdgeType() == EdgeType.back &&
+                            return true;
+                        }
+
+                        // Jumps out of a loop to the loops direct successor also does not create a block
+                        // Those Jumps are always possible by breaking the loop
+                        for (JumpArrow<T> a : knownJumpArrows) {
+                            if (a.getEdgeType() == EdgeType.back &&
                                     indexOf(arrow.getNewTail()) >= indexOf(a.getHead()) &&
                                     indexOf(arrow.getNewTail()) <= indexOf(a.getNewTail()) &&
                                     indexOf(arrow.getHead()) == indexOf(a.getNewTail()) + 1 &&
                                     !contains(a, arrow)) {
-                                    return false;
-                                }
+                                return false;
                             }
+                        }
 
-                            return true;
-                        default:
-                            throw new IllegalStateException();
+                        return true;
+                    default:
+                        throw new IllegalStateException();
                     }
                 })
                 .collect(Collectors.toList());
@@ -234,8 +247,13 @@ public class StructuredControlFlow<T> {
         // We need this stack to keep track of currently active blocks and loops
         final Stack<Block<T>> blockStack = new Stack<>();
 
-        writer.begin();
-        for (final T node : nodesInOrder) {
+        for (final T node : nodes) {
+
+            // Skip already processed nodes
+            // Those nodes were inlined because they are dominated.
+            //if (writer.alreadyProcessed(node)) {
+            //    continue;
+            //}
 
             // We need all starting blocks from here
             // Sorted by their head in descending order
@@ -278,6 +296,8 @@ public class StructuredControlFlow<T> {
 
                 writer.write(node);
 
+                //writer.markAsProcessed(node);
+
                 while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
                     writer.closeBlock();
                     blockStack.pop();
@@ -291,19 +311,21 @@ public class StructuredControlFlow<T> {
 
                 for (final Block<T> block : blocksStartingFromHere) {
                     switch (block.arrow.getEdgeType()) {
-                        case forward:
-                            writer.beginBlockFor(block);
-                            break;
-                        case back:
-                            writer.beginLoopFor(block);
-                            break;
-                        default:
-                            throw new IllegalStateException();
+                    case forward:
+                        writer.beginBlockFor(block);
+                        break;
+                    case back:
+                        writer.beginLoopFor(block);
+                        break;
+                    default:
+                        throw new IllegalStateException();
                     }
                     blockStack.push(block);
                 }
 
                 writer.write(node);
+
+                //writer.markAsProcessed(node);
             }
         }
 
@@ -311,7 +333,13 @@ public class StructuredControlFlow<T> {
             writer.closeBlock();
             blockStack.pop();
         }
+    }
 
-        writer.end();
+    public List<T> slice(final int minIndex, final int maxIndex) {
+        final List<T> theResult = new ArrayList<>();
+        for (int i=minIndex; i<=maxIndex;i++) {
+            theResult.add(nodesInOrder.get(i));
+        }
+        return theResult;
     }
 }

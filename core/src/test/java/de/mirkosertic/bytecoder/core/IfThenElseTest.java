@@ -58,5 +58,4 @@ public class IfThenElseTest {
             failNotEquals(message, expected, actual);
         }
     }
-
 }

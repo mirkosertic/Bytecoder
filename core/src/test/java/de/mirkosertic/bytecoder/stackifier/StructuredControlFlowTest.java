@@ -256,6 +256,7 @@ public class StructuredControlFlowTest {
         final StructuredControlFlowWriter<Integer> writerMock = mock(StructuredControlFlowWriter.class);
         graph.writeStructuredControlFlow(writerMock);
         final InOrder order = inOrder(writerMock);
+
         order.verify(writerMock).begin();
         order.verify(writerMock, times(3)).beginBlockFor(any(Block.class));
         order.verify(writerMock).write(eq(0));

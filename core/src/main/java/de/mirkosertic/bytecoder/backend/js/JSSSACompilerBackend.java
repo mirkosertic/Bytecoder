@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.StringWriter;
+import java.util.List;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -41,15 +44,10 @@ import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
-
-import java.io.StringWriter;
-import java.util.List;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -649,10 +647,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
-                            final Stackifier stackifier = new Stackifier();
-                            final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
+                            final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
+                            theVariablesWriter.printStackified(stackifier);
 
-                            theVariablesWriter.printStackified(flow);
                             aOptions.getLogger().debug("Method {}.{} successfully stackified ", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
                         } catch (final IrreducibleControlFlowException e) {

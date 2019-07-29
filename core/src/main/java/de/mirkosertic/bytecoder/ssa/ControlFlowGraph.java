@@ -165,7 +165,7 @@ public class ControlFlowGraph {
         }
     }
 
-    class DotJump {
+    static class DotJump {
         final String source;
         final String target;
         final boolean backEdge;
@@ -212,7 +212,7 @@ public class ControlFlowGraph {
 
                         if (theExpression instanceof GotoExpression) {
                             final GotoExpression theGoto = (GotoExpression) theExpression;
-                            final RegionNode theJumpTarget = nodeStartingAt(theGoto.getJumpTarget());
+                            final RegionNode theJumpTarget = nodeStartingAt(theGoto.jumpTarget());
 
                             final String theJumpTargetRegion = theRegister.idFor(theJumpTarget);
 

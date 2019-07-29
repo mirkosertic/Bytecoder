@@ -15,6 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import de.mirkosertic.bytecoder.api.opencl.OpenCLFunction;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -41,6 +49,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
@@ -59,16 +68,7 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
-import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
-import de.mirkosertic.bytecoder.stackifier.StructuredControlFlowWriter;
-
-import java.io.PrintWriter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
@@ -347,110 +347,128 @@ public class OpenCLWriter extends IndentSSAWriter {
         print(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
     }
 
-    private void writeExpressions(final ExpressionList aList) {
-        for (final Expression theExpression : aList.toList()) {
-            if (options.isDebugOutput()) {
-                final String theComment = theExpression.getComment();
-                if (theComment != null && !theComment.isEmpty()) {
-                    print("// ");
-                    println(theComment);
-                }
+    private void writeExpression(final Expression expression) {
+        if (options.isDebugOutput()) {
+            final String theComment = expression.getComment();
+            if (theComment != null && !theComment.isEmpty()) {
+                print("// ");
+                println(theComment);
             }
-            if (theExpression instanceof VariableAssignmentExpression) {
-                final VariableAssignmentExpression theInit = (VariableAssignmentExpression) theExpression;
+        }
+        if (expression instanceof VariableAssignmentExpression) {
+            final VariableAssignmentExpression theInit = (VariableAssignmentExpression) expression;
 
-                final Variable theVariable = theInit.getVariable();
-                final Value theValue = theInit.getValue();
-                if (theVariable.resolveType().isObject() && theValue instanceof InvocationExpression) {
-                    print(toType(theVariable.resolveType(), false));
-                    print(" ");
-                    print(theVariable.getName());
-                    print("_temp = ");
-                    printValue(theValue);
-                    println(";");
-
-                    print(theVariable.getName());
-                    print(" = &");
-                    print(theVariable.getName());
-                    println("_temp;");
-                } else {
-                    print(theVariable.getName());
-                    print(" = ");
-                    printValue(theValue);
-                    println(";");
-                }
-            } else if (theExpression instanceof ArrayStoreExpression) {
-                final ArrayStoreExpression theStore = (ArrayStoreExpression) theExpression;
-                final List<Value> theIncomingData = theStore.incomingDataFlows();
-                final Value theArray = theIncomingData.get(0);
-                final Value theIndex = theIncomingData.get(1);
-                final Value theValue = theIncomingData.get(2);
-                printValue(theArray);
-                print("[");
-                printValue(theIndex);
-                print("] = ");
+            final Variable theVariable = theInit.getVariable();
+            final Value theValue = theInit.getValue();
+            if (theVariable.resolveType().isObject() && theValue instanceof InvocationExpression) {
+                print(toType(theVariable.resolveType(), false));
+                print(" ");
+                print(theVariable.getName());
+                print("_temp = ");
                 printValue(theValue);
                 println(";");
-            } else if (theExpression instanceof IFExpression) {
-                final IFExpression theE = (IFExpression) theExpression;
-                print("if ");
-                printValue(theE.incomingDataFlows().get(0));
-                println(" {");
 
-                withDeeperIndent().writeExpressions(theE.getExpressions());
-
-                println("}");
-            } else if (theExpression instanceof BreakExpression) {
-                final BreakExpression theBreak = (BreakExpression) theExpression;
-                if (theBreak.isSetLabelRequired() && !stackifierOutout.get()) {
-                    print("$__label__ = ");
-                    print(theBreak.jumpTarget().getAddress());
-                    println(";");
-                }
-                if (!theBreak.isSilent()) {
-                    print("goto $");
-                    print(theBreak.blockToBreak().name());
-                    println("_next;");
-
-                    recordedNextLabels.add(theBreak.blockToBreak());
-                }
-            } else if (theExpression instanceof ContinueExpression) {
-                final ContinueExpression theContinue = (ContinueExpression) theExpression;
-                if (!stackifierOutout.get()) {
-                    print("$__label__ = ");
-                    print(theContinue.jumpTarget().getAddress());
-                    println(";");
-                }
-                print("goto $");
-                print(theContinue.labelToReturnTo().name());
-                println(";");
-
-            } else if (theExpression instanceof ReturnExpression) {
-                println("return;");
-            } else if (theExpression instanceof PutFieldExpression) {
-                final PutFieldExpression thePutField = (PutFieldExpression) theExpression;
-
-                final List<Value> theIncomingData = thePutField.incomingDataFlows();
-
-                final Value theTarget = theIncomingData.get(0);
-                final BytecodeFieldRefConstant theField = thePutField.getField();
-
-                final Value thevalue = theIncomingData.get(1);
-                printValue(theTarget);
-                printInstanceFieldReference(theField);
-                print(" = ");
-                printValue(thevalue);
-                println(";");
-            } else if (theExpression instanceof ReturnValueExpression) {
-                final ReturnValueExpression theReturn = (ReturnValueExpression) theExpression;
-
-                final List<Value> theIncomingData = theReturn.incomingDataFlows();
-                print("return ");
-                printValue(theIncomingData.get(0));
-                println(";");
+                print(theVariable.getName());
+                print(" = &");
+                print(theVariable.getName());
+                println("_temp;");
             } else {
-                throw new IllegalArgumentException("Not supported. " + theExpression);
+                print(theVariable.getName());
+                print(" = ");
+                printValue(theValue);
+                println(";");
             }
+        } else if (expression instanceof ArrayStoreExpression) {
+            final ArrayStoreExpression theStore = (ArrayStoreExpression) expression;
+            final List<Value> theIncomingData = theStore.incomingDataFlows();
+            final Value theArray = theIncomingData.get(0);
+            final Value theIndex = theIncomingData.get(1);
+            final Value theValue = theIncomingData.get(2);
+            printValue(theArray);
+            print("[");
+            printValue(theIndex);
+            print("] = ");
+            printValue(theValue);
+            println(";");
+        } else if (expression instanceof IFExpression) {
+            final IFExpression theE = (IFExpression) expression;
+            print("if ");
+            printValue(theE.incomingDataFlows().get(0));
+            println(" {");
+
+            withDeeperIndent().writeExpressions(theE.getExpressions());
+
+            println("}");
+        } else if (expression instanceof BreakExpression) {
+            final BreakExpression theBreak = (BreakExpression) expression;
+            if (theBreak.isSetLabelRequired() && !stackifierOutout.get()) {
+                print("$__label__ = ");
+                print(theBreak.jumpTarget().getAddress());
+                println(";");
+            }
+            if (!theBreak.isSilent()) {
+                print("goto $");
+                print(theBreak.blockToBreak().name());
+                println("_next;");
+
+                recordedNextLabels.add(theBreak.blockToBreak());
+            }
+        } else if (expression instanceof ContinueExpression) {
+            final ContinueExpression theContinue = (ContinueExpression) expression;
+            if (!stackifierOutout.get()) {
+                print("$__label__ = ");
+                print(theContinue.jumpTarget().getAddress());
+                println(";");
+            }
+            print("goto $");
+            print(theContinue.labelToReturnTo().name());
+            println(";");
+
+        } else if (expression instanceof ReturnExpression) {
+            println("return;");
+        } else if (expression instanceof PutFieldExpression) {
+            final PutFieldExpression thePutField = (PutFieldExpression) expression;
+
+            final List<Value> theIncomingData = thePutField.incomingDataFlows();
+
+            final Value theTarget = theIncomingData.get(0);
+            final BytecodeFieldRefConstant theField = thePutField.getField();
+
+            final Value thevalue = theIncomingData.get(1);
+            printValue(theTarget);
+            printInstanceFieldReference(theField);
+            print(" = ");
+            printValue(thevalue);
+            println(";");
+        } else if (expression instanceof ReturnValueExpression) {
+            final ReturnValueExpression theReturn = (ReturnValueExpression) expression;
+
+            final List<Value> theIncomingData = theReturn.incomingDataFlows();
+            print("return ");
+            printValue(theIncomingData.get(0));
+            println(";");
+        } else if (expression instanceof IFElseExpression) {
+            final IFElseExpression theE = (IFElseExpression) expression;
+            final IFExpression wrapped = theE.getCondition();
+            print("if ");
+            printValue(wrapped.incomingDataFlows().get(0));
+            println(" {");
+
+            withDeeperIndent().writeExpressions(wrapped.getExpressions());
+
+            println("} else {");
+
+            withDeeperIndent().writeExpressions(theE.getElsePart());
+
+            println("}");
+        } else {
+            throw new IllegalArgumentException("Not supported. " + expression);
+        }
+    }
+
+    private void writeExpressions(final ExpressionList aList) {
+        for (final Expression theExpression : aList.toList()) {
+            writeExpression(theExpression);
         }
     }
 
@@ -731,7 +749,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         }
     }
 
-    public void printStackifiedKernel(final Program program, final StructuredControlFlow<RegionNode> flow) {
+    public void writeStackifiedKernel(final Program program, final Stackifier stackifier) {
 
         stackifierOutout.set(true);
         recordedNextLabels.clear();
@@ -776,12 +794,8 @@ public class OpenCLWriter extends IndentSSAWriter {
         final Stack<OpenCLWriter> writerStack = new Stack<>();
         final Stack<Label> labels = new Stack<>();
         writerStack.push(theDeeper);
-        flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
 
-            @Override
-            public void begin() {
-                super.begin();
-            }
+        stackifier.writeStructuredControlFlow(new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {
 
             @Override
             public void beginLoopFor(final Block<RegionNode> block) {
@@ -811,8 +825,8 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
 
             @Override
-            public void write(final RegionNode node) {
-                writerStack.peek().writeExpressions(node.getExpressions());
+            public void writeExpression(final RegionNode currentNode, final Expression e) {
+                writerStack.peek().writeExpression(e);
             }
 
             @Override
@@ -834,8 +848,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         println("}");
     }
 
-    public void printStackifiedInline(final BytecodeMethod method, final Program program, final StructuredControlFlow<RegionNode> flow) {
-
+    public void writeStackifiedInline(final BytecodeMethod method, final Program program, final Stackifier stackifier) {
         stackifierOutout.set(true);
         recordedNextLabels.clear();
 
@@ -857,18 +870,18 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
             final TypeRef theTypeRef = TypeRef.toType(theArgument1.getField().getValue().getTypeRef());
             switch (theArgument1.getType()) {
-                case INPUT:
-                    print("const ");
-                    print(toType(theTypeRef));
-                    print(" ");
-                    print(theArgument1.getField().getValue().getName().stringValue());
-                    break;
-                case OUTPUT:
-                case INPUTOUTPUT:
-                    print(toType(theTypeRef));
-                    print(" ");
-                    print(theArgument1.getField().getValue().getName().stringValue());
-                    break;
+            case INPUT:
+                print("const ");
+                print(toType(theTypeRef));
+                print(" ");
+                print(theArgument1.getField().getValue().getName().stringValue());
+                break;
+            case OUTPUT:
+            case INPUTOUTPUT:
+                print(toType(theTypeRef));
+                print(" ");
+                print(theArgument1.getField().getValue().getName().stringValue());
+                break;
             }
         }
 
@@ -889,7 +902,7 @@ public class OpenCLWriter extends IndentSSAWriter {
 
         final OpenCLWriter theDeeper = withDeeperIndent();
 
-        for (final Variable theVariable : program.getVariables()) {
+        for (final Variable theVariable : this.program.getVariables()) {
             if (!theVariable.isSynthetic()) {
                 theDeeper.print(toType(theVariable.resolveType(), false));
                 theDeeper.print(" ");
@@ -901,12 +914,8 @@ public class OpenCLWriter extends IndentSSAWriter {
         final Stack<OpenCLWriter> writerStack = new Stack<>();
         final Stack<Label> labels = new Stack<>();
         writerStack.push(theDeeper);
-        flow.writeStructuredControlFlow(new StructuredControlFlowWriter<RegionNode>() {
 
-            @Override
-            public void begin() {
-                super.begin();
-            }
+        stackifier.writeStructuredControlFlow(new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {
 
             @Override
             public void beginLoopFor(final Block<RegionNode> block) {
@@ -936,8 +945,8 @@ public class OpenCLWriter extends IndentSSAWriter {
             }
 
             @Override
-            public void write(final RegionNode node) {
-                writerStack.peek().writeExpressions(node.getExpressions());
+            public void writeExpression(final RegionNode currentNode, final Expression e) {
+                writerStack.peek().writeExpression(e);
             }
 
             @Override
@@ -957,6 +966,5 @@ public class OpenCLWriter extends IndentSSAWriter {
         });
 
         println("}");
-
     }
 }

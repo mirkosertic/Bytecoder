@@ -15,6 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
+
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -38,11 +42,6 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-import de.mirkosertic.bytecoder.stackifier.StructuredControlFlow;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
 
 public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult> {
 
@@ -112,10 +111,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
-                            final Stackifier stackifier = new Stackifier();
-                            final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram1.getControlFlowGraph());
-
-                            theSSAWriter.printStackifiedInline(theMethod, theSSAProgram1, flow);
+                            final Stackifier stackifier = new Stackifier(theSSAProgram1.getControlFlowGraph());
+                            theSSAWriter.writeStackifiedInline(theMethod, theSSAProgram1, stackifier);
 
                         } catch (final IrreducibleControlFlowException e) {
 
@@ -147,10 +144,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         try {
             if (aOptions.isPreferStackifier()) {
                 try {
-                    final Stackifier stackifier = new Stackifier();
-                    final StructuredControlFlow<RegionNode> flow = stackifier.stackify(theSSAProgram.getControlFlowGraph());
-
-                    theSSAWriter.printStackifiedKernel(theSSAProgram, flow);
+                    final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
+                    theSSAWriter.writeStackifiedKernel(theSSAProgram, stackifier);
 
                 } catch (final IrreducibleControlFlowException e) {
 

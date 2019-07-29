@@ -278,7 +278,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Expression theLast = theCurrentList.lastExpression();
                 if (theLast instanceof GotoExpression) {
                     final GotoExpression theGoto = (GotoExpression) theLast;
-                    if (Objects.equals(theGoto.getJumpTarget(), theNode.getStartAddress())) {
+                    if (Objects.equals(theGoto.jumpTarget(), theNode.getStartAddress())) {
                         theCurrentList.remove(theGoto);
                     }
                 }
@@ -342,7 +342,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
-                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.getJumpTarget());
+                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
                         final BlockState theImportingState = theGotoNode.toStartState();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
                             final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
@@ -360,7 +360,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
-                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.getJumpTarget());
+                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
                         final BlockState theImportingState = theGotoNode.toStartState();
                         final StringBuilder theComments = new StringBuilder();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
