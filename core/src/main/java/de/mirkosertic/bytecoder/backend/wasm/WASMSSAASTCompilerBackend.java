@@ -84,6 +84,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -670,6 +671,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                     if (aOptions.isPreferStackifier()) {
                         try {
+                            KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                             final Stackifier st = new Stackifier(theSSAProgram.getControlFlowGraph());
                             writer.writeStackified(st);
 

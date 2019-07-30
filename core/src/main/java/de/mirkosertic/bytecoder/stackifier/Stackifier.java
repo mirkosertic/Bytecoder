@@ -103,21 +103,15 @@ public class Stackifier {
             return aExpression;
         }
 
-        public final void writeExpressionList(final RegionNode currentNode, final ExpressionList aList) {
+        private void replaceGotosAndEnhanceIFExpressions(final ExpressionList aList) {
             final List<Expression> el = aList.toList();
             for (int i=0;i < el.size(); i++) {
-               final Expression converted = potentiallyReplaceGoto(el.get(i));
+                final Expression original = el.get(i);
+                final Expression converted = potentiallyReplaceGoto(original);
                 if (converted instanceof ExpressionListContainer) {
                     final ExpressionListContainer c = (ExpressionListContainer) converted;
                     for (final ExpressionList l : c.getExpressionLists()) {
-                        for (final Expression k : l.toList()) {
-                            final Expression conv = potentiallyReplaceGoto(k);
-                            if (conv == null) {
-                                l.remove(k);
-                            } else if (conv != k) {
-                                l.replace(k, conv);
-                            }
-                        }
+                        replaceGotosAndEnhanceIFExpressions(l);
                     }
                 }
                 if (converted != null) {
@@ -126,18 +120,32 @@ public class Stackifier {
                         final IFExpression ie = (IFExpression) converted;
                         final ExpressionList elsePart = new ExpressionList();
                         for (int k = i+1; k<el.size();k++) {
-                            final Expression c1 = potentiallyReplaceGoto(el.get(k));
-                            if (c1 != null) {
-                                elsePart.add(c1);
-                            }
+                            final Expression elsePartElement = el.get(k);
+                            elsePart.add(elsePartElement);
+                            aList.remove(elsePartElement);
                         }
 
-                        writeExpression(currentNode, new IFElseExpression(ie.getProgram(), ie.getAddress(), ie, elsePart));
+                        replaceGotosAndEnhanceIFExpressions(elsePart);
+
+                        aList.replace(original, new IFElseExpression(ie.getProgram(), ie.getAddress(), ie, elsePart));
                         return;
                     }
 
-                    writeExpression(currentNode, converted);
+                    if (original != converted) {
+                        aList.replace(original, converted);
+                    }
+
+                } else {
+                    aList.remove(original);
                 }
+            }
+
+        }
+
+        public final void writeExpressionList(final RegionNode currentNode, final ExpressionList aList) {
+            replaceGotosAndEnhanceIFExpressions(aList);
+            for (final Expression e : aList.toList()) {
+                writeExpression(currentNode, e);
             }
         }
 
@@ -156,7 +164,6 @@ public class Stackifier {
 
     public Stackifier(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
         this.controlFlowGraph = controlFlowGraph;
-        //new InlineDominatedNodesOptimizer().optimize(this.controlFlowGraph, null);
         final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(controlFlowGraph);
         final List<RegionNode> sorted = order.getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);

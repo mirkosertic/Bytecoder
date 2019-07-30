@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
@@ -111,6 +112,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
+                            KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                             final Stackifier stackifier = new Stackifier(theSSAProgram1.getControlFlowGraph());
                             theSSAWriter.writeStackifiedInline(theMethod, theSSAProgram1, stackifier);
 
@@ -144,6 +147,8 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         try {
             if (aOptions.isPreferStackifier()) {
                 try {
+                    KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                     final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
                     theSSAWriter.writeStackifiedKernel(theSSAProgram, stackifier);
 

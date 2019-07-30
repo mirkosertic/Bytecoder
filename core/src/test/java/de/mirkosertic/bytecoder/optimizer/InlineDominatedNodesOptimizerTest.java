@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DebugInformation;
@@ -23,11 +24,14 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
 
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class InlineDominatedNodesOptimizerTest {
 
@@ -46,7 +50,9 @@ public class InlineDominatedNodesOptimizerTest {
         node1.addSuccessor(node2);
         g.calculateReachabilityAndMarkBackEdges();
 
-        new InlineDominatedNodesOptimizer().optimize(g, null);
+        final BytecodeLinkerContext linkerContext = mock(BytecodeLinkerContext.class);
+        when(linkerContext.getLogger()).thenReturn(new Slf4JLogger());
+        new InlineDominatedNodesOptimizer().optimize(g, linkerContext);
 
         assertEquals(1, g.getKnownNodes().size());
         final RegionNode remaining = g.nodeStartingAt(BytecodeOpcodeAddress.START_AT_ZERO);
@@ -72,7 +78,9 @@ public class InlineDominatedNodesOptimizerTest {
         node1.addSuccessor(startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
-        new InlineDominatedNodesOptimizer().optimize(g, null);
+        final BytecodeLinkerContext linkerContext = mock(BytecodeLinkerContext.class);
+        when(linkerContext.getLogger()).thenReturn(new Slf4JLogger());
+        new InlineDominatedNodesOptimizer().optimize(g, linkerContext);
 
         assertEquals(1, g.getKnownNodes().size());
     }

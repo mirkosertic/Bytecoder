@@ -290,15 +290,39 @@ public class StructuredControlFlow<T> {
 
             if (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
 
+                for (final Block<T> block : blocksStartingFromHere) {
+                    switch (block.arrow.getEdgeType()) {
+                        case forward:
+                            // Forward jumps are only possible to the end
+                            // of Blocks on the stack
+                            check: {
+                                for (final Block<T> onStack : blockStack) {
+                                    if (onStack.getArrow().getEdgeType() == EdgeType.forward &&
+                                        onStack.getEnding() == block.getEnding()) {
+                                        // Jump is possible
+                                        break check;
+                                    }
+                                }
+                                // No viable option found, we give up
+                                printDebug(new PrintWriter(System.out));
+                                throw new IllegalStateException(String.format("Don't know what to do for node %s. Closing loop with starting blocks at the same place!", node));
+                            }
+                            break;
+                        case back:
+                            // Can happen in case of self loops
+                            writer.beginLoopFor(block);
+                            blockStack.push(block);
+                            break;
+                        default:
+                            throw new IllegalStateException();
+                    }
+                }
+
                 writer.write(node);
 
                 while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
                     writer.closeBlock();
                     blockStack.pop();
-                }
-
-                if (!blocksStartingFromHere.isEmpty()) {
-                    throw new IllegalStateException(String.format("Don't know what to do for node %s. Closing loop with starting blocks at the same place!", node));
                 }
 
             } else {

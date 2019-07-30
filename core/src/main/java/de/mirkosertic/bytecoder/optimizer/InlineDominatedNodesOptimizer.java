@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.EdgeType;
@@ -36,8 +37,8 @@ public class InlineDominatedNodesOptimizer implements Optimizer {
                     if (entry.getKey().getType() == EdgeType.forward) {
                         final RegionNode succ = entry.getValue();
                         if (succ.getType() == RegionNode.BlockType.NORMAL && succ.isStrictlyDominatedBy(node)) {
-                            System.out.println(String.format("%s strictly dominates %s", node.getStartAddress(), succ.getStartAddress()));
-                            inline(node.getExpressions(), succ);
+                            aLinkerContext.getLogger().debug("{} strictly dominates {}", node.getStartAddress(), succ.getStartAddress());
+                            inline(node.getExpressions(), succ, aLinkerContext.getLogger());
                             aGraph.inlinedTo(succ, node);
                             continue endless;
                         }
@@ -48,19 +49,19 @@ public class InlineDominatedNodesOptimizer implements Optimizer {
         }
     }
 
-    private boolean inline(final ExpressionList list, final RegionNode l) {
+    private boolean inline(final ExpressionList list, final RegionNode l, final Logger logger) {
         boolean changed = false;
         for (final Expression e : list.toList()) {
             if (e instanceof ExpressionListContainer) {
                 final ExpressionListContainer c = (ExpressionListContainer) e;
                 for (final ExpressionList l1 : c.getExpressionLists()) {
-                    changed = changed | inline(l1, l);
+                    changed = changed | inline(l1, l, logger);
                 }
             }
             if (e instanceof GotoExpression) {
                 final GotoExpression g = (GotoExpression) e;
                 if (g.jumpTarget().equals(l.getStartAddress())) {
-                    System.out.println(String.format("Replacing goto to %s with contents of %s", g.jumpTarget(), l.getStartAddress()));
+                    logger.debug("Replacing goto to {}} with contents of {}}", g.jumpTarget(), l.getStartAddress());
                     list.replace(g, l.getExpressions());
                     changed = true;
                 }

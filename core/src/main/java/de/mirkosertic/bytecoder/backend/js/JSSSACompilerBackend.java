@@ -15,9 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.StringWriter;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -40,6 +37,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -48,6 +46,9 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.StringWriter;
+import java.util.List;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -647,6 +648,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
+                            // Inline strictly dominated nodes to reduce complexity and beautify generated code
+                            KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                             final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
                             theVariablesWriter.printStackified(stackifier);
 
