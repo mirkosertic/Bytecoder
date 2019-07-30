@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -105,7 +106,7 @@ public class Stackifier {
         public final void writeExpressionList(final RegionNode currentNode, final ExpressionList aList) {
             final List<Expression> el = aList.toList();
             for (int i=0;i < el.size(); i++) {
-                final Expression converted = potentiallyReplaceGoto(el.get(i));
+               final Expression converted = potentiallyReplaceGoto(el.get(i));
                 if (converted instanceof ExpressionListContainer) {
                     final ExpressionListContainer c = (ExpressionListContainer) converted;
                     for (final ExpressionList l : c.getExpressionLists()) {
@@ -155,7 +156,7 @@ public class Stackifier {
 
     public Stackifier(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
         this.controlFlowGraph = controlFlowGraph;
-        // new InlineDominatedNodesOptimizer().optimize(this.controlFlowGraph, null);
+        //new InlineDominatedNodesOptimizer().optimize(this.controlFlowGraph, null);
         final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(controlFlowGraph);
         final List<RegionNode> sorted = order.getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);
@@ -180,11 +181,11 @@ public class Stackifier {
         flow = builder.build();
     }
 
-    public ControlFlowGraph getControlFlowGraph() {
-        return controlFlowGraph;
-    }
-
     public void writeStructuredControlFlow(final StackifierStructuredControlFlowWriter writer) {
         flow.writeStructuredControlFlow(writer);
+    }
+
+    public void printDebug(final PrintWriter printWriter) {
+        flow.printDebug(printWriter);
     }
 }

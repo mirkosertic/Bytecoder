@@ -32,14 +32,14 @@ public class InlineDominatedNodesOptimizer implements Optimizer {
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         endless: while (true) {
             for (final RegionNode node : aGraph.getKnownNodes()) {
-                for (Map.Entry<RegionNode.Edge, RegionNode> entry : node.getSuccessors().entrySet()) {
+                for (final Map.Entry<RegionNode.Edge, RegionNode> entry : node.getSuccessors().entrySet()) {
                     if (entry.getKey().getType() == EdgeType.forward) {
                         final RegionNode succ = entry.getValue();
                         if (succ.getType() == RegionNode.BlockType.NORMAL && succ.isStrictlyDominatedBy(node)) {
-                            if (inline(node.getExpressions(), succ)) {
-                                aGraph.inlinedTo(succ, node);
-                                continue endless;
-                            }
+                            System.out.println(String.format("%s strictly dominates %s", node.getStartAddress(), succ.getStartAddress()));
+                            inline(node.getExpressions(), succ);
+                            aGraph.inlinedTo(succ, node);
+                            continue endless;
                         }
                     }
                 }
@@ -60,6 +60,7 @@ public class InlineDominatedNodesOptimizer implements Optimizer {
             if (e instanceof GotoExpression) {
                 final GotoExpression g = (GotoExpression) e;
                 if (g.jumpTarget().equals(l.getStartAddress())) {
+                    System.out.println(String.format("Replacing goto to %s with contents of %s", g.jumpTarget(), l.getStartAddress()));
                     list.replace(g, l.getExpressions());
                     changed = true;
                 }

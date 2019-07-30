@@ -190,6 +190,16 @@ public class StructuredControlFlow<T> {
         writer.end();
     }
 
+    private boolean endsBefore(final Block<T> block, final T node) {
+        switch (block.getArrow().getEdgeType()) {
+            case forward:
+                return indexOf(block.getEnding()) <= indexOf(node);
+            case back:
+                return indexOf(block.getEnding()) < indexOf(node);
+        }
+        throw new IllegalArgumentException();
+    }
+
     public void writeStructuredControlFlow(final StructuredControlFlowWriter<T> writer, final List<T> nodes) {
 
         // We have to filter some arrows to prevent confusion while
@@ -273,7 +283,7 @@ public class StructuredControlFlow<T> {
                 return Integer.compare(b, a);
             });
 
-            while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.forward)) {
+            while (!blockStack.isEmpty() && (endsBefore(blockStack.peek(), node))) {
                 writer.closeBlock();
                 blockStack.pop();
             }

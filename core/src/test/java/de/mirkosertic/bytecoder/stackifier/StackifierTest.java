@@ -144,6 +144,7 @@ public class StackifierTest {
 
         final Stackifier stackifier = new Stackifier(g);
         final StringWriter sw = new StringWriter();
+
         stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
 
         assertEquals("LOOP $L_0_1: {" + System.lineSeparator() +
@@ -647,6 +648,8 @@ public class StackifierTest {
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        node0.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(79)));
+        node0.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(138)));
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(79), RegionNode.BlockType.NORMAL);
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(90), RegionNode.BlockType.NORMAL);
 
@@ -690,6 +693,8 @@ public class StackifierTest {
         assertEquals("BLOCK $B_0_4: {" + System.lineSeparator() +
                 "    BLOCK $B_0_1: {" + System.lineSeparator() +
                 "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "        break $B_0_1" + System.lineSeparator() +
+                "        break $B_0_4" + System.lineSeparator() +
                 "    } ; Closing block $B_0_1" + System.lineSeparator() +
                 "    RegionNode{startAddress=BytecodeOpcodeAddress{address=79}}" + System.lineSeparator() +
                 "    LOOP $L_2_3: {" + System.lineSeparator() +
@@ -722,5 +727,52 @@ public class StackifierTest {
                 "    } ; Closing block $L_6_9" + System.lineSeparator() +
                 "} ; Closing block $B_4_10" + System.lineSeparator() +
                 "RegionNode{startAddress=BytecodeOpcodeAddress{address=247}}" + System.lineSeparator() , sw.toString());
+    }
+
+    @Test
+    public void testInlinedGoto() throws IrreducibleControlFlowException {
+
+        final Program p = new Program(DebugInformation.empty());
+        final ControlFlowGraph g = new ControlFlowGraph(p);
+        final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
+        final RegionNode node90 = g.createAt(new BytecodeOpcodeAddress(90), RegionNode.BlockType.NORMAL);
+        final RegionNode node138 = g.createAt(new BytecodeOpcodeAddress(138), RegionNode.BlockType.NORMAL);
+        final RegionNode node190 = g.createAt(new BytecodeOpcodeAddress(190), RegionNode.BlockType.NORMAL);
+        final RegionNode node247 = g.createAt(new BytecodeOpcodeAddress(247), RegionNode.BlockType.NORMAL);
+
+        node0.addSuccessor(node138);
+        node0.addSuccessor(node90);
+        node90.addSuccessor(node90);
+        node90.addSuccessor(node138);
+        node138.addSuccessor(node247);
+        node138.addSuccessor(node190);
+        node190.addSuccessor(node190);
+        node190.addSuccessor(node247);
+
+        g.calculateReachabilityAndMarkBackEdges();
+
+        final Stackifier stackifier = new Stackifier(g);
+        final StringWriter sw = new StringWriter();
+        stackifier.writeStructuredControlFlow(new DebugStructurecControlFlowWriter(stackifier, new PrintWriter(sw)));
+
+        stackifier.printDebug(new PrintWriter(System.out));
+
+        assertEquals("BLOCK $B_0_2: {" + System.lineSeparator() +
+                "    BLOCK $B_0_1: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=0}}" + System.lineSeparator() +
+                "    } ; Closing block $B_0_1" + System.lineSeparator() +
+                "    LOOP $L_1_1: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=90}}" + System.lineSeparator() +
+                "    } ; Closing block $L_1_1" + System.lineSeparator() +
+                "} ; Closing block $B_0_2" + System.lineSeparator() +
+                "BLOCK $B_2_4: {" + System.lineSeparator() +
+                "    BLOCK $B_2_3: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=138}}" + System.lineSeparator() +
+                "    } ; Closing block $B_2_3" + System.lineSeparator() +
+                "    LOOP $L_3_3: {" + System.lineSeparator() +
+                "        RegionNode{startAddress=BytecodeOpcodeAddress{address=190}}" + System.lineSeparator() +
+                "    } ; Closing block $L_3_3" + System.lineSeparator() +
+                "} ; Closing block $B_2_4" + System.lineSeparator() +
+                "RegionNode{startAddress=BytecodeOpcodeAddress{address=247}}" + System.lineSeparator(), sw.toString());
     }
 }

@@ -282,7 +282,7 @@ public class RegionNode {
     }
 
     public boolean isStrictlyDominatedBy(final RegionNode aNode) {
-        final List<RegionNode> thePredecessors = new ArrayList<>(getPredecessors());
+        final Set<RegionNode> thePredecessors = new HashSet<>(getPredecessors());
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
 
