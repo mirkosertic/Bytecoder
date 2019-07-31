@@ -87,8 +87,8 @@ public class Stackifier {
                                     block.getLabel(),
                                     theTarget
                             );
-                            if (i == hierarchy.size() - 1) {
-                                //theBreak.noJumpLabelRequired();
+                            if (numLoops == 1) {
+                                theBreak.noJumpLabelRequired();
                             }
                             return theBreak;
                         }
@@ -101,9 +101,6 @@ public class Stackifier {
                                     block.getLabel(),
                                     theTarget
                             );
-                            if (i == hierarchy.size() - 1) {
-                                //theBreak.noJumpLabelRequired();
-                            }
                             return theBreak;
                         }
                         break;
