@@ -43,7 +43,7 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.StringWriter;
@@ -652,7 +652,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                             aOptions.getLogger().debug("Method {}.{} successfully stackified ", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
-                        } catch (final IrreducibleControlFlowException e) {
+                        } catch (final HeadToHeadControlFlowException e) {
 
                             // Stackifier has problems, we fallback to relooper instead
                             aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
@@ -670,7 +670,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theVariablesWriter.printRelooped(theReloopedBlock);
                     }
                 } catch (final Exception e) {
-                    System.out.println(theSSAProgram.getControlFlowGraph().toDOT());
                     throw new IllegalStateException("General error while processing " + theLinkedClass.getClassName().name() + '.'
                             + theMethod.getName().stringValue(), e);
                 }

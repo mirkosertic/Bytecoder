@@ -173,7 +173,7 @@ public class Stackifier {
     private final StructuredControlFlow<RegionNode> flow;
     private final ControlFlowGraph controlFlowGraph;
 
-    public Stackifier(final ControlFlowGraph controlFlowGraph) throws IrreducibleControlFlowException {
+    public Stackifier(final ControlFlowGraph controlFlowGraph) throws HeadToHeadControlFlowException {
         this.controlFlowGraph = controlFlowGraph;
         final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(controlFlowGraph);
         final List<RegionNode> sorted = order.getNodesInOrder();

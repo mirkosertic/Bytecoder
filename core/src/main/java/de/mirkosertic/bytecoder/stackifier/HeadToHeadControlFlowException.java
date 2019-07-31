@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-public class IrreducibleControlFlowException extends Exception {
+public class HeadToHeadControlFlowException extends Exception {
 
-    public IrreducibleControlFlowException(final String aMessage) {
+    public HeadToHeadControlFlowException(final String aMessage) {
         super(aMessage);
     }
 }

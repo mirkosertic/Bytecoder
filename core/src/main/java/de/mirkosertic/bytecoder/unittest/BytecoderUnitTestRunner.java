@@ -24,8 +24,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.ssa.ControlFlowProcessingException;
-import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -253,7 +251,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
                 }
                 for (final LogEntry theEntry : theAll) {
-                    System.out.println(theEntry.getMessage());
+                    LOGGER.info(theEntry.getMessage());
                 }
                 final LogEntry theLast = theAll.get(theAll.size() - 1);
 
@@ -261,9 +259,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
                 }
 
-            } catch (final ControlFlowProcessingException e) {
-                System.out.println(e.getGraph().toDOT());
-                aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
@@ -486,9 +481,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
                 }
 
-            } catch (final ControlFlowProcessingException e) {
-                System.out.println(e.getGraph().toDOT());
-                aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {

@@ -37,7 +37,7 @@ public class StructuredControlFlowTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void testSingleNode() throws IrreducibleControlFlowException {
+    public void testSingleNode() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
@@ -52,7 +52,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testSimpleSequence() throws IrreducibleControlFlowException {
+    public void testSimpleSequence() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -71,7 +71,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testSimpleSequenceWithoutGotos() throws IrreducibleControlFlowException {
+    public void testSimpleSequenceWithoutGotos() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2));
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
@@ -88,7 +88,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testDoubleExit() throws IrreducibleControlFlowException {
+    public void testDoubleExit() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -113,7 +113,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testSimpleLoop() throws IrreducibleControlFlowException {
+    public void testSimpleLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -137,7 +137,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testGlobalLoop() throws IrreducibleControlFlowException {
+    public void testGlobalLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -161,7 +161,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testSingleNodeLoop() throws IrreducibleControlFlowException {
+    public void testSingleNodeLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
         builder.add(EdgeType.back, 0, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
@@ -179,7 +179,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testNestedLoop() throws IrreducibleControlFlowException {
+    public void testNestedLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -210,7 +210,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testAdvancedLoop() throws IrreducibleControlFlowException {
+    public void testAdvancedLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -239,7 +239,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testTwoDominatedLoops() throws IrreducibleControlFlowException {
+    public void testTwoDominatedLoops() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4, 5));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -273,8 +273,8 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testHeadToHead() throws IrreducibleControlFlowException {
-        expectedException.expect(IrreducibleControlFlowException.class);
+    public void testHeadToHead() throws HeadToHeadControlFlowException {
+        expectedException.expect(HeadToHeadControlFlowException.class);
         expectedException.expectMessage("{2,3} are head to head");
 
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
@@ -285,7 +285,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testIfThenElse() throws IrreducibleControlFlowException {
+    public void testIfThenElse() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 0, 2);
@@ -311,7 +311,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testSimpleLoopMultipleExits() throws IrreducibleControlFlowException {
+    public void testSimpleLoopMultipleExits() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.forward, 1, 2);
@@ -339,7 +339,7 @@ public class StructuredControlFlowTest {
     }
 
     @Test
-    public void testCompleteLoop() throws IrreducibleControlFlowException {
+    public void testCompleteLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1));
         builder.add(EdgeType.forward, 0, 1);
         builder.add(EdgeType.back, 1, 0);

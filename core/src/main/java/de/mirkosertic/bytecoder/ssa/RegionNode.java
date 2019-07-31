@@ -131,6 +131,7 @@ public class RegionNode {
             successors.remove(key);
         }
         successors.putAll(succ.getSuccessors());
+        predecessorCacheWithoutBackEdges = null;
     }
 
     public List<GraphNodePath> getReachableBy() {

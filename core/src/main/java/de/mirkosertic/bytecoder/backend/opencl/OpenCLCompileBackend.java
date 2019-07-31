@@ -36,7 +36,7 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
-import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.PrintWriter;
@@ -114,7 +114,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                             final Stackifier stackifier = new Stackifier(theSSAProgram1.getControlFlowGraph());
                             theSSAWriter.writeStackifiedInline(theMethod, theSSAProgram1, stackifier);
 
-                        } catch (final IrreducibleControlFlowException e) {
+                        } catch (final HeadToHeadControlFlowException e) {
 
                             // Stackifier has problems, we fallback to relooper instead
                             aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", aMethodMapEntry.getProvidingClass().getClassName().name(), aMethodMapEntry.getValue().getName().stringValue());
@@ -147,7 +147,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                     final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
                     theSSAWriter.writeStackifiedKernel(theSSAProgram, stackifier);
 
-                } catch (final IrreducibleControlFlowException e) {
+                } catch (final HeadToHeadControlFlowException e) {
 
                     // Stackifier has problems, we fallback to relooper instead
                     aOptions.getLogger().warn("Method %s could not be stackified, using Relooper instead", theKernelClass.getClassName().name() + "." + theKernelMethod.getName().stringValue());

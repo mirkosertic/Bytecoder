@@ -71,7 +71,7 @@ public class StructuredControlFlow<T> {
         return backwardArrows;
     }
 
-    void stackify() throws IrreducibleControlFlowException {
+    void stackify() throws HeadToHeadControlFlowException {
         final Stack<T> s = new Stack<>();
         for (final T v : nodesInOrder) {
             for (final JumpArrow<T> forward: forwardArrowsWithHead(v)) {
@@ -80,7 +80,7 @@ public class StructuredControlFlow<T> {
                         final T w = s.pop();
                         for (final JumpArrow<T> backward : backwardArrowsWithHead(w)) {
                             if (indexOf(backward.getTail()) > indexOf(v)) {
-                                throw new IrreducibleControlFlowException(String.format("{%d,%d} are head to head, arrow %d ", indexOf(v), indexOf(backward.getTail()), knownJumpArrows.indexOf(backward)));
+                                throw new HeadToHeadControlFlowException(String.format("{%d,%d} are head to head, arrow %d ", indexOf(v), indexOf(backward.getTail()), knownJumpArrows.indexOf(backward)));
                             } else {
                                 backward.setNewTail(nodesInOrder.get(indexOf(v) - 1));
                             }

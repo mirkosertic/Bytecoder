@@ -72,7 +72,7 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.ByteArrayOutputStream;
@@ -675,7 +675,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                             aOptions.getLogger().debug("Method {}.{} successfully stackified ", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
-                        } catch (final IrreducibleControlFlowException e) {
+                        } catch (final HeadToHeadControlFlowException e) {
 
                             // Stackifier has problems, we fallback to relooper instead
                             aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
