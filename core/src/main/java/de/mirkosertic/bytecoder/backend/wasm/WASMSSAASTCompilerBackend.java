@@ -15,31 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.LambdaMetafactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
@@ -84,7 +59,6 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -100,6 +74,31 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -671,8 +670,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                     if (aOptions.isPreferStackifier()) {
                         try {
-                            KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
-
                             final Stackifier st = new Stackifier(theSSAProgram.getControlFlowGraph());
                             writer.writeStackified(st);
 

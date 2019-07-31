@@ -61,36 +61,50 @@ public class Stackifier {
                     return null;
                 }
 
+                int numLoops = 0;
                 for (int i=hierarchy.size() - 1;i>=0;i--) {
                     final Block<RegionNode> block = hierarchy.get(i);
 
                     switch (block.getArrow().getEdgeType()) {
                     case back:
+                        numLoops++;
                         if (theTargetNode == block.getArrow().getHead()) {
-                            return new ContinueExpression(
+                            final ContinueExpression theContinue =  new ContinueExpression(
                                     theGoto.getProgram(),
                                     theGoto.getAddress(),
                                     block.getLabel(),
                                     theTarget
                             );
+                            if (numLoops == 1) {
+                                theContinue.noJumpLabelRequired();
+                            }
+                            return theContinue;
                         }
                         if (theTargetNode == block.getArrow().getNewTail()) {
-                            return new BreakExpression(
+                            final BreakExpression theBreak = new BreakExpression(
                                     theGoto.getProgram(),
                                     theGoto.getAddress(),
                                     block.getLabel(),
                                     theTarget
                             );
+                            if (i == hierarchy.size() - 1) {
+                                //theBreak.noJumpLabelRequired();
+                            }
+                            return theBreak;
                         }
                         break;
                     case forward:
                         if (theTargetNode == block.getArrow().getHead()) {
-                            return new BreakExpression(
+                            final BreakExpression theBreak = new BreakExpression(
                                     theGoto.getProgram(),
                                     theGoto.getAddress(),
                                     block.getLabel(),
                                     theTarget
                             );
+                            if (i == hierarchy.size() - 1) {
+                                //theBreak.noJumpLabelRequired();
+                            }
+                            return theBreak;
                         }
                         break;
                     default:

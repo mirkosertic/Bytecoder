@@ -37,7 +37,6 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -648,9 +647,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
-                            // Inline strictly dominated nodes to reduce complexity and beautify generated code
-                            KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
-
                             final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
                             theVariablesWriter.printStackified(stackifier);
 

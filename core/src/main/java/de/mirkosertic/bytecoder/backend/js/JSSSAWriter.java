@@ -1269,14 +1269,22 @@ public class JSSSAWriter {
                 startLine().text("__l").assign().text("" + theBreak.jumpTarget().getAddress()).text(";").newLine();
             }
             if (!theBreak.isSilent()) {
-                startLine().text("break $").text(theBreak.blockToBreak().name()).text(";").newLine();
+                if (theBreak.isJumpLabelRequired()) {
+                    startLine().text("break $").text(theBreak.blockToBreak().name()).text(";").newLine();
+                } else {
+                    startLine().text("break;").newLine();
+                }
             }
         } else if (aExpression instanceof ContinueExpression) {
             final ContinueExpression theContinue = (ContinueExpression) aExpression;
             if (labelRequired) {
                 startLine().text("__l").assign().text("" + theContinue.jumpTarget().getAddress()).text(";").newLine();
             }
-            startLine().text("continue $").text(theContinue.labelToReturnTo().name()).text(";").newLine();
+            if (theContinue.isJumpLabelRequired()) {
+                startLine().text("continue $").text(theContinue.labelToReturnTo().name()).text(";").newLine();
+            } else {
+                startLine().text("continue;").newLine();
+            }
         } else if (aExpression instanceof SetEnumConstantsExpression) {
             final SetEnumConstantsExpression theSet = (SetEnumConstantsExpression) aExpression;
             startLine();

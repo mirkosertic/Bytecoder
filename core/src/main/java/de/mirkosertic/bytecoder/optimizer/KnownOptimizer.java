@@ -50,15 +50,7 @@ public enum KnownOptimizer implements Optimizer {
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(ALL);
-            run(aGraph, aLinkerContext, theOptimizer);
-        }
-    },
-
-    ONLY_STACKIFIER {
-        @Override
-        public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-            final List<Optimizer> theOptimizer = new ArrayList<>();
-            //theOptimizer.add(new InlineDominatedNodesOptimizer());
+            theOptimizer.add(new InlineDominatedNodesOptimizer());
             run(aGraph, aLinkerContext, theOptimizer);
         }
     };

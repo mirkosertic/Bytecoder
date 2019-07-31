@@ -15,10 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -31,7 +27,6 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
@@ -43,6 +38,10 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.stackifier.IrreducibleControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Method;
 
 public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult> {
 
@@ -112,8 +111,6 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
-                            KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
-
                             final Stackifier stackifier = new Stackifier(theSSAProgram1.getControlFlowGraph());
                             theSSAWriter.writeStackifiedInline(theMethod, theSSAProgram1, stackifier);
 
@@ -147,8 +144,6 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         try {
             if (aOptions.isPreferStackifier()) {
                 try {
-                    KnownOptimizer.ONLY_STACKIFIER.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
-
                     final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
                     theSSAWriter.writeStackifiedKernel(theSSAProgram, stackifier);
 
