@@ -998,7 +998,7 @@ public class JSSSAWriter {
             }
         }
 
-        if (!theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).collect(Collectors.toList()).isEmpty()) {
+        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1270,7 +1270,7 @@ public class JSSSAWriter {
             }
             if (!theBreak.isSilent()) {
                 if (theBreak.isJumpLabelRequired()) {
-                    startLine().text("break $").text(theBreak.blockToBreak().name()).text(";").newLine();
+                    startLine().text("break ").label(theBreak.blockToBreak()).text(";").newLine();
                 } else {
                     startLine().text("break;").newLine();
                 }
@@ -1281,7 +1281,7 @@ public class JSSSAWriter {
                 startLine().text("__l").assign().text("" + theContinue.jumpTarget().getAddress()).text(";").newLine();
             }
             if (theContinue.isJumpLabelRequired()) {
-                startLine().text("continue $").text(theContinue.labelToReturnTo().name()).text(";").newLine();
+                startLine().text("continue ").label(theContinue.labelToReturnTo()).text(";").newLine();
             } else {
                 startLine().text("continue;").newLine();
             }
@@ -1362,7 +1362,7 @@ public class JSSSAWriter {
         theWriter.writeExpressions(aIfThenElseBlock.getPrelude());
 
         if (aIfThenElseBlock.isLabelRequired()) {
-            theWriter.startLine().text("$").text(aIfThenElseBlock.label().name()).colon().text("{").newLine();
+            theWriter.startLine().label(aIfThenElseBlock.label()).colon().text("{").newLine();
             theWriter = theWriter.withDeeperIndent();
         }
 
@@ -1389,7 +1389,7 @@ public class JSSSAWriter {
         JSSSAWriter theWriter = this;
 
         if (aSimpleBlock.isLabelRequired()) {
-            startLine().text("$").text(aSimpleBlock.label().name()).colon().text("{").newLine();
+            startLine().label(aSimpleBlock.label()).colon().text("{").newLine();
             if (options.isDebugOutput()) {
                 startLine().text("// ").text(aSimpleBlock.internalLabel().getType().toString()).newLine();
             }
@@ -1408,7 +1408,7 @@ public class JSSSAWriter {
 
     private void print(final Relooper.LoopBlock aLoopBlock) {
         if (aLoopBlock.isLabelRequired()) {
-            startLine().text("$").text(aLoopBlock.label().name()).colon().text("for").space().text("(;;)").space().text("{").newLine();
+            startLine().label(aLoopBlock.label()).colon().text("for").space().text("(;;)").space().text("{").newLine();
         } else {
             startLine().text("for").space().text("(;;)").space().text("{").newLine();
         }
@@ -1423,7 +1423,7 @@ public class JSSSAWriter {
     private void print(final Relooper.MultipleBlock aMultiple) {
 
         if (aMultiple.isLabelRequired()) {
-            startLine().text("$").text(aMultiple.label().name()).colon().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
+            startLine().label(aMultiple.label()).colon().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
         } else {
             startLine().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
         }
@@ -1446,7 +1446,7 @@ public class JSSSAWriter {
     private void print(final Relooper.TryBlock aTryBlock) {
 
         if (aTryBlock.isLabelRequired()) {
-            startLine().text("$").text(aTryBlock.label().name()).colon().text("try").space().text("{").newLine();
+            startLine().label(aTryBlock.label()).colon().text("try").space().text("{").newLine();
         } else {
             startLine().text("try").space().text("{").newLine();
         }
@@ -1510,7 +1510,7 @@ public class JSSSAWriter {
             public void beginLoopFor(final Block<RegionNode> block) {
                 super.beginLoopFor(block);
                 final JSSSAWriter current = writerStack.peek();
-                current.startLine().text("$").text(block.getLabel().name())
+                current.startLine().label(block.getLabel())
                         .text(":").space()
                         .text("for(;;)").space().text("{").newLine();
                 final JSSSAWriter newLoopBlock = current.withDeeperIndent();
@@ -1521,7 +1521,7 @@ public class JSSSAWriter {
             public void beginBlockFor(final Block<RegionNode> block) {
                 super.beginBlockFor(block);
                 final JSSSAWriter current = writerStack.peek();
-                current.startLine().text("$").text(block.getLabel().name())
+                current.startLine().label(block.getLabel())
                         .text(":").space().text("{").newLine();
                 final JSSSAWriter newSimpleBlock = current.withDeeperIndent();
                 writerStack.push(newSimpleBlock);
