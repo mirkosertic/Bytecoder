@@ -26,7 +26,7 @@ public class GotoExpression extends Expression {
         jumpTarget = aJumpTarget;
     }
 
-    public BytecodeOpcodeAddress getJumpTarget() {
+    public BytecodeOpcodeAddress jumpTarget() {
         return jumpTarget;
     }
 

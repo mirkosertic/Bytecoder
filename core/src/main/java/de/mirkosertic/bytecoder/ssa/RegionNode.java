@@ -86,10 +86,6 @@ public class RegionNode {
         FINALLY,
     }
 
-    public enum EdgeType {
-        NORMAL, BACK
-    }
-
     public static class Edge {
 
         private EdgeType type;
@@ -130,6 +126,14 @@ public class RegionNode {
         expressions = new ExpressionList();
     }
 
+    public void inlineSuccessors(final RegionNode succ) {
+        for (final Edge key: successors.entrySet().stream().filter(t -> t.getValue() == succ).map(Map.Entry::getKey).collect(Collectors.toSet())) {
+            successors.remove(key);
+        }
+        successors.putAll(succ.getSuccessors());
+        predecessorCacheWithoutBackEdges = null;
+    }
+
     public List<GraphNodePath> getReachableBy() {
         return reachableBy;
     }
@@ -158,7 +162,7 @@ public class RegionNode {
 
     public boolean hasBackEdgeTo(final RegionNode aNode) {
         for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
-            if (theEntry.getKey().getType() == EdgeType.BACK) {
+            if (theEntry.getKey().getType() == EdgeType.back) {
                 if (theEntry.getValue() == aNode) {
                     return true;
                 }
@@ -186,8 +190,8 @@ public class RegionNode {
     }
 
     public void addSuccessor(final RegionNode aBlock) {
-        if (!successors.values().contains(aBlock)) {
-            successors.put(new Edge(EdgeType.NORMAL), aBlock);
+        if (!successors.containsValue(aBlock)) {
+            successors.put(new Edge(EdgeType.forward), aBlock);
         }
     }
 
@@ -262,15 +266,6 @@ public class RegionNode {
         return theVariable;
     }
 
-    public boolean canThrowException() {
-        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
-            if (theEntry.getValue().getType() == BlockType.EXCEPTION_HANDLER) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public void addToExportedList(final Value aValue, final VariableDescription aDescription) {
         exported.put(aDescription, aValue);
     }
@@ -306,6 +301,22 @@ public class RegionNode {
         return true;
     }
 
+    public boolean isOnlyReachableThruRegularFlow(final RegionNode aOtherNode) {
+        // Start nodes are not reachable by anything
+        if (reachableBy.isEmpty()) {
+            return false;
+        }
+        // All paths to this node must go thru aOtherNode
+        for (final GraphNodePath thePath : reachableBy) {
+            if (thePath.isRegularFlow()) {
+                if (!thePath.contains(aOtherNode)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public Set<RegionNode> forwardReachableNodes() {
         final Set<RegionNode> theNodes = new HashSet<>();
         forwardReachableNodes(theNodes, this);
@@ -319,10 +330,17 @@ public class RegionNode {
     private static void forwardReachableNodes(final Set<RegionNode> aResult, final RegionNode aNode) {
         if (aResult.add(aNode)) {
             for (final Map.Entry<Edge,RegionNode> theSuc : aNode.successors.entrySet()) {
-                if (theSuc.getKey().type == EdgeType.NORMAL) {
+                if (theSuc.getKey().type == EdgeType.forward) {
                     forwardReachableNodes(aResult, theSuc.getValue());
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RegionNode{" +
+                "startAddress=" + startAddress +
+                '}';
     }
 }

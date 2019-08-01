@@ -15,14 +15,18 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.WASMOnly;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@WASMOnly
+@BytecoderTestOptions(value = {
+        @BytecoderTestOption(backend = CompileTarget.BackendType.wasm)
+}, includeJVM = false)
 public class SelfInvocationTest {
 
     public static abstract class Stack {
@@ -31,7 +35,7 @@ public class SelfInvocationTest {
         private final int size;
         private Object something;
 
-        public Stack(int aSize) {
+        public Stack(final int aSize) {
             System.out.println(" 1");
             data = new Object[aSize];
             for (int i=0;i<aSize;i++) {
@@ -83,7 +87,7 @@ public class SelfInvocationTest {
     @Test
     public void testCreate() {
         System.out.println("Start");
-        Computer theComputer = new Computer();
+        final Computer theComputer = new Computer();
         System.out.println("Finished test");
     }
 }

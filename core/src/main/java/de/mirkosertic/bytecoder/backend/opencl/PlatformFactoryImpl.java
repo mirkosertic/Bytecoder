@@ -15,16 +15,18 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.api.opencl.OpenCLOptions;
 import de.mirkosertic.bytecoder.api.opencl.Platform;
 import de.mirkosertic.bytecoder.api.opencl.PlatformFactory;
 import de.mirkosertic.bytecoder.api.Logger;
 
 public class PlatformFactoryImpl extends PlatformFactory {
 
-    public Platform createPlatform(Logger aLogger) {
+    @Override
+    public Platform createPlatform(final Logger aLogger, final OpenCLOptions aOptions) {
         try {
-            return new OpenCLPlatform(aLogger);
-        } catch (Exception e) {
+            return new OpenCLPlatform(aLogger, aOptions);
+        } catch (final Exception e) {
             aLogger.warn("Problem while detecting OpenCL device. Using CPU emulation layer", e);
             return new CPUPlatform(aLogger);
         }

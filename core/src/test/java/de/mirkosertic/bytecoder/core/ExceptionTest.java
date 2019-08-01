@@ -15,8 +15,10 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.JSAndJVMOnly;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,7 +26,10 @@ import org.junit.runner.RunWith;
 import java.io.OutputStream;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@JSAndJVMOnly
+@BytecoderTestOptions(value = {
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, exceptionsEnabled = true, preferStackifier = false),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, exceptionsEnabled = true, preferStackifier = false)
+})
 public class ExceptionTest {
 
     private static void throwException(final int aValue) {

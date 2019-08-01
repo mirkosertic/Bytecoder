@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.backend.js;
 
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.ssa.DebugPosition;
+import de.mirkosertic.bytecoder.ssa.Label;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -99,6 +100,10 @@ public class JSPrintWriter {
 
     public JSPrintWriter assign() {
         return space().text("=").space();
+    }
+
+    public JSPrintWriter label(final Label label) {
+        return text("$").text(minifier.toSymbol(label.name()));
     }
 
     public void flush() {

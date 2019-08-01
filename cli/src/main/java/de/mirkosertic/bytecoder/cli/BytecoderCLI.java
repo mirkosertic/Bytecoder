@@ -71,11 +71,15 @@ public class BytecoderCLI {
         @Option(names = "-initialwasmpages", required = false, description = "The initial wasm page size. Defaults to '512'.")
         protected int wasmInitialPages = 512;
 
-        @Option(names = "-maximumwasmpages", required = false, description = "The maximum of wasm pages.")
-        protected int wasmMaximumPages;
+        @Option(names = "-maximumwasmpages", required = false, description = "The maximum of wasm pages. Defaults to '1024'")
+        protected int wasmMaximumPages = 1024;
 
         @Option(names = "-minify", required = false, description = "Shall the generated code be minified? Defaults to 'true'.")
         protected boolean minifyCompileResult = true;
+
+        @Option(names = "-preferStackifier", required = false, description = "Shall the Stackifier be used in favor to Relooper? Defaults to 'false'.")
+        protected boolean preferStackifier = false;
+
     }
 
     public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -107,7 +111,7 @@ public class BytecoderCLI {
         final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier);
         final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
         for (final CompileResult.Content content : theCode.getContent()) {
             final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

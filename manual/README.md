@@ -257,8 +257,8 @@ An OpenCL environment can be obtained by the following code:
 import de.mirkosertic.bytecoder.api.opencl.PlatformFactory;
 import de.mirkosertic.bytecoder.api.opencl.Platform;
 
-PlatformFactory theFactory = new PlatformFactory();
-Platform thePlatform = theFactory.createPlatform();
+PlatformFactory theFactory = PlatformFactory.resolve();
+Platform thePlatform = theFactory.createPlatform(logger,options);
 ```
 
 The `Platform` instance must only be obtained once and can be cached.
@@ -282,8 +282,8 @@ by sub classing `de.mirkosertic.bytecoder.api.opencl.Kernel` and adding a single
 method to it. Here is a simple example of the whole workflow:
 
 ```
-PlatformFactory theFactory = new PlatformFactory();
-Platform thePlatform = theFactory.createPlatform();
+PlatformFactory theFactory = PlatformFactory.resolve();
+Platform thePlatform = theFactory.createPlatform(logger,options);
 
 final float[] theA = {10f, 20f, 30f, 40f};
 final float[] theB = {100f, 200f, 300f, 400f};
@@ -410,8 +410,7 @@ public class SimpleMathTest {
 
 is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This test runner also supports comparison of original Java code and its cross compiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
 
-Bytecoder relies for WebAssembly unit testing on the WABT toolchain. Compilation is done by invoking the JS version of 
-the WABT tools using Selenium and Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
+Bytecoder relies for WebAssembly unit testing on Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
 environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
 of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
 
@@ -437,7 +436,6 @@ the following intermediate representation graph is generated (in its first, un o
 
 ![Intermediate representation graph](docassets/ir_loopexample.svg)
 
-
 This graph combines data flow analysis and control flow into one big graph. Using this graph makes data and
 control flow dependencies explicit and lays foundation for a variety of optimizations that can be performed on it to
 either reduce code size or improve execution speed. Optimizing the program simply becomes an optimizing
@@ -447,10 +445,28 @@ The following graph shows the further optimized version of the previous loop:
 
 ![Intermediate representation graph optimized](docassets/ir_loopexample_optimized.svg) 
 
-Part of the compiler optimization is the [relooper step](../core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf).
-Relooping tries to recover high level control flow constructs from the intermediate representation. This step eliminates
-the needs of GOTO statements and thus allows generation of more natural source code, which in turn can be easier read
-and optimized by Web Browsers or other tools.
+There are two different output styles available for generated code:
+
+* Relooper
+
+    The [Relooper output generator](../core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf)
+    tries to recover high level control flow constructs from the intermediate representation. This step eliminates
+    the needs of GOTO statements and thus allows generation of more natural source code, which in turn can be easier read
+    and optimized by Web Browsers or other tools. The Relooper supports all styles of control flows and also supports
+    exception handling.
+    
+* Stackifier
+
+   The Stackifier is based on [this paper](../core/src/main/java/de/mirkosertic/bytecoder/relooper/SRC-RR-4.pdf). It
+   tries to remove all GOTO statements and replaces them with structured control flow elements and multi level break
+   and continues. The Stackifier does only work for reducible control flows and also does not support 
+   exception handling. The generated output is smaller and in some cases faster compared to the Relooper output.
+
+Relooper output is enabled by default for `JS` and `WASM` backends. The Stackifier can be enabled for `CLI` or `Maven` by setting
+`preferStackifier` to `true` as a configuration parameter. If Stackifier is enabled and Bytecoder detects an
+irreducible control flow Relooper is used as a fallback.
+
+Stackifier is used as the default by `OpenCL` backend.
 
 ### WebAssembly internals
 

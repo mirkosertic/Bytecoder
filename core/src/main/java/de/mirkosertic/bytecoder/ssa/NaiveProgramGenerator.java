@@ -278,7 +278,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Expression theLast = theCurrentList.lastExpression();
                 if (theLast instanceof GotoExpression) {
                     final GotoExpression theGoto = (GotoExpression) theLast;
-                    if (Objects.equals(theGoto.getJumpTarget(), theNode.getStartAddress())) {
+                    if (Objects.equals(theGoto.jumpTarget(), theNode.getStartAddress())) {
                         theCurrentList.remove(theGoto);
                     }
                 }
@@ -322,7 +322,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                 for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : theNode.getSuccessors().entrySet()) {
-                    if (theEdge.getKey().getType() == RegionNode.EdgeType.BACK) {
+                    if (theEdge.getKey().getType() == EdgeType.back) {
                         final RegionNode theReceiving = theEdge.getValue();
                         final BlockState theReceivingState = theReceiving.toStartState();
                         for (final Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {
@@ -342,7 +342,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
-                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.getJumpTarget());
+                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
                         final BlockState theImportingState = theGotoNode.toStartState();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
                             final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
@@ -360,7 +360,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
-                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.getJumpTarget());
+                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
                         final BlockState theImportingState = theGotoNode.toStartState();
                         final StringBuilder theComments = new StringBuilder();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
