@@ -15,30 +15,90 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import de.mirkosertic.bytecoder.api.*;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
+import de.mirkosertic.bytecoder.api.OpaqueMethod;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
+import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ImportReference;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
-import de.mirkosertic.bytecoder.backend.wasm.ast.*;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
+import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.*;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.LambdaMetafactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -587,13 +647,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     instanceFunction.exportAs(theExport.getElementValueByName("value").stringValue());
                 }
 
-                // Try to reloop it!
                 try {
-                    final Relooper theRelooper = new Relooper(aOptions);
-                    final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
-
-                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);
-
                     for (final Variable theVariable : theSSAProgram.getVariables()) {
                         if (!(theVariable.isSynthetic())) {
                             instanceFunction.newLocal(theVariable.getName(), WASMSSAASTWriter.toType(theVariable.resolveType()));
@@ -612,7 +666,31 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theParam.renameTo(theArgument.getVariable().getName());
                     }
 
-                    writer.writeRelooped(theReloopedBlock);
+                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);
+
+                    if (aOptions.isPreferStackifier()) {
+                        try {
+                            final Stackifier st = new Stackifier(theSSAProgram.getControlFlowGraph());
+                            writer.writeStackified(st);
+
+                            aOptions.getLogger().debug("Method {}.{} successfully stackified ", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
+
+                        } catch (final HeadToHeadControlFlowException e) {
+
+                            // Stackifier has problems, we fallback to relooper instead
+                            aOptions.getLogger().warn("Method {}.{} could not be stackified, using Relooper instead", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
+
+                            final Relooper theRelooper = new Relooper(aOptions);
+                            final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                            writer.writeRelooped(theReloopedBlock);
+                        }
+                    } else {
+                        final Relooper theRelooper = new Relooper(aOptions);
+                        final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
+
+                        writer.writeRelooped(theReloopedBlock);
+                    }
                 } catch (final Exception e) {
                     throw new IllegalStateException("Error relooping cfg for " + aMethodMapEntry.getProvidingClass().getBytecodeClass().getThisInfo().getConstant().stringValue() + "." + theMethod.getName().stringValue() + " " + theMethod.getSignature() , e);
                 }

@@ -23,6 +23,7 @@ public class BreakExpression extends Expression {
     private final BytecodeOpcodeAddress jumpTarget;
     private boolean silent;
     private boolean setLabelRequired;
+    private boolean jumpLabelRequired;
 
     public BreakExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Label aBlockToBreak, final BytecodeOpcodeAddress aJumpTarget) {
         super(aProgram, aAddress);
@@ -30,6 +31,7 @@ public class BreakExpression extends Expression {
         jumpTarget = aJumpTarget;
         silent = false;
         setLabelRequired = true;
+        jumpLabelRequired = true;
     }
 
     public void noSetRequired() {
@@ -50,6 +52,14 @@ public class BreakExpression extends Expression {
 
     public Label blockToBreak() {
         return blockToBreak;
+    }
+
+    public boolean isJumpLabelRequired() {
+        return jumpLabelRequired;
+    }
+
+    public void noJumpLabelRequired() {
+        jumpLabelRequired = false;
     }
 
     public BytecodeOpcodeAddress jumpTarget() {

@@ -50,7 +50,7 @@ public class ControlFlowGraph {
         for (final RegionNode theNode : knownNodes) {
             final Set<RegionNode> theSuccessors = new HashSet<>();
             for (final Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
-                if (theSuccessor.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                if (theSuccessor.getKey().getType() == EdgeType.forward) {
                     theSuccessors.add(theSuccessor.getValue());
                 }
             }
@@ -72,7 +72,7 @@ public class ControlFlowGraph {
             theChildPath.addToPath(aNode);
             if (aPath.contains(theEdge.getValue())) {
                 // This is a back edge
-                theEdge.getKey().changeTo(RegionNode.EdgeType.BACK);
+                theEdge.getKey().changeTo(EdgeType.back);
                 theEdge.getValue().addReachablePath(theChildPath);
                 // We have already visited the back edge, so we do not to continue here
                 // As this would lead to an endless loop
@@ -137,6 +137,18 @@ public class ControlFlowGraph {
         return theHandler;
     }
 
+    public void inlinedTo(final RegionNode aNode, final RegionNode aTarget) {
+        for (final RegionNode l : knownNodes) {
+            for (final GraphNodePath p : l.getReachableBy()) {
+                p.replace(aNode, aTarget);
+            }
+        }
+
+        knownNodes.remove(aNode);
+
+        aTarget.inlineSuccessors(aNode);
+    }
+
     private static class IDRegister {
 
         private final List<Object> objects;
@@ -165,7 +177,7 @@ public class ControlFlowGraph {
         }
     }
 
-    class DotJump {
+    static class DotJump {
         final String source;
         final String target;
         final boolean backEdge;
@@ -212,7 +224,7 @@ public class ControlFlowGraph {
 
                         if (theExpression instanceof GotoExpression) {
                             final GotoExpression theGoto = (GotoExpression) theExpression;
-                            final RegionNode theJumpTarget = nodeStartingAt(theGoto.getJumpTarget());
+                            final RegionNode theJumpTarget = nodeStartingAt(theGoto.jumpTarget());
 
                             final String theJumpTargetRegion = theRegister.idFor(theJumpTarget);
 

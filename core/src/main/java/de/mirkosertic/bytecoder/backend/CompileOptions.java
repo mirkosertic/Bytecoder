@@ -28,10 +28,12 @@ public class CompileOptions {
     private final int wasmMinimumPageSize;
     private final int wasmMaximumPageSize;
     private final boolean minify;
+    private final boolean preferStackifier;
 
     public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
                           final String aFilenamePrefix, final int aWasmMinimumPageSize, final int aWasmMaximumPageSize,
-                          final boolean aMinify) {
+                          final boolean aMinify,
+                          final boolean aPreferStackifier) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
@@ -40,6 +42,7 @@ public class CompileOptions {
         wasmMinimumPageSize = aWasmMinimumPageSize;
         wasmMaximumPageSize = aWasmMaximumPageSize;
         minify = aMinify;
+        preferStackifier = aPreferStackifier;
     }
 
     public Logger getLogger() {
@@ -72,5 +75,9 @@ public class CompileOptions {
 
     public boolean isMinify() {
         return minify;
+    }
+
+    public boolean isPreferStackifier() {
+        return preferStackifier;
     }
 }

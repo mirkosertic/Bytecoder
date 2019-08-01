@@ -15,6 +15,12 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
@@ -22,14 +28,95 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DebugPosition;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
+import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFElseExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MaxExpression;
+import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
+import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.MinExpression;
+import de.mirkosertic.bytecoder.ssa.NegatedExpression;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
+import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.SqrtExpression;
+import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.UnknownExpression;
+import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+import de.mirkosertic.bytecoder.stackifier.Block;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 public class JSSSAWriter {
 
@@ -43,7 +130,7 @@ public class JSSSAWriter {
     private final int indent;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-            final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
+                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -54,7 +141,7 @@ public class JSSSAWriter {
         indent = aIndent;
     }
 
-    private JSSSAWriter withDeeperIndent() {
+    public JSSSAWriter withDeeperIndent() {
         return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier);
     }
 
@@ -911,7 +998,7 @@ public class JSSSAWriter {
             }
         }
 
-        if (!theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).collect(Collectors.toList()).isEmpty()) {
+        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -961,10 +1048,6 @@ public class JSSSAWriter {
         writer.text(".").text(minifier.toSymbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
     }
 
-    private String generateJumpCodeFor(final BytecodeOpcodeAddress aTarget) {
-        return "currentLabel = " + aTarget.getAddress()+";continue controlflowloop;";
-    }
-
     private void writeExpressionSourcemapInfo(final Expression aExpression) {
         final BytecodeOpcodeAddress theExpressionAddress = aExpression.getAddress();
         if (theExpressionAddress != null) {
@@ -975,237 +1058,266 @@ public class JSSSAWriter {
         }
     }
 
-    public void writeExpressions(final ExpressionList aExpressions) {
-        for (final Expression theExpression : aExpressions.toList()) {
-            if (options.isDebugOutput()) {
-                final String theComment = theExpression.getComment();
-                if (theComment != null && !theComment.isEmpty()) {
-                    startLine().text("//").text(theComment).newLine();
-                }
+    private void writeExpression(final Expression aExpression) {
+
+        if (options.isDebugOutput()) {
+            final String theComment = aExpression.getComment();
+            if (theComment != null && !theComment.isEmpty()) {
+                startLine().text("//").text(theComment).newLine();
+            }
+        }
+
+        writeExpressionSourcemapInfo(aExpression);
+
+        if (aExpression instanceof ReturnExpression) {
+            final ReturnExpression theE = (ReturnExpression) aExpression;
+            startLine().text("return;").newLine();
+        } else if (aExpression instanceof VariableAssignmentExpression) {
+            final VariableAssignmentExpression theE = (VariableAssignmentExpression) aExpression;
+
+            final Variable theVariable = theE.getVariable();
+            final Value theValue = theE.getValue();
+
+            if (theValue instanceof ComputedMemoryLocationWriteExpression) {
+                return;
             }
 
-            writeExpressionSourcemapInfo(theExpression);
+            final JSPrintWriter theWriter = startLine();
 
-            if (theExpression instanceof ReturnExpression) {
-                final ReturnExpression theE = (ReturnExpression) theExpression;
-                startLine().text("return;").newLine();
-            } else if (theExpression instanceof VariableAssignmentExpression) {
-                final VariableAssignmentExpression theE = (VariableAssignmentExpression) theExpression;
+            if (!program.isGlobalVariable(theVariable)) {
+                theWriter.text("var ");
+            }
 
-                final Variable theVariable = theE.getVariable();
-                final Value theValue = theE.getValue();
-
-                if (theValue instanceof ComputedMemoryLocationWriteExpression) {
-                    continue;
-                }
-
-                final JSPrintWriter theWriter = startLine();
-
-                if (!program.isGlobalVariable(theVariable)) {
-                    theWriter.text("var ");
-                }
-
-                if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
-                    if (!(theValue instanceof IntegerValue)) {
-                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
-                        print(theValue);
-                        theWriter.text(") | 0");
-                    } else {
-                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
-                        print(theValue);
-                    }
+            if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
+                if (!(theValue instanceof IntegerValue)) {
+                    theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
+                    print(theValue);
+                    theWriter.text(") | 0");
                 } else {
                     theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
                     print(theValue);
                 }
-                if (options.isDebugOutput()) {
-                    theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
-                } else {
-                    theWriter.text(";").newLine();
-                }
-            } else if (theExpression instanceof PutStaticExpression) {
-                final PutStaticExpression theE = (PutStaticExpression) theExpression;
-                final BytecodeFieldRefConstant theField = theE.getField();
-                final Value theValue = theE.incomingDataFlows().get(0);
-
-                startLine();
-                printStaticFieldReference(theField, program.getDebugInformation().debugPositionFor(theExpression.getAddress()));
-                writer.assign();
-                print(theValue);
-                writer.text(";").newLine();
-            } else if (theExpression instanceof ReturnValueExpression) {
-                final ReturnValueExpression theE = (ReturnValueExpression) theExpression;
-                final Value theValue = theE.incomingDataFlows().get(0);
-                startLine().text("return ");
-                print(theValue);
-                writer.text(";").newLine();
-            } else if (theExpression instanceof ThrowExpression) {
-                final ThrowExpression theE = (ThrowExpression) theExpression;
-                final Value theValue = theE.incomingDataFlows().get(0);
-                startLine().text("throw {exception :");
-                print(theValue);
-                writer.text(", stack : new Error().stack};").newLine();
-            } else if (theExpression instanceof InvokeVirtualMethodExpression) {
-                final InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) theExpression;
-                startLine();
-                print(theE);
-                writer.text(";").newLine();
-            } else if (theExpression instanceof DirectInvokeMethodExpression) {
-                final DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) theExpression;
-                startLine();
-                print(theE);
-                writer.text(";").newLine();
-            } else if (theExpression instanceof InvokeStaticMethodExpression) {
-                final InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) theExpression;
-                startLine();
-                print(theE);
-                writer.text(";").newLine();
-            } else if (theExpression instanceof PutFieldExpression) {
-                final PutFieldExpression theE = (PutFieldExpression) theExpression;
-
-                final List<Value> theIncomingData = theE.incomingDataFlows();
-
-                final Value theTarget = theIncomingData.get(0);
-                final BytecodeFieldRefConstant theField = theE.getField();
-
-                final Value thevalue = theIncomingData.get(1);
-
-                startLine();
-
-                print(theTarget);
-                printInstanceFieldReference(theField);
-                writer.assign();
-                print(thevalue);
-                writer.text(";").newLine();
-            } else if (theExpression instanceof IFExpression) {
-                final IFExpression theE = (IFExpression) theExpression;
-
-                startLine().text("if (");
-                print(theE.incomingDataFlows().get(0));
-                writer.text(") {").newLine();
-
-                withDeeperIndent().writeExpressions(theE.getExpressions());
-
-                startLine().text("}").newLine();
-
-            } else if (theExpression instanceof GotoExpression) {
-                final GotoExpression theE = (GotoExpression) theExpression;
-                startLine().text(generateJumpCodeFor(theE.getJumpTarget())).newLine();
-            } else if (theExpression instanceof ArrayStoreExpression) {
-                final ArrayStoreExpression theE = (ArrayStoreExpression) theExpression;
-
-                final List<Value> theIncomingData = theE.incomingDataFlows();
-
-                final Value theArray = theIncomingData.get(0);
-                final Value theIndex = theIncomingData.get(1);
-                final Value theValue = theIncomingData.get(2);
-
-                startLine();
-
-                print(theArray);
-                printArrayIndexReference(theIndex);
-
-                writer.assign();
-
-                print(theValue);
-
-                writer.text(";").newLine();
-            } else if (theExpression instanceof CheckCastExpression) {
-                final CheckCastExpression theE = (CheckCastExpression) theExpression;
-                // Completely ignored
-            } else if (theExpression instanceof TableSwitchExpression) {
-                final TableSwitchExpression theE = (TableSwitchExpression) theExpression;
-                final Value theValue = theE.incomingDataFlows().get(0);
-
-                startLine();
-
-                writer.newLine().text("if (");
-                print(theValue);
-                writer.space().text("<").space().text("" + theE.getLowValue());
-                writer.space().text("||").space();
-                print(theValue);
-                writer.space().text(">").space().text("" + theE.getHighValue());
-                writer.text(") {").newLine();
-
-                writeExpressions(theE.getDefaultExpressions());
-
-                writer.text("}").newLine();
-
-                startLine().text("switch(");
-                print(theValue);
-                writer.space().text("-").space().text("" + theE.getLowValue()).text(") {").newLine();
-
-                for (final Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
-
-                    startLine().text(" case ").text("" + theEntry.getKey()).text(":").newLine();
-
-                    withDeeperIndent().writeExpressions(theEntry.getValue());
-                }
-
-                writer.text("}").newLine();
-
-                startLine().text("throw 'Illegal jump target!';").newLine();
-            } else if (theExpression instanceof LookupSwitchExpression) {
-                final LookupSwitchExpression theE = (LookupSwitchExpression) theExpression;
-
-                startLine().text("switch(");
-                print(theE.incomingDataFlows().get(0));
-                writer.text(") {").newLine();
-
-                for (final Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
-
-                    startLine().text(" case ").text("" + theEntry.getKey()).text(":").newLine();
-
-                    withDeeperIndent().writeExpressions(theEntry.getValue());
-                }
-
-                writer.text("}").newLine();
-
-                writeExpressions(theE.getDefaultExpressions());
-            } else if (theExpression instanceof SetMemoryLocationExpression) {
-                final SetMemoryLocationExpression theE = (SetMemoryLocationExpression) theExpression;
-
-                final List<Value> theIncomingData = theE.incomingDataFlows();
-
-                startLine().text("bytecoderGlobalMemory[");
-
-                final ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
-
-                print(theValue);
-
-                writer.text("]=");
-
-                print(theIncomingData.get(1));
-
-                writer.text(";").newLine();
-            } else if (theExpression instanceof UnreachableExpression) {
-                startLine().text("throw 'Unreachable';").newLine();
-            } else if (theExpression instanceof BreakExpression) {
-                final BreakExpression theBreak = (BreakExpression) theExpression;
-                if (theBreak.isSetLabelRequired() && labelRequired) {
-                    startLine().text("__l").assign().text("" + theBreak.jumpTarget().getAddress()).text(";").newLine();
-                }
-                if (!theBreak.isSilent()) {
-                    startLine().text("break $").text(theBreak.blockToBreak().name()).text(";").newLine();
-                }
-            } else if (theExpression instanceof ContinueExpression) {
-                final ContinueExpression theContinue = (ContinueExpression) theExpression;
-                if (labelRequired) {
-                    startLine().text("__l").assign().text("" + theContinue.jumpTarget().getAddress()).text(";").newLine();
-                }
-                startLine().text("continue $").text(theContinue.labelToReturnTo().name()).text(";").newLine();
-            } else if (theExpression instanceof SetEnumConstantsExpression) {
-                final SetEnumConstantsExpression theSet = (SetEnumConstantsExpression) theExpression;
-                startLine();
-
-                print(theSet.incomingDataFlows().get(0));
-                writer.print(".").text(minifier.toSymbol("$VALUES")).assign();
-                print(theSet.incomingDataFlows().get(1));
-
-                writer.text(";").newLine();
             } else {
-                throw new IllegalStateException("Not implemented : " + theExpression);
+                theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
+                print(theValue);
             }
+            if (options.isDebugOutput()) {
+                theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
+            } else {
+                theWriter.text(";").newLine();
+            }
+        } else if (aExpression instanceof PutStaticExpression) {
+            final PutStaticExpression theE = (PutStaticExpression) aExpression;
+            final BytecodeFieldRefConstant theField = theE.getField();
+            final Value theValue = theE.incomingDataFlows().get(0);
+
+            startLine();
+            printStaticFieldReference(theField, program.getDebugInformation().debugPositionFor(aExpression.getAddress()));
+            writer.assign();
+            print(theValue);
+            writer.text(";").newLine();
+        } else if (aExpression instanceof ReturnValueExpression) {
+            final ReturnValueExpression theE = (ReturnValueExpression) aExpression;
+            final Value theValue = theE.incomingDataFlows().get(0);
+            startLine().text("return ");
+            print(theValue);
+            writer.text(";").newLine();
+        } else if (aExpression instanceof ThrowExpression) {
+            final ThrowExpression theE = (ThrowExpression) aExpression;
+            final Value theValue = theE.incomingDataFlows().get(0);
+            startLine().text("throw {exception :");
+            print(theValue);
+            writer.text(", stack : new Error().stack};").newLine();
+        } else if (aExpression instanceof InvokeVirtualMethodExpression) {
+            final InvokeVirtualMethodExpression theE = (InvokeVirtualMethodExpression) aExpression;
+            startLine();
+            print(theE);
+            writer.text(";").newLine();
+        } else if (aExpression instanceof DirectInvokeMethodExpression) {
+            final DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) aExpression;
+            startLine();
+            print(theE);
+            writer.text(";").newLine();
+        } else if (aExpression instanceof InvokeStaticMethodExpression) {
+            final InvokeStaticMethodExpression theE = (InvokeStaticMethodExpression) aExpression;
+            startLine();
+            print(theE);
+            writer.text(";").newLine();
+        } else if (aExpression instanceof PutFieldExpression) {
+            final PutFieldExpression theE = (PutFieldExpression) aExpression;
+
+            final List<Value> theIncomingData = theE.incomingDataFlows();
+
+            final Value theTarget = theIncomingData.get(0);
+            final BytecodeFieldRefConstant theField = theE.getField();
+
+            final Value thevalue = theIncomingData.get(1);
+
+            startLine();
+
+            print(theTarget);
+            printInstanceFieldReference(theField);
+            writer.assign();
+            print(thevalue);
+            writer.text(";").newLine();
+        } else if (aExpression instanceof IFExpression) {
+            final IFExpression theE = (IFExpression) aExpression;
+
+            startLine().text("if (");
+            print(theE.incomingDataFlows().get(0));
+            writer.text(") {").newLine();
+
+            withDeeperIndent().writeExpressions(theE.getExpressions());
+
+            startLine().text("}").newLine();
+
+        } else if (aExpression instanceof GotoExpression) {
+            final GotoExpression theE = (GotoExpression) aExpression;
+            throw new IllegalStateException("JavaScript Backend does not support Goto-Expressions!");
+        } else if (aExpression instanceof ArrayStoreExpression) {
+            final ArrayStoreExpression theE = (ArrayStoreExpression) aExpression;
+
+            final List<Value> theIncomingData = theE.incomingDataFlows();
+
+            final Value theArray = theIncomingData.get(0);
+            final Value theIndex = theIncomingData.get(1);
+            final Value theValue = theIncomingData.get(2);
+
+            startLine();
+
+            print(theArray);
+            printArrayIndexReference(theIndex);
+
+            writer.assign();
+
+            print(theValue);
+
+            writer.text(";").newLine();
+        } else if (aExpression instanceof CheckCastExpression) {
+            final CheckCastExpression theE = (CheckCastExpression) aExpression;
+            // Completely ignored
+        } else if (aExpression instanceof TableSwitchExpression) {
+            final TableSwitchExpression theE = (TableSwitchExpression) aExpression;
+            final Value theValue = theE.incomingDataFlows().get(0);
+
+            startLine();
+
+            writer.newLine().text("if (");
+            print(theValue);
+            writer.space().text("<").space().text("" + theE.getLowValue());
+            writer.space().text("||").space();
+            print(theValue);
+            writer.space().text(">").space().text("" + theE.getHighValue());
+            writer.text(") {").newLine();
+
+            writeExpressions(theE.getDefaultExpressions());
+
+            writer.text("}").newLine();
+
+            startLine().text("switch(");
+            print(theValue);
+            writer.space().text("-").space().text("" + theE.getLowValue()).text(") {").newLine();
+
+            for (final Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
+
+                startLine().text(" case ").text("" + theEntry.getKey()).text(":").newLine();
+
+                withDeeperIndent().writeExpressions(theEntry.getValue());
+            }
+
+            writer.text("}").newLine();
+
+            startLine().text("throw 'Illegal jump target!';").newLine();
+        } else if (aExpression instanceof LookupSwitchExpression) {
+            final LookupSwitchExpression theE = (LookupSwitchExpression) aExpression;
+
+            startLine().text("switch(");
+            print(theE.incomingDataFlows().get(0));
+            writer.text(") {").newLine();
+
+            for (final Map.Entry<Long, ExpressionList> theEntry : theE.getPairs().entrySet()) {
+
+                startLine().text(" case ").text("" + theEntry.getKey()).text(":").newLine();
+
+                withDeeperIndent().writeExpressions(theEntry.getValue());
+            }
+
+            writer.text("}").newLine();
+
+            writeExpressions(theE.getDefaultExpressions());
+        } else if (aExpression instanceof SetMemoryLocationExpression) {
+            final SetMemoryLocationExpression theE = (SetMemoryLocationExpression) aExpression;
+
+            final List<Value> theIncomingData = theE.incomingDataFlows();
+
+            startLine().text("bytecoderGlobalMemory[");
+
+            final ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
+
+            print(theValue);
+
+            writer.text("]=");
+
+            print(theIncomingData.get(1));
+
+            writer.text(";").newLine();
+        } else if (aExpression instanceof UnreachableExpression) {
+            startLine().text("throw 'Unreachable';").newLine();
+        } else if (aExpression instanceof BreakExpression) {
+            final BreakExpression theBreak = (BreakExpression) aExpression;
+            if (theBreak.isSetLabelRequired() && labelRequired) {
+                startLine().text("__l").assign().text("" + theBreak.jumpTarget().getAddress()).text(";").newLine();
+            }
+            if (!theBreak.isSilent()) {
+                if (theBreak.isJumpLabelRequired()) {
+                    startLine().text("break ").label(theBreak.blockToBreak()).text(";").newLine();
+                } else {
+                    startLine().text("break;").newLine();
+                }
+            }
+        } else if (aExpression instanceof ContinueExpression) {
+            final ContinueExpression theContinue = (ContinueExpression) aExpression;
+            if (labelRequired) {
+                startLine().text("__l").assign().text("" + theContinue.jumpTarget().getAddress()).text(";").newLine();
+            }
+            if (theContinue.isJumpLabelRequired()) {
+                startLine().text("continue ").label(theContinue.labelToReturnTo()).text(";").newLine();
+            } else {
+                startLine().text("continue;").newLine();
+            }
+        } else if (aExpression instanceof SetEnumConstantsExpression) {
+            final SetEnumConstantsExpression theSet = (SetEnumConstantsExpression) aExpression;
+            startLine();
+
+            print(theSet.incomingDataFlows().get(0));
+            writer.print(".").text(minifier.toSymbol("$VALUES")).assign();
+            print(theSet.incomingDataFlows().get(1));
+
+            writer.text(";").newLine();
+        } else if (aExpression instanceof IFElseExpression) {
+            final IFElseExpression theE = (IFElseExpression) aExpression;
+
+            final IFExpression wrapped = theE.getCondition();
+
+            startLine().text("if (");
+            print(wrapped.incomingDataFlows().get(0));
+            writer.text(") {").newLine();
+
+            withDeeperIndent().writeExpressions(wrapped.getExpressions());
+
+            startLine().text("} else {").newLine();
+
+            withDeeperIndent().writeExpressions(theE.getElsePart());
+
+            startLine().text("}").newLine();
+        } else {
+            throw new IllegalStateException("Not implemented : " + aExpression);
+        }
+    }
+
+    public void writeExpressions(final ExpressionList aExpressions) {
+        for (final Expression theExpression : aExpressions.toList()) {
+            writeExpression(theExpression);
         }
     }
 
@@ -1250,7 +1362,7 @@ public class JSSSAWriter {
         theWriter.writeExpressions(aIfThenElseBlock.getPrelude());
 
         if (aIfThenElseBlock.isLabelRequired()) {
-            theWriter.startLine().text("$").text(aIfThenElseBlock.label().name()).colon().text("{").newLine();
+            theWriter.startLine().label(aIfThenElseBlock.label()).colon().text("{").newLine();
             theWriter = theWriter.withDeeperIndent();
         }
 
@@ -1277,7 +1389,7 @@ public class JSSSAWriter {
         JSSSAWriter theWriter = this;
 
         if (aSimpleBlock.isLabelRequired()) {
-            startLine().text("$").text(aSimpleBlock.label().name()).colon().text("{").newLine();
+            startLine().label(aSimpleBlock.label()).colon().text("{").newLine();
             if (options.isDebugOutput()) {
                 startLine().text("// ").text(aSimpleBlock.internalLabel().getType().toString()).newLine();
             }
@@ -1296,7 +1408,7 @@ public class JSSSAWriter {
 
     private void print(final Relooper.LoopBlock aLoopBlock) {
         if (aLoopBlock.isLabelRequired()) {
-            startLine().text("$").text(aLoopBlock.label().name()).colon().text("for").space().text("(;;)").space().text("{").newLine();
+            startLine().label(aLoopBlock.label()).colon().text("for").space().text("(;;)").space().text("{").newLine();
         } else {
             startLine().text("for").space().text("(;;)").space().text("{").newLine();
         }
@@ -1311,7 +1423,7 @@ public class JSSSAWriter {
     private void print(final Relooper.MultipleBlock aMultiple) {
 
         if (aMultiple.isLabelRequired()) {
-            startLine().text("$").text(aMultiple.label().name()).colon().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
+            startLine().label(aMultiple.label()).colon().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
         } else {
             startLine().text("for(;;)").space().text("switch").space().text("(__l) {").newLine();
         }
@@ -1334,7 +1446,7 @@ public class JSSSAWriter {
     private void print(final Relooper.TryBlock aTryBlock) {
 
         if (aTryBlock.isLabelRequired()) {
-            startLine().text("$").text(aTryBlock.label().name()).colon().text("try").space().text("{").newLine();
+            startLine().label(aTryBlock.label()).colon().text("try").space().text("{").newLine();
         } else {
             startLine().text("try").space().text("{").newLine();
         }
@@ -1387,5 +1499,46 @@ public class JSSSAWriter {
         startLine().text("}").newLine();
 
         print(aTryBlock.next());
+    }
+
+    public void printStackified(final Stackifier stackifier) {
+        final Stack<JSSSAWriter> writerStack = new Stack<>();
+        writerStack.push(this);
+        final Stackifier.StackifierStructuredControlFlowWriter writer = new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {
+
+            @Override
+            public void beginLoopFor(final Block<RegionNode> block) {
+                super.beginLoopFor(block);
+                final JSSSAWriter current = writerStack.peek();
+                current.startLine().label(block.getLabel())
+                        .text(":").space()
+                        .text("for(;;)").space().text("{").newLine();
+                final JSSSAWriter newLoopBlock = current.withDeeperIndent();
+                writerStack.push(newLoopBlock);
+            }
+
+            @Override
+            public void beginBlockFor(final Block<RegionNode> block) {
+                super.beginBlockFor(block);
+                final JSSSAWriter current = writerStack.peek();
+                current.startLine().label(block.getLabel())
+                        .text(":").space().text("{").newLine();
+                final JSSSAWriter newSimpleBlock = current.withDeeperIndent();
+                writerStack.push(newSimpleBlock);
+            }
+
+            @Override
+            public void writeExpression(final RegionNode currentNode, final Expression e) {
+                writerStack.peek().writeExpression(e);
+            }
+
+            @Override
+            public void closeBlock() {
+                writerStack.pop();
+                writerStack.peek().startLine().text("}").newLine();
+                super.closeBlock();
+            }
+        };
+        stackifier.writeStructuredControlFlow(writer);
     }
 }

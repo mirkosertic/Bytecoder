@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.JSAndWASMOnly;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@JSAndWASMOnly
+@BytecoderTestOptions(includeJVM = false)
 public class RuntimeClassTest {
 
     @Test

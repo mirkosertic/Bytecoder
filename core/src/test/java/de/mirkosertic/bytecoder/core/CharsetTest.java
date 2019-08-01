@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.classlib.java.nio.charset.UTF_8;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -22,16 +31,13 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.Arrays;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
-import org.junit.Test;
-
-import de.mirkosertic.bytecoder.classlib.java.nio.charset.UTF_8;
-import de.mirkosertic.bytecoder.unittest.JSAndJVMOnly;
-import org.junit.runner.RunWith;
-
 @RunWith(BytecoderUnitTestRunner.class)
-@JSAndJVMOnly
+@BytecoderTestOptions(value = {
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, preferStackifier = false),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, preferStackifier = false),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, preferStackifier = true),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, preferStackifier = true)
+})
 public class CharsetTest {
 
     @Test

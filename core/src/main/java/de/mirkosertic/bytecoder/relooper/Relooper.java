@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.EdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
@@ -429,7 +430,7 @@ public class Relooper {
             for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : theInternalLabel.getSuccessors().entrySet()) {
                 final RegionNode theTarget = theSuc.getValue();
                 // We found the matching edge
-                if (theSuc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                if (theSuc.getKey().getType() == EdgeType.forward) {
                     // We can only branch to the next block
                     // We search the whole hiararchy to find the right block to break out
                     for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
@@ -504,40 +505,39 @@ public class Relooper {
             if (theExpression instanceof GotoExpression) {
                 final GotoExpression theGoto = (GotoExpression) theExpression;
                 boolean theGotoFound = false;
+
                 // We search the successor edge
                 for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : aLabel.getSuccessors().entrySet()) {
-                    if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.getJumpTarget())) {
+                    if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.jumpTarget())) {
                         theGotoFound = true;
                         final RegionNode theTarget = theSuc.getValue();
                         // We found the matching edge
-                        if (theSuc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                        if (theSuc.getKey().getType() == EdgeType.forward) {
                             // We can only branch to the next block
                             // We search the whole hiararchy to find the right block to break out
 
-                            boolean theSomethingFound = false;
-                            for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
-                                final Block theNestingBlock = aTraversalStack.get(i);
-                                if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
-                                    theNestingBlock.requireLabel();
-                                    final BreakExpression theBreak = new BreakExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
-                                    aList.replace(theGoto, theBreak);
+                            guard: {
+                                for (int i = aTraversalStack.size() - 1; i >= 0; i--) {
+                                    final Block theNestingBlock = aTraversalStack.get(i);
+                                    if (theNestingBlock.next() != null && theNestingBlock.next().entries().contains(theTarget)) {
+                                        theNestingBlock.requireLabel();
+                                        final BreakExpression theBreak = new BreakExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
+                                        aList.replace(theGoto, theBreak);
 
-                                    if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
-                                        theBreak.noSetRequired();
+                                        if (theNestingBlock.next() instanceof SimpleBlock && theNestingBlock.next().entries().size() == 1) {
+                                            theBreak.noSetRequired();
+                                        }
+
+                                        break guard;
+                                    } else if (theNestingBlock.entries().contains(theTarget)) {
+                                        theNestingBlock.requireLabel();
+                                        final ContinueExpression theContinue = new ContinueExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
+                                        aList.replace(theGoto, theContinue);
+
+                                        break guard;
                                     }
-
-                                    theSomethingFound = true;
-                                    break;
-                                } else if (theNestingBlock.entries().contains(theTarget)) {
-                                    theNestingBlock.requireLabel();
-                                    final ContinueExpression theContinue = new ContinueExpression(theGoto.getProgram(), theGoto.getAddress(), theNestingBlock.label(), theTarget.getStartAddress());
-                                    aList.replace(theGoto, theContinue);
-                                    theSomethingFound = true;
-                                    break;
                                 }
-                            }
 
-                            if (!theSomethingFound) {
                                 throw new IllegalStateException("Failed to jump to " + theTarget.getStartAddress().getAddress() + " from " + aCurrent.label().name() + " : no matching entry found!");
                             }
 
@@ -563,7 +563,7 @@ public class Relooper {
                     }
                 }
                 if (!theGotoFound) {
-                    throw new IllegalStateException("No GOTO possible for " + theGoto.getJumpTarget().getAddress() + " in label " + aCurrent.label().name());
+                    throw new IllegalStateException("No GOTO possible for " + theGoto.jumpTarget().getAddress() + " in label " + aCurrent.label().name());
                 }
             }
         }
@@ -827,7 +827,7 @@ public class Relooper {
                     if (theLast instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) theLast;
                         final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
-                        final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.getJumpTarget());
+                        final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.jumpTarget());
                         if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
                             // We have a candidate!!
                             final Value theCondition = theIf.incomingDataFlows().get(0);
@@ -844,7 +844,7 @@ public class Relooper {
                             for (final RegionNode theTrue : theTrueDominated) {
                                 for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theTrue.getSuccessors().entrySet()) {
                                     final RegionNode theNode = theEntry.getValue();
-                                    if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
+                                    if (theEntry.getKey().getType() == EdgeType.forward && theNextTagSoup.contains(theNode)) {
                                         theNextEntries.add(theNode);
                                     }
                                 }
@@ -853,7 +853,7 @@ public class Relooper {
                             for (final RegionNode theFalse : theFalseDominated) {
                                 for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theFalse.getSuccessors().entrySet()) {
                                     final RegionNode theNode = theEntry.getValue();
-                                    if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL && theNextTagSoup.contains(theNode)) {
+                                    if (theEntry.getKey().getType() == EdgeType.forward && theNextTagSoup.contains(theNode)) {
                                         theNextEntries.add(theNode);
                                     }
                                 }
@@ -876,6 +876,13 @@ public class Relooper {
 
                             return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
                                     theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
+                        } else if (theTrueBranch.isStrictlyDominatedBy(aEntry)) {
+
+                            // TODO:
+
+                        } else if (theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+
+                            // TODO:
                         }
                     }
                 }
@@ -885,7 +892,7 @@ public class Relooper {
         final Set<RegionNode> theNextEntries = new HashSet<>();
         final Set<RegionNode> theDominated = aEntry.dominatedNodes();
         for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : aEntry.getSuccessors().entrySet()) {
-            if (theSucc.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+            if (theSucc.getKey().getType() == EdgeType.forward) {
                 final RegionNode theNode = theSucc.getValue();
                 if (theDominated.contains(theNode) && aLabelSoup.contains(theNode)) {
                     theNextEntries.add(theSucc.getValue());
@@ -914,7 +921,7 @@ public class Relooper {
         final Set<RegionNode> theResults = new HashSet<>();
         for (final RegionNode theNode : aLabelSoup) {
             for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
-                if (theEntry.getKey().getType() == RegionNode.EdgeType.NORMAL) {
+                if (theEntry.getKey().getType() == EdgeType.forward) {
                     theResults.add(theEntry.getValue());
                 }
             }

@@ -24,25 +24,51 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 public class ContextTest {
 
     @Test
-    public void testSimpleAdd() throws Exception {
-        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+    public void testSimpleAddRelooper() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(false));
 
         final float[] theA = {10f, 20f, 30f, 40f};
         final float[] theB = {100f, 200f, 300f, 400f};
         final float[] theResult = new float[4];
 
-        try (Context theContext = thePlatform.createContext()) {
+        try (final Context theContext = thePlatform.createContext()) {
             theContext.compute(4, new Kernel() {
+                @Override
                 public void processWorkItem() {
-                    int id = get_global_id(0);
-                    float a = theA[id];
-                    float b = theB[id];
+                    final int id = get_global_id(0);
+                    final float a = theA[id];
+                    final float b = theB[id];
                     theResult[id] = a + b;
                 }
             });
         }
 
-        for (float aTheResult : theResult) {
+        for (final float aTheResult : theResult) {
+            System.out.println(aTheResult);
+        }
+    }
+
+    @Test
+    public void testSimpleAddStackifier() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+
+        final float[] theA = {10f, 20f, 30f, 40f};
+        final float[] theB = {100f, 200f, 300f, 400f};
+        final float[] theResult = new float[4];
+
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+                @Override
+                public void processWorkItem() {
+                    final int id = get_global_id(0);
+                    final float a = theA[id];
+                    final float b = theB[id];
+                    theResult[id] = a + b;
+                }
+            });
+        }
+
+        for (final float aTheResult : theResult) {
             System.out.println(aTheResult);
         }
     }

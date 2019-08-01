@@ -21,30 +21,22 @@ public class BytecodeOpcodeAddress {
 
     private final int address;
 
-    public BytecodeOpcodeAddress(int aAddress) {
+    public BytecodeOpcodeAddress(final int aAddress) {
         address = aAddress;
     }
 
-    public BytecodeOpcodeAddress add(int aOffset) {
+    public BytecodeOpcodeAddress add(final int aOffset) {
         return new BytecodeOpcodeAddress(address + aOffset);
     }
 
-    public boolean isAfter(BytecodeOpcodeAddress aOtherAddress) {
-        return address > aOtherAddress.address;
-    }
-
-    public boolean isBefore(BytecodeOpcodeAddress aOtherAddress) {
-        return address < aOtherAddress.getAddress();
-    }
-
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
 
-        BytecodeOpcodeAddress that = (BytecodeOpcodeAddress) o;
+        final BytecodeOpcodeAddress that = (BytecodeOpcodeAddress) o;
 
         if (address != that.address)
             return false;
@@ -61,4 +53,10 @@ public class BytecodeOpcodeAddress {
         return address;
     }
 
+    @Override
+    public String toString() {
+        return "BytecodeOpcodeAddress{" +
+                "address=" + address +
+                '}';
+    }
 }

@@ -25,7 +25,7 @@ public class Profiler {
 
             final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(theMethodToTest);
 
-            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, false);
+            final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, false, false);
             final JSCompileResult result = (JSCompileResult) theCompileTarget
                     .compile(theOptions, theClassToTest, theMethodToTest.getName(), theSignature);
             final JSCompileResult.JSContent content = result.getContent()[0];

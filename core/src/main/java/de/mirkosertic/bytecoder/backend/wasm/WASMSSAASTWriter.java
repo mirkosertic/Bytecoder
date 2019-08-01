@@ -15,20 +15,136 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
+import de.mirkosertic.bytecoder.backend.wasm.ast.I32Const;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.backend.wasm.ast.LabeledContainer;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
-import de.mirkosertic.bytecoder.backend.wasm.ast.*;
+import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Return;
+import de.mirkosertic.bytecoder.backend.wasm.ast.ReturnValue;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Try;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Unreachable;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMExpression;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.*;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
-import de.mirkosertic.bytecoder.ssa.*;
-
-import java.util.*;
-
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.*;
+import de.mirkosertic.bytecoder.ssa.BreakExpression;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.CheckCastExpression;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
+import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
+import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
+import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFElseExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MaxExpression;
+import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
+import de.mirkosertic.bytecoder.ssa.MinExpression;
+import de.mirkosertic.bytecoder.ssa.NegatedExpression;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIExpression;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
+import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.SqrtExpression;
+import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 public class WASMSSAASTWriter {
 
@@ -64,13 +180,14 @@ public class WASMSSAASTWriter {
     private final Resolver resolver;
     private final BytecodeLinkerContext linkerContext;
     private final ExportableFunction function;
-    private final Container container;
-    private final Expressions flow;
+    final Container container;
+    final Expressions flow;
     private final Module module;
     private final CompileOptions compileOptions;
     private final List<Variable> stackVariables;
     private final WASMMemoryLayouter memoryLayouter;
     private boolean labelRequired;
+    final AtomicBoolean stackifierEnabled;
 
     public WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction) {
@@ -89,11 +206,12 @@ public class WASMSSAASTWriter {
             }
         }
         labelRequired = false;
+        stackifierEnabled = new AtomicBoolean(false);
     }
 
     private WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Variable> aStackVariables, final boolean aLabelRequired, final Expressions aFlow) {
+            final List<Variable> aStackVariables, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -104,19 +222,20 @@ public class WASMSSAASTWriter {
         container = aContainer;
         flow = aFlow;
         labelRequired = aLabelRequired;
+        stackifierEnabled = aStackifierEnabled;
     }
 
     private WASMSSAASTWriter block(final String label, final Expression expression) {
         final Block block = flow.block(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private WASMSSAASTWriter block(final String label, final PrimitiveType blockType, final Expression expression) {
         final Block block = flow.block(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
-    private class IFCondition {
+    private static class IFCondition {
 
         private final WASMSSAASTWriter trueWriter;
         private final WASMSSAASTWriter falseWriter;
@@ -129,24 +248,24 @@ public class WASMSSAASTWriter {
 
     private IFCondition iff(final String label, final WASMValue condition, final Expression expression) {
         final Iff block = flow.iff(label, condition, expression);
-        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
-        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow);
+        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
+        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow, stackifierEnabled);
         return new IFCondition(theTrueWriter, theFalseWriter);
     }
 
     private WASMSSAASTWriter Try(final String label, final Expression expression) {
         final Try block = flow.Try(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private WASMSSAASTWriter Try(final String label, final PrimitiveType blockType, final Expression expression) {
         final Try block = flow.Try(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
     }
 
     private WASMSSAASTWriter loop(final String label, final Expression expression) {
         final Loop loop = flow.loop(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow, stackifierEnabled);
     }
 
     private int stackSize() {
@@ -185,7 +304,7 @@ public class WASMSSAASTWriter {
         }
     }
 
-    private void generateExpressions(final Expression aExpression) {
+    void generateExpressions(final Expression aExpression) {
         if (aExpression instanceof CheckCastExpression) {
             return;
         }
@@ -255,26 +374,37 @@ public class WASMSSAASTWriter {
         }
         if (aExpression instanceof BreakExpression) {
             final BreakExpression theBreak = (BreakExpression) aExpression;
-            if (theBreak.isSetLabelRequired() && labelRequired) {
-                final Local label = function.localByLabel(LABEL_LOCAL);
-                flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress(), aExpression), aExpression);
-            }
-            if (!theBreak.isSilent()) {
+            if (stackifierEnabled.get()) {
                 final LabeledContainer target = container.findByLabelInHierarchy(theBreak.blockToBreak().name());
                 flow.branch(target, aExpression);
+            } else {
+                if (theBreak.isSetLabelRequired() && labelRequired) {
+                    final Local label = function.localByLabel(LABEL_LOCAL);
+                    flow.setLocal(label, i32.c(theBreak.jumpTarget().getAddress(), aExpression), aExpression);
+                }
+                if (!theBreak.isSilent()) {
+                    final LabeledContainer target = container.findByLabelInHierarchy(theBreak.blockToBreak().name());
+                    flow.branch(target, aExpression);
+                }
             }
             return;
         }
         if (aExpression instanceof ContinueExpression) {
             final ContinueExpression theContinue = (ContinueExpression) aExpression;
+            if (stackifierEnabled.get()) {
 
-            if (labelRequired) {
-                final Local label = function.localByLabel(LABEL_LOCAL);
-                flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress(), aExpression), aExpression);
+                final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
+                flow.branch(target, aExpression);
+
+            } else {
+                if (labelRequired) {
+                    final Local label = function.localByLabel(LABEL_LOCAL);
+                    flow.setLocal(label, i32.c(theContinue.jumpTarget().getAddress(), aExpression), aExpression);
+                }
+
+                final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
+                flow.branch(target, aExpression);
             }
-
-            final LabeledContainer target = container.findByLabelInHierarchy(theContinue.labelToReturnTo().name() + "_inner");
-            flow.branch(target, aExpression);
             return;
         }
         if (aExpression instanceof SetEnumConstantsExpression) {
@@ -282,7 +412,11 @@ public class WASMSSAASTWriter {
             flow.i32.store(0, i32.load(12, toValue(theSetEnum.incomingDataFlows().get(0)), null), toValue(theSetEnum.incomingDataFlows().get(1)), null);
             return;
         }
-
+        if (aExpression instanceof IFElseExpression) {
+            final IFElseExpression i = (IFElseExpression) aExpression;
+            generateIFElseExpression(i);
+            return;
+        }
         throw new IllegalStateException("Not supported : " + aExpression);
     }
 
@@ -464,6 +598,13 @@ public class WASMSSAASTWriter {
     private void generateIFExpression(final IFExpression aExpression) {
         final WASMSSAASTWriter iff = iff("if_" + aExpression.getAddress().getAddress(), toValue(aExpression.incomingDataFlows().get(0)), aExpression).trueWriter;
         iff.writeExpressionList(aExpression.getExpressions());
+    }
+
+    private void generateIFElseExpression(final IFElseExpression aExpression) {
+        final IFExpression wrapped = aExpression.getCondition();
+        final IFCondition c = iff("if_" + wrapped.getAddress().getAddress(), toValue(wrapped.incomingDataFlows().get(0)), wrapped);
+        c.trueWriter.writeExpressionList(wrapped.getExpressions());
+        c.falseWriter.writeExpressionList(aExpression.getElsePart());
     }
 
     private void generateDirectMethodInvokeExpression(final DirectInvokeMethodExpression aExpression) {
@@ -911,7 +1052,7 @@ public class WASMSSAASTWriter {
             }
         }
 
-        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
+        if (!(theClasses.stream().noneMatch(BytecodeLinkedClass::isOpaqueType))) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1362,6 +1503,8 @@ public class WASMSSAASTWriter {
     }
 
     public void writeRelooped(final Relooper.Block aBlock) {
+        stackifierEnabled.set(false);
+
         // We need the local label for structured control flow
         labelRequired = aBlock.containsMultipleBlock();
         if (labelRequired) {
@@ -1553,6 +1696,64 @@ public class WASMSSAASTWriter {
             writeReloopedInternal(aTryBlock.inner());
             writeReloopedInternal(aTryBlock.next());
         }
+    }
 
+    public void writeStackified(final Stackifier st) {
+        stackifierEnabled.set(true);
+        final Stack<WASMSSAASTWriter> writerStack = new Stack<>();
+        writerStack.push(this);
+
+        final Stackifier.StackifierStructuredControlFlowWriter stWriter = new Stackifier.StackifierStructuredControlFlowWriter(st) {
+
+            @Override
+            public void begin() {
+                super.begin();
+                final WASMSSAASTWriter current = writerStack.peek();
+                current.stackEnter();
+            }
+
+            @Override
+            public void beginLoopFor(final de.mirkosertic.bytecoder.stackifier.Block<RegionNode> block) {
+                super.beginLoopFor(block);
+                final WASMSSAASTWriter current = writerStack.peek();
+                final WASMSSAASTWriter outerBlock = current.block(block.getLabel().name(), null);
+                writerStack.push(outerBlock);
+
+                final WASMSSAASTWriter loop = outerBlock.loop(block.getLabel().name() + "_inner", null);
+                writerStack.push(loop);
+            }
+
+            @Override
+            public void beginBlockFor(final de.mirkosertic.bytecoder.stackifier.Block<RegionNode> block) {
+                super.beginBlockFor(block);
+                final WASMSSAASTWriter current = writerStack.peek();
+                final WASMSSAASTWriter newSimpleBlock = current.block(block.getLabel().name(), null);
+                writerStack.push(newSimpleBlock);
+            }
+
+            @Override
+            public void writeExpression(final RegionNode currentNode, final Expression e) {
+                final WASMSSAASTWriter current = writerStack.peek();
+                current.generateExpressions(e);
+            }
+
+            @Override
+            public void closeBlock() {
+                final WASMSSAASTWriter current = writerStack.pop();
+                if (current.container instanceof Loop) {
+                    // Also remove the outer block
+                    final WASMSSAASTWriter outer = writerStack.pop();
+                }
+                super.closeBlock();
+            }
+
+            @Override
+            public void end() {
+                super.end();
+                final WASMSSAASTWriter current = writerStack.peek();
+                current.flow.unreachable(null);
+            }
+        };
+        st.writeStructuredControlFlow(stWriter);
     }
 }

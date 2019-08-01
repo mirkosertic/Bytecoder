@@ -36,7 +36,7 @@ public class IfThenElseTest {
         y = 6;
     }
 
-    private static boolean floatIsDifferent(float f1, float f2, float delta) {
+    private static boolean floatIsDifferent(final float f1, final float f2, final float delta) {
         if (Float.compare(f1, f2) == 0) {
             return false;
         } else {
@@ -44,19 +44,18 @@ public class IfThenElseTest {
         }
     }
 
-    private void failNotEquals(String message, float expected, float actual) {
+    private void failNotEquals(final String message, final float expected, final float actual) {
         throw new AssertionError();
     }
 
     @Test
     public void testIf() {
-        String message = "Message";
-        float expected = 10f;
-        float actual = 10f;
-        float delta = 0;
+        final String message = "Message";
+        final float expected = 10f;
+        final float actual = 10f;
+        final float delta = 0;
         if (floatIsDifferent(expected, actual, delta)) {
             failNotEquals(message, expected, actual);
         }
     }
-
 }

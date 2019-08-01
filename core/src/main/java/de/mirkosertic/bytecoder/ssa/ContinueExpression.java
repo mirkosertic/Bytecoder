@@ -21,15 +21,25 @@ public class ContinueExpression extends Expression {
 
     private final Label labelToReturnTo;
     private final BytecodeOpcodeAddress jumpTarget;
+    private boolean jumpLabelRequired;
 
     public ContinueExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Label aLabelToReturnTo, final BytecodeOpcodeAddress aJumpTarget) {
         super(aProgram, aAddress);
         labelToReturnTo = aLabelToReturnTo;
         jumpTarget = aJumpTarget;
+        jumpLabelRequired = true;
     }
 
     public Label labelToReturnTo() {
         return labelToReturnTo;
+    }
+
+    public boolean isJumpLabelRequired() {
+        return jumpLabelRequired;
+    }
+
+    public void noJumpLabelRequired() {
+        jumpLabelRequired = false;
     }
 
     public BytecodeOpcodeAddress jumpTarget() {

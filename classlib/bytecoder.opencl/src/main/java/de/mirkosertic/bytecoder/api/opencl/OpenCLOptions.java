@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.unittest;
+package de.mirkosertic.bytecoder.api.opencl;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+public class OpenCLOptions {
 
-@Retention(RetentionPolicy.RUNTIME)
-public @interface JSAndWASMOnly {
+    private final boolean preferStackifier;
+
+    public OpenCLOptions(final boolean preferStackifier) {
+        this.preferStackifier = preferStackifier;
+    }
+
+    public boolean isPreferStackifier() {
+        return preferStackifier;
+    }
 }

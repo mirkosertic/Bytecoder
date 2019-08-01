@@ -22,9 +22,9 @@ import java.util.ServiceLoader;
 public abstract class PlatformFactory {
 
     public static PlatformFactory resolve() {
-        ServiceLoader<PlatformFactory> theLoader = ServiceLoader.load(PlatformFactory.class);
+        final ServiceLoader<PlatformFactory> theLoader = ServiceLoader.load(PlatformFactory.class);
         return theLoader.iterator().next();
     }
 
-    public abstract Platform createPlatform(Logger aLogger);
+    public abstract Platform createPlatform(Logger aLogger, OpenCLOptions aOptions);
 }

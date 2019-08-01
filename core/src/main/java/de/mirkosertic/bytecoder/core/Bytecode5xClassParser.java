@@ -353,36 +353,40 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             throws IOException {
         final char theTag = (char) aDis.readUnsignedByte();
         switch (theTag) {
-        case 's': {
-            final int theConstValueIndex = aDis.readUnsignedShort();
-            return new BytecodeAnnotation.StringElementValue(theConstValueIndex, aConstantPool);
-        }
-        case 'I': {
-            final int theConstValueIndex = aDis.readUnsignedShort();
-            return new BytecodeAnnotation.IntegerElementValue(theConstValueIndex, aConstantPool);
-        }
-        case 'c': {
-            final int theClassInfoIndex = aDis.readUnsignedShort();
-            return new BytecodeAnnotation.ClassElementValue(theClassInfoIndex, aConstantPool, signatureParser);
-        }
-        case 'Z': {
-            final int theClassInfoIndex = aDis.readUnsignedShort();
-            return new BytecodeAnnotation.BooleanElementValue(theClassInfoIndex, aConstantPool);
-        }
-        case 'e': {
-            final int theTypeNameIndex = aDis.readUnsignedShort();
-            final int theConstNameIndex = aDis.readUnsignedShort();
-            return new BytecodeAnnotation.EnumElementValue(aConstantPool,
-                    theTypeNameIndex, theConstNameIndex);
-        }
-        case '[': {
-            final int theLength = aDis.readUnsignedShort();
-            final BytecodeAnnotation.ElementValue[] theValues = new BytecodeAnnotation.ElementValue[theLength];
-            for (int i=0;i<theLength;i++) {
-                theValues[i] = readAnnotationElementValueFrom(aDis, aConstantPool);
+            case 's': {
+                final int theConstValueIndex = aDis.readUnsignedShort();
+                return new BytecodeAnnotation.StringElementValue(theConstValueIndex, aConstantPool);
             }
-            return new BytecodeAnnotation.ArrayElementValue(aConstantPool, theValues);
-        }
+            case 'I': {
+                final int theConstValueIndex = aDis.readUnsignedShort();
+                return new BytecodeAnnotation.IntegerElementValue(theConstValueIndex, aConstantPool);
+            }
+            case 'c': {
+                final int theClassInfoIndex = aDis.readUnsignedShort();
+                return new BytecodeAnnotation.ClassElementValue(theClassInfoIndex, aConstantPool, signatureParser);
+            }
+            case 'Z': {
+                final int theClassInfoIndex = aDis.readUnsignedShort();
+                return new BytecodeAnnotation.BooleanElementValue(theClassInfoIndex, aConstantPool);
+            }
+            case 'e': {
+                final int theTypeNameIndex = aDis.readUnsignedShort();
+                final int theConstNameIndex = aDis.readUnsignedShort();
+                return new BytecodeAnnotation.EnumElementValue(aConstantPool,
+                        theTypeNameIndex, theConstNameIndex);
+            }
+            case '[': {
+                final int theLength = aDis.readUnsignedShort();
+                final BytecodeAnnotation.ElementValue[] theValues = new BytecodeAnnotation.ElementValue[theLength];
+                for (int i=0;i<theLength;i++) {
+                    theValues[i] = readAnnotationElementValueFrom(aDis, aConstantPool);
+                }
+                return new BytecodeAnnotation.ArrayElementValue(aConstantPool, theValues);
+            }
+            case '@': {
+                final BytecodeAnnotation theAnnotation = readSingleAnnotation(aDis, aConstantPool);
+                return new BytecodeAnnotation.AnnotationElementValueElementValue(aConstantPool, theAnnotation);
+            }
         }
         throw new IllegalArgumentException("Not supported annotation value type : " + theTag);
     }
@@ -391,22 +395,26 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
         final int theAnnotationCount = aDis.readUnsignedShort();
         final List<BytecodeAnnotation> theAnnotations = new ArrayList<>();
         for (int i=0;i<theAnnotationCount;i++) {
-            final int theTypeIndex = aDis.readUnsignedShort();
-            final int theNumElementValuePairs = aDis.readUnsignedShort();
-
-            final List<BytecodeAnnotation.ElementValuePair> theElementValuePairs = new ArrayList<>();
-            for (int j=0;j<theNumElementValuePairs;j++) {
-                final int theElementNameIndex = aDis.readUnsignedShort();
-                final BytecodeAnnotation.ElementValue theAnnotationValue =  readAnnotationElementValueFrom(aDis, aConstantPool);
-                theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
-                        theAnnotationValue,
-                        aConstantPool));
-            }
-
-            theAnnotations.add(new BytecodeAnnotation(theTypeIndex, theElementValuePairs.toArray(new BytecodeAnnotation.ElementValuePair[theElementValuePairs.size()]), aConstantPool, signatureParser));
+            theAnnotations.add(readSingleAnnotation(aDis, aConstantPool));
         }
 
         return new BytecodeAnnotationAttributeInfo(theAnnotations.toArray(new BytecodeAnnotation[theAnnotations.size()]));
+    }
+
+    private BytecodeAnnotation readSingleAnnotation(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
+        final int theTypeIndex = aDis.readUnsignedShort();
+        final int theNumElementValuePairs = aDis.readUnsignedShort();
+
+        final List<BytecodeAnnotation.ElementValuePair> theElementValuePairs = new ArrayList<>();
+        for (int j=0;j<theNumElementValuePairs;j++) {
+            final int theElementNameIndex = aDis.readUnsignedShort();
+            final BytecodeAnnotation.ElementValue theAnnotationValue =  readAnnotationElementValueFrom(aDis, aConstantPool);
+            theElementValuePairs.add(new BytecodeAnnotation.ElementValuePair(theElementNameIndex,
+                    theAnnotationValue,
+                    aConstantPool));
+        }
+
+        return new BytecodeAnnotation(theTypeIndex, theElementValuePairs.toArray(new BytecodeAnnotation.ElementValuePair[theElementValuePairs.size()]), aConstantPool, signatureParser);
     }
 
     private BytecodeCodeAttributeInfo parseCodeAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
