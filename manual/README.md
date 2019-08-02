@@ -466,7 +466,7 @@ Relooper output is enabled by default for `JS` and `WASM` backends. The Stackifi
 `preferStackifier` to `true` as a configuration parameter. If Stackifier is enabled and Bytecoder detects an
 irreducible control flow Relooper is used as a fallback.
 
-Stackifier is used as the default by `OpenCL` backend.
+Stackifier is used as the default by the `OpenCL` backend.
 
 ### WebAssembly internals
 
