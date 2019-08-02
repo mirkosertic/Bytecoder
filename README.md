@@ -32,8 +32,8 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
 
  Demo                                            |                                   
 -------------------------------------------------|
- [JBox2D Demo compiled from Java to JavaScript](https://mirkosertic.github.io/Bytecoder/index.html)    |  
- [JBox2D Demo compiled from Java to WebAssembly](https://mirkosertic.github.io/Bytecoder/indexwasm.html)   |
+ JBox2D Demo compiled from Java to JavaScript [Relooper Codegen](https://mirkosertic.github.io/Bytecoder/index.html)    |  
+ JBox2D Demo compiled from Java to WebAssembly [Relooper Codegen](https://mirkosertic.github.io/Bytecoder/indexwasm.html)   |
  [JBox2D Demo compiled from Kotlin to JavaScript](https://mirkosertic.github.io/Bytecoder/index-kotlin.html)  |  
  [JBox2D Demo compiled from Kotlin to WebAssembly](https://mirkosertic.github.io/Bytecoder/indexwasm-kotlin.html) |
  [vue.js integration Demo compiled to WebAssembly](https://mirkosertic.github.io/Bytecoder/vuewasm.html) |
