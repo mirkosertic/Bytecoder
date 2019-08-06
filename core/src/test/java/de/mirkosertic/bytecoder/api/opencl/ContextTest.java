@@ -15,11 +15,10 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
-
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
 
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 
 public class ContextTest {
 
@@ -64,6 +63,36 @@ public class ContextTest {
                     final float a = theA[id];
                     final float b = theB[id];
                     theResult[id] = a + b;
+                }
+            });
+        }
+
+        for (final float aTheResult : theResult) {
+            System.out.println(aTheResult);
+        }
+    }
+
+    @Test
+    public void testSimpleAddWithInlineMethod() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+
+        final float[] theA = {10f, 20f, 30f, 40f};
+        final float[] theB = {100f, 200f, 300f, 400f};
+        final float[] theResult = new float[4];
+
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+
+                private float add(final float a, final float b) {
+                    return a + b;
+                }
+
+                @Override
+                public void processWorkItem() {
+                    final int id = get_global_id(0);
+                    final float a = theA[id];
+                    final float b = theB[id];
+                    theResult[id] = add(a, b);
                 }
             });
         }

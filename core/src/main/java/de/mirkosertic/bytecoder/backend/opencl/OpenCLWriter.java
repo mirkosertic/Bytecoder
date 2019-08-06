@@ -15,14 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import java.io.PrintWriter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import de.mirkosertic.bytecoder.api.opencl.OpenCLFunction;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -69,6 +61,14 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OpenCLWriter extends IndentSSAWriter {
 
@@ -559,6 +559,7 @@ public class OpenCLWriter extends IndentSSAWriter {
             print(theArgument.getField().getValue().getName().stringValue());
         }
 
+        final BytecodeMethodSignature theSignature = aExpression.getSignature();
         final List<Value> theMethodArguments = aExpression.incomingDataFlows();
         for (int i=1;i<theMethodArguments.size();i++) {
             final Value theValue = theMethodArguments.get(i);
@@ -567,7 +568,11 @@ public class OpenCLWriter extends IndentSSAWriter {
             } else {
                 print(",");
             }
-            print("&");
+            if (!theSignature.getArguments()[i - 1].isPrimitive()) {
+                // Everything except primitives is passed by reference
+                print("&");
+            }
+
             printValue(theValue);
         }
 
