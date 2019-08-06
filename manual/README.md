@@ -46,13 +46,13 @@ Now, we have the compiled .class files. Now we can use the Bytecoder CLI to comp
 Step 1: Download the CLI from Maven central:
 
 ``` 
-wget http://central.maven.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/2019-06-13/bytecoder-cli-2019-06-13-executable.jar
+wget http://central.maven.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/2019-08-03/bytecoder-cli-2019-08-03-executable.jar
 ```
 
 Step 2: Invoke the CLI:
 
 ```
-java -jar bytecoder-cli-2019-06-13-executable.jar -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=. -backend=js -minify=false
+java -jar bytecoder-cli-2019-08-03-executable.jar -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=. -backend=js -minify=false
 ```
 
 Step 3: Create an embedding HTML document
@@ -332,7 +332,7 @@ __kernel void BytecoderKernel(__global const float* val$theA,
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-06-13</version>
+            <version>2019-08-03</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
@@ -364,7 +364,7 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-06-13</version>
+            <version>2019-08-03</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>wasm</backend>
