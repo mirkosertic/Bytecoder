@@ -16,9 +16,11 @@
 package de.mirkosertic.bytecoder.api.opencl;
 
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.normalize;
 
 public class ContextTest {
 
@@ -102,51 +104,27 @@ public class ContextTest {
         }
     }
 
-    /*
     @Test
-    public void testComplexAdd() throws Exception {
-        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
-
-        final Float2[] theA = {new Float2(10f, 20f)};
-        final Float2[] theB = {new Float2(10f, 20f)};
-        final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
-
-        try (Context theContext = thePlatform.createContext()) {
-            theContext.compute(1, new Kernel() {
-                public void processWorkItem() {
-                    int id = get_global_id(0);
-                    float aS0 = theA[id].s0;
-                    float aS1 = theB[id].s1;
-                    theResult[id].s0 = aS0 + 100;
-                    theResult[id].s1 = aS1 + 200;
-                }
-            });
-        }
-
-        for (Float2 aTheResult : theResult) {
-            System.out.println(aTheResult);
-        }
-    }
-
-    @Test
+    @Ignore
     public void testVectorNormalize() throws Exception {
-        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 
         final Float2[] theA = {new Float2(10f, 20f)};
         final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
 
-        try (Context theContext = thePlatform.createContext()) {
+        try (final Context theContext = thePlatform.createContext()) {
             theContext.compute(1, new Kernel() {
+                @Override
                 public void processWorkItem() {
-                    int id = get_global_id(0);
-                    Float2 theVec = VectorFunctions.normalize(theA[id]);
+                    final int id = get_global_id(0);
+                    final Float2 theVec = normalize(theA[id]);
                     theResult[id].s1 = theVec.s1;
                 }
             });
         }
 
-        for (Float2 aTheResult : theResult) {
+        for (final Float2 aTheResult : theResult) {
             System.out.println(aTheResult);
         }
-    }*/
+    }
 }

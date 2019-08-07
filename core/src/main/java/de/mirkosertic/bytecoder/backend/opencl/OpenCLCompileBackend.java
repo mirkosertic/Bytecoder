@@ -100,6 +100,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 return;
             }
 
+            if (theKernelClass != aMethodMapEntry.getProvidingClass()) {
+                return;
+            }
+
             if (theMethod != theKernelMethod) {
                 final Program theSSAProgram1 = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
