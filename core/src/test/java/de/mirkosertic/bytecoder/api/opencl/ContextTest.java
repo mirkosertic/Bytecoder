@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.api.opencl;
 
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
@@ -75,7 +74,6 @@ public class ContextTest {
     }
 
     @Test
-    @Ignore
     public void testSimpleAddWithInlineMethod() throws Exception {
         final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 

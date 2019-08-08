@@ -23,6 +23,7 @@ import org.jocl.cl_device_id;
 import org.jocl.cl_kernel;
 import org.jocl.cl_platform_id;
 import org.jocl.cl_program;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
@@ -38,6 +39,7 @@ import static org.jocl.CL.clGetPlatformIDs;
 public class HandcraftedTest {
 
     @Test
+    @Ignore
     public void testHandcrafttedCode() {
 
         // Enable exceptions and subsequently omit error checks in this sample

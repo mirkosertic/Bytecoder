@@ -48,11 +48,11 @@ public class ArrayTest {
         }
 
         public Object testGetAndPut() {
-            Object[] theData = elementData;
+            final Object[] theData = elementData;
             Object theResult = null;
             try {
                 theResult = theData[1];
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 theResult = theData[2];
             } finally {
                 theResult = theData[3];
@@ -61,13 +61,13 @@ public class ArrayTest {
         }
     }
 
-    private static byte[] bytes = new byte[10];
-    private static short[] shorts = new short[10];
-    private static char[] chars = new char[10];
-    private static int[] ints = new int[10];
-    private static boolean[] booleans = new boolean[10];
-    private static float[] floats = new float[10];
-    private static Entry[] entries = new Entry[10];
+    private static final byte[] bytes = new byte[10];
+    private static final short[] shorts = new short[10];
+    private static final char[] chars = new char[10];
+    private static final int[] ints = new int[10];
+    private static final boolean[] booleans = new boolean[10];
+    private static final float[] floats = new float[10];
+    private static final Entry[] entries = new Entry[10];
 
     @Test
     public void testLength() {
@@ -118,23 +118,23 @@ public class ArrayTest {
 
     @Test
     public void testEntries() {
-        Entry theEntry = new Entry();
+        final Entry theEntry = new Entry();
         Assert.assertNull(entries[0]);
         theEntry.test = 10;
         entries[4] = theEntry;
         Assert.assertEquals(10, entries[4].test, 0);
 
-        Object[] theEmpty = new Object[100];
+        final Object[] theEmpty = new Object[100];
 
-        Object theEntry0 = theEmpty[12];
+        final Object theEntry0 = theEmpty[12];
         Assert.assertNull(theEntry0);
     }
 
     @Test
     public void testCObjectArray() {
-        String theA = "AB";
-        String theC = "ABC";
-        String[] theStrings = new String[3];
+        final String theA = "AB";
+        final String theC = "ABC";
+        final String[] theStrings = new String[3];
         theStrings[0] = theA;
         theStrings[2] = theC;
         Assert.assertNotNull(theStrings[0]);
@@ -149,29 +149,29 @@ public class ArrayTest {
 
     @Test
     public void testTypeAndLength() {
-        Object[] theOArray = new Object[12];
+        final Object[] theOArray = new Object[12];
         Assert.assertEquals(12, theOArray.length, 0);
-        Object[] theOther = theOArray.clone();
+        final Object[] theOther = theOArray.clone();
         Assert.assertEquals(12, theOther.length, 0);
     }
 
     @Test
     public void testStaticMultiDimInit() {
-        float[][] theFloats = StaticInitHost.floats;
+        final float[][] theFloats = StaticInitHost.floats;
         Assert.assertEquals(2, theFloats.length, 0);
         Assert.assertEquals(3, theFloats[0].length, 0);
-        Assert.assertEquals(3, theFloats[0].length, 0);
+        Assert.assertEquals(3, theFloats[1].length, 0);
     }
 
     @Test
     public void testReflectiveCreation() {
-        Object[] theArray = (Object[]) Array.newInstance(Object.class, 10);
+        final Object[] theArray = (Object[]) Array.newInstance(Object.class, 10);
         Assert.assertEquals(10, theArray.length, 0);
     }
 
     @Test
     public void testIndirectAccess() {
-        MemberWithArray theInstance = new MemberWithArray();
+        final MemberWithArray theInstance = new MemberWithArray();
         theInstance.testGetAndPut();
     }
 }

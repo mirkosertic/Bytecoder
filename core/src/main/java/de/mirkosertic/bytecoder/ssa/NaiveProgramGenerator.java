@@ -603,8 +603,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final TypeRef theType = theTarget.resolveType();
                 if (theType instanceof TypeRef.ArrayTypeRef) {
                     final TypeRef.ArrayTypeRef theArrayTypeRef = (TypeRef.ArrayTypeRef) theTarget.resolveType();
+                    final TypeRef singleElementType = TypeRef.toType(theArrayTypeRef.arrayType().singleElementType());
                     final Variable theVariable = aTargetBlock.newVariable(
-                            theInstruction.getOpcodeAddress(), TypeRef.toType(theArrayTypeRef.arrayType()), new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theTarget, theIndex));
+                            theInstruction.getOpcodeAddress(), singleElementType, new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), singleElementType, theTarget, theIndex));
                     aHelper.push(theVariable);
                 } else {
                     final Variable theVariable = aTargetBlock.newVariable(

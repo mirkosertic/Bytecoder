@@ -707,18 +707,18 @@ public class OpenCLWriter extends IndentSSAWriter {
         for (final Variable theVariable : program.getVariables()) {
             if (!theVariable.isSynthetic()) {
                 final TypeRef theVarType = theVariable.resolveType();
-                /*if (theVarType.isArray()) {
+                if (theVarType.isArray()) {
                     print("__global ");
-                    print(toType(theVarType, false));
+                    print(toType(theVarType));
                     print("* ");
                     print(theVariable.getName());
                     println(";");
-                } else {*/
+                } else {
                     print(toType(theVarType));
                     print(" ");
                     print(theVariable.getName());
                     println(";");
-                /*}*/
+                }
             }
         }
     }
