@@ -160,7 +160,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             }
 
             ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
-            theDriverService = theDriverService.withVerbose(false);
+            theDriverService = theDriverService.withVerbose(false).withLogFile(new File("chromedriver.log"));
             theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
 
             DRIVERSERVICE = theDriverService.build();
@@ -178,6 +178,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+        theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
         return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
     }
