@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.api.opencl;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
 
+import static de.mirkosertic.bytecoder.api.opencl.Float2.float2;
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.normalize;
 
@@ -107,8 +108,8 @@ public class ContextTest {
     public void testVectorNormalize() throws Exception {
         final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 
-        final Float2[] theA = {new Float2(10f, 20f)};
-        final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
+        final Float2[] theA = {float2(10f, 20f)};
+        final Float2[] theResult = new Float2[] {float2(-1f, -1f)};
 
         try (final Context theContext = thePlatform.createContext()) {
             theContext.compute(1, new Kernel() {
