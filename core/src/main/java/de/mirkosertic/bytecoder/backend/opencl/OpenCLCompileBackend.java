@@ -159,14 +159,14 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                     final Relooper theRelooper = new Relooper(aOptions);
                     final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                    theSSAWriter.printReloopedKernel(theSSAProgram, theReloopedBlock);
+                    theSSAWriter.printReloopedKernel(theReloopedBlock);
                 }
             } else {
 
                 final Relooper theRelooper = new Relooper(aOptions);
                 final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                theSSAWriter.printReloopedKernel(theSSAProgram, theReloopedBlock);
+                theSSAWriter.printReloopedKernel(theReloopedBlock);
 
             }
 

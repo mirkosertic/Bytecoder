@@ -75,6 +75,7 @@ public class ContextTest {
     }
 
     @Test
+    @Ignore
     public void testSimpleAddWithInlineMethod() throws Exception {
         final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 
@@ -105,7 +106,6 @@ public class ContextTest {
     }
 
     @Test
-    @Ignore
     public void testVectorNormalize() throws Exception {
         final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 
