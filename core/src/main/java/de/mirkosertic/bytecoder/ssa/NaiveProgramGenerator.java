@@ -609,7 +609,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     aHelper.push(theVariable);
                 } else {
                     final Variable theVariable = aTargetBlock.newVariable(
-                            theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theTarget, theIndex));
+                            theInstruction.getOpcodeAddress(), theType, new ArrayEntryExpression(aProgram, theInstruction.getOpcodeAddress(), theType, theTarget, theIndex));
                     aHelper.push(theVariable);
                 }
             } else if (theInstruction instanceof BytecodeInstructionGenericArrayLOAD) {
