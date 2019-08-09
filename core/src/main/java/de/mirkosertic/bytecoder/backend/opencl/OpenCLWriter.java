@@ -652,8 +652,14 @@ public class OpenCLWriter extends IndentSSAWriter {
                     throw new IllegalArgumentException("Annotation @OpenCLFunction required for static method " + aValue.getMethodName());
                 }
                 final String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
-                final BytecodeMethodSignature theSignature = aValue.getSignature();
-                print(theMethodName);
+                final BytecodeAnnotation.ElementValue literalValue = theAnnotation.getElementValueByName("literal");
+                if (literalValue!= null && "true".equals(literalValue.stringValue())) {
+                    print("(");
+                    print(theMethodName);
+                    print(")");
+                } else {
+                    print(theMethodName);
+                }
                 print("(");
                 final List<Value> theArguments = aValue.incomingDataFlows();
                 for (int i=0;i<theArguments.size();i++) {

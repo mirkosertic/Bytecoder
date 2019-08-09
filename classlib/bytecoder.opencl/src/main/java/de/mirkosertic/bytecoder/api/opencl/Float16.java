@@ -37,7 +37,7 @@ public class Float16 implements FloatSerializable {
     public float se;
     public float sf;
 
-    @OpenCLFunction("float16")
+    @OpenCLFunction(value = "float16", literal = true)
     public static Float16 float16(final float aS0, final float aS1, final float aS2, final float aS3, final float aS4, final float aS5, final float aS6, final float aS7, final float aS8, final float aS9, final float aSa,
                                   final float aSb, final float aSc, final float aSd, final float aSe, final float aSf) {
         return new Float16(aS0, aS1, aS2, aS3, aS4, aS5, aS6, aS7, aS8, aS9, aSa, aSb, aSc, aSd, aSe, aSf);
@@ -91,7 +91,7 @@ public class Float16 implements FloatSerializable {
 
     @Override
     public String toString() {
-        return "Float16{" +
+        return "float16{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 ", s2=" + s2 +

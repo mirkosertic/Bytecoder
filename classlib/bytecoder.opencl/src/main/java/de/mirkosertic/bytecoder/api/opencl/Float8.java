@@ -29,7 +29,7 @@ public class Float8 implements FloatSerializable {
     public float s6;
     public float s7;
 
-    @OpenCLFunction("float8")
+    @OpenCLFunction(value = "float8", literal = true)
     public static Float8 float8(final float aS0, final float aS1, final float aS2, final float aS3, final float aS4, final float aS5, final float aS6, final float aS7) {
         return new Float8(aS0, aS1,  aS2, aS3, aS4, aS5, aS6, aS7);
     }
@@ -64,7 +64,7 @@ public class Float8 implements FloatSerializable {
 
     @Override
     public String toString() {
-        return "Vec8f{" +
+        return "float8{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 ", s2=" + s2 +

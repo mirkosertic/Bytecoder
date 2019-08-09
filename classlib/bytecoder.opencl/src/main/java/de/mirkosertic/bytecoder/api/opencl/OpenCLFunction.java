@@ -28,4 +28,6 @@ import java.lang.annotation.Target;
 public @interface OpenCLFunction {
 
     String value();
+
+    boolean literal() default false;
 }

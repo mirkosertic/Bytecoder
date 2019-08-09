@@ -126,4 +126,28 @@ public class ContextTest {
             System.out.println(aTheResult);
         }
     }
+
+    @Test
+    public void testSimpleCopy() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+
+        final Float2[] theA = {float2(10f, 20f), float2(30f, 40f)};
+        final Float2[] theResult = new Float2[] {float2(0f, 0f), float2(0f, 0f)};
+
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+                @Override
+                public void processWorkItem() {
+                    final int id = get_global_id(0);
+                    final Float2 a = theA[id];
+                    theResult[id] = float2(a.s0, a.s1);
+                }
+            });
+        }
+
+        for (final Float2 aTheResult : theResult) {
+            System.out.println(aTheResult);
+        }
+    }
+
 }

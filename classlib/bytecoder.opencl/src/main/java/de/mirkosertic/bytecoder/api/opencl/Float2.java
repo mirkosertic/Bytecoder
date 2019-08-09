@@ -23,7 +23,7 @@ public class Float2 implements FloatSerializable {
     public float s0;
     public float s1;
 
-    @OpenCLFunction("float2")
+    @OpenCLFunction(value = "float2", literal = true)
     public static Float2 float2(final float aS0, final float aS1) {
         return new Float2(aS0, aS1);
     }
@@ -46,7 +46,7 @@ public class Float2 implements FloatSerializable {
 
     @Override
     public String toString() {
-        return "Vec2f{" +
+        return "float2{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 '}';
