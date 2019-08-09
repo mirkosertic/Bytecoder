@@ -23,31 +23,36 @@ public class Float2 implements FloatSerializable {
     public float s0;
     public float s1;
 
-    public Float2(float aS0, float aS1) {
+    @OpenCLFunction(value = "float2", literal = true)
+    public static Float2 float2(final float aS0, final float aS1) {
+        return new Float2(aS0, aS1);
+    }
+
+    private Float2(final float aS0, final float aS1) {
         s0 = aS0;
         s1 = aS1;
     }
 
     @Override
-    public void writeTo(FloatBuffer aBuffer) {
+    public void writeTo(final FloatBuffer aBuffer) {
         aBuffer.put(s0).put(s1);
     }
 
     @Override
-    public void readFrom(FloatBuffer aBuffer) {
+    public void readFrom(final FloatBuffer aBuffer) {
         s0 = aBuffer.get();
         s1 = aBuffer.get();
     }
 
     @Override
     public String toString() {
-        return "Vec2f{" +
+        return "float2{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 '}';
     }
 
-    static Float2 normalize(Float2 aVector) {
+    static Float2 normalize(final Float2 aVector) {
         throw new IllegalArgumentException("Not implemented for CPU emulation");
     }
 
@@ -59,14 +64,14 @@ public class Float2 implements FloatSerializable {
 
     }
 
-    Float2 cross(Float2 aOtherVector) {
+    Float2 cross(final Float2 aOtherVector) {
         return new Float2(
             s0 * aOtherVector.s0,
             s1 * aOtherVector.s1
         );
     }
 
-    float dot(Float2 aOtherVector) {
+    float dot(final Float2 aOtherVector) {
         float theDotProduct = 0.0f;
         theDotProduct += s0 * aOtherVector.s0;
         theDotProduct += s1 * aOtherVector.s1;

@@ -25,7 +25,12 @@ public class Float4 implements FloatSerializable {
     public float s2;
     public float s3;
 
-    public Float4(float aS0, float aS1, float aS2, float aS3) {
+    @OpenCLFunction(value = "float2", literal = true)
+    public static Float4 float4(final float aS0, final float aS1, final float aS2, final float aS3) {
+        return new Float4(aS0, aS1, aS2, aS3);
+    }
+
+    private Float4(final float aS0, final float aS1, final float aS2, final float aS3) {
         s0 = aS0;
         s1 = aS1;
         s2 = aS2;
@@ -33,12 +38,12 @@ public class Float4 implements FloatSerializable {
     }
 
     @Override
-    public void writeTo(FloatBuffer aBuffer) {
+    public void writeTo(final FloatBuffer aBuffer) {
         aBuffer.put(s0).put(s1).put(s2).put(s3);
     }
 
     @Override
-    public void readFrom(FloatBuffer aBuffer) {
+    public void readFrom(final FloatBuffer aBuffer) {
         s0 = aBuffer.get();
         s1 = aBuffer.get();
         s2 = aBuffer.get();
@@ -47,7 +52,7 @@ public class Float4 implements FloatSerializable {
 
     @Override
     public String toString() {
-        return "Vec4f{" +
+        return "float4{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 ", s2=" + s2 +
@@ -55,7 +60,7 @@ public class Float4 implements FloatSerializable {
                 '}';
     }
 
-    static Float4 normalize(Float4 aVector) {
+    static Float4 normalize(final Float4 aVector) {
         throw new IllegalArgumentException("Not implemented for CPU emulation");
     }
 
@@ -69,7 +74,7 @@ public class Float4 implements FloatSerializable {
 
     }
 
-    Float4 cross(Float4 aOtherVector) {
+    Float4 cross(final Float4 aOtherVector) {
         return new Float4(
             s0 * aOtherVector.s0,
             s1 * aOtherVector.s1,
@@ -78,7 +83,7 @@ public class Float4 implements FloatSerializable {
         );
     }
 
-    float dot(Float4 aOtherVector) {
+    float dot(final Float4 aOtherVector) {
         float theDotProduct = 0.0f;
         theDotProduct += s0 * aOtherVector.s0;
         theDotProduct += s1 * aOtherVector.s1;

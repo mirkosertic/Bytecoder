@@ -15,24 +15,24 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Test;
+
+import static de.mirkosertic.bytecoder.api.opencl.Float4.float4;
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_size;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.dot;
 import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.length;
-
-import org.junit.Test;
-
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 public class AliceBobCarolDaveTest {
 
     @Test
     public void testSimilarityRelooper() throws Exception {
         // The data of our four friends
-        final Float4 theAlice = new Float4(5f, 1f, 0f, 6f);
-        final Float4 theBob = new Float4(0f, 10f, 3f, 0f);
-        final Float4 theCarol = new Float4(2f, 6f, 3f, 2f);
-        final Float4 theDave = new Float4(7f, 2f, 1f, 8f);
+        final Float4 theAlice = float4(5f, 1f, 0f, 6f);
+        final Float4 theBob = float4(0f, 10f, 3f, 0f);
+        final Float4 theCarol = float4(2f, 6f, 3f, 2f);
+        final Float4 theDave = float4(7f, 2f, 1f, 8f);
 
         // We need an input for our kernel, a list of vectors
         final Float4[] theInputs = new Float4[] {theAlice, theCarol, theBob, theDave};
@@ -101,10 +101,10 @@ public class AliceBobCarolDaveTest {
     @Test
     public void testSimilarityStackifier() throws Exception {
         // The data of our four friends
-        final Float4 theAlice = new Float4(5f, 1f, 0f, 6f);
-        final Float4 theBob = new Float4(0f, 10f, 3f, 0f);
-        final Float4 theCarol = new Float4(2f, 6f, 3f, 2f);
-        final Float4 theDave = new Float4(7f, 2f, 1f, 8f);
+        final Float4 theAlice = float4(5f, 1f, 0f, 6f);
+        final Float4 theBob = float4(0f, 10f, 3f, 0f);
+        final Float4 theCarol = float4(2f, 6f, 3f, 2f);
+        final Float4 theDave = float4(7f, 2f, 1f, 8f);
 
         // We need an input for our kernel, a list of vectors
         final Float4[] theInputs = new Float4[] {theAlice, theCarol, theBob, theDave};
@@ -175,7 +175,7 @@ public class AliceBobCarolDaveTest {
         final int theMaxSize = 100000;
         final Float4[] theInputs = new Float4[theMaxSize];
         for (int i=0;i<theMaxSize;i++) {
-            theInputs[i] = new Float4((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
+            theInputs[i] = float4((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
         }
 
         final int[] theMostSimilar = new int[theInputs.length];
@@ -184,7 +184,6 @@ public class AliceBobCarolDaveTest {
         final long theStart = System.currentTimeMillis();
 
         final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(false));
-        //Platform thePlatform = new CPUPlatform(new Slf4JLogger());
 
         final PlatformProperties thePlatformProps = thePlatform.getPlatformProperties();
         System.out.println("Platform is   : " + thePlatformProps.getName());
@@ -242,7 +241,7 @@ public class AliceBobCarolDaveTest {
         final int theMaxSize = 100000;
         final Float4[] theInputs = new Float4[theMaxSize];
         for (int i=0;i<theMaxSize;i++) {
-            theInputs[i] = new Float4((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
+            theInputs[i] = float4((float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10, (float) Math.random() * 10);
         }
 
         final int[] theMostSimilar = new int[theInputs.length];
@@ -251,7 +250,6 @@ public class AliceBobCarolDaveTest {
         final long theStart = System.currentTimeMillis();
 
         final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
-        //Platform thePlatform = new CPUPlatform(new Slf4JLogger());
 
         final PlatformProperties thePlatformProps = thePlatform.getPlatformProperties();
         System.out.println("Platform is   : " + thePlatformProps.getName());

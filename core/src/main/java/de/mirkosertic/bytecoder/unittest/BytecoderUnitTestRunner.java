@@ -160,7 +160,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             }
 
             ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
-            theDriverService = theDriverService.withVerbose(false);
+            theDriverService = theDriverService.withVerbose(false).withLogFile(new File("chromedriver.log"));
             theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
 
             DRIVERSERVICE = theDriverService.build();
@@ -178,6 +178,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+        theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
         return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
     }
@@ -311,9 +312,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("<html>");
                 theWriter.println("    <body>");
                 theWriter.println("        <h1>Module code</h1>");
-                theWriter.println("        <pre id=\"modulecode\">");
-                theWriter.println(textualContent.asString());
-                theWriter.println("        </pre>");
                 theWriter.println("        <h1>Compilation result</h1>");
                 theWriter.println("        <pre id=\"compileresult\">");
                 theWriter.println("        </pre>");

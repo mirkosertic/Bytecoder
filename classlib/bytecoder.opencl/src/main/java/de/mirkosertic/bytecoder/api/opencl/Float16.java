@@ -37,8 +37,14 @@ public class Float16 implements FloatSerializable {
     public float se;
     public float sf;
 
-    public Float16(float aS0, float aS1, float aS2, float aS3, float aS4, float aS5, float aS6, float aS7, float aS8, float aS9, float aSa,
-            float aSb, float aSc, float aSd, float aSe, float aSf) {
+    @OpenCLFunction(value = "float16", literal = true)
+    public static Float16 float16(final float aS0, final float aS1, final float aS2, final float aS3, final float aS4, final float aS5, final float aS6, final float aS7, final float aS8, final float aS9, final float aSa,
+                                  final float aSb, final float aSc, final float aSd, final float aSe, final float aSf) {
+        return new Float16(aS0, aS1, aS2, aS3, aS4, aS5, aS6, aS7, aS8, aS9, aSa, aSb, aSc, aSd, aSe, aSf);
+    }
+
+    private Float16(final float aS0, final float aS1, final float aS2, final float aS3, final float aS4, final float aS5, final float aS6, final float aS7, final float aS8, final float aS9, final float aSa,
+                    final float aSb, final float aSc, final float aSd, final float aSe, final float aSf) {
         s0 = aS0;
         s1 = aS1;
         s2 = aS2;
@@ -58,13 +64,13 @@ public class Float16 implements FloatSerializable {
     }
 
     @Override
-    public void writeTo(FloatBuffer aBuffer) {
+    public void writeTo(final FloatBuffer aBuffer) {
         aBuffer.put(s0).put(s1).put(s2).put(s3).put(s4).put(s5).put(s6).put(s7)
         .put(s8).put(s9).put(sa).put(sb).put(sc).put(sd).put(se).put(sf);
     }
 
     @Override
-    public void readFrom(FloatBuffer aBuffer) {
+    public void readFrom(final FloatBuffer aBuffer) {
         s0 = aBuffer.get();
         s1 = aBuffer.get();
         s2 = aBuffer.get();
@@ -85,7 +91,7 @@ public class Float16 implements FloatSerializable {
 
     @Override
     public String toString() {
-        return "Float16{" +
+        return "float16{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 ", s2=" + s2 +
@@ -105,7 +111,7 @@ public class Float16 implements FloatSerializable {
                 '}';
     }
 
-    static Float16 normalize(Float16 aVector) {
+    static Float16 normalize(final Float16 aVector) {
         throw new IllegalArgumentException("Not implemented for CPU emulation");
     }
 
@@ -131,7 +137,7 @@ public class Float16 implements FloatSerializable {
 
     }
 
-    Float16 cross(Float16 aOtherVector) {
+    Float16 cross(final Float16 aOtherVector) {
         return new Float16(
             s0 * aOtherVector.s0,
             s1 * aOtherVector.s1,
@@ -152,7 +158,7 @@ public class Float16 implements FloatSerializable {
         );
     }
 
-    float dot(Float16 aOtherVector) {
+    float dot(final Float16 aOtherVector) {
         float theDotProduct = 0.0f;
         theDotProduct += s0 * aOtherVector.s0;
         theDotProduct += s1 * aOtherVector.s1;

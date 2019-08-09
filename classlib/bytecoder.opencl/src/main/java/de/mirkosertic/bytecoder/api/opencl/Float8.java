@@ -29,7 +29,12 @@ public class Float8 implements FloatSerializable {
     public float s6;
     public float s7;
 
-    public Float8(float aS0, float aS1, float aS2, float aS3, float aS4, float aS5, float aS6, float aS7) {
+    @OpenCLFunction(value = "float8", literal = true)
+    public static Float8 float8(final float aS0, final float aS1, final float aS2, final float aS3, final float aS4, final float aS5, final float aS6, final float aS7) {
+        return new Float8(aS0, aS1,  aS2, aS3, aS4, aS5, aS6, aS7);
+    }
+
+    private Float8(final float aS0, final float aS1, final float aS2, final float aS3, final float aS4, final float aS5, final float aS6, final float aS7) {
         s0 = aS0;
         s1 = aS1;
         s2 = aS2;
@@ -41,12 +46,12 @@ public class Float8 implements FloatSerializable {
     }
 
     @Override
-    public void writeTo(FloatBuffer aBuffer) {
+    public void writeTo(final FloatBuffer aBuffer) {
         aBuffer.put(s0).put(s1).put(s2).put(s3).put(s4).put(s5).put(s6).put(s7);
     }
 
     @Override
-    public void readFrom(FloatBuffer aBuffer) {
+    public void readFrom(final FloatBuffer aBuffer) {
         s0 = aBuffer.get();
         s1 = aBuffer.get();
         s2 = aBuffer.get();
@@ -59,7 +64,7 @@ public class Float8 implements FloatSerializable {
 
     @Override
     public String toString() {
-        return "Vec8f{" +
+        return "float8{" +
                 "s0=" + s0 +
                 ", s1=" + s1 +
                 ", s2=" + s2 +
@@ -71,7 +76,7 @@ public class Float8 implements FloatSerializable {
                 '}';
     }
 
-    static Float8 normalize(Float8 aVector) {
+    static Float8 normalize(final Float8 aVector) {
         throw new IllegalArgumentException("Not implemented for CPU emulation");
     }
 
@@ -89,7 +94,7 @@ public class Float8 implements FloatSerializable {
 
     }
 
-    Float8 cross(Float8 aOtherVector) {
+    Float8 cross(final Float8 aOtherVector) {
         return new Float8(
             s0 * aOtherVector.s0,
             s1 * aOtherVector.s1,
@@ -102,7 +107,7 @@ public class Float8 implements FloatSerializable {
         );
     }
 
-    float dot(Float8 aOtherVector) {
+    float dot(final Float8 aOtherVector) {
         float theDotProduct = 0.0f;
         theDotProduct += s0 * aOtherVector.s0;
         theDotProduct += s1 * aOtherVector.s1;
