@@ -15,11 +15,12 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
-
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
 
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import static de.mirkosertic.bytecoder.api.opencl.Float2.float2;
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.normalize;
 
 public class ContextTest {
 
@@ -73,51 +74,103 @@ public class ContextTest {
         }
     }
 
-    /*
     @Test
-    public void testComplexAdd() throws Exception {
-        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+    public void testSimpleAddWithInlineMethod() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 
-        final Float2[] theA = {new Float2(10f, 20f)};
-        final Float2[] theB = {new Float2(10f, 20f)};
-        final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
+        final float[] theA = {10f, 20f, 30f, 40f};
+        final float[] theB = {100f, 200f, 300f, 400f};
+        final float[] theResult = new float[4];
 
-        try (Context theContext = thePlatform.createContext()) {
-            theContext.compute(1, new Kernel() {
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+
+                private float add(final float a, final float b) {
+                    return a + b;
+                }
+
+                @Override
                 public void processWorkItem() {
-                    int id = get_global_id(0);
-                    float aS0 = theA[id].s0;
-                    float aS1 = theB[id].s1;
-                    theResult[id].s0 = aS0 + 100;
-                    theResult[id].s1 = aS1 + 200;
+                    final int id = get_global_id(0);
+                    final float a = theA[id];
+                    final float b = theB[id];
+                    theResult[id] = add(a, b);
                 }
             });
         }
 
-        for (Float2 aTheResult : theResult) {
+        for (final float aTheResult : theResult) {
             System.out.println(aTheResult);
         }
     }
 
     @Test
     public void testVectorNormalize() throws Exception {
-        Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger());
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
 
-        final Float2[] theA = {new Float2(10f, 20f)};
-        final Float2[] theResult = new Float2[] {new Float2(-1f, -1f)};
+        final Float2[] theA = {float2(10f, 20f)};
+        final Float2[] theResult = new Float2[] {float2(-1f, -1f)};
 
-        try (Context theContext = thePlatform.createContext()) {
+        try (final Context theContext = thePlatform.createContext()) {
             theContext.compute(1, new Kernel() {
+                @Override
                 public void processWorkItem() {
-                    int id = get_global_id(0);
-                    Float2 theVec = VectorFunctions.normalize(theA[id]);
+                    final int id = get_global_id(0);
+                    final Float2 theVec = normalize(theA[id]);
                     theResult[id].s1 = theVec.s1;
                 }
             });
         }
 
-        for (Float2 aTheResult : theResult) {
+        for (final Float2 aTheResult : theResult) {
             System.out.println(aTheResult);
         }
-    }*/
+    }
+
+    @Test
+    public void testSimpleCopy() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+
+        final Float2[] theA = {float2(10f, 20f), float2(30f, 40f)};
+        final Float2[] theResult = new Float2[] {float2(0f, 0f), float2(0f, 0f)};
+
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+                @Override
+                public void processWorkItem() {
+                    final int id = get_global_id(0);
+                    final Float2 a = theA[id];
+                    theResult[id] = float2(a.s0, a.s1);
+                }
+            });
+        }
+
+        for (final Float2 aTheResult : theResult) {
+            System.out.println(aTheResult);
+        }
+    }
+
+    @Test
+    public void testSimpleCopyWithPrimitiveInput() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+
+        final float adder = 10;
+        final Float2[] theA = {float2(10f, 20f), float2(30f, 40f)};
+        final Float2[] theResult = new Float2[] {float2(0f, 0f), float2(0f, 0f)};
+
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(4, new Kernel() {
+                @Override
+                public void processWorkItem() {
+                    final int id = get_global_id(0);
+                    final Float2 a = theA[id];
+                    theResult[id] = float2(a.s0 + adder, a.s1 + adder);
+                }
+            });
+        }
+
+        for (final Float2 aTheResult : theResult) {
+            System.out.println(aTheResult);
+        }
+    }
 }

@@ -20,7 +20,7 @@ public class BytecodeArrayTypeRef implements BytecodeTypeRef {
     private final BytecodeTypeRef type;
     private final int depth;
 
-    public BytecodeArrayTypeRef(BytecodeTypeRef aType, int aDepth) {
+    public BytecodeArrayTypeRef(final BytecodeTypeRef aType, final int aDepth) {
         type = aType;
         depth = aDepth;
     }
@@ -33,6 +33,13 @@ public class BytecodeArrayTypeRef implements BytecodeTypeRef {
     @Override
     public boolean isPrimitive() {
         return false;
+    }
+
+    public BytecodeTypeRef singleElementType() {
+        if (depth == 1) {
+            return type;
+        }
+        return new BytecodeArrayTypeRef(type, depth - 1);
     }
 
     public BytecodeTypeRef getType() {
@@ -49,11 +56,11 @@ public class BytecodeArrayTypeRef implements BytecodeTypeRef {
     }
 
     @Override
-    public boolean matchesExactlyTo(BytecodeTypeRef aOtherType) {
+    public boolean matchesExactlyTo(final BytecodeTypeRef aOtherType) {
         if (!(aOtherType instanceof BytecodeArrayTypeRef)) {
             return false;
         }
-        BytecodeArrayTypeRef theOther = (BytecodeArrayTypeRef) aOtherType;
+        final BytecodeArrayTypeRef theOther = (BytecodeArrayTypeRef) aOtherType;
         if (!type.matchesExactlyTo(((BytecodeArrayTypeRef) aOtherType).type)) {
             return false;
         }
