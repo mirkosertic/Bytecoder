@@ -312,9 +312,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("<html>");
                 theWriter.println("    <body>");
                 theWriter.println("        <h1>Module code</h1>");
-                theWriter.println("        <pre id=\"modulecode\">");
-                theWriter.println(textualContent.asString());
-                theWriter.println("        </pre>");
                 theWriter.println("        <h1>Compilation result</h1>");
                 theWriter.println("        <pre id=\"compileresult\">");
                 theWriter.println("        </pre>");
