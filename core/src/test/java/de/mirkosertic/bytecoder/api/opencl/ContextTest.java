@@ -173,4 +173,55 @@ public class ContextTest {
             System.out.println(aTheResult);
         }
     }
+
+    @Test
+    public void testMandelbrot() throws Exception {
+
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        // final Platform thePlatform = new CPUPlatform(new Slf4JLogger());
+
+        final int iteration = 30;
+        final float cellSize = 0.00625f;
+        final int width = 440;
+        final int height = 350;
+
+        final int[] imageData = new int[width * height];
+
+        final long startTime = System.currentTimeMillis();
+
+        try (final Context theContext = thePlatform.createContext()) {
+            theContext.compute(imageData.length, new Kernel() {
+
+                private int checkC(final double reC, final double imC) {
+                    double reZ=0,imZ=0,reZ_minus1=0,imZ_minus1=0;
+                    int i;
+                    for (i=0;i<iteration;i++) {
+                        imZ=2*reZ_minus1*imZ_minus1+imC;
+                        reZ=reZ_minus1*reZ_minus1-imZ_minus1*imZ_minus1+reC;
+                        if (reZ*reZ+imZ*imZ>4) return i;
+                        reZ_minus1=reZ;
+                        imZ_minus1=imZ;
+                    }
+                    return i;
+                }
+
+                @Override
+                public void processWorkItem() {
+                    // Get Parallel Index
+                    final int pixelIndex = get_global_id(0);
+                    final int x = pixelIndex % width;
+                    final int y = pixelIndex / width;
+
+                    final float reC = -2.1f + (x * cellSize);
+                    final float imC = -2.1f + (y * cellSize);
+
+                    imageData[pixelIndex] = checkC(reC, imC);
+                }
+            });
+        }
+
+        final long duration = System.currentTimeMillis() - startTime;
+
+        System.out.println("Took " + duration + "ms");
+    }
 }

@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
@@ -463,9 +464,18 @@ public class OpenCLWriter extends IndentSSAWriter {
             printCompareExpression((CompareExpression) aValue);
         } else if (aValue instanceof DirectInvokeMethodExpression) {
             printDirectInvokeMethodExpression((DirectInvokeMethodExpression) aValue);
+        } else if (aValue instanceof FloorExpression) {
+            printFloorExpression((FloorExpression) aValue);
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }
+    }
+
+    private void printFloorExpression(final FloorExpression e) {
+        print("floor((float)(");
+        final Value v = e.incomingDataFlows().get(0);
+        printValue(v);
+        print("))");
     }
 
     private void printDirectInvokeMethodExpression(final DirectInvokeMethodExpression aExpression) {
