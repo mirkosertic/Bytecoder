@@ -17,65 +17,26 @@ package de.mirkosertic.bytecoder.api.opencl;
 
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
+import java.io.IOException;
 
 public class MandelbrotOpenCL {
 
-    final int m_width = 1024;
-    final int m_height = 768;
-    final int[] m_imageData;
-    final int m_itercount;
+    private final Platform platform;
+    private final Context context;
+    private final MandelbrotKernel kernel;
 
-    public MandelbrotOpenCL() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
-        //final Platform thePlatform = new CPUPlatform(new Slf4JLogger());
+    public MandelbrotOpenCL() {
+        platform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        //platform = new CPUPlatform(new Slf4JLogger());
+        context = platform.createContext();
+        kernel = new MandelbrotKernel(1024, 768, 1000);
+    }
 
-        final long startTime = System.currentTimeMillis();
-
-        final float x_min = -2f;
-        final float x_max = 2f;
-        final float y_min = -1.5f;
-        final float y_max = 1.5f;
-
-        final int maxIterations = 1000;
-        final float cellSize_width = (x_max - x_min) / m_width;
-        final float cellSize_height = (y_max - y_min) / m_height;
-
-        final int[] imageData = new int[m_width * m_height];
-
-        try (final Context theContext = thePlatform.createContext()) {
-            theContext.compute(imageData.length, new Kernel() {
-
-                private int checkC(final float reC, final float imC) {
-                    float reZ=0,imZ=0,reZ_minus1=0,imZ_minus1=0;
-                    int i;
-                    for (i=0;i<maxIterations;i++) {
-                        imZ=2*reZ_minus1*imZ_minus1+imC;
-                        reZ=reZ_minus1*reZ_minus1-imZ_minus1*imZ_minus1+reC;
-                        if (reZ*reZ+imZ*imZ>4) return i;
-                        reZ_minus1=reZ;
-                        imZ_minus1=imZ;
-                    }
-                    return i;
-                }
-
-                @Override
-                public void processWorkItem() {
-                    final int pixelIndex = get_global_id(0);
-                    final int x = pixelIndex % m_width;
-                    final int y = pixelIndex / m_width;
-
-                    final float reC = x_min + (x * cellSize_width);
-                    final float imC = y_min + (y * cellSize_height);
-
-                    imageData[pixelIndex] = checkC(reC, imC);
-                }
-            });
-        }
-
-        final long duration = System.currentTimeMillis() - startTime;
-        System.out.println("Duration = " + duration);
-        m_imageData = imageData;
-        m_itercount = maxIterations;
+    public MandelbrotKernel compute() throws IOException {
+        final long start = System.currentTimeMillis();
+        context.compute(kernel.getWidth() * kernel.getHeight(), kernel);
+        final long duration = System.currentTimeMillis() - start;
+        System.out.println("Took " + duration + "ms");
+        return kernel;
     }
 }

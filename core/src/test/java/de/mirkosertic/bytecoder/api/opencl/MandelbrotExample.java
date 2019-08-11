@@ -21,19 +21,24 @@ import java.awt.*;
 public class MandelbrotExample extends JPanel {
 
     private final MandelbrotOpenCL am;
+    private final MandelbrotKernel kernel;
 
     public MandelbrotExample() throws Exception {
         am = new MandelbrotOpenCL();
-        setPreferredSize(new Dimension(am.m_width, am.m_height));
+        kernel = am.compute();
+        setPreferredSize(new Dimension(kernel.getWidth(), kernel.getHeight()));
     }
 
     @Override
     public void paint (final Graphics g) {
-        for (int pixelIndex=0;pixelIndex<am.m_imageData.length;pixelIndex++) {
-            final int x = pixelIndex % am.m_width;
-            final int y = pixelIndex / am.m_width;
-            final int iterCount = am.m_imageData[pixelIndex];
-            if (iterCount == 0 || iterCount == am.m_itercount) {
+        final int[] imageData = kernel.getImageData();
+        final int width = kernel.getWidth();
+        final int maxIterations = kernel.getMaxIterations();
+        for (int pixelIndex=0;pixelIndex<imageData.length;pixelIndex++) {
+            final int x = pixelIndex % width;
+            final int y = pixelIndex / width;
+            final int iterCount = imageData[pixelIndex];
+            if (iterCount == 0 || iterCount == maxIterations) {
                 g.setColor(Color.black);
             } else {
                 switch (iterCount % 16) {
@@ -96,7 +101,7 @@ public class MandelbrotExample extends JPanel {
         test.setResizable(false);
         test.setContentPane(new MandelbrotExample());
         test.pack();
-        test.setVisible(true);
         test.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        test.setVisible(true);
     }
 }
