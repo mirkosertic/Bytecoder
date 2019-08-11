@@ -225,30 +225,47 @@ class OpenCLContext implements Context {
                     default:
                         throw new IllegalArgumentException("Not supported array element type " + theArrayElement.resolve() + " for kernel argument " + theArgument.getField().getValue().getName());
                     }
-                } else {
-                    throw new IllegalArgumentException("Type " + theFieldType + " is not supported for kernel argument " + theArgument.getField().getValue().getName().stringValue());
-                }
 
-                switch (theArgument.getType()) {
-                case INPUT:
+                    switch (theArgument.getType()) {
+                        case INPUT:
 /*                    theMemObjects[i] = clCreateBuffer(context,
                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                             theDataRef.size * aNumberOfStreams, theDataRef.pointer, null);
 
                     break;*/
-                case OUTPUT:
-                case INPUTOUTPUT:
-                    theMemObjects[i] = clCreateBuffer(context,
-                            CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                            theDataRef.size, theDataRef.pointer, null);
+                        case OUTPUT:
+                        case INPUTOUTPUT:
+                            theMemObjects[i] = clCreateBuffer(context,
+                                    CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                                    theDataRef.size, theDataRef.pointer, null);
 
-                    theOutputs.put(i, theDataRef);
+                            theOutputs.put(i, theDataRef);
 
-                    break;
+                            break;
+                    }
+
+                    clSetKernelArg(theCachedKernel.kernel, i,
+                            Sizeof.cl_mem, Pointer.to(theMemObjects[i]));
+
+                } else {
+                    final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
+                    theField.setAccessible(true);
+
+                    switch (theFieldType.resolve()) {
+                        case FLOAT: {
+                            final float theData = (float) theField.get(aKernel);
+                            clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_float, Pointer.to(new float[]{theData}));
+                            break;
+                        }
+                        case INT: {
+                            final int theData = (int) theField.get(aKernel);
+                            clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_int, Pointer.to(new int[]{theData}));
+                            break;
+                        }
+                        default:
+                            throw new IllegalArgumentException("Type " + theFieldType + " is not supported for kernel argument " + theArgument.getField().getValue().getName().stringValue());
+                    }
                 }
-
-                clSetKernelArg(theCachedKernel.kernel, i,
-                        Sizeof.cl_mem, Pointer.to(theMemObjects[i]));
             }
         } catch (final Exception e) {
             throw new RuntimeException("Error extracting kernel parameter", e);
@@ -278,7 +295,9 @@ class OpenCLContext implements Context {
 
         // Release memory
         for (final cl_mem theMem : theMemObjects) {
-            clReleaseMemObject(theMem);
+            if (theMem != null) {
+                clReleaseMemObject(theMem);
+            }
         }
     }
 

@@ -693,9 +693,11 @@ public class OpenCLWriter extends IndentSSAWriter {
             if (i>0) {
                 print(", ");
             }
-            print("__global ");
             final OpenCLInputOutputs.KernelArgument theArgument = arguments.get(i);
             final TypeRef theTypeRef = TypeRef.toType(theArgument.getField().getValue().getTypeRef());
+            if (theTypeRef.isObject() || theTypeRef.isArray()) {
+                print("__global ");
+            }
             switch (theArgument.getType()) {
                 case INPUT:
                     print("const ");
