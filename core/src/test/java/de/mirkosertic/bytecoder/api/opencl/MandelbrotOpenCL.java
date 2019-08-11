@@ -32,9 +32,14 @@ public class MandelbrotOpenCL {
 
         final long startTime = System.currentTimeMillis();
 
-        final int iteration = 1000;
-        final float cellSize_width = 3f / m_width;
-        final float cellSize_height = 4f / m_height;
+        final float x_min = -2f;
+        final float x_max = 2f;
+        final float y_min = -1.5f;
+        final float y_max = 1.5f;
+
+        final int maxIterations = 1000;
+        final float cellSize_width = (x_max - x_min) / m_width;
+        final float cellSize_height = (y_max - y_min) / m_height;
 
         final int[] imageData = new int[m_width * m_height];
 
@@ -44,7 +49,7 @@ public class MandelbrotOpenCL {
                 private int checkC(final float reC, final float imC) {
                     float reZ=0,imZ=0,reZ_minus1=0,imZ_minus1=0;
                     int i;
-                    for (i=0;i<iteration;i++) {
+                    for (i=0;i<maxIterations;i++) {
                         imZ=2*reZ_minus1*imZ_minus1+imC;
                         reZ=reZ_minus1*reZ_minus1-imZ_minus1*imZ_minus1+reC;
                         if (reZ*reZ+imZ*imZ>4) return i;
@@ -60,8 +65,8 @@ public class MandelbrotOpenCL {
                     final int x = pixelIndex % m_width;
                     final int y = pixelIndex / m_width;
 
-                    final float reC = -2.0f + (x * cellSize_width);
-                    final float imC = -2.0f + (y * cellSize_height);
+                    final float reC = x_min + (x * cellSize_width);
+                    final float imC = y_min + (y * cellSize_height);
 
                     imageData[pixelIndex] = checkC(reC, imC);
                 }
@@ -71,6 +76,6 @@ public class MandelbrotOpenCL {
         final long duration = System.currentTimeMillis() - startTime;
         System.out.println("Duration = " + duration);
         m_imageData = imageData;
-        m_itercount = iteration;
+        m_itercount = maxIterations;
     }
 }
