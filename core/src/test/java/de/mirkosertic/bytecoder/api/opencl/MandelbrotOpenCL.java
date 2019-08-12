@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
+import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 import java.io.IOException;
@@ -24,19 +25,23 @@ public class MandelbrotOpenCL {
     private final Platform platform;
     private final Context context;
     private final MandelbrotKernel kernel;
+    private long computingTime;
 
     public MandelbrotOpenCL() {
         platform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
         //platform = new CPUPlatform(new Slf4JLogger());
         context = platform.createContext();
-        kernel = new MandelbrotKernel(1024, 768, 1000);
+        kernel = new MandelbrotKernel(1024, 768, 512);
     }
 
     public MandelbrotKernel compute() throws IOException {
         final long start = System.currentTimeMillis();
         context.compute(kernel.getWidth() * kernel.getHeight(), kernel);
-        final long duration = System.currentTimeMillis() - start;
-        System.out.println("Took " + duration + "ms");
+        computingTime = System.currentTimeMillis() - start;
         return kernel;
+    }
+
+    public long getComputingTime() {
+        return computingTime;
     }
 }

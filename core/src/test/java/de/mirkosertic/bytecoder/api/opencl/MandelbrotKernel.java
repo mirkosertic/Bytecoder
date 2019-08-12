@@ -22,13 +22,13 @@ public class MandelbrotKernel extends Kernel {
     private final int maxIterations;
     private final int width;
     private final int height;
-    private final float x_min;
-    private final float y_min;
-    private final float x_max;
-    private final float y_max;
+    private float x_min;
+    private float y_min;
+    private float x_max;
+    private float y_max;
     private final int[] imageData;
-    private final float cellSize_width;
-    private final float cellSize_height;
+    private float cellSize_width;
+    private float cellSize_height;
 
     public MandelbrotKernel(final int aWidth, final int aHeight, final int aMaxIterations) {
         width = aWidth;
@@ -39,6 +39,10 @@ public class MandelbrotKernel extends Kernel {
         x_max = 2f;
         y_min = -1.5f;
         y_max = 1.5f;
+        fitCellSize();
+    }
+
+    private void fitCellSize() {
         cellSize_width = (x_max - x_min) / width;
         cellSize_height = (y_max - y_min) / height;
     }
@@ -82,5 +86,37 @@ public class MandelbrotKernel extends Kernel {
 
     public int[] getImageData() {
         return imageData;
+    }
+
+    public void zoomInOut(final int amount) {
+        final float width = x_max - x_min;
+        final float height = y_max - y_min;
+
+        final float centerX = x_min + width / 2;
+        final float centerY = y_min + height / 2;
+
+        final float newHalfWidth = width * (1 + 0.05f * amount) / 2;
+        final float newHalfHeight = height * (1 + 0.05f * amount) / 2;
+
+        x_min = centerX - newHalfWidth;
+        x_max = centerX + newHalfWidth;
+        y_min = centerY - newHalfHeight;
+        y_max = centerY + newHalfHeight;
+
+        fitCellSize();
+    }
+
+    public void focusOn(final int x, final int y) {
+
+        final float halfWidth = (x_max - x_min) / 2;
+        final float halfHeight = (y_max - y_min) / 2;
+
+        final float newCenterX = x_min + x * cellSize_width;
+        final float newCenterY = y_min + y * cellSize_height;
+
+        x_min = newCenterX - halfWidth;
+        x_max = newCenterX + halfWidth;
+        y_min = newCenterY - halfHeight;
+        y_max = newCenterY + halfHeight;
     }
 }
