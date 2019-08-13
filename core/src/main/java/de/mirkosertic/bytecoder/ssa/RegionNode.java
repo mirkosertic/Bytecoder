@@ -153,9 +153,7 @@ public class RegionNode {
     public List<RegionNode> getPredecessors() {
         final List<RegionNode> theResult = new ArrayList<>();
         for (final GraphNodePath thePath : reachableBy) {
-            if (!thePath.isEmpty()) {
-                theResult.add(thePath.lastElement());
-            }
+            theResult.add(thePath.lastElement());
         }
         return theResult;
     }
@@ -177,11 +175,9 @@ public class RegionNode {
         if (predecessorCacheWithoutBackEdges == null) {
             final Set<RegionNode> theResult = new HashSet<>();
             for (final GraphNodePath thePath : reachableBy) {
-                if (!thePath.isEmpty()) {
-                    final RegionNode theLastElement = thePath.lastElement();
-                    if (!theLastElement.hasBackEdgeTo(this)) {
-                        theResult.add(theLastElement);
-                    }
+                final RegionNode theLastElement = thePath.lastElement();
+                if (!theLastElement.hasBackEdgeTo(this)) {
+                    theResult.add(theLastElement);
                 }
             }
             predecessorCacheWithoutBackEdges = theResult;

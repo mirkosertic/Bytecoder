@@ -15,10 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodeProgram;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -29,7 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Stack;
 import java.util.function.Consumer;
+
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 public class ControlFlowGraph {
 
@@ -62,26 +63,30 @@ public class ControlFlowGraph {
     }
 
     public void calculateReachabilityAndMarkBackEdges() {
-        calculateReachabilityAndMarkBackEdges(new GraphNodePath(), startNode());
+        final Stack<RegionNode> currentPath = new Stack();
+        calculateReachabilityAndMarkBackEdges(currentPath, startNode());
     }
 
-    private void calculateReachabilityAndMarkBackEdges(final GraphNodePath aPath, final RegionNode aNode) {
-        aNode.addReachablePath(aPath);
+    private void calculateReachabilityAndMarkBackEdges(final Stack<RegionNode> aCurrentPath, final RegionNode aNode) {
+        if (!aCurrentPath.isEmpty()) {
+            aNode.addReachablePath(new GraphNodePath(aCurrentPath.toArray(new RegionNode[0])));
+        }
+        aCurrentPath.push(aNode);
         for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
-            final GraphNodePath theChildPath = new GraphNodePath(aPath);
-            theChildPath.addToPath(aNode);
-            if (aPath.contains(theEdge.getValue())) {
+            final RegionNode theTarget = theEdge.getValue();
+            if (aCurrentPath.contains(theTarget)) {
                 // This is a back edge
                 theEdge.getKey().changeTo(EdgeType.back);
-                theEdge.getValue().addReachablePath(theChildPath);
+                theTarget.addReachablePath(new GraphNodePath(aCurrentPath.toArray(new RegionNode[0])));
                 // We have already visited the back edge, so we do not to continue here
                 // As this would lead to an endless loop
             } else {
                 // Normal edge
                 // Continue with graph traversal
-                calculateReachabilityAndMarkBackEdges(theChildPath, theEdge.getValue());
+                calculateReachabilityAndMarkBackEdges(aCurrentPath, theTarget);
             }
         }
+        aCurrentPath.pop();
     }
 
     public RegionNode createAt(final BytecodeOpcodeAddress aAddress, final RegionNode.BlockType aType) {
