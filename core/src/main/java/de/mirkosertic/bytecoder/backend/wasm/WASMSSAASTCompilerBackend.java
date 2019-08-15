@@ -83,6 +83,7 @@ import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -648,7 +649,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 try {
-                    for (final Variable theVariable : theSSAProgram.getVariables()) {
+                    final List<Variable> theVariables = theSSAProgram.getVariables();
+                    theVariables.sort(Comparator.comparing(Variable::getName));
+                    for (final Variable theVariable : theVariables) {
                         if (!(theVariable.isSynthetic())) {
                             instanceFunction.newLocal(theVariable.getName(), WASMSSAASTWriter.toType(theVariable.resolveType()));
                         }
@@ -818,7 +821,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             }
 
             final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction);
-            for (final Variable theVariable : theSSAProgram.getVariables()) {
+
+            final List<Variable> theVariables = theSSAProgram.getVariables();
+            theVariables.sort(Comparator.comparing(Variable::getName));
+
+            for (final Variable theVariable : theVariables) {
 
                 if (!(theVariable.isSynthetic())) {
                     theFunction.newLocal(theVariable.getName(), WASMSSAASTWriter.toType(theVariable.resolveType()));

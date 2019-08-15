@@ -16,44 +16,33 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class GraphNodePath {
 
-    private final List<RegionNode> nodes;
+    private RegionNode[] nodes;
+    private boolean regularFlow;
 
-    protected GraphNodePath(final List<RegionNode> aNodes) {
+    protected GraphNodePath(final RegionNode[] aNodes) {
         nodes = aNodes;
     }
 
-    public GraphNodePath() {
-        this(new ArrayList<>());
-    }
-
-    public GraphNodePath(final GraphNodePath aOther) {
-        this(new ArrayList<>(aOther.nodes));
-    }
-
-    public void addToPath(final RegionNode aNode) {
-        if (!nodes.contains(aNode)) {
-            nodes.add(aNode);
-        }
-    }
-
-    public boolean isEmpty() {
-        return nodes.isEmpty();
-    }
-
     public RegionNode lastElement() {
-        return nodes.get(nodes.size() - 1);
+        return nodes[nodes.length - 1];
     }
 
     public boolean contains(final RegionNode aNode) {
-        return nodes.contains(aNode);
+        for (final RegionNode n : nodes) {
+            if (n == aNode) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<RegionNode> getNodes() {
-        return nodes;
+        return Arrays.asList(nodes);
     }
 
     public boolean isRegularFlow() {
@@ -66,10 +55,13 @@ public class GraphNodePath {
     }
 
     public void replace(final RegionNode aNode, final RegionNode aTarget) {
-        final int p = nodes.indexOf(aNode);
+        final List<RegionNode> list = new ArrayList<>(getNodes());
+        final int p = list.indexOf(aNode);
         if (p>=0) {
-            nodes.add(p, aTarget);
-            nodes.remove(aNode);
+            list.add(p, aTarget);
+            list.remove(aNode);
+
+            nodes = list.toArray(new RegionNode[0]);
         }
     }
 }

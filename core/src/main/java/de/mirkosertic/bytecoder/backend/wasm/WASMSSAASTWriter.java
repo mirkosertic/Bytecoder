@@ -29,6 +29,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFun
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -200,7 +201,11 @@ public class WASMSSAASTWriter {
         memoryLayouter = aMemoryLayouter;
         flow = function.flow;
         container = function;
-        for (final Variable theVariable : aProgram.getVariables()) {
+
+        final List<Variable> theVariables = aProgram.getVariables();
+        theVariables.sort(Comparator.comparing(Variable::getName));
+
+        for (final Variable theVariable : theVariables) {
             if (theVariable.resolveType().resolve() == TypeRef.Native.REFERENCE) {
                 stackVariables.add(theVariable);
             }
