@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -110,9 +109,7 @@ public class Program {
     }
 
     public List<Variable> getVariables() {
-        final List<Variable> theVariables = new ArrayList<>(variables);
-        theVariables.sort(Comparator.comparing(Variable::getName));
-        return theVariables;
+        return variables;
     }
 
     public Variable createVariable(final TypeRef aType) {

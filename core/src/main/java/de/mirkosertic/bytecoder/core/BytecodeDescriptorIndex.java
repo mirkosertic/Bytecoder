@@ -20,18 +20,26 @@ public class BytecodeDescriptorIndex {
     private final int index;
     private final BytecodeConstantPool constantPool;
     private final BytecodeSignatureParser signatureParser;
+    private BytecodeMethodSignature signature;
+    private BytecodeTypeRef typeRef;
 
-    public BytecodeDescriptorIndex(int aIndex, BytecodeConstantPool aConstantPool, BytecodeSignatureParser aSignatureParser) {
+    public BytecodeDescriptorIndex(final int aIndex, final BytecodeConstantPool aConstantPool, final BytecodeSignatureParser aSignatureParser) {
         index = aIndex;
         constantPool = aConstantPool;
         signatureParser = aSignatureParser;
     }
 
     public BytecodeMethodSignature methodSignature() {
-        return signatureParser.toMethodSignature((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
+        if (signature == null) {
+            signature = signatureParser.toMethodSignature((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
+        }
+        return signature;
     }
 
     public BytecodeTypeRef fieldType() {
-        return signatureParser.toFieldType((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
+        if (typeRef == null) {
+            typeRef = signatureParser.toFieldType((BytecodeUtf8Constant) constantPool.constantByIndex(index - 1));
+        }
+        return typeRef;
     }
 }

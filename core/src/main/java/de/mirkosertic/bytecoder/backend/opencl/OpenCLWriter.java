@@ -63,6 +63,7 @@ import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.PrintWriter;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -722,7 +723,9 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printProgramVariablesDeclaration(final Program program) {
-        for (final Variable theVariable : program.getVariables()) {
+        final List<Variable> theVariables = program.getVariables();
+        theVariables.sort(Comparator.comparing(Variable::getName));
+        for (final Variable theVariable : theVariables) {
             if (!theVariable.isSynthetic()) {
                 final TypeRef theVarType = theVariable.resolveType();
                 if (theVarType.isArray()) {
