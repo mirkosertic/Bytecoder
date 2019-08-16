@@ -174,7 +174,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
         theOptions.addArguments("--js-flags=experimental-wasm-eh");
         theOptions.addArguments("--enable-experimental-wasm-eh");
-
+        theOptions.addArguments("disable-infobars"); // disabling infobars
+        theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
+        theOptions.addArguments("--no-sandbox"); // Bypass OS security model
         final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
