@@ -268,6 +268,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             } finally {
                 if (null != theDriver) {
                     theDriver.close();
+                    theDriver.quit();
                 }
                 aRunNotifier.fireTestFinished(theDescription);
             }
@@ -487,6 +488,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             } finally {
                 if (null != theDriver) {
                     theDriver.close();
+                    theDriver.quit();
                 }
                 aRunNotifier.fireTestFinished(theDescription);
             }
