@@ -48,7 +48,7 @@ jobs:
       name: "JS Target OpenJDK 11"
     - script: mkdir /home/travis/openjdk12 && ~/install-jdk.sh -W /home/travis/openjdk12 -F 12 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P jstestsonly
       name: "JS Target OpenJDK 12"
-    - script: mkdir /home/travis/openjdk12 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P jstestsonly
+    - script: mkdir /home/travis/openjdk13 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P jstestsonly
       name: "JS Target OpenJDK 13"
     - script: mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_reloop
       name: "WASM Target Reloop OpenJDK 8"
@@ -56,7 +56,7 @@ jobs:
       name: "WASM Target Reloop OpenJDK 11"
     - script: mkdir /home/travis/openjdk12 && ~/install-jdk.sh -W /home/travis/openjdk12 -F 12 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_reloop
       name: "WASM Target Reloop OpenJDK 12"
-    - script: mkdir /home/travis/openjdk12 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_reloop
+    - script: mkdir /home/travis/openjdk13 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_reloop
       name: "WASM Target Reloop OpenJDK 13"
     - script: mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_stackify
       name: "WASM Target Stackify OpenJDK 8"
@@ -64,7 +64,7 @@ jobs:
       name: "WASM Target Stackify OpenJDK 11"
     - script: mkdir /home/travis/openjdk12 && ~/install-jdk.sh -W /home/travis/openjdk12 -F 12 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_stackify
       name: "WASM Target Stackify OpenJDK 12"
-    - script: mkdir /home/travis/openjdk12 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_stackify
+    - script: mkdir /home/travis/openjdk13 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_stackify
       name: "WASM Target Stackify OpenJDK 13"
     - stage: "Deploy to Maven Central"
       script: skip
