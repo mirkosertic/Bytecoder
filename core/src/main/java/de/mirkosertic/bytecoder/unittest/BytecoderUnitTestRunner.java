@@ -177,6 +177,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         theOptions.addArguments("disable-infobars"); // disabling infobars
         theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
         theOptions.addArguments("--no-sandbox"); // Bypass OS security model
+        theOptions.setExperimentalOption("useAutomationExtension", false);
         final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
