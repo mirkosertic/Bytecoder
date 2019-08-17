@@ -39,6 +39,11 @@
                         <goals>
                             <goal>helpmojo</goal>
                         </goals>
+                        <configuration>
+                            <mojoDependencies>
+                                <mojoDependency>de.mirkosertic.bytecoder:bytecoder-mavenplugin</mojoDependency>
+                            </mojoDependencies>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
