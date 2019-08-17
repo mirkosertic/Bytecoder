@@ -33,6 +33,11 @@
                         <goals>
                             <goal>descriptor</goal>
                         </goals>
+                        <configuration>
+                            <mojoDependencies>
+                                <mojoDependency>de.mirkosertic.bytecoder:bytecoder-mavenplugin</mojoDependency>
+                            </mojoDependencies>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>help-goal</id>
