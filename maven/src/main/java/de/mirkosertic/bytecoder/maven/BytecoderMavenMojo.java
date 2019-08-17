@@ -28,7 +28,6 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -50,7 +49,7 @@ import java.util.List;
     requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BytecoderMavenMojo extends AbstractMojo {
 
-    @Component
+    @Parameter( defaultValue = "${project}", readonly = true )
     protected MavenProject project;
 
     @Parameter(defaultValue = "${project.build.outputDirectory}")
