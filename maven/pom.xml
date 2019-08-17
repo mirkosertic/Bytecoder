@@ -29,11 +29,14 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>mojo-descriptor</id>
+                        <id>default-descriptor</id>
                         <goals>
                             <goal>descriptor</goal>
                         </goals>
                         <configuration>
+                            <extractors>
+                                <extractor>java-annotations</extractor>
+                            </extractors>
                             <mojoDependencies>
                                 <mojoDependency>de.mirkosertic.bytecoder:bytecoder-mavenplugin</mojoDependency>
                             </mojoDependencies>
@@ -45,12 +48,23 @@
                             <goal>helpmojo</goal>
                         </goals>
                         <configuration>
+                            <extractors>
+                                <extractor>java-annotations</extractor>
+                            </extractors>
                             <mojoDependencies>
                                 <mojoDependency>de.mirkosertic.bytecoder:bytecoder-mavenplugin</mojoDependency>
                             </mojoDependencies>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>12</source>
+                    <target>12</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
