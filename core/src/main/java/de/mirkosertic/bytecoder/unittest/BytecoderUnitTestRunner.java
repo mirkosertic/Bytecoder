@@ -174,7 +174,10 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
         theOptions.addArguments("--js-flags=experimental-wasm-eh");
         theOptions.addArguments("--enable-experimental-wasm-eh");
-
+        theOptions.addArguments("disable-infobars"); // disabling infobars
+        theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
+        theOptions.addArguments("--no-sandbox"); // Bypass OS security model
+        theOptions.setExperimentalOption("useAutomationExtension", false);
         final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
         theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
         theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
@@ -265,6 +268,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             } finally {
                 if (null != theDriver) {
                     theDriver.close();
+                    theDriver.quit();
                 }
                 aRunNotifier.fireTestFinished(theDescription);
             }
@@ -484,6 +488,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             } finally {
                 if (null != theDriver) {
                     theDriver.close();
+                    theDriver.quit();
                 }
                 aRunNotifier.fireTestFinished(theDescription);
             }

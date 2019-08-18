@@ -89,6 +89,8 @@ public class BytecodeLoader {
                 return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);
             case 56:
                 return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);
+            case 57:
+                return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);
         }
         throw new IllegalArgumentException("Not Supported bytecode format : " + theMajorVersion);
     }

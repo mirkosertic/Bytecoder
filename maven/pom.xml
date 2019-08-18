@@ -22,23 +22,39 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.6.0</version>
                 <configuration>
                     <goalPrefix>bytecoder</goalPrefix>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>mojo-descriptor</id>
+                        <id>default-descriptor</id>
                         <goals>
                             <goal>descriptor</goal>
                         </goals>
+                        <configuration>
+                            <extractors>
+                                <extractor>java-annotations</extractor>
+                            </extractors>
+                            <mojoDependencies>
+                                <mojoDependency>de.mirkosertic.bytecoder:bytecoder-mavenplugin</mojoDependency>
+                            </mojoDependencies>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>help-goal</id>
                         <goals>
                             <goal>helpmojo</goal>
                         </goals>
+                        <configuration>
+                            <extractors>
+                                <extractor>java-annotations</extractor>
+                            </extractors>
+                            <mojoDependencies>
+                                <mojoDependency>de.mirkosertic.bytecoder:bytecoder-mavenplugin</mojoDependency>
+                            </mojoDependencies>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -61,20 +77,20 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-core</artifactId>
             <scope>provided</scope>
-            <version>3.5.0</version>
+            <version>3.6.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-artifact</artifactId>
             <scope>provided</scope>
-            <version>3.5.0</version>
+            <version>3.6.1</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
-            <version>3.5.0</version>
+            <version>3.6.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.maven</groupId>
@@ -93,7 +109,7 @@
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
-            <version>3.5</version>
+            <version>3.6.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
