@@ -124,6 +124,11 @@ public class Program {
     }
 
     public void deleteVariable(final Variable aVariable) {
+        for (final Variable v : variables) {
+            if (v != aVariable) {
+                v.removeLivenessWith(aVariable);
+            }
+        }
         variables.remove(aVariable);
     }
 }

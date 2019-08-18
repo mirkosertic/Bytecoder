@@ -70,6 +70,14 @@ public class ParsingHelper {
         if (aValue == null) {
             throw new IllegalStateException("Trying to push null in " + this);
         }
+        if (aValue instanceof Variable) {
+            for (final Value stackValue : stack) {
+                if (stackValue instanceof Variable && stackValue != aValue) {
+                    final Variable sv = (Variable) stackValue;
+                    sv.addLivenessWith((Variable) aValue);
+                }
+            }
+        }
         stack.push(aValue);
     }
 

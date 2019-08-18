@@ -637,7 +637,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     if (!theVariable.isSynthetic()) {
                         final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");
                         if (aOptions.isDebugOutput()) {
-                            thePW.text(" // type is ").text(theVariable.resolveType().resolve().name()).text(" # of inits = " + theVariable.incomingDataFlows().size());
+                            thePW.text(" // type is ").text(theVariable.resolveType().resolve().name()).text(", # of inits = " + theVariable.incomingDataFlows().size());
+                            thePW.text(", live with : " + theVariable.getLiveWith());
                         }
                         thePW.newLine();
                     }

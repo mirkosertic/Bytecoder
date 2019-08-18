@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Variable extends Value {
 
     public static final String THISREF_NAME = "__tr";
@@ -40,15 +43,29 @@ public class Variable extends Value {
     private final TypeRef type;
     private final String name;
     private final boolean synthetic;
+    private final Set<Variable> liveWith;
 
     private Variable(final TypeRef aType, final String aName, final boolean aSynthetic) {
         type = aType;
         name = aName;
         synthetic = aSynthetic;
+        liveWith = new HashSet<>();
     }
 
     public Variable(final TypeRef aType, final String aName) {
         this(aType, aName, false);
+    }
+
+    public void addLivenessWith(final Variable aVariable) {
+        liveWith.add(aVariable);
+    }
+
+    public void removeLivenessWith(final Variable aVariable) {
+        liveWith.remove(aVariable);
+    }
+
+    public Set<Variable> getLiveWith() {
+        return liveWith;
     }
 
     public void initializeWith(final Value aValue) {
@@ -86,4 +103,5 @@ public class Variable extends Value {
         }
         return super.isTrulyFunctional();
     }
+
 }
