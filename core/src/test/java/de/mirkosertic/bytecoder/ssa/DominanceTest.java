@@ -38,8 +38,8 @@ public class DominanceTest {
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         theNode3.getExpressions().add(new ReturnExpression(null, null));
 
-        theNode1.addSuccessor(theNode2);
-        theNode2.addSuccessor(theNode3);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode2);
+        theNode2.addEdgeTo(ControlFlowEdgeType.forward, theNode3);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
@@ -76,9 +76,9 @@ public class DominanceTest {
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         theNode3.getExpressions().add(new GotoExpression(null, null, BytecodeOpcodeAddress.START_AT_ZERO));
 
-        theNode1.addSuccessor(theNode2);
-        theNode2.addSuccessor(theNode3);
-        theNode3.addSuccessor(theNode1);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode2);
+        theNode2.addEdgeTo(ControlFlowEdgeType.forward, theNode3);
+        theNode3.addEdgeTo(ControlFlowEdgeType.forward, theNode1);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
     }
@@ -106,10 +106,10 @@ public class DominanceTest {
         final RegionNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
         theNode4.getExpressions().add(new ReturnExpression(null, null));
 
-        theNode1.addSuccessor(theNode2);
-        theNode1.addSuccessor(theNode3);
-        theNode2.addSuccessor(theNode4);
-        theNode3.addSuccessor(theNode4);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode2);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode3);
+        theNode2.addEdgeTo(ControlFlowEdgeType.forward, theNode4);
+        theNode3.addEdgeTo(ControlFlowEdgeType.forward, theNode4);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 

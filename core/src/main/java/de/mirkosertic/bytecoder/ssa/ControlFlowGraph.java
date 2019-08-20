@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.graph.Edge;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ControlFlowGraph {
 
@@ -50,9 +52,9 @@ public class ControlFlowGraph {
         final Set<RegionNode> theNodes = new HashSet<>();
         for (final RegionNode theNode : knownNodes) {
             final Set<RegionNode> theSuccessors = new HashSet<>();
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
-                if (theSuccessor.getKey().getType() == EdgeType.forward) {
-                    theSuccessors.add(theSuccessor.getValue());
+            for (final Edge<ControlFlowEdgeType, RegionNode> theSuccessor : theNode.outgoingEdges().collect(Collectors.toList())) {
+                if (theSuccessor.edgeType() == ControlFlowEdgeType.forward) {
+                    theSuccessors.add(theSuccessor.targetNode());
                 }
             }
             if (theSuccessors.isEmpty()) {
@@ -63,7 +65,7 @@ public class ControlFlowGraph {
     }
 
     public void calculateReachabilityAndMarkBackEdges() {
-        final Stack<RegionNode> currentPath = new Stack();
+        final Stack<RegionNode> currentPath = new Stack<>();
         calculateReachabilityAndMarkBackEdges(currentPath, startNode());
     }
 
@@ -72,11 +74,11 @@ public class ControlFlowGraph {
             aNode.addReachablePath(new GraphNodePath(aCurrentPath.toArray(new RegionNode[0])));
         }
         aCurrentPath.push(aNode);
-        for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
-            final RegionNode theTarget = theEdge.getValue();
+        for (final Edge<ControlFlowEdgeType, RegionNode> theEdge : aNode.outgoingEdges().collect(Collectors.toList())) {
+            final RegionNode theTarget = theEdge.targetNode();
             if (aCurrentPath.contains(theTarget)) {
                 // This is a back edge
-                theEdge.getKey().changeTo(EdgeType.back);
+                theEdge.newTypeIs(ControlFlowEdgeType.back);
                 theTarget.addReachablePath(new GraphNodePath(aCurrentPath.toArray(new RegionNode[0])));
                 // We have already visited the back edge, so we do not to continue here
                 // As this would lead to an endless loop
@@ -91,12 +93,8 @@ public class ControlFlowGraph {
 
     public RegionNode createAt(final BytecodeOpcodeAddress aAddress, final RegionNode.BlockType aType) {
         final RegionNode theNewBlock = new RegionNode(this, aType, program, aAddress);
-        addDominatedNode(theNewBlock);
+        knownNodes.add(theNewBlock);
         return theNewBlock;
-    }
-
-    public void addDominatedNode(final RegionNode aGraphNode) {
-        knownNodes.add(aGraphNode);
     }
 
     public RegionNode startNode() {
@@ -140,18 +138,6 @@ public class ControlFlowGraph {
         }
         theHandler.sort((o1, o2) -> Integer.compare(o2.getEndPC().getAddress(),  o1.getEndPC().getAddress()));
         return theHandler;
-    }
-
-    public void inlinedTo(final RegionNode aNode, final RegionNode aTarget) {
-        for (final RegionNode l : knownNodes) {
-            for (final GraphNodePath p : l.getReachableBy()) {
-                p.replace(aNode, aTarget);
-            }
-        }
-
-        knownNodes.remove(aNode);
-
-        aTarget.inlineSuccessors(aNode);
     }
 
     private static class IDRegister {

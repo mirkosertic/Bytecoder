@@ -15,12 +15,18 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.graph.GraphDFSOrder;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraphDFSOrder;
-import de.mirkosertic.bytecoder.ssa.EdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
@@ -28,11 +34,6 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-
-import java.io.PrintWriter;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
 
 public class Stackifier {
 
@@ -55,7 +56,7 @@ public class Stackifier {
                 final RegionNode theTargetNode = stackifier.controlFlowGraph.nodeStartingAt(theTarget);
 
                 if (stackifier.flow.indexOf(theTargetNode) == stackifier.flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThruRegularFlow(currentNode)
-                        && currentNode.getSuccessors().entrySet().stream().filter(t -> t.getValue().getType() == RegionNode.BlockType.NORMAL).count() == 1) {
+                        && currentNode.outgoingEdges().filter(t -> t.targetNode().getType() == RegionNode.BlockType.NORMAL).count() == 1) {
                     // We are branching to the strictly dominated successor
                     // The goto can be removed
                     return null;
@@ -175,20 +176,22 @@ public class Stackifier {
 
     public Stackifier(final ControlFlowGraph controlFlowGraph) throws HeadToHeadControlFlowException {
         this.controlFlowGraph = controlFlowGraph;
-        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(controlFlowGraph);
+        final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(controlFlowGraph.startNode(),
+                RegionNode.NODE_COMPARATOR,
+                RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         final List<RegionNode> sorted = order.getNodesInOrder();
         final StructuredControlFlowBuilder<RegionNode> builder = new StructuredControlFlowBuilder<>(sorted);
         for (final RegionNode node : sorted) {
-            for (final Map.Entry<RegionNode.Edge, RegionNode> succ : node.getSuccessors().entrySet()) {
-                switch (succ.getKey().getType()) {
+            for (final Edge<ControlFlowEdgeType, RegionNode> succ : node.outgoingEdges().collect(Collectors.toList())) {
+                switch (succ.edgeType()) {
                 case forward:
-                    if (sorted.contains(succ.getValue())) {
-                        builder.add(EdgeType.forward, node, succ.getValue());
+                    if (sorted.contains(succ.targetNode())) {
+                        builder.add(ControlFlowEdgeType.forward, node, succ.targetNode());
                     }
                     break;
                 case back:
-                    if (sorted.contains(succ.getValue())) {
-                        builder.add(EdgeType.back, node, succ.getValue());
+                    if (sorted.contains(succ.targetNode())) {
+                        builder.add(ControlFlowEdgeType.back, node, succ.targetNode());
                     }
                     break;
                 default:

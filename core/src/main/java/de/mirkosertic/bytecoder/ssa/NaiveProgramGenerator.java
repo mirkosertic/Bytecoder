@@ -122,6 +122,7 @@ import de.mirkosertic.bytecoder.core.BytecodeSourceFileAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 
 import java.util.ArrayList;
@@ -248,7 +249,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 if (theSuccessorBlock == null) {
                     throw new IllegalStateException("Cannot find successor block " + theSuccessor.getStartAddress().getAddress() + " from " + theEntry.getKey().getStartAddress().getAddress());
                 }
-                theEntry.getValue().addSuccessor(theSuccessorBlock);
+                theEntry.getValue().addEdgeTo(ControlFlowEdgeType.forward, theSuccessorBlock);
             }
         }
 
@@ -283,28 +284,31 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     }
                 }
                 if (!theNode.getExpressions().endWithNeverReturningExpression()) {
-                    Map<RegionNode.Edge, RegionNode> theSuccessors = theNode.getSuccessors();
+
+                    final List<RegionNode> theSuccessors = theNode.outgoingEdges().map(t -> t.targetNode()).collect(
+                            Collectors.toList());
 
                     for (final Expression theExpression : theCurrentList.toList()) {
                         if (theExpression instanceof IFExpression) {
                             final IFExpression theIF = (IFExpression) theExpression;
                             final BytecodeOpcodeAddress theGoto = theIF.getGotoAddress();
-                            theSuccessors = theSuccessors.entrySet().stream().filter(t -> !Objects
-                                    .equals(t.getValue().getStartAddress(), theGoto)).collect(
-                                    Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+                            theSuccessors.remove(theGraph.nodeStartingAt(theGoto));
                         }
                     }
 
-                    List<RegionNode> theSuccessorRegions = theSuccessors.values().stream().filter(t -> t.getType() == RegionNode.BlockType.NORMAL).collect(
+                    List<RegionNode> theSuccessorRegions = theSuccessors.stream().filter(t -> t.getType() == RegionNode.BlockType.NORMAL).collect(
                             Collectors.toList());
 
                     if (theSuccessorRegions.size() == 1) {
                         theNode.getExpressions().add(new GotoExpression(theProgram, null, theSuccessorRegions.get(0).getStartAddress()).withComment("Resolving pass thru direct"));
                     } else {
                         // Special case, the node includes gotos and a fall thru to the same node
-                        theSuccessors = theNode.getSuccessors();
-                        theSuccessorRegions = theSuccessors.values().stream().filter(t -> t.getType() == RegionNode.BlockType.NORMAL).collect(
-                                Collectors.toList());
+                        theSuccessorRegions =
+                                theNode.outgoingEdges()
+                                        .map(t -> t.targetNode())
+                                        .filter(t -> t.getType() == RegionNode.BlockType.NORMAL)
+                                        .collect(Collectors.toList());
 
                         if (theSuccessorRegions.size() == 1) {
                             theNode.getExpressions().add(new GotoExpression(theProgram, null, theSuccessorRegions.get(0).getStartAddress())
@@ -321,9 +325,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             // Check that all PHI-propagations for back-edges are set
             for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
                 final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
-                for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : theNode.getSuccessors().entrySet()) {
-                    if (theEdge.getKey().getType() == EdgeType.back) {
-                        final RegionNode theReceiving = theEdge.getValue();
+                for (final Edge theEdge : theNode.outgoingEdges().collect(Collectors.toList())) {
+                    if (theEdge.edgeType() == ControlFlowEdgeType.back) {
+                        final RegionNode theReceiving = (RegionNode) theEdge.targetNode();
                         final BlockState theReceivingState = theReceiving.toStartState();
                         for (final Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {
                             final Variable theReceivingTarget = (Variable) theEntry.getValue();

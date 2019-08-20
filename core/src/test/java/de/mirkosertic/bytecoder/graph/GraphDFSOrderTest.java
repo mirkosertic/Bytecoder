@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
-
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import org.junit.Test;
-
-import java.io.PrintWriter;
-import java.util.List;
+package de.mirkosertic.bytecoder.graph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
-public class ControlFlowGraphDFSOrderTest {
+import java.io.PrintWriter;
+import java.util.List;
+
+import org.junit.Test;
+
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DebugInformation;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+
+public class GraphDFSOrderTest {
 
     @Test
     public void testSimpleNode() {
@@ -33,8 +39,8 @@ public class ControlFlowGraphDFSOrderTest {
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
-        order.printDebug(new PrintWriter(System.out));
+        final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(graph.startNode(), RegionNode.NODE_COMPARATOR,
+                RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
 
         final List<RegionNode> nodes = order.getNodesInOrder();
 
@@ -51,11 +57,13 @@ public class ControlFlowGraphDFSOrderTest {
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
+
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
+        final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(graph.startNode(), RegionNode.NODE_COMPARATOR,
+                RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         order.printDebug(new PrintWriter(System.out));
 
         final List<RegionNode> nodes = order.getNodesInOrder();
@@ -74,13 +82,15 @@ public class ControlFlowGraphDFSOrderTest {
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
         final RegionNode node3 = graph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        startNode.addSuccessor(node2);
-        node1.addSuccessor(node3);
-        node2.addSuccessor(node3);
+
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node3);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
+        final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(graph.startNode(), RegionNode.NODE_COMPARATOR,
+                RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         order.printDebug(new PrintWriter(System.out));
 
         final List<RegionNode> nodes = order.getNodesInOrder();
@@ -90,7 +100,6 @@ public class ControlFlowGraphDFSOrderTest {
         assertSame(node1, nodes.get(1));
         assertSame(node2, nodes.get(2));
         assertSame(node3, nodes.get(3));
-
     }
 
     @Test
@@ -102,14 +111,16 @@ public class ControlFlowGraphDFSOrderTest {
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
         final RegionNode node3 = graph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
         final RegionNode node4 = graph.createAt(new BytecodeOpcodeAddress(40), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
-        startNode.addSuccessor(node3);
-        node3.addSuccessor(node4);
-        node2.addSuccessor(node4);
+
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node4);
         graph.calculateReachabilityAndMarkBackEdges();
 
-        final ControlFlowGraphDFSOrder order = new ControlFlowGraphDFSOrder(graph);
+        final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(graph.startNode(), RegionNode.NODE_COMPARATOR,
+                RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         order.printDebug(new PrintWriter(System.out));
 
         final List<RegionNode> nodes = order.getNodesInOrder();
@@ -120,6 +131,5 @@ public class ControlFlowGraphDFSOrderTest {
         assertSame(node2, nodes.get(2));
         assertSame(node3, nodes.get(3));
         assertSame(node4, nodes.get(4));
-
     }
 }

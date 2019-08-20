@@ -19,9 +19,10 @@ import java.util.function.Predicate;
 
 import de.mirkosertic.bytecoder.graph.EdgeType;
 
-public class BytecodeProvidesMethodEdgeType implements EdgeType {
+public enum BytecodeProvidesMethodEdgeType implements EdgeType {
+    instance;
 
     public static Predicate<EdgeType> filter() {
-        return edgeType -> edgeType instanceof BytecodeProvidesMethodEdgeType;
-    };
+        return edgeType -> edgeType == instance;
+    }
 }
