@@ -21,19 +21,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** Compute Dominators of a graph, following:
  * A Simple, Fast Dominance Algorithm
  * (Cooper, Keith  D.  and Harvey, Timothy  J.  and Kennedy, Ken).
  */
-public class Dominators<T extends Node<Node, EdgeType>> {
+public class Dominators<T extends Node<? extends Node, ? extends EdgeType>> {
 
     private final List<T> preOrder;
     private final Map<T, T> idom;
 
     public Dominators(final T rootNode, final Comparator<T> comparator) {
-        preOrder = new GraphDFSOrder<>(rootNode, comparator, edgeTypeTEdge -> true).getNodesInOrder();
+        this(rootNode, comparator, t -> true);
+    }
+
+    public Dominators(final T rootNode, final Comparator<T> comparator, final Predicate<Edge<EdgeType, T>> edgeFilter) {
+        preOrder = new GraphDFSOrder<>(rootNode, comparator, edgeFilter).getNodesInOrder();
         idom = new HashMap<>();
         computeDominators();
     }
@@ -46,9 +51,9 @@ public class Dominators<T extends Node<Node, EdgeType>> {
         final T firstElement = preOrder.get(0);
         idom.put(firstElement, firstElement);
 
-        if (!(firstElement.incomingEdges().map(t -> t.sourceNode()).count() == 0)) {
+/*        if (!(firstElement.incomingEdges().map(t -> t.sourceNode()).count() == 0)) {
             throw new AssertionError("The entry of the flow graph is not allowed to have incoming edges");
-        }
+        }*/
 
         boolean changed;
         do {
@@ -124,5 +129,20 @@ public class Dominators<T extends Node<Node, EdgeType>> {
             iDom = getIDom(dominated);
         }
         return strictDoms;
+    }
+
+    public Set<T> domSetOf(final T n) {
+        final Set<T> theDomSet = new HashSet<>();
+        addToDomSet(n, theDomSet);
+        return theDomSet;
+    }
+
+    private void addToDomSet(final T n, final Set<T> domset) {
+        domset.add(n);
+        for (final Map.Entry<T, T> idomEntry : idom.entrySet()) {
+            if (idomEntry.getValue() == n && preOrder.indexOf(idomEntry.getKey()) > preOrder.indexOf(n)) {
+                addToDomSet(idomEntry.getKey(), domset);
+            }
+        }
     }
 }

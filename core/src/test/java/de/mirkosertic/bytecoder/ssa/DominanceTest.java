@@ -43,13 +43,13 @@ public class DominanceTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        assertTrue(theNode2.isOnlyReachableThru(theNode1));
-        assertTrue(theNode3.isOnlyReachableThru(theNode1));
-        assertTrue(theNode3.isOnlyReachableThru(theNode2));
+        assertTrue(theNode2.isDominatedBy(theNode1));
+        assertTrue(theNode3.isDominatedBy(theNode1));
+        assertTrue(theNode3.isDominatedBy(theNode2));
 
-        assertFalse(theNode1.isOnlyReachableThru(theNode2));
-        assertFalse(theNode1.isOnlyReachableThru(theNode3));
-        assertFalse(theNode2.isOnlyReachableThru(theNode3));
+        assertFalse(theNode1.isDominatedBy(theNode2));
+        assertFalse(theNode1.isDominatedBy(theNode3));
+        assertFalse(theNode2.isDominatedBy(theNode3));
 
         final Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
         assertEquals(3, theDom1.size(), 0);
@@ -113,9 +113,9 @@ public class DominanceTest {
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        assertTrue(theNode4.isOnlyReachableThru(theNode1));
-        assertFalse(theNode4.isOnlyReachableThru(theNode2));
-        assertFalse(theNode4.isOnlyReachableThru(theNode3));
+        assertTrue(theNode4.isDominatedBy(theNode1));
+        assertFalse(theNode4.isDominatedBy(theNode2));
+        assertFalse(theNode4.isDominatedBy(theNode3));
 
         final Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
         assertEquals(4, theDom1.size(), 0);

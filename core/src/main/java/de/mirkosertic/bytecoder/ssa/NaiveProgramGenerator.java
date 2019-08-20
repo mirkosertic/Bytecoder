@@ -1029,9 +1029,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                                 final Set<RegionNode> thePath = new HashSet<>();
                                 thePath.add(aTargetBlock);
-                                for (final GraphNodePath path : aTargetBlock.getReachableBy()) {
-                                    thePath.addAll(path.getNodes());
-                                }
+                                thePath.addAll(aTargetBlock.getPredecessorsIgnoringBackEdges());
 
                                 for (final RegionNode theNode : thePath) {
                                     for (final Expression theExpression : theNode.getExpressions().toList()) {

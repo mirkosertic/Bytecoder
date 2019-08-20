@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -84,6 +85,18 @@ public class DominatorsTest {
         assertTrue(d.dominates(node1, node4));
         assertTrue(d.dominates(node2, node3));
         assertFalse(d.dominates(node3, node4));
+
+        final Set<NamedNode> theDomSetNode1 = d.domSetOf(node1);
+        assertEquals(4, theDomSetNode1.size());
+        assertTrue(theDomSetNode1.contains(node1));
+        assertTrue(theDomSetNode1.contains(node2));
+        assertTrue(theDomSetNode1.contains(node3));
+        assertTrue(theDomSetNode1.contains(node4));
+
+        final Set<NamedNode> theDomSetNode2 = d.domSetOf(node2);
+        assertEquals(2, theDomSetNode2.size());
+        assertTrue(theDomSetNode2.contains(node2));
+        assertTrue(theDomSetNode2.contains(node3));
     }
 
     @Test
@@ -124,5 +137,10 @@ public class DominatorsTest {
         assertTrue(d.dominates(node1, node4));
         assertFalse(d.dominates(node2, node4));
         assertFalse(d.dominates(node3, node4));
+
+        final Set<NamedNode> theDomSetNode3 = d.domSetOf(node3);
+        assertEquals(1, theDomSetNode3.size());
+        assertTrue(theDomSetNode3.contains(node3));
+
     }
 }

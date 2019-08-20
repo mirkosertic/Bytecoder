@@ -55,7 +55,7 @@ public class Stackifier {
 
                 final RegionNode theTargetNode = stackifier.controlFlowGraph.nodeStartingAt(theTarget);
 
-                if (stackifier.flow.indexOf(theTargetNode) == stackifier.flow.indexOf(currentNode) + 1 && theTargetNode.isOnlyReachableThruRegularFlow(currentNode)
+                if (stackifier.flow.indexOf(theTargetNode) == stackifier.flow.indexOf(currentNode) + 1 && stackifier.controlFlowGraph.dominatesInRegularFlowOnly(currentNode, theTargetNode)
                         && currentNode.outgoingEdges().filter(t -> t.targetNode().getType() == RegionNode.BlockType.NORMAL).count() == 1) {
                     // We are branching to the strictly dominated successor
                     // The goto can be removed

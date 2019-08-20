@@ -622,10 +622,12 @@ public class Relooper {
 
                 // Search for branch-outs of the current loop
                 final Set<RegionNode> theRestEntries = new HashSet<>();
-                for (final RegionNode theReachable : theSingleEntry.forwardReachableNodes()) {
-                    if (theRestLabels.contains(theReachable)) {
-                        theRestEntries.add(theReachable);
-                    }
+                for (final RegionNode theReachable : theSingleEntry.dominatedNodes()) {
+                    theReachable.outgoingEdges().filter(t -> t.edgeType() == ControlFlowEdgeType.forward).forEach(edge -> {
+                        if (theRestLabels.contains(edge.targetNode())) {
+                            theRestEntries.add(edge.targetNode());
+                        }
+                    });
                 }
 
                 final Block theInternalBlock =
@@ -828,7 +830,7 @@ public class Relooper {
                         final GotoExpression theGoto = (GotoExpression) theLast;
                         final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
                         final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.jumpTarget());
-                        if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+                        if (theTrueBranch.isImmediatelyDominatedBy(aEntry) && theFalseBranch.isImmediatelyDominatedBy(aEntry)) {
                             // We have a candidate!!
                             final Value theCondition = theIf.incomingDataFlows().get(0);
 
@@ -876,11 +878,11 @@ public class Relooper {
 
                             return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
                                     theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
-                        } else if (theTrueBranch.isStrictlyDominatedBy(aEntry)) {
+                        } else if (theTrueBranch.isImmediatelyDominatedBy(aEntry)) {
 
                             // TODO:
 
-                        } else if (theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+                        } else if (theFalseBranch.isImmediatelyDominatedBy(aEntry)) {
 
                             // TODO:
                         }
