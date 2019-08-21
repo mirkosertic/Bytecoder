@@ -13,38 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.ssa;
+package de.mirkosertic.bytecoder.graph;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class ControlFlowGraphDFSOrder {
+public class GraphDFSOrder<T extends Node<? extends Node, ? extends EdgeType>> {
 
-    private final List<RegionNode> nodesInOrder;
+    private final List<T> nodesInOrder;
 
-    public ControlFlowGraphDFSOrder(final ControlFlowGraph graph) {
-        final List<RegionNode> lastNodes = new ArrayList<>();
-        final RegionNode startNode = graph.startNode();
-        final Stack<RegionNode> currentPath = new Stack<>();
+    public GraphDFSOrder(final T graphStartNode, final Comparator<T> nodeComparator, final Predicate<Edge<EdgeType, T>> edgeFilter) {
+        final List<T> lastNodes = new ArrayList<>();
+        final T startNode = graphStartNode;
+        final Stack<T> currentPath = new Stack<>();
         currentPath.add(startNode);
-        final Set<RegionNode> marked = new HashSet<>();
+        final Set<T> marked = new HashSet<>();
         while(!currentPath.isEmpty()) {
-            final RegionNode currentNode= currentPath.peek();
-            final List<RegionNode> forwardNodes = currentNode.getSuccessors().entrySet().stream()
-                    .filter(t -> t.getKey().getType() == EdgeType.forward && t.getValue().getType() == RegionNode.BlockType.NORMAL)
-                    .map(Map.Entry::getValue)
-                    .sorted(Comparator.comparingInt(o -> o.getStartAddress().getAddress()))
-                    .collect(Collectors.toList());
+            final T currentNode= currentPath.peek();
+            final List<T> forwardNodes = currentNode.outgoingEdges()
+                    .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) edge -> edgeFilter.test((Edge<EdgeType, T>) edge))
+                    .map(t -> (T) t.targetNode()).collect(Collectors.toList());
+            forwardNodes.sort(nodeComparator);
             if (!forwardNodes.isEmpty()) {
                 boolean somethingFound = false;
-                for (final RegionNode node : forwardNodes) {
+                for (final T node : forwardNodes) {
                     if (marked.add(node)) {
                         currentPath.push(node);
                         somethingFound = true;
@@ -65,24 +64,25 @@ public class ControlFlowGraphDFSOrder {
         }
     }
 
-    public List<RegionNode> getNodesInOrder() {
+    public List<T> getNodesInOrder() {
         return nodesInOrder;
     }
 
     public void printDebug(final PrintWriter pw) {
         System.out.println("Topologic order:");
-        for (final RegionNode node : nodesInOrder) {
+        for (final T node : nodesInOrder) {
             pw.print("    ");
-            pw.print(node.getStartAddress());
+            pw.print(node);
             pw.print(" SUCC : ");
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : node.getSuccessors().entrySet()) {
-                pw.print(theEntry.getKey().getType());
+            for (final Edge edge : node.outgoingEdges().collect(Collectors.toList())) {
+                pw.print(edge.edgeType());
                 pw.print(":");
-                pw.print(theEntry.getValue().getStartAddress());
+                pw.print(edge.targetNode());
                 pw.print(" ");
             }
             pw.println();
         }
         pw.flush();
     }
+
 }

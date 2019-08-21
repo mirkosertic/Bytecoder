@@ -19,9 +19,11 @@ import de.mirkosertic.bytecoder.graph.EdgeType;
 
 import java.util.function.Predicate;
 
-public class DataFlowEdgeType implements EdgeType {
+public enum DataFlowEdgeType implements EdgeType {
+
+    instance;
 
     public static Predicate<EdgeType> filter() {
-        return edgeType -> edgeType instanceof DataFlowEdgeType;
+        return edgeType -> edgeType == instance;
     }
 }

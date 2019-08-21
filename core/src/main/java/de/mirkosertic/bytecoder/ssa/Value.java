@@ -15,15 +15,16 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.graph.Node;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class Value extends Node {
+import de.mirkosertic.bytecoder.graph.EdgeType;
+import de.mirkosertic.bytecoder.graph.Node;
+
+public abstract class Value extends Node<Node, EdgeType> {
 
     private List<? extends Value> cachedIncomingFlows;
     private List<? extends Value> cachedIncomingFlowsRecursive;
@@ -37,7 +38,7 @@ public abstract class Value extends Node {
     }
 
     protected void receivesDataFrom(final Value aOtherValue) {
-        aOtherValue.addEdgeTo(new DataFlowEdgeType(), this);
+        aOtherValue.addEdgeTo(DataFlowEdgeType.instance, this);
         resetCaches();
     }
 

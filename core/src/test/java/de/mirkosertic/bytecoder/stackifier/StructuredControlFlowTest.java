@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -54,8 +54,8 @@ public class StructuredControlFlowTest {
     @Test
     public void testSimpleSequence() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -90,9 +90,9 @@ public class StructuredControlFlowTest {
     @Test
     public void testDoubleExit() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.forward, 0, 3);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 0, 3);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -115,10 +115,10 @@ public class StructuredControlFlowTest {
     @Test
     public void testSimpleLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.forward, 2, 3);
-        builder.add(EdgeType.back, 2, 1);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 2, 3);
+        builder.add(ControlFlowEdgeType.back, 2, 1);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -139,10 +139,10 @@ public class StructuredControlFlowTest {
     @Test
     public void testGlobalLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.forward, 2, 3);
-        builder.add(EdgeType.back, 2, 0);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 2, 3);
+        builder.add(ControlFlowEdgeType.back, 2, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -163,7 +163,7 @@ public class StructuredControlFlowTest {
     @Test
     public void testSingleNodeLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Collections.singletonList(0));
-        builder.add(EdgeType.back, 0, 0);
+        builder.add(ControlFlowEdgeType.back, 0, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -181,12 +181,12 @@ public class StructuredControlFlowTest {
     @Test
     public void testNestedLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.forward, 2, 3);
-        builder.add(EdgeType.forward, 3, 4);
-        builder.add(EdgeType.back, 3, 1);
-        builder.add(EdgeType.back, 4, 0);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 2, 3);
+        builder.add(ControlFlowEdgeType.forward, 3, 4);
+        builder.add(ControlFlowEdgeType.back, 3, 1);
+        builder.add(ControlFlowEdgeType.back, 4, 0);
 
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
@@ -212,11 +212,11 @@ public class StructuredControlFlowTest {
     @Test
     public void testAdvancedLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.forward, 2, 3);
-        builder.add(EdgeType.back, 3, 1);
-        builder.add(EdgeType.forward, 2, 4);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 2, 3);
+        builder.add(ControlFlowEdgeType.back, 3, 1);
+        builder.add(ControlFlowEdgeType.forward, 2, 4);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -241,14 +241,14 @@ public class StructuredControlFlowTest {
     @Test
     public void testTwoDominatedLoops() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3, 4, 5));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.back, 2, 1);
-        builder.add(EdgeType.forward, 0, 3);
-        builder.add(EdgeType.forward, 3, 4);
-        builder.add(EdgeType.back, 4, 3);
-        builder.add(EdgeType.forward, 2, 5);
-        builder.add(EdgeType.forward, 4, 5);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.back, 2, 1);
+        builder.add(ControlFlowEdgeType.forward, 0, 3);
+        builder.add(ControlFlowEdgeType.forward, 3, 4);
+        builder.add(ControlFlowEdgeType.back, 4, 3);
+        builder.add(ControlFlowEdgeType.forward, 2, 5);
+        builder.add(ControlFlowEdgeType.forward, 4, 5);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -278,8 +278,8 @@ public class StructuredControlFlowTest {
         expectedException.expectMessage("{2,3} are head to head");
 
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
-        builder.add(EdgeType.forward,0, 2);
-        builder.add(EdgeType.back, 3, 1);
+        builder.add(ControlFlowEdgeType.forward,0, 2);
+        builder.add(ControlFlowEdgeType.back, 3, 1);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
     }
@@ -287,10 +287,10 @@ public class StructuredControlFlowTest {
     @Test
     public void testIfThenElse() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 0, 2);
-        builder.add(EdgeType.forward, 1, 3);
-        builder.add(EdgeType.forward, 2, 3);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 0, 2);
+        builder.add(ControlFlowEdgeType.forward, 1, 3);
+        builder.add(ControlFlowEdgeType.forward, 2, 3);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -313,11 +313,11 @@ public class StructuredControlFlowTest {
     @Test
     public void testSimpleLoopMultipleExits() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1, 2, 3));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.forward, 1, 2);
-        builder.add(EdgeType.forward, 1, 3);
-        builder.add(EdgeType.forward, 2, 3);
-        builder.add(EdgeType.back, 2, 1);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.forward, 1, 2);
+        builder.add(ControlFlowEdgeType.forward, 1, 3);
+        builder.add(ControlFlowEdgeType.forward, 2, 3);
+        builder.add(ControlFlowEdgeType.back, 2, 1);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));
@@ -341,8 +341,8 @@ public class StructuredControlFlowTest {
     @Test
     public void testCompleteLoop() throws HeadToHeadControlFlowException {
         final StructuredControlFlowBuilder<Integer> builder = new StructuredControlFlowBuilder<>(Arrays.asList(0, 1));
-        builder.add(EdgeType.forward, 0, 1);
-        builder.add(EdgeType.back, 1, 0);
+        builder.add(ControlFlowEdgeType.forward, 0, 1);
+        builder.add(ControlFlowEdgeType.back, 1, 0);
         final StructuredControlFlow<Integer> graph = builder.build();
         graph.printDebug(new PrintWriter(System.out));
         graph.writeStructuredControlFlow(new IntegerDebugStructurecControlFlowWriter(System.out));

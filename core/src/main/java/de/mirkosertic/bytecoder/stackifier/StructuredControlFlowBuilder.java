@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +30,7 @@ public class StructuredControlFlowBuilder<T> {
         this.knownJumpArrows = new ArrayList<>();
     }
 
-    public void add(final EdgeType edgeType, final T source, final T destination) {
+    public void add(final ControlFlowEdgeType edgeType, final T source, final T destination) {
         knownJumpArrows.add(new JumpArrow<>(edgeType, source, destination));
     }
 

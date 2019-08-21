@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public enum EdgeType {
+import de.mirkosertic.bytecoder.graph.EdgeType;
+
+public enum ControlFlowEdgeType implements EdgeType {
     forward, back
 }

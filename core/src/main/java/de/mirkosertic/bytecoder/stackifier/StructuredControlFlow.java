@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Label;
 
 public class StructuredControlFlow<T> {
@@ -47,7 +47,7 @@ public class StructuredControlFlow<T> {
     private List<JumpArrow<T>> forwardArrowsWithHead(final T head) {
         final List<JumpArrow<T>> forwardArrows = new ArrayList<>();
         for (final JumpArrow<T> f : knownJumpArrows) {
-            if (f.getEdgeType() == EdgeType.forward && f.getHead() == head) {
+            if (f.getEdgeType() == ControlFlowEdgeType.forward && f.getHead() == head) {
                 forwardArrows.add(f);
             }
         }
@@ -64,7 +64,7 @@ public class StructuredControlFlow<T> {
     private List<JumpArrow<T>> backwardArrowsWithHead(final T head) {
         final List<JumpArrow<T>> backwardArrows = new ArrayList<>();
         for (final JumpArrow<T> f : knownJumpArrows) {
-            if (f.getEdgeType() == EdgeType.back && indexOf(f.getHead()) == indexOf(head)) {
+            if (f.getEdgeType() == ControlFlowEdgeType.back && indexOf(f.getHead()) == indexOf(head)) {
                 backwardArrows.add(f);
             }
         }
@@ -130,7 +130,7 @@ public class StructuredControlFlow<T> {
             pw.print(String.format("%3d-%3d ", indexOf(arrow.getTail()) ,indexOf(arrow.getHead())));
             final T tail = newTail ? arrow.getNewTail() : arrow.getTail();
             final T head = arrow.getHead();
-            if (arrow.getEdgeType() == EdgeType.forward) {
+            if (arrow.getEdgeType() == ControlFlowEdgeType.forward) {
                 for (int i=0;i<indexOf(tail);i++) {
                     pw.print("    ");
                 }
@@ -220,7 +220,7 @@ public class StructuredControlFlow<T> {
                             // Also forward jumps out of a loop do not create new blocks
                             // As the loop can always be exited
                             if (knownJumpArrows.stream().filter(
-                                    t -> t.getEdgeType() == EdgeType.back && t.getNewTail() == arrow.getNewTail()).count() == 1) {
+                                    t -> t.getEdgeType() == ControlFlowEdgeType.back && t.getNewTail() == arrow.getNewTail()).count() == 1) {
                                 return false;
                             }
 
@@ -230,7 +230,7 @@ public class StructuredControlFlow<T> {
                         // Jumps out of a loop to the loops direct successor also does not create a block
                         // Those Jumps are always possible by breaking the loop
                         for (JumpArrow<T> a : knownJumpArrows) {
-                            if (a.getEdgeType() == EdgeType.back &&
+                            if (a.getEdgeType() == ControlFlowEdgeType.back &&
                                     indexOf(arrow.getNewTail()) >= indexOf(a.getHead()) &&
                                     indexOf(arrow.getNewTail()) <= indexOf(a.getNewTail()) &&
                                     indexOf(arrow.getHead()) == indexOf(a.getNewTail()) + 1 &&
@@ -255,7 +255,7 @@ public class StructuredControlFlow<T> {
             // Sorted by their head in descending order
             // So we can build a stack of blocks correctly
             final Set<Block<T>> uniqueBlocksStartingFromHere = filteredJumpArrows.stream()
-                    .filter(t -> t.getEdgeType() == EdgeType.forward && t.getNewTail() == node)
+                    .filter(t -> t.getEdgeType() == ControlFlowEdgeType.forward && t.getNewTail() == node)
                     .map(t -> new Block<>(toLabel(t), t))
                     .collect(Collectors.toSet());
 
@@ -263,7 +263,7 @@ public class StructuredControlFlow<T> {
             // and sort them correctly to place them at the right
             // position onto the stack
             final List<JumpArrow<T>> backEdgesToHere =  filteredJumpArrows.stream()
-                    .filter(t -> t.getEdgeType() == EdgeType.back && t.getHead() == node)
+                    .filter(t -> t.getEdgeType() == ControlFlowEdgeType.back && t.getHead() == node)
                     .collect(Collectors.toList());
 
             // TODO: We have to join back edges to the same head
@@ -278,8 +278,8 @@ public class StructuredControlFlow<T> {
             // we get sorted blocks from widest to smallest
             // We have top place the blocks in this exact order
             blocksStartingFromHere.sort((o1, o2) -> {
-                final int a = o1.getArrow().getEdgeType() == EdgeType.forward ? indexOf(o1.getEnding()) : indexOf(o1.getEnding()) + 1;
-                final int b = o2.getArrow().getEdgeType() == EdgeType.forward ? indexOf(o2.getEnding()) : indexOf(o2.getEnding()) + 1;
+                final int a = o1.getArrow().getEdgeType() == ControlFlowEdgeType.forward ? indexOf(o1.getEnding()) : indexOf(o1.getEnding()) + 1;
+                final int b = o2.getArrow().getEdgeType() == ControlFlowEdgeType.forward ? indexOf(o2.getEnding()) : indexOf(o2.getEnding()) + 1;
                 return Integer.compare(b, a);
             });
 
@@ -288,7 +288,7 @@ public class StructuredControlFlow<T> {
                 blockStack.pop();
             }
 
-            if (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+            if (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == ControlFlowEdgeType.back)) {
 
                 for (final Block<T> block : blocksStartingFromHere) {
                     switch (block.arrow.getEdgeType()) {
@@ -297,7 +297,7 @@ public class StructuredControlFlow<T> {
                             // of Blocks on the stack
                             check: {
                                 for (final Block<T> onStack : blockStack) {
-                                    if (onStack.getArrow().getEdgeType() == EdgeType.forward &&
+                                    if (onStack.getArrow().getEdgeType() == ControlFlowEdgeType.forward &&
                                         onStack.getEnding() == block.getEnding()) {
                                         // Jump is possible
                                         break check;
@@ -320,7 +320,7 @@ public class StructuredControlFlow<T> {
 
                 writer.write(node);
 
-                while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == EdgeType.back)) {
+                while (!blockStack.isEmpty() && (indexOf(blockStack.peek().getEnding()) == indexOf(node)) && (blockStack.peek().getArrow().getEdgeType() == ControlFlowEdgeType.back)) {
                     writer.closeBlock();
                     blockStack.pop();
                 }

@@ -18,10 +18,10 @@ package de.mirkosertic.bytecoder.graph;
 public class Edge<TYPE extends EdgeType, TARGET extends Node> {
 
     private Node sourceNode;
-    private final TYPE edgeType;
+    private TYPE edgeType;
     private TARGET targetNode;
 
-    public Edge(Node aSourceNode, TYPE aType, TARGET aTargetNode) {
+    public Edge(final Node aSourceNode, final TYPE aType, final TARGET aTargetNode) {
         sourceNode = aSourceNode;
         edgeType = aType;
         targetNode = aTargetNode;
@@ -39,11 +39,15 @@ public class Edge<TYPE extends EdgeType, TARGET extends Node> {
         return targetNode;
     }
 
-    public void newSourceIs(Node aNewSource) {
+    public void newSourceIs(final Node aNewSource) {
         sourceNode = aNewSource;
     }
 
-    public void newTargetId(TARGET aNewTarget) {
+    public void newTargetId(final TARGET aNewTarget) {
         targetNode = aNewTarget;
+    }
+
+    public void newTypeIs(final TYPE aEdgeType) {
+        edgeType = aEdgeType;
     }
 }
