@@ -22,10 +22,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class Node {
+public class Node<V extends Node, E extends EdgeType> {
 
-    private final List<Edge> outgoingEdges;
-    private final List<Edge> incomingEdges;
+    private final List<Edge<E, V>> outgoingEdges;
+    private final List<Edge<E, V>> incomingEdges;
 
     public Node() {
         outgoingEdges = new ArrayList<>();
@@ -36,22 +36,30 @@ public abstract class Node {
         incomingEdges.add(aEdge);
     }
 
-    public <T extends Edge> Stream<T> outgoingEdges(final Predicate<EdgeType> aPredicate) {
+    public <T extends Edge<E, V>> Stream<T> outgoingEdges() {
+        return (Stream<T>) outgoingEdges.stream();
+    }
+
+    public <T extends Edge<E, V>> Stream<T> outgoingEdges(final Predicate<E> aPredicate) {
         return (Stream<T>) outgoingEdges.stream().filter(t -> aPredicate.test(t.edgeType()));
     }
 
-    public <T extends Node> T addEdgeTo(final EdgeType aType, final T aTargetNode) {
+    public <T extends Node> T addEdgeTo(final E aType, final T aTargetNode) {
         final Edge theNewEdge = new Edge(this, aType, aTargetNode);
         outgoingEdges.add(theNewEdge);
         aTargetNode.addIncomingEdge(theNewEdge);
         return aTargetNode;
     }
 
-    public <T extends Edge> Stream<T> incomingEdges(final Predicate<EdgeType> aPredicate) {
+    public <T extends Edge<E, V>> Stream<T> incomingEdges(final Predicate<E> aPredicate) {
         return (Stream<T>) incomingEdges.stream().filter(t -> aPredicate.test(t.edgeType()));
     }
 
-    public <T extends Node> Optional<T> singleOutgoingNodeMatching(final Predicate<EdgeType> aPredicate) {
+    public <T extends Edge<E, V>> Stream<T> incomingEdges() {
+        return (Stream<T>) incomingEdges.stream();
+    }
+
+    public <T extends Node> Optional<T> singleOutgoingNodeMatching(final Predicate<E> aPredicate) {
         final List<Edge> theEdges = outgoingEdges(aPredicate).collect(Collectors.toList());
         if (theEdges.isEmpty()) {
             return Optional.empty();

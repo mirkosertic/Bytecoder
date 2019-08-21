@@ -60,9 +60,9 @@ public class ControlFlowGraphSCC {
         stack.push(vertex);
         boolean isComponentRoot = true;
 
-        final List<RegionNode> successors = vertex.getSuccessors().entrySet().stream()
-                .filter(t -> t.getValue().getType() == RegionNode.BlockType.NORMAL)
-                .map(Map.Entry::getValue)
+        final List<RegionNode> successors = vertex.outgoingEdges()
+                .filter(t -> t.targetNode().getType() == RegionNode.BlockType.NORMAL)
+                .map(t -> t.targetNode())
                 .sorted((o1, o2) -> Integer.compare(o2.getStartAddress().getAddress(), o1.getStartAddress().getAddress()))
                 .collect(Collectors.toList());
 

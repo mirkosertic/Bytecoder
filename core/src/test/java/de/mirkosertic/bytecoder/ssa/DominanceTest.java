@@ -38,18 +38,18 @@ public class DominanceTest {
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         theNode3.getExpressions().add(new ReturnExpression(null, null));
 
-        theNode1.addSuccessor(theNode2);
-        theNode2.addSuccessor(theNode3);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode2);
+        theNode2.addEdgeTo(ControlFlowEdgeType.forward, theNode3);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        assertTrue(theNode2.isOnlyReachableThru(theNode1));
-        assertTrue(theNode3.isOnlyReachableThru(theNode1));
-        assertTrue(theNode3.isOnlyReachableThru(theNode2));
+        assertTrue(theNode2.isDominatedBy(theNode1));
+        assertTrue(theNode3.isDominatedBy(theNode1));
+        assertTrue(theNode3.isDominatedBy(theNode2));
 
-        assertFalse(theNode1.isOnlyReachableThru(theNode2));
-        assertFalse(theNode1.isOnlyReachableThru(theNode3));
-        assertFalse(theNode2.isOnlyReachableThru(theNode3));
+        assertFalse(theNode1.isDominatedBy(theNode2));
+        assertFalse(theNode1.isDominatedBy(theNode3));
+        assertFalse(theNode2.isDominatedBy(theNode3));
 
         final Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
         assertEquals(3, theDom1.size(), 0);
@@ -76,9 +76,9 @@ public class DominanceTest {
         final RegionNode theNode3 = theGraph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         theNode3.getExpressions().add(new GotoExpression(null, null, BytecodeOpcodeAddress.START_AT_ZERO));
 
-        theNode1.addSuccessor(theNode2);
-        theNode2.addSuccessor(theNode3);
-        theNode3.addSuccessor(theNode1);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode2);
+        theNode2.addEdgeTo(ControlFlowEdgeType.forward, theNode3);
+        theNode3.addEdgeTo(ControlFlowEdgeType.forward, theNode1);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
     }
@@ -106,16 +106,16 @@ public class DominanceTest {
         final RegionNode theNode4 = theGraph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
         theNode4.getExpressions().add(new ReturnExpression(null, null));
 
-        theNode1.addSuccessor(theNode2);
-        theNode1.addSuccessor(theNode3);
-        theNode2.addSuccessor(theNode4);
-        theNode3.addSuccessor(theNode4);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode2);
+        theNode1.addEdgeTo(ControlFlowEdgeType.forward, theNode3);
+        theNode2.addEdgeTo(ControlFlowEdgeType.forward, theNode4);
+        theNode3.addEdgeTo(ControlFlowEdgeType.forward, theNode4);
 
         theGraph.calculateReachabilityAndMarkBackEdges();
 
-        assertTrue(theNode4.isOnlyReachableThru(theNode1));
-        assertFalse(theNode4.isOnlyReachableThru(theNode2));
-        assertFalse(theNode4.isOnlyReachableThru(theNode3));
+        assertTrue(theNode4.isDominatedBy(theNode1));
+        assertFalse(theNode4.isDominatedBy(theNode2));
+        assertFalse(theNode4.isDominatedBy(theNode3));
 
         final Set<RegionNode> theDom1 = theGraph.dominatedNodesOf(theNode1);
         assertEquals(4, theDom1.size(), 0);

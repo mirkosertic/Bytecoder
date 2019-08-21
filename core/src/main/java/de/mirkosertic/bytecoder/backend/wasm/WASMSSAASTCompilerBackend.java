@@ -222,10 +222,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface() && !aEntry.targetNode().isOpaqueType()) {
                 return;
             }
-            if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
-            if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(java.lang.reflect.Array.class))) {
+            if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(java.lang.reflect.Array.class))) {
                 return;
             }
 
@@ -355,11 +355,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-            if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
 
-            final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
+            final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
 
             // We also create a global for the runtime class
             module.getGlobals().newMutableGlobal(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX, PrimitiveType.i32, i32.c(-1, null));
@@ -396,7 +396,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     return;
                 }
 
-                final String theMethodName = WASMWriterUtils.toMethodName(aEntry.edgeType().objectTypeRef(), t.getName(), theSignature);
+                final String theMethodName = WASMWriterUtils.toMethodName(aEntry.targetNode().getClassName(), t.getName(), theSignature);
                 if (!module.functionIndex().hasFunction(theMethodName)) {
                     final List<Param> params = new ArrayList<>();
                     params.add(param("thisRef", WASMSSAASTWriter.toType(TypeRef.Native.REFERENCE)));
@@ -429,7 +429,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
 
-            if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+            if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
             if (null != theLinkedClass.getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
@@ -437,7 +437,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             }
 
             final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
-            final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
+            final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
 
             if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
 
@@ -860,19 +860,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
 
-                if (Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     return;
                 }
                 if (null != theLinkedClass.getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
                     return;
                 }
 
-                final Global runtimeClassGlobal = module.globalsIndex().globalByLabel(WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef()) + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
+                final Global runtimeClassGlobal = module.globalsIndex().globalByLabel(WASMWriterUtils.toClassName(aEntry.targetNode().getClassName()) + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
 
                 final List<WASMValue> initArguments = new ArrayList<>();
                 initArguments.add(i32.c(theLinkedClass.getUniqueId(), null));
 
-                final WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(aEntry.edgeType().objectTypeRef());
+                final WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(aEntry.targetNode().getClassName());
 
                 initArguments.add(i32.c(theLayout.classSize(), null));
 
@@ -955,10 +955,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     return;
                 }
 
-                if (!Objects.equals(aEntry.edgeType().objectTypeRef(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                if (!Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
 
                     final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
-                    final String theClassName = WASMWriterUtils.toClassName(aEntry.edgeType().objectTypeRef());
+                    final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
                     final Global theGlobal = module.globalsIndex().globalByLabel(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
                     final ExportableFunction theClassInitFunction = module.getFunctions().newFunction( theClassName + WASMSSAASTWriter.CLASSINITSUFFIX, PrimitiveType.i32);
 

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.graph.Node;
 
-public class RootNode extends Node {
+public class RootNode extends Node<BytecodeLinkedClass, BytecodeLinkedClassEdgeType> {
 
     public RootNode() {
     }

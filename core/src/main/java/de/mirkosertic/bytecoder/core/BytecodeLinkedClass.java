@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class BytecodeLinkedClass extends Node {
+public class BytecodeLinkedClass extends Node<Node, EdgeType> {
 
     public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]);
     public static final BytecodeMethodSignature DESIRED_ASSERTION_STATUS_SIGNATURE = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]);
@@ -156,7 +157,7 @@ public class BytecodeLinkedClass extends Node {
                 throw new IllegalStateException("Field " + theFieldName + " is not static in " + className.name());
             }
 
-            addEdgeTo(new BytecodeProvidesFieldEdgeType(), theField);
+            addEdgeTo(BytecodeProvidesFieldEdgeType.instance, theField);
 
             linkerContext.resolveTypeRef(theField.getTypeRef());
 
@@ -200,7 +201,7 @@ public class BytecodeLinkedClass extends Node {
                 throw new IllegalStateException("Field " + theFieldName + " is static in " + className.name());
             }
 
-            addEdgeTo(new BytecodeProvidesFieldEdgeType(), theField);
+            addEdgeTo(BytecodeProvidesFieldEdgeType.instance, theField);
 
             linkerContext.resolveTypeRef(theField.getTypeRef());
 
@@ -278,7 +279,7 @@ public class BytecodeLinkedClass extends Node {
                 throw new IllegalStateException("Method " + aMethodName + " is static in " + className.name());
             }
 
-            addEdgeTo(new BytecodeProvidesMethodEdgeType(), theMethod);
+            addEdgeTo(BytecodeProvidesMethodEdgeType.instance, theMethod);
 
             resolveMethodSignatureAndBody(theMethod);
 
@@ -308,7 +309,7 @@ public class BytecodeLinkedClass extends Node {
                 throw new IllegalStateException("Constructor <init> is static in " + className.name());
             }
 
-            addEdgeTo(new BytecodeProvidesMethodEdgeType(), theMethod);
+            addEdgeTo(BytecodeProvidesMethodEdgeType.instance, theMethod);
 
             resolveMethodSignatureAndBody(theMethod);
 
@@ -333,7 +334,7 @@ public class BytecodeLinkedClass extends Node {
                 throw new IllegalStateException("Method " + aMethodName + " is static in " + className.name());
             }
 
-            addEdgeTo(new BytecodeProvidesMethodEdgeType(), theMethod);
+            addEdgeTo(BytecodeProvidesMethodEdgeType.instance, theMethod);
 
             resolveMethodSignatureAndBody(theMethod);
 
@@ -358,7 +359,7 @@ public class BytecodeLinkedClass extends Node {
                 throw new IllegalStateException("Method " + aMethodName + " is not static in " + className.name());
             }
 
-            addEdgeTo(new BytecodeProvidesMethodEdgeType(), theMethod);
+            addEdgeTo(BytecodeProvidesMethodEdgeType.instance, theMethod);
 
             resolveMethodSignatureAndBody(theMethod);
 

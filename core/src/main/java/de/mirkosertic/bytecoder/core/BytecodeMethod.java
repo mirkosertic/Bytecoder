@@ -16,25 +16,26 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.DelegatesTo;
+import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 
 import java.util.Objects;
 
-public class BytecodeMethod extends Node {
+public class BytecodeMethod extends Node<Node, EdgeType> {
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;
     private final BytecodeAttributeInfo[] attributes;
     private final BytecodeMethodSignature signature;
 
-    public BytecodeMethod(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeMethodSignature aSignature, BytecodeAttributeInfo[] aAttributes) {
+    public BytecodeMethod(final BytecodeAccessFlags aAccessFlags, final BytecodeUtf8Constant aName, final BytecodeMethodSignature aSignature, final BytecodeAttributeInfo[] aAttributes) {
         accessFlags = aAccessFlags;
         name = aName;
         signature = aSignature;
         attributes = aAttributes;
     }
 
-    public BytecodeMethod replaceAndFlagsFrom(BytecodeMethod aOtherMethod) {
+    public BytecodeMethod replaceAndFlagsFrom(final BytecodeMethod aOtherMethod) {
         return new BytecodeMethod(aOtherMethod.accessFlags, name, signature, aOtherMethod.attributes);
     }
 
@@ -50,12 +51,12 @@ public class BytecodeMethod extends Node {
         return accessFlags;
     }
 
-    public BytecodeCodeAttributeInfo getCode(BytecodeClass aContextClass) {
-        BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(DelegatesTo.class.getName());
+    public BytecodeCodeAttributeInfo getCode(final BytecodeClass aContextClass) {
+        final BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(DelegatesTo.class.getName());
         if (theDelegatesTo != null) {
-            BytecodeAnnotation.ElementValue theMethodToDelegate = theDelegatesTo.getElementValueByName("methodName");
-            String theDelegatingMethod = theMethodToDelegate.stringValue();
-            BytecodeMethod theMethod = aContextClass.methodByNameAndSignatureOrNull(theDelegatingMethod, getSignature());
+            final BytecodeAnnotation.ElementValue theMethodToDelegate = theDelegatesTo.getElementValueByName("methodName");
+            final String theDelegatingMethod = theMethodToDelegate.stringValue();
+            final BytecodeMethod theMethod = aContextClass.methodByNameAndSignatureOrNull(theDelegatingMethod, getSignature());
             if (theMethod == null) {
                 throw new IllegalStateException("Cannot find method " + theDelegatingMethod + " in " + aContextClass.getThisInfo().getConstant().stringValue());
             }
@@ -64,8 +65,8 @@ public class BytecodeMethod extends Node {
         return attributeByType(BytecodeCodeAttributeInfo.class);
     }
 
-    public <T extends BytecodeAttributeInfo> T attributeByType(Class<T> aAttributeClass) {
-        for (BytecodeAttributeInfo theInfo : attributes) {
+    public <T extends BytecodeAttributeInfo> T attributeByType(final Class<T> aAttributeClass) {
+        for (final BytecodeAttributeInfo theInfo : attributes) {
             if (Objects.equals(theInfo.getClass(), aAttributeClass)) {
                 return (T) theInfo;
             }

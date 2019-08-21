@@ -15,16 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 
-public class BytecodeField extends Node {
+public class BytecodeField extends Node<Node, EdgeType> {
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;
     private final BytecodeTypeRef typeRef;
     private final BytecodeAttributeInfo[] attributeInfo;
 
-    public BytecodeField(BytecodeAccessFlags aAccessFlags, BytecodeUtf8Constant aName, BytecodeTypeRef aTypeRef, BytecodeAttributeInfo[] aAttributeInfo) {
+    public BytecodeField(final BytecodeAccessFlags aAccessFlags, final BytecodeUtf8Constant aName, final BytecodeTypeRef aTypeRef, final BytecodeAttributeInfo[] aAttributeInfo) {
         accessFlags = aAccessFlags;
         name = aName;
         typeRef = aTypeRef;

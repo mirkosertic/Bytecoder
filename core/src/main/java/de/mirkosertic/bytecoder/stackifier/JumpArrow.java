@@ -15,16 +15,16 @@
  */
 package de.mirkosertic.bytecoder.stackifier;
 
-import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 
 public class JumpArrow<T> {
 
-    private final EdgeType edgeType;
+    private final ControlFlowEdgeType edgeType;
     private final T head;
     private final T tail;
     private T newTail;
 
-    public JumpArrow(final EdgeType edgeType, final T tail, final T head) {
+    public JumpArrow(final ControlFlowEdgeType edgeType, final T tail, final T head) {
         this.edgeType = edgeType;
         this.head = head;
         this.tail = tail;
@@ -35,7 +35,7 @@ public class JumpArrow<T> {
         this.newTail = newTail;
     }
 
-    public EdgeType getEdgeType() {
+    public ControlFlowEdgeType getEdgeType() {
         return edgeType;
     }
 
