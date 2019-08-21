@@ -50,8 +50,8 @@ public class ControlFlowGraphSCCTest {
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
         graph.calculateReachabilityAndMarkBackEdges();
 
         final ControlFlowGraphSCC scc = new ControlFlowGraphSCC(graph);
@@ -73,10 +73,10 @@ public class ControlFlowGraphSCCTest {
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
         final RegionNode node3 = graph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        startNode.addSuccessor(node2);
-        node1.addSuccessor(node3);
-        node2.addSuccessor(node3);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node3);
         graph.calculateReachabilityAndMarkBackEdges();
 
 
@@ -100,9 +100,9 @@ public class ControlFlowGraphSCCTest {
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
-        node2.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         graph.calculateReachabilityAndMarkBackEdges();
 
         final ControlFlowGraphSCC scc = new ControlFlowGraphSCC(graph);
@@ -121,9 +121,9 @@ public class ControlFlowGraphSCCTest {
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
-        node1.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         graph.calculateReachabilityAndMarkBackEdges();
 
         final ControlFlowGraphSCC scc = new ControlFlowGraphSCC(graph);
@@ -145,12 +145,12 @@ public class ControlFlowGraphSCCTest {
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         final RegionNode node3 = graph.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
         final RegionNode node4 = graph.createAt(new BytecodeOpcodeAddress(40), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node3);
-        node1.addSuccessor(node2);
-        node2.addSuccessor(node1);
-        node2.addSuccessor(node4);
-        node3.addSuccessor(node4);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node4);
         graph.calculateReachabilityAndMarkBackEdges();
 
         final ControlFlowGraphSCC scc = new ControlFlowGraphSCC(graph);

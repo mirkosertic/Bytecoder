@@ -17,47 +17,6 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.graph.EdgeType;
 
-import java.util.Objects;
-import java.util.function.Predicate;
-
-public class BytecodeLinkedClassEdgeType implements EdgeType {
-
-    public static Predicate<EdgeType> filter() {
-        return edgeType -> edgeType instanceof BytecodeLinkedClassEdgeType;
-    };
-
-    public static Predicate<EdgeType> filter(BytecodeObjectTypeRef aTypeRef) {
-        return edgeType -> {
-            if (!(edgeType instanceof BytecodeLinkedClassEdgeType)) {
-                return false;
-            }
-            BytecodeLinkedClassEdgeType theType = (BytecodeLinkedClassEdgeType) edgeType;
-            return Objects.equals(aTypeRef, theType.objectTypeRef);
-        };
-    };
-
-    private final BytecodeObjectTypeRef objectTypeRef;
-
-    public BytecodeLinkedClassEdgeType(BytecodeObjectTypeRef aObjectTypeRef) {
-        objectTypeRef = aObjectTypeRef;
-    }
-
-    public BytecodeObjectTypeRef objectTypeRef() {
-        return objectTypeRef;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        BytecodeLinkedClassEdgeType that = (BytecodeLinkedClassEdgeType) o;
-        return Objects.equals(objectTypeRef, that.objectTypeRef);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(objectTypeRef);
-    }
+public enum BytecodeLinkedClassEdgeType implements EdgeType {
+    instance
 }

@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -57,8 +58,8 @@ public class StackifierTest {
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
         node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(20)));
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -77,8 +78,8 @@ public class StackifierTest {
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -103,10 +104,10 @@ public class StackifierTest {
         final RegionNode b = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
         b.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(2), new BytecodeOpcodeAddress(30)));
         final RegionNode c = g.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(a);
-        startNode.addSuccessor(b);
-        a.addSuccessor(c);
-        b.addSuccessor(c);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, a);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, b);
+        a.addEdgeTo(ControlFlowEdgeType.forward, c);
+        b.addEdgeTo(ControlFlowEdgeType.forward, c);
 
         g.calculateReachabilityAndMarkBackEdges();
 
@@ -138,8 +139,8 @@ public class StackifierTest {
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
         node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(0)));
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -164,9 +165,9 @@ public class StackifierTest {
         node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(0)));
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
 
-        startNode.addSuccessor(node1);
-        startNode.addSuccessor(node2);
-        node1.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -196,9 +197,9 @@ public class StackifierTest {
         node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(20)));
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
 
-        startNode.addSuccessor(node1);
-        startNode.addSuccessor(node2);
-        node1.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -229,9 +230,9 @@ public class StackifierTest {
         node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(0)));
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
 
-        startNode.addSuccessor(node1);
-        startNode.addSuccessor(node2);
-        node1.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -263,9 +264,9 @@ public class StackifierTest {
         node1.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(1), new BytecodeOpcodeAddress(0)));
         final RegionNode node2 = g.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
 
-        startNode.addSuccessor(node1);
-        startNode.addSuccessor(node2);
-        node1.addSuccessor(startNode);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, startNode);
         g.calculateReachabilityAndMarkBackEdges();
 
         final Stackifier stackifier = new Stackifier(g);
@@ -307,46 +308,46 @@ public class StackifierTest {
         final RegionNode node112= g.createAt(new BytecodeOpcodeAddress(112), RegionNode.BlockType.NORMAL);
         final RegionNode node116= g.createAt(new BytecodeOpcodeAddress(116), RegionNode.BlockType.NORMAL);
 
-        startNode.addSuccessor(node10);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node10);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
 
-        node10.addSuccessor(node16);
+        node10.addEdgeTo(ControlFlowEdgeType.forward, node16);
         node10.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(10), new BytecodeOpcodeAddress(16)));
-        node10.addSuccessor(node41);
+        node10.addEdgeTo(ControlFlowEdgeType.forward, node41);
         node10.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(11), new BytecodeOpcodeAddress(41)));
 
-        node16.addSuccessor(node35);
+        node16.addEdgeTo(ControlFlowEdgeType.forward, node35);
         node16.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(16), new BytecodeOpcodeAddress(35)));
-        node16.addSuccessor(node31);
+        node16.addEdgeTo(ControlFlowEdgeType.forward, node31);
         node16.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(17), new BytecodeOpcodeAddress(31)));
 
-        node35.addSuccessor(node10);
+        node35.addEdgeTo(ControlFlowEdgeType.forward, node10);
         node35.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(35), new BytecodeOpcodeAddress(10)));
 
-        node41.addSuccessor(node51);
+        node41.addEdgeTo(ControlFlowEdgeType.forward, node51);
         node41.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(41), new BytecodeOpcodeAddress(51)));
 
-        node51.addSuccessor(node57);
+        node51.addEdgeTo(ControlFlowEdgeType.forward, node57);
         node51.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(51), new BytecodeOpcodeAddress(57)));
-        node51.addSuccessor(node82);
+        node51.addEdgeTo(ControlFlowEdgeType.forward, node82);
         node51.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(52), new BytecodeOpcodeAddress(82)));
 
-        node57.addSuccessor(node72);
+        node57.addEdgeTo(ControlFlowEdgeType.forward, node72);
         node57.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(57), new BytecodeOpcodeAddress(72)));
-        node57.addSuccessor(node76);
+        node57.addEdgeTo(ControlFlowEdgeType.forward, node76);
         node57.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(58), new BytecodeOpcodeAddress(76)));
 
-        node76.addSuccessor(node51);
+        node76.addEdgeTo(ControlFlowEdgeType.forward, node51);
         node76.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(76), new BytecodeOpcodeAddress(51)));
 
-        node82.addSuccessor(node95);
+        node82.addEdgeTo(ControlFlowEdgeType.forward, node95);
         node82.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(82), new BytecodeOpcodeAddress(95)));
-        node82.addSuccessor(node99);
+        node82.addEdgeTo(ControlFlowEdgeType.forward, node99);
         node82.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(83), new BytecodeOpcodeAddress(99)));
 
-        node99.addSuccessor(node112);
+        node99.addEdgeTo(ControlFlowEdgeType.forward, node112);
         node99.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(99), new BytecodeOpcodeAddress(112)));
-        node99.addSuccessor(node116);
+        node99.addEdgeTo(ControlFlowEdgeType.forward, node116);
         node99.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(100), new BytecodeOpcodeAddress(116)));
 
         g.calculateReachabilityAndMarkBackEdges();
@@ -429,19 +430,19 @@ public class StackifierTest {
         final RegionNode node109 = g.createAt(new BytecodeOpcodeAddress(109), RegionNode.BlockType.NORMAL);
         final RegionNode node103 = g.createAt(new BytecodeOpcodeAddress(103), RegionNode.BlockType.NORMAL);
         final RegionNode node100 = g.createAt(new BytecodeOpcodeAddress(100), RegionNode.BlockType.NORMAL);
-        startNode.addSuccessor(node10);
-        startNode.addSuccessor(node74);
-        node10.addSuccessor(node23);
-        node10.addSuccessor(node25);
-        node25.addSuccessor(node62);
-        node25.addSuccessor(node65);
-        node65.addSuccessor(node74);
-        node74.addSuccessor(node81);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node10);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node74);
+        node10.addEdgeTo(ControlFlowEdgeType.forward, node23);
+        node10.addEdgeTo(ControlFlowEdgeType.forward, node25);
+        node25.addEdgeTo(ControlFlowEdgeType.forward, node62);
+        node25.addEdgeTo(ControlFlowEdgeType.forward, node65);
+        node65.addEdgeTo(ControlFlowEdgeType.forward, node74);
+        node74.addEdgeTo(ControlFlowEdgeType.forward, node81);
         node74.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(74), new BytecodeOpcodeAddress(109)));
-        node74.addSuccessor(node109);
-        node81.addSuccessor(node103);
-        node81.addSuccessor(node100);
-        node100.addSuccessor(node74);
+        node74.addEdgeTo(ControlFlowEdgeType.forward, node109);
+        node81.addEdgeTo(ControlFlowEdgeType.forward, node103);
+        node81.addEdgeTo(ControlFlowEdgeType.forward, node100);
+        node100.addEdgeTo(ControlFlowEdgeType.forward, node74);
         node100.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(100), new BytecodeOpcodeAddress(74)));
 
         g.calculateReachabilityAndMarkBackEdges();
@@ -504,10 +505,10 @@ public class StackifierTest {
         final RegionNode node3 = g.createAt(new BytecodeOpcodeAddress(13), RegionNode.BlockType.NORMAL);
         node3.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(13), new BytecodeOpcodeAddress(2)));
 
-        node0.addSuccessor(node1);
-        node1.addSuccessor(node2);
-        node1.addSuccessor(node3);
-        node3.addSuccessor(node1);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node1);
 
         g.calculateReachabilityAndMarkBackEdges();
 
@@ -545,10 +546,10 @@ public class StackifierTest {
         node2.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(30)));
         final RegionNode node3 = g.createAt(new BytecodeOpcodeAddress(30), RegionNode.BlockType.NORMAL);
 
-        startNode.addSuccessor(node1);
-        node1.addSuccessor(node2);
-        node1.addSuccessor(node3);
-        node2.addSuccessor(node3);
+        startNode.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node3);
 
         g.calculateReachabilityAndMarkBackEdges();
 
@@ -587,20 +588,20 @@ public class StackifierTest {
         final RegionNode node8 = g.createAt(new BytecodeOpcodeAddress(53), RegionNode.BlockType.NORMAL);
         final RegionNode node9 = g.createAt(new BytecodeOpcodeAddress(66), RegionNode.BlockType.NORMAL);
 
-        node0.addSuccessor(node1);
-        node0.addSuccessor(node2);
-        node1.addSuccessor(node3);
-        node2.addSuccessor(node3);
-        node3.addSuccessor(node4);
-        node3.addSuccessor(node9);
-        node4.addSuccessor(node5);
-        node4.addSuccessor(node9);
-        node5.addSuccessor(node9);
-        node5.addSuccessor(node6);
-        node6.addSuccessor(node7);
-        node7.addSuccessor(node8);
-        node7.addSuccessor(node9);
-        node8.addSuccessor(node7);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node9);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node5);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node9);
+        node5.addEdgeTo(ControlFlowEdgeType.forward, node9);
+        node5.addEdgeTo(ControlFlowEdgeType.forward, node6);
+        node6.addEdgeTo(ControlFlowEdgeType.forward, node7);
+        node7.addEdgeTo(ControlFlowEdgeType.forward, node8);
+        node7.addEdgeTo(ControlFlowEdgeType.forward, node9);
+        node8.addEdgeTo(ControlFlowEdgeType.forward, node7);
 
         g.calculateReachabilityAndMarkBackEdges();
 
@@ -668,21 +669,21 @@ public class StackifierTest {
         final RegionNode node9 = g.createAt(new BytecodeOpcodeAddress(219), RegionNode.BlockType.NORMAL);
         final RegionNode node10 = g.createAt(new BytecodeOpcodeAddress(247), RegionNode.BlockType.NORMAL);
 
-        node0.addSuccessor(node1);
-        node0.addSuccessor(node4);
-        node1.addSuccessor(node2);
-        node2.addSuccessor(node3);
-        node2.addSuccessor(node4);
-        node3.addSuccessor(node2);
-        node4.addSuccessor(node5);
-        node4.addSuccessor(node10);
-        node5.addSuccessor(node6);
-        node6.addSuccessor(node10);
-        node6.addSuccessor(node7);
-        node7.addSuccessor(node9);
-        node7.addSuccessor(node8);
-        node8.addSuccessor(node9);
-        node9.addSuccessor(node6);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node5);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node10);
+        node5.addEdgeTo(ControlFlowEdgeType.forward, node6);
+        node6.addEdgeTo(ControlFlowEdgeType.forward, node10);
+        node6.addEdgeTo(ControlFlowEdgeType.forward, node7);
+        node7.addEdgeTo(ControlFlowEdgeType.forward, node9);
+        node7.addEdgeTo(ControlFlowEdgeType.forward, node8);
+        node8.addEdgeTo(ControlFlowEdgeType.forward, node9);
+        node9.addEdgeTo(ControlFlowEdgeType.forward, node6);
 
         g.calculateReachabilityAndMarkBackEdges();
 
@@ -740,14 +741,14 @@ public class StackifierTest {
         final RegionNode node190 = g.createAt(new BytecodeOpcodeAddress(190), RegionNode.BlockType.NORMAL);
         final RegionNode node247 = g.createAt(new BytecodeOpcodeAddress(247), RegionNode.BlockType.NORMAL);
 
-        node0.addSuccessor(node138);
-        node0.addSuccessor(node90);
-        node90.addSuccessor(node90);
-        node90.addSuccessor(node138);
-        node138.addSuccessor(node247);
-        node138.addSuccessor(node190);
-        node190.addSuccessor(node190);
-        node190.addSuccessor(node247);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node138);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node90);
+        node90.addEdgeTo(ControlFlowEdgeType.forward, node90);
+        node90.addEdgeTo(ControlFlowEdgeType.forward, node138);
+        node138.addEdgeTo(ControlFlowEdgeType.forward, node247);
+        node138.addEdgeTo(ControlFlowEdgeType.forward, node190);
+        node190.addEdgeTo(ControlFlowEdgeType.forward, node190);
+        node190.addEdgeTo(ControlFlowEdgeType.forward, node247);
 
         g.calculateReachabilityAndMarkBackEdges();
 
@@ -778,8 +779,6 @@ public class StackifierTest {
 
     @Test
     public void testOverlapping() throws HeadToHeadControlFlowException {
-
-
         final Program p = new Program(DebugInformation.empty());
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -789,20 +788,20 @@ public class StackifierTest {
         final RegionNode node4 = g.createAt(new BytecodeOpcodeAddress(524), RegionNode.BlockType.NORMAL);
         final RegionNode node5 = g.createAt(new BytecodeOpcodeAddress(759), RegionNode.BlockType.NORMAL);
 
-        node0.addSuccessor(node1);
-        node1.addSuccessor(node4);
-        node1.addSuccessor(node2);
-        node2.addSuccessor(node3);
-        node2.addSuccessor(node4);
-        node2.addSuccessor(node4);
-        node2.addSuccessor(node4);
-        node2.addSuccessor(node2);
-        node3.addSuccessor(node4);
-        node3.addSuccessor(node1);
-        node3.addSuccessor(node3);
-        node4.addSuccessor(node5);
-        node4.addSuccessor(node5);
-        node4.addSuccessor(node5);
+        node0.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node1.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node2.addEdgeTo(ControlFlowEdgeType.forward, node2);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node4);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node1);
+        node3.addEdgeTo(ControlFlowEdgeType.forward, node3);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node5);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node5);
+        node4.addEdgeTo(ControlFlowEdgeType.forward, node5);
 
         g.calculateReachabilityAndMarkBackEdges();
 

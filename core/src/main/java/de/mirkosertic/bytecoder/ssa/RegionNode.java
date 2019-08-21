@@ -17,16 +17,24 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.graph.Node;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class RegionNode {
+public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
+
+    public final static Comparator<RegionNode> NODE_COMPARATOR = (o1, o2) -> Integer.compare(o1.getStartAddress().getAddress(), o2.getStartAddress().getAddress());
+
+    public static final Predicate<Edge> FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY = edge -> edge.edgeType() == ControlFlowEdgeType.forward &&
+            ((RegionNode) edge.targetNode()).getType() == BlockType.NORMAL;
 
     public static class ExceptionHandler {
 
@@ -86,30 +94,11 @@ public class RegionNode {
         FINALLY,
     }
 
-    public static class Edge {
-
-        private EdgeType type;
-
-        public Edge(final EdgeType aType) {
-            type = aType;
-        }
-
-        public void changeTo(final EdgeType aType) {
-            type = aType;
-        }
-
-        public EdgeType getType() {
-            return type;
-        }
-    }
-
     private final BytecodeOpcodeAddress startAddress;
     private final Program program;
-    private final Map<Edge, RegionNode> successors;
     private final BlockType type;
     private final Map<VariableDescription, Value> imported;
     private final Map<VariableDescription, Value> exported;
-    private final List<GraphNodePath> reachableBy;
     private final ControlFlowGraph owningGraph;
     private final ExpressionList expressions;
 
@@ -119,95 +108,38 @@ public class RegionNode {
         owningGraph = aOwningGraph;
         startAddress = aStartAddress;
         program = aProgram;
-        successors = new HashMap<>();
         imported = new HashMap<>();
         exported = new HashMap<>();
-        reachableBy = new ArrayList<>();
         expressions = new ExpressionList();
-    }
-
-    public void inlineSuccessors(final RegionNode succ) {
-        for (final Edge key: successors.entrySet().stream().filter(t -> t.getValue() == succ).map(Map.Entry::getKey).collect(Collectors.toSet())) {
-            successors.remove(key);
-        }
-        successors.putAll(succ.getSuccessors());
-        predecessorCacheWithoutBackEdges = null;
-    }
-
-    public List<GraphNodePath> getReachableBy() {
-        return reachableBy;
     }
 
     public ExpressionList getExpressions() {
          return expressions;
     }
 
-    public void addReachablePath(final GraphNodePath aPath) {
-        reachableBy.add(aPath);
-    }
-
     public BlockType getType() {
         return type;
     }
 
-    public List<RegionNode> getPredecessors() {
-        final List<RegionNode> theResult = new ArrayList<>();
-        for (final GraphNodePath thePath : reachableBy) {
-            theResult.add(thePath.lastElement());
-        }
-        return theResult;
-    }
-
     public boolean hasBackEdgeTo(final RegionNode aNode) {
-        for (final Map.Entry<Edge, RegionNode> theEntry : successors.entrySet()) {
-            if (theEntry.getKey().getType() == EdgeType.back) {
-                if (theEntry.getValue() == aNode) {
-                    return true;
-                }
+        for (final Edge edge : outgoingEdges(t -> t == ControlFlowEdgeType.back).collect(Collectors.toList())) {
+            if (edge.targetNode() == aNode) {
+                return true;
             }
         }
         return false;
     }
 
-    private Set<RegionNode> predecessorCacheWithoutBackEdges;
-
     public Set<RegionNode> getPredecessorsIgnoringBackEdges() {
-        if (predecessorCacheWithoutBackEdges == null) {
-            final Set<RegionNode> theResult = new HashSet<>();
-            for (final GraphNodePath thePath : reachableBy) {
-                final RegionNode theLastElement = thePath.lastElement();
-                if (!theLastElement.hasBackEdgeTo(this)) {
-                    theResult.add(theLastElement);
-                }
-            }
-            predecessorCacheWithoutBackEdges = theResult;
-        }
-        return predecessorCacheWithoutBackEdges;
-    }
-
-    public void addSuccessor(final RegionNode aBlock) {
-        if (!successors.containsValue(aBlock)) {
-            successors.put(new Edge(EdgeType.forward), aBlock);
-        }
-    }
-
-    public Map<Edge, RegionNode> getSuccessors() {
-        return successors;
+        return incomingEdges().filter(t -> t.edgeType() == ControlFlowEdgeType.forward).map(t -> (RegionNode) t.sourceNode()).collect(Collectors.toSet());
     }
 
     public BytecodeOpcodeAddress getStartAddress() {
         return startAddress;
     }
 
-    private TypeRef.Native toNative(final TypeRef aTypeRef) {
-        if (aTypeRef instanceof TypeRef.Native) {
-            return (TypeRef.Native) aTypeRef;
-        }
-        return aTypeRef.resolve();
-    }
-
     public Variable setLocalVariable(final BytecodeOpcodeAddress aAddress, final int aIndex, final TypeRef aType, final Value aValue) {
-        final String theName = "local_" + aIndex + "_" + toNative(aType).name();
+        final String theName = "local_" + aIndex + "_" + aType.resolve().name();
         for (final Variable v : program.getVariables()) {
             if (v.getName().equals(theName)) {
                 expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
@@ -222,7 +154,7 @@ public class RegionNode {
     }
 
     public Variable findLocalVariable(final int index, final TypeRef aType) {
-        final String theName = "local_" + index + "_" + toNative(aType).name();
+        final String theName = "local_" + index + "_" + aType.resolve().name();
         final List<Variable> theKnown = program.getVariables().stream().filter(t -> t.getName().equals(theName)).collect(Collectors.toList());
         if (theKnown.size() != 1) {
             // At this point we assume there is such a variable and we use it
@@ -278,59 +210,25 @@ public class RegionNode {
         return theState;
     }
 
-    public boolean isStrictlyDominatedBy(final RegionNode aNode) {
-        final List<RegionNode> thePredecessors = new ArrayList<>(getPredecessors());
+    public boolean isImmediatelyDominatedBy(final RegionNode aNode) {
+        final Set<RegionNode> thePredecessors = getPredecessorsIgnoringBackEdges();
         return thePredecessors.size() == 1 && thePredecessors.contains(aNode);
     }
 
-    public boolean isOnlyReachableThru(final RegionNode aOtherNode) {
-        // Start nodes are not reachable by anything
-        if (reachableBy.isEmpty()) {
-            return false;
-        }
-        // All paths to this node must go thru aOtherNode
-        for (final GraphNodePath thePath : reachableBy) {
-            if (!thePath.contains(aOtherNode)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean isOnlyReachableThruRegularFlow(final RegionNode aOtherNode) {
-        // Start nodes are not reachable by anything
-        if (reachableBy.isEmpty()) {
-            return false;
-        }
-        // All paths to this node must go thru aOtherNode
-        for (final GraphNodePath thePath : reachableBy) {
-            if (thePath.isRegularFlow()) {
-                if (!thePath.contains(aOtherNode)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    public Set<RegionNode> forwardReachableNodes() {
-        final Set<RegionNode> theNodes = new HashSet<>();
-        forwardReachableNodes(theNodes, this);
-        return theNodes;
+    public boolean isDominatedBy(final RegionNode aOtherNode) {
+        return owningGraph.dominates(aOtherNode, this);
     }
 
     public Set<RegionNode> dominatedNodes() {
         return owningGraph.dominatedNodesOf(this);
     }
 
-    private static void forwardReachableNodes(final Set<RegionNode> aResult, final RegionNode aNode) {
-        if (aResult.add(aNode)) {
-            for (final Map.Entry<Edge,RegionNode> theSuc : aNode.successors.entrySet()) {
-                if (theSuc.getKey().type == EdgeType.forward) {
-                    forwardReachableNodes(aResult, theSuc.getValue());
-                }
-            }
+    @Override
+    public <T extends Node> T addEdgeTo(final ControlFlowEdgeType aType, final T aTargetNode) {
+        if (outgoingEdges().noneMatch(t -> t.targetNode() == aTargetNode)) {
+            return super.addEdgeTo(aType, aTargetNode);
         }
+        return null;
     }
 
     @Override

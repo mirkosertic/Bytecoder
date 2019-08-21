@@ -19,10 +19,11 @@ import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.EdgeType;
+import de.mirkosertic.bytecoder.ssa.ControlFlowEdgeType;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
@@ -427,10 +428,10 @@ public class Relooper {
 
             // At this place, we check the goto labels for the blocks successors to make them available during rendering
             // We search the successor edge
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : theInternalLabel.getSuccessors().entrySet()) {
-                final RegionNode theTarget = theSuc.getValue();
+            for (final Edge theEdge : theInternalLabel.outgoingEdges().collect(Collectors.toList())) {
+                final RegionNode theTarget = (RegionNode) theEdge.targetNode();
                 // We found the matching edge
-                if (theSuc.getKey().getType() == EdgeType.forward) {
+                if (theEdge.edgeType() == ControlFlowEdgeType.forward) {
                     // We can only branch to the next block
                     // We search the whole hiararchy to find the right block to break out
                     for (int i=aTraversalStack.size() -1 ; i>= 0; i--) {
@@ -507,15 +508,14 @@ public class Relooper {
                 boolean theGotoFound = false;
 
                 // We search the successor edge
-                for (final Map.Entry<RegionNode.Edge, RegionNode> theSuc : aLabel.getSuccessors().entrySet()) {
-                    if (Objects.equals(theSuc.getValue().getStartAddress(), theGoto.jumpTarget())) {
+                for (final Edge theEdge : aLabel.outgoingEdges().collect(Collectors.toList())) {
+                    final RegionNode theTarget = (RegionNode) theEdge.targetNode();
+                    if (Objects.equals(theTarget.getStartAddress(), theGoto.jumpTarget())) {
                         theGotoFound = true;
-                        final RegionNode theTarget = theSuc.getValue();
                         // We found the matching edge
-                        if (theSuc.getKey().getType() == EdgeType.forward) {
+                        if (theEdge.edgeType() == ControlFlowEdgeType.forward) {
                             // We can only branch to the next block
                             // We search the whole hiararchy to find the right block to break out
-
                             guard: {
                                 for (int i = aTraversalStack.size() - 1; i >= 0; i--) {
                                     final Block theNestingBlock = aTraversalStack.get(i);
@@ -622,10 +622,12 @@ public class Relooper {
 
                 // Search for branch-outs of the current loop
                 final Set<RegionNode> theRestEntries = new HashSet<>();
-                for (final RegionNode theReachable : theSingleEntry.forwardReachableNodes()) {
-                    if (theRestLabels.contains(theReachable)) {
-                        theRestEntries.add(theReachable);
-                    }
+                for (final RegionNode theReachable : theSingleEntry.dominatedNodes()) {
+                    theReachable.outgoingEdges().filter(t -> t.edgeType() == ControlFlowEdgeType.forward).forEach(edge -> {
+                        if (theRestLabels.contains(edge.targetNode())) {
+                            theRestEntries.add(edge.targetNode());
+                        }
+                    });
                 }
 
                 final Block theInternalBlock =
@@ -724,9 +726,9 @@ public class Relooper {
                 // Now we have to search for the entry nodes of the next block
                 final HashSet<RegionNode> theNextEntries = new HashSet<>();
                 for (final RegionNode theInner : theInnerNodes) {
-                    for (final RegionNode theJumpTarget : theInner.getSuccessors().values()) {
-                        if (theNextNodes.contains(theJumpTarget)) {
-                            theNextEntries.add(theJumpTarget);
+                    for (final Edge theEdge : theInner.outgoingEdges().collect(Collectors.toList())) {
+                        if (theNextNodes.contains(theEdge.targetNode())) {
+                            theNextEntries.add((RegionNode) theEdge.targetNode());
                         }
                     }
                 }
@@ -734,9 +736,9 @@ public class Relooper {
                 // Ok, now we compute the inner block of our try block
                 theInnerNodes.remove(aEntry);
                 final HashSet<RegionNode> theInnerEntries = new HashSet<>();
-                for (final RegionNode theNext : aEntry.getSuccessors().values()) {
-                    if (theInnerNodes.contains(theNext)) {
-                        theInnerEntries.add(theNext);
+                for (final Edge theEdge : aEntry.outgoingEdges().collect(Collectors.toList())) {
+                    if (theInnerNodes.contains(theEdge.targetNode())) {
+                        theInnerEntries.add((RegionNode) theEdge.targetNode());
                     }
                 }
 
@@ -768,9 +770,9 @@ public class Relooper {
                     // If a catch or finally block branches out to the next block,
                     // This branch will also become an entry
                     for (final RegionNode theInner : theTagSoup) {
-                        for (final RegionNode theJump : theInner.getSuccessors().values()) {
-                            if (theNextNodes.contains(theJump)) {
-                                theNextEntries.add(theJump);
+                        for (final Edge theEdge : theInner.outgoingEdges().collect(Collectors.toList())) {
+                            if (theNextNodes.contains(theEdge.targetNode())) {
+                                theNextEntries.add((RegionNode) theEdge.targetNode());
                             }
                         }
                     }
@@ -828,7 +830,7 @@ public class Relooper {
                         final GotoExpression theGoto = (GotoExpression) theLast;
                         final RegionNode theTrueBranch = aGraph.nodeStartingAt(theIf.getGotoAddress());
                         final RegionNode theFalseBranch = aGraph.nodeStartingAt(theGoto.jumpTarget());
-                        if (theTrueBranch.isStrictlyDominatedBy(aEntry) && theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+                        if (theTrueBranch.isImmediatelyDominatedBy(aEntry) && theFalseBranch.isImmediatelyDominatedBy(aEntry)) {
                             // We have a candidate!!
                             final Value theCondition = theIf.incomingDataFlows().get(0);
 
@@ -842,18 +844,18 @@ public class Relooper {
 
                             // Calculate the entries for the next block
                             for (final RegionNode theTrue : theTrueDominated) {
-                                for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theTrue.getSuccessors().entrySet()) {
-                                    final RegionNode theNode = theEntry.getValue();
-                                    if (theEntry.getKey().getType() == EdgeType.forward && theNextTagSoup.contains(theNode)) {
+                                for (final Edge theEdge : theTrue.outgoingEdges().collect(Collectors.toList())) {
+                                    final RegionNode theNode = (RegionNode) theEdge.targetNode();
+                                    if (theEdge.edgeType() == ControlFlowEdgeType.forward && theNextTagSoup.contains(theNode)) {
                                         theNextEntries.add(theNode);
                                     }
                                 }
                             }
 
                             for (final RegionNode theFalse : theFalseDominated) {
-                                for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theFalse.getSuccessors().entrySet()) {
-                                    final RegionNode theNode = theEntry.getValue();
-                                    if (theEntry.getKey().getType() == EdgeType.forward && theNextTagSoup.contains(theNode)) {
+                                for (final Edge theEdge : theFalse.outgoingEdges().collect(Collectors.toList())) {
+                                    final RegionNode theNode = (RegionNode) theEdge.targetNode();
+                                    if (theEdge.edgeType() == ControlFlowEdgeType.forward && theNextTagSoup.contains(theNode)) {
                                         theNextEntries.add(theNode);
                                     }
                                 }
@@ -876,11 +878,11 @@ public class Relooper {
 
                             return new IFThenElseBlock(thePrelude, Collections.singleton(aEntry), theCondition,
                                     theTrueBranchBlock, theFalseBranchBlock, theNextBlock);
-                        } else if (theTrueBranch.isStrictlyDominatedBy(aEntry)) {
+                        } else if (theTrueBranch.isImmediatelyDominatedBy(aEntry)) {
 
                             // TODO:
 
-                        } else if (theFalseBranch.isStrictlyDominatedBy(aEntry)) {
+                        } else if (theFalseBranch.isImmediatelyDominatedBy(aEntry)) {
 
                             // TODO:
                         }
@@ -891,11 +893,11 @@ public class Relooper {
 
         final Set<RegionNode> theNextEntries = new HashSet<>();
         final Set<RegionNode> theDominated = aEntry.dominatedNodes();
-        for (final Map.Entry<RegionNode.Edge, RegionNode> theSucc : aEntry.getSuccessors().entrySet()) {
-            if (theSucc.getKey().getType() == EdgeType.forward) {
-                final RegionNode theNode = theSucc.getValue();
+        for (final Edge theEdge : aEntry.outgoingEdges().collect(Collectors.toList())) {
+            if (theEdge.edgeType() == ControlFlowEdgeType.forward) {
+                final RegionNode theNode = (RegionNode) theEdge.targetNode();
                 if (theDominated.contains(theNode) && aLabelSoup.contains(theNode)) {
-                    theNextEntries.add(theSucc.getValue());
+                    theNextEntries.add(theNode);
                 }
             }
         }
@@ -908,9 +910,9 @@ public class Relooper {
     private Set<RegionNode> jumpTargetsOf(final Collection<RegionNode> aLabelSoup) {
         final Set<RegionNode> theResults = new HashSet<>();
         for (final RegionNode theNode : aLabelSoup) {
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
-                if (aLabelSoup.contains(theEntry.getValue())) {
-                    theResults.add(theEntry.getValue());
+            for (final Edge theEdge : theNode.outgoingEdges().collect(Collectors.toList())) {
+                if (aLabelSoup.contains(theEdge.targetNode())) {
+                    theResults.add((RegionNode) theEdge.targetNode());
                 }
             }
         }
@@ -920,9 +922,9 @@ public class Relooper {
     private Set<RegionNode> allForwardJumpTargetsOf(final Collection<RegionNode> aLabelSoup) {
         final Set<RegionNode> theResults = new HashSet<>();
         for (final RegionNode theNode : aLabelSoup) {
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theEntry : theNode.getSuccessors().entrySet()) {
-                if (theEntry.getKey().getType() == EdgeType.forward) {
-                    theResults.add(theEntry.getValue());
+            for (final Edge theEdge : theNode.outgoingEdges().collect(Collectors.toList())) {
+                if (theEdge.edgeType() == ControlFlowEdgeType.forward) {
+                    theResults.add((RegionNode) theEdge.targetNode());
                 }
             }
         }

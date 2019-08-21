@@ -71,7 +71,7 @@ public class Variable extends Value {
     public void initializeWith(final Value aValue) {
         // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
-        aValue.addEdgeTo(new DataFlowEdgeType(), this);
+        aValue.addEdgeTo(DataFlowEdgeType.instance, this);
     }
 
     @Override

@@ -18,24 +18,26 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
+import de.mirkosertic.bytecoder.graph.Dominators;
+import de.mirkosertic.bytecoder.graph.Edge;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ControlFlowGraph {
 
     private final List<RegionNode> knownNodes;
     private final Program program;
+    private Dominators<RegionNode> dominators;
+    private Dominators<RegionNode> regularFlowDominators;
 
     public ControlFlowGraph(final Program aProgram) {
         program = aProgram;
@@ -50,9 +52,9 @@ public class ControlFlowGraph {
         final Set<RegionNode> theNodes = new HashSet<>();
         for (final RegionNode theNode : knownNodes) {
             final Set<RegionNode> theSuccessors = new HashSet<>();
-            for (final Map.Entry<RegionNode.Edge, RegionNode> theSuccessor : theNode.getSuccessors().entrySet()) {
-                if (theSuccessor.getKey().getType() == EdgeType.forward) {
-                    theSuccessors.add(theSuccessor.getValue());
+            for (final Edge<ControlFlowEdgeType, RegionNode> theSuccessor : theNode.outgoingEdges().collect(Collectors.toList())) {
+                if (theSuccessor.edgeType() == ControlFlowEdgeType.forward) {
+                    theSuccessors.add(theSuccessor.targetNode());
                 }
             }
             if (theSuccessors.isEmpty()) {
@@ -62,22 +64,29 @@ public class ControlFlowGraph {
         return theNodes;
     }
 
+    public boolean dominates(final RegionNode dominator, final RegionNode dominated) {
+        return dominators.dominates(dominator, dominated);
+    }
+
+    public boolean dominatesInRegularFlowOnly(final RegionNode node, final RegionNode targetNode) {
+        return regularFlowDominators.dominates(node, targetNode);
+    }
+
     public void calculateReachabilityAndMarkBackEdges() {
-        final Stack<RegionNode> currentPath = new Stack();
+        final Stack<RegionNode> currentPath = new Stack<>();
         calculateReachabilityAndMarkBackEdges(currentPath, startNode());
+
+        dominators = new Dominators<>(startNode(), RegionNode.NODE_COMPARATOR);
+        regularFlowDominators = new Dominators<>(startNode(), RegionNode.NODE_COMPARATOR, t -> t.targetNode().getType() == RegionNode.BlockType.NORMAL);
     }
 
     private void calculateReachabilityAndMarkBackEdges(final Stack<RegionNode> aCurrentPath, final RegionNode aNode) {
-        if (!aCurrentPath.isEmpty()) {
-            aNode.addReachablePath(new GraphNodePath(aCurrentPath.toArray(new RegionNode[0])));
-        }
         aCurrentPath.push(aNode);
-        for (final Map.Entry<RegionNode.Edge, RegionNode> theEdge : aNode.getSuccessors().entrySet()) {
-            final RegionNode theTarget = theEdge.getValue();
+        for (final Edge<ControlFlowEdgeType, RegionNode> theEdge : aNode.outgoingEdges().collect(Collectors.toList())) {
+            final RegionNode theTarget = theEdge.targetNode();
             if (aCurrentPath.contains(theTarget)) {
                 // This is a back edge
-                theEdge.getKey().changeTo(EdgeType.back);
-                theTarget.addReachablePath(new GraphNodePath(aCurrentPath.toArray(new RegionNode[0])));
+                theEdge.newTypeIs(ControlFlowEdgeType.back);
                 // We have already visited the back edge, so we do not to continue here
                 // As this would lead to an endless loop
             } else {
@@ -91,12 +100,8 @@ public class ControlFlowGraph {
 
     public RegionNode createAt(final BytecodeOpcodeAddress aAddress, final RegionNode.BlockType aType) {
         final RegionNode theNewBlock = new RegionNode(this, aType, program, aAddress);
-        addDominatedNode(theNewBlock);
+        knownNodes.add(theNewBlock);
         return theNewBlock;
-    }
-
-    public void addDominatedNode(final RegionNode aGraphNode) {
-        knownNodes.add(aGraphNode);
     }
 
     public RegionNode startNode() {
@@ -142,16 +147,8 @@ public class ControlFlowGraph {
         return theHandler;
     }
 
-    public void inlinedTo(final RegionNode aNode, final RegionNode aTarget) {
-        for (final RegionNode l : knownNodes) {
-            for (final GraphNodePath p : l.getReachableBy()) {
-                p.replace(aNode, aTarget);
-            }
-        }
-
-        knownNodes.remove(aNode);
-
-        aTarget.inlineSuccessors(aNode);
+    public boolean isImmediatelyDominatedBy(final RegionNode aDominator, final RegionNode aNode) {
+        return dominators.getIDom(aNode) == aDominator;
     }
 
     private static class IDRegister {
@@ -417,22 +414,7 @@ public class ControlFlowGraph {
         return theStr.toString();
     }
 
-    private final Map<RegionNode, Set<RegionNode>> dominationCache = new HashMap<>();
-
     protected Set<RegionNode> dominatedNodesOf(final RegionNode aNode) {
-        Set<RegionNode> theResult = dominationCache.get(aNode);
-        if (theResult != null) {
-            return theResult;
-        }
-        theResult = new HashSet<>();
-        theResult.add(aNode);
-        for (final RegionNode theNode : knownNodes) {
-            if (theNode.isOnlyReachableThru(aNode)) {
-                theResult.add(theNode);
-            }
-        }
-        final Set<RegionNode> theUnmodifiable = Collections.unmodifiableSet(theResult);
-        dominationCache.put(aNode, theUnmodifiable);
-        return theUnmodifiable;
+        return dominators.domSetOf(aNode);
     }
 }
