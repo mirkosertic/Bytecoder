@@ -741,12 +741,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 }
                                 final BytecodeMethodSignature theImplementationSignature = theImplementationMethod.getSignature();
 
-                                final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
-                                            theImplementationMethod.getClassName(),
-                                            theImplementationMethod.getMethodName(),
-                                            theImplementationSignature
-                                ));
-
                                 final String theFunctionName = WASMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
                                         theImplementationMethod.getMethodName() + theEntry.getKey(), theImplementationMethod.getSignature());
 
@@ -782,7 +776,22 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
                                     }
 
-                                    theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments, null);
+                                    switch (theImplementationMethod.getReferenceKind()) {
+                                        case REF_invokeSpecial:
+                                        case REF_invokeStatic:
+                                        case REF_invokeVirtual: {
+                                            final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
+                                                    theImplementationMethod.getClassName(),
+                                                    theImplementationMethod.getMethodName(),
+                                                    theImplementationSignature
+                                            ));
+
+                                            theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments, null);
+                                            break;
+                                        }
+                                        default:
+                                            throw new IllegalStateException("Not implemented : " + theImplementationMethod.getReferenceKind() + " for LambdaMetaFactory!");
+                                    }
                                 } else {
 
                                     final ExportableFunction theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
@@ -812,7 +821,22 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
                                     }
 
-                                    theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments, null), null);
+                                    switch (theImplementationMethod.getReferenceKind()) {
+                                        case REF_invokeSpecial:
+                                        case REF_invokeStatic:
+                                        case REF_invokeVirtual: {
+                                            final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
+                                                    theImplementationMethod.getClassName(),
+                                                    theImplementationMethod.getMethodName(),
+                                                    theImplementationSignature
+                                            ));
+
+                                            theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments, null), null);
+                                            break;
+                                        }
+                                        default:
+                                            throw new IllegalStateException("Not implemented : " + theImplementationMethod.getReferenceKind() + " for LambdaMetaFactory!");
+                                    }
                                 }
                             }
                         }
