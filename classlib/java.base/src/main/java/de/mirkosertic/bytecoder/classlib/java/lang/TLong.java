@@ -120,4 +120,13 @@ public class TLong extends Number {
         i = i + (i >>> 32);
         return (int)i & 0x7f;
     }
+
+    public static int compare(final long a, final long b) {
+        if (a > b) {
+            return 1;
+        } else if (a < b) {
+            return -1;
+        }
+        return 0;
+    }
 }

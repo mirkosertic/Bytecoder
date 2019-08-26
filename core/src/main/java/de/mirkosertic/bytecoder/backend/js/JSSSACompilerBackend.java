@@ -469,8 +469,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             });
 
-            theWriter.tab().text("C.prototype.constructor").assign().text("C").space().text(";").newLine();
-
             // NewLambdaInstance function
             if (theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theWriter.tab().text("C.").text(theMinifier.toSymbol("newLambdaInstance")).assign().text("function(impl)").space().text("{").newLine();

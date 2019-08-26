@@ -742,9 +742,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 final BytecodeMethodSignature theImplementationSignature = theImplementationMethod.getSignature();
 
                                 final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
-                                        theImplementationMethod.getClassName(),
-                                        theImplementationMethod.getMethodName(),
-                                        theImplementationSignature
+                                            theImplementationMethod.getClassName(),
+                                            theImplementationMethod.getMethodName(),
+                                            theImplementationSignature
                                 ));
 
                                 final String theFunctionName = WASMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
