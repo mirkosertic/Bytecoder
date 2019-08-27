@@ -744,6 +744,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 final String theFunctionName = WASMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
                                         theImplementationMethod.getMethodName() + theEntry.getKey(), theImplementationMethod.getSignature());
 
+                                final String theImplementationOriginalMethodName = theImplementationMethod.getMethodName();
+
                                 // This is our new implementation
                                 theImplementationMethod.retargetToMethodName(theImplementationMethod.getMethodName() + theEntry.getKey());
 
@@ -782,10 +784,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         case REF_invokeVirtual: {
                                             final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
                                                     theImplementationMethod.getClassName(),
-                                                    theImplementationMethod.getMethodName(),
+                                                    theImplementationOriginalMethodName,
                                                     theImplementationSignature
                                             ));
-
                                             theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments, null);
                                             break;
                                         }
@@ -827,10 +828,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         case REF_invokeVirtual: {
                                             final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
                                                     theImplementationMethod.getClassName(),
-                                                    theImplementationMethod.getMethodName(),
+                                                    theImplementationOriginalMethodName,
                                                     theImplementationSignature
                                             ));
-
                                             theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments, null), null);
                                             break;
                                         }
