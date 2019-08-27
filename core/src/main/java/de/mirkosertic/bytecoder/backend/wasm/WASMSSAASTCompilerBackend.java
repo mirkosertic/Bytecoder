@@ -756,7 +756,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                             theParams).toTable();
 
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
-                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef"), null));
 
                                     switch (theImplementationMethod.getReferenceKind()) {
                                         case REF_invokeSpecial:
@@ -793,6 +792,22 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                             break;
                                         }
                                         case REF_invokeInterface: {
+
+                                            // Add static arguments
+                                            for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
+
+                                                final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
+                                                final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
+                                                switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
+                                                    case DOUBLE:
+                                                    case FLOAT: {
+                                                        theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
+                                                    }
+                                                    default: {
+                                                        theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
+                                                    }
+                                                }
+                                            }
 
                                             // Add dynamic arguments
                                             for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
@@ -833,7 +848,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                             theParams, toType(TypeRef.toType(theDynamicInvocationType.getSignature().getReturnType()))).toTable();
 
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
-                                    theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("selfRef"), null));
 
                                     switch (theImplementationMethod.getReferenceKind()) {
                                         case REF_invokeSpecial:
@@ -870,6 +884,22 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                             break;
                                         }
                                         case REF_invokeInterface: {
+
+                                            // Add static arguments
+                                            for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
+
+                                                final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
+                                                final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
+                                                switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
+                                                    case DOUBLE:
+                                                    case FLOAT: {
+                                                        theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
+                                                    }
+                                                    default: {
+                                                        theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
+                                                    }
+                                                }
+                                            }
 
                                             // Add dynamic arguments
                                             for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
