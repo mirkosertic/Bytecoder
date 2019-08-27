@@ -39,4 +39,20 @@ public class ListTest {
             }
         });
     }
+
+    @Test
+    public void testListOfLambda() {
+        final List<String> list = new ArrayList<>();
+        list.add("Hello");
+        list.add("World!");
+        list.stream().forEach(s -> System.out.println(s));
+    }
+
+    /*@Test
+    public void testListOfMethodRef() {
+        final List<String> list = new ArrayList<>();
+        list.add("Hello");
+        list.add("World!");
+        list.stream().forEach(System.out::println);
+    }*/
 }
