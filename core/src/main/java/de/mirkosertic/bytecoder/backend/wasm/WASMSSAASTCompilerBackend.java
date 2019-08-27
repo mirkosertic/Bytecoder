@@ -758,8 +758,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
 
                                     switch (theImplementationMethod.getReferenceKind()) {
-                                        case REF_invokeSpecial:
                                         case REF_invokeStatic:
+                                            theDispatchArguments.add(i32.c(-1, null));
+                                        case REF_invokeSpecial:
                                         case REF_invokeVirtual: {
 
                                             // Add static arguments
@@ -850,8 +851,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     final List<WASMValue> theDispatchArguments = new ArrayList<>();
 
                                     switch (theImplementationMethod.getReferenceKind()) {
-                                        case REF_invokeSpecial:
                                         case REF_invokeStatic:
+                                            theDispatchArguments.add(i32.c(-1, null));
+                                        case REF_invokeSpecial:
                                         case REF_invokeVirtual: {
 
                                             // Add static arguments
