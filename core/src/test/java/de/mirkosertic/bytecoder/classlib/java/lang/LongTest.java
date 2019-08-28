@@ -15,13 +15,15 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-//@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(BytecoderUnitTestRunner.class)
 public class LongTest {
 
     @Test
@@ -111,6 +113,7 @@ public class LongTest {
         System.out.println(l);
     }
 
+    /*
     @Test
     public void testBitCount() {
         final int count = Long.bitCount(1234L);
@@ -122,10 +125,18 @@ public class LongTest {
         final int count = Long.numberOfTrailingZeros(1234L);
         Assert.assertEquals(1, count, 0);
     }
+    */
 
     @Test
     public void testNumberOfLeadingZeros() {
         final int count = Long.numberOfLeadingZeros(1234L);
         Assert.assertEquals(53, count, 0);
+    }
+
+    @Test
+    public void testCompare() {
+        assertEquals(0, Long.compare(10L, 10L));
+        assertEquals(1, Long.compare(20L, 10L));
+        assertEquals(-1, Long.compare(10L, 20L));
     }
 }
