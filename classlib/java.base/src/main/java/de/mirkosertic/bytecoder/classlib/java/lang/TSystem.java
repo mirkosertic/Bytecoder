@@ -81,6 +81,10 @@ public class TSystem {
         return null;
     }
 
+    public static String getProperty(final String aProperty, final String aDefault) {
+        return aDefault;
+    }
+
     public static String lineSeparator() {
         return "\n";
     }

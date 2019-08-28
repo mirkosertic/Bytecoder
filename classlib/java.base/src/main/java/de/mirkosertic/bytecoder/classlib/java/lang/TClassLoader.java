@@ -23,4 +23,8 @@ public class TClassLoader {
     public static ClassLoader getPlatformClassLoader() {
         throw new IllegalStateException();
     }
+
+    public static ClassLoader getSystemClassLoader() {
+        throw new IllegalStateException();
+    }
 }

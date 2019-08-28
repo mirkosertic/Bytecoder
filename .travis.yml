@@ -37,7 +37,7 @@ before_install:
 install: true
 
 script:
-  - mvn clean install -P jvmtestsonly
+  - mvn clean package -P jvmtestsonly
 
 jobs:
   include:
@@ -85,7 +85,7 @@ jobs:
             tags: true
             jdk: openjdk8
     - stage: "Deploy GitHub Pages"
-      script: mvn clean install -P notest
+      script: mvn clean package -P notest
       deploy:
         - provider: pages
           skip-cleanup: true
