@@ -15,23 +15,29 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 
 public class MethodRefExpression extends Expression {
 
     private final BytecodeObjectTypeRef className;
     private String methodName;
     private final BytecodeMethodSignature signature;
+    private final BytecodeReferenceKind referenceKind;
 
     public MethodRefExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
-            final BytecodeMethodSignature signature) {
+            final BytecodeMethodSignature signature, final BytecodeReferenceKind referenceKind) {
         super(aProgram, aAddress);
         this.className = className;
         this.methodName = methodName;
         this.signature = signature;
+        this.referenceKind = referenceKind;
+    }
+
+    public BytecodeReferenceKind getReferenceKind() {
+        return referenceKind;
     }
 
     public BytecodeObjectTypeRef getClassName() {

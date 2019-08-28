@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
@@ -62,11 +63,11 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public TString(final byte[] value, final byte coder) {
-        this(value, Charset.forName("UTF-16"));
+        this(value, StandardCharsets.UTF_16);
     }
 
-    public TString(final byte[] value, int offset, int length) {
-        this(Arrays.copyOfRange(value, offset, offset + length), Charset.forName("UTF-16"));
+    public TString(final byte[] value, final int offset, final int length) {
+        this(Arrays.copyOfRange(value, offset, offset + length), StandardCharsets.UTF_16);
     }
 
     public TString(final byte[] aData) {
@@ -80,6 +81,14 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     public TString(final TString aOtherString) {
         data = aOtherString.data;
+    }
+
+    public TString(final int[] codePoints, final int offset, final int count) {
+        final StringBuilder sb = new StringBuilder();
+        for (int i = offset; i < offset + count;i++) {
+            sb.append(Character.toChars(codePoints[i]));
+        }
+        data = sb.toString().toCharArray();
     }
 
     public TString() {

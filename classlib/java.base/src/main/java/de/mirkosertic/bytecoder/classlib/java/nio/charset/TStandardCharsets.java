@@ -13,23 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
-
-import java.util.HashMap;
+package de.mirkosertic.bytecoder.classlib.java.nio.charset;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.nio.charset.Charset;
+
 @SubstitutesInClass(completeReplace = true)
-public class TConcurrentHashMap<K,V> extends HashMap<K,V> {
+public class TStandardCharsets {
 
-    public TConcurrentHashMap() {
-    }
-
-    public TConcurrentHashMap(final int initialCapacity) {
-        super(initialCapacity);
-    }
-
-    public TConcurrentHashMap(final int initialCapacity, final float loadFactor, final int concurrencyLevel) {
-        super(initialCapacity, loadFactor);
-    }
+    public static final Charset UTF_16 = Charset.forName("UTF-16");
+    public static final Charset UTF_8 = Charset.forName("UTF-8");
 }
