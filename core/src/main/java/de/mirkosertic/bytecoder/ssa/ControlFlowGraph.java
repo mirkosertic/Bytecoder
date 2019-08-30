@@ -64,6 +64,10 @@ public class ControlFlowGraph {
         return theNodes;
     }
 
+    public Dominators<RegionNode> dominators() {
+        return dominators;
+    }
+
     public boolean dominates(final RegionNode dominator, final RegionNode dominated) {
         return dominators.dominates(dominator, dominated);
     }
@@ -203,7 +207,7 @@ public class ControlFlowGraph {
 
             thePW.println("digraph CFG {");
 
-            final Consumer<DotContext> theExpressionConsumer = new Consumer<DotContext>() {
+            final Consumer<DotContext> theExpressionConsumer = new Consumer<>() {
 
                 @Override
                 public void accept(final DotContext aContext) {

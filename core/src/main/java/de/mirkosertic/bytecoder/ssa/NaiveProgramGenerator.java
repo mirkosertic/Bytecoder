@@ -122,6 +122,7 @@ import de.mirkosertic.bytecoder.core.BytecodeSourceFileAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.graph.Dominators;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 
@@ -260,15 +261,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         theProgram.getControlFlowGraph().calculateReachabilityAndMarkBackEdges();
 
         try {
-            final Set<RegionNode> theVisited = new HashSet<>();
-
             // Now we can continue to create the program flow
             final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theDebugInfos);
 
-            // This will traverse the CFG from bottom to top
-            final Set<RegionNode> theFinalNodes = theProgram.getControlFlowGraph().finalNodes();
-            for (final RegionNode theNode : theFinalNodes) {
-                initializeBlock(aOwningClass, aMethod, theNode, theVisited, theParsingHelperCache,
+            // We have the exact order of basic blocks,
+            // So we can initialize them in that order
+            final Dominators<RegionNode> theGraphDominators = theProgram.getControlFlowGraph().dominators();
+            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
+                initializeBlock(aOwningClass, aMethod, theNode, theParsingHelperCache,
                         theFlowInformation, theProgram);
             }
 
@@ -425,7 +425,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             final BytecodeClass aOwningClass,
             final BytecodeMethod aMethod,
             final RegionNode aCurrentBlock,
-            final Set<RegionNode> aAlreadyVisited,
             final ParsingHelperCache aCache,
             final BytecodeProgram.FlowInformation aFlowInformation,
             final Program aProgram) {
@@ -434,43 +433,35 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         // We have to ignore back edges!!
         final Set<RegionNode> thePredecessors = aCurrentBlock.getPredecessorsIgnoringBackEdges();
 
-        // First the normal flow
-        for (final RegionNode thePredecessor : thePredecessors) {
-            initializeBlock(aOwningClass, aMethod, thePredecessor, aAlreadyVisited, aCache, aFlowInformation, aProgram);
-        }
-
-        if (aAlreadyVisited.add(aCurrentBlock)) {
-
-            final ParsingHelper theParsingState;
-            if (aCurrentBlock.getType() != RegionNode.BlockType.NORMAL) {
-                theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
-                if (!aMethod.getAccessFlags().isStatic()) {
-                    theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(),
-                            TypeRef.Native.REFERENCE, Variable.createThisRef());
-                }
-                theParsingState.push(new CurrentExceptionExpression(aProgram, null));
-            } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
-                // Programm is at start address, so we need the initial state
-                theParsingState = aCache.resolveFinalStateForNode(null);
-            } else if (thePredecessors.size() == 1) {
-                // Only one predecessor
-                final RegionNode thePredecessor = thePredecessors.iterator().next();
-                final ParsingHelper theResolved = aCache.resolveFinalStateForNode(thePredecessor);
-                if (theResolved == null) {
-                    throw new IllegalStateException("No fully resolved predecessor found!");
-                }
-                theParsingState = aCache.resolveInitialStateFromPredecessorFor(aCurrentBlock, theResolved);
-            } else {
-                // we have more than one predecessor
-                // we need to create PHI functions for all the disjunct states in local variables and the stack
-                theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
+        final ParsingHelper theParsingState;
+        if (aCurrentBlock.getType() != RegionNode.BlockType.NORMAL) {
+            theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
+            if (!aMethod.getAccessFlags().isStatic()) {
+                theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(),
+                        TypeRef.Native.REFERENCE, Variable.createThisRef());
             }
-
-            initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aFlowInformation, theParsingState, aProgram);
-
-            // register the final state after program flow
-            aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
+            theParsingState.push(new CurrentExceptionExpression(aProgram, null));
+        } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
+            // Programm is at start address, so we need the initial state
+            theParsingState = aCache.resolveFinalStateForNode(null);
+        } else if (thePredecessors.size() == 1) {
+            // Only one predecessor
+            final RegionNode thePredecessor = thePredecessors.iterator().next();
+            final ParsingHelper theResolved = aCache.resolveFinalStateForNode(thePredecessor);
+            if (theResolved == null) {
+                throw new IllegalStateException("No fully resolved predecessor found!");
+            }
+            theParsingState = aCache.resolveInitialStateFromPredecessorFor(aCurrentBlock, theResolved);
+        } else {
+            // we have more than one predecessor
+            // we need to create PHI functions for all the disjunct states in local variables and the stack
+            theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
         }
+
+        initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aFlowInformation, theParsingState, aProgram);
+
+        // register the final state after program flow
+        aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
     }
 
     private void initializeBlockWith(final BytecodeClass aOwningClass,
