@@ -207,7 +207,7 @@ public class ControlFlowGraph {
 
             thePW.println("digraph CFG {");
 
-            final Consumer<DotContext> theExpressionConsumer = new Consumer<>() {
+            final Consumer<DotContext> theExpressionConsumer = new Consumer<DotContext>() {
 
                 @Override
                 public void accept(final DotContext aContext) {
