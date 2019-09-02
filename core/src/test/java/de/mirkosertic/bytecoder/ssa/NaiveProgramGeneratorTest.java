@@ -15,13 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import org.junit.Test;
-
+import de.mirkosertic.bytecoder.allocator.LinearRegisterAllocator;
 import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
@@ -48,8 +42,15 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Test;
 
+import java.util.Collections;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class NaiveProgramGeneratorTest {
 
@@ -113,13 +114,13 @@ public class NaiveProgramGeneratorTest {
         System.out.println(theCFG.toDOT());
     }
 
-    private static int simpleMethod(int a, int b) {
+    private static int simpleMethod(final int a, final int b) {
         final int c = a + b + 20;
         return c;
     }
 
     @Test
-    public void testSimpleMethod() {
+    public void testSimpleMethodWithRegisterAllocation() {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(NaiveProgramGeneratorTest.class));
@@ -154,5 +155,19 @@ public class NaiveProgramGeneratorTest {
         assertEquals("var4", vars.get(4).getName());
         assertEquals(6, vars.get(4).getDefinedAt());
         assertEquals(7, vars.get(4).getLastUsedAt());
+
+        final LinearRegisterAllocator theAllocator = new LinearRegisterAllocator(p.getVariables());
+        assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
+        assertEquals(3L, theAllocator.registersOfType(TypeRef.Native.INT).size());
+        assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());
+        assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(0)).getType());
+        assertEquals(1L, theAllocator.registerAssignmentFor(vars.get(1)).getNumber());
+        assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(1)).getType());
+        assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(2)).getNumber());
+        assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(2)).getType());
+        assertEquals(2L, theAllocator.registerAssignmentFor(vars.get(3)).getNumber());
+        assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(3)).getType());
+        assertEquals(1L, theAllocator.registerAssignmentFor(vars.get(4)).getNumber());
+        assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(4)).getType());
     }
 }

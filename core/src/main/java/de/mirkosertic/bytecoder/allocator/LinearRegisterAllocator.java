@@ -1,0 +1,130 @@
+/*
+ * Copyright 2019 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.mirkosertic.bytecoder.allocator;
+
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Variable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
+public class LinearRegisterAllocator {
+
+    private final Map<Variable, Register> registerAssignments;
+    private final Map<TypeRef.Native, List<Register>> knownRegisters;
+    private final Function<TypeRef.Native, TypeRef.Native> typeConverter;
+
+    public LinearRegisterAllocator(final List<Variable> aVariables) {
+        this(aVariables, t -> t);
+    }
+
+    public LinearRegisterAllocator(final List<Variable> aVariables, final Function<TypeRef.Native, TypeRef.Native> aTypeConverter) {
+        typeConverter = aTypeConverter;
+        knownRegisters = new HashMap<>();
+        registerAssignments = new HashMap<>();
+
+        final Map<Long, List<Variable>> theDefinitionPointsToDefition = new HashMap<>();
+        final Set<Long> foundDefinitionPoints = new HashSet<>();
+
+        // Step one : We sort the variables into buckets
+        // and try to establish a timeline for the linear scan
+        for (final Variable v : aVariables) {
+            final long theDefinition = v.getDefinedAt();
+            foundDefinitionPoints.add(theDefinition);
+
+            final List<Variable> theDefList = theDefinitionPointsToDefition.computeIfAbsent(theDefinition, k -> new ArrayList<>());
+            theDefList.add(v);
+        }
+
+        final List<Long> theDefinitionPoints = new ArrayList<>(foundDefinitionPoints);
+        Collections.sort(theDefinitionPoints);
+
+        // Now we do a simple linear scan
+        final List<Variable> currentlyActive = new ArrayList<>();
+        for (final long theDefinition : theDefinitionPoints) {
+            // We remove variables that are no longer active at this point in time
+            final List<Variable> theNoLongerActive = new ArrayList<>();
+            for (final Variable v : currentlyActive) {
+                if (v.getLastUsedAt() < theDefinition) {
+                    theNoLongerActive.add(v);
+                }
+            }
+            currentlyActive.removeAll(theNoLongerActive);
+
+            // Now we add the variables that are active from now and assign
+            // Registers to them
+            final List<Variable> activeFromHere = theDefinitionPointsToDefition.get(theDefinition);
+            for (final Variable v : activeFromHere) {
+                final TypeRef.Native theType = aTypeConverter.apply(v.resolveType().resolve());
+                final List<Register> theKnownRegistersOfThisType = knownRegisters.get(theType);
+                if (theKnownRegistersOfThisType != null) {
+                    // We already know registers of this type
+                    // So we can try to find a free one
+                    final List<Register> theAvailableRegisters = new ArrayList<>(theKnownRegistersOfThisType);
+
+                    for (final Variable a : currentlyActive) {
+                        final TypeRef.Native theOtherType = aTypeConverter.apply(a.resolveType().resolve());
+                        if (theOtherType == theType) {
+                            theAvailableRegisters.remove(registerAssignments.get(a));
+                        }
+                    }
+
+                    if (theAvailableRegisters.isEmpty()) {
+                        // There are no free registers left
+                        // So we introduce a new one
+                        final long theNewRegisterNumber = theKnownRegistersOfThisType.size();
+                        final Register theNewRegister = new Register(theNewRegisterNumber, theType);
+                        knownRegisters.get(theType).add(theNewRegister);
+                        registerAssignments.put(v, theNewRegister);
+                    } else {
+                        // We take the first free register
+                        registerAssignments.put(v, theAvailableRegisters.iterator().next());
+                    }
+
+                } else {
+
+                    // First usage of this type
+                    // We introduce a new register of this type
+                    final Register theNewRegister = new Register(0, theType);
+                    final List<Register> theRegisterList = new ArrayList<>();
+                    theRegisterList.add(theNewRegister);
+                    knownRegisters.put(theType, theRegisterList);
+                    registerAssignments.put(v, theNewRegister);
+                }
+
+                currentlyActive.add(v);
+            }
+        }
+    }
+
+    public Set<TypeRef.Native> usedRegisterTypes() {
+        return knownRegisters.keySet();
+    }
+
+    public List<Register> registersOfType(final TypeRef.Native aType) {
+        return knownRegisters.get(typeConverter.apply(aType));
+    }
+
+    public Register registerAssignmentFor(final Variable v) {
+        return registerAssignments.get(v);
+    }
+}
