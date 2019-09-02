@@ -32,6 +32,7 @@ public class ParsingHelper {
         Value resolveValueFor(VariableDescription aDescription);
     }
 
+    private final Program program;
     private final RegionNode block;
     private final Stack<Value> stack;
     private final Map<Integer, Variable> localVariables;
@@ -39,7 +40,8 @@ public class ParsingHelper {
     private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
     public ParsingHelper(
-            final BytecodeLocalVariableTableAttributeInfo aDebugInfo, final RegionNode aBlock, final ValueProvider aValueProvider) {
+            final Program aProgram, final BytecodeLocalVariableTableAttributeInfo aDebugInfo, final RegionNode aBlock, final ValueProvider aValueProvider) {
+        program = aProgram;
         stack = new Stack<>();
         block = aBlock;
         localVariables = new HashMap<>();
@@ -59,11 +61,19 @@ public class ParsingHelper {
         if (stack.isEmpty()) {
             throw new IllegalStateException("Stack is empty!!!");
         }
-        return stack.pop();
+        final Value theValue = stack.pop();
+        if (theValue instanceof Variable) {
+            ((Variable) theValue).usedAt(program.getAnalysisTime());
+        }
+        return theValue;
     }
 
     public Value peek() {
-        return stack.peek();
+        final Value theValue = stack.peek();
+        if (theValue instanceof Variable) {
+            ((Variable) theValue).usedAt(program.getAnalysisTime());
+        }
+        return theValue;
     }
 
     public void push(final Value aValue) {
@@ -71,12 +81,7 @@ public class ParsingHelper {
             throw new IllegalStateException("Trying to push null in " + this);
         }
         if (aValue instanceof Variable) {
-            for (final Value stackValue : stack) {
-                if (stackValue instanceof Variable && stackValue != aValue) {
-                    final Variable sv = (Variable) stackValue;
-                    sv.addLivenessWith((Variable) aValue);
-                }
-            }
+            ((Variable) aValue).usedAt(program.getAnalysisTime());
         }
         stack.push(aValue);
     }
@@ -93,6 +98,7 @@ public class ParsingHelper {
             block.addToExportedList(theValue, theDesc);
             localVariables.put(aIndex, theValue);
         }
+        theValue.usedAt(program.getAnalysisTime());
         return theValue;
     }
 
@@ -131,6 +137,10 @@ public class ParsingHelper {
     }
 
     public void setStackValue(final int aStackPos, final Value aValue) {
+        if (aValue instanceof Variable) {
+            ((Variable) aValue).usedAt(program.getAnalysisTime());
+        }
+
         final List<Value> theValues = new ArrayList<>(stack);
         while (theValues.size() <= aStackPos) {
             theValues.add(null);

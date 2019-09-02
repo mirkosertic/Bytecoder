@@ -125,17 +125,17 @@ public class OpenCLWriter extends IndentSSAWriter {
         printInputOutputArgs(inputOutputs.arguments());
         boolean theFirst = inputOutputs.arguments().isEmpty();
 
-        final List<Program.Argument> theProgramArguments = aProgram.getArguments();
+        final List<Variable> theProgramArguments = aProgram.getArguments();
         for (int i=1;i<theProgramArguments.size();i++) {
-            final Program.Argument theArgument = theProgramArguments.get(i);
+            final Variable theVariable = theProgramArguments.get(i);
             if (theFirst) {
                 theFirst = false;
             } else {
                 print(", ");
             }
-            print(toType(theArgument.getVariable().resolveType()));
+            print(toType(theVariable.resolveType()));
             print(" ");
-            print(theArgument.getVariable().getName());
+            print(theVariable.getName());
         }
 
         println(") {");
@@ -830,17 +830,17 @@ public class OpenCLWriter extends IndentSSAWriter {
         printInputOutputArgs(inputOutputs.arguments());
         boolean theFirst = inputOutputs.arguments().isEmpty();
 
-        final List<Program.Argument> theProgramArguments = program.getArguments();
+        final List<Variable> theProgramArguments = program.getArguments();
         for (int i=1;i<theProgramArguments.size();i++) {
-            final Program.Argument theArgument = theProgramArguments.get(i);
+            final Variable theVariable = theProgramArguments.get(i);
             if (theFirst) {
                 theFirst = false;
             } else {
                 print(", ");
             }
-            print(toType(theArgument.getVariable().resolveType()));
+            print(toType(theVariable.resolveType()));
             print(" ");
-            print(theArgument.getVariable().getName());
+            print(theVariable.getName());
         }
 
         println(") {");

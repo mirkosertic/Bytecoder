@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
 
-    public final static Comparator<RegionNode> NODE_COMPARATOR = (o1, o2) -> Integer.compare(o1.getStartAddress().getAddress(), o2.getStartAddress().getAddress());
+    public final static Comparator<RegionNode> NODE_COMPARATOR = Comparator.comparingInt(o -> o.getStartAddress().getAddress());
 
     public static final Predicate<Edge> FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY = edge -> edge.edgeType() == ControlFlowEdgeType.forward &&
             ((RegionNode) edge.targetNode()).getType() == BlockType.NORMAL;
@@ -142,14 +142,16 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         final String theName = "local_" + aIndex + "_" + aType.resolve().name();
         for (final Variable v : program.getVariables()) {
             if (v.getName().equals(theName)) {
+                v.usedAt(program.getAnalysisTime());
                 expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
                 v.receivesDataFrom(aValue);
                 return v;
             }
         }
         final Variable v = program.createVariable(theName, aValue.resolveType());
+        v.usedAt(program.getAnalysisTime());
         expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
-        v.initializeWith(aValue);
+        v.initializeWith(aValue, program.getAnalysisTime());
         return v;
     }
 
@@ -162,7 +164,6 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         }
         return theKnown.get(0);
     }
-
 
     public Variable newVariable(final TypeRef aType) {
         return program.createVariable(aType);
@@ -181,7 +182,7 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
 
     private Variable newVariable(final BytecodeOpcodeAddress aAddress, final TypeRef aType, final Value aValue, final boolean aIsImport)  {
         final Variable theNewVariable = newVariable(aType);
-        theNewVariable.initializeWith(aValue);
+        theNewVariable.initializeWith(aValue, program.getAnalysisTime());
         if (!aIsImport) {
             expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
         }

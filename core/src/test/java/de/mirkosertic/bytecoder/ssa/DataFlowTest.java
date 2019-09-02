@@ -25,16 +25,16 @@ public class DataFlowTest {
     @Test
     public void testAdd() {
         final IntegerValue int1 = new IntegerValue(10);
-        final Variable theVar1 = new Variable(TypeRef.Native.INT, "var1");
-        theVar1.initializeWith(int1);
+        final Variable theVar1 = new Variable(TypeRef.Native.INT, "var1", 0);
+        theVar1.initializeWith(int1, 0);
 
-        final Variable theVar2 = new Variable(TypeRef.Native.INT, "var2");
+        final Variable theVar2 = new Variable(TypeRef.Native.INT, "var2", 0);
         final IntegerValue int2 = new IntegerValue(10);
-        theVar2.initializeWith(int2);
+        theVar2.initializeWith(int2, 0);
 
-        final Variable theVar3 = new Variable(TypeRef.Native.INT, "var3");
+        final Variable theVar3 = new Variable(TypeRef.Native.INT, "var3", 0);
         final BinaryExpression b = new BinaryExpression(null, null, TypeRef.Native.INT, theVar1, BinaryExpression.Operator.ADD, theVar2);
-        theVar3.initializeWith(b);
+        theVar3.initializeWith(b, 0);
 
         final List<Value> theIncomingDataFlows = theVar3.incomingDataFlowsRecursive();
         assertEquals(6, theIncomingDataFlows.size(), 0);

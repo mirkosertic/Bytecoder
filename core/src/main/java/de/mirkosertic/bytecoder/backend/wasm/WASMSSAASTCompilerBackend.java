@@ -621,8 +621,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 if (theMethod.getAccessFlags().isStatic()) {
                     params.add(param("UNUSED", toType(TypeRef.Native.REFERENCE)));
                 }
-                for (final Program.Argument theArgument : theSSAProgram.getArguments()) {
-                    final Variable theVariable = theArgument.getVariable();
+                for (final Variable theVariable : theSSAProgram.getArguments()) {
                     params.add(param(theVariable.getName(), toType(theVariable.resolveType())));
                 }
                 final String theFunctionLabel = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature);
@@ -665,9 +664,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theParam.renameTo("UNUSED");
                     }
 
-                    for (final Program.Argument theArgument : theSSAProgram.getArguments()) {
+                    for (final Variable theVariable : theSSAProgram.getArguments()) {
                         final Param theParam = instanceFunction.getParams().get(++paramIndex);
-                        theParam.renameTo(theArgument.getVariable().getName());
+                        theParam.renameTo(theVariable.getName());
                     }
 
                     final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);

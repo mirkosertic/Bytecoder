@@ -15,6 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import org.junit.Test;
+
 import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
@@ -30,19 +37,19 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionGenericSUB;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionICONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionIFNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import org.junit.Test;
+import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.util.List;
 
 public class NaiveProgramGeneratorTest {
 
@@ -73,7 +80,7 @@ public class NaiveProgramGeneratorTest {
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         assertEquals(0, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
-        assertEquals(1, theCFG.getKnownNodes().size());
+        assertEquals(1, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
         assertEquals(1, theSingleNode.getExpressions().size());
     }
@@ -100,10 +107,52 @@ public class NaiveProgramGeneratorTest {
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         assertEquals(6, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
-        assertEquals(4, theCFG.getKnownNodes().size());
+        assertEquals(4, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
         assertEquals(2, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }
 
+    private static int simpleMethod(int a, int b) {
+        final int c = a + b + 20;
+        return c;
+    }
+
+    @Test
+    public void testSimpleMethod() {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(NaiveProgramGeneratorTest.class));
+        theLinkedClass.resolveStaticMethod("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        final List<Variable> vars = p.getVariables();
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+        }
+
+        assertEquals(5, vars.size());
+
+        assertEquals("var0", vars.get(0).getName());
+        assertEquals(2, vars.get(0).getDefinedAt());
+        assertEquals(4, vars.get(0).getLastUsedAt());
+
+        assertEquals("var1", vars.get(1).getName());
+        assertEquals(4, vars.get(1).getDefinedAt());
+        assertEquals(5, vars.get(1).getLastUsedAt());
+
+        assertEquals("var2", vars.get(2).getName());
+        assertEquals(5, vars.get(2).getDefinedAt());
+        assertEquals(6, vars.get(2).getLastUsedAt());
+
+        assertEquals("local_2_INT", vars.get(3).getName());
+        assertEquals(5, vars.get(3).getDefinedAt());
+        assertEquals(6, vars.get(3).getLastUsedAt());
+
+        assertEquals("var4", vars.get(4).getName());
+        assertEquals(6, vars.get(4).getDefinedAt());
+        assertEquals(7, vars.get(4).getLastUsedAt());
+    }
 }

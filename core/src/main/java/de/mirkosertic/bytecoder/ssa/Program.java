@@ -25,32 +25,19 @@ import java.util.Set;
 
 public class Program {
 
-    public static class Argument {
-
-        private final LocalVariableDescription variableDescription;
-        private final Variable variable;
-
-        public Argument(final LocalVariableDescription aVariableDescription, final Variable aVariable) {
-            variableDescription = aVariableDescription;
-            variable = aVariable;
-        }
-
-        public Variable getVariable() {
-            return variable;
-        }
-    }
-
     private final DebugInformation debugInformation;
     private final ControlFlowGraph controlFlowGraph;
     private final List<Variable> variables;
-    private final List<Argument> arguments;
+    private final List<Variable> arguments;
     private BytecodeProgram.FlowInformation flowInformation;
+    private long analysisTime;
 
     public Program(final DebugInformation aDebugInformation) {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
         arguments = new ArrayList<>();
         debugInformation = aDebugInformation;
+        analysisTime = 0;
     }
 
     public DebugInformation getDebugInformation() {
@@ -65,21 +52,19 @@ public class Program {
         return flowInformation;
     }
 
-    public void addArgument(final LocalVariableDescription aVariableDescription, final Variable aVariable) {
-        arguments.add(new Argument(aVariableDescription, aVariable));
+    public void addArgument(final Variable aVariable) {
+        arguments.add(aVariable);
     }
 
-    public List<Argument> getArguments() {
+    public List<Variable> getArguments() {
         return arguments;
     }
 
-    public Argument matchingArgumentOf(final LocalVariableDescription aVariableDescription) {
-        for (final Argument theArgument : arguments) {
-            if (Objects.equals(theArgument.variableDescription, aVariableDescription)) {
-                return theArgument;
-            }
+    public Variable argumentAt(final int aIndex) {
+        if (aIndex>=0 && aIndex < arguments.size()) {
+            return arguments.get(aIndex);
         }
-        throw new IllegalStateException("No argument matching " + aVariableDescription);
+        throw new IllegalStateException("No argument at index " + aIndex);
     }
 
     public ControlFlowGraph getControlFlowGraph() {
@@ -88,7 +73,7 @@ public class Program {
 
     public Set<Variable> globalVariables() {
         final Set<Variable> theVariables = new HashSet<>();
-        for (final RegionNode theNode : controlFlowGraph.getKnownNodes()) {
+        for (final RegionNode theNode : controlFlowGraph.dominators().getPreOrder()) {
             final BlockState theStartState = theNode.toStartState();
             for (final Value theValue : theStartState.getPorts().values()) {
                 if (theValue instanceof Variable) {
@@ -118,17 +103,20 @@ public class Program {
     }
 
     public Variable createVariable(final String aName, final TypeRef aType) {
-        final Variable theNewVariable = new Variable(aType, aName);
+        final Variable theNewVariable = new Variable(aType, aName, analysisTime);
         variables.add(theNewVariable);
         return theNewVariable;
     }
 
     public void deleteVariable(final Variable aVariable) {
-        for (final Variable v : variables) {
-            if (v != aVariable) {
-                v.removeLivenessWith(aVariable);
-            }
-        }
         variables.remove(aVariable);
+    }
+
+    public void incrementAnalysisTime() {
+        analysisTime++;
+    }
+
+    public long getAnalysisTime() {
+        return analysisTime;
     }
 }

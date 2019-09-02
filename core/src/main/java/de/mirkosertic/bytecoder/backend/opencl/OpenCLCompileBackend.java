@@ -177,7 +177,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
     private OpenCLInputOutputs inputOutputsFor(final BytecodeLinkerContext aLinkerContext, final BytecodeLinkedClass aKernelClass, final Program aProgram) {
         final OpenCLInputOutputs theResult = new OpenCLInputOutputs();
-        for (final RegionNode theNode : aProgram.getControlFlowGraph().getKnownNodes()) {
+        for (final RegionNode theNode : aProgram.getControlFlowGraph().dominators().getPreOrder()) {
             fillInputOutputs(aLinkerContext, aKernelClass, theNode.getExpressions(), theResult);
         }
         return theResult;

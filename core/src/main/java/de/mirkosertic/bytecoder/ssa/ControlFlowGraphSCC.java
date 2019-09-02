@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.graph.Edge;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +42,7 @@ public class ControlFlowGraphSCC {
         lowLink = new HashMap<>();
         visited = new HashSet<>();
         stack = new Stack<>();
-        for (final RegionNode node : g.getKnownNodes()) {
+        for (final RegionNode node : g.dominators().getPreOrder()) {
             if (!visited.contains(node)) {
                 dfs(node);
             }
@@ -62,7 +64,7 @@ public class ControlFlowGraphSCC {
 
         final List<RegionNode> successors = vertex.outgoingEdges()
                 .filter(t -> t.targetNode().getType() == RegionNode.BlockType.NORMAL)
-                .map(t -> t.targetNode())
+                .map(Edge::targetNode)
                 .sorted((o1, o2) -> Integer.compare(o2.getStartAddress().getAddress(), o1.getStartAddress().getAddress()))
                 .collect(Collectors.toList());
 

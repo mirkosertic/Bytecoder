@@ -97,7 +97,7 @@ public class MemoryManagerIntrinsic extends Intrinsic {
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction, final String aMethodName, final BytecodeObjectTypeRef aType, final List<Value> aArguments, final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
 
         if (Objects.equals(aType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-            aTarget.initializeWith(aArguments.get(0));
+            aTarget.initializeWith(aArguments.get(0), aProgram.getAnalysisTime());
             aTargetBlock.getExpressions().add(new VariableAssignmentExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget, aArguments.get(0)));
             return true;
         }

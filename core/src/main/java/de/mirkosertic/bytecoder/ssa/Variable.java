@@ -15,63 +15,64 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class Variable extends Value {
 
     public static final String THISREF_NAME = "__tr";
 
     public static Variable createThisRef() {
-        final Variable theVariable = new Variable(TypeRef.Native.REFERENCE, THISREF_NAME, true);
-        theVariable.initializeWith(new SelfReferenceParameterValue());
+        final Variable theVariable = new Variable(TypeRef.Native.REFERENCE, THISREF_NAME, true, 0);
+        theVariable.initializeWith(new SelfReferenceParameterValue(), 0);
         return theVariable;
     }
 
     public static Variable createMethodParameter(final int aIndex, final TypeRef aTypeRef) {
-        final Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true);
-        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
+        final Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true, 0);
+        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef), 0);
         return theVariable;
     }
 
     public static Variable createMethodParameter(final int aIndex, final String aName, final TypeRef aTypeRef) {
-        final Variable theVariable = new Variable(aTypeRef, aName, true);
-        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
+        final Variable theVariable = new Variable(aTypeRef, aName, true, 0);
+        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef), 0);
         return theVariable;
     }
 
     private final TypeRef type;
     private final String name;
     private final boolean synthetic;
-    private final Set<Variable> liveWith;
+    private final long definedAt;
+    private long lastUsedAt;
 
-    private Variable(final TypeRef aType, final String aName, final boolean aSynthetic) {
+    private Variable(final TypeRef aType, final String aName, final boolean aSynthetic, final long aDefinedAt) {
         type = aType;
         name = aName;
         synthetic = aSynthetic;
-        liveWith = new HashSet<>();
+        definedAt = aDefinedAt;
+        lastUsedAt = definedAt;
     }
 
-    public Variable(final TypeRef aType, final String aName) {
-        this(aType, aName, false);
+    public Variable(final TypeRef aType, final String aName, final long definedAt) {
+        this(aType, aName, false, definedAt);
     }
 
-    public void addLivenessWith(final Variable aVariable) {
-        liveWith.add(aVariable);
+    public void usedAt(final long analysisTime) {
+        lastUsedAt = Math.max(lastUsedAt, analysisTime);
     }
 
-    public void removeLivenessWith(final Variable aVariable) {
-        liveWith.remove(aVariable);
-    }
-
-    public Set<Variable> getLiveWith() {
-        return liveWith;
-    }
-
-    public void initializeWith(final Value aValue) {
+    public void initializeWith(final Value aValue, final long analysisTime) {
         // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
+
+        usedAt(analysisTime);
+        if (aValue instanceof Variable) {
+            ((Variable) aValue).usedAt(analysisTime);
+            for (final Value theValue : aValue.incomingDataFlows()) {
+                if (theValue instanceof Variable) {
+                    ((Variable) theValue).usedAt(analysisTime);
+                }
+            }
+        }
     }
 
     @Override
@@ -104,4 +105,11 @@ public class Variable extends Value {
         return super.isTrulyFunctional();
     }
 
+    public long getDefinedAt() {
+        return definedAt;
+    }
+
+    public long getLastUsedAt() {
+        return lastUsedAt;
+    }
 }

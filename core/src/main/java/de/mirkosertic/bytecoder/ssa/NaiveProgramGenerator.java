@@ -182,7 +182,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
         int theCurrentIndex = 0;
         if (!aMethod.getAccessFlags().isStatic()) {
-            theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, TypeRef.Native.REFERENCE), Variable.createThisRef());
+            theProgram.addArgument(Variable.createThisRef());
             theCurrentIndex++;
         }
         final BytecodeTypeRef[] theTypes = aMethod.getSignature().getArguments();
@@ -193,12 +193,12 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(BytecodeOpcodeAddress.START_AT_ZERO, theCurrentIndex);
                 if (theEntry != null) {
                     final String theVariableName = "_" + theDebugInfos.resolveVariableName(theEntry);
-                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theVariableName, theType));
+                    theProgram.addArgument(Variable.createMethodParameter(i + 1, theVariableName, theType));
                 } else {
-                    theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theType));
+                    theProgram.addArgument(Variable.createMethodParameter(i + 1, theType));
                 }
             } else {
-                theProgram.addArgument(new LocalVariableDescription(theCurrentIndex, theType), Variable.createMethodParameter(i + 1, theType));
+                theProgram.addArgument(Variable.createMethodParameter(i + 1, theType));
             }
 
             theCurrentIndex++;
@@ -262,7 +262,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
         try {
             // Now we can continue to create the program flow
-            final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theStart, theDebugInfos);
+            final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theDebugInfos);
 
             // We have the exact order of basic blocks,
             // So we can initialize them in that order
@@ -274,7 +274,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
             // Check if there are infinite looping blocks
             // Additionally, we have to add gotos
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
                 final ExpressionList theCurrentList = theNode.getExpressions();
                 final Expression theLast = theCurrentList.lastExpression();
                 if (theLast instanceof GotoExpression) {
@@ -285,7 +285,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
                 if (!theNode.getExpressions().endWithNeverReturningExpression()) {
 
-                    final List<RegionNode> theSuccessors = theNode.outgoingEdges().map(t -> t.targetNode()).collect(
+                    final List<RegionNode> theSuccessors = theNode.outgoingEdges().map(Edge::targetNode).collect(
                             Collectors.toList());
 
                     for (final Expression theExpression : theCurrentList.toList()) {
@@ -306,7 +306,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         // Special case, the node includes gotos and a fall thru to the same node
                         theSuccessorRegions =
                                 theNode.outgoingEdges()
-                                        .map(t -> t.targetNode())
+                                        .map(Edge::targetNode)
                                         .filter(t -> t.getType() == RegionNode.BlockType.NORMAL)
                                         .collect(Collectors.toList());
 
@@ -323,7 +323,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
 
             // Check that all PHI-propagations for back-edges are set
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
                 final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                 for (final Edge theEdge : theNode.outgoingEdges().collect(Collectors.toList())) {
                     if (theEdge.edgeType() == ControlFlowEdgeType.back) {
@@ -335,14 +335,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             if (theExportingValue == null) {
                                 throw new IllegalStateException("No value for " + theEntry.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theReceiving.getStartAddress().getAddress());
                             }
-                            theReceivingTarget.initializeWith(theExportingValue);
+                            theReceivingTarget.initializeWith(theExportingValue, -1);
                         }
                     }
                 }
             }
 
             // Make sure that all jump conditions are met
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
@@ -360,7 +360,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
 
             // Insert PHI value resolving at required places
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().getKnownNodes()) {
+            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
                 forEachExpressionOf(theNode, aPoint -> {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
@@ -441,9 +441,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         TypeRef.Native.REFERENCE, Variable.createThisRef());
             }
             theParsingState.push(new CurrentExceptionExpression(aProgram, null));
-        } else if (aCurrentBlock.getStartAddress().getAddress() == 0) {
+        } else if (aCurrentBlock == aProgram.getControlFlowGraph().startNode()) {
             // Programm is at start address, so we need the initial state
-            theParsingState = aCache.resolveFinalStateForNode(null);
+            theParsingState = aCache.resolveInitialProgramFlowState();
         } else if (thePredecessors.size() == 1) {
             // Only one predecessor
             final RegionNode thePredecessor = thePredecessors.iterator().next();
@@ -1189,6 +1189,11 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Program theProgram = new Program(DebugInformation.empty());
                 final RegionNode theInitNode = theProgram.getControlFlowGraph().createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
 
+                // Don't forget to calculate reachability and dominators here
+                // Our CFG contains only one node at this point, but the
+                // dominator information is required in further analysis and optimization steps
+                theProgram.getControlFlowGraph().calculateReachabilityAndMarkBackEdges();
+
                 switch (theMethodRef.getReferenceKind()) {
                 case REF_invokeStatic: {
 
@@ -1334,6 +1339,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else {
                 throw new IllegalArgumentException("Not implemented : " + theInstruction);
             }
+
+            aProgram.incrementAnalysisTime();
         }
 
         aHelper.finalizeExportState();

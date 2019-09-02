@@ -574,16 +574,18 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 final Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer
-                aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                if (!theMethod.getAccessFlags().isAbstract() && !theMethod.getAccessFlags().isNative()) {
+                    aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                }
 
                 final StringBuilder theArguments = new StringBuilder();
                 boolean first = true;
-                for (final Program.Argument theArgument : theSSAProgram.getArguments()) {
-                    if (!Variable.THISREF_NAME.equals(theArgument.getVariable().getName())) {
+                for (final Variable theVariable : theSSAProgram.getArguments()) {
+                    if (!Variable.THISREF_NAME.equals(theVariable.getName())) {
                         if (!first) {
                             theArguments.append(',');
                         }
-                        theArguments.append(theMinifier.toVariableName(theArgument.getVariable().getName()));
+                        theArguments.append(theMinifier.toVariableName(theVariable.getName()));
                         first = false;
                     }
                 }
@@ -636,7 +638,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");
                         if (aOptions.isDebugOutput()) {
                             thePW.text(" // type is ").text(theVariable.resolveType().resolve().name()).text(", # of inits = " + theVariable.incomingDataFlows().size());
-                            thePW.text(", live with : " + theVariable.getLiveWith());
                         }
                         thePW.newLine();
                     }
