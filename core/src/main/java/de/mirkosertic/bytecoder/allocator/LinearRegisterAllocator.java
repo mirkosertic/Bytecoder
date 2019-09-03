@@ -27,20 +27,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-public class LinearRegisterAllocator {
-
-    private final Map<Variable, Register> registerAssignments;
-    private final Map<TypeRef.Native, List<Register>> knownRegisters;
-    private final Function<TypeRef.Native, TypeRef.Native> typeConverter;
+public class LinearRegisterAllocator extends AbstractAllocator {
 
     public LinearRegisterAllocator(final List<Variable> aVariables) {
         this(aVariables, t -> t);
     }
 
     public LinearRegisterAllocator(final List<Variable> aVariables, final Function<TypeRef.Native, TypeRef.Native> aTypeConverter) {
-        typeConverter = aTypeConverter;
-        knownRegisters = new HashMap<>();
-        registerAssignments = new HashMap<>();
+        super(aTypeConverter);
 
         final Map<Long, List<Variable>> theDefinitionPointsToDefition = new HashMap<>();
         final Set<Long> foundDefinitionPoints = new HashSet<>();
@@ -114,17 +108,5 @@ public class LinearRegisterAllocator {
                 currentlyActive.add(v);
             }
         }
-    }
-
-    public Set<TypeRef.Native> usedRegisterTypes() {
-        return knownRegisters.keySet();
-    }
-
-    public List<Register> registersOfType(final TypeRef.Native aType) {
-        return knownRegisters.get(typeConverter.apply(aType));
-    }
-
-    public Register registerAssignmentFor(final Variable v) {
-        return registerAssignments.get(v);
     }
 }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.cli;
 
+import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
@@ -80,6 +81,9 @@ public class BytecoderCLI {
         @Option(names = "-preferStackifier", required = false, description = "Shall the Stackifier be used in favor to Relooper? Defaults to 'false'.")
         protected boolean preferStackifier = false;
 
+        @Option(names = "-registerallocator", required = false, description = "Which register allocator should be used? Can be linear or passthru. Defaults to 'passthru'.")
+        protected String registerAllocator = "passthru";
+
     }
 
     public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -111,7 +115,7 @@ public class BytecoderCLI {
         final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator));
         final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
         for (final CompileResult.Content content : theCode.getContent()) {
             final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

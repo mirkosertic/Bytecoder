@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.maven;
 
+import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
@@ -121,6 +122,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(required = false, defaultValue = "false")
     protected boolean preferStackifier;
 
+    /**
+     * Which register allocator should be used? Can be linear or passthru.
+     */
+    @Parameter(required = false, defaultValue = "linear")
+    protected String registerAllocator;
+
     @Override
     public void execute() throws MojoExecutionException {
         final File theBaseDirectory = new File(buldDirectory);
@@ -136,7 +143,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier);
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator));
             final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

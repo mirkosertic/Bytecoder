@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
@@ -114,7 +115,7 @@ class OpenCLContext implements Context {
         platform = aPlatform;
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
-        compileOptions = new CompileOptions(logger, false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, aOptions.isPreferStackifier());
+        compileOptions = new CompileOptions(logger, false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, aOptions.isPreferStackifier(), Allocator.passthru);
 
         final cl_context_properties contextProperties = new cl_context_properties();
         contextProperties.addProperty(CL_CONTEXT_PLATFORM, aPlatform.selectedPlatform.id);
