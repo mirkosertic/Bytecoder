@@ -22,9 +22,9 @@ import java.util.Objects;
 public class Register {
 
     private final long number;
-    private final TypeRef.Native type;
+    private final TypeRef type;
 
-    public Register(final long number, final TypeRef.Native type) {
+    public Register(final long number, final TypeRef type) {
         this.number = number;
         this.type = type;
     }
@@ -33,7 +33,7 @@ public class Register {
         return number;
     }
 
-    public TypeRef.Native getType() {
+    public TypeRef getType() {
         return type;
     }
 
@@ -43,7 +43,7 @@ public class Register {
         if (o == null || getClass() != o.getClass()) return false;
         final Register register = (Register) o;
         return number == register.number &&
-                type == register.type;
+                type.equals(register.type);
     }
 
     @Override

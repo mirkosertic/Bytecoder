@@ -24,17 +24,17 @@ import java.util.function.Function;
 public enum Allocator {
     linear {
         @Override
-        public AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef.Native, TypeRef.Native> aTypeConverter) {
+        public AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
             return new LinearRegisterAllocator(aVariables, aTypeConverter);
         }
     },
 
     passthru {
         @Override
-        public AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef.Native, TypeRef.Native> aTypeConverter) {
+        public AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
             return new PassThruRegisterAllocator(aVariables, aTypeConverter);
         }
     }
     ;
-    public abstract AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef.Native, TypeRef.Native> aTypeConverter);
+    public abstract AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter);
 }

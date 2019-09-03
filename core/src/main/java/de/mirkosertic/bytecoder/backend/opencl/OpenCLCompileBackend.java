@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -80,6 +81,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         //Run optimizer
         aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
+        // Perform register allocation
+        final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), t -> t);
+
+
         // Ok, at this point we have to map kernel arguments
         // Every member of the kernel class becomes a kernel function argument
         try {
@@ -108,13 +113,16 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 //Run optimizer
                 aOptions.getOptimizer().optimize(theSSAProgram1.getControlFlowGraph(), aLinkerContext);
 
+                // Perform register allocation
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1.getVariables(), t -> t);
+
                 // Write the method to the output
                 // Try to reloop it!
                 try {
                     if (aOptions.isPreferStackifier()) {
                         try {
                             final Stackifier stackifier = new Stackifier(theSSAProgram1.getControlFlowGraph());
-                            theSSAWriter.writeStackifiedInline(theMethod, theSSAProgram1, stackifier);
+                            theSSAWriter.writeStackifiedInline(theMethod, theSSAProgram1, stackifier, theAllocator);
 
                         } catch (final HeadToHeadControlFlowException e) {
 
@@ -124,14 +132,14 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                             final Relooper theRelooper = new Relooper(aOptions);
                             final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                            theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock);
+                            theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock, theAllocator);
                         }
                     } else {
 
                         final Relooper theRelooper = new Relooper(aOptions);
                         final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                        theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock);
+                        theSSAWriter.printReloopedInline(theMethod, theSSAProgram1, theReloopedBlock, theAllocator);
 
                     }
 
@@ -143,11 +151,12 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         });
 
         // Finally, we write the kernel method
+
         try {
             if (aOptions.isPreferStackifier()) {
                 try {
                     final Stackifier stackifier = new Stackifier(theSSAProgram.getControlFlowGraph());
-                    theSSAWriter.writeStackifiedKernel(theSSAProgram, stackifier);
+                    theSSAWriter.writeStackifiedKernel(theSSAProgram, stackifier, theKernelAllocator);
 
                 } catch (final HeadToHeadControlFlowException e) {
 
@@ -157,14 +166,14 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                     final Relooper theRelooper = new Relooper(aOptions);
                     final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                    theSSAWriter.printReloopedKernel(theReloopedBlock);
+                    theSSAWriter.printReloopedKernel(theReloopedBlock, theKernelAllocator);
                 }
             } else {
 
                 final Relooper theRelooper = new Relooper(aOptions);
                 final Relooper.Block theReloopedBlock = theRelooper.reloop(theSSAProgram.getControlFlowGraph());
 
-                theSSAWriter.printReloopedKernel(theReloopedBlock);
+                theSSAWriter.printReloopedKernel(theReloopedBlock, theKernelAllocator);
 
             }
 

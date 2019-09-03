@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLFunction;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -77,23 +79,27 @@ public class OpenCLWriter extends IndentSSAWriter {
     private final BytecodeLinkedClass kernelClass;
     private final AtomicBoolean stackifierOutout;
     private final Set<Label> recordedNextLabels;
+    private AbstractAllocator allocator;
 
     public OpenCLWriter(
             final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs) {
-        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>());
+        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>(), null);
     }
 
     private OpenCLWriter(
-            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs, final AtomicBoolean aStackifierOutout, final Set<Label> aRecordedNextLabels) {
+            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs, final AtomicBoolean aStackifierOutout, final Set<Label> aRecordedNextLabels,
+            final AbstractAllocator aRegisterAllocator) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         inputOutputs = aInputOutputs;
         kernelClass = aKernelClass;
         stackifierOutout = aStackifierOutout;
         recordedNextLabels = aRecordedNextLabels;
+        allocator = aRegisterAllocator;
     }
 
-    public void printReloopedKernel(final Relooper.Block aBlock) {
+    public void printReloopedKernel(final Relooper.Block aBlock, final AbstractAllocator registerAllocator) {
         stackifierOutout.set(false);
+        allocator = registerAllocator;
 
         print("__kernel void BytecoderKernel(");
 
@@ -110,9 +116,10 @@ public class OpenCLWriter extends IndentSSAWriter {
         println("}");
     }
 
-    public void printReloopedInline(final BytecodeMethod aMethod, final Program aProgram, final Relooper.Block aBlock) {
+    public void printReloopedInline(final BytecodeMethod aMethod, final Program aProgram, final Relooper.Block aBlock, final AbstractAllocator registerAllocator) {
 
         stackifierOutout.set(false);
+        allocator = registerAllocator;
 
         final BytecodeMethodSignature theSignature = aMethod.getSignature();
 
@@ -283,7 +290,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private OpenCLWriter withDeeperIndent() {
-        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels);
+        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels, allocator);
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -303,8 +310,9 @@ public class OpenCLWriter extends IndentSSAWriter {
             final VariableAssignmentExpression theInit = (VariableAssignmentExpression) expression;
 
             final Variable theVariable = theInit.getVariable();
+            final Register r = allocator.registerAssignmentFor(theVariable);
             final Value theValue = theInit.getValue();
-            print(theVariable.getName());
+            print(registerName(r));
             print(" = ");
             printValue(theValue);
             println(";");
@@ -440,7 +448,12 @@ public class OpenCLWriter extends IndentSSAWriter {
     private void printValue(final Value aValue) {
         if (aValue instanceof Variable) {
             final Variable theVariable = (Variable) aValue;
-            print(theVariable.getName());
+            if (!theVariable.isSynthetic()) {
+                final Register r = allocator.registerAssignmentFor(theVariable);
+                print(registerName(r));
+            } else {
+                print(theVariable.getName());
+            }
         } else if (aValue instanceof InvokeVirtualMethodExpression) {
             printInvokeVirtual((InvokeVirtualMethodExpression) aValue);
         } else if (aValue instanceof InvokeStaticMethodExpression) {
@@ -722,32 +735,41 @@ public class OpenCLWriter extends IndentSSAWriter {
         }
     }
 
+    private String registerName(final Register r) {
+        if (r == null) {
+            throw new IllegalStateException();
+        }
+        return "r" + r.getNumber();
+    }
+
     private void printProgramVariablesDeclaration(final Program program) {
         final List<Variable> theVariables = program.getVariables();
         theVariables.sort(Comparator.comparing(Variable::getName));
         for (final Variable theVariable : theVariables) {
             if (!theVariable.isSynthetic()) {
+                final Register r = allocator.registerAssignmentFor(theVariable);
                 final TypeRef theVarType = theVariable.resolveType();
                 if (theVarType.isArray()) {
                     print("__global ");
                     print(toType(theVarType));
                     print("* ");
-                    print(theVariable.getName());
+                    print(registerName(r));
                     println(";");
                 } else {
                     print(toType(theVarType));
                     print(" ");
-                    print(theVariable.getName());
+                    print(registerName(r));
                     println(";");
                 }
             }
         }
     }
 
-    public void writeStackifiedKernel(final Program program, final Stackifier stackifier) {
+    public void writeStackifiedKernel(final Program program, final Stackifier stackifier, final AbstractAllocator registerAllocator) {
 
         stackifierOutout.set(true);
         recordedNextLabels.clear();
+        allocator = registerAllocator;
 
         print("__kernel void BytecoderKernel(");
 
@@ -815,9 +837,10 @@ public class OpenCLWriter extends IndentSSAWriter {
         println("}");
     }
 
-    public void writeStackifiedInline(final BytecodeMethod method, final Program program, final Stackifier stackifier) {
+    public void writeStackifiedInline(final BytecodeMethod method, final Program program, final Stackifier stackifier, final AbstractAllocator registerAllocator) {
         stackifierOutout.set(true);
         recordedNextLabels.clear();
+        allocator = registerAllocator;
 
         final BytecodeMethodSignature theSignature = method.getSignature();
 

@@ -27,21 +27,21 @@ import java.util.function.Function;
 public abstract class AbstractAllocator {
 
     protected final Map<Variable, Register> registerAssignments;
-    protected final Map<TypeRef.Native, List<Register>> knownRegisters;
-    protected final Function<TypeRef.Native, TypeRef.Native> typeConverter;
+    protected final Map<TypeRef, List<Register>> knownRegisters;
+    protected final Function<TypeRef, TypeRef> typeConverter;
 
-    public AbstractAllocator(final Function<TypeRef.Native, TypeRef.Native> aTypeConverter) {
+    public AbstractAllocator(final Function<TypeRef, TypeRef> aTypeConverter) {
         registerAssignments = new HashMap<>();
         knownRegisters = new HashMap<>();
         typeConverter = aTypeConverter;
     }
 
 
-    public Set<TypeRef.Native> usedRegisterTypes() {
+    public Set<TypeRef> usedRegisterTypes() {
         return knownRegisters.keySet();
     }
 
-    public List<Register> registersOfType(final TypeRef.Native aType) {
+    public List<Register> registersOfType(final TypeRef aType) {
         return knownRegisters.get(typeConverter.apply(aType));
     }
 

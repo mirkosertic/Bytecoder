@@ -29,11 +29,7 @@ import java.util.function.Function;
 
 public class LinearRegisterAllocator extends AbstractAllocator {
 
-    public LinearRegisterAllocator(final List<Variable> aVariables) {
-        this(aVariables, t -> t);
-    }
-
-    public LinearRegisterAllocator(final List<Variable> aVariables, final Function<TypeRef.Native, TypeRef.Native> aTypeConverter) {
+    public LinearRegisterAllocator(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
         super(aTypeConverter);
 
         final Map<Long, List<Variable>> theDefinitionPointsToDefition = new HashMap<>();
@@ -68,7 +64,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
             // Registers to them
             final List<Variable> activeFromHere = theDefinitionPointsToDefition.get(theDefinition);
             for (final Variable v : activeFromHere) {
-                final TypeRef.Native theType = aTypeConverter.apply(v.resolveType().resolve());
+                final TypeRef theType = aTypeConverter.apply(v.resolveType());
                 final List<Register> theKnownRegistersOfThisType = knownRegisters.get(theType);
                 if (theKnownRegistersOfThisType != null) {
                     // We already know registers of this type
@@ -76,7 +72,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
                     final List<Register> theAvailableRegisters = new ArrayList<>(theKnownRegistersOfThisType);
 
                     for (final Variable a : currentlyActive) {
-                        final TypeRef.Native theOtherType = aTypeConverter.apply(a.resolveType().resolve());
+                        final TypeRef theOtherType = aTypeConverter.apply(a.resolveType());
                         if (theOtherType == theType) {
                             theAvailableRegisters.remove(registerAssignments.get(a));
                         }
