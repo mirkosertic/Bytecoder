@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.allocator;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,11 @@ public abstract class AbstractAllocator {
         typeConverter = aTypeConverter;
     }
 
+    public List<Register> assignedRegister() {
+        final List<Register> theList = new ArrayList<>(registerAssignments.values());
+        theList.sort(Comparator.comparingLong(Register::getNumber));
+        return theList;
+    }
 
     public Set<TypeRef> usedRegisterTypes() {
         return knownRegisters.keySet();

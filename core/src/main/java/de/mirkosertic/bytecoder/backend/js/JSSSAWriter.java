@@ -114,12 +114,9 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -323,11 +320,7 @@ public class JSSSAWriter {
     }
 
     public void printRegisterDeclarations() {
-        final Set<Register> theRegs = new HashSet<>();
-        for (final TypeRef usedType : allocator.usedRegisterTypes()) {
-            theRegs.addAll(allocator.registersOfType(usedType));
-        }
-        final List<Register> theList = new ArrayList<>(theRegs);
+        final List<Register> theList = allocator.assignedRegister();
         theList.sort(comparingLong(Register::getNumber));
         for (final Register r : theList) {
             final JSPrintWriter thePW = startLine().text("var ").text(toRegisterName(r)).assign().text("null;");

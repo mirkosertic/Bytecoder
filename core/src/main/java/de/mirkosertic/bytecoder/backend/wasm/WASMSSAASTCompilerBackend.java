@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
@@ -83,7 +85,6 @@ import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -617,6 +618,26 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 //Run optimizer
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
+                // Perform register allocation
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), typeRef -> {
+                    switch (typeRef.resolve()) {
+                        case INT:
+                        case LONG:
+                        case BYTE:
+                        case SHORT:
+                        case BOOLEAN:
+                        case CHAR:
+                            return TypeRef.Native.INT;
+                        case DOUBLE:
+                        case FLOAT:
+                            return TypeRef.Native.FLOAT;
+                        case REFERENCE:
+                            return TypeRef.Native.REFERENCE;
+                        default:
+                            throw new IllegalArgumentException("Not supported type : " + typeRef.resolve());
+                    }
+                });
+
                 final List<Param> params = new ArrayList<>();
                 if (theMethod.getAccessFlags().isStatic()) {
                     params.add(param("UNUSED", toType(TypeRef.Native.REFERENCE)));
@@ -649,15 +670,12 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 try {
-                    final List<Variable> theVariables = theSSAProgram.getVariables();
-                    theVariables.sort(Comparator.comparing(Variable::getName));
-                    for (final Variable theVariable : theVariables) {
-                        if (!(theVariable.isSynthetic())) {
-                            instanceFunction.newLocal(theVariable.getName(), toType(theVariable.resolveType()));
-                        }
+                    final List<Register> theRegister = theAllocator.assignedRegister();
+                    for (final Register r : theRegister) {
+                        instanceFunction.newLocal(WASMSSAASTWriter.registerName(r), toType(r.getType()));
                     }
 
-                    // Now we know the exact fucntion argument names, so we rename them
+                    // Now we know the exact function argument names, so we rename them
                     int paramIndex = -1;
                     if (theMethod.getAccessFlags().isStatic()) {
                         final Param theParam = instanceFunction.getParams().get(++paramIndex);
@@ -669,7 +687,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theParam.renameTo(theVariable.getName());
                     }
 
-                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction);
+                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction, theAllocator);
 
                     if (aOptions.isPreferStackifier()) {
                         try {
@@ -941,17 +959,31 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
             }
 
-            final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction);
-
-            final List<Variable> theVariables = theSSAProgram.getVariables();
-            theVariables.sort(Comparator.comparing(Variable::getName));
-
-            for (final Variable theVariable : theVariables) {
-
-                if (!(theVariable.isSynthetic())) {
-                    theFunction.newLocal(theVariable.getName(), toType(theVariable.resolveType()));
+            // Perform register allocation
+            final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), typeRef -> {
+                switch (typeRef.resolve()) {
+                    case INT:
+                    case LONG:
+                    case BYTE:
+                    case SHORT:
+                    case BOOLEAN:
+                    case CHAR:
+                        return TypeRef.Native.INT;
+                    case DOUBLE:
+                    case FLOAT:
+                        return TypeRef.Native.FLOAT;
+                    case REFERENCE:
+                        return TypeRef.Native.REFERENCE;
+                    default:
+                        throw new IllegalArgumentException("Not supported type : " + typeRef.resolve());
                 }
+            });
+
+            for (final Register r : theAllocator.assignedRegister()) {
+                theFunction.newLocal(WASMSSAASTWriter.registerName(r), toType(r.getType()));
             }
+
+            final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction, theAllocator);
 
             writer.stackEnter();
             writer.writeExpressionList(theEntry.getValue().bootstrapMethod.getExpressions());

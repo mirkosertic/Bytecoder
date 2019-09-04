@@ -15,27 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
@@ -147,7 +128,31 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
 public class WASMSSAASTWriter {
+
+    public static String registerName(final Register r) {
+        return "r" + r.getNumber();
+    }
 
     private static final String LABEL_LOCAL = "__label__";
     private static final String SP = "SP";
@@ -185,29 +190,28 @@ public class WASMSSAASTWriter {
     final Expressions flow;
     private final Module module;
     private final CompileOptions compileOptions;
-    private final List<Variable> stackVariables;
+    private final List<Register> stackRegister;
     private final WASMMemoryLayouter memoryLayouter;
     private boolean labelRequired;
     final AtomicBoolean stackifierEnabled;
+    private final AbstractAllocator allocator;
 
     public WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction) {
+            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final AbstractAllocator aAllocator) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
         module = aModule;
         compileOptions = aOptions;
-        stackVariables = new ArrayList<>();
+        stackRegister = new ArrayList<>();
         memoryLayouter = aMemoryLayouter;
         flow = function.flow;
         container = function;
+        allocator = aAllocator;
 
-        final List<Variable> theVariables = aProgram.getVariables();
-        theVariables.sort(Comparator.comparing(Variable::getName));
-
-        for (final Variable theVariable : theVariables) {
-            if (theVariable.resolveType().resolve() == TypeRef.Native.REFERENCE) {
-                stackVariables.add(theVariable);
+        for (final Register r : allocator.assignedRegister()) {
+            if (r.getType().resolve() == TypeRef.Native.REFERENCE) {
+                stackRegister.add(r);
             }
         }
         labelRequired = false;
@@ -216,28 +220,30 @@ public class WASMSSAASTWriter {
 
     private WASMSSAASTWriter(
             final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Variable> aStackVariables, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled) {
+            final List<Register> aStackRegister, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled,
+            final AbstractAllocator aAllocator) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
         module = aModule;
         compileOptions = aOptions;
-        stackVariables = aStackVariables;
+        stackRegister = aStackRegister;
         memoryLayouter = aMemoryLayouter;
         container = aContainer;
         flow = aFlow;
         labelRequired = aLabelRequired;
         stackifierEnabled = aStackifierEnabled;
+        allocator = aAllocator;
     }
 
     private WASMSSAASTWriter block(final String label, final Expression expression) {
         final Block block = flow.block(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
     }
 
     private WASMSSAASTWriter block(final String label, final PrimitiveType blockType, final Expression expression) {
         final Block block = flow.block(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
     }
 
     private static class IFCondition {
@@ -253,37 +259,36 @@ public class WASMSSAASTWriter {
 
     private IFCondition iff(final String label, final WASMValue condition, final Expression expression) {
         final Iff block = flow.iff(label, condition, expression);
-        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
-        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.falseFlow, stackifierEnabled);
+        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
+        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.falseFlow, stackifierEnabled, allocator);
         return new IFCondition(theTrueWriter, theFalseWriter);
     }
 
     private WASMSSAASTWriter Try(final String label, final Expression expression) {
         final Try block = flow.Try(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
     }
 
     private WASMSSAASTWriter Try(final String label, final PrimitiveType blockType, final Expression expression) {
         final Try block = flow.Try(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackVariables, labelRequired, block.flow, stackifierEnabled);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
     }
 
     private WASMSSAASTWriter loop(final String label, final Expression expression) {
         final Loop loop = flow.loop(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackVariables, labelRequired, loop.flow, stackifierEnabled);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackRegister, labelRequired, loop.flow, stackifierEnabled, allocator);
     }
 
     private int stackSize() {
-        return stackVariables.size() * 4;
+        return stackRegister.size() * 4;
     }
 
     public boolean isStackVariable(final Variable aVariable) {
-        for (final Variable theVariable : stackVariables) {
-            if (Objects.equals(theVariable.getName(), aVariable.getName())) {
-                return true;
-            }
+        if (aVariable.isSynthetic()) {
+            return false;
         }
-        return false;
+        final Register theRegister = allocator.registerAssignmentFor(aVariable);
+        return stackRegister.contains(theRegister);
     }
 
     private BytecodeResolvedFields.FieldEntry implementingClassForStaticField(final BytecodeObjectTypeRef aClass, final String aFieldName) {
@@ -293,14 +298,11 @@ public class WASMSSAASTWriter {
     }
 
     private int stackOffsetFor(final Variable aVariable) {
-        int theStart = 0;
-        for (final Variable theVariable : stackVariables) {
-            if (Objects.equals(theVariable.getName(), aVariable.getName())) {
-                return theStart;
-            }
-            theStart += 4;
+        final Register r = allocator.registerAssignmentFor(aVariable);
+        if (r == null) {
+            throw new IllegalStateException("Unknown variable : " + aVariable);
         }
-        throw new IllegalStateException("Unknown variable : " + aVariable);
+        return stackRegister.indexOf(r) * 4;
     }
 
     public void writeExpressionList(final ExpressionList aList) {
@@ -629,7 +631,13 @@ public class WASMSSAASTWriter {
             return;
         }
 
-        final Local theLocal = function.localByLabel(theVariable.getName());
+        final Local theLocal;
+        if (theVariable.isSynthetic()) {
+            theLocal = function.localByLabel(theVariable.getName());
+        } else {
+            final Register r = allocator.registerAssignmentFor(theVariable);
+            theLocal = function.localByLabel(registerName(r));
+        }
 
         if (isStackVariable(theVariable)) {
             final Local sp = function.localByLabel(SP);
@@ -1483,7 +1491,12 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue variableName(final Variable aVariable) {
-        final Local local = function.localByLabel(aVariable.getName());
+        if (aVariable.isSynthetic()) {
+            final Local local = function.localByLabel(aVariable.getName());
+            return getLocal(local, null);
+        }
+        final Register r = allocator.registerAssignmentFor(aVariable);
+        final Local local = function.localByLabel(registerName(r));
         return getLocal(local, null);
     }
 
