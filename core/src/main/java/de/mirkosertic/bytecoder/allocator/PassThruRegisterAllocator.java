@@ -29,13 +29,15 @@ public class PassThruRegisterAllocator extends AbstractAllocator {
 
         for (int i=0;i<aVariables.size(); i++) {
             final Variable v = aVariables.get(i);
-            final TypeRef type = typeConverter.apply(v.resolveType());
+            if (!v.isSynthetic()) {
+                final TypeRef type = typeConverter.apply(v.resolveType());
 
-            final Register r = new Register(i, type);
-            registerAssignments.put(v, r);
+                final Register r = new Register(i, type);
+                registerAssignments.put(v, r);
 
-            final List<Register> theRegsForType = knownRegisters.computeIfAbsent(type, k -> new ArrayList<>());
-            theRegsForType.add(r);
+                final List<Register> theRegsForType = knownRegisters.computeIfAbsent(type, k -> new ArrayList<>());
+                theRegsForType.add(r);
+            }
         }
     }
 }

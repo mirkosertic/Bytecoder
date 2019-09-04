@@ -18,10 +18,7 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 public class Program {
 
@@ -69,28 +66,6 @@ public class Program {
 
     public ControlFlowGraph getControlFlowGraph() {
         return controlFlowGraph;
-    }
-
-    public Set<Variable> globalVariables() {
-        final Set<Variable> theVariables = new HashSet<>();
-        for (final RegionNode theNode : controlFlowGraph.dominators().getPreOrder()) {
-            final BlockState theStartState = theNode.toStartState();
-            for (final Value theValue : theStartState.getPorts().values()) {
-                if (theValue instanceof Variable) {
-                    theVariables.add((Variable) theValue);
-                }
-            }
-        }
-        return theVariables;
-    }
-
-    public boolean isGlobalVariable(final Variable aVariable) {
-        for (final Variable theVar : globalVariables()) {
-            if (Objects.equals(theVar.getName(), aVariable.getName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public List<Variable> getVariables() {

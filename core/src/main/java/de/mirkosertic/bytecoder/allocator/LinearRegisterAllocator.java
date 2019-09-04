@@ -38,11 +38,13 @@ public class LinearRegisterAllocator extends AbstractAllocator {
         // Step one : We sort the variables into buckets
         // and try to establish a timeline for the linear scan
         for (final Variable v : aVariables) {
-            final long theDefinition = v.getDefinedAt();
-            foundDefinitionPoints.add(theDefinition);
+            if (!v.isSynthetic()) {
+                final long theDefinition = v.getDefinedAt();
+                foundDefinitionPoints.add(theDefinition);
 
-            final List<Variable> theDefList = theDefinitionPointsToDefition.computeIfAbsent(theDefinition, k -> new ArrayList<>());
-            theDefList.add(v);
+                final List<Variable> theDefList = theDefinitionPointsToDefition.computeIfAbsent(theDefinition, k -> new ArrayList<>());
+                theDefList.add(v);
+            }
         }
 
         final List<Long> theDefinitionPoints = new ArrayList<>(foundDefinitionPoints);
