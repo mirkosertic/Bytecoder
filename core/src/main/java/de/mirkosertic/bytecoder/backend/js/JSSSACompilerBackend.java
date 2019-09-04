@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -632,16 +633,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.flush();
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier);
-                for (final Variable theVariable : theSSAProgram.globalVariables()) {
-                    if (!theVariable.isSynthetic()) {
-                        final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");
-                        if (aOptions.isDebugOutput()) {
-                            thePW.text(" // type is ").text(theVariable.resolveType().resolve().name()).text(", # of inits = " + theVariable.incomingDataFlows().size());
-                        }
-                        thePW.newLine();
-                    }
-                }
+                // Perform register allocation
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), t -> t);
+
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator);
+                theVariablesWriter.printRegisterDeclarations();
 
                 // Try to reloop it or stackify it!
                 try {

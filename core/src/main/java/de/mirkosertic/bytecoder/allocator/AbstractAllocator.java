@@ -42,7 +42,7 @@ public abstract class AbstractAllocator {
     }
 
     public List<Register> registersOfType(final TypeRef aType) {
-        return knownRegisters.get(typeConverter.apply(aType));
+        return knownRegisters.get(aType);
     }
 
     public Register registerAssignmentFor(final Variable v) {

@@ -15,12 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
@@ -118,6 +114,17 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparingLong;
+
 public class JSSSAWriter {
 
     protected final Program program;
@@ -128,9 +135,10 @@ public class JSSSAWriter {
     private boolean labelRequired;
     private final JSMinifier minifier;
     private final int indent;
+    private final AbstractAllocator allocator;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
+                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final AbstractAllocator aAllocator) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -139,14 +147,19 @@ public class JSSSAWriter {
         labelRequired = aLabelRequired;
         minifier = aMinifier;
         indent = aIndent;
+        allocator = aAllocator;
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier);
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, allocator);
     }
 
     public JSPrintWriter startLine() {
         return writer.tab(indent);
+    }
+
+    public String toRegisterName(final Register r) {
+        return "r" + r.getNumber();
     }
 
     private void print(final Value aValue) {
@@ -309,6 +322,22 @@ public class JSSSAWriter {
         writer.text("0");
     }
 
+    public void printRegisterDeclarations() {
+        final Set<Register> theRegs = new HashSet<>();
+        for (final TypeRef usedType : allocator.usedRegisterTypes()) {
+            theRegs.addAll(allocator.registersOfType(usedType));
+        }
+        final List<Register> theList = new ArrayList<>(theRegs);
+        theList.sort(comparingLong(Register::getNumber));
+        for (final Register r : theList) {
+            final JSPrintWriter thePW = startLine().text("var ").text(toRegisterName(r)).assign().text("null;");
+            if (options.isDebugOutput()) {
+                thePW.text(" // type is ").text(r.getType().resolve().name());
+            }
+            thePW.newLine();
+        }
+    }
+
     private void print(final ResolveCallsiteObjectExpression aValue) {
         writer.text("bytecoder.resolveStaticCallSiteObject(")
                 .text(minifier.toClassName(aValue.getOwningClass().getThisInfo()))
@@ -319,11 +348,10 @@ public class JSSSAWriter {
         final Program theProgram = aValue.getProgram();
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        final JSSSAWriter theNested = withDeeperIndent();
+        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram.getVariables(), t -> t);
+        final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator);
 
-        for (final Variable theVariable : theProgram.globalVariables()) {
-            theNested.startLine().text("var ").text(theVariable.getName()).assign().text("null;").newLine();
-        }
+        theNested.printRegisterDeclarations();
 
         theNested.writeExpressions(theBootstrapCode.getExpressions());
 
@@ -1033,7 +1061,12 @@ public class JSSSAWriter {
         if (Variable.THISREF_NAME.equals(aVariable.getName())) {
             writer.text("this");
         } else {
-            writer.text(minifier.toVariableName(aVariable.getName()));
+            if (aVariable.isSynthetic()) {
+                writer.text(minifier.toVariableName(aVariable.getName()));
+            } else {
+                final Register r = allocator.registerAssignmentFor(aVariable);
+                writer.text(toRegisterName(r));
+            }
         }
     }
 
@@ -1084,27 +1117,46 @@ public class JSSSAWriter {
 
             final JSPrintWriter theWriter = startLine();
 
-            if (!program.isGlobalVariable(theVariable)) {
-                theWriter.text("var ");
-            }
-
-            if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
-                if (!(theValue instanceof IntegerValue)) {
-                    theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
-                    print(theValue);
-                    theWriter.text(") | 0");
+            if (theVariable.isSynthetic()) {
+                if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
+                    if (!(theValue instanceof IntegerValue)) {
+                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
+                        print(theValue);
+                        theWriter.text(") | 0");
+                    } else {
+                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
+                        print(theValue);
+                    }
                 } else {
                     theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
                     print(theValue);
                 }
+                if (options.isDebugOutput()) {
+                    theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
+                } else {
+                    theWriter.text(";").newLine();
+                }
+
             } else {
-                theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
-                print(theValue);
-            }
-            if (options.isDebugOutput()) {
-                theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
-            } else {
-                theWriter.text(";").newLine();
+                final Register r = allocator.registerAssignmentFor(theVariable);
+                if (r.getType().resolve() == TypeRef.Native.INT) {
+                    if (!(theValue instanceof IntegerValue)) {
+                        theWriter.text(toRegisterName(r)).space().text("=").space().text("(");
+                        print(theValue);
+                        theWriter.text(") | 0");
+                    } else {
+                        theWriter.text(toRegisterName(r)).space().text("=").space();
+                        print(theValue);
+                    }
+                } else {
+                    theWriter.text(toRegisterName(r)).space().text("=").space();
+                    print(theValue);
+                }
+                if (options.isDebugOutput()) {
+                    theWriter.text("; // type is ").text(r.getType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
+                } else {
+                    theWriter.text(";").newLine();
+                }
             }
         } else if (aExpression instanceof PutStaticExpression) {
             final PutStaticExpression theE = (PutStaticExpression) aExpression;
