@@ -115,7 +115,7 @@ public class ParsingHelperCache {
                 }
                 final LocalVariableDescription theLocal = (LocalVariableDescription) aDescription;
                 final Variable theVariable = aBlock.findLocalVariable(theLocal.getIndex(), theLocal.getTypeRef());
-                aBlock.addToImportedList(theVariable, theLocal);
+                aBlock.addToLiveIn(theVariable, theLocal);
                 return theVariable;
             };
 
@@ -159,11 +159,11 @@ public class ParsingHelperCache {
                 // Only one value, we do not need to insert a phi value
                 final Value theSingleValue = theValues.iterator().next();
                 theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, theSingleValue);
-                aBlock.addToImportedList(theSingleValue, theEntry.getKey());
+                aBlock.addToLiveIn(theSingleValue, theEntry.getKey());
             } else {
                 // We have a PHI value here
                 final TypeRef theType = widestTypeOf(theValues);
-                final Variable thePHI = aBlock.newImportedVariable(theType, theEntry.getKey());
+                final Variable thePHI = aBlock.newPhiLiveIn(theType, theEntry.getKey());
                 for (final Value theValue : theValues) {
                     thePHI.initializeWith(theValue, -1);
                 }
@@ -188,11 +188,11 @@ public class ParsingHelperCache {
         }
         if (theValues.size() == 1) {
             final Value theValue = theValues.iterator().next();
-            aImportingBlock.addToImportedList(theValue, aDescription);
+            aImportingBlock.addToLiveIn(theValue, aDescription);
             return theValue;
         }
         final TypeRef theType = widestTypeOf(theValues);
-        final Variable thePHI = aImportingBlock.newImportedVariable(theType, aDescription);
+        final Variable thePHI = aImportingBlock.newPhiLiveIn(theType, aDescription);
         for (final Value theValue : theValues) {
             thePHI.initializeWith(theValue, -1);
         }
@@ -208,7 +208,9 @@ public class ParsingHelperCache {
             final StackVariableDescription theStackDesc = new StackVariableDescription(theStackToImport.size() - i - 1);
             final Value theImportedValue = theStackToImport.get(i);
             theNew.getStack().push(theImportedValue);
-            aNode.addToImportedList(theImportedValue, theStackDesc);
+            aNode.addToLiveIn(theImportedValue, theStackDesc);
+
+            aPredecessor.getBlock().addToLiveOut(theImportedValue, theStackDesc);
         }
         return theNew;
     }

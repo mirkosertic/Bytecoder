@@ -97,10 +97,12 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
     private final BytecodeOpcodeAddress startAddress;
     private final Program program;
     private final BlockType type;
-    private final Map<VariableDescription, Value> imported;
-    private final Map<VariableDescription, Value> exported;
+    private final Map<VariableDescription, Value> liveIn;
+    private final Map<VariableDescription, Value> liveOut;
     private final ControlFlowGraph owningGraph;
     private final ExpressionList expressions;
+    private long startAnalysisTime;
+    private long finishedAnalysisTime;
 
     protected RegionNode(
             final ControlFlowGraph aOwningGraph, final BlockType aType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
@@ -108,9 +110,25 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         owningGraph = aOwningGraph;
         startAddress = aStartAddress;
         program = aProgram;
-        imported = new HashMap<>();
-        exported = new HashMap<>();
+        liveIn = new HashMap<>();
+        liveOut = new HashMap<>();
         expressions = new ExpressionList();
+    }
+
+    public long getStartAnalysisTime() {
+        return startAnalysisTime;
+    }
+
+    public void setStartAnalysisTime(final long startAnalysisTime) {
+        this.startAnalysisTime = startAnalysisTime;
+    }
+
+    public long getFinishedAnalysisTime() {
+        return finishedAnalysisTime;
+    }
+
+    public void setFinishedAnalysisTime(final long finishedAnalysisTime) {
+        this.finishedAnalysisTime = finishedAnalysisTime;
     }
 
     public ExpressionList getExpressions() {
@@ -189,23 +207,31 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(final TypeRef aType, final VariableDescription aDescription) {
+    public Variable newPhiLiveIn(final TypeRef aType, final VariableDescription aDescription) {
         final Variable theVariable = newVariable(aType);
-        imported.put(aDescription, theVariable);
+        liveIn.put(aDescription, theVariable);
         return theVariable;
     }
 
-    public void addToExportedList(final Value aValue, final VariableDescription aDescription) {
-        exported.put(aDescription, aValue);
+    public void addToLiveIn(final Value aValue, final VariableDescription aDescription) {
+        liveIn.put(aDescription, aValue);
     }
 
-    public void addToImportedList(final Value aValue, final VariableDescription aDescription) {
-        imported.put(aDescription, aValue);
+    public void addToLiveOut(final Value aValue, final VariableDescription aDescription) {
+        liveOut.put(aDescription, aValue);
     }
 
-    public BlockState toStartState() {
+    public BlockState liveIn() {
         final BlockState theState = new BlockState();
-        for (final Map.Entry<VariableDescription, Value> theEntry : imported.entrySet()) {
+        for (final Map.Entry<VariableDescription, Value> theEntry : liveIn.entrySet()) {
+            theState.assignToPort(theEntry.getKey(), theEntry.getValue());
+        }
+        return theState;
+    }
+
+    public BlockState liveOut() {
+        final BlockState theState = new BlockState();
+        for (final Map.Entry<VariableDescription, Value> theEntry : liveOut.entrySet()) {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;

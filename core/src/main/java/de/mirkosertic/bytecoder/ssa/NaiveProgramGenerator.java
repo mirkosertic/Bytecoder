@@ -254,9 +254,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
         }
 
-        // Now we can add the SSA instructions to the graph nodes
-        final RegionNode theStart = theProgram.getControlFlowGraph().startNode();
-
         // First of all, we need to mark the back-edges of the graph
         theProgram.getControlFlowGraph().calculateReachabilityAndMarkBackEdges();
 
@@ -328,7 +325,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 for (final Edge theEdge : theNode.outgoingEdges().collect(Collectors.toList())) {
                     if (theEdge.edgeType() == ControlFlowEdgeType.back) {
                         final RegionNode theReceiving = (RegionNode) theEdge.targetNode();
-                        final BlockState theReceivingState = theReceiving.toStartState();
+                        final BlockState theReceivingState = theReceiving.liveIn();
                         for (final Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {
                             final Variable theReceivingTarget = (Variable) theEntry.getValue();
                             final Value theExportingValue = theHelper.requestValue(theEntry.getKey());
@@ -347,7 +344,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
                         final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
-                        final BlockState theImportingState = theGotoNode.toStartState();
+                        final BlockState theImportingState = theGotoNode.liveIn();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
                             final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
                             final Value theExportingValue = theHelper.requestValue(theImporting.getKey());
@@ -365,7 +362,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     if (aPoint.expression instanceof GotoExpression) {
                         final GotoExpression theGoto = (GotoExpression) aPoint.expression;
                         final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
-                        final BlockState theImportingState = theGotoNode.toStartState();
+                        final BlockState theImportingState = theGotoNode.liveIn();
                         final StringBuilder theComments = new StringBuilder();
                         for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
                             theComments.append(theImporting.getKey()).append(" is of type ")
@@ -470,6 +467,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                      final BytecodeProgram.FlowInformation aFlowInformation,
                                      final ParsingHelper aHelper,
                                      final Program aProgram) {
+
+        aTargetBlock.setStartAnalysisTime(aProgram.getAnalysisTime());
 
         // Finally we can start to parse the program
         final BytecodeBasicBlock theBytecodeBlock = aFlowInformation.blockAt(aTargetBlock.getStartAddress());
@@ -1342,7 +1341,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
             aProgram.incrementAnalysisTime();
         }
-
-        aHelper.finalizeExportState();
+        aTargetBlock.setFinishedAnalysisTime(aProgram.getAnalysisTime());
     }
 }

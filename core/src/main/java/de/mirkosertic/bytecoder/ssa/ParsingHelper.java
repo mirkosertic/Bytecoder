@@ -49,6 +49,10 @@ public class ParsingHelper {
         localVariableTableAttributeInfo = aDebugInfo;
     }
 
+    public RegionNode getBlock() {
+        return block;
+    }
+
     public int numberOfLocalVariables() {
         return localVariables.size();
     }
@@ -94,8 +98,7 @@ public class ParsingHelper {
             if (theValue == null) {
                 throw new IllegalStateException("Value must not be null from provider for " + theDesc);
             }
-            block.addToImportedList(theValue, theDesc);
-            block.addToExportedList(theValue, theDesc);
+            block.addToLiveIn(theValue, theDesc);
             localVariables.put(aIndex, theValue);
         }
         theValue.usedAt(program.getAnalysisTime());
@@ -105,11 +108,14 @@ public class ParsingHelper {
     public Value requestValue(final VariableDescription aDescription) {
         if (aDescription instanceof LocalVariableDescription) {
             final LocalVariableDescription theDesc = (LocalVariableDescription) aDescription;
-            return getLocalVariable(theDesc.getIndex(), ((LocalVariableDescription) aDescription).getTypeRef());
+            final Value theValue = getLocalVariable(theDesc.getIndex(), ((LocalVariableDescription) aDescription).getTypeRef());
+            block.addToLiveOut(theValue, theDesc);
+            return theValue;
         }
         final StackVariableDescription theStack = (StackVariableDescription) aDescription;
         if (theStack.getPos() < stack.size()) {
-            return stack.get(stack.size() - theStack.getPos() - 1);
+            final Value theValue = stack.get(stack.size() - theStack.getPos() - 1);
+            block.addToLiveOut(theValue, theStack);
         }
         throw new IllegalStateException("Invalid stack index : " + theStack.getPos() + " with total size of " + stack.size());
     }
@@ -133,7 +139,6 @@ public class ParsingHelper {
 
         final Variable v = block.setLocalVariable(aInstruction, aIndex, aType, aValue);
         localVariables.put(aIndex, v);
-        block.addToExportedList(v, new LocalVariableDescription(aIndex, aType));
     }
 
     public void setStackValue(final int aStackPos, final Value aValue) {
@@ -148,15 +153,5 @@ public class ParsingHelper {
         theValues.set(aStackPos, aValue);
         stack.clear();
         stack.addAll(theValues);
-    }
-
-    public void finalizeExportState() {
-        for (final Map.Entry<Integer, Variable> theEntry : localVariables.entrySet()) {
-            block.addToExportedList(theEntry.getValue(), new LocalVariableDescription(theEntry.getKey(), theEntry.getValue().resolveType()));
-        }
-        for (int i=stack.size() - 1 ; i>= 0; i--) {
-            // Numbering must be consistent here!!
-            block.addToExportedList(stack.get(i), new StackVariableDescription(stack.size() - 1 - i));
-        }
     }
 }
