@@ -150,4 +150,84 @@ public class LivenessTest {
         assertTrue(finalLiveOut.getPorts().isEmpty());
     }
 
+    private static int simpleForLoop(final int a, final int b) {
+        final int x = 10;
+        int y = 20;
+        for (int i=0;i<10;i++) {
+            y = y + 1;
+            final int z = 30;
+        }
+        final int k = 30;
+        return y;
+    }
+
+    @Test
+    public void simpleForLoopLiveness() {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
+        theLinkedClass.resolveStaticMethod("simpleForLoop", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("simpleForLoop", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        final List<Variable> vars = p.getVariables();
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+        }
+
+        final ControlFlowGraph graph = p.getControlFlowGraph();
+        final List<RegionNode> preorder = graph.dominators().getPreOrder();
+        assertEquals(4, preorder.size());
+        final RegionNode startNode = preorder.get(0);
+        assertEquals(0L, startNode.getStartAnalysisTime());
+        assertEquals(6L, startNode.getFinishedAnalysisTime());
+
+        final RegionNode loopHeader = preorder.get(1);
+        assertEquals(6L, loopHeader.getStartAnalysisTime());
+        assertEquals(9L, loopHeader.getFinishedAnalysisTime());
+
+        final RegionNode loopBody = preorder.get(2);
+        assertEquals(9L, loopBody.getStartAnalysisTime());
+        assertEquals(17L, loopBody.getFinishedAnalysisTime());
+
+        final RegionNode finalNode = preorder.get(3);
+        assertEquals(17L, finalNode.getStartAnalysisTime());
+        assertEquals(21L, finalNode.getFinishedAnalysisTime());
+
+        final BlockState startLiveIn = startNode.liveIn();
+        assertTrue(startLiveIn.getPorts().isEmpty());
+
+        final BlockState startLiveOut = startNode.liveOut();
+        assertEquals(2, startLiveOut.getPorts().size());
+        assertNotNull(startLiveOut.getPorts().get(new LocalVariableDescription(3, TypeRef.Native.INT)));
+        assertNotNull(startLiveOut.getPorts().get(new LocalVariableDescription(4, TypeRef.Native.INT)));
+
+        final BlockState loopHeaderLiveIn = loopHeader.liveIn();
+        assertEquals(2, loopHeaderLiveIn.getPorts().size());
+        assertNotNull(loopHeaderLiveIn.getPorts().get(new LocalVariableDescription(3, TypeRef.Native.INT)));
+        assertNotNull(loopHeaderLiveIn.getPorts().get(new LocalVariableDescription(4, TypeRef.Native.INT)));
+
+        final BlockState loopHeaderLiveOut = loopHeader.liveOut();
+        assertEquals(2, loopHeaderLiveOut.getPorts().size());
+        assertNotNull(loopHeaderLiveOut.getPorts().get(new LocalVariableDescription(3, TypeRef.Native.INT)));
+        assertNotNull(loopHeaderLiveOut.getPorts().get(new LocalVariableDescription(4, TypeRef.Native.INT)));
+
+        final BlockState loopBodyLiveIn = loopBody.liveIn();
+        assertEquals(2, loopBodyLiveIn.getPorts().size());
+        assertNotNull(loopBodyLiveIn.getPorts().get(new LocalVariableDescription(3, TypeRef.Native.INT)));
+        assertNotNull(loopBodyLiveIn.getPorts().get(new LocalVariableDescription(4, TypeRef.Native.INT)));
+
+        final BlockState loopBodyLiveOut = loopBody.liveOut();
+        assertEquals(2, loopBodyLiveOut.getPorts().size());
+        assertNotNull(loopBodyLiveOut.getPorts().get(new LocalVariableDescription(3, TypeRef.Native.INT)));
+        assertNotNull(loopBodyLiveOut.getPorts().get(new LocalVariableDescription(4, TypeRef.Native.INT)));
+
+        final BlockState finalLiveIn = finalNode.liveIn();
+        assertEquals(1, finalLiveIn.getPorts().size());
+        assertNotNull(finalLiveIn.getPorts().get(new LocalVariableDescription(3, TypeRef.Native.INT)));
+
+        final BlockState finalLiveOut = finalNode.liveOut();
+        assertTrue(finalLiveOut.getPorts().isEmpty());
+    }
 }

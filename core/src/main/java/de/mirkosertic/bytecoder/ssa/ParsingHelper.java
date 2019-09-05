@@ -116,6 +116,7 @@ public class ParsingHelper {
         if (theStack.getPos() < stack.size()) {
             final Value theValue = stack.get(stack.size() - theStack.getPos() - 1);
             block.addToLiveOut(theValue, theStack);
+            return theValue;
         }
         throw new IllegalStateException("Invalid stack index : " + theStack.getPos() + " with total size of " + stack.size());
     }
