@@ -49,15 +49,13 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                 if (theBefore instanceof VariableAssignmentExpression) {
                     final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
                     final Variable theVariable = theAssignment.getVariable();
-                    if (!theVariable.isLocal()) {
-                        final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter())
-                                .collect(Collectors.toList());
-                        if ((theDataEdges.size() == 1) && (theFirst == theDataEdges.get(0).sourceNode())) {
-                            aExpressionList.remove(theAssignment);
-                            theBinary.replaceIncomingDataEdge(theVariable, theAssignment.getValue());
-                            aGraph.getProgram().deleteVariable(theVariable);
-                            return aExpression;
-                        }
+                    final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter())
+                            .collect(Collectors.toList());
+                    if ((theDataEdges.size() == 1) && (theFirst == theDataEdges.get(0).sourceNode())) {
+                        aExpressionList.remove(theAssignment);
+                        theBinary.replaceIncomingDataEdge(theVariable, theAssignment.getValue());
+                        aGraph.getProgram().deleteVariable(theVariable);
+                        return aExpression;
                     }
                 }
             }

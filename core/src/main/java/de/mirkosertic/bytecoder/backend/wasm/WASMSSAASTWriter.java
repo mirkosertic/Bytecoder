@@ -102,7 +102,7 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
-import de.mirkosertic.bytecoder.ssa.PHIExpression;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -627,7 +627,7 @@ public class WASMSSAASTWriter {
         final Variable theVariable = aExpression.getVariable();
         final Value theNewValue = aExpression.getValue();
 
-        if (theNewValue instanceof PHIExpression) {
+        if (theNewValue instanceof PHIValue) {
             return;
         }
 

@@ -375,7 +375,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 throw new IllegalStateException("No value for " + theImporting.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theGotoNode.getStartAddress().getAddress());
                             }
                             if (theReceivingValue != theExportingValue) {
-                                final VariableAssignmentExpression theInit = new VariableAssignmentExpression(theProgram, null, (Variable) theReceivingValue, theExportingValue);
+                                final Variable theReceivingValueVar = (Variable) theReceivingValue;
+                                theReceivingValueVar.initializeWith(theExportingValue, theNode.getFinishedAnalysisTime());
+                                final VariableAssignmentExpression theInit = new VariableAssignmentExpression(theProgram, null, theReceivingValueVar, theExportingValue);
                                 aPoint.expressionList.addBefore(theInit, theGoto);
                             }
                         }

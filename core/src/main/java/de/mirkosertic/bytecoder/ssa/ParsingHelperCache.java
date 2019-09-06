@@ -114,9 +114,15 @@ public class ParsingHelperCache {
                     throw new IllegalStateException("Stack imports not allowed for EXCEPTION HANDLER or FINALLY blocks");
                 }
                 final LocalVariableDescription theLocal = (LocalVariableDescription) aDescription;
-                final Variable theVariable = aBlock.findLocalVariable(theLocal.getIndex(), theLocal.getTypeRef());
-                aBlock.addToLiveIn(theVariable, theLocal);
-                return theVariable;
+                final Set<RegionNode> thePredecessors = aBlock.getPredecessorsIgnoringBackEdges();
+                if (thePredecessors.size() == 1) {
+                    final RegionNode theSinglePred = thePredecessors.iterator().next();
+                    final ParsingHelper theHelper = finalStatesForNodes.get(theSinglePred);
+                    final Value theValue = theHelper.requestValue(theLocal);
+                    aBlock.addToLiveIn(theValue, theLocal);
+                    return theValue;
+                }
+                return newPHIFor(thePredecessors, theLocal, aBlock);
             };
 
             return new ParsingHelper(program, localVariableTableAttributeInfo, aBlock, theProvider);

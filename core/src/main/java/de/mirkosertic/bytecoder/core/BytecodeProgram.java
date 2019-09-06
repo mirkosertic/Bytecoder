@@ -162,6 +162,10 @@ public class BytecodeProgram {
             } else if (theInstruction instanceof BytecodeInstructionATHROW) {
                 // thowing an exception, start new basic block
                 theCurrentBlock = null;
+            } else if (theInstruction instanceof BytecodeInstructionInvoke) {
+                // Invocations might throw an exception
+                // to get data flow analysis right, we start a new block after the invocation
+                theCurrentBlock = null;
             }
         }
 

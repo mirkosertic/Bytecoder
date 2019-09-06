@@ -15,12 +15,14 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import java.util.Map;
 
-public class PHIExpression extends Expression {
+public class PHIValue extends Value {
 
-    public PHIExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
-        super(aProgram, address);
+    private final Map<RegionNode, Value> mappings;
+
+    public PHIValue(final Map<RegionNode, Value> aMappings) {
+        mappings = aMappings;
     }
 
     @Override

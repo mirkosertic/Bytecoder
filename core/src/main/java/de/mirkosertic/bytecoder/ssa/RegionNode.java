@@ -157,30 +157,11 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
     }
 
     public Variable setLocalVariable(final BytecodeOpcodeAddress aAddress, final int aIndex, final TypeRef aType, final Value aValue) {
-        final String theName = "local_" + aIndex + "_" + aType.resolve().name();
-        for (final Variable v : program.getVariables()) {
-            if (v.getName().equals(theName)) {
-                v.usedAt(program.getAnalysisTime());
-                expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
-                v.receivesDataFrom(aValue);
-                return v;
-            }
-        }
-        final Variable v = program.createVariable(theName, aValue.resolveType());
+        final Variable v = program.createVariable(aValue.resolveType());
         v.usedAt(program.getAnalysisTime());
         expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
         v.initializeWith(aValue, program.getAnalysisTime());
         return v;
-    }
-
-    public Variable findLocalVariable(final int index, final TypeRef aType) {
-        final String theName = "local_" + index + "_" + aType.resolve().name();
-        final List<Variable> theKnown = program.getVariables().stream().filter(t -> t.getName().equals(theName)).collect(Collectors.toList());
-        if (theKnown.size() != 1) {
-            // At this point we assume there is such a variable and we use it
-            return program.createVariable(theName, aType);
-        }
-        return theKnown.get(0);
     }
 
     public Variable newVariable(final TypeRef aType) {

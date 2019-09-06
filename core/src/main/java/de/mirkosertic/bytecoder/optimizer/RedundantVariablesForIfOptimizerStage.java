@@ -47,44 +47,40 @@ public class RedundantVariablesForIfOptimizerStage implements OptimizerStage {
 
                     final Variable theLeftVar = (Variable) theLeft;
                     final Variable theRightVar = (Variable) theRight;
-                    if (!theLeftVar.isLocal() && !theRightVar.isLocal()) {
-                        final Expression theRightBefore = aExpressionList.predecessorOf(aExpression);
-                        final Expression theLeftBefore = aExpressionList.predecessorOf(theRightBefore);
-                        if (theLeftBefore instanceof VariableAssignmentExpression
-                                && theRightBefore instanceof VariableAssignmentExpression) {
-                            final VariableAssignmentExpression theLeftAssignment = (VariableAssignmentExpression )theLeftBefore;
-                            final VariableAssignmentExpression theRightAssignment = (VariableAssignmentExpression) theRightBefore;
+                    final Expression theRightBefore = aExpressionList.predecessorOf(aExpression);
+                    final Expression theLeftBefore = aExpressionList.predecessorOf(theRightBefore);
+                    if (theLeftBefore instanceof VariableAssignmentExpression
+                            && theRightBefore instanceof VariableAssignmentExpression) {
+                        final VariableAssignmentExpression theLeftAssignment = (VariableAssignmentExpression )theLeftBefore;
+                        final VariableAssignmentExpression theRightAssignment = (VariableAssignmentExpression) theRightBefore;
 
-                            final List<Edge> theLeftEdges = theLeftAssignment.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-                            final List<Edge> theRightEdges = theRightAssignment.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                        final List<Edge> theLeftEdges = theLeftAssignment.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                        final List<Edge> theRightEdges = theRightAssignment.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
 
-                            if (theLeftEdges.size() == 1 && theRightEdges.size() == 1 && theLeftVar == theLeftAssignment.getVariable() && theRightVar == theRightAssignment.getVariable()) {
-                                aExpression.replaceIncomingDataEdgeRecursive(theLeftVar, theLeftAssignment.getValue());
-                                aExpression.replaceIncomingDataEdgeRecursive(theRightVar, theRightAssignment.getValue());
+                        if (theLeftEdges.size() == 1 && theRightEdges.size() == 1 && theLeftVar == theLeftAssignment.getVariable() && theRightVar == theRightAssignment.getVariable()) {
+                            aExpression.replaceIncomingDataEdgeRecursive(theLeftVar, theLeftAssignment.getValue());
+                            aExpression.replaceIncomingDataEdgeRecursive(theRightVar, theRightAssignment.getValue());
 
-                                aExpressionList.remove(theLeftAssignment);
-                                aExpressionList.remove(theRightAssignment);
-                                aGraph.getProgram().deleteVariable(theLeftAssignment.getVariable());
-                                aGraph.getProgram().deleteVariable(theRightAssignment.getVariable());
-                            }
+                            aExpressionList.remove(theLeftAssignment);
+                            aExpressionList.remove(theRightAssignment);
+                            aGraph.getProgram().deleteVariable(theLeftAssignment.getVariable());
+                            aGraph.getProgram().deleteVariable(theRightAssignment.getVariable());
                         }
                     }
 
                 } else if (theLeft instanceof Variable) {
                     final Variable theLeftVar = (Variable) theLeft;
-                    if (!theLeftVar.isLocal()) {
-                        final Expression theLeftBefore = aExpressionList.predecessorOf(aExpression);
-                        if (theLeftBefore instanceof VariableAssignmentExpression) {
-                            final VariableAssignmentExpression theLeftAssignment = (VariableAssignmentExpression )theLeftBefore;
+                    final Expression theLeftBefore = aExpressionList.predecessorOf(aExpression);
+                    if (theLeftBefore instanceof VariableAssignmentExpression) {
+                        final VariableAssignmentExpression theLeftAssignment = (VariableAssignmentExpression )theLeftBefore;
 
-                            final List<Edge> theLeftEdges = theLeftAssignment.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
+                        final List<Edge> theLeftEdges = theLeftAssignment.getVariable().outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
 
-                            if (theLeftEdges.size() == 1 && theLeftVar == theLeftAssignment.getVariable()) {
-                                aExpression.replaceIncomingDataEdgeRecursive(theLeftVar, theLeftAssignment.getValue());
+                        if (theLeftEdges.size() == 1 && theLeftVar == theLeftAssignment.getVariable()) {
+                            aExpression.replaceIncomingDataEdgeRecursive(theLeftVar, theLeftAssignment.getValue());
 
-                                aExpressionList.remove(theLeftAssignment);
-                                aGraph.getProgram().deleteVariable(theLeftAssignment.getVariable());
-                            }
+                            aExpressionList.remove(theLeftAssignment);
+                            aGraph.getProgram().deleteVariable(theLeftAssignment.getVariable());
                         }
                     }
                 }

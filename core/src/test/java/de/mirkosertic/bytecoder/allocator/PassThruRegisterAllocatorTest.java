@@ -71,9 +71,9 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals("var2", vars.get(2).getName());
         assertEquals(5, vars.get(2).getDefinedAt());
-        assertEquals(6, vars.get(2).getLastUsedAt());
+        assertEquals(5, vars.get(2).getLastUsedAt());
 
-        assertEquals("local_2_INT", vars.get(3).getName());
+        assertEquals("var3", vars.get(3).getName());
         assertEquals(5, vars.get(3).getDefinedAt());
         assertEquals(6, vars.get(3).getLastUsedAt());
 

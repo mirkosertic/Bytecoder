@@ -65,12 +65,16 @@ public class Variable extends Value {
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
 
         usedAt(analysisTime);
+
+        markUsageIn(aValue, analysisTime);
+    }
+
+    private void markUsageIn(final Value aValue, final long analysisTime) {
         if (aValue instanceof Variable) {
             ((Variable) aValue).usedAt(analysisTime);
+        } else {
             for (final Value theValue : aValue.incomingDataFlows()) {
-                if (theValue instanceof Variable) {
-                    ((Variable) theValue).usedAt(analysisTime);
-                }
+                markUsageIn(theValue, analysisTime);
             }
         }
     }
@@ -91,18 +95,6 @@ public class Variable extends Value {
 
     public boolean isSynthetic() {
         return synthetic;
-    }
-
-    public boolean isLocal() {
-        return name.startsWith("local_");
-    }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        if (isLocal()) {
-            return true;
-        }
-        return super.isTrulyFunctional();
     }
 
     public long getDefinedAt() {
