@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.allocator;
 
+import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -24,11 +25,13 @@ import java.util.function.Function;
 
 public class PassThruRegisterAllocator extends AbstractAllocator {
 
-    public PassThruRegisterAllocator(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
+    public PassThruRegisterAllocator(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
         super(aTypeConverter);
 
-        for (int i=0;i<aVariables.size(); i++) {
-            final Variable v = aVariables.get(i);
+        final List<Variable> theVariables = computeSSAReadyVariablesFor(aProgram);
+
+        for (int i=0;i<theVariables.size(); i++) {
+            final Variable v = theVariables.get(i);
             if (!v.isSynthetic()) {
                 final TypeRef type = typeConverter.apply(v.resolveType());
 

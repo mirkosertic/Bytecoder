@@ -35,12 +35,13 @@ public class GraphDFSOrder<T extends Node<? extends Node, ? extends EdgeType>> {
         final Stack<T> currentPath = new Stack<>();
         currentPath.add(startNode);
         final Set<T> marked = new HashSet<>();
+        marked.add(startNode);
         while(!currentPath.isEmpty()) {
             final T currentNode= currentPath.peek();
             final List<T> forwardNodes = currentNode.outgoingEdges()
-                    .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) edge -> edgeFilter.test((Edge<EdgeType, T>) edge))
-                    .map(t -> (T) t.targetNode()).collect(Collectors.toList());
-            forwardNodes.sort(nodeComparator);
+                    .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) edge -> edgeFilter
+                            .test((Edge<EdgeType, T>) edge))
+                    .map(t -> (T) t.targetNode()).sorted(nodeComparator).collect(Collectors.toList());
             if (!forwardNodes.isEmpty()) {
                 boolean somethingFound = false;
                 for (final T node : forwardNodes) {

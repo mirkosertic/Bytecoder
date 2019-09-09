@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -99,6 +100,7 @@ public abstract class Value extends Node<Node, EdgeType> {
                 aEdge.newSourceIs(aNewValue);
             }
         });
+        aNewValue.addEdgeTo(DataFlowEdgeType.instance, this);
         resetCaches();
     }
 
@@ -118,4 +120,20 @@ public abstract class Value extends Node<Node, EdgeType> {
     }
 
     public abstract TypeRef resolveType();
+
+    public static TypeRef widestTypeOf(final Collection<Value> aValue) {
+        if (aValue.size() == 1) {
+            return aValue.iterator().next().resolveType();
+        }
+        TypeRef.Native theCurrent = null;
+        for (final Value theValue : aValue) {
+            final TypeRef.Native theValueType = theValue.resolveType().resolve();
+            if (theCurrent == null) {
+                theCurrent = theValueType;
+            } else {
+                theCurrent = theCurrent.eventuallyPromoteTo(theValueType);
+            }
+        }
+        return theCurrent;
+    }
 }

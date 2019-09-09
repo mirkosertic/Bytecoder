@@ -86,6 +86,7 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -106,7 +107,6 @@ import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
 import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.UnknownExpression;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -223,8 +223,6 @@ public class JSSSAWriter {
             print((MethodParameterValue) aValue);
         } else if (aValue instanceof CurrentExceptionExpression) {
             print((CurrentExceptionExpression) aValue);
-        } else if (aValue instanceof UnknownExpression) {
-            print((UnknownExpression) aValue);
         } else if (aValue instanceof FloorExpression) {
             print((FloorExpression) aValue);
         } else if (aValue instanceof MethodRefExpression) {
@@ -261,8 +259,20 @@ public class JSSSAWriter {
             print((EnumConstantsExpression) aValue);
         } else if (aValue instanceof NewObjectAndConstructExpression) {
             print((NewObjectAndConstructExpression) aValue);
+        } else if (aValue instanceof PHIValue) {
+            print((PHIValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
+        }
+    }
+
+    private void print(final PHIValue p) {
+        final Variable v = allocator.variableAssignmentFor(p);
+        if (v.isSynthetic()) {
+            printVariableName(v);
+        } else {
+            final Register r = allocator.registerAssignmentFor(v);
+            writer.text(toRegisterName(r));
         }
     }
 
@@ -341,7 +351,7 @@ public class JSSSAWriter {
         final Program theProgram = aValue.getProgram();
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram.getVariables(), t -> t);
+        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, t -> t);
         final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator);
 
         theNested.printRegisterDeclarations();
@@ -435,10 +445,6 @@ public class JSSSAWriter {
         writer.text("Math.ceil(");
         print(aValue.incomingDataFlows().get(0));
         writer.text(")");
-    }
-
-    private void print(final UnknownExpression aValue) {
-        writer.text("undefined");
     }
 
     private void print(final CurrentExceptionExpression aValue) {
@@ -1019,7 +1025,7 @@ public class JSSSAWriter {
             }
         }
 
-        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
+        if (!(theClasses.stream().noneMatch(BytecodeLinkedClass::isOpaqueType))) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1355,6 +1361,10 @@ public class JSSSAWriter {
             withDeeperIndent().writeExpressions(theE.getElsePart());
 
             startLine().text("}").newLine();
+        } else if (aExpression instanceof NewObjectAndConstructExpression) {
+            final JSSSAWriter theDeeper = withDeeperIndent();
+            theDeeper.print((NewObjectAndConstructExpression) aExpression);
+            theDeeper.writer.text(";");
         } else {
             throw new IllegalStateException("Not implemented : " + aExpression);
         }

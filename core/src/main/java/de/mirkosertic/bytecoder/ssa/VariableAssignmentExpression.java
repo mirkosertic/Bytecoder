@@ -46,6 +46,8 @@ public class VariableAssignmentExpression extends Expression {
     public void replaceIncomingDataEdge(final Value aOldValue, final Value aNewValue) {
         if (value == aOldValue) {
             value = aNewValue;
+        } else {
+            value.replaceIncomingDataEdge(aOldValue, aNewValue);
         }
     }
 

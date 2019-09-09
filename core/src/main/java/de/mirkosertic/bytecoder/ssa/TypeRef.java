@@ -42,13 +42,7 @@ public interface TypeRef {
     boolean isObject();
 
     enum Native implements TypeRef {
-        UNKNOWN {
-            @Override
-            public Native eventuallyPromoteTo(final Native aOtherType) {
-                throw new IllegalStateException();
-            }
-        }
-        ,BYTE {
+        BYTE {
             @Override
             public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {

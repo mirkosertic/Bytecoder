@@ -40,8 +40,9 @@ public class DropUnusedReturnValuesOptimizerStage implements OptimizerStage {
             final Variable theVariable = theAssignment.getVariable();
             final Value theValue = theAssignment.getValue();
             if (theValue instanceof InvocationExpression) {
-                final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
-                if (theDataEdges.isEmpty()) {
+                // This only works because a new basic block is created after an invocation
+                // thus we can use the liveness information for efficient usage calculation
+                if (!aCurrentNode.liveOut().contains(theVariable)) {
                     aExpressionList.replace(aExpression, (InvocationExpression) theValue);
                     aGraph.getProgram().deleteVariable(theVariable);
                     return (InvocationExpression) theValue;

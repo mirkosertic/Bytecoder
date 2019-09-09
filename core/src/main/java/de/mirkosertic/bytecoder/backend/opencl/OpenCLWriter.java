@@ -51,6 +51,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -480,6 +481,14 @@ public class OpenCLWriter extends IndentSSAWriter {
             printDirectInvokeMethodExpression((DirectInvokeMethodExpression) aValue);
         } else if (aValue instanceof FloorExpression) {
             printFloorExpression((FloorExpression) aValue);
+        } else if (aValue instanceof PHIValue) {
+            final Variable v = allocator.variableAssignmentFor((PHIValue) aValue);
+            if (v.isSynthetic()) {
+                print(v.getName());
+            } else {
+                final Register r = allocator.registerAssignmentFor(v);
+                print(registerName(r));
+            }
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }

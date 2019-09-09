@@ -82,7 +82,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
         // Perform register allocation
-        final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), t -> t);
+        final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram, t -> t);
 
 
         // Ok, at this point we have to map kernel arguments
@@ -114,7 +114,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 aOptions.getOptimizer().optimize(theSSAProgram1.getControlFlowGraph(), aLinkerContext);
 
                 // Perform register allocation
-                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1.getVariables(), t -> t);
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1, t -> t);
 
                 // Write the method to the output
                 // Try to reloop it!

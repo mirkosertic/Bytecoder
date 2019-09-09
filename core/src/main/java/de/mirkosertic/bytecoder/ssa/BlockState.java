@@ -33,4 +33,8 @@ public class BlockState {
     public void assignToPort(final VariableDescription aDescription, final Value aValue) {
         ports.put(aDescription, aValue);
     }
+
+    public boolean contains(final Value value) {
+        return ports.values().contains(value);
+    }
 }

@@ -619,7 +619,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                 // Perform register allocation
-                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), typeRef -> {
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, typeRef -> {
                     switch (typeRef.resolve()) {
                         case INT:
                         case LONG:
@@ -960,7 +960,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             }
 
             // Perform register allocation
-            final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), typeRef -> {
+            final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, typeRef -> {
                 switch (typeRef.resolve()) {
                     case INT:
                     case LONG:

@@ -20,7 +20,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -89,22 +88,6 @@ public class ParsingHelperCache {
         return finalStatesForNodes.get(aGraphNode);
     }
 
-    private TypeRef widestTypeOf(final Collection<Value> aValue) {
-        if (aValue.size() == 1) {
-            return aValue.iterator().next().resolveType();
-        }
-        TypeRef.Native theCurrent = null;
-        for (final Value theValue : aValue) {
-            final TypeRef.Native theValueType = theValue.resolveType().resolve();
-            if (theCurrent == null) {
-                theCurrent = theValueType;
-            } else {
-                theCurrent = theCurrent.eventuallyPromoteTo(theValueType);
-            }
-        }
-        return theCurrent;
-    }
-
     public ParsingHelper resolveInitialPHIStateForNode(final RegionNode aBlock) {
 
         if (aBlock.getType() != RegionNode.BlockType.NORMAL) {
@@ -115,7 +98,7 @@ public class ParsingHelperCache {
                 }
                 final LocalVariableDescription theLocal = (LocalVariableDescription) aDescription;
                 final Set<RegionNode> thePredecessors = aBlock.getPredecessorsIgnoringBackEdges();
-                if (thePredecessors.size() == 1) {
+                if (thePredecessors.size() == 1 && !aBlock.hasIncomingBackEdges()) {
                     final RegionNode theSinglePred = thePredecessors.iterator().next();
                     final ParsingHelper theHelper = finalStatesForNodes.get(theSinglePred);
                     final Value theValue = theHelper.requestValue(theLocal);
@@ -161,19 +144,19 @@ public class ParsingHelperCache {
         // Now we import the stack and check if we need to insert phi values
         for (final Map.Entry<StackVariableDescription, Set<Value>> theEntry : theStackToImport.entrySet()) {
             final Set<Value> theValues = theEntry.getValue();
-            if (theValues.size() == 1) {
+            if (theValues.size() == 1 && !aBlock.hasIncomingBackEdges()) {
                 // Only one value, we do not need to insert a phi value
                 final Value theSingleValue = theValues.iterator().next();
                 theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, theSingleValue);
                 aBlock.addToLiveIn(theSingleValue, theEntry.getKey());
             } else {
                 // We have a PHI value here
-                final TypeRef theType = widestTypeOf(theValues);
-                final Variable thePHI = aBlock.newPhiLiveIn(theType, theEntry.getKey());
-                for (final Value theValue : theValues) {
-                    thePHI.initializeWith(theValue, -1);
-                }
+                final TypeRef theType = Value.widestTypeOf(theValues);
+
+                final PHIValue thePHI = new PHIValue(theEntry.getKey(), theType);
+
                 theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, thePHI);
+                aBlock.addToLiveIn(thePHI, theEntry.getKey());
             }
         }
         return theHelper;
@@ -192,16 +175,15 @@ public class ParsingHelperCache {
             throw new IllegalStateException(
                     "No values for " + aDescription + " in block " + aImportingBlock.getStartAddress().getAddress());
         }
-        if (theValues.size() == 1) {
+        if (theValues.size() == 1 && !aImportingBlock.hasIncomingBackEdges()) {
             final Value theValue = theValues.iterator().next();
             aImportingBlock.addToLiveIn(theValue, aDescription);
             return theValue;
         }
-        final TypeRef theType = widestTypeOf(theValues);
-        final Variable thePHI = aImportingBlock.newPhiLiveIn(theType, aDescription);
-        for (final Value theValue : theValues) {
-            thePHI.initializeWith(theValue, -1);
-        }
+        final TypeRef theType = Value.widestTypeOf(theValues);
+        final PHIValue thePHI = new PHIValue(aDescription, theType);
+        aImportingBlock.addToLiveIn(thePHI, aDescription);
+
         return thePHI;
     }
 

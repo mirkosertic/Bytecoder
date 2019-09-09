@@ -98,7 +98,8 @@ public class NaiveProgramGeneratorTest {
         theBytecodeProgram.addInstruction(new BytecodeInstructionGenericRETURN(new BytecodeOpcodeAddress(102), BytecodePrimitiveTypeRef.INT));
 
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        assertEquals(6, theProgram.getVariables().size());
+
+        assertEquals(5, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(4, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();

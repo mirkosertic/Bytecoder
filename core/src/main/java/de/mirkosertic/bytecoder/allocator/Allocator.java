@@ -15,26 +15,25 @@
  */
 package de.mirkosertic.bytecoder.allocator;
 
+import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.Variable;
 
-import java.util.List;
 import java.util.function.Function;
 
 public enum Allocator {
     linear {
         @Override
-        public AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
-            return new LinearRegisterAllocator(aVariables, aTypeConverter);
+        public AbstractAllocator allocate(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
+            return new LinearRegisterAllocator(aProgram, aTypeConverter);
         }
     },
 
     passthru {
         @Override
-        public AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
-            return new PassThruRegisterAllocator(aVariables, aTypeConverter);
+        public AbstractAllocator allocate(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
+            return new PassThruRegisterAllocator(aProgram, aTypeConverter);
         }
     }
     ;
-    public abstract AbstractAllocator allocate(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter);
+    public abstract AbstractAllocator allocate(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter);
 }

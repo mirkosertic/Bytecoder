@@ -35,7 +35,7 @@ public class ParsingHelper {
     private final Program program;
     private final RegionNode block;
     private final Stack<Value> stack;
-    private final Map<Integer, Variable> localVariables;
+    private final Map<Integer, Value> localVariables;
     private final ValueProvider valueProvider;
     private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
@@ -91,17 +91,19 @@ public class ParsingHelper {
     }
 
     public Value getLocalVariable(final int aIndex, final TypeRef aExpectedType) {
-        Variable theValue = localVariables.get(aIndex);
+        Value theValue = localVariables.get(aIndex);
         if (theValue == null) {
             final VariableDescription theDesc = new LocalVariableDescription(aIndex, aExpectedType);
-            theValue = (Variable) valueProvider.resolveValueFor(theDesc);
+            theValue = valueProvider.resolveValueFor(theDesc);
             if (theValue == null) {
                 throw new IllegalStateException("Value must not be null from provider for " + theDesc);
             }
             block.addToLiveIn(theValue, theDesc);
             localVariables.put(aIndex, theValue);
         }
-        theValue.usedAt(program.getAnalysisTime());
+        if (theValue instanceof Variable) {
+            ((Variable) theValue).usedAt(program.getAnalysisTime());
+        }
         return theValue;
     }
 

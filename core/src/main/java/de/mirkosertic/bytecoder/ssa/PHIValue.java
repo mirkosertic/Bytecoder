@@ -15,18 +15,18 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.Map;
-
 public class PHIValue extends Value {
 
-    private final Map<RegionNode, Value> mappings;
+    private final VariableDescription description;
+    private final TypeRef typeRef;
 
-    public PHIValue(final Map<RegionNode, Value> aMappings) {
-        mappings = aMappings;
+    public PHIValue(final VariableDescription description, final TypeRef typeRef) {
+        this.description = description;
+        this.typeRef = typeRef;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
+        return typeRef;
     }
 }

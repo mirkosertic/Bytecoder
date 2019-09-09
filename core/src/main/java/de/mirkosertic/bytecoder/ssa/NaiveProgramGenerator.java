@@ -134,7 +134,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public final class NaiveProgramGenerator implements ProgramGenerator {
@@ -319,69 +318,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
             }
 
-            // Check that all PHI-propagations for back-edges are set
+            // Check that required values for PHI functions are
+            // correctly propagated and are part of the liveout-sets for the predecessor nodes
             for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
-                final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
-                for (final Edge theEdge : theNode.outgoingEdges().collect(Collectors.toList())) {
-                    if (theEdge.edgeType() == ControlFlowEdgeType.back) {
-                        final RegionNode theReceiving = (RegionNode) theEdge.targetNode();
-                        final BlockState theReceivingState = theReceiving.liveIn();
-                        for (final Map.Entry<VariableDescription, Value> theEntry : theReceivingState.getPorts().entrySet()) {
-                            final Variable theReceivingTarget = (Variable) theEntry.getValue();
-                            final Value theExportingValue = theHelper.requestValue(theEntry.getKey());
-                            if (theExportingValue == null) {
-                                throw new IllegalStateException("No value for " + theEntry.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theReceiving.getStartAddress().getAddress());
-                            }
-                            theReceivingTarget.initializeWith(theExportingValue, -1);
-                        }
-                    }
-                }
-            }
-
-            // Make sure that all jump conditions are met
-            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
-                forEachExpressionOf(theNode, aPoint -> {
-                    if (aPoint.expression instanceof GotoExpression) {
-                        final GotoExpression theGoto = (GotoExpression) aPoint.expression;
-                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
-                        final BlockState theImportingState = theGotoNode.liveIn();
-                        for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
-                            final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
-                            final Value theExportingValue = theHelper.requestValue(theImporting.getKey());
-                            if (theExportingValue == null) {
-                                throw new IllegalStateException("No value for " + theImporting.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theGotoNode.getStartAddress().getAddress());
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Insert PHI value resolving at required places
-            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
-                forEachExpressionOf(theNode, aPoint -> {
-                    if (aPoint.expression instanceof GotoExpression) {
-                        final GotoExpression theGoto = (GotoExpression) aPoint.expression;
-                        final RegionNode theGotoNode = theProgram.getControlFlowGraph().nodeStartingAt(theGoto.jumpTarget());
-                        final BlockState theImportingState = theGotoNode.liveIn();
-                        final StringBuilder theComments = new StringBuilder();
-                        for (final Map.Entry<VariableDescription, Value> theImporting : theImportingState.getPorts().entrySet()) {
-                            theComments.append(theImporting.getKey()).append(" is of type ")
-                                    .append(theImporting.getValue().resolveType().resolve()).append(" with values ")
-                                    .append(theImporting.getValue().incomingDataFlows());
-                            final Value theReceivingValue = theImporting.getValue();
-                            final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(theNode);
-                            final Value theExportingValue = theHelper.requestValue(theImporting.getKey());
-                            if (theExportingValue == null) {
-                                throw new IllegalStateException("No value for " + theImporting.getKey() + " to jump from " + theNode.getStartAddress().getAddress() + " to " + theGotoNode.getStartAddress().getAddress());
-                            }
-                            if (theReceivingValue != theExportingValue) {
-                                final Variable theReceivingValueVar = (Variable) theReceivingValue;
-                                theReceivingValueVar.initializeWith(theExportingValue, theNode.getFinishedAnalysisTime());
-                                final VariableAssignmentExpression theInit = new VariableAssignmentExpression(theProgram, null, theReceivingValueVar, theExportingValue);
-                                aPoint.expressionList.addBefore(theInit, theGoto);
-                            }
-                        }
-                        theGoto.withComment(theComments.toString());
+                final BlockState theLiveIn = theNode.liveIn();
+                theLiveIn.getPorts().forEach((d, value) -> {
+                    for (final RegionNode thePred : theNode.getPredecessors()) {
+                        final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(thePred);
+                        theHelper.requestValue(d);
                     }
                 });
             }
@@ -391,33 +335,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         }
 
         return theProgram;
-    }
-
-    static class TraversalPoint {
-        public final ExpressionList expressionList;
-        public final Expression expression;
-
-        public TraversalPoint(final ExpressionList aExpressionList, final Expression aExpression) {
-            expressionList = aExpressionList;
-            expression = aExpression;
-        }
-    }
-
-    public void forEachExpressionOf(final RegionNode aNode, final Consumer<TraversalPoint> aConsumer)  {
-        forEachExpressionOf(aNode.getExpressions(), aConsumer);
-    }
-
-    public void forEachExpressionOf(final ExpressionList aList, final Consumer<TraversalPoint> aConsumer) {
-        for (final Expression theExpression : aList.toList()) {
-            if (theExpression instanceof ExpressionListContainer) {
-                final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
-                for (final ExpressionList theList : theContainer.getExpressionLists()) {
-                    forEachExpressionOf(theList, aConsumer);
-                }
-            }
-
-            aConsumer.accept(new TraversalPoint(aList, theExpression));
-        }
     }
 
     private void initializeBlock(
@@ -441,9 +358,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             }
             theParsingState.push(new CurrentExceptionExpression(aProgram, null));
         } else if (aCurrentBlock == aProgram.getControlFlowGraph().startNode()) {
-            // Programm is at start address, so we need the initial state
+            // Program is at start address, so we need the initial state
             theParsingState = aCache.resolveInitialProgramFlowState();
-        } else if (thePredecessors.size() == 1) {
+        } else if (thePredecessors.size() == 1 && !aCurrentBlock.hasIncomingBackEdges()) {
             // Only one predecessor
             final RegionNode thePredecessor = thePredecessors.iterator().next();
             final ParsingHelper theResolved = aCache.resolveFinalStateForNode(thePredecessor);

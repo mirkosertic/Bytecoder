@@ -81,7 +81,7 @@ public class LinearRegisterAllocatorTest {
         assertEquals(6, vars.get(4).getDefinedAt());
         assertEquals(7, vars.get(4).getLastUsedAt());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p.getVariables(), t -> t);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
         assertEquals(3L, theAllocator.registersOfType(TypeRef.Native.INT).size());
         assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());

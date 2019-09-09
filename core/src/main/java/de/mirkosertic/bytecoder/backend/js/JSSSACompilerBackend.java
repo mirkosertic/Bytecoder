@@ -627,14 +627,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 if (aOptions.isDebugOutput()) {
                     theWriter.tab(2).text("/**").newLine();
-                    theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
+                    //theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
                     theWriter.tab(2).text("**/").newLine();
                 }
 
                 theWriter.flush();
 
                 // Perform register allocation
-                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram.getVariables(), t -> t);
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, t -> t);
 
                 final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator);
                 theVariablesWriter.printRegisterDeclarations();

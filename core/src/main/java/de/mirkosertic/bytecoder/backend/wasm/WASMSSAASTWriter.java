@@ -648,8 +648,6 @@ public class WASMSSAASTWriter {
                     flow.f32.store(theOffset, getLocal(sp, aExpression), teeLocal(theLocal, toValue(theNewValue), aExpression), aExpression);
                     break;
                 }
-                case UNKNOWN:
-                    throw new IllegalStateException();
                 default: {
                     flow.i32.store(theOffset, getLocal(sp, aExpression), teeLocal(theLocal, toValue(theNewValue), aExpression), aExpression);
                     break;
@@ -663,6 +661,9 @@ public class WASMSSAASTWriter {
     private WASMValue toValue(final Value aValue) {
         if (aValue instanceof Variable) {
             return variableName((Variable) aValue);
+        }
+        if (aValue instanceof PHIValue) {
+            return phiValue((PHIValue) aValue);
         }
         if (aValue instanceof BinaryExpression) {
             return binaryValue((BinaryExpression) aValue);
@@ -1498,6 +1499,11 @@ public class WASMSSAASTWriter {
         final Register r = allocator.registerAssignmentFor(aVariable);
         final Local local = function.localByLabel(registerName(r));
         return getLocal(local, null);
+    }
+
+    private WASMValue phiValue(final PHIValue p) {
+        final Variable v = allocator.variableAssignmentFor(p);
+        return variableName(v);
     }
 
     public void stackEnter() {

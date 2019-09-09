@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.allocator;
 
+import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
@@ -29,15 +30,17 @@ import java.util.function.Function;
 
 public class LinearRegisterAllocator extends AbstractAllocator {
 
-    public LinearRegisterAllocator(final List<Variable> aVariables, final Function<TypeRef, TypeRef> aTypeConverter) {
+    public LinearRegisterAllocator(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
         super(aTypeConverter);
+
+        final List<Variable> theVariables = computeSSAReadyVariablesFor(aProgram);
 
         final Map<Long, List<Variable>> theDefinitionPointsToDefition = new HashMap<>();
         final Set<Long> foundDefinitionPoints = new HashSet<>();
 
         // Step one : We sort the variables into buckets
         // and try to establish a timeline for the linear scan
-        for (final Variable v : aVariables) {
+        for (final Variable v : theVariables) {
             if (!v.isSynthetic()) {
                 final long theDefinition = v.getDefinedAt();
                 foundDefinitionPoints.add(theDefinition);

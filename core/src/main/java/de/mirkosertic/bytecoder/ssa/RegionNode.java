@@ -148,8 +148,16 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         return false;
     }
 
+    public boolean hasIncomingBackEdges() {
+        return incomingEdges().anyMatch(t -> t.edgeType() == ControlFlowEdgeType.back);
+    }
+
     public Set<RegionNode> getPredecessorsIgnoringBackEdges() {
         return incomingEdges().filter(t -> t.edgeType() == ControlFlowEdgeType.forward).map(t -> (RegionNode) t.sourceNode()).collect(Collectors.toSet());
+    }
+
+    public Set<RegionNode> getPredecessors() {
+        return incomingEdges().map(t -> (RegionNode) t.sourceNode()).collect(Collectors.toSet());
     }
 
     public BytecodeOpcodeAddress getStartAddress() {
@@ -186,12 +194,6 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
             expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
         }
         return theNewVariable;
-    }
-
-    public Variable newPhiLiveIn(final TypeRef aType, final VariableDescription aDescription) {
-        final Variable theVariable = newVariable(aType);
-        liveIn.put(aDescription, theVariable);
-        return theVariable;
     }
 
     public void addToLiveIn(final Value aValue, final VariableDescription aDescription) {
