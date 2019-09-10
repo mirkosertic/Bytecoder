@@ -66,11 +66,11 @@ public class LinearRegisterAllocatorTest {
         assertEquals(4, vars.get(0).getLastUsedAt());
 
         assertEquals("var1", vars.get(1).getName());
-        assertEquals(4, vars.get(1).getDefinedAt());
-        assertEquals(5, vars.get(1).getLastUsedAt());
+        assertEquals(3, vars.get(1).getDefinedAt());
+        assertEquals(4, vars.get(1).getLastUsedAt());
 
         assertEquals("var2", vars.get(2).getName());
-        assertEquals(5, vars.get(2).getDefinedAt());
+        assertEquals(4, vars.get(2).getDefinedAt());
         assertEquals(5, vars.get(2).getLastUsedAt());
 
         assertEquals("var3", vars.get(3).getName());
@@ -88,11 +88,11 @@ public class LinearRegisterAllocatorTest {
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(0)).getType());
         assertEquals(1L, theAllocator.registerAssignmentFor(vars.get(1)).getNumber());
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(1)).getType());
-        assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(2)).getNumber());
+        assertEquals(2L, theAllocator.registerAssignmentFor(vars.get(2)).getNumber());
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(2)).getType());
-        assertEquals(2L, theAllocator.registerAssignmentFor(vars.get(3)).getNumber());
+        assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(3)).getNumber());
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(3)).getType());
-        assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(4)).getNumber());
+        assertEquals(1L, theAllocator.registerAssignmentFor(vars.get(4)).getNumber());
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(4)).getType());
     }
 }

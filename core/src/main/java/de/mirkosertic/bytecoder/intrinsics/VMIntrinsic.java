@@ -30,7 +30,7 @@ public class VMIntrinsic extends Intrinsic {
         if (Objects.equals(aTargetClass.name(), VM.class.getName()) && "newRuntimeGeneratedType".equals(aMethodName)) {
             final RuntimeGeneratedTypeExpression theValue = new RuntimeGeneratedTypeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(1), aArguments.get(2), aArguments.get(3), aArguments.get(0));
             final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
-            aHelper.push(theNewVariable);
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
             return true;
         }

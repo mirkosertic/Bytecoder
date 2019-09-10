@@ -99,11 +99,11 @@ public class NaiveProgramGeneratorTest {
 
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
-        assertEquals(5, theProgram.getVariables().size());
+        assertEquals(8, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(4, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(2, theSingleNode.getExpressions().size());
+        assertEquals(5, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }
 }

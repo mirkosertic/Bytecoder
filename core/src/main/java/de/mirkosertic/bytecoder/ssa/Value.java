@@ -100,7 +100,6 @@ public abstract class Value extends Node<Node, EdgeType> {
                 aEdge.newSourceIs(aNewValue);
             }
         });
-        aNewValue.addEdgeTo(DataFlowEdgeType.instance, this);
         resetCaches();
     }
 

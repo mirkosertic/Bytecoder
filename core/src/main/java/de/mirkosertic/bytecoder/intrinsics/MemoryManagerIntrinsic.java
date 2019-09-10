@@ -54,21 +54,21 @@ public class MemoryManagerIntrinsic extends Intrinsic {
                     final Value theTarget = aArguments.get(0);
                     final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theTarget);
 
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                     return true;
                 }
                 case "getStackTop": {
 
                     final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, new StackTopExpression(aProgram, aInstruction.getOpcodeAddress()));
 
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                     return true;
                 }
                 case "getMemorySize": {
 
                     final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, new MemorySizeExpression(aProgram, aInstruction.getOpcodeAddress()));
 
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                     return true;
                 }
                 case "getIntValue": {
@@ -78,7 +78,7 @@ public class MemoryManagerIntrinsic extends Intrinsic {
 
                     final ComputedMemoryLocationReadExpression theLocation = new ComputedMemoryLocationReadExpression(aProgram, aInstruction.getOpcodeAddress(), theTarget, theOffset);
                     final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theLocation);
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                     return true;
                 }

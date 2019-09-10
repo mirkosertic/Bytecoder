@@ -34,7 +34,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new NewArrayExpression(aProgram, aInstruction.getOpcodeAddress(), BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theArraySize);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature().getReturnType()), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -44,7 +44,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayLengthExpression(aProgram, aInstruction.getOpcodeAddress(), theArray);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -66,7 +66,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.BOOLEAN, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.BOOLEAN, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -88,7 +88,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.BYTE, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.BYTE, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -110,7 +110,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.CHAR, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.CHAR, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -132,7 +132,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.DOUBLE, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.DOUBLE, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -154,7 +154,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.FLOAT, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.FLOAT, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -176,7 +176,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -198,7 +198,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.LONG, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.LONG, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -220,7 +220,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.Native.SHORT, theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.SHORT, theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -242,7 +242,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Value theValue = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(), TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theArray, theIndex);
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(Object.class)), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
 
@@ -254,7 +254,7 @@ public class JavaUtilArrayIntrinsic extends Intrinsic {
 
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(),
                         TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, aInstruction.getOpcodeAddress(), BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theLength));
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }

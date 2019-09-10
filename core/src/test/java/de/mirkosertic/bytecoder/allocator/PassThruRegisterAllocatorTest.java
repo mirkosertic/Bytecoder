@@ -85,11 +85,11 @@ public class PassThruRegisterAllocatorTest {
         assertEquals(4, vars.get(0).getLastUsedAt());
 
         assertEquals("var1", vars.get(1).getName());
-        assertEquals(4, vars.get(1).getDefinedAt());
-        assertEquals(5, vars.get(1).getLastUsedAt());
+        assertEquals(3, vars.get(1).getDefinedAt());
+        assertEquals(4, vars.get(1).getLastUsedAt());
 
         assertEquals("var2", vars.get(2).getName());
-        assertEquals(5, vars.get(2).getDefinedAt());
+        assertEquals(4, vars.get(2).getDefinedAt());
         assertEquals(5, vars.get(2).getLastUsedAt());
 
         assertEquals("var3", vars.get(3).getName());
@@ -233,11 +233,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
         }
 
-        assertEquals(119, vars.size());
+        assertEquals(117, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
 
-        assertEquals(109, theAllocator.assignedRegister().size());
+        assertEquals(105, theAllocator.assignedRegister().size());
     }
 
     @Test
@@ -256,11 +256,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
         }
 
-        assertEquals(48, vars.size());
+        assertEquals(43, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
 
-        assertEquals(46, theAllocator.assignedRegister().size());
+        assertEquals(41, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -330,11 +330,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
         }
 
-        assertEquals(15, vars.size());
+        assertEquals(19, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
 
-        assertEquals(14, theAllocator.assignedRegister().size());
+        assertEquals(18, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -367,11 +367,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
         }
 
-        assertEquals(51, vars.size());
+        assertEquals(48, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
 
-        assertEquals(47, theAllocator.assignedRegister().size());
+        assertEquals(44, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);

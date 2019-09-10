@@ -28,7 +28,7 @@ public class JavaLangEnumIntrinsic extends Intrinsic {
         if ("getEnumConstants".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_ENUM_CONSTANTS_SIGNATURE)) {
             final Value theValue = new EnumConstantsExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
             final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-            aHelper.push(theNewVariable);
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
             return true;
         }
         return false;
@@ -38,7 +38,7 @@ public class JavaLangEnumIntrinsic extends Intrinsic {
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
         if ("$VALUES".equals(aFieldName)) {
             final Value theValue = new EnumConstantsExpression(aProgram, aInstruction.getOpcodeAddress(), new ClassReferenceValue(aTtargetType));
-            aHelper.push(theValue);
+            aHelper.push(aInstruction.getOpcodeAddress(), theValue);
             return true;
         }
         return false;

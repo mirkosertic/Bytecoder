@@ -80,14 +80,21 @@ public class ParsingHelper {
         return theValue;
     }
 
-    public void push(final Value aValue) {
+    public void push(final BytecodeOpcodeAddress aAddress, final Value aValue) {
         if (aValue == null) {
             throw new IllegalStateException("Trying to push null in " + this);
         }
         if (aValue instanceof Variable) {
-            ((Variable) aValue).usedAt(program.getAnalysisTime());
+            final Variable v = (Variable) aValue;
+            v.usedAt(program.getAnalysisTime());
+            stack.push(v);
+        } else {
+            // store value as variable and push  it onto the stack
+            final Variable v = program.createVariable(aValue.resolveType());
+            v.initializeWith(aValue, program.getAnalysisTime());
+            block.getExpressions().add(new VariableAssignmentExpression(program, aAddress, v, aValue));
+            stack.push(v);
         }
-        stack.push(aValue);
     }
 
     public Value getLocalVariable(final int aIndex, final TypeRef aExpectedType) {
@@ -139,8 +146,15 @@ public class ParsingHelper {
                     return;*/
             }
         }
-
-        final Variable v = block.setLocalVariable(aInstruction, aIndex, aType, aValue);
+        if (aValue instanceof Variable) {
+            final Variable v = (Variable) aValue;
+            localVariables.put(aIndex, v);
+            return;
+        }
+        final Variable v = program.createVariable(aValue.resolveType());
+        v.usedAt(program.getAnalysisTime());
+        block.getExpressions().add(new VariableAssignmentExpression(program, aInstruction, v, aValue));
+        v.initializeWith(aValue, program.getAnalysisTime());
         localVariables.put(aIndex, v);
     }
 

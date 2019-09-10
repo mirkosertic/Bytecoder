@@ -164,14 +164,6 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         return startAddress;
     }
 
-    public Variable setLocalVariable(final BytecodeOpcodeAddress aAddress, final int aIndex, final TypeRef aType, final Value aValue) {
-        final Variable v = program.createVariable(aValue.resolveType());
-        v.usedAt(program.getAnalysisTime());
-        expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
-        v.initializeWith(aValue, program.getAnalysisTime());
-        return v;
-    }
-
     public Variable newVariable(final TypeRef aType) {
         return program.createVariable(aType);
     }
@@ -184,15 +176,9 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
             }
 
         }
-        return newVariable(aAddress, aType, aValue, false);
-    }
-
-    private Variable newVariable(final BytecodeOpcodeAddress aAddress, final TypeRef aType, final Value aValue, final boolean aIsImport)  {
         final Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue, program.getAnalysisTime());
-        if (!aIsImport) {
-            expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
-        }
+        expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
         return theNewVariable;
     }
 
