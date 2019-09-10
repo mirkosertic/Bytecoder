@@ -71,11 +71,11 @@ public class NaiveProgramGeneratorTest {
         theBytecodeProgram.addInstruction(new BytecodeInstructionRETURN(BytecodeOpcodeAddress.START_AT_ZERO));
 
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        assertEquals(0, theProgram.getVariables().size());
+        assertEquals(3, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(1, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(1, theSingleNode.getExpressions().size());
+        assertEquals(4, theSingleNode.getExpressions().size());
     }
 
     @Test
@@ -99,11 +99,11 @@ public class NaiveProgramGeneratorTest {
 
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
-        assertEquals(8, theProgram.getVariables().size());
+        assertEquals(14, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
         assertEquals(4, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(5, theSingleNode.getExpressions().size());
+        assertEquals(8, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }
 }
