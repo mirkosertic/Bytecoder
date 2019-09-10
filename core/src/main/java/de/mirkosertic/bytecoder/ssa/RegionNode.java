@@ -174,7 +174,6 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
             if (theVar.isSynthetic()) {
                 return theVar;
             }
-
         }
         final Variable theNewVariable = newVariable(aType);
         theNewVariable.initializeWith(aValue, program.getAnalysisTime());

@@ -87,7 +87,14 @@ public class ParsingHelper {
         if (aValue instanceof Variable) {
             final Variable v = (Variable) aValue;
             v.usedAt(program.getAnalysisTime());
-            stack.push(v);
+            if (v.isSynthetic()) {
+                final Variable v2 = program.createVariable(aValue.resolveType());
+                v2.initializeWith(v, program.getAnalysisTime());
+                block.getExpressions().add(new VariableAssignmentExpression(program, aAddress, v2, v));
+                stack.push(v2);
+            } else {
+                stack.push(v);
+            }
         } else {
             // store value as variable and push  it onto the stack
             final Variable v = program.createVariable(aValue.resolveType());
@@ -148,7 +155,14 @@ public class ParsingHelper {
         }
         if (aValue instanceof Variable) {
             final Variable v = (Variable) aValue;
-            localVariables.put(aIndex, v);
+            if (v.isSynthetic()) {
+                final Variable v2 = program.createVariable(aValue.resolveType());
+                v2.initializeWith(v, program.getAnalysisTime());
+                block.getExpressions().add(new VariableAssignmentExpression(program, aInstruction, v2, v));
+                localVariables.put(aIndex, v);
+            } else {
+                localVariables.put(aIndex, v);
+            }
             return;
         }
         final Variable v = program.createVariable(aValue.resolveType());

@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
@@ -57,7 +58,13 @@ public class ParsingHelperCache {
         int theLocalVariableIndex = 0;
         if (!method.getAccessFlags().isStatic()) {
             final LocalVariableDescription theDesc = new LocalVariableDescription(theLocalVariableIndex, TypeRef.Native.REFERENCE);
-            theValues.put(theDesc, program.argumentAt(theCurrentIndex));
+
+            final Variable theThisRef = program.argumentAt(theCurrentIndex);
+            final Variable theShadow = program.createVariable(theThisRef.resolveType());
+            theShadow.initializeWith(theThisRef, 0);
+            startNode.getExpressions().add(new VariableAssignmentExpression(program, BytecodeOpcodeAddress.START_AT_ZERO, theShadow, theThisRef));
+
+            theValues.put(theDesc, theShadow);
             theCurrentIndex++;
             theLocalVariableIndex++;
         }
@@ -65,7 +72,13 @@ public class ParsingHelperCache {
         final BytecodeTypeRef[] theTypes = method.getSignature().getArguments();
         for (final BytecodeTypeRef theRef : theTypes) {
             final LocalVariableDescription theDesc = new LocalVariableDescription(theLocalVariableIndex, TypeRef.toType(theRef));
-            theValues.put(theDesc, program.argumentAt(theCurrentIndex));
+
+            final Variable theArgument = program.argumentAt(theCurrentIndex);
+            final Variable theShadow = program.createVariable(theArgument.resolveType());
+            theShadow.initializeWith(theArgument, 0);
+            startNode.getExpressions().add(new VariableAssignmentExpression(program, BytecodeOpcodeAddress.START_AT_ZERO, theShadow, theArgument));
+
+            theValues.put(theDesc, theShadow);
             theCurrentIndex++;
             theLocalVariableIndex++;
             if (theRef == BytecodePrimitiveTypeRef.LONG || theRef == BytecodePrimitiveTypeRef.DOUBLE) {
