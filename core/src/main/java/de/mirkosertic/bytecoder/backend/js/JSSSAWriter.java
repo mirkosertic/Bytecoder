@@ -71,6 +71,7 @@ import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
@@ -261,9 +262,22 @@ public class JSSSAWriter {
             print((NewObjectAndConstructExpression) aValue);
         } else if (aValue instanceof PHIValue) {
             print((PHIValue) aValue);
+        } else if (aValue instanceof IsNaNExpression) {
+            print((IsNaNExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final IsNaNExpression aExpression) {
+        writer.text("(!(");
+
+        final Value theIncoming = aExpression.incomingDataFlows().get(0);
+        print(theIncoming);
+        writer.text("==");
+        print(theIncoming);
+
+        writer.text("))");
     }
 
     private void print(final PHIValue p) {

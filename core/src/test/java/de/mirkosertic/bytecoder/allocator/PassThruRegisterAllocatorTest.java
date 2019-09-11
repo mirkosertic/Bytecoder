@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import de.mirkosertic.bytecoder.backend.wasm.WASMIntrinsics;
+import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
@@ -135,7 +137,7 @@ public class PassThruRegisterAllocatorTest {
             }
             z++;
         } else {
-            z+=7;
+            z += 7;
         }
         return z;
     }
@@ -177,7 +179,7 @@ public class PassThruRegisterAllocatorTest {
     private static int simplePhiFlow(final int a, final int b) {
         int z = a + b;
         for (int j = 0; j < 10; j++) {
-            z+=2;
+            z += 2;
         }
         return z;
     }
@@ -223,9 +225,9 @@ public class PassThruRegisterAllocatorTest {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(HashMap.class));
-        theLinkedClass.resolveVirtualMethod("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")),1), new BytecodeTypeRef[]{}));
+        theLinkedClass.resolveVirtualMethod("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")), 1), new BytecodeTypeRef[]{}));
 
-        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")),1), new BytecodeTypeRef[]{}));
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")), 1), new BytecodeTypeRef[]{}));
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
 
         final List<Variable> vars = p.getVariables();
@@ -283,9 +285,9 @@ public class PassThruRegisterAllocatorTest {
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 String.class));
-        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR,1)}));
+        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
 
-        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR,1)}));
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
 
         final List<Variable> vars = p.getVariables();
@@ -320,9 +322,9 @@ public class PassThruRegisterAllocatorTest {
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 Charset.class));
-        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class),1)}));
+        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)}));
 
-        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class),1)}));
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)}));
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
 
         final List<Variable> vars = p.getVariables();
@@ -424,5 +426,28 @@ public class PassThruRegisterAllocatorTest {
         theVariablesWriter.printStackified(stackifier);
 
         System.out.println(theWriter);
+    }
+
+    private static void testWriteMemory() {
+        Address.setIntValue(new Address(10), 20, 30);
+    }
+
+    @Test
+    public void testWriteMemoryRegisterAllocator() {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new WASMIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
+        theLinkedClass.resolveStaticMethod("testWriteMemory", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("testWriteMemory", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        final List<Variable> vars = p.getVariables();
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+        }
+
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
+        assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
     }
 }

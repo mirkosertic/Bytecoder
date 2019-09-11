@@ -88,6 +88,7 @@ import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
@@ -797,7 +798,16 @@ public class WASMSSAASTWriter {
         if (aValue instanceof NewObjectAndConstructExpression) {
             return newObjectAndConstruct((NewObjectAndConstructExpression) aValue);
         }
+        if (aValue instanceof IsNaNExpression) {
+            return isNaN((IsNaNExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue isNaN(final IsNaNExpression aValue) {
+        final WASMValue theValue =toValue(aValue.incomingDataFlows().get(0));
+        return select(i32.c(0, null), i32.c(1, null),
+                f32.eq(theValue, theValue, null), null);
     }
 
     private WASMValue newObjectAndConstruct(final NewObjectAndConstructExpression aValue) {
