@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(value = {
-        @BytecoderTestOption(backend = CompileTarget.BackendType.wasm),
         @BytecoderTestOption(backend = CompileTarget.BackendType.js)
 }, includeJVM = false)
 public class MemoryManagerSimpleTest {
