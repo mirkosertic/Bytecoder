@@ -26,15 +26,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions({
-        @BytecoderTestOption(backend = CompileTarget.BackendType.wasm)
-})
+@BytecoderTestOptions(value = {
+        @BytecoderTestOption(backend = CompileTarget.BackendType.wasm),
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js)
+}, includeJVM = false)
 public class DirectMemoryAccessTest {
 
     @Test
     public void testReadAndWrite() {
-        MemoryManager.initWithSize(100);
-        final Address theAddress = new Address(20);
+        MemoryManager.initNative();
+        final int theAddress = 20;
         Address.setIntValue(theAddress, 5, 10);
         final int theStored = Address.getIntValue(theAddress, 5);
         Assert.assertEquals(10, theStored, 0);

@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -28,13 +27,11 @@ import de.mirkosertic.bytecoder.graph.Node;
 public abstract class Value extends Node<Node, EdgeType> {
 
     private List<? extends Value> cachedIncomingFlows;
-    private List<? extends Value> cachedIncomingFlowsRecursive;
 
     protected Value() {
     }
 
     private void resetCaches() {
-        cachedIncomingFlowsRecursive = null;
         cachedIncomingFlows = null;
     }
 
@@ -62,23 +59,6 @@ public abstract class Value extends Node<Node, EdgeType> {
         return (List<T>) cachedIncomingFlows;
     }
 
-    public <T extends Value> List<T> incomingDataFlowsRecursive() {
-        if (cachedIncomingFlowsRecursive == null) {
-            cachedIncomingFlowsRecursive = incomingDataFlowsRecursive(new ArrayList<>());
-        }
-        return (List<T>) cachedIncomingFlowsRecursive;
-    }
-
-    private <T extends Value> List<T> incomingDataFlowsRecursive(final List<T> aValues) {
-        if (!aValues.contains(this)) {
-            aValues.add((T) this);
-            for (final Value theValue : incomingDataFlows()) {
-                theValue.incomingDataFlowsRecursive(aValues);
-            }
-        }
-        return aValues;
-    }
-
     public boolean isTrulyFunctional() {
         return isTrulyFunctional(new HashSet<>());
     }
@@ -100,13 +80,6 @@ public abstract class Value extends Node<Node, EdgeType> {
                 aEdge.newSourceIs(aNewValue);
             }
         });
-        resetCaches();
-    }
-
-    public void replaceIncomingDataEdgeRecursive(final Value aOldValue, final Value aNewValue) {
-        for (final Value theValue : incomingDataFlowsRecursive()) {
-            theValue.replaceIncomingDataEdge(aOldValue, aNewValue);
-        }
         resetCaches();
     }
 

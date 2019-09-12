@@ -340,7 +340,7 @@ public class JSSSAWriter {
     }
 
     private void print(final MemorySizeExpression aValue) {
-        writer.text("0");
+        writer.text("1000");
     }
 
     public void printRegisterDeclarations() {
@@ -428,7 +428,7 @@ public class JSSSAWriter {
 
         final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        writer.text("bytecoderGlobalMemory[");
+        writer.text("bytecoder.memory[");
         print(theIncomingData.get(0));
         writer.space().text("+").space();
         print(theIncomingData.get(1));
@@ -1315,9 +1315,9 @@ public class JSSSAWriter {
 
             final List<Value> theIncomingData = theE.incomingDataFlows();
 
-            startLine().text("bytecoderGlobalMemory[");
+            startLine().text("bytecoder.memory[");
 
-            final ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
+            final Value theValue = theIncomingData.get(0);
 
             print(theValue);
 

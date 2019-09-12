@@ -206,7 +206,6 @@ public abstract class AbstractAllocator {
 
             final TypeRef theWidestType = Value.widestTypeOf(thePartitionValues);
 
-            // TODO: Get the liveness right here
             final Variable theNewPhiVar = prog.createVariable("phi" + i, theWidestType);
             for (final Value thePartitionValue : thePartitionValues) {
                 if (thePartitionValue instanceof PHIValue) {
@@ -216,13 +215,13 @@ public abstract class AbstractAllocator {
                     aliases.put(v, theNewPhiVar);
                     theVariables.remove(v);
 
-                //} else {
-                //    throw new IllegalStateException("Only PHIValues and Variables are supported, got a " + thePartitionValue);
+                    theNewPhiVar.liveRange().usedAt(v.liveRange().getDefinedAt());
+                    theNewPhiVar.liveRange().usedAt(v.liveRange().getLastUsedAt());
                 }
             }
         }
 
-        // Some sanity checkts
+        // Some sanity checks
         if (phis.keySet().size() != thePHIs.keySet().size()) {
             throw new IllegalStateException("Some phis where not correctly processed!");
         }

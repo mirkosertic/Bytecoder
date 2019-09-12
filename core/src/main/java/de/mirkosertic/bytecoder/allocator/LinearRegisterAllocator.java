@@ -42,7 +42,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
         // and try to establish a timeline for the linear scan
         for (final Variable v : theVariables) {
             if (!v.isSynthetic()) {
-                final long theDefinition = v.getDefinedAt();
+                final long theDefinition = v.liveRange().getDefinedAt();
                 foundDefinitionPoints.add(theDefinition);
 
                 final List<Variable> theDefList = theDefinitionPointsToDefition.computeIfAbsent(theDefinition, k -> new ArrayList<>());
@@ -59,7 +59,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
             // We remove variables that are no longer active at this point in time
             final List<Variable> theNoLongerActive = new ArrayList<>();
             for (final Variable v : currentlyActive) {
-                if (v.getLastUsedAt() < theDefinition) {
+                if (v.liveRange().getLastUsedAt() < theDefinition) {
                     theNoLongerActive.add(v);
                 }
             }

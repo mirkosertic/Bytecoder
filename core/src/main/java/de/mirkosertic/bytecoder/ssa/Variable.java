@@ -40,23 +40,21 @@ public class Variable extends Value {
     private final TypeRef type;
     private final String name;
     private final boolean synthetic;
-    private final long definedAt;
-    private long lastUsedAt;
+    private final LiveRange liveRange;
 
     private Variable(final TypeRef aType, final String aName, final boolean aSynthetic, final long aDefinedAt) {
         type = aType;
         name = aName;
         synthetic = aSynthetic;
-        definedAt = aDefinedAt;
-        lastUsedAt = definedAt;
+        liveRange = new LiveRange(aDefinedAt, aDefinedAt);
     }
 
     public Variable(final TypeRef aType, final String aName, final long definedAt) {
         this(aType, aName, false, definedAt);
     }
 
-    public void usedAt(final long analysisTime) {
-        lastUsedAt = Math.max(lastUsedAt, analysisTime);
+    public LiveRange liveRange() {
+        return liveRange;
     }
 
     public void initializeWith(final Value aValue, final long analysisTime) {
@@ -64,14 +62,14 @@ public class Variable extends Value {
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
 
-        usedAt(analysisTime);
+        liveRange.usedAt(analysisTime);
 
         markUsageIn(aValue, analysisTime);
     }
 
     private void markUsageIn(final Value aValue, final long analysisTime) {
         if (aValue instanceof Variable) {
-            ((Variable) aValue).usedAt(analysisTime);
+            ((Variable) aValue).liveRange().usedAt(analysisTime);
         } else {
             for (final Value theValue : aValue.incomingDataFlows()) {
                 markUsageIn(theValue, analysisTime);
@@ -95,13 +93,5 @@ public class Variable extends Value {
 
     public boolean isSynthetic() {
         return synthetic;
-    }
-
-    public long getDefinedAt() {
-        return definedAt;
-    }
-
-    public long getLastUsedAt() {
-        return lastUsedAt;
     }
 }

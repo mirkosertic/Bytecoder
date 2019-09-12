@@ -28,6 +28,7 @@ import java.util.List;
 
 import de.mirkosertic.bytecoder.backend.wasm.WASMIntrinsics;
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
@@ -77,30 +78,30 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(9, vars.size());
 
         assertEquals("var0", vars.get(0).getName());
-        assertEquals(0, vars.get(0).getDefinedAt());
-        assertEquals(0, vars.get(0).getLastUsedAt());
+        assertEquals(0, vars.get(0).liveRange().getDefinedAt());
+        assertEquals(0, vars.get(0).liveRange().getLastUsedAt());
 
         assertEquals("var1", vars.get(1).getName());
-        assertEquals(0, vars.get(1).getDefinedAt());
-        assertEquals(1, vars.get(1).getLastUsedAt());
+        assertEquals(0, vars.get(1).liveRange().getDefinedAt());
+        assertEquals(1, vars.get(1).liveRange().getLastUsedAt());
 
         assertEquals("var2", vars.get(2).getName());
-        assertEquals(0, vars.get(2).getDefinedAt());
-        assertEquals(2, vars.get(2).getLastUsedAt());
+        assertEquals(0, vars.get(2).liveRange().getDefinedAt());
+        assertEquals(2, vars.get(2).liveRange().getLastUsedAt());
 
         assertEquals("var3", vars.get(3).getName());
-        assertEquals(1, vars.get(3).getDefinedAt());
-        assertEquals(2, vars.get(3).getLastUsedAt());
+        assertEquals(1, vars.get(3).liveRange().getDefinedAt());
+        assertEquals(2, vars.get(3).liveRange().getLastUsedAt());
 
         assertEquals("var4", vars.get(4).getName());
-        assertEquals(2, vars.get(4).getDefinedAt());
-        assertEquals(4, vars.get(4).getLastUsedAt());
+        assertEquals(2, vars.get(4).liveRange().getDefinedAt());
+        assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
@@ -154,7 +155,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(38, vars.size());
@@ -196,7 +197,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(13, vars.size());
@@ -232,7 +233,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(124, vars.size());
@@ -255,7 +256,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(45, vars.size());
@@ -292,7 +293,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(19, vars.size());
@@ -329,7 +330,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(30, vars.size());
@@ -366,7 +367,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(54, vars.size());
@@ -404,7 +405,7 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(48, vars.size());
@@ -429,7 +430,7 @@ public class PassThruRegisterAllocatorTest {
     }
 
     private static void testWriteMemory() {
-        Address.setIntValue(new Address(10), 20, 30);
+        Address.setIntValue(10, 20, 30);
     }
 
     @Test
@@ -444,10 +445,50 @@ public class PassThruRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
     }
+
+    @Test
+    public void testFreeMemRegisterAllocator() throws HeadToHeadControlFlowException {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
+                MemoryManager.class));
+        theLinkedClass.resolveVirtualMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[]{}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[]{}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        final List<Variable> vars = p.getVariables();
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
+        }
+
+        assertEquals(21, vars.size());
+
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t);
+
+        assertEquals(19, theAllocator.assignedRegister().size());
+
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final JSMinifier theMinifier = new JSMinifier(theOptions);
+        final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
+        final StringWriter theWriter = new StringWriter();
+        final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
+        final ConstantPool thePool = new ConstantPool();
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        theVariablesWriter.printRegisterDeclarations();
+
+        final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
+        theVariablesWriter.printStackified(stackifier);
+
+        System.out.println(theWriter);
+
+
+    }
+
 }

@@ -40,7 +40,6 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.WASMExpression;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
-import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -628,11 +627,8 @@ public class WASMSSAASTWriter {
         final Variable theVariable = aExpression.getVariable();
         final Value theNewValue = aExpression.getValue();
 
-        if (theNewValue instanceof PHIValue) {
-            return;
-        }
-
         final Local theLocal;
+
         if (theVariable.isSynthetic()) {
             theLocal = function.localByLabel(theVariable.getName());
         } else {
@@ -881,15 +877,13 @@ public class WASMSSAASTWriter {
                 theMethodName = WASMWriterUtils.toMethodName(
                         BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                         "newArray",
-                        new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                        new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 break;
             case 2:
                 theMethodName = WASMWriterUtils.toMethodName(
                         BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                         "newArray",
-                        new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                                Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                        new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
                 break;
             default:
                 throw new IllegalStateException("Unsupported number of dimensions : " + theDimensions.size());
@@ -1028,8 +1022,7 @@ public class WASMSSAASTWriter {
         final String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newArray",
-                new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final String theClassName = WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
         final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, null);
@@ -1252,8 +1245,7 @@ public class WASMSSAASTWriter {
         final String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newObject",
-                new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                        Address.class), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theType);
         final String theClassName = WASMWriterUtils.toClassName(theLinkedClass.getClassName());

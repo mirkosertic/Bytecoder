@@ -56,30 +56,30 @@ public class LinearRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         assertEquals(9, vars.size());
 
         assertEquals("var0", vars.get(0).getName());
-        assertEquals(0, vars.get(0).getDefinedAt());
-        assertEquals(0, vars.get(0).getLastUsedAt());
+        assertEquals(0, vars.get(0).liveRange().getDefinedAt());
+        assertEquals(0, vars.get(0).liveRange().getLastUsedAt());
 
         assertEquals("var1", vars.get(1).getName());
-        assertEquals(0, vars.get(1).getDefinedAt());
-        assertEquals(1, vars.get(1).getLastUsedAt());
+        assertEquals(0, vars.get(1).liveRange().getDefinedAt());
+        assertEquals(1, vars.get(1).liveRange().getLastUsedAt());
 
         assertEquals("var2", vars.get(2).getName());
-        assertEquals(0, vars.get(2).getDefinedAt());
-        assertEquals(2, vars.get(2).getLastUsedAt());
+        assertEquals(0, vars.get(2).liveRange().getDefinedAt());
+        assertEquals(2, vars.get(2).liveRange().getLastUsedAt());
 
         assertEquals("var3", vars.get(3).getName());
-        assertEquals(1, vars.get(3).getDefinedAt());
-        assertEquals(2, vars.get(3).getLastUsedAt());
+        assertEquals(1, vars.get(3).liveRange().getDefinedAt());
+        assertEquals(2, vars.get(3).liveRange().getLastUsedAt());
 
         assertEquals("var4", vars.get(4).getName());
-        assertEquals(2, vars.get(4).getDefinedAt());
-        assertEquals(4, vars.get(4).getLastUsedAt());
+        assertEquals(2, vars.get(4).liveRange().getDefinedAt());
+        assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
 
         final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());

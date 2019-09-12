@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
@@ -850,15 +849,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final BytecodeClassinfoConstant theClassInfo = theINS.getClassInfoForObjectToCreate();
                 final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant());
-                if (Objects.equals(theObjectType.name(), Address.class.getName())) {
-                    // At this time the exact location is unknown, the value
-                    // will be set at constructor invocation time
-                    final Variable theNewVariable = aTargetBlock.newVariable(TypeRef.Native.INT);
-                    aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
-                } else {
-                    final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theObjectType), new NewObjectExpression(aProgram, theInstruction.getOpcodeAddress(), theClassInfo));
-                    aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
-                }
+                final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theObjectType), new NewObjectExpression(aProgram, theInstruction.getOpcodeAddress(), theClassInfo));
+                aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 final BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
                 final Value theLength = aHelper.pop();

@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+public class LiveRange {
 
-@EmulatedByRuntime
-public class Address {
+    private long definedAt;
+    private long lastUsedAt;
 
-    public static native int getIntValue(int aAddress, int aIndex);
+    public LiveRange(final long aDefinedAt, final long aLastUsedAt) {
+        definedAt = aDefinedAt;
+        lastUsedAt = aLastUsedAt;
+    }
 
-    public static native void setIntValue(int aAddress, int aIndex, int aValue);
+    public void usedAt(final long analysisTime) {
+        definedAt = Math.min(analysisTime, definedAt);
+        lastUsedAt = Math.max(analysisTime, lastUsedAt);
+    }
 
-    public static native int getStackTop();
+    public long getDefinedAt() {
+        return definedAt;
+    }
 
-    public static native int getMemorySize();
-
-    public static native void unreachable();
+    public long getLastUsedAt() {
+        return lastUsedAt;
+    }
 }

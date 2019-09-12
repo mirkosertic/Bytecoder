@@ -67,7 +67,7 @@ public class ParsingHelper {
         }
         final Value theValue = stack.pop();
         if (theValue instanceof Variable) {
-            ((Variable) theValue).usedAt(program.getAnalysisTime());
+            ((Variable) theValue).liveRange().usedAt(program.getAnalysisTime());
         }
         return theValue;
     }
@@ -75,7 +75,7 @@ public class ParsingHelper {
     public Value peek() {
         final Value theValue = stack.peek();
         if (theValue instanceof Variable) {
-            ((Variable) theValue).usedAt(program.getAnalysisTime());
+            ((Variable) theValue).liveRange().usedAt(program.getAnalysisTime());
         }
         return theValue;
     }
@@ -86,7 +86,7 @@ public class ParsingHelper {
         }
         if (aValue instanceof Variable) {
             final Variable v = (Variable) aValue;
-            v.usedAt(program.getAnalysisTime());
+            v.liveRange().usedAt(program.getAnalysisTime());
             if (v.isSynthetic()) {
                 final Variable v2 = program.createVariable(aValue.resolveType());
                 v2.initializeWith(v, program.getAnalysisTime());
@@ -116,7 +116,7 @@ public class ParsingHelper {
             localVariables.put(aIndex, theValue);
         }
         if (theValue instanceof Variable) {
-            ((Variable) theValue).usedAt(program.getAnalysisTime());
+            ((Variable) theValue).liveRange().usedAt(program.getAnalysisTime());
         }
         return theValue;
     }
@@ -166,7 +166,7 @@ public class ParsingHelper {
             return;
         }
         final Variable v = program.createVariable(aValue.resolveType());
-        v.usedAt(program.getAnalysisTime());
+        v.liveRange().usedAt(program.getAnalysisTime());
         block.getExpressions().add(new VariableAssignmentExpression(program, aInstruction, v, aValue));
         v.initializeWith(aValue, program.getAnalysisTime());
         localVariables.put(aIndex, v);
@@ -174,7 +174,7 @@ public class ParsingHelper {
 
     public void setStackValue(final int aStackPos, final Value aValue) {
         if (aValue instanceof Variable) {
-            ((Variable) aValue).usedAt(program.getAnalysisTime());
+            ((Variable) aValue).liveRange().usedAt(program.getAnalysisTime());
         }
 
         final List<Value> theValues = new ArrayList<>(stack);

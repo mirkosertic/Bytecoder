@@ -52,7 +52,7 @@ public class LivenessTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         final ControlFlowGraph graph = p.getControlFlowGraph();
@@ -97,7 +97,7 @@ public class LivenessTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         final ControlFlowGraph graph = p.getControlFlowGraph();
@@ -173,7 +173,7 @@ public class LivenessTest {
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
-            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.getDefinedAt(), v.getLastUsedAt()));
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
         final ControlFlowGraph graph = p.getControlFlowGraph();
