@@ -53,6 +53,8 @@ public class LinearRegisterAllocator extends AbstractAllocator {
         final List<Long> theDefinitionPoints = new ArrayList<>(foundDefinitionPoints);
         Collections.sort(theDefinitionPoints);
 
+        long registerCount=0;
+
         // Now we do a simple linear scan
         final List<Variable> currentlyActive = new ArrayList<>();
         for (final long theDefinition : theDefinitionPoints) {
@@ -86,8 +88,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
                     if (theAvailableRegisters.isEmpty()) {
                         // There are no free registers left
                         // So we introduce a new one
-                        final long theNewRegisterNumber = theKnownRegistersOfThisType.size();
-                        final Register theNewRegister = new Register(theNewRegisterNumber, theType);
+                        final Register theNewRegister = new Register(registerCount++, theType);
                         knownRegisters.get(theType).add(theNewRegister);
                         registerAssignments.put(v, theNewRegister);
                     } else {
@@ -99,7 +100,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
 
                     // First usage of this type
                     // We introduce a new register of this type
-                    final Register theNewRegister = new Register(0, theType);
+                    final Register theNewRegister = new Register(registerCount++, theType);
                     final List<Register> theRegisterList = new ArrayList<>();
                     theRegisterList.add(theNewRegister);
                     knownRegisters.put(theType, theRegisterList);

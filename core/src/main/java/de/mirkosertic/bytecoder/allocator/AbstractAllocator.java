@@ -63,7 +63,7 @@ public abstract class AbstractAllocator {
     }
 
     public List<Register> assignedRegister() {
-        final List<Register> theList = new ArrayList<>(registerAssignments.values());
+        final List<Register> theList = new ArrayList<>(new HashSet<>(registerAssignments.values()));
         theList.sort(Comparator.comparingLong(Register::getNumber));
         return theList;
     }

@@ -752,24 +752,20 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printProgramVariablesDeclaration(final Program program) {
-        final List<Variable> theVariables = program.getVariables();
-        theVariables.sort(Comparator.comparing(Variable::getName));
-        for (final Variable theVariable : theVariables) {
-            if (!theVariable.isSynthetic()) {
-                final Register r = allocator.registerAssignmentFor(theVariable);
-                final TypeRef theVarType = theVariable.resolveType();
-                if (theVarType.isArray()) {
-                    print("__global ");
-                    print(toType(theVarType));
-                    print("* ");
-                    print(registerName(r));
-                    println(";");
-                } else {
-                    print(toType(theVarType));
-                    print(" ");
-                    print(registerName(r));
-                    println(";");
-                }
+        final List<Register> theRegisters = allocator.assignedRegister();
+        for (final Register r : theRegisters) {
+            final TypeRef theVarType = r.getType();
+            if (theVarType.isArray()) {
+                print("__global ");
+                print(toType(theVarType));
+                print("* ");
+                print(registerName(r));
+                println(";");
+            } else {
+                print(toType(theVarType));
+                print(" ");
+                print(registerName(r));
+                println(";");
             }
         }
     }

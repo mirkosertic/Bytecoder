@@ -15,7 +15,14 @@
  */
 package de.mirkosertic.bytecoder.allocator;
 
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.ConstantPool;
+import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.backend.js.JSMinifier;
+import de.mirkosertic.bytecoder.backend.js.JSPrintWriter;
+import de.mirkosertic.bytecoder.backend.js.JSSSAWriter;
+import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -24,14 +31,18 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
+import de.mirkosertic.bytecoder.stackifier.Stackifier;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
 
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.List;
 
@@ -95,4 +106,42 @@ public class LinearRegisterAllocatorTest {
         assertEquals(1L, theAllocator.registerAssignmentFor(vars.get(4)).getNumber());
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(4)).getType());
     }
+
+    @Test
+    public void testStringArrayInitRegisterAllocation() throws HeadToHeadControlFlowException {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
+                String.class));
+        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        final List<Variable> vars = p.getVariables();
+
+        assertEquals(19, vars.size());
+
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t);
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d assigned to register %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt(), theAllocator.registerAssignmentFor(v).getNumber()));
+        }
+
+        assertEquals(10, theAllocator.assignedRegister().size());
+
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final JSMinifier theMinifier = new JSMinifier(theOptions);
+        final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
+        final StringWriter theWriter = new StringWriter();
+        final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
+        final ConstantPool thePool = new ConstantPool();
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        theVariablesWriter.printRegisterDeclarations();
+
+        final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
+        theVariablesWriter.printStackified(stackifier);
+
+        System.out.println(theWriter);
+    }
+
 }
