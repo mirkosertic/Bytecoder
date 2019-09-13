@@ -81,8 +81,8 @@ public class BytecoderCLI {
         @Option(names = "-preferStackifier", required = false, description = "Shall the Stackifier be used in favor to Relooper? Defaults to 'false'.")
         protected boolean preferStackifier = false;
 
-        @Option(names = "-registerallocator", required = false, description = "Which register allocator should be used? Can be linear or passthru. Defaults to 'passthru'.")
-        protected String registerAllocator = "passthru";
+        @Option(names = "-registerallocator", required = false, description = "Which register allocator should be used? Can be linear or passthru. Defaults to 'linear'.")
+        protected String registerAllocator = "linear";
 
     }
 

@@ -125,7 +125,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     /**
      * Which register allocator should be used? Can be linear or passthru.
      */
-    @Parameter(required = false, defaultValue = "passthru")
+    @Parameter(required = false, defaultValue = "linear")
     protected String registerAllocator;
 
     @Override
