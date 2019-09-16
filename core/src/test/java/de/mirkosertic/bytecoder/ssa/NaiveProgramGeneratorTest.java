@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeAttributes;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
@@ -37,6 +38,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -51,7 +53,11 @@ public class NaiveProgramGeneratorTest {
         final BytecodeLinkerContext theContext = mock(BytecodeLinkerContext.class);
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theContext, new JSIntrinsics());
 
+        final BytecodeClassinfoConstant theThisConst = mock(BytecodeClassinfoConstant.class);
+        when(theThisConst.getConstant()).thenReturn(new BytecodeUtf8Constant("Testclass"));
+
         final BytecodeClass theClass = mock(BytecodeClass.class);
+        when(theClass.getThisInfo()).thenReturn(theThisConst);
         when(theClass.getAttributes()).thenReturn(new BytecodeAttributes(new BytecodeAttributeInfo[0]));
 
         final BytecodeMethod theMethod = mock(BytecodeMethod.class);

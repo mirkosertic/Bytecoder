@@ -613,8 +613,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                 // Perform register allocation
-                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, typeRef -> {
-                    switch (typeRef.resolve()) {
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, variable -> {
+                    switch (variable.resolveType().resolve()) {
                         case INT:
                         case LONG:
                         case BYTE:
@@ -628,9 +628,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         case REFERENCE:
                             return TypeRef.Native.REFERENCE;
                         default:
-                            throw new IllegalArgumentException("Not supported type : " + typeRef.resolve());
+                            throw new IllegalArgumentException("Not supported type : " + variable.resolveType().resolve());
                     }
-                });
+                }, aLinkerContext);
 
                 final List<Param> params = new ArrayList<>();
                 if (theMethod.getAccessFlags().isStatic()) {
@@ -954,8 +954,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             }
 
             // Perform register allocation
-            final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, typeRef -> {
-                switch (typeRef.resolve()) {
+            final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, variable -> {
+                switch (variable.resolveType().resolve()) {
                     case INT:
                     case LONG:
                     case BYTE:
@@ -969,9 +969,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case REFERENCE:
                         return TypeRef.Native.REFERENCE;
                     default:
-                        throw new IllegalArgumentException("Not supported type : " + typeRef.resolve());
+                        throw new IllegalArgumentException("Not supported type : " + variable.resolveType().resolve());
                 }
-            });
+            }, aLinkerContext);
 
             for (final Register r : theAllocator.assignedRegister()) {
                 theFunction.newLocal(WASMSSAASTWriter.registerName(r), toType(r.getType()));

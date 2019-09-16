@@ -57,9 +57,4 @@ public class VariableAssignmentExpression extends Expression {
         theResult.add((T) value);
         return theResult;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

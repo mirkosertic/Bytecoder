@@ -22,9 +22,4 @@ public class ReturnExpression extends Expression {
     public ReturnExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
         super(aProgram, address);
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

@@ -35,9 +35,4 @@ public abstract class InvocationExpression extends Expression {
     public TypeRef resolveType() {
         return TypeRef.toType(signature.getReturnType());
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

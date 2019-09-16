@@ -92,7 +92,7 @@ public class LinearRegisterAllocatorTest {
         assertEquals(2, vars.get(4).liveRange().getDefinedAt());
         assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
         assertEquals(3L, theAllocator.registersOfType(TypeRef.Native.INT).size());
         assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());
@@ -122,7 +122,7 @@ public class LinearRegisterAllocatorTest {
 
         assertEquals(19, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
         for (final Variable v : vars) {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d assigned to register %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt(), theAllocator.registerAssignmentFor(v).getNumber()));
         }

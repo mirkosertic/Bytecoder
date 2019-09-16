@@ -365,7 +365,7 @@ public class JSSSAWriter {
         final Program theProgram = aValue.getProgram();
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, t -> t);
+        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, t -> t.resolveType(), linkerContext);
         final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator);
 
         theNested.printRegisterDeclarations();

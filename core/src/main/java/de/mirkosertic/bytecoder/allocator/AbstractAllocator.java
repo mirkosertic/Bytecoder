@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 import de.mirkosertic.bytecoder.graph.Partitioning;
@@ -50,16 +51,18 @@ public abstract class AbstractAllocator {
 
     protected final Map<Variable, Register> registerAssignments;
     protected final Map<TypeRef, List<Register>> knownRegisters;
-    protected final Function<TypeRef, TypeRef> typeConverter;
+    protected final Function<Variable, TypeRef> typeConverter;
     protected final Map<PHIValue, Variable> phis;
     protected final Map<Variable, Variable> aliases;
+    protected final BytecodeLinkerContext linkerContext;
 
-    public AbstractAllocator(final Function<TypeRef, TypeRef> aTypeConverter) {
+    public AbstractAllocator(final Function<Variable, TypeRef> aTypeConverter, final BytecodeLinkerContext aLinkerContext) {
         registerAssignments = new HashMap<>();
         knownRegisters = new HashMap<>();
         typeConverter = aTypeConverter;
         phis = new HashMap<>();
         aliases = new HashMap<>();
+        linkerContext = aLinkerContext;
     }
 
     public List<Register> assignedRegister() {
@@ -204,7 +207,7 @@ public abstract class AbstractAllocator {
                 }
             });
 
-            final TypeRef theWidestType = Value.widestTypeOf(thePartitionValues);
+            final TypeRef theWidestType = Value.widestTypeOf(thePartitionValues, linkerContext);
 
             final Variable theNewPhiVar = prog.createVariable("phi" + i, theWidestType);
             for (final Value thePartitionValue : thePartitionValues) {

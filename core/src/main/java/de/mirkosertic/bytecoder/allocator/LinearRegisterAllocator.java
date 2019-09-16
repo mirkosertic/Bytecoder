@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.allocator;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -30,8 +31,9 @@ import java.util.function.Function;
 
 public class LinearRegisterAllocator extends AbstractAllocator {
 
-    public LinearRegisterAllocator(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
-        super(aTypeConverter);
+    public LinearRegisterAllocator(final Program aProgram, final Function<Variable, TypeRef> aTypeConverter, final
+            BytecodeLinkerContext aLinkerContext) {
+        super(aTypeConverter, aLinkerContext);
 
         final List<Variable> theVariables = computeSSAReadyVariablesFor(aProgram);
 
@@ -71,7 +73,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
             // Registers to them
             final List<Variable> activeFromHere = theDefinitionPointsToDefition.get(theDefinition);
             for (final Variable v : activeFromHere) {
-                final TypeRef theType = aTypeConverter.apply(v.resolveType());
+                final TypeRef theType = aTypeConverter.apply(v);
                 final List<Register> theKnownRegistersOfThisType = knownRegisters.get(theType);
                 if (theKnownRegistersOfThisType != null) {
                     // We already know registers of this type
@@ -79,7 +81,7 @@ public class LinearRegisterAllocator extends AbstractAllocator {
                     final List<Register> theAvailableRegisters = new ArrayList<>(theKnownRegistersOfThisType);
 
                     for (final Variable a : currentlyActive) {
-                        final TypeRef theOtherType = aTypeConverter.apply(a.resolveType());
+                        final TypeRef theOtherType = aTypeConverter.apply(a);
                         if (theOtherType == theType) {
                             theAvailableRegisters.remove(registerAssignments.get(a));
                         }

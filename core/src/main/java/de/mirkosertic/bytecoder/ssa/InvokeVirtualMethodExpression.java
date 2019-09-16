@@ -19,24 +19,27 @@ import java.util.List;
 
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class InvokeVirtualMethodExpression extends InvocationExpression {
 
     private final String methodName;
     private final boolean interfaceInvocation;
+    private final BytecodeObjectTypeRef invokedClass;
 
     public InvokeVirtualMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeNameAndTypeConstant aMethod, final Value aTarget,
-                                         final List<Value> aArguments, final boolean aInterfaceInvocation) {
+                                         final List<Value> aArguments, final boolean aInterfaceInvocation, final BytecodeObjectTypeRef aInvokedClass) {
         this(aProgram, aAddress, aMethod.getNameIndex().getName().stringValue(), aMethod.getDescriptorIndex().methodSignature(),
-                aTarget, aArguments, aInterfaceInvocation);
+                aTarget, aArguments, aInterfaceInvocation, aInvokedClass);
     }
 
     public InvokeVirtualMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final String aMethodName, final BytecodeMethodSignature aSignature, final Value aTarget,
-                                         final List<Value> aArguments, final boolean aInterfaceInvocation) {
+                                         final List<Value> aArguments, final boolean aInterfaceInvocation, final BytecodeObjectTypeRef aInvokedClass) {
         super(aProgram, aAddress, aSignature);
         methodName = aMethodName;
         interfaceInvocation = aInterfaceInvocation;
+        invokedClass = aInvokedClass;
 
         receivesDataFrom(aTarget);
         receivesDataFrom(aArguments);
@@ -48,5 +51,9 @@ public class InvokeVirtualMethodExpression extends InvocationExpression {
 
     public boolean isInterfaceInvocation() {
         return interfaceInvocation;
+    }
+
+    public BytecodeObjectTypeRef getInvokedClass() {
+        return invokedClass;
     }
 }

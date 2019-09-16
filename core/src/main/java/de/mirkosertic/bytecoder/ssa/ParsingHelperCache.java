@@ -15,33 +15,39 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableAttributeInfo;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+
 public class ParsingHelperCache {
 
+    private final BytecodeObjectTypeRef linkedClass;
     private final BytecodeMethod method;
     private final RegionNode startNode;
     private final Map<RegionNode, ParsingHelper> finalStatesForNodes;
     private final Program program;
     private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
+    private final BytecodeLinkerContext linkerContext;
 
     public ParsingHelperCache(
-            final Program aProgram, final BytecodeMethod aMethod, final BytecodeLocalVariableTableAttributeInfo aLocalVariablesInfo) {
+            final Program aProgram, final BytecodeObjectTypeRef aLinkedClass, final BytecodeMethod aMethod, final BytecodeLocalVariableTableAttributeInfo aLocalVariablesInfo, final BytecodeLinkerContext aLinkerContext) {
+        linkedClass = aLinkedClass;
         program = aProgram;
         startNode = aProgram.getControlFlowGraph().startNode();
         method = aMethod;
         localVariableTableAttributeInfo = aLocalVariablesInfo;
         finalStatesForNodes = new HashMap<>();
+        linkerContext = aLinkerContext;
     }
 
     public void registerFinalStateForNode(final RegionNode aNode, final ParsingHelper aState) {
@@ -57,10 +63,11 @@ public class ParsingHelperCache {
         int theCurrentIndex = 0;
         int theLocalVariableIndex = 0;
         if (!method.getAccessFlags().isStatic()) {
-            final LocalVariableDescription theDesc = new LocalVariableDescription(theLocalVariableIndex, TypeRef.Native.REFERENCE);
+            final TypeRef theThisType = TypeRef.toType(linkedClass);
+            final LocalVariableDescription theDesc = new LocalVariableDescription(theLocalVariableIndex, theThisType);
 
             final Variable theThisRef = program.argumentAt(theCurrentIndex);
-            final Variable theShadow = program.createVariable(theThisRef.resolveType());
+            final Variable theShadow = program.createVariable(theThisType);
             theShadow.initializeWith(theThisRef, 0);
             startNode.getExpressions().add(new VariableAssignmentExpression(program, BytecodeOpcodeAddress.START_AT_ZERO, theShadow, theThisRef));
 
@@ -164,7 +171,7 @@ public class ParsingHelperCache {
                 aBlock.addToLiveIn(theSingleValue, theEntry.getKey());
             } else {
                 // We have a PHI value here
-                final TypeRef theType = Value.widestTypeOf(theValues);
+                final TypeRef theType = Value.widestTypeOf(theValues, linkerContext);
 
                 final PHIValue thePHI = new PHIValue(theEntry.getKey(), theType);
 
@@ -193,7 +200,7 @@ public class ParsingHelperCache {
             aImportingBlock.addToLiveIn(theValue, aDescription);
             return theValue;
         }
-        final TypeRef theType = Value.widestTypeOf(theValues);
+        final TypeRef theType = Value.widestTypeOf(theValues, linkerContext);
         final PHIValue thePHI = new PHIValue(aDescription, theType);
         aImportingBlock.addToLiveIn(thePHI, aDescription);
 

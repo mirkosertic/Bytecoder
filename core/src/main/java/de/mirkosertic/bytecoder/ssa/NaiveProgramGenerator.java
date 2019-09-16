@@ -125,6 +125,7 @@ import de.mirkosertic.bytecoder.graph.Dominators;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 
+import java.lang.invoke.CallSite;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -257,7 +258,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
         try {
             // Now we can continue to create the program flow
-            final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, aMethod, theDebugInfos);
+            final ParsingHelperCache theParsingHelperCache = new ParsingHelperCache(theProgram, BytecodeObjectTypeRef.fromUtf8Constant(aOwningClass.getThisInfo().getConstant()), aMethod, theDebugInfos, linkerContext);
 
             // We have the exact order of basic blocks,
             // So we can initialize them in that order
@@ -352,8 +353,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         if (aCurrentBlock.getType() != RegionNode.BlockType.NORMAL) {
             theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
             if (!aMethod.getAccessFlags().isStatic()) {
+                final TypeRef theClass = TypeRef.toType(BytecodeObjectTypeRef.fromUtf8Constant(aOwningClass.getThisInfo().getConstant()));
                 theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(),
-                        TypeRef.Native.REFERENCE, Variable.createThisRef());
+                        theClass, Variable.createThisRef());
             }
             theParsingState.push(aCurrentBlock.getStartAddress(), new CurrentExceptionExpression(aProgram, null));
         } else if (aCurrentBlock == aProgram.getControlFlowGraph().startNode()) {
@@ -970,6 +972,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
             } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                 final BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
+                final BytecodeObjectTypeRef theInvokedClass = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
                 final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                 final List<Value> theArguments = new ArrayList<>();
@@ -982,7 +985,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Value theTarget = aHelper.pop();
 
                 if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theTarget, aTargetBlock, aHelper)) {
-                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false);
+                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false, theInvokedClass);
                     if (theSignature.getReturnType().isVoid()) {
                         aTargetBlock.getExpressions().add(theExpression);
                     } else {
@@ -993,6 +996,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
             } else if (theInstruction instanceof BytecodeInstructionINVOKEINTERFACE) {
                 final BytecodeInstructionINVOKEINTERFACE theINS = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
+                final BytecodeObjectTypeRef theInvokedClass = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodDescriptor().getClassIndex().getClassConstant().getConstant());
                 final BytecodeMethodSignature theSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                 final List<Value> theArguments = new ArrayList<>();
@@ -1003,7 +1007,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 Collections.reverse(theArguments);
 
                 final Value theTarget = aHelper.pop();
-                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true);
+                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true, theInvokedClass);
                 if (theSignature.getReturnType().isVoid()) {
                     aTargetBlock.getExpressions().add(theExpression);
                 } else {
@@ -1235,7 +1239,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                                     new BytecodeTypeRef[] {
                                             new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1) }),
-                            theCallsiteVariable, theInvokeArguments, false);
+                            theCallsiteVariable, theInvokeArguments, false, BytecodeObjectTypeRef.fromRuntimeClass(CallSite.class));
 
                     final Variable theInvokeExactResult = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theInvokeValue);
                     aHelper.push(theINS.getOpcodeAddress(), theInvokeExactResult);

@@ -1,6 +1,6 @@
 # Optimizer effectiveness
 
-# Code size
+# Code size für Relooper Output
 
 Testcase          |Unoptimized     |Linear Register Allocation
 ------------------|----------------|--------------------------------

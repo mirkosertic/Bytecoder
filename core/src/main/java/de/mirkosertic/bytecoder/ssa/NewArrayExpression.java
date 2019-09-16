@@ -36,9 +36,4 @@ public class NewArrayExpression extends Expression {
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return true;
-    }
 }

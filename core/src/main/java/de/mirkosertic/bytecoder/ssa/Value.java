@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 
@@ -59,21 +60,6 @@ public abstract class Value extends Node<Node, EdgeType> {
         return (List<T>) cachedIncomingFlows;
     }
 
-    public boolean isTrulyFunctional() {
-        return isTrulyFunctional(new HashSet<>());
-    }
-
-    private boolean isTrulyFunctional(final Set<Value> aVisited) {
-        if (aVisited.add(this)) {
-            for (final Value theIncoming : incomingDataFlows()) {
-                if (!theIncoming.isTrulyFunctional(aVisited)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
     public void replaceIncomingDataEdge(final Value aOldValue, final Value aNewValue) {
         incomingEdges(DataFlowEdgeType.filter()).forEach(aEdge -> {
             if (aEdge.sourceNode() == aOldValue) {
@@ -93,10 +79,21 @@ public abstract class Value extends Node<Node, EdgeType> {
 
     public abstract TypeRef resolveType();
 
-    public static TypeRef widestTypeOf(final Collection<Value> aValue) {
+    public static TypeRef widestTypeOf(final Collection<Value> aValue, final BytecodeLinkerContext aLinkerContext) {
         if (aValue.size() == 1) {
             return aValue.iterator().next().resolveType();
         }
+        final Set<TypeRef> theTypes = new HashSet<>();
+        for (final Value v : aValue) {
+            final TypeRef theType = v.resolveType();
+            if (!(theType == TypeRef.Native.REFERENCE)) {
+                theTypes.add(v.resolveType());
+            }
+        }
+        if (theTypes.size() == 1) {
+            return theTypes.iterator().next();
+        }
+        
         TypeRef.Native theCurrent = null;
         for (final Value theValue : aValue) {
             final TypeRef.Native theValueType = theValue.resolveType().resolve();

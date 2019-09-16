@@ -15,25 +15,28 @@
  */
 package de.mirkosertic.bytecoder.allocator;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.util.function.Function;
 
 public enum Allocator {
     linear {
         @Override
-        public AbstractAllocator allocate(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
-            return new LinearRegisterAllocator(aProgram, aTypeConverter);
+        public AbstractAllocator allocate(final Program aProgram, final Function<Variable, TypeRef> aTypeConverter, final BytecodeLinkerContext aLinkerContext) {
+            return new LinearRegisterAllocator(aProgram, aTypeConverter, aLinkerContext);
         }
     },
 
     passthru {
         @Override
-        public AbstractAllocator allocate(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter) {
-            return new PassThruRegisterAllocator(aProgram, aTypeConverter);
+        public AbstractAllocator allocate(final Program aProgram, final Function<Variable, TypeRef> aTypeConverter, final BytecodeLinkerContext aLinkerContext) {
+            return new PassThruRegisterAllocator(aProgram, aTypeConverter, aLinkerContext);
         }
     }
     ;
-    public abstract AbstractAllocator allocate(final Program aProgram, final Function<TypeRef, TypeRef> aTypeConverter);
+    public abstract AbstractAllocator allocate(final Program aProgram, final Function<Variable, TypeRef> aTypeConverter, final
+            BytecodeLinkerContext aLinkerContext);
 }

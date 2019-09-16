@@ -31,9 +31,4 @@ public class PutStaticExpression extends Expression {
     public BytecodeFieldRefConstant getField() {
         return field;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

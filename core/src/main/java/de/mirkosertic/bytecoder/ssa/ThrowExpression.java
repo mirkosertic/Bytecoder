@@ -23,9 +23,4 @@ public class ThrowExpression extends Expression {
         super(aProgram, aAddress);
         receivesDataFrom(aValue);
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

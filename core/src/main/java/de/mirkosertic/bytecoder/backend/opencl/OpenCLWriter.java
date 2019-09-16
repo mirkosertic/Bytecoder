@@ -411,6 +411,11 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private String toStructName(final BytecodeObjectTypeRef aObjectType) {
+        if (kernelClass.getClassName().equals(aObjectType)) {
+            // Kernel classes are mapped to type int,
+            // which is not used
+            return "int";
+        }
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aObjectType);
         final BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
         final BytecodeAnnotation theAnnotation = theBytecodeClass.getAttributes().getAnnotationByType(OpenCLType.class.getName());
@@ -452,7 +457,11 @@ public class OpenCLWriter extends IndentSSAWriter {
                 final Register r = allocator.registerAssignmentFor(theVariable);
                 print(registerName(r));
             } else {
-                print(theVariable.getName());
+                if (Variable.THISREF_NAME.equalsIgnoreCase(theVariable.getName())) {
+                    print(0);
+                } else {
+                    print(theVariable.getName());
+                }
             }
         } else if (aValue instanceof InvokeVirtualMethodExpression) {
             printInvokeVirtual((InvokeVirtualMethodExpression) aValue);
@@ -642,8 +651,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printGetFieldValue(final GetFieldExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
-        if (theLinkedClass == kernelClass) {
+        if (kernelClass.getClassName().equals(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()))) {
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
             final Value theValue = aValue.incomingDataFlows().get(0);
@@ -668,8 +676,43 @@ public class OpenCLWriter extends IndentSSAWriter {
         print("]");
     }
 
-    private void printInvokeVirtual(final InvokeVirtualMethodExpression aValue) {
-        throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
+    private void printInvokeVirtual(final InvokeVirtualMethodExpression aExpression) {
+        if (kernelClass.getClassName().equals(aExpression.getInvokedClass())) {
+            print(aExpression.getMethodName());
+            print("(");
+
+            final List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
+            boolean theFirst = true;
+            for (int i = 0; i<theArguments.size(); i++) {
+                theFirst = false;
+                if (i>0) {
+                    print(", ");
+                }
+                final OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
+                print(theArgument.getField().getValue().getName().stringValue());
+            }
+
+            final BytecodeMethodSignature theSignature = aExpression.getSignature();
+            final List<Value> theMethodArguments = aExpression.incomingDataFlows();
+            for (int i=1;i<theMethodArguments.size();i++) {
+                final Value theValue = theMethodArguments.get(i);
+                if (theFirst) {
+                    theFirst = false;
+                } else {
+                    print(",");
+                }
+                if (!theSignature.getArguments()[i - 1].isPrimitive()) {
+                    // Everything except primitives is passed by reference
+                    print("&");
+                }
+
+                printValue(theValue);
+            }
+
+            print(")");
+            return;
+        }
+        throw new IllegalArgumentException("Not supported virtual method invocation : " + aExpression.getMethodName());
     }
 
     private void printInvokeStatic(final InvokeStaticMethodExpression aValue) {

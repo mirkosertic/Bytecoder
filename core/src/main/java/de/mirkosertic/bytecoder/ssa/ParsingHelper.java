@@ -35,7 +35,7 @@ public class ParsingHelper {
     private final Program program;
     private final RegionNode block;
     private final Stack<Value> stack;
-    private final Map<Integer, Value> localVariables;
+    private final Map<Integer, Variable> localVariables;
     private final ValueProvider valueProvider;
     private final BytecodeLocalVariableTableAttributeInfo localVariableTableAttributeInfo;
 
@@ -87,14 +87,7 @@ public class ParsingHelper {
         if (aValue instanceof Variable) {
             final Variable v = (Variable) aValue;
             v.liveRange().usedAt(program.getAnalysisTime());
-            if (v.isSynthetic()) {
-                final Variable v2 = program.createVariable(aValue.resolveType());
-                v2.initializeWith(v, program.getAnalysisTime());
-                block.getExpressions().add(new VariableAssignmentExpression(program, aAddress, v2, v));
-                stack.push(v2);
-            } else {
-                stack.push(v);
-            }
+            stack.push(v);
         } else {
             // store value as variable and push  it onto the stack
             final Variable v = program.createVariable(aValue.resolveType());
@@ -105,19 +98,17 @@ public class ParsingHelper {
     }
 
     public Value getLocalVariable(final int aIndex, final TypeRef aExpectedType) {
-        Value theValue = localVariables.get(aIndex);
+        Variable theValue = localVariables.get(aIndex);
         if (theValue == null) {
             final VariableDescription theDesc = new LocalVariableDescription(aIndex, aExpectedType);
-            theValue = valueProvider.resolveValueFor(theDesc);
+            theValue = (Variable) valueProvider.resolveValueFor(theDesc);
             if (theValue == null) {
                 throw new IllegalStateException("Value must not be null from provider for " + theDesc);
             }
             block.addToLiveIn(theValue, theDesc);
-            localVariables.put(aIndex, theValue);
+            localVariables.put(aIndex, (Variable) theValue);
         }
-        if (theValue instanceof Variable) {
-            ((Variable) theValue).liveRange().usedAt(program.getAnalysisTime());
-        }
+        theValue.liveRange().usedAt(program.getAnalysisTime());
         return theValue;
     }
 
@@ -154,15 +145,7 @@ public class ParsingHelper {
             }
         }
         if (aValue instanceof Variable) {
-            final Variable v = (Variable) aValue;
-            if (v.isSynthetic()) {
-                final Variable v2 = program.createVariable(aValue.resolveType());
-                v2.initializeWith(v, program.getAnalysisTime());
-                block.getExpressions().add(new VariableAssignmentExpression(program, aInstruction, v2, v));
-                localVariables.put(aIndex, v);
-            } else {
-                localVariables.put(aIndex, v);
-            }
+            localVariables.put(aIndex, (Variable) aValue);
             return;
         }
         final Variable v = program.createVariable(aValue.resolveType());
