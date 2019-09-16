@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,5 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class DoubleValue extends PrimitiveValue implements Constant {
-
-    private final double doubleValue;
-
-    public DoubleValue(final double aDoubleValue) {
-        doubleValue = aDoubleValue;
-    }
-
-    public double getDoubleValue() {
-        return doubleValue;
-    }
-
-    @Override
-    public TypeRef resolveType() {
-        return TypeRef.Native.DOUBLE;
-    }
+public interface Constant {
 }

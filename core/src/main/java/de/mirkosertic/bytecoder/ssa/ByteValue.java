@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ByteValue extends PrimitiveValue {
+public class ByteValue extends PrimitiveValue implements Constant {
 
     private final byte byteValue;
 
-    public ByteValue(byte aByteValue) {
+    public ByteValue(final byte aByteValue) {
         byteValue = aByteValue;
     }
 

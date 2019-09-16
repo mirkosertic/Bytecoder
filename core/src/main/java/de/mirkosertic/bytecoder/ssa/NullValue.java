@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class NullValue extends PrimitiveValue {
+public class NullValue extends PrimitiveValue implements Constant {
 
     @Override
     public TypeRef resolveType() {

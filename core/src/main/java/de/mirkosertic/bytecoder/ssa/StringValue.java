@@ -17,11 +17,11 @@ package de.mirkosertic.bytecoder.ssa;
 
 import java.util.Objects;
 
-public class StringValue extends PrimitiveValue {
+public class StringValue extends PrimitiveValue implements Constant {
 
     private final String stringValue;
 
-    public StringValue(String aStringValue) {
+    public StringValue(final String aStringValue) {
         stringValue = aStringValue;
     }
 
@@ -35,12 +35,12 @@ public class StringValue extends PrimitiveValue {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        StringValue that = (StringValue) o;
+        final StringValue that = (StringValue) o;
         return Objects.equals(stringValue, that.stringValue);
     }
 

@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.Node;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -187,6 +188,17 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
 
     public void addToLiveOut(final Value aValue, final VariableDescription aDescription) {
         liveOut.put(aDescription, aValue);
+    }
+
+    public void removeFromLiveInAndOut(final Collection<Variable> aValues) {
+        final Set<VariableDescription> theInDesc = liveIn.entrySet().stream().filter(t -> aValues.contains(t.getValue())).map(Map.Entry::getKey).collect(Collectors.toSet());
+        for (final VariableDescription theDesc : theInDesc) {
+            liveIn.remove(theDesc);
+        }
+        final Set<VariableDescription> theOutDesc = liveOut.entrySet().stream().filter(t -> aValues.contains(t.getValue())).map(Map.Entry::getKey).collect(Collectors.toSet());
+        for (final VariableDescription theDesc : theOutDesc) {
+            liveOut.remove(theDesc);
+        }
     }
 
     public BlockState liveIn() {

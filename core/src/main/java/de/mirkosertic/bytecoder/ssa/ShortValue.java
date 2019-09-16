@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class ShortValue extends PrimitiveValue {
+public class ShortValue extends PrimitiveValue implements Constant {
 
     private final short shortValue;
 
-    public ShortValue(short aShortValue) {
+    public ShortValue(final short aShortValue) {
         shortValue = aShortValue;
     }
 
