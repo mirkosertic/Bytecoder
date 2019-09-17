@@ -1039,7 +1039,7 @@ public class JSSSAWriter {
             }
         }
 
-        if (!(theClasses.stream().noneMatch(BytecodeLinkedClass::isOpaqueType))) {
+        if (theClasses.stream().anyMatch(BytecodeLinkedClass::isOpaqueType)) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1145,7 +1145,7 @@ public class JSSSAWriter {
                     print(theValue);
                 }
                 if (options.isDebugOutput()) {
-                    theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
+                    theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name()).newLine();
                 } else {
                     theWriter.text(";").newLine();
                 }
@@ -1166,7 +1166,7 @@ public class JSSSAWriter {
                     print(theValue);
                 }
                 if (options.isDebugOutput()) {
-                    theWriter.text("; // type is ").text(r.getType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
+                    theWriter.text("; // type is ").text(r.getType().resolve().name()).newLine();
                 } else {
                     theWriter.text(";").newLine();
                 }

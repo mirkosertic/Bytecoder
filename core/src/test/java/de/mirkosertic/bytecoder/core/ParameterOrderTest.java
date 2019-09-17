@@ -26,7 +26,7 @@ public class ParameterOrderTest {
 
     public static class Computer {
 
-        public float compute(float a, float b, float c) {
+        public float compute(final float a, final float b, final float c) {
             return a / b + c;
         }
     }
@@ -34,5 +34,11 @@ public class ParameterOrderTest {
     @Test
     public void testCompute() {
         Assert.assertEquals(9, new Computer().compute(30, 15, 7), 0);
+    }
+
+    @Test
+    public void testUnusedReturn() {
+        final Computer c = new Computer();
+        c.compute(1f, 2f, 3f);
     }
 }

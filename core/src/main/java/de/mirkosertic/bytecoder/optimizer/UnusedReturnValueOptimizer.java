@@ -17,8 +17,8 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.BlockState;
-import de.mirkosertic.bytecoder.ssa.Constant;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -31,12 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class InlineConstVariablesOptimizer implements Optimizer {
+public class UnusedReturnValueOptimizer implements Optimizer {
 
     @Override
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         final Program theProgram = aGraph.getProgram();
-        final Map<Variable, Value> theConstantMappings = new HashMap<>();
+        final Map<Variable, InvocationExpression> theMappings = new HashMap<>();
 
         final Set<Value> theLiveOuts = new HashSet<>();
         for (final RegionNode n : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
@@ -49,40 +49,33 @@ public class InlineConstVariablesOptimizer implements Optimizer {
                 final List<Value> theIncoming = v.incomingDataFlows();
                 if (theIncoming.size() == 1) {
                     final Value theSingleValue = theIncoming.get(0);
-                    if ((theSingleValue instanceof Constant) || ((theSingleValue instanceof Variable) && ((Variable) theSingleValue).isSynthetic())) {
+                    // Search for invocation results that have no usages
+                    if (theSingleValue instanceof InvocationExpression && v.outgoingEdges().count() == 0) {
                         // We found something
-                        theConstantMappings.put(v, theSingleValue);
-
-                        // We replace the usages
-                        v.outgoingEdges().map(t -> (Value) t.targetNode()).forEach(t -> t.replaceIncomingDataEdge(v, theSingleValue));
+                        theMappings.put(v, (InvocationExpression) theSingleValue);
                     }
                 }
             }
         }
 
         // Now, we have to delete the no longer needed assignments
-        if (!theConstantMappings.isEmpty()) {
+        if (!theMappings.isEmpty()) {
             final SinglePassOptimizer theSinglePass = new SinglePassOptimizer(new OptimizerStage[]{
                     (aGraph1, aLinkerContext1, aCurrentNode, aExpressionList, aExpression) -> {
                         if (aExpression instanceof VariableAssignmentExpression) {
                             final VariableAssignmentExpression theVarAssign = (VariableAssignmentExpression) aExpression;
-                            if (theConstantMappings.containsKey(theVarAssign.getVariable())) {
-                                aExpressionList.remove(aExpression);
+                            final Variable theVar = theVarAssign.getVariable();
+                            final InvocationExpression inv = theMappings.get(theVar);
+                            if (inv != null) {
+                                aExpressionList.replace(theVarAssign, inv);
+                                theProgram.deleteVariable(theVar);
                             }
+                            return inv;
                         }
                         return aExpression;
                     }
             });
             theSinglePass.optimize(aGraph, aLinkerContext);
-
-            // And finally we can delete the variables
-            for (final Variable v : theConstantMappings.keySet()) {
-                theProgram.deleteVariable(v);
-            }
-
-            //for (final RegionNode n : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
-            //    n.removeFromLiveInAndOut(theConstantMappings.keySet());
-            //}
         }
     }
 }
