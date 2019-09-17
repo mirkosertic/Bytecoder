@@ -625,7 +625,7 @@ public class WASMSSAASTWriter {
     private void generateInitVariableExpression(final VariableAssignmentExpression aExpression) {
 
         final Variable theVariable = aExpression.getVariable();
-        final Value theNewValue = aExpression.getValue();
+        final Value theNewValue = aExpression.incomingDataFlows().get(0);
 
         final Local theLocal;
 

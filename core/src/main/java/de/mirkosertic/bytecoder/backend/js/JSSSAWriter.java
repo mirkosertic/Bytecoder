@@ -365,7 +365,7 @@ public class JSSSAWriter {
         final Program theProgram = aValue.getProgram();
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, t -> t.resolveType(), linkerContext);
+        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, Variable::resolveType, linkerContext);
         final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator);
 
         theNested.printRegisterDeclarations();
@@ -1122,7 +1122,7 @@ public class JSSSAWriter {
             final VariableAssignmentExpression theE = (VariableAssignmentExpression) aExpression;
 
             final Variable theVariable = theE.getVariable();
-            final Value theValue = theE.getValue();
+            final Value theValue = theE.incomingDataFlows().get(0);
 
             if (theValue instanceof ComputedMemoryLocationWriteExpression) {
                 return;

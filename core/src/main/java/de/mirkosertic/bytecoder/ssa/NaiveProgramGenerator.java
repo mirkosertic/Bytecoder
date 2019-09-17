@@ -939,7 +939,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                         if (theExpression instanceof VariableAssignmentExpression) {
                                             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theExpression;
                                             if (theAssignment.getVariable().getName().equals(theTarget.getName()) &&
-                                                    theAssignment.getValue() instanceof NewObjectExpression) {
+                                                    theAssignment.incomingDataFlows().get(0) instanceof NewObjectExpression) {
                                                 // We have a candidate!
                                                 aTargetBlock.getExpressions().remove(theAssignment);
                                             }

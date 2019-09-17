@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.Constant;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -25,8 +26,10 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class InlineConstVariablesOptimizer implements Optimizer {
 
@@ -34,17 +37,26 @@ public class InlineConstVariablesOptimizer implements Optimizer {
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         final Program theProgram = aGraph.getProgram();
         final Map<Variable, Value> theConstantMappings = new HashMap<>();
+
+        final Set<Value> theLiveOuts = new HashSet<>();
+        for (final RegionNode n : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
+            final BlockState theLiveout = n.liveOut();
+            theLiveOuts.addAll(theLiveout.getPorts().values());
+        }
+
         for (final Variable v : theProgram.getVariables()) {
             if (!v.isSynthetic()) {
                 final List<Value> theIncoming = v.incomingDataFlows();
                 if (theIncoming.size() == 1) {
                     final Value theSingleValue = theIncoming.get(0);
-                    if (theSingleValue instanceof Constant) {
-                        // We found something
-                        theConstantMappings.put(v, theSingleValue);
+                    if (!theLiveOuts.contains(v)) {
+                        if ((theSingleValue instanceof Constant) || ((theSingleValue instanceof Variable) && ((Variable) theSingleValue).isSynthetic())) {
+                            // We found something
+                            theConstantMappings.put(v, theSingleValue);
 
-                        // We replace the usages
-                        v.outgoingEdges().map(t -> (Value) t.targetNode()).forEach(t -> t.replaceIncomingDataEdge(v, theSingleValue));
+                            // We replace the usages
+                            v.outgoingEdges().map(t -> (Value) t.targetNode()).forEach(t -> t.replaceIncomingDataEdge(v, theSingleValue));
+                        }
                     }
                 }
             }
@@ -70,9 +82,9 @@ public class InlineConstVariablesOptimizer implements Optimizer {
                 theProgram.deleteVariable(v);
             }
 
-            for (final RegionNode theNode : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
-                theNode.removeFromLiveInAndOut(theConstantMappings.keySet());
-            }
+            //for (final RegionNode n : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
+            //    n.removeFromLiveInAndOut(theConstantMappings.keySet());
+            //}
         }
     }
 }

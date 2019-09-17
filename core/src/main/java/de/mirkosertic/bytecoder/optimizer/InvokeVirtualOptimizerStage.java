@@ -51,7 +51,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
     }
 
     private Expression visit(final VariableAssignmentExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
-        final Value theValue = aExpression.getValue();
+        final Value theValue = aExpression.incomingDataFlows().get(0);
         if (theValue instanceof InvokeVirtualMethodExpression) {
             final Optional<DirectInvokeMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
             theNewExpression.ifPresent(

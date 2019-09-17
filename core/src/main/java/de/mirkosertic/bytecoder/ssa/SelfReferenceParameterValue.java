@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class SelfReferenceParameterValue extends PrimitiveValue {
+public class SelfReferenceParameterValue extends PrimitiveValue implements Constant {
 
     @Override
     public TypeRef resolveType() {

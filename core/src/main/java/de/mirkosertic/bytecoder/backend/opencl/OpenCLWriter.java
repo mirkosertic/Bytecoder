@@ -311,7 +311,7 @@ public class OpenCLWriter extends IndentSSAWriter {
 
             final Variable theVariable = theInit.getVariable();
             final Register r = allocator.registerAssignmentFor(theVariable);
-            final Value theValue = theInit.getValue();
+            final Value theValue = theInit.incomingDataFlows().get(0);
             print(registerName(r));
             print(" = ");
             printValue(theValue);

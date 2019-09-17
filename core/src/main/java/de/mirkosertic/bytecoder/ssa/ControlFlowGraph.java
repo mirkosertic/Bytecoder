@@ -241,7 +241,7 @@ public class ControlFlowGraph {
                         thePW.print(theRegister.idFor(theTarget));
                         thePW.println(";");
 
-                        final Value theValue = theAssignment.getValue();
+                        final Value theValue = theAssignment.incomingDataFlows().get(0);
                         theAllValues.add(theValue);
 
                         String theValueID = null;
