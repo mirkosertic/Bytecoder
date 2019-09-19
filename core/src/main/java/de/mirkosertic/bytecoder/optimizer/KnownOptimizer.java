@@ -38,6 +38,7 @@ public enum KnownOptimizer implements Optimizer {
             theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
                     new InvokeVirtualOptimizerStage(),
                     new InefficientCompareOptimizerStage(),
+                    new InlineCallArgumentsOptimizerStage(),
                     new MemberFieldReadOptimizerStage(),
                     new MemberFieldWriteOptimizerStage()
             }));
