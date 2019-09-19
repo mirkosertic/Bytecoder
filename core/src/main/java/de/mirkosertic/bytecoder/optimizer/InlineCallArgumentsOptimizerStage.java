@@ -19,8 +19,12 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.IFElseExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
@@ -34,27 +38,35 @@ public class InlineCallArgumentsOptimizerStage implements OptimizerStage{
     public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
                                final ExpressionList aExpressionList, final Expression aExpression) {
 
-        InvocationExpression theInvocation = null;
+        Value theValueToObserve = null;
         if (aExpression instanceof InvocationExpression) {
-            theInvocation = (InvocationExpression) aExpression;
+            theValueToObserve = aExpression;
         } else if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theValue = theAssignment.incomingDataFlows().get(0);
             if (theValue instanceof InvocationExpression) {
-                theInvocation = (InvocationExpression) theValue;
+                theValueToObserve = theValue;
             } else {
                 final List<Value> theIncoming = theValue.incomingDataFlows();
                 if (theIncoming.size() > 0) {
                     if (theIncoming.get(0) instanceof InvocationExpression) {
-                        theInvocation = (InvocationExpression) theIncoming.get(0);
+                        theValueToObserve = theIncoming.get(0);
                     }
                 }
             }
+        } else if (aExpression instanceof IFExpression) {
+            theValueToObserve = aExpression.incomingDataFlows().get(0);
+        } else if (aExpression instanceof IFElseExpression) {
+            theValueToObserve = aExpression.incomingDataFlows().get(0);
+        } else if (aExpression instanceof ReturnValueExpression) {
+            theValueToObserve = aExpression;
+        } else if (aExpression instanceof PutStaticExpression) {
+            theValueToObserve = aExpression;
         }
 
-        if (theInvocation != null) {
+        if (theValueToObserve != null) {
             // Try to find all required variables
-            final List<Variable> theVars = theInvocation.incomingDataFlows().stream().filter(t -> t instanceof Variable).map(t -> (Variable) t).collect(Collectors.toList());
+            final List<Variable> theVars = theValueToObserve.incomingDataFlows().stream().filter(t -> t instanceof Variable).map(t -> (Variable) t).collect(Collectors.toList());
             loop: while (true) {
                 if (!theVars.isEmpty()) {
                     final Expression theBefore = aExpressionList.predecessorOf(aExpression);
@@ -62,7 +74,7 @@ public class InlineCallArgumentsOptimizerStage implements OptimizerStage{
                         final VariableAssignmentExpression theBeforeAss = (VariableAssignmentExpression) theBefore;
                         final Variable theVar = theBeforeAss.getVariable();
                         if (!aCurrentNode.liveOut().contains(theVar) && (theVar == theVars.get(theVars.size() - 1))) {
-                            theInvocation.replaceIncomingDataEdge(theVar, theBeforeAss.incomingDataFlows().get(0));
+                            theValueToObserve.replaceIncomingDataEdge(theVar, theBeforeAss.incomingDataFlows().get(0));
                             aExpressionList.remove(theBeforeAss);
                             aGraph.getProgram().deleteVariable(theVar);
 
