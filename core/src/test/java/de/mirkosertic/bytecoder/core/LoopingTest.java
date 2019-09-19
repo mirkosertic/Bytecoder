@@ -25,8 +25,8 @@ public class LoopingTest {
     @Test
     public void testLoop() {
         byte[] byteData = new byte[10];
-        byte[] aOtherData = new byte[10];
-        byte[] theNewData = new byte[byteData.length + aOtherData.length];
+        final byte[] aOtherData = new byte[10];
+        final byte[] theNewData = new byte[byteData.length + aOtherData.length];
 
         int offset = 0;
         for (int i = 0; i< byteData.length; i++) {
@@ -43,11 +43,11 @@ public class LoopingTest {
     @Test
     public void testSimpleSum() {
         int theSum = 0;
-        int theCount = 20;
+        final int theCount = 20;
         for (int i=0;i<theCount;i++) {
             theSum+=i;
         }
-        int z = theSum * 2;
+        final int z = theSum * 2;
     }
 
     @Test
@@ -58,7 +58,7 @@ public class LoopingTest {
     }
 
     @Test
-    public void testConplexFlow() {
+    public void testComplexFlow() {
         int theIndex = 0;
         while (true) {
 
@@ -75,7 +75,7 @@ public class LoopingTest {
     @Test
     public void testComplexer() {
         int a = 0;
-        int b = 10;
+        final int b = 10;
         System.out.println("Starting");
         while(true) {
             System.out.println(a);

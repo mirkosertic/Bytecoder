@@ -16,66 +16,59 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-public class UnusedReturnValueOptimizer implements Optimizer {
+public class InlineMethodParameterOptimizer implements Optimizer {
 
     @Override
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         final Program theProgram = aGraph.getProgram();
-        final Map<Variable, InvocationExpression> theMappings = new HashMap<>();
 
-        final Set<Value> theLiveOuts = new HashSet<>();
-        for (final RegionNode n : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
-            final BlockState theLiveout = n.liveOut();
-            theLiveOuts.addAll(theLiveout.getPorts().values());
-        }
+        // We need a list of variables that are only initialized once with method parameters
+        final Map<Variable, Value> theOnceInitialized = new HashMap<>();
 
         for (final Variable v : theProgram.getVariables()) {
-            if (!v.isSynthetic() && !theLiveOuts.contains(v)) {
+            if (!v.isSynthetic()) {
                 final List<Value> theIncoming = v.incomingDataFlows();
                 if (theIncoming.size() == 1) {
                     final Value theSingleValue = theIncoming.get(0);
-                    // Search for invocation results that have no usages
-                    if (theSingleValue instanceof InvocationExpression && v.outgoingEdges().count() == 0) {
+                    if ((theSingleValue instanceof Variable) && ((Variable) theSingleValue).isSynthetic()) {
                         // We found something
-                        theMappings.put(v, (InvocationExpression) theSingleValue);
+                        theOnceInitialized.put(v, theSingleValue);
                     }
                 }
             }
         }
 
-        // Now, we have to delete the no longer needed assignments
-        if (!theMappings.isEmpty()) {
+        // Now we iterate over variables that are initialized with one of the once initialized
+        // those inits are replaced by the method parameter values
+        if (!theOnceInitialized.isEmpty()) {
             final SinglePassOptimizer theSinglePass = new SinglePassOptimizer(new OptimizerStage[]{
                     (aGraph1, aLinkerContext1, aCurrentNode, aExpressionList, aExpression) -> {
                         if (aExpression instanceof VariableAssignmentExpression) {
                             final VariableAssignmentExpression theVarAssign = (VariableAssignmentExpression) aExpression;
-                            final Variable theVar = theVarAssign.getVariable();
-                            final InvocationExpression inv = theMappings.get(theVar);
-                            if (inv != null) {
-                                aExpressionList.replace(theVarAssign, inv);
-                                theProgram.deleteVariable(theVar);
+                            final Value theValue = theVarAssign.incomingDataFlows().get(0);
+                            if (theValue instanceof Variable) {
+                                final Value theReplacement = theOnceInitialized.get(theValue);
+                                if (theReplacement != null) {
+                                    theVarAssign.replaceIncomingDataEdge(theValue, theReplacement);
+                                }
                             }
-                            return inv;
                         }
                         return aExpression;
                     }
             });
             theSinglePass.optimize(aGraph, aLinkerContext);
+
+            // Todo: Wipeout from livein/out and phi value propagation
         }
     }
 }

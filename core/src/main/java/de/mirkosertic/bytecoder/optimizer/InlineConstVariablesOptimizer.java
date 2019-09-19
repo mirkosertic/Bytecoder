@@ -79,10 +79,6 @@ public class InlineConstVariablesOptimizer implements Optimizer {
             for (final Variable v : theConstantMappings.keySet()) {
                 theProgram.deleteVariable(v);
             }
-
-            //for (final RegionNode n : theProgram.getControlFlowGraph().dominators().getPreOrder()) {
-            //    n.removeFromLiveInAndOut(theConstantMappings.keySet());
-            //}
         }
     }
 }
