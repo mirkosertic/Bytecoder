@@ -26,6 +26,25 @@ public class InstanceAccessTest {
     public static class StaticClassWithStuffInside {
 
         public int member;
+        public Long member2;
+    }
+
+    private void testWrite(final StaticClassWithStuffInside aTarget, final int aValue) {
+        aTarget.member = aValue;
+    }
+
+    private int testRead(final StaticClassWithStuffInside aTarget) {
+        return aTarget.member;
+    }
+
+    @Test
+    public void testIndirectGetAndSet() {
+        final StaticClassWithStuffInside theInstance = new StaticClassWithStuffInside();
+        testWrite(theInstance, 12);
+
+        theInstance.member2 = new Long(10L);
+
+        Assert.assertEquals(12, testRead(theInstance), 0);
     }
 
     @Test
