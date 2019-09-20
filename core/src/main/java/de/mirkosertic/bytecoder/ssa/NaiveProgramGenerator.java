@@ -323,18 +323,74 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
                 final BlockState theLiveIn = theNode.liveIn();
                 theLiveIn.getPorts().forEach((d, value) -> {
-                    for (final RegionNode thePred : theNode.getPredecessors()) {
+                    final Set<Value> theValues = new HashSet<>();
+                    final Set<RegionNode> thePredecessors = theNode.getPredecessors();
+                    for (final RegionNode thePred : thePredecessors) {
                         final ParsingHelper theHelper = theParsingHelperCache.resolveFinalStateForNode(thePred);
-                        theHelper.requestValue(d);
+                        final Value theValue = theHelper.requestValue(d);
+                        theValues.add(theValue);
+                    }
+
+                    // Finally we have to handle a corner case
+                    // If a synthetic variable is exposed in liveout and used by a phi value in combination
+                    // with other values it must be replaced or else register allocation will lead into an error
+                    if (value instanceof PHIValue) {
+                        final Set<Variable> theSyntheticPHIValues = theValues
+                                .stream()
+                                .filter(t -> t instanceof Variable && ((Variable)t).isSynthetic())
+                                .map(t -> (Variable) t)
+                                .collect(Collectors.toSet());
+                        if (!theSyntheticPHIValues.isEmpty()) {
+                            // We have to augment the predecessors
+                            for (final RegionNode thePred : thePredecessors) {
+                                if (thePred != theNode) {
+                                    augmentSyntheticVariablesForPHINodeIn(theProgram, thePred, d, theNode);
+                                }
+                            }
+                        }
                     }
                 });
             }
+
 
         } catch (final Exception e) {
             throw new ControlFlowProcessingException("Error processing CFG for " + aOwningClass.getThisInfo().getConstant().stringValue() + "." + aMethod.getName().stringValue(), e, theProgram.getControlFlowGraph());
         }
 
         return theProgram;
+    }
+
+    private void augmentSyntheticVariablesForPHINodeIn(final Program p, final RegionNode aTargetNode, final VariableDescription aDescription, final RegionNode aJumpTarget) {
+        augmentSyntheticVariablesForPHINodeIn(p, aTargetNode, aDescription, aJumpTarget, aTargetNode.getExpressions());
+    }
+
+    private void augmentSyntheticVariablesForPHINodeIn(final Program p, final RegionNode aTargetNode, final VariableDescription aDescription, final RegionNode aJumpTarget, final ExpressionList aExpressionList) {
+        for (final Expression e : aExpressionList.toList()) {
+            if (e instanceof ExpressionListContainer) {
+                final ExpressionListContainer c = (ExpressionListContainer) e;
+                for (final ExpressionList l : c.getExpressionLists()) {
+                    augmentSyntheticVariablesForPHINodeIn(p, aTargetNode, aDescription, aJumpTarget, l);
+                }
+            } else if (e instanceof GotoExpression) {
+                final GotoExpression theGoto = (GotoExpression) e;
+                if (theGoto.jumpTarget().equals(aJumpTarget.getStartAddress())) {
+                    final Value theLiveOut = aTargetNode.liveOut().getPorts().get(aDescription);
+                    if (theLiveOut instanceof Variable) {
+                        final Variable v = (Variable) theLiveOut;
+                        if (v.isSynthetic()) {
+                            // We convert the synthetic variable to a regular one
+                            // by introducing a copy operation
+                            final Variable theShadow = p.createVariable(v.resolveType());
+                            theShadow.initializeWith(v, aTargetNode.getStartAnalysisTime());
+                            final VariableAssignmentExpression theAssignment = new VariableAssignmentExpression(p, theGoto.getAddress(), theShadow, v);
+                            aExpressionList.addBefore(theAssignment, theGoto);
+                            // And the new variable will be part of the liveout set
+                            aTargetNode.addToLiveOut(theShadow, aDescription);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void initializeBlock(

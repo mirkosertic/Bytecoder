@@ -81,31 +81,31 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(9, vars.size());
+        assertEquals(5, vars.size());
 
         assertEquals("var0", vars.get(0).getName());
-        assertEquals(0, vars.get(0).liveRange().getDefinedAt());
-        assertEquals(0, vars.get(0).liveRange().getLastUsedAt());
+        assertEquals(2, vars.get(0).liveRange().getDefinedAt());
+        assertEquals(4, vars.get(0).liveRange().getLastUsedAt());
 
         assertEquals("var1", vars.get(1).getName());
-        assertEquals(0, vars.get(1).liveRange().getDefinedAt());
-        assertEquals(1, vars.get(1).liveRange().getLastUsedAt());
+        assertEquals(3, vars.get(1).liveRange().getDefinedAt());
+        assertEquals(4, vars.get(1).liveRange().getLastUsedAt());
 
         assertEquals("var2", vars.get(2).getName());
-        assertEquals(0, vars.get(2).liveRange().getDefinedAt());
-        assertEquals(2, vars.get(2).liveRange().getLastUsedAt());
+        assertEquals(4, vars.get(2).liveRange().getDefinedAt());
+        assertEquals(5, vars.get(2).liveRange().getLastUsedAt());
 
         assertEquals("var3", vars.get(3).getName());
-        assertEquals(1, vars.get(3).liveRange().getDefinedAt());
-        assertEquals(2, vars.get(3).liveRange().getLastUsedAt());
+        assertEquals(5, vars.get(3).liveRange().getDefinedAt());
+        assertEquals(6, vars.get(3).liveRange().getLastUsedAt());
 
         assertEquals("var4", vars.get(4).getName());
-        assertEquals(2, vars.get(4).liveRange().getDefinedAt());
-        assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
+        assertEquals(6, vars.get(4).liveRange().getDefinedAt());
+        assertEquals(7, vars.get(4).liveRange().getLastUsedAt());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
-        assertEquals(9L, theAllocator.registersOfType(TypeRef.Native.INT).size());
+        assertEquals(5L, theAllocator.registersOfType(TypeRef.Native.INT).size());
         assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());
         assertEquals(TypeRef.Native.INT, theAllocator.registerAssignmentFor(vars.get(0)).getType());
         assertEquals(1L, theAllocator.registerAssignmentFor(vars.get(1)).getNumber());
@@ -158,9 +158,9 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(38, vars.size());
+        assertEquals(32, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -200,11 +200,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(13, vars.size());
+        assertEquals(9, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(11, theAllocator.assignedRegister().size());
+        assertEquals(7, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -236,11 +236,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(124, vars.size());
+        assertEquals(118, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(111, theAllocator.assignedRegister().size());
+        assertEquals(105, theAllocator.assignedRegister().size());
     }
 
     @Test
@@ -259,11 +259,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(45, vars.size());
+        assertEquals(44, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(43, theAllocator.assignedRegister().size());
+        assertEquals(42, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -296,11 +296,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(19, vars.size());
+        assertEquals(16, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(18, theAllocator.assignedRegister().size());
+        assertEquals(15, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -333,11 +333,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(30, vars.size());
+        assertEquals(28, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(28, theAllocator.assignedRegister().size());
+        assertEquals(20, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -370,11 +370,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(54, vars.size());
+        assertEquals(50, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(50, theAllocator.assignedRegister().size());
+        assertEquals(46, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -408,11 +408,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(48, vars.size());
+        assertEquals(39, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(47, theAllocator.assignedRegister().size());
+        assertEquals(38, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
@@ -448,7 +448,7 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
     }
 
@@ -470,7 +470,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(21, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(19, theAllocator.assignedRegister().size());
 

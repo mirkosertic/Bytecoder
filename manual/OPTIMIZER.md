@@ -8,7 +8,7 @@ Constant Inlining          |1.487.327 bytes |1.010.403 bytes
 Inefficient If-Conditions  |1.473.286 bytes |1.001.294 bytes
 Inefficient Field-Read     |1.401.204 bytes |  929.177 bytes
 Inefficient Field-Write    |1.370.353 bytes |  909.742 bytes
-Inefficient Invocations    |1.261.180 bytes |  857.123 bytes
+Inefficient Invocations    |1.228.315 bytes |  836.656 bytes
 
 Reference: 2019-08-30 build:
 
