@@ -61,7 +61,6 @@ public class Variable extends Value {
         // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
-
         liveRange.usedAt(analysisTime);
 
         markUsageIn(aValue, analysisTime);
