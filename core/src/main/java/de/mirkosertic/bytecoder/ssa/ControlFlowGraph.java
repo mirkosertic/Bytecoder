@@ -60,14 +60,6 @@ public class ControlFlowGraph {
         return regularFlowDominators.dominates(node, targetNode);
     }
 
-    public boolean dominates(final RegionNode dominator, final RegionNode dominated) {
-        return dominators.dominates(dominator, dominated);
-    }
-
-    public boolean dominatesInRegularFlowOnly(final RegionNode node, final RegionNode targetNode) {
-        return regularFlowDominators.dominates(node, targetNode);
-    }
-
     public void calculateReachabilityAndMarkBackEdges() {
         final Stack<RegionNode> currentPath = new Stack<>();
         calculateReachabilityAndMarkBackEdges(currentPath, startNode());
