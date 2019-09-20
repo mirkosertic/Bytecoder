@@ -70,29 +70,29 @@ public class LinearRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(5, vars.size());
+        assertEquals(9, vars.size());
 
         assertEquals("var0", vars.get(0).getName());
-        assertEquals(2, vars.get(0).liveRange().getDefinedAt());
-        assertEquals(4, vars.get(0).liveRange().getLastUsedAt());
+        assertEquals(0, vars.get(0).liveRange().getDefinedAt());
+        assertEquals(0, vars.get(0).liveRange().getLastUsedAt());
 
         assertEquals("var1", vars.get(1).getName());
-        assertEquals(3, vars.get(1).liveRange().getDefinedAt());
-        assertEquals(4, vars.get(1).liveRange().getLastUsedAt());
+        assertEquals(0, vars.get(1).liveRange().getDefinedAt());
+        assertEquals(1, vars.get(1).liveRange().getLastUsedAt());
 
         assertEquals("var2", vars.get(2).getName());
-        assertEquals(4, vars.get(2).liveRange().getDefinedAt());
-        assertEquals(5, vars.get(2).liveRange().getLastUsedAt());
+        assertEquals(0, vars.get(2).liveRange().getDefinedAt());
+        assertEquals(2, vars.get(2).liveRange().getLastUsedAt());
 
         assertEquals("var3", vars.get(3).getName());
-        assertEquals(5, vars.get(3).liveRange().getDefinedAt());
-        assertEquals(6, vars.get(3).liveRange().getLastUsedAt());
+        assertEquals(1, vars.get(3).liveRange().getDefinedAt());
+        assertEquals(2, vars.get(3).liveRange().getLastUsedAt());
 
         assertEquals("var4", vars.get(4).getName());
-        assertEquals(6, vars.get(4).liveRange().getDefinedAt());
-        assertEquals(7, vars.get(4).liveRange().getLastUsedAt());
+        assertEquals(2, vars.get(4).liveRange().getDefinedAt());
+        assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, Variable::resolveType, theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
         assertEquals(3L, theAllocator.registersOfType(TypeRef.Native.INT).size());
         assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());
@@ -120,14 +120,14 @@ public class LinearRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
 
-        assertEquals(16, vars.size());
+        assertEquals(19, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, Variable::resolveType, theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
         for (final Variable v : vars) {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d assigned to register %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt(), theAllocator.registerAssignmentFor(v).getNumber()));
         }
 
-        assertEquals(9, theAllocator.assignedRegister().size());
+        assertEquals(10, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);

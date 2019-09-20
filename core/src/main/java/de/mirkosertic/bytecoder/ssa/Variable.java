@@ -58,7 +58,7 @@ public class Variable extends Value {
     }
 
     public void initializeWith(final Value aValue, final long analysisTime) {
-        // Test there is a widest type available
+        // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
 
