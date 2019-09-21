@@ -15,16 +15,26 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+public class LiveRange {
 
-public class PHIExpression extends Expression {
+    private long definedAt;
+    private long lastUsedAt;
 
-    public PHIExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
-        super(aProgram, address);
+    public LiveRange(final long aDefinedAt, final long aLastUsedAt) {
+        definedAt = aDefinedAt;
+        lastUsedAt = aLastUsedAt;
     }
 
-    @Override
-    public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
+    public void usedAt(final long analysisTime) {
+        definedAt = Math.min(analysisTime, definedAt);
+        lastUsedAt = Math.max(analysisTime, lastUsedAt);
+    }
+
+    public long getDefinedAt() {
+        return definedAt;
+    }
+
+    public long getLastUsedAt() {
+        return lastUsedAt;
     }
 }

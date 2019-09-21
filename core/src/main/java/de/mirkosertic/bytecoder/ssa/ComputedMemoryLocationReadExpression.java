@@ -28,9 +28,4 @@ public class ComputedMemoryLocationReadExpression extends Expression {
     public TypeRef resolveType() {
         return TypeRef.Native.INT;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

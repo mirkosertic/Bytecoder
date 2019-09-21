@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeAttributes;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGOTO;
@@ -37,6 +38,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -51,7 +53,11 @@ public class NaiveProgramGeneratorTest {
         final BytecodeLinkerContext theContext = mock(BytecodeLinkerContext.class);
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theContext, new JSIntrinsics());
 
+        final BytecodeClassinfoConstant theThisConst = mock(BytecodeClassinfoConstant.class);
+        when(theThisConst.getConstant()).thenReturn(new BytecodeUtf8Constant("Testclass"));
+
         final BytecodeClass theClass = mock(BytecodeClass.class);
+        when(theClass.getThisInfo()).thenReturn(theThisConst);
         when(theClass.getAttributes()).thenReturn(new BytecodeAttributes(new BytecodeAttributeInfo[0]));
 
         final BytecodeMethod theMethod = mock(BytecodeMethod.class);
@@ -71,11 +77,11 @@ public class NaiveProgramGeneratorTest {
         theBytecodeProgram.addInstruction(new BytecodeInstructionRETURN(BytecodeOpcodeAddress.START_AT_ZERO));
 
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        assertEquals(0, theProgram.getVariables().size());
+        assertEquals(3, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
-        assertEquals(1, theCFG.getKnownNodes().size());
+        assertEquals(1, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(1, theSingleNode.getExpressions().size());
+        assertEquals(4, theSingleNode.getExpressions().size());
     }
 
     @Test
@@ -98,12 +104,12 @@ public class NaiveProgramGeneratorTest {
         theBytecodeProgram.addInstruction(new BytecodeInstructionGenericRETURN(new BytecodeOpcodeAddress(102), BytecodePrimitiveTypeRef.INT));
 
         final Program theProgram = newProgramFrom(theBytecodeProgram, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        assertEquals(6, theProgram.getVariables().size());
+
+        assertEquals(14, theProgram.getVariables().size());
         final ControlFlowGraph theCFG = theProgram.getControlFlowGraph();
-        assertEquals(4, theCFG.getKnownNodes().size());
+        assertEquals(4, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
-        assertEquals(2, theSingleNode.getExpressions().size());
+        assertEquals(8, theSingleNode.getExpressions().size());
         System.out.println(theCFG.toDOT());
     }
-
 }

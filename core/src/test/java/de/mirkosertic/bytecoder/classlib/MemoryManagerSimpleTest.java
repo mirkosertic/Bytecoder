@@ -15,32 +15,41 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(BytecoderUnitTestRunner.class)
+@BytecoderTestOptions(value = {
+        @BytecoderTestOption(backend = CompileTarget.BackendType.js)
+}, includeJVM = false)
 public class MemoryManagerSimpleTest {
 
     @Test
     public void testInit() {
-        MemoryManager.initWithSize(1000);
+        MemoryManager.initNative();
         Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
     }
 
     @Test
     public void testMalloc() {
-        MemoryManager.initWithSize(1000);
+        MemoryManager.initNative();
         Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
-        Address theMalloc = MemoryManager.malloc(100);
-        Assert.assertEquals(36, Address.getStart(theMalloc) , 0);
+        final int theMalloc = MemoryManager.malloc(100);
+        Assert.assertEquals(36, theMalloc , 0);
 
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
 
-        Address theMalloc2 = MemoryManager.malloc(150);
-        Assert.assertEquals(144, Address.getStart(theMalloc2) , 0);
+        final int theMalloc2 = MemoryManager.malloc(150);
+        Assert.assertEquals(144, theMalloc2 , 0);
 
         Assert.assertEquals(734, MemoryManager.freeMem(), 0);
         Assert.assertEquals(266, MemoryManager.usedMem(), 0);
@@ -48,12 +57,12 @@ public class MemoryManagerSimpleTest {
 
     @Test
     public void testMallocFree() {
-        MemoryManager.initWithSize(1000);
+        MemoryManager.initNative();
         Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
-        Address theMalloc = MemoryManager.malloc(100);
-        Assert.assertEquals(36, Address.getStart(theMalloc) , 0);
+        int theMalloc = MemoryManager.malloc(100);
+        Assert.assertEquals(36, theMalloc , 0);
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
 
@@ -62,19 +71,19 @@ public class MemoryManagerSimpleTest {
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
         theMalloc = MemoryManager.malloc(100);
-        Assert.assertEquals(36, Address.getStart(theMalloc) , 0);
+        Assert.assertEquals(36, theMalloc , 0);
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
     }
 
     @Test
     public void testMallocGC() {
-        MemoryManager.initWithSize(1000);
+        MemoryManager.initNative();
         Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
-        Address theMalloc1 = MemoryManager.malloc(100);
-        Address theMalloc2 = MemoryManager.malloc(200);
+        final int theMalloc1 = MemoryManager.malloc(100);
+        final int theMalloc2 = MemoryManager.malloc(200);
 
         Assert.assertEquals(684, MemoryManager.freeMem(), 0);
         Assert.assertEquals(316, MemoryManager.usedMem(), 0);
@@ -87,13 +96,13 @@ public class MemoryManagerSimpleTest {
 
     @Test
     public void testMallocGCPartial() {
-        MemoryManager.initWithSize(1000);
+        MemoryManager.initNative();
         Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
-        Address theMalloc1 = MemoryManager.malloc(100);
-        Address theMalloc2 = MemoryManager.malloc(200);
-        Address.setIntValue(theMalloc1, 0, Address.getStart(theMalloc2));
+        final int theMalloc1 = MemoryManager.malloc(100);
+        final int theMalloc2 = MemoryManager.malloc(200);
+        Address.setIntValue(theMalloc1, 0, theMalloc2);
 
         // Malloc1 references malloc2, but it is not references
         // Malloc2 will be GCed first, then Malloc2
@@ -105,10 +114,5 @@ public class MemoryManagerSimpleTest {
 
         Assert.assertEquals(792, MemoryManager.freeMem(), 0);
         Assert.assertEquals(208, MemoryManager.usedMem(), 0);
-
-        MemoryManager.GC();
-
-        Assert.assertEquals(1000, MemoryManager.freeMem(), 0);
-        Assert.assertEquals(0, MemoryManager.usedMem(), 0);
-    }
+   }
 }

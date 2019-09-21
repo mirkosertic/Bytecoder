@@ -30,7 +30,7 @@ public class RuntimeClassIntrinsic extends Intrinsic {
                 .matchesExactlyTo(theSignature)) {
             final Variable theNewVariable = aTargetBlock
                     .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
-            aHelper.push(theNewVariable);
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
             return true;
         }
@@ -43,12 +43,12 @@ public class RuntimeClassIntrinsic extends Intrinsic {
         if ("getClass".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE)) {
             final Value theValue = new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
             final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-            aHelper.push(theNewVariable);
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
             return true;
         }
         if ("desiredAssertionStatus".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.DESIRED_ASSERTION_STATUS_SIGNATURE)) {
             // Status is always false
-            aHelper.push(new IntegerValue(0));
+            aHelper.push(aInstruction.getOpcodeAddress(), new IntegerValue(0));
             return true;
         }
         return false;
@@ -57,7 +57,7 @@ public class RuntimeClassIntrinsic extends Intrinsic {
     @Override
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
         if ("$assertionsDisabled".equals(aFieldName)) {
-            aHelper.push(new IntegerValue(1));
+            aHelper.push(aInstruction.getOpcodeAddress(), new IntegerValue(1));
             return true;
         }
         return false;

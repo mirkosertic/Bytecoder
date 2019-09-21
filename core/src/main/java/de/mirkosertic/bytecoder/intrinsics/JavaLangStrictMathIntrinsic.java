@@ -33,7 +33,7 @@ public class JavaLangStrictMathIntrinsic extends Intrinsic {
                         aArguments.get(0));
                 final Variable theNewVariable = aTargetBlock
                         .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -41,7 +41,7 @@ public class JavaLangStrictMathIntrinsic extends Intrinsic {
                 final Value theValue = new FloatingPointFloorExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.toType(theSignature.getReturnType()));
                 final Variable theNewVariable = aTargetBlock
                         .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -49,7 +49,7 @@ public class JavaLangStrictMathIntrinsic extends Intrinsic {
                 final Value theValue = new FloatingPointCeilExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.toType(theSignature.getReturnType()));
                 final Variable theNewVariable = aTargetBlock
                         .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -58,7 +58,7 @@ public class JavaLangStrictMathIntrinsic extends Intrinsic {
                         aArguments.get(0), aArguments.get(1));
                 final Variable theNewVariable = aTargetBlock
                         .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }
@@ -67,7 +67,7 @@ public class JavaLangStrictMathIntrinsic extends Intrinsic {
                         aArguments.get(0), aArguments.get(1));
                 final Variable theNewVariable = aTargetBlock
                         .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                aHelper.push(theNewVariable);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
                 return true;
             }

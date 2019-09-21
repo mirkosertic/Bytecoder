@@ -35,9 +35,4 @@ public class NewObjectExpression extends Expression {
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

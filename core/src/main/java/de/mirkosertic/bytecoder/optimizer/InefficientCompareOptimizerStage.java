@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.optimizer;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
+import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataFlowEdgeType;
@@ -38,7 +39,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
 
     @Override
     public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
-            final ExpressionList aExpressionList, final Expression aExpression) {
+                               final ExpressionList aExpressionList, final Expression aExpression) {
         if (aExpression instanceof IFExpression) {
             final IFExpression theIf = (IFExpression) aExpression;
             final Value theCondition = theIf.incomingDataFlows().get(0);
@@ -49,15 +50,14 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                 if (theBefore instanceof VariableAssignmentExpression) {
                     final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theBefore;
                     final Variable theVariable = theAssignment.getVariable();
-                    if (!theVariable.isLocal()) {
-                        final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter())
-                                .collect(Collectors.toList());
-                        if ((theDataEdges.size() == 1) && (theFirst == theDataEdges.get(0).sourceNode())) {
-                            aExpressionList.remove(theAssignment);
-                            theBinary.replaceIncomingDataEdge(theVariable, theAssignment.getValue());
-                            aGraph.getProgram().deleteVariable(theVariable);
-                            return aExpression;
-                        }
+                    final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter())
+                            .collect(Collectors.toList());
+                    final BlockState theLiveOut = aCurrentNode.liveOut();
+                    if ((theDataEdges.size() == 1) && (theFirst == theDataEdges.get(0).sourceNode()) && !theLiveOut.contains(theVariable)) {
+                        aExpressionList.remove(theAssignment);
+                        theBinary.replaceIncomingDataEdge(theVariable, theAssignment.incomingDataFlows().get(0));
+                        aGraph.getProgram().deleteVariable(theVariable);
+                        return aExpression;
                     }
                 }
             }
@@ -72,7 +72,7 @@ public class InefficientCompareOptimizerStage implements OptimizerStage{
                         final Variable theVariable = theAssignment.getVariable();
                         final List<Edge> theDataEdges = theVariable.outgoingEdges(DataFlowEdgeType.filter()).collect(Collectors.toList());
                         if (theDataEdges.size() == 1 && theFirst == theVariable) {
-                            final Value theValue = theAssignment.getValue();
+                            final Value theValue = theAssignment.incomingDataFlows().get(0);
                             if (theValue instanceof CompareExpression) {
                                 final CompareExpression theCompare = (CompareExpression) theValue;
                                 final Value theA = theCompare.incomingDataFlows().get(0);

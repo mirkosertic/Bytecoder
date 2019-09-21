@@ -20,41 +20,60 @@ public class Variable extends Value {
     public static final String THISREF_NAME = "__tr";
 
     public static Variable createThisRef() {
-        final Variable theVariable = new Variable(TypeRef.Native.REFERENCE, THISREF_NAME, true);
-        theVariable.initializeWith(new SelfReferenceParameterValue());
+        final Variable theVariable = new Variable(TypeRef.Native.REFERENCE, THISREF_NAME, true, 0);
+        theVariable.initializeWith(new SelfReferenceParameterValue(), 0);
         return theVariable;
     }
 
     public static Variable createMethodParameter(final int aIndex, final TypeRef aTypeRef) {
-        final Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true);
-        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
+        final Variable theVariable = new Variable(aTypeRef, "p" + aIndex, true, 0);
+        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef), 0);
         return theVariable;
     }
 
     public static Variable createMethodParameter(final int aIndex, final String aName, final TypeRef aTypeRef) {
-        final Variable theVariable = new Variable(aTypeRef, aName, true);
-        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef));
+        final Variable theVariable = new Variable(aTypeRef, aName, true, 0);
+        theVariable.initializeWith(new MethodParameterValue(aIndex, aTypeRef), 0);
         return theVariable;
     }
 
     private final TypeRef type;
     private final String name;
     private final boolean synthetic;
+    private final LiveRange liveRange;
 
-    private Variable(final TypeRef aType, final String aName, final boolean aSynthetic) {
+    private Variable(final TypeRef aType, final String aName, final boolean aSynthetic, final long aDefinedAt) {
         type = aType;
         name = aName;
         synthetic = aSynthetic;
+        liveRange = new LiveRange(aDefinedAt, aDefinedAt);
     }
 
-    public Variable(final TypeRef aType, final String aName) {
-        this(aType, aName, false);
+    public Variable(final TypeRef aType, final String aName, final long definedAt) {
+        this(aType, aName, false, definedAt);
     }
 
-    public void initializeWith(final Value aValue) {
+    public LiveRange liveRange() {
+        return liveRange;
+    }
+
+    public void initializeWith(final Value aValue, final long analysisTime) {
         // Test there is a videst type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
+        liveRange.usedAt(analysisTime);
+
+        markUsageIn(aValue, analysisTime);
+    }
+
+    private void markUsageIn(final Value aValue, final long analysisTime) {
+        if (aValue instanceof Variable) {
+            ((Variable) aValue).liveRange().usedAt(analysisTime);
+        } else {
+            for (final Value theValue : aValue.incomingDataFlows()) {
+                markUsageIn(theValue, analysisTime);
+            }
+        }
     }
 
     @Override
@@ -73,17 +92,5 @@ public class Variable extends Value {
 
     public boolean isSynthetic() {
         return synthetic;
-    }
-
-    public boolean isLocal() {
-        return name.startsWith("local_");
-    }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        if (isLocal()) {
-            return true;
-        }
-        return super.isTrulyFunctional();
     }
 }

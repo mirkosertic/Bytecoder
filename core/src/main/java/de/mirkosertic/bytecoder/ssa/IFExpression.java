@@ -48,11 +48,6 @@ public class IFExpression extends Expression implements ExpressionListContainer 
     }
 
     @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
-
-    @Override
     public Expression deepCopy() {
         return new IFExpression(getProgram(), getAddress(), gotoAddress, incomingDataFlows().get(0), expressions.deepCopy());
     }

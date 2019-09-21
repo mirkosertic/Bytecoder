@@ -28,8 +28,4 @@ public class MemorySizeExpression extends Expression {
         return TypeRef.Native.INT;
     }
 
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

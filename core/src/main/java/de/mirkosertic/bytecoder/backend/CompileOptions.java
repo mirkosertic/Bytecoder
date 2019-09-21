@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
+import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.optimizer.Optimizer;
 
@@ -29,11 +30,13 @@ public class CompileOptions {
     private final int wasmMaximumPageSize;
     private final boolean minify;
     private final boolean preferStackifier;
+    private final Allocator allocator;
 
     public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
                           final String aFilenamePrefix, final int aWasmMinimumPageSize, final int aWasmMaximumPageSize,
                           final boolean aMinify,
-                          final boolean aPreferStackifier) {
+                          final boolean aPreferStackifier,
+                          final Allocator aAllocator) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
@@ -43,6 +46,7 @@ public class CompileOptions {
         wasmMaximumPageSize = aWasmMaximumPageSize;
         minify = aMinify;
         preferStackifier = aPreferStackifier;
+        allocator = aAllocator;
     }
 
     public Logger getLogger() {
@@ -79,5 +83,9 @@ public class CompileOptions {
 
     public boolean isPreferStackifier() {
         return preferStackifier;
+    }
+
+    public Allocator getAllocator() {
+        return allocator;
     }
 }

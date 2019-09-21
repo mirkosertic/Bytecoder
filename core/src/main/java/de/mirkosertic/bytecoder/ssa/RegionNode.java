@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
 
-    public final static Comparator<RegionNode> NODE_COMPARATOR = (o1, o2) -> Integer.compare(o1.getStartAddress().getAddress(), o2.getStartAddress().getAddress());
+    public final static Comparator<RegionNode> NODE_COMPARATOR = Comparator.comparingInt(o -> o.getStartAddress().getAddress());
 
     public static final Predicate<Edge> FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY = edge -> edge.edgeType() == ControlFlowEdgeType.forward &&
             ((RegionNode) edge.targetNode()).getType() == BlockType.NORMAL;
@@ -97,10 +97,12 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
     private final BytecodeOpcodeAddress startAddress;
     private final Program program;
     private final BlockType type;
-    private final Map<VariableDescription, Value> imported;
-    private final Map<VariableDescription, Value> exported;
+    private final Map<VariableDescription, Value> liveIn;
+    private final Map<VariableDescription, Value> liveOut;
     private final ControlFlowGraph owningGraph;
     private final ExpressionList expressions;
+    private long startAnalysisTime;
+    private long finishedAnalysisTime;
 
     protected RegionNode(
             final ControlFlowGraph aOwningGraph, final BlockType aType, final Program aProgram, final BytecodeOpcodeAddress aStartAddress) {
@@ -108,9 +110,25 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         owningGraph = aOwningGraph;
         startAddress = aStartAddress;
         program = aProgram;
-        imported = new HashMap<>();
-        exported = new HashMap<>();
+        liveIn = new HashMap<>();
+        liveOut = new HashMap<>();
         expressions = new ExpressionList();
+    }
+
+    public long getStartAnalysisTime() {
+        return startAnalysisTime;
+    }
+
+    public void setStartAnalysisTime(final long startAnalysisTime) {
+        this.startAnalysisTime = startAnalysisTime;
+    }
+
+    public long getFinishedAnalysisTime() {
+        return finishedAnalysisTime;
+    }
+
+    public void setFinishedAnalysisTime(final long finishedAnalysisTime) {
+        this.finishedAnalysisTime = finishedAnalysisTime;
     }
 
     public ExpressionList getExpressions() {
@@ -130,39 +148,21 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         return false;
     }
 
+    public boolean hasIncomingBackEdges() {
+        return incomingEdges().anyMatch(t -> t.edgeType() == ControlFlowEdgeType.back);
+    }
+
     public Set<RegionNode> getPredecessorsIgnoringBackEdges() {
         return incomingEdges().filter(t -> t.edgeType() == ControlFlowEdgeType.forward).map(t -> (RegionNode) t.sourceNode()).collect(Collectors.toSet());
+    }
+
+    public Set<RegionNode> getPredecessors() {
+        return incomingEdges().map(t -> (RegionNode) t.sourceNode()).collect(Collectors.toSet());
     }
 
     public BytecodeOpcodeAddress getStartAddress() {
         return startAddress;
     }
-
-    public Variable setLocalVariable(final BytecodeOpcodeAddress aAddress, final int aIndex, final TypeRef aType, final Value aValue) {
-        final String theName = "local_" + aIndex + "_" + aType.resolve().name();
-        for (final Variable v : program.getVariables()) {
-            if (v.getName().equals(theName)) {
-                expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
-                v.receivesDataFrom(aValue);
-                return v;
-            }
-        }
-        final Variable v = program.createVariable(theName, aValue.resolveType());
-        expressions.add(new VariableAssignmentExpression(program, aAddress, v, aValue));
-        v.initializeWith(aValue);
-        return v;
-    }
-
-    public Variable findLocalVariable(final int index, final TypeRef aType) {
-        final String theName = "local_" + index + "_" + aType.resolve().name();
-        final List<Variable> theKnown = program.getVariables().stream().filter(t -> t.getName().equals(theName)).collect(Collectors.toList());
-        if (theKnown.size() != 1) {
-            // At this point we assume there is such a variable and we use it
-            return program.createVariable(theName, aType);
-        }
-        return theKnown.get(0);
-    }
-
 
     public Variable newVariable(final TypeRef aType) {
         return program.createVariable(aType);
@@ -174,37 +174,43 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
             if (theVar.isSynthetic()) {
                 return theVar;
             }
-
         }
-        return newVariable(aAddress, aType, aValue, false);
-    }
-
-    private Variable newVariable(final BytecodeOpcodeAddress aAddress, final TypeRef aType, final Value aValue, final boolean aIsImport)  {
         final Variable theNewVariable = newVariable(aType);
-        theNewVariable.initializeWith(aValue);
-        if (!aIsImport) {
-            expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
-        }
+        theNewVariable.initializeWith(aValue, program.getAnalysisTime());
+        expressions.add(new VariableAssignmentExpression(program, aAddress, theNewVariable, aValue));
         return theNewVariable;
     }
 
-    public Variable newImportedVariable(final TypeRef aType, final VariableDescription aDescription) {
-        final Variable theVariable = newVariable(aType);
-        imported.put(aDescription, theVariable);
-        return theVariable;
+    public void addToLiveIn(final Value aValue, final VariableDescription aDescription) {
+        liveIn.put(aDescription, aValue);
     }
 
-    public void addToExportedList(final Value aValue, final VariableDescription aDescription) {
-        exported.put(aDescription, aValue);
+    public void addToLiveOut(final Value aValue, final VariableDescription aDescription) {
+        liveOut.put(aDescription, aValue);
     }
 
-    public void addToImportedList(final Value aValue, final VariableDescription aDescription) {
-        imported.put(aDescription, aValue);
+    public void replaceInLiveInAndOut(final Variable key, final Value value) {
+        final Set<VariableDescription> theInDesc = liveIn.entrySet().stream().filter(t -> t.getValue() == key).map(Map.Entry::getKey).collect(Collectors.toSet());
+        for (final VariableDescription desc : theInDesc) {
+            liveIn.put(desc, value);
+        }
+        final Set<VariableDescription> theOutDesc = liveOut.entrySet().stream().filter(t -> t.getValue() == key).map(Map.Entry::getKey).collect(Collectors.toSet());
+        for (final VariableDescription desc : theOutDesc) {
+            liveOut.put(desc, value);
+        }
     }
 
-    public BlockState toStartState() {
+    public BlockState liveIn() {
         final BlockState theState = new BlockState();
-        for (final Map.Entry<VariableDescription, Value> theEntry : imported.entrySet()) {
+        for (final Map.Entry<VariableDescription, Value> theEntry : liveIn.entrySet()) {
+            theState.assignToPort(theEntry.getKey(), theEntry.getValue());
+        }
+        return theState;
+    }
+
+    public BlockState liveOut() {
+        final BlockState theState = new BlockState();
+        for (final Map.Entry<VariableDescription, Value> theEntry : liveOut.entrySet()) {
             theState.assignToPort(theEntry.getKey(), theEntry.getValue());
         }
         return theState;

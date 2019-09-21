@@ -16,8 +16,6 @@
 package de.mirkosertic.bytecoder.intrinsics;
 
 import de.mirkosertic.bytecoder.classlib.Address;
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.*;
@@ -30,11 +28,6 @@ public class MemoryManagerIntrinsic extends Intrinsic {
     @Override
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
 
-        if (Objects.equals(aTargetClass.name(), MemoryManager.class.getName()) && "initTestMemory".equals(aMethodName)) {
-            // This invocation can be skipped!!!
-            return true;
-        }
-
         if (Objects.equals(aTargetClass.name(), Address.class.getName())) {
             switch (aMethodName) {
                 case "setIntValue": {
@@ -44,31 +37,17 @@ public class MemoryManagerIntrinsic extends Intrinsic {
                     final Value theNewValue = aArguments.get(2);
 
                     final ComputedMemoryLocationWriteExpression theLocation = new ComputedMemoryLocationWriteExpression(aProgram, aInstruction.getOpcodeAddress(), theTarget, theOffset);
-                    final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theLocation);
-                    aTargetBlock.getExpressions().add(new SetMemoryLocationExpression(aProgram, aInstruction.getOpcodeAddress(), theNewVariable, theNewValue));
+                    aTargetBlock.getExpressions().add(new SetMemoryLocationExpression(aProgram, aInstruction.getOpcodeAddress(), theLocation, theNewValue));
 
-                    return true;
-                }
-                case "getStart": {
-
-                    final Value theTarget = aArguments.get(0);
-                    final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theTarget);
-
-                    aHelper.push(theNewVariable);
                     return true;
                 }
                 case "getStackTop": {
-
-                    final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, new StackTopExpression(aProgram, aInstruction.getOpcodeAddress()));
-
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), new StackTopExpression(aProgram, aInstruction.getOpcodeAddress()));
                     return true;
                 }
                 case "getMemorySize": {
 
-                    final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, new MemorySizeExpression(aProgram, aInstruction.getOpcodeAddress()));
-
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), new MemorySizeExpression(aProgram, aInstruction.getOpcodeAddress()));
                     return true;
                 }
                 case "getIntValue": {
@@ -76,9 +55,7 @@ public class MemoryManagerIntrinsic extends Intrinsic {
                     final Value theTarget = aArguments.get(0);
                     final Value theOffset = aArguments.get(1);
 
-                    final ComputedMemoryLocationReadExpression theLocation = new ComputedMemoryLocationReadExpression(aProgram, aInstruction.getOpcodeAddress(), theTarget, theOffset);
-                    final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.INT, theLocation);
-                    aHelper.push(theNewVariable);
+                    aHelper.push(aInstruction.getOpcodeAddress(), new ComputedMemoryLocationReadExpression(aProgram, aInstruction.getOpcodeAddress(), theTarget, theOffset));
 
                     return true;
                 }
@@ -89,17 +66,6 @@ public class MemoryManagerIntrinsic extends Intrinsic {
                 default:
                     throw new IllegalStateException("Not implemented : " + aMethodName);
             }
-        }
-        return false;
-    }
-
-    @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction, final String aMethodName, final BytecodeObjectTypeRef aType, final List<Value> aArguments, final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
-
-        if (Objects.equals(aType, BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-            aTarget.initializeWith(aArguments.get(0));
-            aTargetBlock.getExpressions().add(new VariableAssignmentExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget, aArguments.get(0)));
-            return true;
         }
         return false;
     }
