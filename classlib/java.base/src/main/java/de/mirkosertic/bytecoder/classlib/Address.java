@@ -20,33 +20,13 @@ import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 @EmulatedByRuntime
 public class Address {
 
-    private int start;
+    public static native int getIntValue(int aAddress, int aIndex);
 
-    public Address(int aStart) {
-        start = aStart;
-    }
+    public static native void setIntValue(int aAddress, int aIndex, int aValue);
 
-    public static int getStart(Address aAddress) {
-        return aAddress.start;
-    }
+    public static native int getStackTop();
 
-    public static int getIntValue(Address aAddress, int aIndex) {
-        return (int) MemoryManager.data[aAddress.start + aIndex];
-    }
+    public static native int getMemorySize();
 
-    public static void setIntValue(Address aAddress, int aIndex, int aValue) {
-        MemoryManager.data[aAddress.start + aIndex] = aValue;
-    }
-
-    public static int getStackTop() {
-        return 0;
-    }
-
-    public static int getMemorySize() {
-        return 0;
-    }
-
-    public static void unreachable() {
-        throw new RuntimeException();
-    };
+    public static native void unreachable();
 }

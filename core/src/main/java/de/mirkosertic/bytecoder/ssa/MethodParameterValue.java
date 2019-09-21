@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class MethodParameterValue extends PrimitiveValue {
+public class MethodParameterValue extends PrimitiveValue implements Constant {
 
     private final int parameterIndex;
     private final TypeRef typeRef;
 
-    public MethodParameterValue(int aParameterIndex, TypeRef aTypeRef) {
+    public MethodParameterValue(final int aParameterIndex, final TypeRef aTypeRef) {
         parameterIndex = aParameterIndex;
         typeRef = aTypeRef;
     }

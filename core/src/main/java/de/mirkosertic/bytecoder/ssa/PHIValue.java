@@ -15,16 +15,18 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+public class PHIValue extends Value {
 
-public class UnknownExpression extends Expression {
+    private final VariableDescription description;
+    private final TypeRef typeRef;
 
-    public UnknownExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
-        super(aProgram, address);
+    public PHIValue(final VariableDescription description, final TypeRef typeRef) {
+        this.description = description;
+        this.typeRef = typeRef;
     }
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.UNKNOWN;
+        return typeRef;
     }
 }

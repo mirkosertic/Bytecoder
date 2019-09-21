@@ -29,9 +29,4 @@ public class GotoExpression extends Expression {
     public BytecodeOpcodeAddress jumpTarget() {
         return jumpTarget;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

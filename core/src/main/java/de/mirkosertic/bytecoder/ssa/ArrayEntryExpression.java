@@ -31,9 +31,4 @@ public class ArrayEntryExpression extends Expression {
     public TypeRef resolveType() {
         return arrayType;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return true;
-    }
 }

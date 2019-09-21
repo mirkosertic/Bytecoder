@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class IntegerValue extends PrimitiveValue {
+public class IntegerValue extends PrimitiveValue implements Constant {
 
     private final int intValue;
 
-    public IntegerValue(int aIntValue) {
+    public IntegerValue(final int aIntValue) {
         intValue = aIntValue;
     }
 

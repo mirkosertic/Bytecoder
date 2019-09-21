@@ -15,12 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
@@ -75,6 +71,7 @@ import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
@@ -90,6 +87,7 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -110,13 +108,20 @@ import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
 import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.UnknownExpression;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparingLong;
 
 public class JSSSAWriter {
 
@@ -128,9 +133,10 @@ public class JSSSAWriter {
     private boolean labelRequired;
     private final JSMinifier minifier;
     private final int indent;
+    private final AbstractAllocator allocator;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier) {
+                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final AbstractAllocator aAllocator) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -139,14 +145,19 @@ public class JSSSAWriter {
         labelRequired = aLabelRequired;
         minifier = aMinifier;
         indent = aIndent;
+        allocator = aAllocator;
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier);
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, allocator);
     }
 
     public JSPrintWriter startLine() {
         return writer.tab(indent);
+    }
+
+    public String toRegisterName(final Register r) {
+        return "r" + r.getNumber();
     }
 
     private void print(final Value aValue) {
@@ -213,8 +224,6 @@ public class JSSSAWriter {
             print((MethodParameterValue) aValue);
         } else if (aValue instanceof CurrentExceptionExpression) {
             print((CurrentExceptionExpression) aValue);
-        } else if (aValue instanceof UnknownExpression) {
-            print((UnknownExpression) aValue);
         } else if (aValue instanceof FloorExpression) {
             print((FloorExpression) aValue);
         } else if (aValue instanceof MethodRefExpression) {
@@ -251,8 +260,33 @@ public class JSSSAWriter {
             print((EnumConstantsExpression) aValue);
         } else if (aValue instanceof NewObjectAndConstructExpression) {
             print((NewObjectAndConstructExpression) aValue);
+        } else if (aValue instanceof PHIValue) {
+            print((PHIValue) aValue);
+        } else if (aValue instanceof IsNaNExpression) {
+            print((IsNaNExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
+        }
+    }
+
+    private void print(final IsNaNExpression aExpression) {
+        writer.text("(!(");
+
+        final Value theIncoming = aExpression.incomingDataFlows().get(0);
+        print(theIncoming);
+        writer.text("==");
+        print(theIncoming);
+
+        writer.text("))");
+    }
+
+    private void print(final PHIValue p) {
+        final Variable v = allocator.variableAssignmentFor(p);
+        if (v.isSynthetic()) {
+            printVariableName(v);
+        } else {
+            final Register r = allocator.registerAssignmentFor(v);
+            writer.text(toRegisterName(r));
         }
     }
 
@@ -306,7 +340,19 @@ public class JSSSAWriter {
     }
 
     private void print(final MemorySizeExpression aValue) {
-        writer.text("0");
+        writer.text("1000");
+    }
+
+    public void printRegisterDeclarations() {
+        final List<Register> theList = allocator.assignedRegister();
+        theList.sort(comparingLong(Register::getNumber));
+        for (final Register r : theList) {
+            final JSPrintWriter thePW = startLine().text("var ").text(toRegisterName(r)).assign().text("null;");
+            if (options.isDebugOutput()) {
+                thePW.text(" // type is ").text(r.getType().resolve().name());
+            }
+            thePW.newLine();
+        }
     }
 
     private void print(final ResolveCallsiteObjectExpression aValue) {
@@ -319,11 +365,10 @@ public class JSSSAWriter {
         final Program theProgram = aValue.getProgram();
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
-        final JSSSAWriter theNested = withDeeperIndent();
+        final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, Variable::resolveType, linkerContext);
+        final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator);
 
-        for (final Variable theVariable : theProgram.globalVariables()) {
-            theNested.startLine().text("var ").text(theVariable.getName()).assign().text("null;").newLine();
-        }
+        theNested.printRegisterDeclarations();
 
         theNested.writeExpressions(theBootstrapCode.getExpressions());
 
@@ -383,7 +428,7 @@ public class JSSSAWriter {
 
         final List<Value> theIncomingData = aValue.incomingDataFlows();
 
-        writer.text("bytecoderGlobalMemory[");
+        writer.text("bytecoder.memory[");
         print(theIncomingData.get(0));
         writer.space().text("+").space();
         print(theIncomingData.get(1));
@@ -414,10 +459,6 @@ public class JSSSAWriter {
         writer.text("Math.ceil(");
         print(aValue.incomingDataFlows().get(0));
         writer.text(")");
-    }
-
-    private void print(final UnknownExpression aValue) {
-        writer.text("undefined");
     }
 
     private void print(final CurrentExceptionExpression aValue) {
@@ -998,7 +1039,7 @@ public class JSSSAWriter {
             }
         }
 
-        if (!(theClasses.stream().filter(BytecodeLinkedClass::isOpaqueType).count() == 0)) {
+        if (theClasses.stream().anyMatch(BytecodeLinkedClass::isOpaqueType)) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
@@ -1033,7 +1074,12 @@ public class JSSSAWriter {
         if (Variable.THISREF_NAME.equals(aVariable.getName())) {
             writer.text("this");
         } else {
-            writer.text(minifier.toVariableName(aVariable.getName()));
+            if (aVariable.isSynthetic()) {
+                writer.text(minifier.toVariableName(aVariable.getName()));
+            } else {
+                final Register r = allocator.registerAssignmentFor(aVariable);
+                writer.text(toRegisterName(r));
+            }
         }
     }
 
@@ -1076,7 +1122,7 @@ public class JSSSAWriter {
             final VariableAssignmentExpression theE = (VariableAssignmentExpression) aExpression;
 
             final Variable theVariable = theE.getVariable();
-            final Value theValue = theE.getValue();
+            final Value theValue = theE.incomingDataFlows().get(0);
 
             if (theValue instanceof ComputedMemoryLocationWriteExpression) {
                 return;
@@ -1084,27 +1130,46 @@ public class JSSSAWriter {
 
             final JSPrintWriter theWriter = startLine();
 
-            if (!program.isGlobalVariable(theVariable)) {
-                theWriter.text("var ");
-            }
-
-            if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
-                if (!(theValue instanceof IntegerValue)) {
-                    theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
-                    print(theValue);
-                    theWriter.text(") | 0");
+            if (theVariable.isSynthetic()) {
+                if (theVariable.resolveType().resolve() == TypeRef.Native.INT) {
+                    if (!(theValue instanceof IntegerValue)) {
+                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space().text("(");
+                        print(theValue);
+                        theWriter.text(") | 0");
+                    } else {
+                        theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
+                        print(theValue);
+                    }
                 } else {
                     theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
                     print(theValue);
                 }
+                if (options.isDebugOutput()) {
+                    theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name()).newLine();
+                } else {
+                    theWriter.text(";").newLine();
+                }
+
             } else {
-                theWriter.text(minifier.toVariableName(theVariable.getName())).space().text("=").space();
-                print(theValue);
-            }
-            if (options.isDebugOutput()) {
-                theWriter.text("; // type is ").text(theVariable.resolveType().resolve().name() + " value type is " + theValue.resolveType()).newLine();
-            } else {
-                theWriter.text(";").newLine();
+                final Register r = allocator.registerAssignmentFor(theVariable);
+                if (r.getType().resolve() == TypeRef.Native.INT) {
+                    if (!(theValue instanceof IntegerValue)) {
+                        theWriter.text(toRegisterName(r)).space().text("=").space().text("(");
+                        print(theValue);
+                        theWriter.text(") | 0");
+                    } else {
+                        theWriter.text(toRegisterName(r)).space().text("=").space();
+                        print(theValue);
+                    }
+                } else {
+                    theWriter.text(toRegisterName(r)).space().text("=").space();
+                    print(theValue);
+                }
+                if (options.isDebugOutput()) {
+                    theWriter.text("; // type is ").text(r.getType().resolve().name()).newLine();
+                } else {
+                    theWriter.text(";").newLine();
+                }
             }
         } else if (aExpression instanceof PutStaticExpression) {
             final PutStaticExpression theE = (PutStaticExpression) aExpression;
@@ -1250,9 +1315,9 @@ public class JSSSAWriter {
 
             final List<Value> theIncomingData = theE.incomingDataFlows();
 
-            startLine().text("bytecoderGlobalMemory[");
+            startLine().text("bytecoder.memory[");
 
-            final ComputedMemoryLocationWriteExpression theValue = (ComputedMemoryLocationWriteExpression) theIncomingData.get(0);
+            final Value theValue = theIncomingData.get(0);
 
             print(theValue);
 
@@ -1310,6 +1375,10 @@ public class JSSSAWriter {
             withDeeperIndent().writeExpressions(theE.getElsePart());
 
             startLine().text("}").newLine();
+        } else if (aExpression instanceof NewObjectAndConstructExpression) {
+            final JSSSAWriter theDeeper = withDeeperIndent();
+            theDeeper.print((NewObjectAndConstructExpression) aExpression);
+            theDeeper.writer.text(";");
         } else {
             throw new IllegalStateException("Not implemented : " + aExpression);
         }

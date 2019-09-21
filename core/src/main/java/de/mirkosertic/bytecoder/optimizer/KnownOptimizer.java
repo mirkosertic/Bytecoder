@@ -33,13 +33,14 @@ public enum KnownOptimizer implements Optimizer {
         @Override
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
+            theOptimizer.add(new InlineMethodParameterOptimizer());
+            theOptimizer.add(new InlineConstVariablesOptimizer());
             theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
-                    new DropUnusedReturnValuesOptimizerStage(),
-                    new InefficientCompareOptimizerStage(),
-                    new RedundantVariablesOptimizerStage(),
                     new InvokeVirtualOptimizerStage(),
-                    new DirectAssignmentOptimizerStage(),
-                    new RedundantVariablesForIfOptimizerStage(),
+                    new InefficientCompareOptimizerStage(),
+                    new InlineCallArgumentsOptimizerStage(),
+                    new MemberFieldReadOptimizerStage(),
+                    new MemberFieldWriteOptimizerStage()
             }));
             run(aGraph, aLinkerContext, theOptimizer);
         }

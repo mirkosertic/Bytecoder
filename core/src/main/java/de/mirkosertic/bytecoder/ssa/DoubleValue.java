@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class DoubleValue extends PrimitiveValue {
+public class DoubleValue extends PrimitiveValue implements Constant {
 
     private final double doubleValue;
 
-    public DoubleValue(double aDoubleValue) {
+    public DoubleValue(final double aDoubleValue) {
         doubleValue = aDoubleValue;
     }
 

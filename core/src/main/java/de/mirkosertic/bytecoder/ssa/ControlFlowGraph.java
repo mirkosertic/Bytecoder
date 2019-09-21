@@ -48,20 +48,8 @@ public class ControlFlowGraph {
         return program;
     }
 
-    public Set<RegionNode> finalNodes() {
-        final Set<RegionNode> theNodes = new HashSet<>();
-        for (final RegionNode theNode : knownNodes) {
-            final Set<RegionNode> theSuccessors = new HashSet<>();
-            for (final Edge<ControlFlowEdgeType, RegionNode> theSuccessor : theNode.outgoingEdges().collect(Collectors.toList())) {
-                if (theSuccessor.edgeType() == ControlFlowEdgeType.forward) {
-                    theSuccessors.add(theSuccessor.targetNode());
-                }
-            }
-            if (theSuccessors.isEmpty()) {
-                theNodes.add(theNode);
-            }
-        }
-        return theNodes;
+    public Dominators<RegionNode> dominators() {
+        return dominators;
     }
 
     public boolean dominates(final RegionNode dominator, final RegionNode dominated) {
@@ -115,10 +103,6 @@ public class ControlFlowGraph {
             }
         }
         throw new IllegalArgumentException("Unknown address : " + aAddress.getAddress());
-    }
-
-    public List<RegionNode> getKnownNodes() {
-        return new ArrayList<>(knownNodes);
     }
 
     public List<RegionNode.ExceptionHandler> exceptionHandlersStartingAt(final BytecodeOpcodeAddress aAddress) {
@@ -257,7 +241,7 @@ public class ControlFlowGraph {
                         thePW.print(theRegister.idFor(theTarget));
                         thePW.println(";");
 
-                        final Value theValue = theAssignment.getValue();
+                        final Value theValue = theAssignment.incomingDataFlows().get(0);
                         theAllValues.add(theValue);
 
                         String theValueID = null;

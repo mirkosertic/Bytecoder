@@ -30,11 +30,11 @@ public class BlockState {
         return ports;
     }
 
-    public void assignToPort(VariableDescription aDescription, Value aValue) {
+    public void assignToPort(final VariableDescription aDescription, final Value aValue) {
         ports.put(aDescription, aValue);
     }
 
-    public Value findBySlot(VariableDescription aDescription) {
-        return ports.get(aDescription);
+    public boolean contains(final Value value) {
+        return ports.values().contains(value);
     }
 }

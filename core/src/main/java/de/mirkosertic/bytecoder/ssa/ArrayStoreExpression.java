@@ -30,9 +30,4 @@ public class ArrayStoreExpression extends Expression {
     public TypeRef getArrayType() {
         return arrayType;
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

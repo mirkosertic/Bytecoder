@@ -23,9 +23,4 @@ public class SetMemoryLocationExpression extends Expression {
         super(aProgram, aOpCodeAddress);
         receivesDataFrom(aAddress, aValue);
     }
-
-    @Override
-    public boolean isTrulyFunctional() {
-        return false;
-    }
 }

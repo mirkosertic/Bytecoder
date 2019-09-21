@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
@@ -331,6 +332,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab().text("stringpool").colon().text("[],").newLine();
 
+        theWriter.tab().text("memory").colon().text("[],").newLine();
+
         theWriter.text("};").newLine();
 
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
@@ -574,16 +577,18 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 final Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer
-                aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                if (!theMethod.getAccessFlags().isAbstract() && !theMethod.getAccessFlags().isNative()) {
+                    aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                }
 
                 final StringBuilder theArguments = new StringBuilder();
                 boolean first = true;
-                for (final Program.Argument theArgument : theSSAProgram.getArguments()) {
-                    if (!Variable.THISREF_NAME.equals(theArgument.getVariable().getName())) {
+                for (final Variable theVariable : theSSAProgram.getArguments()) {
+                    if (!Variable.THISREF_NAME.equals(theVariable.getName())) {
                         if (!first) {
                             theArguments.append(',');
                         }
-                        theArguments.append(theMinifier.toVariableName(theArgument.getVariable().getName()));
+                        theArguments.append(theMinifier.toVariableName(theVariable.getName()));
                         first = false;
                     }
                 }
@@ -624,22 +629,17 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 if (aOptions.isDebugOutput()) {
                     theWriter.tab(2).text("/**").newLine();
-                    theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
+                    //theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
                     theWriter.tab(2).text("**/").newLine();
                 }
 
                 theWriter.flush();
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier);
-                for (final Variable theVariable : theSSAProgram.globalVariables()) {
-                    if (!theVariable.isSynthetic()) {
-                        final JSPrintWriter thePW = theVariablesWriter.startLine().text("var ").text(theMinifier.toVariableName(theVariable.getName())).assign().text("null;");
-                        if (aOptions.isDebugOutput()) {
-                            thePW.text(" // type is ").text(theVariable.resolveType().resolve().name()).text(" # of inits = " + theVariable.incomingDataFlows().size());
-                        }
-                        thePW.newLine();
-                    }
-                }
+                // Perform register allocation
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, t -> t.resolveType(), aLinkerContext);
+
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator);
+                theVariablesWriter.printRegisterDeclarations();
 
                 // Try to reloop it or stackify it!
                 try {

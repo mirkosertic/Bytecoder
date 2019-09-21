@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -33,7 +32,7 @@ public class SinglePassOptimizer implements Optimizer {
 
     @Override
     public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
-        for (final RegionNode theNode : aGraph.getKnownNodes()) {
+        for (final RegionNode theNode : aGraph.dominators().getPreOrder()) {
             optimize(aGraph, aLinkerContext, theNode, theNode.getExpressions());
         }
     }

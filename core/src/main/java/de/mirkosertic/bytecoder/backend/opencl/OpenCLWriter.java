@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLFunction;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -49,6 +51,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Label;
 import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -63,7 +66,6 @@ import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.PrintWriter;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -77,23 +79,27 @@ public class OpenCLWriter extends IndentSSAWriter {
     private final BytecodeLinkedClass kernelClass;
     private final AtomicBoolean stackifierOutout;
     private final Set<Label> recordedNextLabels;
+    private AbstractAllocator allocator;
 
     public OpenCLWriter(
             final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs) {
-        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>());
+        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>(), null);
     }
 
     private OpenCLWriter(
-            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs, final AtomicBoolean aStackifierOutout, final Set<Label> aRecordedNextLabels) {
+            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs, final AtomicBoolean aStackifierOutout, final Set<Label> aRecordedNextLabels,
+            final AbstractAllocator aRegisterAllocator) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         inputOutputs = aInputOutputs;
         kernelClass = aKernelClass;
         stackifierOutout = aStackifierOutout;
         recordedNextLabels = aRecordedNextLabels;
+        allocator = aRegisterAllocator;
     }
 
-    public void printReloopedKernel(final Relooper.Block aBlock) {
+    public void printReloopedKernel(final Relooper.Block aBlock, final AbstractAllocator registerAllocator) {
         stackifierOutout.set(false);
+        allocator = registerAllocator;
 
         print("__kernel void BytecoderKernel(");
 
@@ -110,9 +116,10 @@ public class OpenCLWriter extends IndentSSAWriter {
         println("}");
     }
 
-    public void printReloopedInline(final BytecodeMethod aMethod, final Program aProgram, final Relooper.Block aBlock) {
+    public void printReloopedInline(final BytecodeMethod aMethod, final Program aProgram, final Relooper.Block aBlock, final AbstractAllocator registerAllocator) {
 
         stackifierOutout.set(false);
+        allocator = registerAllocator;
 
         final BytecodeMethodSignature theSignature = aMethod.getSignature();
 
@@ -125,17 +132,17 @@ public class OpenCLWriter extends IndentSSAWriter {
         printInputOutputArgs(inputOutputs.arguments());
         boolean theFirst = inputOutputs.arguments().isEmpty();
 
-        final List<Program.Argument> theProgramArguments = aProgram.getArguments();
+        final List<Variable> theProgramArguments = aProgram.getArguments();
         for (int i=1;i<theProgramArguments.size();i++) {
-            final Program.Argument theArgument = theProgramArguments.get(i);
+            final Variable theVariable = theProgramArguments.get(i);
             if (theFirst) {
                 theFirst = false;
             } else {
                 print(", ");
             }
-            print(toType(theArgument.getVariable().resolveType()));
+            print(toType(theVariable.resolveType()));
             print(" ");
-            print(theArgument.getVariable().getName());
+            print(theVariable.getName());
         }
 
         println(") {");
@@ -283,7 +290,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private OpenCLWriter withDeeperIndent() {
-        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels);
+        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels, allocator);
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -303,8 +310,9 @@ public class OpenCLWriter extends IndentSSAWriter {
             final VariableAssignmentExpression theInit = (VariableAssignmentExpression) expression;
 
             final Variable theVariable = theInit.getVariable();
-            final Value theValue = theInit.getValue();
-            print(theVariable.getName());
+            final Register r = allocator.registerAssignmentFor(theVariable);
+            final Value theValue = theInit.incomingDataFlows().get(0);
+            print(registerName(r));
             print(" = ");
             printValue(theValue);
             println(";");
@@ -403,6 +411,11 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private String toStructName(final BytecodeObjectTypeRef aObjectType) {
+        if (kernelClass.getClassName().equals(aObjectType)) {
+            // Kernel classes are mapped to type int,
+            // which is not used
+            return "int";
+        }
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aObjectType);
         final BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
         final BytecodeAnnotation theAnnotation = theBytecodeClass.getAttributes().getAnnotationByType(OpenCLType.class.getName());
@@ -440,7 +453,16 @@ public class OpenCLWriter extends IndentSSAWriter {
     private void printValue(final Value aValue) {
         if (aValue instanceof Variable) {
             final Variable theVariable = (Variable) aValue;
-            print(theVariable.getName());
+            if (!theVariable.isSynthetic()) {
+                final Register r = allocator.registerAssignmentFor(theVariable);
+                print(registerName(r));
+            } else {
+                if (Variable.THISREF_NAME.equalsIgnoreCase(theVariable.getName())) {
+                    print(0);
+                } else {
+                    print(theVariable.getName());
+                }
+            }
         } else if (aValue instanceof InvokeVirtualMethodExpression) {
             printInvokeVirtual((InvokeVirtualMethodExpression) aValue);
         } else if (aValue instanceof InvokeStaticMethodExpression) {
@@ -467,6 +489,14 @@ public class OpenCLWriter extends IndentSSAWriter {
             printDirectInvokeMethodExpression((DirectInvokeMethodExpression) aValue);
         } else if (aValue instanceof FloorExpression) {
             printFloorExpression((FloorExpression) aValue);
+        } else if (aValue instanceof PHIValue) {
+            final Variable v = allocator.variableAssignmentFor((PHIValue) aValue);
+            if (v.isSynthetic()) {
+                print(v.getName());
+            } else {
+                final Register r = allocator.registerAssignmentFor(v);
+                print(registerName(r));
+            }
         } else {
             throw new IllegalArgumentException("Not supported : " + aValue);
         }
@@ -621,8 +651,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printGetFieldValue(final GetFieldExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
-        if (theLinkedClass == kernelClass) {
+        if (kernelClass.getClassName().equals(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()))) {
             print(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         } else {
             final Value theValue = aValue.incomingDataFlows().get(0);
@@ -647,8 +676,43 @@ public class OpenCLWriter extends IndentSSAWriter {
         print("]");
     }
 
-    private void printInvokeVirtual(final InvokeVirtualMethodExpression aValue) {
-        throw new IllegalArgumentException("Not supported method : " + aValue.getMethodName());
+    private void printInvokeVirtual(final InvokeVirtualMethodExpression aExpression) {
+        if (kernelClass.getClassName().equals(aExpression.getInvokedClass())) {
+            print(aExpression.getMethodName());
+            print("(");
+
+            final List<OpenCLInputOutputs.KernelArgument> theArguments = inputOutputs.arguments();
+            boolean theFirst = true;
+            for (int i = 0; i<theArguments.size(); i++) {
+                theFirst = false;
+                if (i>0) {
+                    print(", ");
+                }
+                final OpenCLInputOutputs.KernelArgument theArgument = theArguments.get(i);
+                print(theArgument.getField().getValue().getName().stringValue());
+            }
+
+            final BytecodeMethodSignature theSignature = aExpression.getSignature();
+            final List<Value> theMethodArguments = aExpression.incomingDataFlows();
+            for (int i=1;i<theMethodArguments.size();i++) {
+                final Value theValue = theMethodArguments.get(i);
+                if (theFirst) {
+                    theFirst = false;
+                } else {
+                    print(",");
+                }
+                if (!theSignature.getArguments()[i - 1].isPrimitive()) {
+                    // Everything except primitives is passed by reference
+                    print("&");
+                }
+
+                printValue(theValue);
+            }
+
+            print(")");
+            return;
+        }
+        throw new IllegalArgumentException("Not supported virtual method invocation : " + aExpression.getMethodName());
     }
 
     private void printInvokeStatic(final InvokeStaticMethodExpression aValue) {
@@ -722,32 +786,37 @@ public class OpenCLWriter extends IndentSSAWriter {
         }
     }
 
+    private String registerName(final Register r) {
+        if (r == null) {
+            throw new IllegalStateException();
+        }
+        return "r" + r.getNumber();
+    }
+
     private void printProgramVariablesDeclaration(final Program program) {
-        final List<Variable> theVariables = program.getVariables();
-        theVariables.sort(Comparator.comparing(Variable::getName));
-        for (final Variable theVariable : theVariables) {
-            if (!theVariable.isSynthetic()) {
-                final TypeRef theVarType = theVariable.resolveType();
-                if (theVarType.isArray()) {
-                    print("__global ");
-                    print(toType(theVarType));
-                    print("* ");
-                    print(theVariable.getName());
-                    println(";");
-                } else {
-                    print(toType(theVarType));
-                    print(" ");
-                    print(theVariable.getName());
-                    println(";");
-                }
+        final List<Register> theRegisters = allocator.assignedRegister();
+        for (final Register r : theRegisters) {
+            final TypeRef theVarType = r.getType();
+            if (theVarType.isArray()) {
+                print("__global ");
+                print(toType(theVarType));
+                print("* ");
+                print(registerName(r));
+                println(";");
+            } else {
+                print(toType(theVarType));
+                print(" ");
+                print(registerName(r));
+                println(";");
             }
         }
     }
 
-    public void writeStackifiedKernel(final Program program, final Stackifier stackifier) {
+    public void writeStackifiedKernel(final Program program, final Stackifier stackifier, final AbstractAllocator registerAllocator) {
 
         stackifierOutout.set(true);
         recordedNextLabels.clear();
+        allocator = registerAllocator;
 
         print("__kernel void BytecoderKernel(");
 
@@ -815,9 +884,10 @@ public class OpenCLWriter extends IndentSSAWriter {
         println("}");
     }
 
-    public void writeStackifiedInline(final BytecodeMethod method, final Program program, final Stackifier stackifier) {
+    public void writeStackifiedInline(final BytecodeMethod method, final Program program, final Stackifier stackifier, final AbstractAllocator registerAllocator) {
         stackifierOutout.set(true);
         recordedNextLabels.clear();
+        allocator = registerAllocator;
 
         final BytecodeMethodSignature theSignature = method.getSignature();
 
@@ -830,17 +900,17 @@ public class OpenCLWriter extends IndentSSAWriter {
         printInputOutputArgs(inputOutputs.arguments());
         boolean theFirst = inputOutputs.arguments().isEmpty();
 
-        final List<Program.Argument> theProgramArguments = program.getArguments();
+        final List<Variable> theProgramArguments = program.getArguments();
         for (int i=1;i<theProgramArguments.size();i++) {
-            final Program.Argument theArgument = theProgramArguments.get(i);
+            final Variable theVariable = theProgramArguments.get(i);
             if (theFirst) {
                 theFirst = false;
             } else {
                 print(", ");
             }
-            print(toType(theArgument.getVariable().resolveType()));
+            print(toType(theVariable.resolveType()));
             print(" ");
-            print(theArgument.getVariable().getName());
+            print(theVariable.getName());
         }
 
         println(") {");

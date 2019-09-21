@@ -11,7 +11,7 @@ languages such as JavaScript, OpenCL or WebAssembly.
 * Use OpenJDK 12 as Java Classlib
 
 The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
-optimizer stages and sent to a backend implementation for target code generation.
+[optimizer stages](OPTIMIZER.md) and sent to a backend implementation for target code generation.
 
 The *JavaScript* backend transforms the intermediate representation into JavaScript.
 
@@ -462,7 +462,7 @@ There are two different output styles available for generated code:
    and continues. The Stackifier does only work for reducible control flows and also does not support 
    exception handling. The generated output is smaller and in some cases faster compared to the Relooper output.
 
-Relooper output is enabled by default for `JS` and `WASM` backends. The Stackifier can be enabled for `CLI` or `Maven` by setting
+Relooper output is enabled by default for `JS` and `Wasm` backends. The Stackifier can be enabled for `CLI` or `Maven` by setting
 `preferStackifier` to `true` as a configuration parameter. If Stackifier is enabled and Bytecoder detects an
 irreducible control flow Relooper is used as a fallback.
 
@@ -473,12 +473,12 @@ Stackifier is used as the default by the `OpenCL` backend.
 The WebAssembly backend emulates high level data types using WebAssembly primitives. 
 At the moment only `i32` and `f32` types. All other data types are composed using 
 data blocks in the `linear memory` and pointers, which are basically also `i32`. This 
-Backend does not use `WASM64`. 
+Backend does not use `Wasm64`. 
 
 #### Memory
 
 The memory is managed. It is dynamically allocated and automatically freed using a
-Mark-and-Sweep garbage collector. All memory is directly mapped to the WASM linear memory.
+Mark-and-Sweep garbage collector. All memory is directly mapped to the Wasm linear memory.
 
 Memory is split into `Heap` and `Stack`. The `Heap` is used for allocated objects. The `Stack` 
 is used to hold `activation records` used during method invocation.

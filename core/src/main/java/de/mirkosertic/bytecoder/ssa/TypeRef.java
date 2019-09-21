@@ -15,13 +15,10 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-
-import java.util.Objects;
 
 public interface TypeRef {
 
@@ -42,13 +39,7 @@ public interface TypeRef {
     boolean isObject();
 
     enum Native implements TypeRef {
-        UNKNOWN {
-            @Override
-            public Native eventuallyPromoteTo(final Native aOtherType) {
-                throw new IllegalStateException();
-            }
-        }
-        ,BYTE {
+        BYTE {
             @Override
             public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
@@ -253,9 +244,6 @@ public interface TypeRef {
             default:
                 throw new IllegalStateException("Not supported : " + aTypeRef);
             }
-        }
-        if (Objects.equals(BytecodeObjectTypeRef.fromRuntimeClass(Address.class), aTypeRef)) {
-            return TypeRef.Native.INT;
         }
         return new ObjectTypeRef() {
             @Override

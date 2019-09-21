@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-public class FloatValue extends PrimitiveValue {
+public class FloatValue extends PrimitiveValue implements Constant {
 
     private final float floatValue;
 
-    public FloatValue(float aFloatValue) {
+    public FloatValue(final float aFloatValue) {
         floatValue = aFloatValue;
     }
 
