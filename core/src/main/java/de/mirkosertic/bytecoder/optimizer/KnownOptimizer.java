@@ -40,7 +40,10 @@ public enum KnownOptimizer implements Optimizer {
                     new InefficientCompareOptimizerStage(),
                     new InlineCallArgumentsOptimizerStage(),
                     new MemberFieldReadOptimizerStage(),
-                    new MemberFieldWriteOptimizerStage()
+                    new MemberFieldWriteOptimizerStage(),
+                    new ArrayEntryReadOptimizerStage(),
+                    new ArrayEntryWriteOptimizerStage(),
+                    new ArrayReadLengthOptimizerStage()
             }));
             run(aGraph, aLinkerContext, theOptimizer);
         }
