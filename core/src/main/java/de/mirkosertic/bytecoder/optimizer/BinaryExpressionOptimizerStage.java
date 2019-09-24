@@ -16,7 +16,7 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -25,7 +25,7 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-public class ArrayEntryReadOptimizerStage implements OptimizerStage {
+public class BinaryExpressionOptimizerStage implements OptimizerStage {
 
     private boolean isRegularVariable(final Value value) {
         return ((value instanceof Variable) && !((Variable) value).isSynthetic());
@@ -38,34 +38,37 @@ public class ArrayEntryReadOptimizerStage implements OptimizerStage {
         while (true) {
             if (aExpression instanceof VariableAssignmentExpression) {
                 final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
-                final Value theValue = theAssignment.incomingDataFlows().get(0);
-                if (theValue instanceof ArrayEntryExpression) {
-                    final Value theArray = theValue.incomingDataFlows().get(0);
-                    final Value theIndex = theValue.incomingDataFlows().get(1);
+                final Value theAssignedValue = theAssignment.incomingDataFlows().get(0);
+                if (theAssignedValue instanceof BinaryExpression) {
+                    // We have a candidate
+
+                    final Value theValue1 = theAssignedValue.incomingDataFlows().get(0);
+                    final Value theValue2 = theAssignedValue.incomingDataFlows().get(1);
+
                     final Expression theBefore = aExpressionList.predecessorOf(aExpression);
                     if (theBefore instanceof VariableAssignmentExpression) {
                         final VariableAssignmentExpression theBeforeAssignment = (VariableAssignmentExpression) theBefore;
-                        if (theBeforeAssignment.getVariable() == theIndex && isRegularVariable(theIndex)) {
-                            if (theIndex.outgoingEdges().count() == 1 &&
-                                    !aCurrentNode.liveOut().contains(theBeforeAssignment.getVariable())) {
 
-                                theValue.replaceIncomingDataEdge(theIndex, theBeforeAssignment.incomingDataFlows().get(0));
-                                aGraph.getProgram().deleteVariable(theBeforeAssignment.getVariable());
-                                aExpressionList.remove(theBeforeAssignment);
+                        if (theBeforeAssignment.getVariable() == theValue1 && isRegularVariable(theValue1)
+                                && theBeforeAssignment.getVariable().outgoingEdges().count() == 1 &&
+                                !aCurrentNode.liveOut().contains(theBeforeAssignment.getVariable())) {
 
-                                continue loop;
-                            }
+                            theAssignedValue.replaceIncomingDataEdge(theValue1, theBeforeAssignment.incomingDataFlows().get(0));
+                            aGraph.getProgram().deleteVariable(theBeforeAssignment.getVariable());
+                            aExpressionList.remove(theBeforeAssignment);
+
+                            continue loop;
                         }
-                        if (theBeforeAssignment.getVariable() == theArray && isRegularVariable(theArray)) {
-                            if (theArray.outgoingEdges().count() == 1 &&
-                                    !aCurrentNode.liveOut().contains(theBeforeAssignment.getVariable())) {
 
-                                theValue.replaceIncomingDataEdge(theArray, theBeforeAssignment.incomingDataFlows().get(0));
-                                aGraph.getProgram().deleteVariable(theBeforeAssignment.getVariable());
-                                aExpressionList.remove(theBeforeAssignment);
+                        if (theBeforeAssignment.getVariable() == theValue2 && isRegularVariable(theValue2)
+                                && theBeforeAssignment.getVariable().outgoingEdges().count() == 1 &&
+                                !aCurrentNode.liveOut().contains(theBeforeAssignment.getVariable())) {
 
-                                continue loop;
-                            }
+                            theAssignedValue.replaceIncomingDataEdge(theValue2, theBeforeAssignment.incomingDataFlows().get(0));
+                            aGraph.getProgram().deleteVariable(theBeforeAssignment.getVariable());
+                            aExpressionList.remove(theBeforeAssignment);
+
+                            continue loop;
                         }
                     }
                 }

@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public enum KnownOptimizer implements Optimizer {
 
@@ -43,7 +43,8 @@ public enum KnownOptimizer implements Optimizer {
                     new MemberFieldWriteOptimizerStage(),
                     new ArrayEntryReadOptimizerStage(),
                     new ArrayEntryWriteOptimizerStage(),
-                    new ArrayReadLengthOptimizerStage()
+                    new ArrayReadLengthOptimizerStage(),
+                    new BinaryExpressionOptimizerStage()
             }));
             run(aGraph, aLinkerContext, theOptimizer);
         }
