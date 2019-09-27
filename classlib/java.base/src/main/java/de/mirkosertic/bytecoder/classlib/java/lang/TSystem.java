@@ -26,7 +26,7 @@ import java.io.PrintStream;
 public class TSystem {
 
     public static final class ConsoleOutputStream extends OutputStream {
-q
+
         private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         @Import(module = "system", name = "writeCharArrayToConsole")
