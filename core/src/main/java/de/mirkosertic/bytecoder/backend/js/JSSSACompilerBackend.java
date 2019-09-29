@@ -326,7 +326,28 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(4).text("return console;").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("unixfilesystem").space().text(":").text("{").newLine();
+        theWriter.tab(3).text("getBooleanAttributes0String").colon().text("function(path)").space().text("{").newLine();
+
+        theWriter.tab(4).text("var jsPath").assign().text("bytecoder.toJSString(path);").newLine();
+        theWriter.tab(4).text("try").space().text("{").newLine();
+        theWriter.tab(5).text("var request").assign().text("new XMLHttpRequest();").newLine();
+        theWriter.tab(5).text("request.open('HEAD',jsPath,false);").newLine();
+        theWriter.tab(5).text("request.send(null);").newLine();
+        theWriter.tab(5).text("if").space().text("(request.status").space().text("==").space().text("200)").space().text("{").newLine();
+        theWriter.tab(6).text("var length").assign().text("request.getResponseHeader('content-length');").newLine();
+        theWriter.tab(6).text("return 0x01;").newLine();
+        theWriter.tab(5).text("}").newLine();
+        theWriter.tab(5).text("return 0;").newLine();
+        theWriter.tab(4).text("}").space().text("catch(e)").space().text("{").newLine();
+        theWriter.tab(5).text("return 0;").newLine();
+        theWriter.tab(4).text("}").newLine();
+
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
         theWriter.tab(1).text("},").newLine();
+
 
         theWriter.tab().text("exports").colon().text("{},").newLine();
 
@@ -601,16 +622,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                     final BytecodeImportedLink theLink = theLinkedClass.linkfor(theMethod);
 
-                    if (theMethod.getAccessFlags().isStatic()) {
-                        theWriter.tab().text("C.");
-                    } else {
-                        theWriter.tab().text("C.prototype.");
-                    }
-                    theWriter.text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
+                    theWriter.tab().text("C.");
+
+                    final String theJSMethodName = theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature);
+
+                    theWriter.text(theJSMethodName)
                             .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
 
                     theWriter.tab(2).text("return bytecoder.imports.").text(theLink.getModuleName()).text(".").text(theLink.getLinkName()).text("(").text(theArguments.toString()).text(");").newLine();
                     theWriter.tab().text("};").newLine();
+
+                    if (!theMethod.getAccessFlags().isStatic()) {
+                        theWriter.tab().text("C.prototype.").text(theJSMethodName).assign().text("C.").text(theJSMethodName).text(";").newLine();
+                    }
+
                     return;
                 }
 
@@ -636,7 +661,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.flush();
 
                 // Perform register allocation
-                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, t -> t.resolveType(), aLinkerContext);
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, Variable::resolveType, aLinkerContext);
 
                 final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator);
                 theVariablesWriter.printRegisterDeclarations();

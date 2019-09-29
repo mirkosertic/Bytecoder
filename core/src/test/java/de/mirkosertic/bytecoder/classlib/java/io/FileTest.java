@@ -27,7 +27,7 @@ public class FileTest {
 
     @Test
     public void testNotExists() {
-        final File notExists = new File("lala");
+        final File notExists = new File("/lala");
         Assert.assertFalse(notExists.exists());
     }
 }

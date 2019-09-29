@@ -1382,6 +1382,24 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             nativeconsole: function(caller) {return bytecoder.toBytecoderReference(console);},");
             theWriter.println("         },");
 
+            theWriter.println("         unixfilesystem :{");
+            theWriter.println("             getBooleanAttributes0String : function(thisref,path) {");
+            theWriter.println("                 var jsPath = bytecoder.toJSString(path);");
+            theWriter.println("                 try {");
+            theWriter.println("                     var request = new XMLHttpRequest();");
+            theWriter.println("                     request.open('HEAD',jsPath,false);");
+            theWriter.println("                     request.send(null);");
+            theWriter.println("                     if (request.status == 200) {");
+            theWriter.println("                         var length = request.getResponseHeader('content-length');");
+            theWriter.println("                         return 0x01;");
+            theWriter.println("                     }");
+            theWriter.println("                     return 0;");
+            theWriter.println("                 } catch(e) {");
+            theWriter.println("                     return 0;");
+            theWriter.println("                 }");
+            theWriter.println("             },");
+            theWriter.println("         },");
+
             final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
             for (final Map.Entry<String, List<OpaqueReferenceMethod>> theEntry : theMethods.entrySet()) {
 
