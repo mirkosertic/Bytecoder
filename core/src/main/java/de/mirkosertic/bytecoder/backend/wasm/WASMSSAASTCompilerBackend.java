@@ -1234,6 +1234,28 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("     runningInstanceMemory: undefined,");
             theWriter.println("     exports: undefined,");
             theWriter.println("     referenceTable: ['EMPTY'],");
+            theWriter.println("     filehandles: [],");
+            theWriter.println();
+
+            theWriter.println("     openForRead: function(path) {");
+            theWriter.println("         try {");
+            theWriter.println("             var request = new XMLHttpRequest();");
+            theWriter.println("             request.responseType = 'arraybuffer';");
+            theWriter.println("             request.open('GET',path,false);");
+            theWriter.println("             request.send(null);");
+            theWriter.println("             if (request.status == 200) {");
+            theWriter.println("                 var length = request.getResponseHeader('content-length');");
+            theWriter.println("                 var uInt8Array = new Uint8Array(request.response);");
+            theWriter.println("                 var handle = bytecoder.filehandles.length;");
+            theWriter.println("                 bytecoder.filehandles[handle] = {");
+            theWriter.println("                 };");
+            theWriter.println("                 return handle;");
+            theWriter.println("             }");
+            theWriter.println("             return -1;");
+            theWriter.println("         } catch(e) {");
+            theWriter.println("             return -1;");
+            theWriter.println("         }");
+            theWriter.println("     },");
             theWriter.println();
 
             theWriter.println("     init: function(instance) {");
@@ -1243,18 +1265,45 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("     },");
             theWriter.println();
 
+            theWriter.println("     initializeFileIO: function() {");
+            theWriter.println("         var stddin = {");
+            theWriter.println("         };");
+            theWriter.println("         var stdout = {");
+            theWriter.println("             buffer: \"\",");
+            theWriter.println("             writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {");
+            theWriter.println("                 if (length > 0) {");
+            theWriter.println("                     var array = new Uint8Array(length);");
+            theWriter.println("                     data+=20;");
+            theWriter.println("                     for (var i = 0; i < length; i++) {");
+            theWriter.println("                         array[i] = bytecoder.intInMemory(data);");
+            theWriter.println("                         data+=4;");
+            theWriter.println("                     }");
+            theWriter.println("                     var asstring = String.fromCharCode.apply(null, array);");
+            theWriter.println("                     for (var i=0;i<asstring.length;i++) {");
+            theWriter.println("                         var c = asstring.charAt(i);");
+            theWriter.println("                         if (c == '\\n') {");
+            theWriter.println("                             console.log(stdout.buffer);");
+            theWriter.println("                             stdout.buffer=\"\";");
+            theWriter.println("                         } else {");
+            theWriter.println("                             stdout.buffer = stdout.buffer.concat(c);");
+            theWriter.println("                         }");
+            theWriter.println("                     }");
+            theWriter.println("                 }");
+            theWriter.println("             }");
+            theWriter.println("         };");
+            theWriter.println("         bytecoder.filehandles[0] = stddin;");
+            theWriter.println("         bytecoder.filehandles[1] = stdout;");
+            theWriter.println("         bytecoder.filehandles[2] = stdout;");
+            theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1,0,1,2);");
+            theWriter.println("     },");
+            theWriter.println();
+
             theWriter.println("     intInMemory: function(value) {");
             theWriter.println("         return bytecoder.runningInstanceMemory[value]");
             theWriter.println("                + (bytecoder.runningInstanceMemory[value + 1] * 256)");
             theWriter.println("                + (bytecoder.runningInstanceMemory[value + 2] * 256 * 256)");
             theWriter.println("                + (bytecoder.runningInstanceMemory[value + 3] * 256 * 256 * 256);");
             theWriter.println("     },");
-
-            theWriter.println();
-            theWriter.println("     logByteArrayAsString: function(acaller, value) {");
-            theWriter.println("         console.log(bytecoder.toJSString(value));");
-            theWriter.println("     },");
-            theWriter.println();
 
             theWriter.println();
             theWriter.println("     toJSString: function(value) {");
@@ -1308,7 +1357,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         system: {");
             theWriter.println("             currentTimeMillis: function() {return Date.now();},");
             theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
-            theWriter.println("             writeCharArrayToConsole: function(caller, value) {console.log(bytecoder.charArraytoJSString(value));},");
             theWriter.println("         },");
             theWriter.println("         vm: {");
             theWriter.println("             newRuntimeGeneratedTypeStringMethodTypeMethodHandleObject: function() {},");
@@ -1397,6 +1445,21 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                 } catch(e) {");
             theWriter.println("                     return 0;");
             theWriter.println("                 }");
+            theWriter.println("             },");
+            theWriter.println("         },");
+
+            theWriter.println("         fileoutputstream : {");
+            theWriter.println("             writeBytesLONGL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
+            theWriter.println("                 bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+            theWriter.println("             },");
+            theWriter.println("             writeIntLONGINT : function(thisref, handle, intvalue) {");
+            theWriter.println("                 bytecoder.filehandles[handle].writeIntLONGINT(handle,intvalue);");
+            theWriter.println("             },");
+            theWriter.println("         },");
+
+            theWriter.println("         fileinputstream : {");
+            theWriter.println("             open0String : function(name) {");
+            theWriter.println("                 return bytecoder.openForRead(thisref, bytecoder.toJSString(name));");
             theWriter.println("             },");
             theWriter.println("         },");
 

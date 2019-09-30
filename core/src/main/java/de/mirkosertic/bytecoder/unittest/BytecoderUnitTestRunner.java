@@ -368,6 +368,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                             console.log(\"Used memory in bytes \" + bytecoder.exports.usedMem());");
                 theWriter.println("                             console.log(\"Free memory in bytes \" + bytecoder.exports.freeMem());");
                 theWriter.println("                             bytecoder.exports.bootstrap(0);");
+                theWriter.println("                             bytecoder.initializeFileIO();");
                 theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + bytecoder.exports.usedMem());");
                 theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + bytecoder.exports.freeMem());");
                 theWriter.println("                             bytecoder.exports.logMemoryLayout(0);");

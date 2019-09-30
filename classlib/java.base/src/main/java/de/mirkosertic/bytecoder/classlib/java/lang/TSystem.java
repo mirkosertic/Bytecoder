@@ -15,47 +15,22 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 
 @SubstitutesInClass(completeReplace = true)
 public class TSystem {
 
-    public static final class ConsoleOutputStream extends OutputStream {
+    public static final InputStream in = new FileInputStream(FileDescriptor.in);
 
-        private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    public static final PrintStream out = new PrintStream(new FileOutputStream(FileDescriptor.out));
 
-        @Import(module = "system", name = "writeCharArrayToConsole")
-        public static native void writeCharArrayToConsole(char[] aBytes);
-
-        @Override
-        public void write(final int b) {
-            if (b != '\n') {
-                bos.write(b);
-            } else {
-                final byte[] toData = bos.toByteArray();
-                final String theString = new String(toData);
-                final char[] theChars = new char[theString.length()];
-                for (int i=0;i<theString.length();i++) {
-                    theChars[i] = theString.charAt(i);
-                }
-                writeCharArrayToConsole(theChars);
-                bos.reset();
-            }
-        }
-
-        @Override
-        public void close() {
-        }
-    }
-
-    public static final PrintStream out = new PrintStream(new ConsoleOutputStream());
-
-    public static final PrintStream err = new PrintStream(new ConsoleOutputStream());
+    public static final PrintStream err = new PrintStream(new FileOutputStream(FileDescriptor.err));
 
     public static native long nanoTime();
 

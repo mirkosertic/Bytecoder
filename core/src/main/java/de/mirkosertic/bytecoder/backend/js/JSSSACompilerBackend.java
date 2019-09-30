@@ -199,9 +199,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("nanoTime").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now() * 1000000;").newLine();
         theWriter.tab(3).text("},").newLine();
-        theWriter.tab(3).text("writeCharArrayToConsole").colon().text("function(p1)").space().text("{").newLine();
-        theWriter.tab(4).text("bytecoder.logCharArrayAsString(p1);").newLine();
-        theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
         theWriter.tab(2).text("printstream").colon().text("{").newLine();
@@ -327,7 +324,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
-        theWriter.tab(2).text("unixfilesystem").space().text(":").text("{").newLine();
+        theWriter.tab(2).text("unixfilesystem").space().text(":").space().text("{").newLine();
         theWriter.tab(3).text("getBooleanAttributes0String").colon().text("function(path)").space().text("{").newLine();
 
         theWriter.tab(4).text("var jsPath").assign().text("bytecoder.toJSString(path);").newLine();
@@ -343,17 +340,80 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(4).text("}").space().text("catch(e)").space().text("{").newLine();
         theWriter.tab(5).text("return 0;").newLine();
         theWriter.tab(4).text("}").newLine();
-
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("fileoutputstream").space().text(":").space().text("{").newLine();
+        theWriter.tab(3).text("writeBytesLONGL1BYTEINTINT").colon().text("function(handle, data, offset, length)").space().text("{").newLine();
+        theWriter.tab(4).text("bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("fileinputstream").space().text(":").space().text("{").newLine();
+        theWriter.tab(3).text("open0String").colon().text("function(name)").space().text("{").newLine();
+        theWriter.tab(4).text("return bytecoder.openForRead(bytecoder.toJSString(name));").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
         theWriter.tab(1).text("},").newLine();
 
+        theWriter.tab().text("filehandles").colon().text("[],").newLine();
 
         theWriter.tab().text("exports").colon().text("{},").newLine();
 
         theWriter.tab().text("stringpool").colon().text("[],").newLine();
 
         theWriter.tab().text("memory").colon().text("[],").newLine();
+        theWriter.tab().text("openForRead: function(path) {\n" +
+                "        try {\n" +
+                "            var request = new XMLHttpRequest();\n" +
+                "            request.responseType = 'arraybuffer';\n" +
+                "            request.open('GET',path,false);\n" +
+                "            request.send(null);\n" +
+                "            if (request.status == 200) {\n" +
+                "                var length = request.getResponseHeader('content-length');\n" +
+                "                var uInt8Array = new Uint8Array(request.response);\n" +
+                "                var handle = bytecoder.filehandles.length;\n" +
+                "                bytecoder.filehandles[handle] = {\n" +
+                "                };\n" +
+                "                return handle;\n" +
+                "            }\n" +
+                "            return -1;\n" +
+                "        } catch(e) {\n" +
+                "            return -1;\n" +
+                "        }\n" +
+                "    },\n").newLine();
+        theWriter.tab().text("initializeFileIO: function() {\n"
+                + "        var stddin = {\n"
+                + "        };\n"
+                + "        var stdout = {\n"
+                + "            buffer: \"\",\n"
+                + "            writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {\n"
+                + "                if (length > 0) {\n"
+                + "                    var array = new Uint8Array(length);\n"
+                + "                    for (var i = 0; i < length; i++) {\n"
+                + "                        array[i] = data.data[i];\n"
+                + "                    }\n"
+                + "                    var asstring = String.fromCharCode.apply(null, array);\n"
+                + "                    for (var i=0;i<asstring.length;i++) {\n"
+                + "                        var c = asstring.charAt(i);\n"
+                + "                        if (c == '\\n') {\n"
+                + "                            console.log(stdout.buffer);\n"
+                + "                            stdout.buffer=\"\";\n"
+                + "                        } else {\n"
+                + "                            stdout.buffer = stdout.buffer.concat(c);\n"
+                + "                        }\n"
+                + "                    }\n"
+                + "                }\n"
+                + "            }\n"
+                + "        };\n"
+                + "\n"
+                + "        bytecoder.filehandles[0] = stddin;\n"
+                + "        bytecoder.filehandles[1] = stdout;\n"
+                + "        bytecoder.filehandles[2] = stdout;\n"
+                + "\n"
+                + "        bytecoder.exports.initDefaultFileHandles(0,1,2);\n"
+                + "    },").newLine();
 
         theWriter.text("};").newLine();
 
@@ -741,6 +801,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
             });
         });
+
+        theWriter.tab().text("bytecoder.initializeFileIO();").newLine();
 
         theWriter.text("}").newLine();
 

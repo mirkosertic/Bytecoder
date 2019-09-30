@@ -21,6 +21,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 @RunWith(BytecoderUnitTestRunner.class)
 public class FileTest {
@@ -29,5 +32,10 @@ public class FileTest {
     public void testNotExists() {
         final File notExists = new File("/lala");
         Assert.assertFalse(notExists.exists());
+    }
+
+    @Test
+    public void testOpen() throws FileNotFoundException {
+        final InputStream fos = new FileInputStream(new File("test.html"));
     }
 }
