@@ -398,6 +398,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 "            return -1;\n" +
                 "        }\n" +
                 "    },\n").newLine();
+
         theWriter.tab().text("initializeFileIO: function() {\n"
                 + "        var stddin = {\n"
                 + "        };\n"
@@ -419,6 +420,17 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 + "                            stdout.buffer = stdout.buffer.concat(c);\n"
                 + "                        }\n"
                 + "                    }\n"
+                + "                }\n"
+                + "            },\n"
+                + "            close0LONG: function(handle) {\n"
+                + "            },\n"
+                + "            writeIntLONGINT: function(handle,value) {\n"
+                + "                var c = String.fromCharCode(value);\n"
+                + "                if (c == '\\n') {\n"
+                + "                    console.log(stdout.buffer);\n"
+                + "                    stdout.buffer=\"\";\n"
+                + "                } else {\n"
+                + "                    stdout.buffer = stdout.buffer.concat(c);\n"
                 + "                }\n"
                 + "            }\n"
                 + "        };\n"
