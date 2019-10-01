@@ -1467,6 +1467,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             read0LONG : function(thisref,handle) {");
             theWriter.println("                 return bytecoder.filehandles[handle].read0LONG(handle);");
             theWriter.println("             },");
+            theWriter.println("             readBytesLONGL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
+            theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+            theWriter.println("             },");
             theWriter.println("             close0LONG : function(thisref,handle) {");
             theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
             theWriter.println("             },");

@@ -362,6 +362,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("read0LONG").colon().text("function(handle)").space().text("{").newLine();
         theWriter.tab(4).text("return bytecoder.filehandles[handle].read0LONG(handle);").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("readBytesLONGL1BYTEINTINT").colon().text("function(handle,data,offset,length)").space().text("{").newLine();
+        theWriter.tab(4).text("bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);").newLine();
+        theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("close0LONG").colon().text("function(handle)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.filehandles[handle].close0LONG(handle);").newLine();
         theWriter.tab(3).text("},").newLine();
