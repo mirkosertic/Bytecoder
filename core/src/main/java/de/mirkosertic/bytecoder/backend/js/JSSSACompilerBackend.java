@@ -347,11 +347,23 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("writeBytesLONGL1BYTEINTINT").colon().text("function(handle, data, offset, length)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("writeIntLONGINT").colon().text("function(handle, value)").space().text("{").newLine();
+        theWriter.tab(4).text("bytecoder.filehandles[handle].writeIntLONGINT(handle,value);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("close0LONG").colon().text("function(handle)").space().text("{").newLine();
+        theWriter.tab(4).text("bytecoder.filehandles[handle].close0LONG(handle);").newLine();
+        theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
         theWriter.tab(2).text("fileinputstream").space().text(":").space().text("{").newLine();
         theWriter.tab(3).text("open0String").colon().text("function(name)").space().text("{").newLine();
         theWriter.tab(4).text("return bytecoder.openForRead(bytecoder.toJSString(name));").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("read0LONG").colon().text("function(handle)").space().text("{").newLine();
+        theWriter.tab(4).text("return bytecoder.filehandles[handle].read0LONG(handle);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("close0LONG").colon().text("function(handle)").space().text("{").newLine();
+        theWriter.tab(4).text("bytecoder.filehandles[handle].close0LONG(handle);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
