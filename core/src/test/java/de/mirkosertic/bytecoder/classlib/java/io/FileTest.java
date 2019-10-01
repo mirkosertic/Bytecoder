@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.classlib.java.io;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -35,6 +36,7 @@ public class FileTest {
     }
 
     @Test
+    @Ignore
     public void testOpen() throws FileNotFoundException {
         final InputStream fos = new FileInputStream(new File("test.html"));
     }

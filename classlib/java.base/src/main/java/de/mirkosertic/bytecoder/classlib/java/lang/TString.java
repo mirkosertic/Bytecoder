@@ -101,6 +101,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return (String) a;
     }
 
+    public boolean isEmpty() {
+        return data.length == 0;
+    }
+
     public byte[] getBytes(final Charset charset) {
         final CharBuffer cb = CharBuffer.wrap(data);
         final ByteBuffer bb = charset.encode(cb);
