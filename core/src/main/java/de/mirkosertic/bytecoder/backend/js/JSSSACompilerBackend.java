@@ -271,6 +271,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("minINTINT").colon().text("function(p1,p2)").space().text("{").newLine();
         theWriter.tab(4).text("return Math.min(p1,p2);").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("minLONGLONG").colon().text("function(p1,p2)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.min(p1,p2);").newLine();
+        theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("minFLOATFLOAT").colon().text("function(p1,p2)").space().text("{").newLine();
         theWriter.tab(4).text("return Math.min(p1,p2);").newLine();
         theWriter.tab(3).text("},").newLine();
@@ -367,6 +370,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("close0LONG").colon().text("function(handle)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.filehandles[handle].close0LONG(handle);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("skip0LONGLONG").colon().text("function(handle,amount)").space().text("{").newLine();
+        theWriter.tab(4).text("return bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("available0LONG").colon().text("function(handle)").space().text("{").newLine();
+        theWriter.tab(4).text("return bytecoder.filehandles[handle].available0LONG(handle);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 

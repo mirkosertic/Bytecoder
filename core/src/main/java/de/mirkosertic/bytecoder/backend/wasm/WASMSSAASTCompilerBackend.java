@@ -1409,6 +1409,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             maxFLOATFLOAT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("             minFLOATFLOAT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("             minINTINT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+            theWriter.println("             minLONGLONG: function(thisref, p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("             minDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.min(p1, p2);},");
             theWriter.println("             toRadiansDOUBLE: function(thisref, p1) {");
             theWriter.println("                 return p1 * (Math.PI / 180);");
@@ -1480,6 +1481,12 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             },");
             theWriter.println("             readBytesLONGL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
             theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+            theWriter.println("             },");
+            theWriter.println("             skip0LONGLONG : function(thisref,handle,amount) {");
+            theWriter.println("                 bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
+            theWriter.println("             },");
+            theWriter.println("             available0LONG : function(thisref,handle) {");
+            theWriter.println("                 bytecoder.filehandles[handle].available0LONG(handle);");
             theWriter.println("             },");
             theWriter.println("             close0LONG : function(thisref,handle) {");
             theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");

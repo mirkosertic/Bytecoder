@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -39,5 +40,24 @@ public class FileTest {
     @Ignore
     public void testOpen() throws FileNotFoundException {
         final InputStream fos = new FileInputStream(new File("test.html"));
+    }
+
+    @Test
+    @Ignore
+    public void testRead() throws IOException {
+        final StringBuilder theBuilder = new StringBuilder();
+        final InputStream fos = new FileInputStream(new File("test.txt"));
+        fos.skip(0);
+        while(fos.available() > 0) {
+            final int intValue = fos.read();
+            theBuilder.append((char) intValue);
+            final byte[] data = new byte[100];
+            final int read = fos.read(data);
+            for (int i=0;i<read;i++) {
+                theBuilder.append((char) data[i]);
+            }
+        }
+        fos.close();
+        System.out.println(theBuilder.toString());
     }
 }
