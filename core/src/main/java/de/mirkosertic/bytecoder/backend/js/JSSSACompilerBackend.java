@@ -366,7 +366,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(4).text("return bytecoder.filehandles[handle].read0LONG(handle);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("readBytesLONGL1BYTEINTINT").colon().text("function(handle,data,offset,length)").space().text("{").newLine();
-        theWriter.tab(4).text("bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);").newLine();
+        theWriter.tab(4).text("return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("close0LONG").colon().text("function(handle)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.filehandles[handle].close0LONG(handle);").newLine();
@@ -391,14 +391,42 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("openForRead: function(path) {\n" +
                 "        try {\n" +
                 "            var request = new XMLHttpRequest();\n" +
-                "            request.responseType = 'arraybuffer';\n" +
                 "            request.open('GET',path,false);\n" +
+                "            request.overrideMimeType('text\\/plain; charset=x-user-defined');\n" +
                 "            request.send(null);\n" +
                 "            if (request.status == 200) {\n" +
                 "                var length = request.getResponseHeader('content-length');\n" +
-                "                var uInt8Array = new Uint8Array(request.response);\n" +
+                "                var responsetext = request.response;\n" +
+                "                var buf = new ArrayBuffer(responsetext.length);\n" +
+                "                var bufView = new Uint8Array(buf);\n" +
+                "                for (var i=0, strLen=responsetext.length; i<strLen; i++) {\n" +
+                "                    bufView[i] = responsetext.charCodeAt(i) & 0xff;\n" +
+                "                }\n" +
                 "                var handle = bytecoder.filehandles.length;\n" +
                 "                bytecoder.filehandles[handle] = {\n" +
+                "                    currentpos: 0,\n" +
+                "                    data: bufView,\n" +
+                "                    size: length,\n" +
+                "                    skip0LONGLONG: function(handle,amount) {\n" +
+                "                        var remaining = this.size - this.currentpos;\n" +
+                "                        var possible = Math.min(remaining, amount);\n" +
+                "                        this.currentpos+=possible;\n" +
+                "                        return possible;\n" +
+                "                    },\n" +
+                "                    available0LONG: function(handle) {\n" +
+                "                        return this.size - this.currentpos;\n" +
+                "                    },\n" +
+                "                    read0LONG: function(handle) {\n" +
+                "                        return this.data[this.currentpos++];\n" +
+                "                    },\n" +
+                "                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {\n" +
+                "                        var remaining = this.size - this.currentpos;\n" +
+                "                        var possible = Math.min(remaining, length);\n" +
+                "                        for (var j=0;j<possible;j++) {\n" +
+                "                            target.data[offset++]=this.data[this.currentpos++];\n" +
+                "                        }\n" +
+                "                        return possible;\n" +
+                "                    }\n" +
                 "                };\n" +
                 "                return handle;\n" +
                 "            }\n" +

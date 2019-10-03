@@ -1239,19 +1239,48 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             theWriter.println("     openForRead: function(path) {");
             theWriter.println("         try {");
-            theWriter.println("             var request = new XMLHttpRequest();");
-            theWriter.println("             request.responseType = 'arraybuffer';");
-            theWriter.println("             request.open('GET',path,false);");
-            theWriter.println("             request.send(null);");
-            theWriter.println("             if (request.status == 200) {");
-            theWriter.println("                 var length = request.getResponseHeader('content-length');");
-            theWriter.println("                 var uInt8Array = new Uint8Array(request.response);");
-            theWriter.println("                 var handle = bytecoder.filehandles.length;");
-            theWriter.println("                 bytecoder.filehandles[handle] = {");
-            theWriter.println("                 };");
-            theWriter.println("                 return handle;");
-            theWriter.println("             }");
-            theWriter.println("             return -1;");
+            theWriter.println("             var request = new XMLHttpRequest();\n" +
+                    "            request.open('GET',path,false);\n" +
+                    "            request.overrideMimeType('text\\/plain; charset=x-user-defined');\n" +
+                    "            request.send(null);\n" +
+                    "            if (request.status == 200) {\n" +
+                    "                var length = request.getResponseHeader('content-length');\n" +
+                    "                var responsetext = request.response;\n" +
+                    "                var buf = new ArrayBuffer(responsetext.length);\n" +
+                    "                var bufView = new Uint8Array(buf);\n" +
+                    "                for (var i=0, strLen=responsetext.length; i<strLen; i++) {\n" +
+                    "                    bufView[i] = responsetext.charCodeAt(i) & 0xff;\n" +
+                    "                }\n" +
+                    "                var handle = bytecoder.filehandles.length;\n" +
+                    "                bytecoder.filehandles[handle] = {\n" +
+                    "                    currentpos: 0,\n" +
+                    "                    data: bufView,\n" +
+                    "                    size: length,\n" +
+                    "                    skip0LONGLONG: function(handle,amount) {\n" +
+                    "                        var remaining = this.size - this.currentpos;\n" +
+                    "                        var possible = Math.min(remaining, amount);\n" +
+                    "                        this.currentpos+=possible;\n" +
+                    "                        return possible;\n" +
+                    "                    },\n" +
+                    "                    available0LONG: function(handle) {\n" +
+                    "                        return this.size - this.currentpos;\n" +
+                    "                    },\n" +
+                    "                    read0LONG: function(handle) {\n" +
+                    "                        return this.data[this.currentpos++];\n" +
+                    "                    },\n" +
+                    "                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {\n" +
+                    "                        var remaining = this.size - this.currentpos;\n" +
+                    "                        var possible = Math.min(remaining, length);\n" +
+                    "                        for (var j=0;j<possible;j++) {\n" +
+                    "                            bytecoder.runningInstanceMemory[target + 20 + offset * 4]=this.data[this.currentpos++];\n" +
+                    "                            offset++;\n" +
+                    "                        }\n" +
+                    "                        return possible;\n" +
+                    "                    }\n" +
+                    "                };\n" +
+                    "                return handle;\n" +
+                    "            }\n" +
+                    "            return -1;\n");
             theWriter.println("         } catch(e) {");
             theWriter.println("             return -1;");
             theWriter.println("         }");
@@ -1474,7 +1503,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             theWriter.println("         fileinputstream : {");
             theWriter.println("             open0String : function(thisref,name) {");
-            theWriter.println("                 return bytecoder.openForRead(thisref, bytecoder.toJSString(name));");
+            theWriter.println("                 return bytecoder.openForRead(bytecoder.toJSString(name));");
             theWriter.println("             },");
             theWriter.println("             read0LONG : function(thisref,handle) {");
             theWriter.println("                 return bytecoder.filehandles[handle].read0LONG(handle);");
@@ -1483,10 +1512,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
             theWriter.println("             },");
             theWriter.println("             skip0LONGLONG : function(thisref,handle,amount) {");
-            theWriter.println("                 bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
+            theWriter.println("                 return bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
             theWriter.println("             },");
             theWriter.println("             available0LONG : function(thisref,handle) {");
-            theWriter.println("                 bytecoder.filehandles[handle].available0LONG(handle);");
+            theWriter.println("                 return bytecoder.filehandles[handle].available0LONG(handle);");
             theWriter.println("             },");
             theWriter.println("             close0LONG : function(thisref,handle) {");
             theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
