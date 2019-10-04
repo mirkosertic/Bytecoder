@@ -388,96 +388,94 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("stringpool").colon().text("[],").newLine();
 
         theWriter.tab().text("memory").colon().text("[],").newLine();
-        theWriter.tab().text("openForRead: function(path) {\n" +
-                "        try {\n" +
-                "            var request = new XMLHttpRequest();\n" +
-                "            request.open('GET',path,false);\n" +
-                "            request.overrideMimeType('text\\/plain; charset=x-user-defined');\n" +
-                "            request.send(null);\n" +
-                "            if (request.status == 200) {\n" +
-                "                var length = request.getResponseHeader('content-length');\n" +
-                "                var responsetext = request.response;\n" +
-                "                var buf = new ArrayBuffer(responsetext.length);\n" +
-                "                var bufView = new Uint8Array(buf);\n" +
-                "                for (var i=0, strLen=responsetext.length; i<strLen; i++) {\n" +
-                "                    bufView[i] = responsetext.charCodeAt(i) & 0xff;\n" +
-                "                }\n" +
-                "                var handle = bytecoder.filehandles.length;\n" +
-                "                bytecoder.filehandles[handle] = {\n" +
-                "                    currentpos: 0,\n" +
-                "                    data: bufView,\n" +
-                "                    size: length,\n" +
-                "                    skip0LONGLONG: function(handle,amount) {\n" +
-                "                        var remaining = this.size - this.currentpos;\n" +
-                "                        var possible = Math.min(remaining, amount);\n" +
-                "                        this.currentpos+=possible;\n" +
-                "                        return possible;\n" +
-                "                    },\n" +
-                "                    available0LONG: function(handle) {\n" +
-                "                        return this.size - this.currentpos;\n" +
-                "                    },\n" +
-                "                    read0LONG: function(handle) {\n" +
-                "                        return this.data[this.currentpos++];\n" +
-                "                    },\n" +
-                "                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {\n" +
-                "                        var remaining = this.size - this.currentpos;\n" +
-                "                        var possible = Math.min(remaining, length);\n" +
-                "                        for (var j=0;j<possible;j++) {\n" +
-                "                            target.data[offset++]=this.data[this.currentpos++];\n" +
-                "                        }\n" +
-                "                        return possible;\n" +
-                "                    }\n" +
-                "                };\n" +
-                "                return handle;\n" +
-                "            }\n" +
-                "            return -1;\n" +
-                "        } catch(e) {\n" +
-                "            return -1;\n" +
-                "        }\n" +
-                "    },\n").newLine();
+        theWriter.tab().text("openForRead").colon().space().text("function(path)").space().text("{").newLine();
+        theWriter.tab(2).text("try").space().text("{").newLine();
+        theWriter.tab(3).text("var request").assign().text("new XMLHttpRequest();").newLine();
+        theWriter.tab(3).text("request.open('GET',path,false);").newLine();
+        theWriter.tab(3).text("request.overrideMimeType('text\\/plain; charset=x-user-defined');").newLine();
+        theWriter.tab(3).text("request.send(null);").newLine();
+        theWriter.tab(3).text("if").space().text("(request.status==200)").space().text("{").newLine();
+        theWriter.tab(4).text("var length").assign().text("request.getResponseHeader('content-length');").newLine();
+        theWriter.tab(4).text("var responsetext").assign().text("request.response;").newLine();
+        theWriter.tab(4).text("var buf = new ArrayBuffer(responsetext.length);").newLine();
+        theWriter.tab(4).text("var bufView = new Uint8Array(buf);").newLine();
+        theWriter.tab(4).text("for (var i=0, strLen=responsetext.length; i<strLen; i++) {").newLine();
+        theWriter.tab(5).text("bufView[i] = responsetext.charCodeAt(i) & 0xff;").newLine();
+        theWriter.tab(4).text("}").newLine();
+        theWriter.tab(4).text("var handle = bytecoder.filehandles.length;").newLine();
+        theWriter.tab(4).text("bytecoder.filehandles[handle] = {").newLine();
+        theWriter.tab(5).text("currentpos: 0,").newLine();
+        theWriter.tab(5).text("data: bufView,").newLine();
+        theWriter.tab(5).text("size: length,").newLine();
+        theWriter.tab(5).text("skip0LONGLONG: function(handle,amount) {").newLine();
+        theWriter.tab(6).text("var remaining = this.size - this.currentpos;").newLine();
+        theWriter.tab(6).text("var possible = Math.min(remaining, amount);").newLine();
+        theWriter.tab(6).text("this.currentpos+=possible;").newLine();
+        theWriter.tab(6).text("return possible;").newLine();
+        theWriter.tab(5).text("},").newLine();
+        theWriter.tab(5).text("available0LONG: function(handle) {").newLine();
+        theWriter.tab(6).text("return this.size - this.currentpos;").newLine();
+        theWriter.tab(5).text("},").newLine();
+        theWriter.tab(5).text("read0LONG: function(handle) {").newLine();
+        theWriter.tab(6).text("return this.data[this.currentpos++];").newLine();
+        theWriter.tab(5).text("},").newLine();
+        theWriter.tab(5).text("readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {").newLine();
+        theWriter.tab(6).text("var remaining = this.size - this.currentpos;").newLine();
+        theWriter.tab(6).text("var possible = Math.min(remaining, length);").newLine();
+        theWriter.tab(6).text("for (var j=0;j<possible;j++) {").newLine();
+        theWriter.tab(7).text("target.data[offset++]=this.data[this.currentpos++];").newLine();
+        theWriter.tab(6).text("}").newLine();
+        theWriter.tab(6).text("return possible;").newLine();
+        theWriter.tab(5).text("}").newLine();
+        theWriter.tab(4).text("};").newLine();
+        theWriter.tab(4).text("return handle;").newLine();
+        theWriter.tab(3).text("}").newLine();
+        theWriter.tab(3).text("return -1;").newLine();
+        theWriter.tab(2).text("} catch(e) {").newLine();
+        theWriter.tab(3).text("return -1;").newLine();
+        theWriter.tab(2).text("}").newLine();
+        theWriter.tab().text("},").newLine();
 
-        theWriter.tab().text("initializeFileIO: function() {\n"
-                + "        var stddin = {\n"
-                + "        };\n"
-                + "        var stdout = {\n"
-                + "            buffer: \"\",\n"
-                + "            writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {\n"
-                + "                if (length > 0) {\n"
-                + "                    var array = new Uint8Array(length);\n"
-                + "                    for (var i = 0; i < length; i++) {\n"
-                + "                        array[i] = data.data[i];\n"
-                + "                    }\n"
-                + "                    var asstring = String.fromCharCode.apply(null, array);\n"
-                + "                    for (var i=0;i<asstring.length;i++) {\n"
-                + "                        var c = asstring.charAt(i);\n"
-                + "                        if (c == '\\n') {\n"
-                + "                            console.log(stdout.buffer);\n"
-                + "                            stdout.buffer=\"\";\n"
-                + "                        } else {\n"
-                + "                            stdout.buffer = stdout.buffer.concat(c);\n"
-                + "                        }\n"
-                + "                    }\n"
-                + "                }\n"
-                + "            },\n"
-                + "            close0LONG: function(handle) {\n"
-                + "            },\n"
-                + "            writeIntLONGINT: function(handle,value) {\n"
-                + "                var c = String.fromCharCode(value);\n"
-                + "                if (c == '\\n') {\n"
-                + "                    console.log(stdout.buffer);\n"
-                + "                    stdout.buffer=\"\";\n"
-                + "                } else {\n"
-                + "                    stdout.buffer = stdout.buffer.concat(c);\n"
-                + "                }\n"
-                + "            }\n"
-                + "        };\n"
-                + "\n"
-                + "        bytecoder.filehandles[0] = stddin;\n"
-                + "        bytecoder.filehandles[1] = stdout;\n"
-                + "        bytecoder.filehandles[2] = stdout;\n"
-                + "\n"
-                + "        bytecoder.exports.initDefaultFileHandles(0,1,2);\n"
-                + "    },").newLine();
+        theWriter.tab().text("initializeFileIO: function() {").newLine();
+        theWriter.tab(2).text("var stddin = {").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("var stdout = {").newLine();
+        theWriter.tab(3).text("buffer: \"\",").newLine();
+        theWriter.tab(3).text("writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {").newLine();
+        theWriter.tab(4).text("if (length > 0) {").newLine();
+        theWriter.tab(5).text("var array = new Uint8Array(length);").newLine();
+        theWriter.tab(5).text("for (var i = 0; i < length; i++) {").newLine();
+        theWriter.tab(6).text("array[i] = data.data[i];").newLine();
+        theWriter.tab(5).text("}").newLine();
+        theWriter.tab(5).text("var asstring = String.fromCharCode.apply(null, array);").newLine();
+        theWriter.tab(5).text("for (var i=0;i<asstring.length;i++) {").newLine();
+        theWriter.tab(6).text("var c = asstring.charAt(i);").newLine();
+        theWriter.tab(6).text("if (c == '\\n') {").newLine();
+        theWriter.tab(7).text("console.log(stdout.buffer);").newLine();
+        theWriter.tab(7).text("stdout.buffer=\"\";").newLine();
+        theWriter.tab(6).text("} else {").newLine();
+        theWriter.tab(7).text("stdout.buffer = stdout.buffer.concat(c);").newLine();
+        theWriter.tab(6).text("}").newLine();
+        theWriter.tab(5).text("}").newLine();
+        theWriter.tab(4).text("}").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("close0LONG: function(handle) {").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("writeIntLONGINT: function(handle,value) {").newLine();
+        theWriter.tab(4).text("var c = String.fromCharCode(value);").newLine();
+        theWriter.tab(4).text("if (c == '\\n') {").newLine();
+        theWriter.tab(5).text("console.log(stdout.buffer);").newLine();
+        theWriter.tab(5).text("stdout.buffer=\"\";").newLine();
+        theWriter.tab(4).text("} else {").newLine();
+        theWriter.tab(5).text("stdout.buffer = stdout.buffer.concat(c);").newLine();
+        theWriter.tab(4).text("}").newLine();
+        theWriter.tab(3).text("}").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("bytecoder.filehandles[0] = stddin;").newLine();
+        theWriter.tab(2).text("bytecoder.filehandles[1] = stdout;").newLine();
+        theWriter.tab(2).text("bytecoder.filehandles[2] = stdout;").newLine();
+        theWriter.tab(2).text("bytecoder.exports.initDefaultFileHandles(0,1,2);").newLine();
+        theWriter.tab().text("},").newLine();
 
         theWriter.text("};").newLine();
 
