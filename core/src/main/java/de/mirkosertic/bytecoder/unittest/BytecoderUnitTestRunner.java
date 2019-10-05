@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.unittest;
 
+import com.sun.net.httpserver.HttpServer;
 import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
@@ -25,6 +26,8 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -51,8 +54,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> {
@@ -61,6 +70,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private final List<TestOption> testOptions;
 
     private static ChromeDriverService DRIVERSERVICE;
+    private static HttpServer TESTSERVER;
+    private static final AtomicReference<File> HTTPFILESDIR = new AtomicReference<>();
 
     public BytecoderUnitTestRunner(final Class aClass) throws InitializationError {
         super(aClass);
@@ -171,6 +182,49 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         }
     }
 
+    private static void initializeTestWebServer() throws IOException {
+        if (TESTSERVER == null) {
+            TESTSERVER = HttpServer.create();
+            final int port = Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
+            TESTSERVER.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 20);
+            TESTSERVER.createContext("/", httpExchange -> {
+                final File filesDir = HTTPFILESDIR.get();
+                final String fileName = httpExchange.getRequestURI().getPath();
+                final int lastSlash = fileName.lastIndexOf('/');
+                final String requestedFileName = fileName.substring(lastSlash + 1);
+                final File requestedFile = new File(filesDir, requestedFileName);
+                if (requestedFile.exists()) {
+                    if (requestedFileName.endsWith(".html")) {
+                        httpExchange.getResponseHeaders().add("Content-Type", "text/html");
+                    } else if (requestedFileName.endsWith(".js")) {
+                        httpExchange.getResponseHeaders().add("Content-Type", "text/javascript");
+                    } else if (requestedFileName.endsWith(".wasm")) {
+                        httpExchange.getResponseHeaders().add("Content-Type", "application/wasm");
+                    } else {
+                        httpExchange.getResponseHeaders().add("Content-Type", "application/octet-stream");
+                    }
+                    httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, requestedFile.length());
+                    FileUtils.copyFile(requestedFile, httpExchange.getResponseBody());
+                } else {
+                    httpExchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND, 0);
+                }
+                httpExchange.close();
+            });
+            TESTSERVER.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> TESTSERVER.stop(0)));
+        }
+    }
+
+    private static void initializeWebRoot(final File aFile) {
+        HTTPFILESDIR.set(aFile);
+    }
+
+    private static URL getTestFileUrl(final File aFile) throws MalformedURLException {
+        final String theFileName = aFile.getName();
+        final InetSocketAddress theServerAddress = TESTSERVER.getAddress();
+        return new URL(String.format("http://%s:%d/%s", theServerAddress.getAddress().getHostAddress(), theServerAddress.getPort(), theFileName));
+    }
+
     private WebDriver newDriverForTest() {
         final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
         theOptions.addArguments("--js-flags=experimental-wasm-eh");
@@ -185,6 +239,20 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
         return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
+    }
+
+    private void copyTestResources(final FrameworkMethod m, final File targetDirectory) throws IOException {
+        final TestResource[] t = m.getMethod().getAnnotationsByType(TestResource.class);
+        if (t != null) {
+            for (final TestResource r : t) {
+                final String name = r.value();
+                final int p = name.lastIndexOf('/');
+                final File theTargetFile = new File(targetDirectory, name.substring(p + 1));
+                try (final FileOutputStream fos = new FileOutputStream(theTargetFile)) {
+                    IOUtils.copy(m.getDeclaringClass().getResourceAsStream(name), fos);
+                }
+            }
+        }
     }
 
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
@@ -235,11 +303,15 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 final File theWorkingDirectory = new File(".");
 
+                initializeTestWebServer();
                 initializeSeleniumDriver();
 
                 final File theMavenTargetDir = new File(theWorkingDirectory, "target");
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
                 theGeneratedFilesDir.mkdirs();
+
+                copyTestResources(aFrameworkMethod, theGeneratedFilesDir);
+
                 final File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
                 final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
                 theWriter.println("<html><body><script>");
@@ -248,8 +320,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.flush();
                 theWriter.close();
 
+                initializeWebRoot(theGeneratedFile.getParentFile());
+
                 theDriver = newDriverForTest();
-                theDriver.get(theGeneratedFile.toURI().toURL().toString());
+
+                final URL theTestURL = getTestFileUrl(theGeneratedFile);
+
+                theDriver.get(theTestURL.toString());
 
                 final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
                 if (1 > theAll.size()) {
@@ -301,16 +378,21 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
                 final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
                 final WASMCompileResult.WASMCompileContent jsContent = theResult.getContent()[2];
+                final WASMCompileResult.WASMCompileContent sourceMapContent = theResult.getContent()[3];
 
                 final String theFileName = theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix()+  ".html";
 
                 final File theWorkingDirectory = new File(".");
 
+                initializeTestWebServer();
                 initializeSeleniumDriver();
 
                 final File theMavenTargetDir = new File(theWorkingDirectory, "target");
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
                 theGeneratedFilesDir.mkdirs();
+
+                copyTestResources(aFrameworkMethod, theGeneratedFilesDir);
+
                 final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
 
                 final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
@@ -367,6 +449,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                             console.log(\"Used memory in bytes \" + bytecoder.exports.usedMem());");
                 theWriter.println("                             console.log(\"Free memory in bytes \" + bytecoder.exports.freeMem());");
                 theWriter.println("                             bytecoder.exports.bootstrap(0);");
+                theWriter.println("                             bytecoder.initializeFileIO();");
                 theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + bytecoder.exports.usedMem());");
                 theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + bytecoder.exports.freeMem());");
                 theWriter.println("                             bytecoder.exports.logMemoryLayout(0);");
@@ -457,9 +540,18 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     binaryContent.writeTo(fos);
                 }
 
+                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm.map"))) {
+                    sourceMapContent.writeTo(fos);
+                }
+
+                initializeWebRoot(theGeneratedFile.getParentFile());
+
                 // Invoke test in browser
                 theDriver = newDriverForTest();
-                theDriver.get(theGeneratedFile.toURI().toURL().toString());
+
+                final URL theTestURL = getTestFileUrl(theGeneratedFile);
+
+                theDriver.get(theTestURL.toString());
 
                 final long theStart = System.currentTimeMillis();
                 boolean theTestSuccedded = false;

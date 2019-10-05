@@ -26,4 +26,13 @@ public class SystemOutTest {
     public void testPrintString() {
         System.out.println("Hello world!");
     }
+
+    @Test
+    public void testPrintSingleChars() {
+        final String text = "Hello world!";
+        for (int i=0;i<text.length();i++) {
+            System.out.write((int) text.charAt(i));
+        }
+        System.out.println();
+    }
 }

@@ -78,6 +78,8 @@ public class TMath {
 
     public static native int min(int aValue1, int aValue2);
 
+    public static native long min(long aValue1, long aValue2);
+
     public static native float min(float aValue1, float aValue2);
 
     public static native double min(double aValue1, double aValue2);
@@ -153,8 +155,8 @@ public class TMath {
         return x - floorDiv(x, y) * y;
     }
 
-    public static int addExact(int x, int y) {
-        int r = x + y;
+    public static int addExact(final int x, final int y) {
+        final int r = x + y;
         // HD 2-12 Overflow iff both arguments have the opposite sign of the result
         if (((x ^ r) & (y ^ r)) < 0) {
             throw new ArithmeticException("integer overflow");
@@ -162,8 +164,8 @@ public class TMath {
         return r;
     }
 
-    public static long addExact(long x, long y) {
-        long r = x + y;
+    public static long addExact(final long x, final long y) {
+        final long r = x + y;
         // HD 2-12 Overflow iff both arguments have the opposite sign of the result
         if (((x ^ r) & (y ^ r)) < 0) {
             throw new ArithmeticException("long overflow");
