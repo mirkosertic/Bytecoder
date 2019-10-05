@@ -36,6 +36,7 @@ Run Lua to see the output!
                 bytecoder.exports.initMemory(0);
                 console.log("Memory initialized");
                 bytecoder.exports.bootstrap(0);
+                bytecoder.initializeFileIO();
                 console.log("Bootstrapped");
                 bytecoder.exports.main(0);
                 console.log("Ready for action!");
