@@ -252,8 +252,16 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return new String(data);
     }
 
-    public static String valueOf(final long data) {
-        return Long.toString(data);
+    public static String valueOf(final long aValue) {
+        return Long.toString(aValue);
+    }
+
+    public static String valueOf(final boolean aValue) {
+        return Boolean.toString(aValue);
+    }
+
+    public static String valueOf(final float aValue) {
+        return Float.toString(aValue);
     }
 
     public static String format(final String aPattern, final Object[] aValues) {
