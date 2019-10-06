@@ -257,7 +257,7 @@ public class TString implements java.io.Serializable, Comparable<String> {
     }
 
     public static String valueOf(final boolean aValue) {
-        return Boolean.toString(aValue);
+        return aValue ? "true" : "false";
     }
 
     public static String valueOf(final float aValue) {
