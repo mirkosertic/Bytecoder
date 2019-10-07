@@ -171,22 +171,13 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected final ClassLoader prepareClassLoader() throws MojoExecutionException {
         try {
             final List<URL> theURLs = new ArrayList<>();
-            final StringBuilder theClassPath = new StringBuilder();
             for (final Artifact artifact : project.getArtifacts()) {
                 if (!isSupportedScope(artifact.getScope())) {
                     continue;
                 }
                 final File file = artifact.getFile();
-                if (0 < theClassPath.length()) {
-                    theClassPath.append(':');
-                }
-                theClassPath.append(file.getPath());
                 theURLs.add(file.toURI().toURL());
             }
-            if (0 < theClassPath.length()) {
-                theClassPath.append(':');
-            }
-            theClassPath.append(classFiles.getPath());
             theURLs.add(classFiles.toURI().toURL());
 
             return new URLClassLoader(theURLs.toArray(new URL[theURLs.size()]),
