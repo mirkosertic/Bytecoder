@@ -15,6 +15,33 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
@@ -30,11 +57,13 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Function;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ImportReference;
+import de.mirkosertic.bytecoder.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
@@ -76,32 +105,6 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.LambdaMetafactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -452,6 +455,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         .newFunction(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX,
                                 Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
+                // First of all, we collect the list of implementation methods
+                final Map<Integer, BytecodeResolvedMethods.MethodEntry> theImplementedMethods = new HashMap<>();
+
                 final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
                 final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
                 for (int i = theEntries.size() - 1; 0 <= i; i--) {
@@ -468,19 +474,74 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 .identifierFor(theMethod);
 
                         if (theVisitedMethods.add(theMethodIdentifier)) {
-
-                            final Iff iff = resolveTableIndex.flow.iff("b" + theMethodIdentifier.getIdentifier(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theMethodIdentifier.getIdentifier(), null), null), null);
-
-                            final String theFullMethodName = WASMWriterUtils
-                                    .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
-                                            theMethod.getName(),
-                                            theMethod.getSignature());
-
-                            iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
+                            theImplementedMethods.put(theMethodIdentifier.getIdentifier(), aMethodMapEntry);
                         }
                     }
                 }
 
+                // Now, we have to check
+                // If there are only a few implementation methods,
+                // we can use a simple comparison chain to find the right method
+                // if there are many, we implement a binary search strategy
+                if (theImplementedMethods.size() < 5) {
+                    for (Map.Entry<Integer, BytecodeResolvedMethods.MethodEntry> theEntry : theImplementedMethods.entrySet()) {
+                        final BytecodeMethod theMethod = theEntry.getValue().getValue();
+
+                        final Iff iff = resolveTableIndex.flow.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
+                        final String theFullMethodName = WASMWriterUtils
+                                .toMethodName(theEntry.getValue().getProvidingClass().getClassName(),
+                                        theMethod.getName(),
+                                        theMethod.getSignature());
+
+                        iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
+                    }
+                } else {
+                    final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
+                    final Stack<List<Integer>> theWorkList = new Stack<>();
+                    theWorkList.push(theSorted);
+
+                    final Stack<Expressions> theContainer = new Stack<>();
+                    theContainer.push(resolveTableIndex.flow);
+
+                    int stepCounter = 1;
+                    while (!theWorkList.isEmpty()) {
+                        final List<Integer> theStackTop = theWorkList.pop();
+                        if (theStackTop.size() < 4) {
+                            Expressions theContainerToAdd = theContainer.pop();
+                            for (final int theMethodIdentifier : theStackTop) {
+                                final BytecodeResolvedMethods.MethodEntry theEntry = theImplementedMethods
+                                        .get(theMethodIdentifier);
+                                final BytecodeMethod theMethod = theEntry.getValue();
+                                final String theFullMethodName = WASMWriterUtils
+                                        .toMethodName(theEntry.getProvidingClass().getClassName(),
+                                                theMethod.getName(),
+                                                theMethod.getSignature());
+
+                                // Do we need some sanity check here?
+                                final Iff iff = theContainerToAdd.iff("b" + stepCounter++,
+                                        i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null),
+                                                i32.c(theMethodIdentifier, null), null), null);
+                                iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
+                                theContainerToAdd = iff.falseFlow;
+                            }
+                        } else {
+                            final int half = theStackTop.size() / 2;
+                            final int theSplitPoint = theStackTop.get(half);
+                            final List<Integer> theLowerBound = theStackTop.subList(0, half);
+                            final List<Integer> theUpperBound = theStackTop.subList(half, theStackTop.size());
+
+                            final Iff iff = theContainer.peek().iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
+                            theWorkList.push(theUpperBound);
+                            theContainer.push(iff.falseFlow);
+
+                            theWorkList.push(theLowerBound);
+                            theContainer.push(iff.flow);
+                        }
+                    }
+                }
+
+                // The instanceof method is the last thing to check
+                // If none of the above conditions met, this is the pass-thru case
                 final Iff block = resolveTableIndex.flow.iff("b", i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID, null), null), null);
                 final int theIndex = module.getTables().funcTable().indexOf(instanceOf);
                 block.flow.ret(i32.c(theIndex, null), null);
