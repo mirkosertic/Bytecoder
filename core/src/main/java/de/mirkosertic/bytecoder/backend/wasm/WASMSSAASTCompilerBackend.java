@@ -439,7 +439,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
             final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
 
-            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
+            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
 
                 final ExportableFunction instanceOf = module.getFunctions()
                         .newFunction(theClassName + WASMSSAASTWriter.INSTANCEOFSUFFIX,
@@ -630,7 +630,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 // We need to create a newInstance function in case this is a constructor
-                if (theMethod.isConstructor()) {
+                if (theMethod.isConstructor() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract() && !theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
 
                     final String theMethodName = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), "$newInstance", theMethod.getSignature());
                     final List<Param> theParams = new ArrayList<>();
