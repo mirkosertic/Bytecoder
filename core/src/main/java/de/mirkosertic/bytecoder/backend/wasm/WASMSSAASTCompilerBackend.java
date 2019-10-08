@@ -63,7 +63,6 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.backend.wasm.ast.GlobalsIndex;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ImportReference;
-import de.mirkosertic.bytecoder.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
@@ -71,6 +70,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionTableReference;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
@@ -456,8 +456,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
                 // First of all, we collect the list of implementation methods
-                final Map<Integer, BytecodeResolvedMethods.MethodEntry> theImplementedMethods = new HashMap<>();
+                final Map<Integer, WeakFunctionTableReference> theImplementedMethods = new HashMap<>();
 
+                // The instanceof method is also part of the vtable
+                theImplementedMethods.put(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID,
+                        weakFunctionTableReference(instanceOf.getLabel(), null));
+
+                // Collect all virtual methods and create function references
                 final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
                 final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
                 for (int i = theEntries.size() - 1; 0 <= i; i--) {
@@ -474,27 +479,29 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 .identifierFor(theMethod);
 
                         if (theVisitedMethods.add(theMethodIdentifier)) {
-                            theImplementedMethods.put(theMethodIdentifier.getIdentifier(), aMethodMapEntry);
+
+                            final String theFullMethodName = WASMWriterUtils
+                                    .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
+                                            theMethod.getName(),
+                                            theMethod.getSignature());
+
+                            theImplementedMethods.put(theMethodIdentifier.getIdentifier(), weakFunctionTableReference(theFullMethodName, null));
                         }
                     }
                 }
 
+                final int binary_search_threshold = 8;
+
                 // Now, we have to check
                 // If there are only a few implementation methods,
-                // we can use a simple comparison chain to find the right method
+                // we can use a simple linear comparison chain to find the right method
                 // if there are many, we implement a binary search strategy
-                if (theImplementedMethods.size() < 4) {
+                if (theImplementedMethods.size() < binary_search_threshold) {
                     Expressions theContainerToAdd = resolveTableIndex.flow;
-                    for (Map.Entry<Integer, BytecodeResolvedMethods.MethodEntry> theEntry : theImplementedMethods.entrySet()) {
-                        final BytecodeMethod theMethod = theEntry.getValue().getValue();
+                    for (final Map.Entry<Integer, WeakFunctionTableReference> theEntry : theImplementedMethods.entrySet()) {
 
                         final Iff iff = theContainerToAdd.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
-                        final String theFullMethodName = WASMWriterUtils
-                                .toMethodName(theEntry.getValue().getProvidingClass().getClassName(),
-                                        theMethod.getName(),
-                                        theMethod.getSignature());
-
-                        iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
+                        iff.flow.ret(theEntry.getValue(), null);
                         theContainerToAdd = iff.falseFlow;
                     }
                 } else {
@@ -509,23 +516,20 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     while (!theWorkList.isEmpty()) {
                         final List<Integer> theStackTop = theWorkList.pop();
                         Expressions theContainerToAdd = theContainer.pop();
-                        if (theStackTop.size() < 4) {
+                        if (theStackTop.size() < binary_search_threshold) {
                             for (final int theMethodIdentifier : theStackTop) {
-                                final BytecodeResolvedMethods.MethodEntry theEntry = theImplementedMethods
+                                final WeakFunctionTableReference theEntry = theImplementedMethods
                                         .get(theMethodIdentifier);
-                                final BytecodeMethod theMethod = theEntry.getValue();
-                                final String theFullMethodName = WASMWriterUtils
-                                        .toMethodName(theEntry.getProvidingClass().getClassName(),
-                                                theMethod.getName(),
-                                                theMethod.getSignature());
 
                                 // Do we need some sanity check here?
                                 final Iff iff = theContainerToAdd.iff("b" + stepCounter++,
                                         i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null),
                                                 i32.c(theMethodIdentifier, null), null), null);
-                                iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
+                                iff.flow.ret(theEntry, null);
                                 theContainerToAdd = iff.falseFlow;
                             }
+                            // We can trap here if nothing was found
+                            theContainerToAdd.unreachable(null);
                         } else {
                             final int half = theStackTop.size() / 2;
                             final int theSplitPoint = theStackTop.get(half);
@@ -542,12 +546,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     }
                 }
 
-                // The instanceof method is the last thing to check
-                // If none of the above conditions met, this is the pass-thru case
-                final Iff block = resolveTableIndex.flow.iff("b", i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID, null), null), null);
-                final int theIndex = module.getTables().funcTable().indexOf(instanceOf);
-                block.flow.ret(i32.c(theIndex, null), null);
-
+                // Nothing wa found, so we trap
                 resolveTableIndex.flow.unreachable(null);
             }
 
