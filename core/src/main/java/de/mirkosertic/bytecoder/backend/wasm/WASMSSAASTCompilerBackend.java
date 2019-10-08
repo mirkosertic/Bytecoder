@@ -483,17 +483,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 // If there are only a few implementation methods,
                 // we can use a simple comparison chain to find the right method
                 // if there are many, we implement a binary search strategy
-                if (theImplementedMethods.size() < 5) {
+                if (theImplementedMethods.size() < 4) {
+                    Expressions theContainerToAdd = resolveTableIndex.flow;
                     for (Map.Entry<Integer, BytecodeResolvedMethods.MethodEntry> theEntry : theImplementedMethods.entrySet()) {
                         final BytecodeMethod theMethod = theEntry.getValue().getValue();
 
-                        final Iff iff = resolveTableIndex.flow.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
+                        final Iff iff = theContainerToAdd.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
                         final String theFullMethodName = WASMWriterUtils
                                 .toMethodName(theEntry.getValue().getProvidingClass().getClassName(),
                                         theMethod.getName(),
                                         theMethod.getSignature());
 
                         iff.flow.ret(weakFunctionTableReference(theFullMethodName, null), null);
+                        theContainerToAdd = iff.falseFlow;
                     }
                 } else {
                     final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
@@ -506,8 +508,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     int stepCounter = 1;
                     while (!theWorkList.isEmpty()) {
                         final List<Integer> theStackTop = theWorkList.pop();
+                        Expressions theContainerToAdd = theContainer.pop();
                         if (theStackTop.size() < 4) {
-                            Expressions theContainerToAdd = theContainer.pop();
                             for (final int theMethodIdentifier : theStackTop) {
                                 final BytecodeResolvedMethods.MethodEntry theEntry = theImplementedMethods
                                         .get(theMethodIdentifier);
@@ -530,7 +532,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                             final List<Integer> theLowerBound = theStackTop.subList(0, half);
                             final List<Integer> theUpperBound = theStackTop.subList(half, theStackTop.size());
 
-                            final Iff iff = theContainer.peek().iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
+                            final Iff iff = theContainerToAdd.iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
                             theWorkList.push(theUpperBound);
                             theContainer.push(iff.falseFlow);
 
