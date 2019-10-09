@@ -28,6 +28,10 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>java.desktop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>bytecoder.web</artifactId>
         </dependency>
         <dependency>

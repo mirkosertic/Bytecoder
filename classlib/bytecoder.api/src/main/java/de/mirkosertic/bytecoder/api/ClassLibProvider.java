@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.api;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 
@@ -28,9 +27,8 @@ public abstract class ClassLibProvider {
 
     public static List<ClassLibProvider> availableProviders() {
         final List<ClassLibProvider> result = new ArrayList<>();
-        final Iterator<ClassLibProvider> it = LOADER.iterator();
-        while(it.hasNext()) {
-            result.add(it.next());
+        for (ClassLibProvider classLibProvider : LOADER) {
+            result.add(classLibProvider);
         }
         return result;
     }

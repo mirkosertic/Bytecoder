@@ -8,10 +8,10 @@
         <version>0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>java.activation</artifactId>
+    <artifactId>java.desktop</artifactId>
     <packaging>jar</packaging>
-    <name>Bytecoder java.activation Module</name>
-    <description>Bytecoder java.activation Module</description>
+    <name>Bytecoder java.desktop Module</name>
+    <description>Bytecoder java.desktop Module</description>
 
     <dependencies>
         <dependency>
@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>de.mirkosertic.bytecoder</groupId>
-            <artifactId>java.base</artifactId>
+            <artifactId>java.datatransfer</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
