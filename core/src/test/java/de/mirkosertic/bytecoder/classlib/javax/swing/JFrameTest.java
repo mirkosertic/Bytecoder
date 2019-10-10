@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.classlib.javax.swing;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,6 +29,7 @@ import java.awt.*;
 public class JFrameTest {
 
     @Test
+    @Ignore
     public void testEmptyFrame() {
         final JFrame window = new JFrame();
         window.setMinimumSize(new Dimension(800, 600));
