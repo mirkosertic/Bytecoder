@@ -15,15 +15,19 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
 
     public static void sort(final Object[] aData, final int aStart, final int aEnd) {
+    }
+
+    public static void sort(final Object[] aData, final Comparator<Object> c) {
     }
 
     public static <T> List<T> asList(final T... aValues) {

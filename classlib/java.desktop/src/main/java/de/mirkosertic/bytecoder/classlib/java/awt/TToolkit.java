@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib.java.awt;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.awt.*;
+
 @SubstitutesInClass(completeReplace = true)
-public class TThread implements Runnable {
+public class TToolkit {
 
-    private static final TThread MAIN = new TThread(null);
+    private static final TToolkit TK = new TToolkit();
 
-    public static TThread currentThread() {
-        return MAIN;
+    private final EventQueue queue;
+
+    private TToolkit() {
+        queue = new EventQueue();
     }
 
-    private final Runnable runnable;
-
-    public TThread(final Runnable aRunable) {
-        runnable = aRunable;
+    public static Toolkit getDefaultToolkit() {
+        return (Toolkit) (Object) TK;
     }
 
-    @Override
-    public void run() {
-        runnable.run();
+    public static void loadLibraries() {
     }
 
-    public static boolean holdsLock(final Object obj) {
+    public static String getProperty(final String key, final String defaultValue) {
+        return defaultValue;
+    }
+
+    public static EventQueue getEventQueue() {
+        return TK.queue;
+    }
+
+    static boolean enabledOnToolkit(final long eventMask) {
         return true;
     }
 }

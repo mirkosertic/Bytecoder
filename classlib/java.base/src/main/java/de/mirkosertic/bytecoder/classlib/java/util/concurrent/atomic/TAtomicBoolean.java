@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib.java.util.concurrent.atomic;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TThread implements Runnable {
+public class TAtomicBoolean {
 
-    private static final TThread MAIN = new TThread(null);
+    private final boolean value;
 
-    public static TThread currentThread() {
-        return MAIN;
+    public TAtomicBoolean(final boolean aValue) {
+        value = aValue;
     }
 
-    private final Runnable runnable;
-
-    public TThread(final Runnable aRunable) {
-        runnable = aRunable;
-    }
-
-    @Override
-    public void run() {
-        runnable.run();
-    }
-
-    public static boolean holdsLock(final Object obj) {
-        return true;
+    public final boolean get() {
+        return value;
     }
 }

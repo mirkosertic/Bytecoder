@@ -29,6 +29,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>java.desktop</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>

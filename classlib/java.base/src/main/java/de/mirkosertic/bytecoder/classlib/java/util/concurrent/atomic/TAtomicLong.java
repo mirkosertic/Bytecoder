@@ -22,7 +22,7 @@ public class TAtomicLong extends Number {
 
     private long value;
 
-    public TAtomicLong(long aValue) {
+    public TAtomicLong(final long aValue) {
         value = aValue;
     }
 
@@ -56,12 +56,12 @@ public class TAtomicLong extends Number {
         return value;
     }
 
-    public long incrementAndGet() {
+    public final long incrementAndGet() {
         value = ++value;
         return value;
     }
 
-    public long get() {
+    public final long get() {
         return value;
     }
 }

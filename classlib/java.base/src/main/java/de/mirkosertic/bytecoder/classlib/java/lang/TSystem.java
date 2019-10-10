@@ -63,4 +63,8 @@ public class TSystem {
     public static String lineSeparator() {
         return "\n";
     }
+
+    public static String getenv(final String name) {
+        return null;
+    }
 }

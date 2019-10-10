@@ -84,6 +84,10 @@ public class TClass {
         throw new RuntimeException(aName);
     }
 
+    public static Class forName(final String name) {
+        return null;
+    }
+
     public static Class forName(final String name, final boolean initialize, final ClassLoader classLoader) throws ClassNotFoundException {
         throw new ClassNotFoundException(name);
     }

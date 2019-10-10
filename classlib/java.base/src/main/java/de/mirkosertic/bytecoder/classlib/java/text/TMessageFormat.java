@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.classlib.java.text;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class SystemOutTest {
+@SubstitutesInClass(completeReplace = true)
+public class TMessageFormat {
 
-    @Test
-    public void testPrintString() {
-        System.out.println("Hello world!");
+    private final String pattern;
+
+    public TMessageFormat(final String pattern) {
+        this.pattern = pattern;
     }
 
-    @Test
-    public void testPrintSingleChars() {
-        final String text = "Hello world!";
-        for (int i=0;i<text.length();i++) {
-            System.out.write((int) text.charAt(i));
-        }
-        System.out.println();
+    public String format(final Object... values) {
+        return pattern;
     }
 }
