@@ -24,10 +24,21 @@ import java.util.List;
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
 
+    public static void sort(final long[] aData) {
+    }
+
     public static void sort(final Object[] aData, final int aStart, final int aEnd) {
     }
 
     public static void sort(final Object[] aData, final Comparator<Object> c) {
+    }
+
+    public static int binarySearch(final int[] aData, final int value) {
+        return -1;
+    }
+
+    public static int binarySearch(final Object[] aData, final Object aValue, final Comparator<Object> c) {
+        return -1;
     }
 
     public static <T> List<T> asList(final T... aValues) {
@@ -60,6 +71,22 @@ public class TArrays {
 
     public static byte[] copyOf(final byte[] original, final int newLength) {
         final byte[] theResult = new byte[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static float[] copyOf(final float[] original, final int newLength) {
+        final float[] theResult = new float[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static double[] copyOf(final double[] original, final int newLength) {
+        final double[] theResult = new double[newLength];
         for (int i=0;i<Math.min(newLength, original.length);i++) {
             theResult[i] = original[i];
         }
@@ -112,6 +139,11 @@ public class TArrays {
     }
 
     public static void fill(final int[] a, final int fromIndex, final int toIndex, final int val) {
+        for (int i = fromIndex; i < toIndex; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final byte[] a, final int fromIndex, final int toIndex, final byte val) {
         for (int i = fromIndex; i < toIndex; i++)
             a[i] = val;
     }

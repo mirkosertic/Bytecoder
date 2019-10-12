@@ -67,4 +67,8 @@ public class TSystem {
     public static String getenv(final String name) {
         return null;
     }
+
+    public static void loadLibrary(final String name) {
+        throw new IllegalArgumentException("Cannot load library " + name);
+    }
 }

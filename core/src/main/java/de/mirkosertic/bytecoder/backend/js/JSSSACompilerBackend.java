@@ -292,6 +292,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("logDOUBLE").colon().text("function(p1)").space().text("{").newLine();
         theWriter.tab(4).text("return Math.log(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("powDOUBLEDOUBLE").colon().text("function(p1,p2)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.pow(p1,p2);").newLine();
+        theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
         theWriter.tab(2).text("strictmath").colon().text("{").newLine();

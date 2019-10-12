@@ -64,6 +64,8 @@ public class TLocale {
 
     public final static Locale ENGLISH = new Locale("en");
 
+    public final static Locale US = new Locale("en", "usa");
+
     public static Locale getDefault() {
         return ENGLISH;
     }

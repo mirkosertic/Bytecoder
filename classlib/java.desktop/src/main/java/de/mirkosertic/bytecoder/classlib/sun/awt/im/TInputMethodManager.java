@@ -13,33 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.ref;
+package de.mirkosertic.bytecoder.classlib.sun.awt.im;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
-import java.lang.ref.ReferenceQueue;
+import sun.awt.im.InputMethodManager;
 
 @SubstitutesInClass(completeReplace = true)
-public class TReference<T> {
+public abstract class TInputMethodManager {
 
-    private T referent;
+    private static InputMethodManager INSTANCE;
 
-    TReference(final T referent) {
-        this.referent = referent;
-    }
-
-    TReference(final T referent, final ReferenceQueue queue) {
-        this.referent = referent;
-    }
-
-    public T get() {
-        return referent;
-    }
-
-    public void clear() {
-        referent = null;
-    }
-
-    public static void reachabilityFence(final Object value) {
+    public static InputMethodManager getInstance() {
+        return INSTANCE;
     }
 }

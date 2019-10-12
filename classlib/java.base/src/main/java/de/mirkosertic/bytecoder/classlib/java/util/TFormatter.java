@@ -13,33 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.ref;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.ref.ReferenceQueue;
+import java.io.PrintStream;
 
 @SubstitutesInClass(completeReplace = true)
-public class TReference<T> {
+public class TFormatter {
 
-    private T referent;
+    private final PrintStream out;
 
-    TReference(final T referent) {
-        this.referent = referent;
-    }
-
-    TReference(final T referent, final ReferenceQueue queue) {
-        this.referent = referent;
-    }
-
-    public T get() {
-        return referent;
-    }
-
-    public void clear() {
-        referent = null;
-    }
-
-    public static void reachabilityFence(final Object value) {
+    public TFormatter(final PrintStream aOut) {
+        out = aOut;
     }
 }

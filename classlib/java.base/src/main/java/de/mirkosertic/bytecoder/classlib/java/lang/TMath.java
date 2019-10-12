@@ -74,6 +74,8 @@ public class TMath {
 
     public static native int max(int aValue1, int aValue2);
 
+    public static native float max(float aValue1, float aValue2);
+
     public static native double max(double aValue1, double aValue2);
 
     public static native int min(int aValue1, int aValue2);
@@ -172,4 +174,6 @@ public class TMath {
         }
         return r;
     }
+
+    public static native double pow(double a, double b);
 }

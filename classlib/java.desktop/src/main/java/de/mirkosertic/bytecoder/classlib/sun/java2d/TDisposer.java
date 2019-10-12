@@ -13,33 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.ref;
+package de.mirkosertic.bytecoder.classlib.sun.java2d;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
-import java.lang.ref.ReferenceQueue;
+import sun.java2d.DisposerRecord;
 
 @SubstitutesInClass(completeReplace = true)
-public class TReference<T> {
+public class TDisposer {
 
-    private T referent;
-
-    TReference(final T referent) {
-        this.referent = referent;
+    public static void addRecord(final DisposerRecord disposerRecord) {
     }
 
-    TReference(final T referent, final ReferenceQueue queue) {
-        this.referent = referent;
-    }
-
-    public T get() {
-        return referent;
-    }
-
-    public void clear() {
-        referent = null;
-    }
-
-    public static void reachabilityFence(final Object value) {
+    public static void addRecord(final Object o, final DisposerRecord disposerRecord) {
     }
 }

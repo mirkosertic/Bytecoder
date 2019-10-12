@@ -13,33 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.ref;
+package de.mirkosertic.bytecoder.classlib.sun.font;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import sun.font.FontStrike;
 
-import java.lang.ref.ReferenceQueue;
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 
 @SubstitutesInClass(completeReplace = true)
-public class TReference<T> {
+public class TStrikeCache {
 
-    private T referent;
-
-    TReference(final T referent) {
-        this.referent = referent;
+    public static Reference<FontStrike> getStrikeRef(final FontStrike strike) {
+        return getStrikeRef(strike, true);
     }
 
-    TReference(final T referent, final ReferenceQueue queue) {
-        this.referent = referent;
+    public static Reference<FontStrike> getStrikeRef(final FontStrike strike, final boolean weak) {
+        return new SoftReference<>(strike);
     }
 
-    public T get() {
-        return referent;
-    }
-
-    public void clear() {
-        referent = null;
-    }
-
-    public static void reachabilityFence(final Object value) {
+    public static void refStrike(final FontStrike strike) {
     }
 }
