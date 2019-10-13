@@ -21,6 +21,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.lang.reflect.InvocationTargetException;
+
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false)
 public class RuntimeClassTest {
@@ -37,5 +39,25 @@ public class RuntimeClassTest {
     public void testGetName() {
         System.out.println(RuntimeClassTest.class.getName());
         Assert.assertEquals("RuntimeClassTest", RuntimeClassTest.class.getName());
+    }
+
+    @Test
+    public void testForName() throws ClassNotFoundException {
+        final Class cl = Class.forName(Object.class.getName());
+        Assert.assertSame(Object.class, cl);
+    }
+
+    @Test
+    public void testNewInstance() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+        final Class cl = Class.forName(Object.class.getName());
+        final Object o = cl.newInstance();
+        Assert.assertTrue(o instanceof Object);
+    }
+
+    @Test
+    public void testNewInstanceConstructor() throws ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        final Class cl = Class.forName(Object.class.getName());
+        final Object o = cl.getConstructor(new Class[0]).newInstance();
+        Assert.assertTrue(o instanceof Object);
     }
 }
