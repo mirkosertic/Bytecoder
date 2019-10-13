@@ -54,4 +54,7 @@ public class TUnsafe {
     public long objectFieldOffset(final Class clazz, final String fieldName) {
         return 0;
     }
+
+    public void storeFence() {
+    }
 }
