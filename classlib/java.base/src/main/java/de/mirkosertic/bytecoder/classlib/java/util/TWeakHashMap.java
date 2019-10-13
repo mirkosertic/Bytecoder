@@ -36,6 +36,10 @@ public class TWeakHashMap <K,V>
         delegate = new HashMap<>();
     }
 
+    public TWeakHashMap(final int capacity) {
+        delegate = new HashMap<>(capacity);
+    }
+
     @Override
     public Set<Entry<K, V>> entrySet() {
         return delegate.entrySet();

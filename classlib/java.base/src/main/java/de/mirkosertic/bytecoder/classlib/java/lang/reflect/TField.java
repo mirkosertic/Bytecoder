@@ -13,18 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.javax.swing;
+package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.util.Hashtable;
-
 @SubstitutesInClass(completeReplace = true)
-public class TUIDefaults extends Hashtable<Object,Object> {
-
-    public TUIDefaults() {
-    }
-
-    public TUIDefaults(final int aValue1, final float aValue2) {
-    }
+public class TField {
 }

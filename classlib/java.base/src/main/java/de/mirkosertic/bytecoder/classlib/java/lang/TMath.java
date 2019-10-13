@@ -180,4 +180,13 @@ public class TMath {
     public static int round(final float value) {
         return (int) value;
     }
+
+    public static long round(final double value) {
+        return (int) value;
+    }
+
+    public static double rint(final double value) {
+        return value;
+    }
+
 }

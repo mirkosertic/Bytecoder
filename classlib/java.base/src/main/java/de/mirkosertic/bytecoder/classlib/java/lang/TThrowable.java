@@ -23,21 +23,26 @@ import java.io.PrintStream;
 public class TThrowable {
 
     private final String message;
+    private final Throwable cause;
 
-    public TThrowable(String aMessage) {
+    public TThrowable(final String aMessage) {
         message = aMessage;
+        cause = null;
     }
 
-    public TThrowable(String aMessage, Throwable aCause) {
+    public TThrowable(final String aMessage, final Throwable aCause) {
         message = aMessage;
+        cause = aCause;
     }
 
-    public TThrowable(Throwable aCause) {
+    public TThrowable(final Throwable aCause) {
         message = null;
+        cause = aCause;
     }
 
     public TThrowable() {
         message = null;
+        cause = null;
     }
 
     private void doNothing() {
@@ -46,7 +51,7 @@ public class TThrowable {
     public void printStackTrace() {
     }
 
-    public void printStackTrace(PrintStream s) {
+    public void printStackTrace(final PrintStream s) {
     }
 
     public Throwable fillInStackTrace() {
@@ -55,5 +60,9 @@ public class TThrowable {
 
     public String getMessage() {
         return message;
+    }
+
+    public Throwable getCause() {
+        return cause;
     }
 }

@@ -17,12 +17,15 @@ package de.mirkosertic.bytecoder.classlib.java.lang.ref;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 
 @SubstitutesInClass(completeReplace = true)
 public class TReference<T> {
 
     private T referent;
+    private ReferenceQueue queue;
+    private Reference<T> next;
 
     TReference(final T referent) {
         this.referent = referent;
@@ -30,6 +33,7 @@ public class TReference<T> {
 
     TReference(final T referent, final ReferenceQueue queue) {
         this.referent = referent;
+        this.queue = queue;
     }
 
     public T get() {

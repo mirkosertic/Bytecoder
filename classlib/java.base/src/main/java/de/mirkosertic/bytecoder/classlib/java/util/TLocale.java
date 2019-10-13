@@ -66,6 +66,14 @@ public class TLocale {
 
     public final static Locale US = new Locale("en", "usa");
 
+    public final static Locale JAPAN = new Locale("en", "usa");
+
+    public final static Locale JAPANESE = new Locale("en", "usa");
+
+    public final static Locale KOREA = new Locale("en", "usa");
+
+    public final static Locale KOREAN = new Locale("en", "usa");
+
     public static Locale getDefault() {
         return ENGLISH;
     }

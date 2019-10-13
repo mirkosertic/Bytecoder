@@ -72,4 +72,9 @@ public class TAWTKeyStroke {
         this.modifiers = modifiers;
         this.onKeyRelease = onKeyRelease;
     }
+
+    protected TAWTKeyStroke() {
+        modifiers = 0;
+        onKeyRelease = false;
+    }
 }

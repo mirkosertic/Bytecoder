@@ -49,6 +49,17 @@ public class TThread implements Runnable {
         return true;
     }
 
+    public static void sleep(final long duration) {
+    }
+
+    public static boolean interrupted() {
+        return false;
+    }
+
     public static void dumpStack() {
+    }
+
+    public static Thread.UncaughtExceptionHandler getDefaultUncaughtExceptionHandler() {
+        return null;
     }
 }

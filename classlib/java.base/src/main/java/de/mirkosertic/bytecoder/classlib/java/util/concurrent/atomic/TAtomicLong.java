@@ -22,6 +22,10 @@ public class TAtomicLong extends Number {
 
     private long value;
 
+    public TAtomicLong() {
+        value = 0L;
+    }
+
     public TAtomicLong(final long aValue) {
         value = aValue;
     }

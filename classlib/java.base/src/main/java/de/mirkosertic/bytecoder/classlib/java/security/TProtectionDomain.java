@@ -17,6 +17,12 @@ package de.mirkosertic.bytecoder.classlib.java.security;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.security.CodeSource;
+import java.security.PermissionCollection;
+
 @SubstitutesInClass(completeReplace = true)
 public class TProtectionDomain {
+
+    public TProtectionDomain(final CodeSource codeSource, final PermissionCollection permissionCollection) {
+    }
 }
