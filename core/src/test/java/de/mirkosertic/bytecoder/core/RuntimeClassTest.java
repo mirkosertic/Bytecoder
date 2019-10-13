@@ -38,7 +38,7 @@ public class RuntimeClassTest {
     @Test
     public void testGetName() {
         System.out.println(RuntimeClassTest.class.getName());
-        Assert.assertEquals("RuntimeClassTest", RuntimeClassTest.class.getName());
+        Assert.assertEquals("de.mirkosertic.bytecoder.core.RuntimeClassTest", RuntimeClassTest.class.getName());
     }
 
     @Test

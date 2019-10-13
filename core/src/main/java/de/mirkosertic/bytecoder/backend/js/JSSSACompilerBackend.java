@@ -678,7 +678,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.tab().text("C.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
                 if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
-                    theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
+                    theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(theLinkedClass.getClassName().name()))).text("];").newLine();
                 } else {
                     theWriter.tab(2).text("return this.").text(theGetNameMethodName).text("();").newLine();
                 }
@@ -691,6 +691,33 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 // If the method is provided by the runtime, we do not need to generate the implementation
                 if (null != theMethod.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
+
+                    if (aEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
+                        && theMethod.getName().stringValue().equals("forName")
+                        && theMethod.getSignature().matchesExactlyTo(BytecodeLinkedClass.CLASS_FOR_NAME_SIGNATURE)) {
+
+                        // Special method: we resolve a runtime class by name here
+                        theWriter.tab().text("C.");
+
+                        final String theJSMethodName = theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature);
+
+                        theWriter.text(theJSMethodName).assign().text("function(className,resolve,classloader)").space().text("{").newLine();
+                        theWriter.tab(2).text("var jsClassName").assign().text("bytecoder.toJSString(className);").newLine();
+
+                        // We search for all non abstract non interface classes
+                        theOrderedClasses.getClassesInOrder().stream().forEach(search -> {
+                            if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
+                                final String theSearchClassName = theMinifier.toClassName(search.getClassName());
+                                theWriter.tab(2).text("if").space().text("(jsClassName").space().text("===").space().text("'").text(search.getClassName().name()).text("') return ").text(theSearchClassName).text(";").newLine();
+                            }
+                        });
+
+                        theWriter.tab(2).text("throw new Error();").newLine();
+                        theWriter.tab().text("};").newLine();
+
+                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
+                    }
+
                     return;
                 }
 

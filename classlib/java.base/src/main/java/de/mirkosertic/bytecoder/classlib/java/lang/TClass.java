@@ -46,7 +46,7 @@ public class TClass {
     }
 
     public String getSimpleName() {
-        return "";
+        return getName();
     }
 
     public boolean isEnum() {
@@ -90,10 +90,15 @@ public class TClass {
         return null;
     }
 
-    public static Class forName(final String name) {
+    public ClassLoader getClassLoader() {
         return null;
     }
 
+    public static Class forName(final String name) throws ClassNotFoundException {
+        return forName(name, true, Class.class.getClassLoader());
+    }
+
+    @EmulatedByRuntime
     public static Class forName(final String name, final boolean initialize, final ClassLoader classLoader) throws ClassNotFoundException {
         throw new ClassNotFoundException(name);
     }

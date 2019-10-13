@@ -36,6 +36,11 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]);
     public static final BytecodeMethodSignature DESIRED_ASSERTION_STATUS_SIGNATURE = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]);
     public static final BytecodeMethodSignature GET_ENUM_CONSTANTS_SIGNATURE = new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1), new BytecodeTypeRef[0]);
+    public static final BytecodeMethodSignature CLASS_FOR_NAME_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[] {
+            BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+            BytecodePrimitiveTypeRef.BOOLEAN,
+            BytecodeObjectTypeRef.fromRuntimeClass(ClassLoader.class),
+    });
 
     private final int uniqueId;
     private final BytecodeObjectTypeRef className;
