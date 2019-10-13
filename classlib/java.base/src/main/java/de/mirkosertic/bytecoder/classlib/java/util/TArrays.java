@@ -20,6 +20,10 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @SubstitutesInClass(completeReplace = true)
 public class TArrays {
@@ -28,6 +32,9 @@ public class TArrays {
     }
 
     public static void sort(final Object[] aData, final int aStart, final int aEnd) {
+    }
+
+    public static void sort(final Object[] aData, final int aStart, final int aEnd, final Comparator<Object> c) {
     }
 
     public static void sort(final Object[] aData, final Comparator<Object> c) {
@@ -151,5 +158,31 @@ public class TArrays {
     public static void fill(final int[] a, final int val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
+    }
+
+    public static void fill(final long[] a, final long val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static <T> Stream<T> stream(final T[] array) {
+        return stream(array, 0, array.length);
+    }
+
+    public static <T> Stream<T> stream(final T[] array, final int startInclusive, final int endExclusive) {
+        return StreamSupport.stream(spliterator(array, startInclusive, endExclusive), false);
+    }
+
+    public static <T> Spliterator<T> spliterator(final T[] array, final int startInclusive, final int endExclusive) {
+        return Spliterators.spliterator(array, startInclusive, endExclusive,
+                Spliterator.ORDERED | Spliterator.IMMUTABLE);
+    }
+
+    public static int hashCode(final Object[] data) {
+        return 0;
+    }
+
+    public static boolean equals(final long[] a, final long[] b) {
+        return false;
     }
 }

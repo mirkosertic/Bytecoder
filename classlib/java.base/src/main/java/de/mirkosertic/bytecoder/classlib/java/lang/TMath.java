@@ -176,4 +176,8 @@ public class TMath {
     }
 
     public static native double pow(double a, double b);
+
+    public static int round(final float value) {
+        return (int) value;
+    }
 }

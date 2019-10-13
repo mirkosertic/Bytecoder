@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.security.ProtectionDomain;
+
 @SubstitutesInClass(completeReplace = true)
 public class TClass {
 
@@ -82,6 +84,10 @@ public class TClass {
             return Boolean.class;
         }
         throw new RuntimeException(aName);
+    }
+
+    public ProtectionDomain getProtectionDomain() {
+        return null;
     }
 
     public static Class forName(final String name) {

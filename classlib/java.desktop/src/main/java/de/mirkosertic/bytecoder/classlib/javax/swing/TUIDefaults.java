@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util.concurrent.atomic;
+package de.mirkosertic.bytecoder.classlib.javax.swing;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.Hashtable;
+
 @SubstitutesInClass(completeReplace = true)
-public class TAtomicBoolean {
-
-    private final boolean value;
-
-    public TAtomicBoolean(final boolean aValue) {
-        value = aValue;
-    }
-
-    public TAtomicBoolean() {
-        value = false;
-    }
-
-    public final boolean get() {
-        return value;
-    }
+public class TUIDefaults extends Hashtable<Object,Object> {
 }

@@ -17,6 +17,12 @@ package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.ResourceBundle;
+
 @SubstitutesInClass(completeReplace = true)
 public class TResourceBundle {
+
+    public static ResourceBundle getBundle(final String aName) {
+        return null;
+    }
 }

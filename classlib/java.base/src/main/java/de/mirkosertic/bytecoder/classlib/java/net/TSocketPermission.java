@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
-
-import java.util.HashMap;
-import java.util.Map;
+package de.mirkosertic.bytecoder.classlib.java.net;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.security.Permission;
+
 @SubstitutesInClass(completeReplace = true)
-public class TConcurrentHashMap<K,V> extends HashMap<K,V> {
+public class TSocketPermission extends Permission {
 
-    public TConcurrentHashMap() {
+    public TSocketPermission(final String host, final String action) {
+        super(action);
     }
 
-    public TConcurrentHashMap(final int initialCapacity) {
-        super(initialCapacity);
+    @Override
+    public boolean implies(final Permission permission) {
+        return false;
     }
 
-    public TConcurrentHashMap(final int initialCapacity, final float loadFactor, final int concurrencyLevel) {
-        super(initialCapacity, loadFactor);
+    @Override
+    public boolean equals(final Object obj) {
+        return false;
     }
 
-    public TConcurrentHashMap(final Map<K,V> data) {
-        super(data);
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
+    @Override
+    public String getActions() {
+        return null;
     }
 }

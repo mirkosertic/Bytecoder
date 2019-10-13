@@ -22,9 +22,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Properties;
 
 @SubstitutesInClass(completeReplace = true)
 public class TSystem {
+
+    private static final Properties PROPERTIES = new Properties();
 
     public static final InputStream in = new FileInputStream(FileDescriptor.in);
 
@@ -53,11 +56,19 @@ public class TSystem {
     }
 
     public static String getProperty(final String aProperty) {
-        return null;
+        return PROPERTIES.getProperty(aProperty);
     }
 
     public static String getProperty(final String aProperty, final String aDefault) {
-        return aDefault;
+        return PROPERTIES.getProperty(aProperty, aDefault);
+    }
+
+    public static String setProperty(final String aProperty, final String value) {
+        return (String) PROPERTIES.setProperty(aProperty, value);
+    }
+
+    public static Properties getProperties() {
+        return PROPERTIES;
     }
 
     public static String lineSeparator() {
@@ -70,5 +81,8 @@ public class TSystem {
 
     public static void loadLibrary(final String name) {
         throw new IllegalArgumentException("Cannot load library " + name);
+    }
+
+    public static void exit(final int exitCode) {
     }
 }

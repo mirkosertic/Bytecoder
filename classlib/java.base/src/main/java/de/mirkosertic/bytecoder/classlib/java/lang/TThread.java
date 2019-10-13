@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,16 @@ public class TThread implements Runnable {
 
     private final Runnable runnable;
 
-    public TThread(final Runnable aRunable) {
-        runnable = aRunable;
+    public TThread() {
+        runnable = null;
+    }
+
+    public TThread(final Runnable aRunnable) {
+        runnable = aRunnable;
+    }
+
+    public TThread(final ThreadGroup group, final Runnable aRunnable, final String name, final long aPriority, final boolean daemon) {
+        runnable = aRunnable;
     }
 
     @Override
@@ -39,5 +47,8 @@ public class TThread implements Runnable {
 
     public static boolean holdsLock(final Object obj) {
         return true;
+    }
+
+    public static void dumpStack() {
     }
 }

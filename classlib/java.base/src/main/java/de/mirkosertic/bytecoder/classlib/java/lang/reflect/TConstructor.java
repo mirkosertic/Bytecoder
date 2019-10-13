@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
-
-import java.util.HashMap;
-import java.util.Map;
+package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TConcurrentHashMap<K,V> extends HashMap<K,V> {
-
-    public TConcurrentHashMap() {
-    }
-
-    public TConcurrentHashMap(final int initialCapacity) {
-        super(initialCapacity);
-    }
-
-    public TConcurrentHashMap(final int initialCapacity, final float loadFactor, final int concurrencyLevel) {
-        super(initialCapacity, loadFactor);
-    }
-
-    public TConcurrentHashMap(final Map<K,V> data) {
-        super(data);
-    }
+public class TConstructor {
 }
