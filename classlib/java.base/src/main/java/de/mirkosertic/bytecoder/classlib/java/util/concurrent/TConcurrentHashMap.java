@@ -101,7 +101,7 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
 
     @Override
     public V compute(final K key, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
-        return delegate.computeIfPresent(key, remappingFunction);
+        return delegate.compute(key, remappingFunction);
     }
 
     @Override
