@@ -32,6 +32,10 @@ public class VM {
 
     public static native Object newRuntimeGeneratedType(String methodName, MethodType aType, MethodHandle aHandle, Object... staticArguments);
 
+    public static Object newInstanceWithDefaultConstructor(final Class clz) {
+        return null;
+    }
+
     public static final char NEWLINE = '\n';
 
     public static long stringToLong(final String aString) {

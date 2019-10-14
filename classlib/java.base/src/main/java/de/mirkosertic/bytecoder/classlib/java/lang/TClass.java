@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.security.ProtectionDomain;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-
-import java.security.ProtectionDomain;
+import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
 
 @SubstitutesInClass(completeReplace = true)
 public class TClass {
@@ -56,6 +59,17 @@ public class TClass {
     @EmulatedByRuntime
     public Object[] getEnumConstants() {
         return null;
+    }
+
+    public Constructor getConstructor(final Class[] constructorArgs) {
+        if (constructorArgs.length != 0) {
+            throw new IllegalStateException("Only zero-args constructors are supported yet!");
+        }
+        return (Constructor) (Object) new TConstructor((Class) (Object) this, new Class[0]);
+    }
+
+    public Object newInstance() throws IllegalAccessException, InvocationTargetException, InstantiationException {
+        return getConstructor(new Class[0]).newInstance(new Object[0]);
     }
 
     public static Class<?> getPrimitiveClass(final String aName) {

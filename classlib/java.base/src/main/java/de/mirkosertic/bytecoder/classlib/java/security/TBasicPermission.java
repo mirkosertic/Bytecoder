@@ -13,23 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
+package de.mirkosertic.bytecoder.classlib.java.security;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
-public class TConstructor {
+public class TBasicPermission {
 
-    private final Class clz;
-    private final Class[] signature;
-
-    public TConstructor(final Class clz, final Class[] signature) {
-        this.clz = clz;
-        this.signature = signature;
-    }
-
-    public Object newInstance(final Object[] constructorArgs) {
-        return VM.newInstanceWithDefaultConstructor(clz);
+    public TBasicPermission(final String name) {
     }
 }

@@ -39,6 +39,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.backend.wasm.ast.WASMExpression;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMType;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
@@ -182,6 +183,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         if (!theStringClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}))) {
             throw new IllegalStateException("No matching constructor!");
         }
+        if (!theStringClass.resolveVirtualMethod("equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}))) {
+            throw new IllegalStateException("No matching stringequals method!");
+        }
 
         final Module module = new Module("bytecoder", aOptions.getFilenamePrefix() + ".wasm.map");
 
@@ -294,6 +298,17 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final Map<String, WASMSSAASTCompilerBackend.CallSite> theCallsites = new HashMap<>();
         final WASMSSAASTWriter.Resolver theResolver = new WASMSSAASTWriter.Resolver() {
+
+            @Override
+            public Global runtimeClassFor(final BytecodeObjectTypeRef aObjectType) {
+                final String theGlobalName = WASMWriterUtils.toClassName(aObjectType) + WASMSSAASTWriter.RUNTIMECLASSSUFFIX;
+                try {
+                    return module.globalsIndex().globalByLabel(theGlobalName);
+                } catch (final Exception e) {
+                    return module.getGlobals().newMutableGlobal(theGlobalName, PrimitiveType.i32, i32.c(-1, null));
+                }
+            }
+
             @Override
             public Global globalForStringFromPool(final StringValue aValue) {
                 final int thePoolIndex = theConstantPool.register(aValue);
@@ -356,10 +371,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 return;
             }
 
-            final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
-
             // We also create a global for the runtime class
-            module.getGlobals().newMutableGlobal(theClassName + WASMSSAASTWriter.RUNTIMECLASSSUFFIX, PrimitiveType.i32, i32.c(-1, null));
+            final Global theRuntimeClass = theResolver.runtimeClassFor(aEntry.targetNode().getClassName());
 
             final BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
             theMethodMap.stream().forEach(aMapEntry -> {
@@ -367,6 +380,44 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 // If the method is provided by the runtime, we do not need to generate the implementation
                 if (null != t.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
+
+                    if (aMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
+                            && t.getName().stringValue().equals("forName")
+                            && t.getSignature().matchesExactlyTo(BytecodeLinkedClass.CLASS_FOR_NAME_SIGNATURE)) {
+
+                        // Special method: we resolve a runtime class by name here
+
+                        final String theWASMMethodName = WASMWriterUtils.toMethodName(aMapEntry.getProvidingClass().getClassName(), t.getName().stringValue(), t.getSignature());
+
+                        final ExportableFunction forNameMethod = module.getFunctions()
+                                .newFunction(theWASMMethodName,
+                                        Arrays.asList(param("UNUSED", PrimitiveType.i32),
+                                        param("name", PrimitiveType.i32),
+                                        param("initialize", PrimitiveType.i32),
+                                        param("classloader", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+
+                        final String theStringEqualsClass = WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(String.class), "equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+
+                        // We search for all non abstract non interface classes
+                        aLinkerContext.linkedClasses().map(k -> k.targetNode()).forEach(search -> {
+                            if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
+                                // Only if the class has a zero arg constructor
+                                final BytecodeResolvedMethods theResolved = search.resolvedMethods();
+                                theResolved.stream().filter(j -> j.getProvidingClass() == search).map(j -> j.getValue()).filter(j -> j.isConstructor() && j.getSignature().getArguments().length == 0).forEach(m -> {
+                                    final Global theGlobal = theResolver.globalForStringFromPool(new StringValue(search.getClassName().name()));
+                                    final Global theSearchRuntimeClass = theResolver.runtimeClassFor(search.getClassName());
+                                    final WASMExpression stringEqualCall = call(weakFunctionReference(theStringEqualsClass, null), Arrays.asList(getLocal(forNameMethod.localByLabel("name"), null), getGlobal(theGlobal, null)), null);
+                                    final Iff theIff = forNameMethod.flow.iff(search.getClassName().name(),
+                                            i32.eq(stringEqualCall, i32.c(1, null), null), null);
+
+                                    theIff.flow.ret(getGlobal(theSearchRuntimeClass, null), null);
+                                });
+                            }
+                        });
+
+                        forNameMethod.flow.unreachable(null);
+                    }
+
                     return;
                 }
                 // Do not generate code for abstract methods
@@ -712,6 +763,32 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             });
         });
 
+        // NewInstance reflection helper
+        {
+            final ExportableFunction theInstanceOfHelper = module.getFunctions().newFunction(WASMSSAASTWriter.NEWINSTANCEHELPER,
+                    Collections.singletonList(param("runtimeClass", PrimitiveType.i32)), PrimitiveType.i32);
+
+            aLinkerContext.linkedClasses().map(k -> k.targetNode()).forEach(search -> {
+                if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags()
+                        .isInterface()) {
+                    // Only if the class has a zero arg constructor
+                    final BytecodeResolvedMethods theResolved = search.resolvedMethods();
+                    theResolved.stream().filter(j -> j.getProvidingClass() == search).map(j -> j.getValue())
+                            .filter(j -> j.isConstructor() && j.getSignature().getArguments().length == 0).forEach(m -> {
+                        final Global theGlobal = theResolver.runtimeClassFor(search.getClassName());
+                        final String theNewInstanceMethodName = WASMWriterUtils.toMethodName(search.getClassName(), "$newInstance", m.getSignature());
+                        final Iff theIff = theInstanceOfHelper.flow.iff(search.getClassName().name(),
+                                i32.eq(getGlobal(theGlobal, null), getLocal(theInstanceOfHelper.localByLabel("runtimeClass"), null), null), null);
+
+                        theIff.flow.ret(call(weakFunctionReference(theNewInstanceMethodName, null), Collections.emptyList(), null), null);
+                    });
+                }
+            });
+
+            theInstanceOfHelper.flow.unreachable(null);
+        }
+
+
         // Render callsites
         for (final Map.Entry<String, CallSite> theEntry : theCallsites.entrySet()) {
 
@@ -1029,7 +1106,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 } else {
                     initArguments.add(i32.c(-1, null));
                 }
-                final StringValue theName = new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name()));
+                final StringValue theName = new StringValue(theLinkedClass.getClassName().name());
                 final Global theGlobal = theResolver.globalForStringFromPool(theName);
                 initArguments.add(i32.c(theConstantPool.register(theName), null));
 

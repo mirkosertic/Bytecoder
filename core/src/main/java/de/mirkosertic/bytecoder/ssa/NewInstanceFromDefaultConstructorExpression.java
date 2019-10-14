@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-@SubstitutesInClass(completeReplace = true)
-public class TConstructor {
+public class NewInstanceFromDefaultConstructorExpression extends Expression {
 
-    private final Class clz;
-    private final Class[] signature;
-
-    public TConstructor(final Class clz, final Class[] signature) {
-        this.clz = clz;
-        this.signature = signature;
+    public NewInstanceFromDefaultConstructorExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aClass) {
+        super(aProgram, aAddress);
+        receivesDataFrom(aClass);
     }
 
-    public Object newInstance(final Object[] constructorArgs) {
-        return VM.newInstanceWithDefaultConstructor(clz);
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.BOOLEAN;
     }
 }

@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import java.lang.reflect.InvocationTargetException;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.lang.reflect.InvocationTargetException;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false)

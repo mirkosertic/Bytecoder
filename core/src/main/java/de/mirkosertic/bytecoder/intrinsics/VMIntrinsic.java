@@ -15,13 +15,20 @@
  */
 package de.mirkosertic.bytecoder.intrinsics;
 
+import java.util.List;
+import java.util.Objects;
+
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.ssa.*;
-
-import java.util.List;
-import java.util.Objects;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
+import de.mirkosertic.bytecoder.ssa.ParsingHelper;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class VMIntrinsic extends Intrinsic {
 
@@ -32,6 +39,10 @@ public class VMIntrinsic extends Intrinsic {
             final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
             aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
+            return true;
+        }
+        if (Objects.equals(aTargetClass.name(), VM.class.getName()) && "newInstanceWithDefaultConstructor".equals(aMethodName)) {
+            aHelper.push(aInstruction.getOpcodeAddress(), new NewInstanceFromDefaultConstructorExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0)));
             return true;
         }
         return false;
