@@ -13,22 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib.java.security;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
-
 @SubstitutesInClass(completeReplace = true)
-public class TResourceBundle {
-
-    public static ResourceBundle getBundle(final String aName) {
-        return null;
-    }
-
-    public static ResourceBundle getBundle(final String aName, final Locale aLocale) {
-        return null;
-    }
-
+public class TCodeSource {
 }

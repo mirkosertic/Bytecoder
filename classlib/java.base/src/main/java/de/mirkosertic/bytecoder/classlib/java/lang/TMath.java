@@ -189,4 +189,19 @@ public class TMath {
         return value;
     }
 
+    public static double hypot(final double a, final double b) {
+        return a;
+    }
+
+    public static double acos(final double value) {
+        return value;
+    }
+
+    public static long abs(final long value) {
+        if (value < 0) {
+            return -value;
+        }
+        return value;
+    }
+
 }

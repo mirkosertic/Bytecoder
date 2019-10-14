@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib.java.io;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.io.IOException;
+import java.io.InputStream;
 
 @SubstitutesInClass(completeReplace = true)
-public class TResourceBundle {
+public class TObjectInputStream extends InputStream {
 
-    public static ResourceBundle getBundle(final String aName) {
-        return null;
+    private final InputStream delegate;
+
+    public TObjectInputStream(final InputStream delegate) {
+        this.delegate = delegate;
     }
 
-    public static ResourceBundle getBundle(final String aName, final Locale aLocale) {
-        return null;
+    @Override
+    public int read() throws IOException {
+        return delegate.read();
     }
-
 }

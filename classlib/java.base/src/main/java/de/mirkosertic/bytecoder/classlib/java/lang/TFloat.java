@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.classlib.VM;
 @SubstitutesInClass(completeReplace = true)
 public class TFloat extends Number {
 
+    public static final Class<Float> TYPE = (Class<Float>) TClass.getPrimitiveClass("float");
+
     public static final float POSITIVE_INFINITY = 1 / 0.0f;
     public static final float NEGATIVE_INFINITY = -POSITIVE_INFINITY;
     public static final float NaN = 0.0f / 0.0f;

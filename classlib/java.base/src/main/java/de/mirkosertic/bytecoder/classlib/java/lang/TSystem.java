@@ -85,4 +85,7 @@ public class TSystem {
 
     public static void exit(final int exitCode) {
     }
+
+    public static void gc() {
+    }
 }

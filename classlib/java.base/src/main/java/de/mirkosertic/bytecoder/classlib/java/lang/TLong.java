@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.classlib.VM;
 @SubstitutesInClass(completeReplace = true)
 public class TLong extends Number {
 
+    public static final Class<Long> TYPE = (Class<Long>) TClass.getPrimitiveClass("long");
+
     private final long longValue;
 
     public TLong(final long aLongValue) {

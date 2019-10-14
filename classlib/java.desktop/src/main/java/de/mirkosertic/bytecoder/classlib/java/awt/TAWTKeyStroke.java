@@ -65,6 +65,10 @@ public class TAWTKeyStroke {
         }
     }
 
+    public static AWTKeyStroke getAWTKeyStroke(final String s) {
+        return null;
+    }
+
     protected TAWTKeyStroke(final char keyChar, final int keyCode, final int modifiers,
                             final boolean onKeyRelease) {
         this.keyChar = keyChar;

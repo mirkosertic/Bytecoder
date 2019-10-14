@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -155,8 +156,8 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
     }
 
     @Override
-    public Set<K> keySet() {
-        return delegate.keySet();
+    public KeySetView<K> keySet() {
+        return new KeySetView<>(delegate.keySet());
     }
 
     @Override
@@ -177,5 +178,13 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
     @Override
     public String toString() {
         return delegate.toString();
+    }
+
+    @SubstitutesInClass(completeReplace = true)
+    public static class KeySetView<K> extends HashSet<K> {
+
+        KeySetView(final Set<K> aKeys) {
+            super(aKeys);
+        }
     }
 }

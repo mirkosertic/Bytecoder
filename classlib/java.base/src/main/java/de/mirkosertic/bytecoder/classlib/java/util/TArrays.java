@@ -48,6 +48,10 @@ public class TArrays {
         return -1;
     }
 
+    public static int binarySearch(final Object[] aData, final Object aValue) {
+        return -1;
+    }
+
     public static <T> List<T> asList(final T... aValues) {
         final ArrayList<T> theResult = new ArrayList<>();
         for (final T theValue : aValues) {
@@ -70,6 +74,14 @@ public class TArrays {
 
     public static int[] copyOf(final int[] original, final int newLength) {
         final int[] theResult = new int[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static long[] copyOf(final long[] original, final int newLength) {
+        final long[] theResult = new long[newLength];
         for (int i=0;i<Math.min(newLength, original.length);i++) {
             theResult[i] = original[i];
         }
@@ -160,7 +172,27 @@ public class TArrays {
             a[i] = val;
     }
 
+    public static void fill(final byte[] a, final byte val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final short[] a, final short val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
     public static void fill(final long[] a, final long val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final float[] a, final float val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final double[] a, final double val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
     }
@@ -182,7 +214,24 @@ public class TArrays {
         return 0;
     }
 
+    public static int hashCode(final int[] data) {
+        return 0;
+    }
+
     public static boolean equals(final long[] a, final long[] b) {
         return false;
     }
+
+    public static boolean equals(final float[] a, final float[] b) {
+        return false;
+    }
+
+    public static boolean equals(final int[] a, final int[] b) {
+        return false;
+    }
+
+    public static boolean equals(final Object[] a, final Object[] b) {
+        return false;
+    }
+
 }

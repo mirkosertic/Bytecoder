@@ -84,6 +84,7 @@ public class TLocale {
 
     private final String language;
     private final String country;
+    private final String region;
     private final Category category;
 
     public TLocale(final String language) {
@@ -91,12 +92,17 @@ public class TLocale {
     }
 
     public TLocale(final String language, final String country) {
-        this(language, country, null);
+        this(language, country, null, null);
     }
 
-    public TLocale(final String language, final String country, final Category category) {
+    public TLocale(final String language, final String country, final String region) {
+        this(language, country, region,null);
+    }
+
+    public TLocale(final String language, final String country, final String region, final Category category) {
         this.language = language;
         this.country = country;
+        this.region = region;
         this.category = category;
     }
 

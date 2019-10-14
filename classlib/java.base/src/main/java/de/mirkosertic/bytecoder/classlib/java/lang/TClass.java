@@ -72,6 +72,12 @@ public class TClass {
         return getConstructor(new Class[0]).newInstance(new Object[0]);
     }
 
+    public Constructor[] getConstructors() {
+        final Constructor[] theResult = new Constructor[1];
+        theResult[0] = getConstructor(new Class[0]);
+        return theResult;
+    }
+
     public static Class<?> getPrimitiveClass(final String aName) {
         if ("byte".equals(aName)) {
             return Byte.class;

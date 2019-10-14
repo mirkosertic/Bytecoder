@@ -22,9 +22,10 @@ import java.io.PrintStream;
 @SubstitutesInClass(completeReplace = true)
 public class TFormatter {
 
-    private final PrintStream out;
-
     public TFormatter(final PrintStream aOut) {
-        out = aOut;
     }
+
+    public TFormatter(final Appendable aOut) {
+    }
+
 }

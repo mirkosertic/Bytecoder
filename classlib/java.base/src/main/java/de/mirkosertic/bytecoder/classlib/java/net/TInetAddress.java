@@ -13,22 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib.java.net;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.net.InetAddress;
 
 @SubstitutesInClass(completeReplace = true)
-public class TResourceBundle {
+public class TInetAddress {
 
-    public static ResourceBundle getBundle(final String aName) {
+    public static InetAddress getByName(final String aName) {
         return null;
     }
-
-    public static ResourceBundle getBundle(final String aName, final Locale aLocale) {
-        return null;
-    }
-
 }
