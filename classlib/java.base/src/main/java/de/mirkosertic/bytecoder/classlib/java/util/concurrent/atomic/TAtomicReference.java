@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
+package de.mirkosertic.bytecoder.classlib.java.util.concurrent.atomic;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.reflect.Field;
-
 @SubstitutesInClass(completeReplace = true)
-public class TObjectStreamField {
+public class TAtomicReference<V> {
 
-    public TObjectStreamField(final String name, final Class clazz) {
+    private final V value;
+
+    public TAtomicReference(final V aValue) {
+        value = aValue;
     }
 
-    public TObjectStreamField(final String name, final String a, final boolean b) {
+    public TAtomicReference() {
+        value = null;
     }
 
-    public TObjectStreamField(final Field field, final boolean a, final boolean b) {
+    public final V get() {
+        return value;
     }
-
 }

@@ -13,22 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
+package de.mirkosertic.bytecoder.classlib.java.util.concurrent.locks;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.reflect.Field;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 
 @SubstitutesInClass(completeReplace = true)
-public class TObjectStreamField {
+public class TReentrantReadWriteLock implements ReadWriteLock {
 
-    public TObjectStreamField(final String name, final Class clazz) {
+    @Override
+    public Lock readLock() {
+        return new TReentrantLock();
     }
 
-    public TObjectStreamField(final String name, final String a, final boolean b) {
+    @Override
+    public Lock writeLock() {
+        return new TReentrantLock();
     }
-
-    public TObjectStreamField(final Field field, final boolean a, final boolean b) {
-    }
-
 }

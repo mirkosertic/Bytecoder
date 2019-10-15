@@ -167,6 +167,11 @@ public class TArrays {
             a[i] = val;
     }
 
+    public static void fill(final Object[] a, final int fromIndex, final int toIndex, final Object val) {
+        for (int i = fromIndex; i < toIndex; i++)
+            a[i] = val;
+    }
+
     public static void fill(final int[] a, final int val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;

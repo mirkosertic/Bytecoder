@@ -204,4 +204,11 @@ public class TMath {
         return value;
     }
 
+    public static double IEEEremainder(final double a, final double b) {
+        return 0;
+    }
+
+    public static double atan2(final double a, final double b) {
+        return 0;
+    }
 }

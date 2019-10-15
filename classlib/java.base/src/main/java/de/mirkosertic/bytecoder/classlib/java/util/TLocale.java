@@ -82,6 +82,10 @@ public class TLocale {
         return ENGLISH;
     }
 
+    public static Locale forLanguageTag(final String aTag) {
+        return getDefault();
+    }
+
     private final String language;
     private final String country;
     private final String region;

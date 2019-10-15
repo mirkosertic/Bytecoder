@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -29,6 +32,20 @@ public class TResourceBundle {
 
     public static ResourceBundle getBundle(final String aName, final Locale aLocale) {
         return null;
+    }
+
+    @SubstitutesInClass(completeReplace = true)
+    public static class Control {
+
+        private static final Control INSTANCE = new Control();
+
+        public static ResourceBundle.Control getControl(final List aList) {
+            return (ResourceBundle.Control) (Object) INSTANCE;
+        }
+
+        public static final List<String> FORMAT_DEFAULT
+                = Collections.unmodifiableList(Arrays.asList("java.class",
+                "java.properties"));
     }
 
 }

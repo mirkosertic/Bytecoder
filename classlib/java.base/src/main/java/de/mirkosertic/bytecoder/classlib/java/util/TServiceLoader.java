@@ -29,6 +29,10 @@ public class TServiceLoader<S> implements Iterable<S> {
         return (ServiceLoader<S>) (Object) new TServiceLoader<>();
     }
 
+    public static <S> ServiceLoader<S> loadInstalled(final Class<S> service) {
+        return load(service, null);
+    }
+
     @Override
     public Iterator<S> iterator() {
         return new Iterator<S>() {
