@@ -16,9 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import sun.util.locale.BaseLocale;
-import sun.util.locale.LocaleExtensions;
-import sun.util.locale.LocaleUtils;
 
 import java.util.Locale;
 
@@ -89,17 +86,10 @@ public class TLocale {
         return getDefault();
     }
 
-    public static Locale getInstance(final BaseLocale baseLocale, final LocaleExtensions extensions) {
-        return getDefault();
-    }
-
     private final String language;
     private final String country;
     private final String region;
     private final Category category;
-
-    private BaseLocale baseLocale;
-    private LocaleExtensions localeExtensions;
 
     public TLocale(final String language) {
         this(language, null);
@@ -118,27 +108,5 @@ public class TLocale {
         this.country = country;
         this.region = region;
         this.category = category;
-    }
-
-    private static LocaleExtensions getCompatibilityExtensions(final String language,
-                                                               final String script,
-                                                               final String country,
-                                                               final String variant) {
-        LocaleExtensions extensions = null;
-        // Special cases for backward compatibility support
-        if (LocaleUtils.caseIgnoreMatch(language, "ja")
-                && script.isEmpty()
-                && LocaleUtils.caseIgnoreMatch(country, "jp")
-                && "JP".equals(variant)) {
-            // ja_JP_JP -> u-ca-japanese (calendar = japanese)
-            extensions = LocaleExtensions.CALENDAR_JAPANESE;
-        } else if (LocaleUtils.caseIgnoreMatch(language, "th")
-                && script.isEmpty()
-                && LocaleUtils.caseIgnoreMatch(country, "th")
-                && "TH".equals(variant)) {
-            // th_TH_TH -> u-nu-thai (numbersystem = thai)
-            extensions = LocaleExtensions.NUMBER_THAI;
-        }
-        return extensions;
     }
 }
