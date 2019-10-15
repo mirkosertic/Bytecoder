@@ -40,6 +40,9 @@ public class TArrays {
     public static void sort(final Object[] aData, final Comparator<Object> c) {
     }
 
+    public static void sort(final Object[] aData) {
+    }
+
     public static int binarySearch(final int[] aData, final int value) {
         return -1;
     }

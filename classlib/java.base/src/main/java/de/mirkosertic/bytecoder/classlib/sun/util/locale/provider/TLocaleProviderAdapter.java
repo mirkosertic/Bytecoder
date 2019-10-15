@@ -13,32 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
+package de.mirkosertic.bytecoder.classlib.sun.util.locale.provider;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import sun.util.locale.provider.LocaleProviderAdapter;
 
-import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 @SubstitutesInClass(completeReplace = true)
-public class TObjectStreamField {
+public class TLocaleProviderAdapter {
 
-    public TObjectStreamField(final String name, final Class clazz) {
-    }
-
-    public TObjectStreamField(final String name, final String a, final boolean b) {
-    }
-
-    public TObjectStreamField(final String name, final Class clazz, final boolean b) {
-    }
-
-    public TObjectStreamField(final Field field, final boolean a, final boolean b) {
-    }
-
-    public static String getClassSignature(final Class clazz) {
+    public static LocaleProviderAdapter getAdapter(final Class clazz, final Locale locale) {
         return null;
     }
 
-    public static StringBuilder appendClassSignature(final StringBuilder builder, final Class aClass) {
-        return builder.append(getClassSignature(aClass));
+    public static LocaleProviderAdapter forJRE() {
+        return null;
+    }
+
+    public static LocaleProviderAdapter forType(final LocaleProviderAdapter.Type type) {
+        return null;
+    }
+
+    public static List getAdapterPreference() {
+        return Collections.emptyList();
     }
 }

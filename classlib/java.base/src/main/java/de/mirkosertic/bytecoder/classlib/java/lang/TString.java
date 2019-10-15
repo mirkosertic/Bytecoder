@@ -78,6 +78,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
         this(aData, Charset.defaultCharset());
     }
 
+    public TString(final byte[] aData, final int highByte) {
+        this(aData, Charset.defaultCharset());
+    }
+
     public TString(final byte[] value, final String charsetName) {
         this(value, Charset.forName(charsetName));
     }

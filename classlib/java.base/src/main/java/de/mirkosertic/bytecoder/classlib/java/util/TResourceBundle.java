@@ -46,6 +46,10 @@ public class TResourceBundle {
         public static final List<String> FORMAT_DEFAULT
                 = Collections.unmodifiableList(Arrays.asList("java.class",
                 "java.properties"));
+
+        public static ResourceBundle.Control getNoFallbackControl(final List aList) {
+            return (ResourceBundle.Control) (Object) INSTANCE;
+        }
     }
 
 }

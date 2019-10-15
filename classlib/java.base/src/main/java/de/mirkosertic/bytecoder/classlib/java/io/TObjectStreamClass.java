@@ -17,28 +17,6 @@ package de.mirkosertic.bytecoder.classlib.java.io;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.reflect.Field;
-
 @SubstitutesInClass(completeReplace = true)
-public class TObjectStreamField {
-
-    public TObjectStreamField(final String name, final Class clazz) {
-    }
-
-    public TObjectStreamField(final String name, final String a, final boolean b) {
-    }
-
-    public TObjectStreamField(final String name, final Class clazz, final boolean b) {
-    }
-
-    public TObjectStreamField(final Field field, final boolean a, final boolean b) {
-    }
-
-    public static String getClassSignature(final Class clazz) {
-        return null;
-    }
-
-    public static StringBuilder appendClassSignature(final StringBuilder builder, final Class aClass) {
-        return builder.append(getClassSignature(aClass));
-    }
+public class TObjectStreamClass {
 }

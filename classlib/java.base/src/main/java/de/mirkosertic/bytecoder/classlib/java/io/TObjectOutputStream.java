@@ -17,28 +17,40 @@ package de.mirkosertic.bytecoder.classlib.java.io;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.reflect.Field;
+import java.io.IOException;
+import java.io.OutputStream;
 
 @SubstitutesInClass(completeReplace = true)
-public class TObjectStreamField {
+public class TObjectOutputStream extends OutputStream {
 
-    public TObjectStreamField(final String name, final Class clazz) {
+    private final OutputStream delegate;
+
+    public TObjectOutputStream(final OutputStream os) {
+        delegate = os;
     }
 
-    public TObjectStreamField(final String name, final String a, final boolean b) {
+    @Override
+    public void write(final byte[] b) throws IOException {
+        delegate.write(b);
     }
 
-    public TObjectStreamField(final String name, final Class clazz, final boolean b) {
+    @Override
+    public void write(final byte[] b, final int off, final int len) throws IOException {
+        delegate.write(b, off, len);
     }
 
-    public TObjectStreamField(final Field field, final boolean a, final boolean b) {
+    @Override
+    public void flush() throws IOException {
+        delegate.flush();
     }
 
-    public static String getClassSignature(final Class clazz) {
-        return null;
+    @Override
+    public void close() throws IOException {
+        delegate.close();
     }
 
-    public static StringBuilder appendClassSignature(final StringBuilder builder, final Class aClass) {
-        return builder.append(getClassSignature(aClass));
+    @Override
+    public void write(final int b) throws IOException {
+        delegate.write(b);
     }
 }

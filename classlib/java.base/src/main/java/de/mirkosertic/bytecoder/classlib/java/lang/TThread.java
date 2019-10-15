@@ -56,6 +56,9 @@ public class TThread implements Runnable {
         return false;
     }
 
+    public static void yield() {
+    }
+
     public static void dumpStack() {
     }
 
