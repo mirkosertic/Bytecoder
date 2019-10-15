@@ -770,7 +770,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             aLinkerContext.linkedClasses().map(k -> k.targetNode()).forEach(search -> {
                 if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags()
-                        .isInterface()) {
+                        .isInterface() && !search.emulatedByRuntime()) {
                     // Only if the class has a zero arg constructor
                     final BytecodeResolvedMethods theResolved = search.resolvedMethods();
                     theResolved.stream().filter(j -> j.getProvidingClass() == search).map(j -> j.getValue())
