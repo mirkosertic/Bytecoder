@@ -28,17 +28,21 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
 
     private final BytecodeReplacer defaultReplacer;
 
-    public BytecodeShadowReplacer(BytecodeLoader aLoader, BytecodeReplacer aDefaultReplacer) {
+    public BytecodeShadowReplacer(final BytecodeLoader aLoader, final BytecodeReplacer aDefaultReplacer) {
         super(aLoader);
         defaultReplacer = aDefaultReplacer;
     }
 
-    private BytecodeMethod replaceMethodFrom(BytecodeMethod aMethod, BytecodeClass aShadowType) {
-        for (BytecodeMethod theShadowMethod : aShadowType.getMethods()) {
-            BytecodeAnnotation theAnnotation = theShadowMethod.getAttributes().getAnnotationByType(Substitutes.class.getName());
+    private BytecodeMethod replaceMethodFrom(final BytecodeMethod aMethod, final BytecodeClass aShadowType) {
+        for (final BytecodeMethod theShadowMethod : aShadowType.getMethods()) {
+            final BytecodeAnnotation theAnnotation = theShadowMethod.getAttributes().getAnnotationByType(Substitutes.class.getName());
             if (theAnnotation != null) {
-                String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
+                final String theMethodName = theAnnotation.getElementValueByName("value").stringValue();
                 if (Objects.equals(theMethodName, aMethod.getName().stringValue()) && theShadowMethod.getSignature().matchesExactlyTo(aMethod.getSignature())) {
+                    return aMethod.replaceAndFlagsFrom(theShadowMethod);
+                }
+            } else {
+                if (!"<clinit>".equals(theShadowMethod.getName().stringValue()) && !"<init>".equals(theShadowMethod.getName().stringValue()) && Objects.equals(theShadowMethod.getName().stringValue(), aMethod.getName().stringValue()) && theShadowMethod.getSignature().matchesExactlyTo(aMethod.getSignature())) {
                     return aMethod.replaceAndFlagsFrom(theShadowMethod);
                 }
             }
@@ -48,27 +52,27 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
 
     @Override
     public MergeResult replace(
-            BytecodeClassinfoConstant aClass, BytecodeMethod[] aMethods, BytecodeField[] aFields,
-            BytecodeClassinfoConstant aSuperClass,
-            BytecodeInterface[] aInterfaces) {
+            final BytecodeClassinfoConstant aClass, final BytecodeMethod[] aMethods, final BytecodeField[] aFields,
+            final BytecodeClassinfoConstant aSuperClass,
+            final BytecodeInterface[] aInterfaces) {
 
-        BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
-        StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.").append(theObjectType.name());
-        int p = theShadowName.lastIndexOf(".");
+        final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
+        final StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.").append(theObjectType.name());
+        final int p = theShadowName.lastIndexOf(".");
         if (p>0) {
             theShadowName.insert(p+1, "T");
         }
         try {
-            String theShadowNameStr = theShadowName.toString();
+            final String theShadowNameStr = theShadowName.toString();
             defaultReplacer.addTypeMap(theShadowNameStr, theObjectType.name());
-            BytecodeClass theShadowType = loader.loadByteCode(new BytecodeObjectTypeRef(theShadowNameStr), defaultReplacer);
+            final BytecodeClass theShadowType = loader.loadByteCode(new BytecodeObjectTypeRef(theShadowNameStr), defaultReplacer);
 
             BytecodeClassinfoConstant theSuperClass = theShadowType.getSuperClass();
             if (theShadowType.getAttributes().getAnnotationByType(IsObject.class.getName()) != null) {
                 theSuperClass = BytecodeClassinfoConstant.OBJECT_CLASS;
             }
 
-            BytecodeAnnotation theClassAnnotation = theShadowType.getAttributes().getAnnotationByType(SubstitutesInClass.class.getName());
+            final BytecodeAnnotation theClassAnnotation = theShadowType.getAttributes().getAnnotationByType(SubstitutesInClass.class.getName());
             if (theClassAnnotation == null) {
                 // No valid shadow type
                 return new MergeResult(
@@ -81,36 +85,36 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
 
             if (Objects.equals(theClassAnnotation.getElementValueByName("completeReplace").stringValue(), "true")) {
 
-                List<BytecodeMethod> theMethods = new ArrayList<>();
-                for (BytecodeMethod aMethod : theShadowType.getMethods()) {
+                final List<BytecodeMethod> theMethods = new ArrayList<>();
+                for (final BytecodeMethod aMethod : theShadowType.getMethods()) {
                     theMethods.add(replaceMethodFrom(aMethod, theShadowType));
                 }
 
                 return new MergeResult(
-                        theMethods.toArray(new BytecodeMethod[theMethods.size()]),
+                        theMethods.toArray(new BytecodeMethod[0]),
                         theShadowType.fields(),
                         theSuperClass,
                         theShadowType.getInterfaces()
                 );
             }
 
-            List<BytecodeField> theFields = new ArrayList<>();
+            final List<BytecodeField> theFields = new ArrayList<>();
             // Import fields from shadow type
             theFields.addAll(Arrays.asList(theShadowType.fields()));
             theFields.addAll(Arrays.asList(aFields));
 
-            List<BytecodeMethod> theMethods = new ArrayList<>();
-            for (BytecodeMethod aMethod : aMethods) {
+            final List<BytecodeMethod> theMethods = new ArrayList<>();
+            for (final BytecodeMethod aMethod : aMethods) {
                 theMethods.add(replaceMethodFrom(aMethod, theShadowType));
             }
 
             return new MergeResult(
-                    theMethods.toArray(new BytecodeMethod[theMethods.size()]),
-                    theFields.toArray(new BytecodeField[theFields.size()]),
+                    theMethods.toArray(new BytecodeMethod[0]),
+                    theFields.toArray(new BytecodeField[0]),
                     theSuperClass,
                     aInterfaces
             );
-        } catch (Exception  e) {
+        } catch (final Exception  e) {
             // No shadow type found
             return new MergeResult(
                     aMethods,

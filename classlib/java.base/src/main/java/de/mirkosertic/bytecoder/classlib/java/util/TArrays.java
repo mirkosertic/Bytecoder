@@ -20,12 +20,9 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.Objects;
 
-@SubstitutesInClass(completeReplace = true)
+@SubstitutesInClass(completeReplace = false)
 public class TArrays {
 
     public static void sort(final long[] aData) {
@@ -41,18 +38,6 @@ public class TArrays {
     }
 
     public static void sort(final Object[] aData) {
-    }
-
-    public static int binarySearch(final int[] aData, final int value) {
-        return -1;
-    }
-
-    public static int binarySearch(final Object[] aData, final Object aValue, final Comparator<Object> c) {
-        return -1;
-    }
-
-    public static int binarySearch(final Object[] aData, final Object aValue) {
-        return -1;
     }
 
     public static <T> List<T> asList(final T... aValues) {
@@ -205,41 +190,78 @@ public class TArrays {
             a[i] = val;
     }
 
-    public static <T> Stream<T> stream(final T[] array) {
-        return stream(array, 0, array.length);
-    }
-
-    public static <T> Stream<T> stream(final T[] array, final int startInclusive, final int endExclusive) {
-        return StreamSupport.stream(spliterator(array, startInclusive, endExclusive), false);
-    }
-
-    public static <T> Spliterator<T> spliterator(final T[] array, final int startInclusive, final int endExclusive) {
-        return Spliterators.spliterator(array, startInclusive, endExclusive,
-                Spliterator.ORDERED | Spliterator.IMMUTABLE);
-    }
-
-    public static int hashCode(final Object[] data) {
-        return 0;
-    }
-
-    public static int hashCode(final int[] data) {
-        return 0;
+    public static boolean equals(final byte[] a, final byte[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean equals(final long[] a, final long[] b) {
-        return false;
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean equals(final float[] a, final float[] b) {
-        return false;
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean equals(final int[] a, final int[] b) {
-        return false;
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean equals(final Object[] a, final Object[] b) {
-        return false;
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (!Objects.equals(a[i], b[i])) {
+                return false;
+            }
+        }
+        return true;
     }
-
 }

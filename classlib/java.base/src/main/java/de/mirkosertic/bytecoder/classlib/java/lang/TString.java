@@ -151,16 +151,8 @@ public class TString implements java.io.Serializable, Comparable<String> {
         final String theOtherString = (String) aOtherObject;
         final byte[] theOtherData = theOtherString.getBytes();
         final byte[] thisData = this.getBytes();
-        if (thisData.length != theOtherData.length) {
-            return false;
-        }
 
-        for (int i=0;i<thisData.length;i++) {
-            if (thisData[i] != theOtherData[i]) {
-                return false;
-            }
-        }
-        return true;
+        return Arrays.equals(theOtherData, thisData);
     }
 
     public boolean equalsIgnoreCase(final String aOtherObject) {
