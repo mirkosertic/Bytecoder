@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.classlib;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.Comparator;
 
 public class VM {
 
@@ -37,6 +38,8 @@ public class VM {
     }
 
     public static final char NEWLINE = '\n';
+
+    public static Comparator DEFAULT = (o1, o2) -> ((Comparable) o1).compareTo(o2);
 
     public static long stringToLong(final String aString) {
         long theResult = 0;

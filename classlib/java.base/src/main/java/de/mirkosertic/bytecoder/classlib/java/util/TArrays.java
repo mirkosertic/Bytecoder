@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,19 +26,20 @@ import java.util.Objects;
 @SubstitutesInClass(completeReplace = false)
 public class TArrays {
 
-    public static void sort(final long[] aData) {
+    public static <T> void sort(final T[] aData, final int aStart, final int aEnd) {
+        Quicksort.quickSort(aData, aStart, aEnd, VM.DEFAULT);
     }
 
-    public static void sort(final Object[] aData, final int aStart, final int aEnd) {
+    public static <T> void sort(final T[] aData, final int aStart, final int aEnd, final Comparator<T> c) {
+        Quicksort.quickSort(aData, aStart, aEnd, c);
     }
 
-    public static void sort(final Object[] aData, final int aStart, final int aEnd, final Comparator<Object> c) {
+    public static <T> void sort(final T[] aData, final Comparator<T> c) {
+        Quicksort.quickSort(aData, 0, aData.length - 1, c);
     }
 
-    public static void sort(final Object[] aData, final Comparator<Object> c) {
-    }
-
-    public static void sort(final Object[] aData) {
+    public static <T> void sort(final T[] aData) {
+        Quicksort.quickSort(aData, 0, aData.length - 1, VM.DEFAULT);
     }
 
     public static <T> List<T> asList(final T... aValues) {
