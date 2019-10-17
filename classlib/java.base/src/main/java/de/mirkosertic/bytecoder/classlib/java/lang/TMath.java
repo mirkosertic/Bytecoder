@@ -186,16 +186,14 @@ public class TMath {
     }
 
     public static double rint(final double value) {
-        return value;
+        return (int) value;
     }
 
     public static double hypot(final double a, final double b) {
-        return a;
+        return sqrt(a*a + b*b);
     }
 
-    public static double acos(final double value) {
-        return value;
-    }
+    public static native double acos(final double value);
 
     public static long abs(final long value) {
         if (value < 0) {
@@ -208,7 +206,5 @@ public class TMath {
         return 0;
     }
 
-    public static double atan2(final double a, final double b) {
-        return 0;
-    }
+    public static native double atan2(final double a, final double b);
 }
