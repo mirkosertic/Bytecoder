@@ -26,6 +26,8 @@ import java.util.ResourceBundle;
 @SubstitutesInClass(completeReplace = true)
 public class TResourceBundle {
 
+    protected ResourceBundle parent = null;
+
     public static ResourceBundle getBundle(final String aName) {
         return null;
     }

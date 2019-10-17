@@ -86,6 +86,10 @@ public class TLong extends Number {
         return VM.stringToLong(aString);
     }
 
+    public static long parseLong(final String aString, final int base) {
+        return VM.stringToLong(aString);
+    }
+
     public static String toString(final long aValue) {
         final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);

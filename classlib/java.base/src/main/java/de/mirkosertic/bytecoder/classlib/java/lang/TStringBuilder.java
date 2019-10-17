@@ -47,6 +47,10 @@ public class TStringBuilder {
         charData = toCharArray(aOtherString);
     }
 
+    public TStringBuilder(final CharSequence aOtherString) {
+        charData = toCharArray(aOtherString);
+    }
+
     public int length() {
         return charData.length;
     }

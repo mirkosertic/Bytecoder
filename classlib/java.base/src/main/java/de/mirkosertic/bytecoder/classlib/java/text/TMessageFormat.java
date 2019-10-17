@@ -26,6 +26,14 @@ public class TMessageFormat {
         this.pattern = pattern;
     }
 
+    public TMessageFormat(final String pattern, final Object... values) {
+        this.pattern = pattern;
+    }
+
+    public static String format(final String pattern, final Object... values) {
+        return pattern;
+    }
+
     public String format(final Object... values) {
         return pattern;
     }

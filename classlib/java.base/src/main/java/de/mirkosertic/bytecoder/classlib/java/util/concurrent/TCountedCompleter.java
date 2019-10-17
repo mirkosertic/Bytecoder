@@ -25,6 +25,10 @@ public abstract class TCountedCompleter<T> extends ForkJoinTask<T> {
 
     private final CountedCompleter<T> completer;
 
+    public TCountedCompleter() {
+        completer = null;
+    }
+
     public TCountedCompleter(final CountedCompleter<T> completer) {
         this.completer = completer;
     }

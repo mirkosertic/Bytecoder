@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import java.util.Locale;
 
 @SubstitutesInClass(completeReplace = true)
 public class TString implements java.io.Serializable, Comparable<String> {
@@ -106,6 +107,23 @@ public class TString implements java.io.Serializable, Comparable<String> {
     public TString() {
         data = new char[0];
     }
+
+    public TString(final byte[] ascii, int hibyte, final int offset, final int count) {
+        final char[] value = new char[count];
+
+        if (hibyte == 0) {
+            for (int i = count; i-- > 0;) {
+                value[i] = (char)(ascii[i + offset] & 0xff);
+            }
+        } else {
+            hibyte <<= 8;
+            for (int i = count; i-- > 0;) {
+                value[i] = (char)(hibyte | (ascii[i + offset] & 0xff));
+            }
+        }
+        this.data = value;
+    }
+
 
     @Override
     public String toString() {
@@ -314,5 +332,9 @@ public class TString implements java.io.Serializable, Comparable<String> {
         for (int i=srcBegin;i<srcEnd;i++) {
             dst[dstBegin++]=data[i];
         }
+    }
+
+    public static String format(final Locale locale, final String pattern, final Object... values) {
+        return pattern;
     }
 }

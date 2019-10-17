@@ -19,6 +19,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.security.ProtectionDomain;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
@@ -112,6 +113,10 @@ public class TClass {
 
     public ClassLoader getClassLoader() {
         return null;
+    }
+
+    public static Class forName(final AnyTypeMatches module, final String name) throws ClassNotFoundException {
+        return forName(name, true, Class.class.getClassLoader());
     }
 
     public static Class forName(final String name) throws ClassNotFoundException {
