@@ -259,11 +259,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(45, vars.size());
+        assertEquals(66, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
 
-        assertEquals(43, theAllocator.assignedRegister().size());
+        assertEquals(63, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
