@@ -190,7 +190,272 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("isBigEndian").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return 1;").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("toolkit").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("component").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("awtevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("inputevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("dimension").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("trayicon").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("raster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("samplemodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("inflater").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("graphicsprimitivemgr").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClassClassClassClassClassClassClassClassClassClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("filekey").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("ioutil").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("cursor").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("event").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("font").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("fontmetrics").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("insets").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("keyboardfocusmanager").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menucomponent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("colormodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("singlepixelpackedsamplemodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("gifimagedecoder").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("imagerepresentation").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("jpegimagedecoder").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("disposer").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("surfacedata").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("shapespaniterator").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("spancliprenderer").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("button").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("choice").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("color").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("container").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menubar").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menuitem").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bufferedimage").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("indexcolormodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("randomaccessfile").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bufimgsurfacedata").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("freetypefontscaler").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("sunfontmanager").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("checkboxmenuitem").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menu").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("rectangle").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("window").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bytecomponentraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bytepackedraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("integercomponentraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("shortcomponentraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("dialog").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("frame").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("keyevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("mouseevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("filechannelimpl").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
 
         theWriter.tab(2).text("system").colon().text("{").newLine();
         theWriter.tab(3).text("currentTimeMillis").colon().text("function()").space().text("{").newLine();

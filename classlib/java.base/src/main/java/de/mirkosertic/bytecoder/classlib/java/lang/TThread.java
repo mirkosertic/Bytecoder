@@ -20,24 +20,33 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TThread implements Runnable {
 
+    private static final ThreadGroup DEFAULT = new ThreadGroup("default");
     private static final TThread MAIN = new TThread(null);
 
-    public static TThread currentThread() {
-        return MAIN;
+    public static Thread currentThread() {
+        return (Thread) (Object) MAIN;
     }
 
     private final Runnable runnable;
+    private final ThreadGroup threadGroup;
 
     public TThread() {
         runnable = null;
+        threadGroup = DEFAULT;
     }
 
     public TThread(final Runnable aRunnable) {
+        threadGroup = DEFAULT;
         runnable = aRunnable;
     }
 
     public TThread(final ThreadGroup group, final Runnable aRunnable, final String name, final long aPriority, final boolean daemon) {
+        threadGroup = group;
         runnable = aRunnable;
+    }
+
+    public ThreadGroup getThreadGroup() {
+        return threadGroup;
     }
 
     @Override

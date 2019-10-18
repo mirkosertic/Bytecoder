@@ -80,7 +80,8 @@ public class TSystem {
     }
 
     public static void loadLibrary(final String name) {
-        throw new IllegalArgumentException("Cannot load library " + name);
+        // System libraries cannot be loaded by Bytecoder.
+        // However, native parts are linked using the Bytecoder module imports
     }
 
     public static void exit(final int exitCode) {

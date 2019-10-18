@@ -57,4 +57,7 @@ public class TUnsafe {
 
     public void storeFence() {
     }
+
+    public void ensureClassInitialized(final Class<?> c) {
+    }
 }

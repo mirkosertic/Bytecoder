@@ -73,7 +73,7 @@ public class InlineCallArgumentsOptimizerStage implements OptimizerStage{
                     if (theBefore instanceof VariableAssignmentExpression) {
                         final VariableAssignmentExpression theBeforeAss = (VariableAssignmentExpression) theBefore;
                         final Variable theVar = theBeforeAss.getVariable();
-                        if (!aCurrentNode.liveOut().contains(theVar) && (theVar == theVars.get(theVars.size() - 1))) {
+                        if (!aCurrentNode.liveOut().contains(theVar) && (theVar == theVars.get(theVars.size() - 1)) && theVar.outgoingEdges().count() == 1) {
                             theValueToObserve.replaceIncomingDataEdge(theVar, theBeforeAss.incomingDataFlows().get(0));
                             aExpressionList.remove(theBeforeAss);
                             aGraph.getProgram().deleteVariable(theVar);
