@@ -35,4 +35,13 @@ public class JFrameTest {
         window.setMinimumSize(new Dimension(800, 600));
         window.setVisible(true);
     }
+
+    @Test
+    @Ignore
+    public void testEmptyWindow() {
+        final Window window = new Frame();
+        window.setMinimumSize(new Dimension(800, 600));
+        window.setVisible(true);
+    }
+
 }

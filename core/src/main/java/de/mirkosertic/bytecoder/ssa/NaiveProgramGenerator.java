@@ -1190,7 +1190,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final Variable theNewVarargsArray = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(),
                                 BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new IntegerValue(theVarArgsLength)));
                         for (int i = theSignatureLength - 1; i < theArgumentsLength; i++) {
-                            final Value theVariable = theArguments.get(i);
+                            final Value theVariable = theArguments.get(theSignatureLength - 1);
                             theArguments.remove(theVariable);
                             theInitNode.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theNewVarargsArray, new IntegerValue(i - theSignatureLength + 1), theVariable));
                         }
