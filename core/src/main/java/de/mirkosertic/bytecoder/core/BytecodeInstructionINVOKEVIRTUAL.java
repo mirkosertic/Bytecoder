@@ -42,13 +42,19 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
 
             // We are linking an Array here, so mark the corresponding name
             final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
-            if (!aLinkerContext.resolveClass(theTypeRef).resolveVirtualMethod(theName.stringValue(), theSig)) {
-                //throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
+            final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(theTypeRef);
+            if (!theClass.resolveVirtualMethod(theName.stringValue(), theSig)) {
+                if (!theClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+                    throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in non-abstract class " + theClassConstant.getConstant().stringValue() + " with signature " + theSig.toString());
+                }
             }
         } else {
-            if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant))
+            final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant));
+            if (!theClass
                     .resolveVirtualMethod(theName.stringValue(), theSig)) {
-                //throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
+                if (!theClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+                    throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in non-abstract class " + theClassConstant.getConstant().stringValue() + " with signature " + theSig.toString());
+                }
             }
         }
     }
