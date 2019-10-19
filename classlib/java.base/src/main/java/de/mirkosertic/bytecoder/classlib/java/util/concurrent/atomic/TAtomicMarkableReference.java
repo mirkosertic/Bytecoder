@@ -48,4 +48,8 @@ public class TAtomicMarkableReference<V> {
     public void set(final V newReference, final boolean newMark) {
         reference = newReference;
     }
+
+    public boolean isMarked() {
+        return false;
+    }
 }

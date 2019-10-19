@@ -19,4 +19,8 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TMethod {
+
+    public Object invoke(final Object where, final Object[] args) {
+        return null;
+    }
 }

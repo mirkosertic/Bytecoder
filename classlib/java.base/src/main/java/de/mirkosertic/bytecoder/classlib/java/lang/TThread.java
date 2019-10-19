@@ -20,33 +20,68 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TThread implements Runnable {
 
-    private static final ThreadGroup DEFAULT = new ThreadGroup("default");
-    private static final TThread MAIN = new TThread(null);
+    public static Thread MAIN_THREAD;
 
     public static Thread currentThread() {
-        return (Thread) (Object) MAIN;
+        if (MAIN_THREAD == null) {
+            final ThreadGroup main = new ThreadGroup((ThreadGroup) (Object) TThreadGroup.SYSTEM, "main");
+            MAIN_THREAD = new Thread(main, "main");
+        }
+        return MAIN_THREAD;
     }
 
     private final Runnable runnable;
     private final ThreadGroup threadGroup;
+    private String name;
+    private ClassLoader contextClassLoader;
 
     public TThread() {
         runnable = null;
-        threadGroup = DEFAULT;
+        threadGroup = (ThreadGroup) (Object) TThreadGroup.SYSTEM;
+        name = "UNKNOWN";
     }
 
     public TThread(final Runnable aRunnable) {
-        threadGroup = DEFAULT;
+        threadGroup = (ThreadGroup) (Object) TThreadGroup.SYSTEM;
         runnable = aRunnable;
+        name = "UNKNOWN";
     }
 
-    public TThread(final ThreadGroup group, final Runnable aRunnable, final String name, final long aPriority, final boolean daemon) {
+    public TThread(final ThreadGroup group, final Runnable aRunnable, final String aName, final long aPriority, final boolean daemon) {
         threadGroup = group;
         runnable = aRunnable;
+        name = aName;
+    }
+
+    public TThread(final ThreadGroup group, final String aName) {
+        threadGroup = group;
+        runnable = null;
+        name = aName;
     }
 
     public ThreadGroup getThreadGroup() {
         return threadGroup;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(final String aName) {
+        name = aName;
+    }
+
+    public void start() {
+    }
+
+    public void stop() {
+    }
+
+    public void interrupt() {
+    }
+
+    public static boolean interrupted() {
+        return currentThread().isInterrupted();
     }
 
     @Override
@@ -61,7 +96,7 @@ public class TThread implements Runnable {
     public static void sleep(final long duration) {
     }
 
-    public static boolean interrupted() {
+    public boolean isInterrupted() {
         return false;
     }
 
@@ -71,7 +106,35 @@ public class TThread implements Runnable {
     public static void dumpStack() {
     }
 
+    public void setDaemon(final boolean flag) {
+    }
+
+    public void setPriority(final int value) {
+    }
+
+    public void join(final long aTimeout) {
+    }
+
+    public void join() {
+    }
+
+    public boolean isAlive() {
+        return true;
+    }
+
     public static Thread.UncaughtExceptionHandler getDefaultUncaughtExceptionHandler() {
+        return null;
+    }
+
+    public void setContextClassLoader(final ClassLoader aLoader) {
+        contextClassLoader = aLoader;
+    }
+
+    public ClassLoader getContextClassLoader() {
+        return contextClassLoader;
+    }
+
+    public Thread.UncaughtExceptionHandler getUncaughtExceptionHandler() {
         return null;
     }
 }

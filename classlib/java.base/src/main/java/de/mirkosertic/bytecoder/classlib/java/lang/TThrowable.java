@@ -23,7 +23,7 @@ import java.io.PrintStream;
 public class TThrowable {
 
     private final String message;
-    private final Throwable cause;
+    private Throwable cause;
 
     public TThrowable(final String aMessage) {
         message = aMessage;
@@ -62,7 +62,19 @@ public class TThrowable {
         return message;
     }
 
+    public String getLocalizedMessage() {
+        return message;
+    }
+
     public Throwable getCause() {
         return cause;
+    }
+
+    public Throwable initCause(final Throwable aCause) {
+        cause = aCause;
+        return (Throwable) (Object) this;
+    }
+
+    public void addSuppressed(final Throwable aCause) {
     }
 }

@@ -272,10 +272,14 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             return true;
         }
 
+        boolean foundByInterface = false;
+
         // Try to find default methods and also mark usage
         // of interface methods
         for (final BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
-            theImplementedInterface.resolveVirtualMethod(aMethodName, aSignature);
+            if (theImplementedInterface.resolveVirtualMethod(aMethodName, aSignature)) {
+                foundByInterface = true;
+            }
         }
 
         final BytecodeMethod theMethod = bytecodeClass.methodByNameAndSignatureOrNull(aMethodName, aSignature);
@@ -291,12 +295,14 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             return true;
         }
 
-        final BytecodeLinkedClass theSuperClass = getSuperClass();
-        if (theSuperClass != null) {
-            return theSuperClass.resolveVirtualMethod(aMethodName, aSignature);
+        if (!foundByInterface) {
+            final BytecodeLinkedClass theSuperClass = getSuperClass();
+            if (theSuperClass != null) {
+                return theSuperClass.resolveVirtualMethod(aMethodName, aSignature);
+            }
         }
 
-        return false;
+        return foundByInterface;
     }
 
     public boolean resolveConstructorInvocation(final BytecodeMethodSignature aSignature) {

@@ -18,9 +18,37 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TModule {
+public class TThreadGroup {
 
-    public boolean isExported(final String aName) {
+    public static TThreadGroup SYSTEM = new TThreadGroup();
+
+    private final ThreadGroup parent;
+    private final String name;
+
+    private TThreadGroup() {
+        name = "system";
+        parent = null;
+    }
+
+    private TThreadGroup(final String aName) {
+        name = aName;
+        parent = Thread.currentThread().getThreadGroup();
+    }
+
+    private TThreadGroup(final ThreadGroup aParent, final String aName) {
+        name = aName;
+        parent = aParent;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ThreadGroup getParent() {
+        return parent;
+    }
+
+    public boolean isDestroyed() {
         return false;
     }
 }

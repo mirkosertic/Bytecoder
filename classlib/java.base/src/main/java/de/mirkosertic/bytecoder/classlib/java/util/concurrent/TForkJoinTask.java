@@ -22,4 +22,6 @@ import java.util.concurrent.Future;
 
 @SubstitutesInClass(completeReplace = true)
 public abstract class TForkJoinTask<V> implements Future<V>, Serializable {
+
+    public abstract V invoke();
 }

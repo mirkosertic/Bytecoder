@@ -52,6 +52,14 @@ public class TResourceBundle {
         public static ResourceBundle.Control getNoFallbackControl(final List aList) {
             return (ResourceBundle.Control) (Object) INSTANCE;
         }
+
+        public List getCandidateLocales(final String aName, final Locale aLocale) {
+            return Collections.emptyList();
+        }
+
+        public String toBundleName(final String aBaseName, final Locale aLocale) {
+            return aBaseName;
+        }
     }
 
 }

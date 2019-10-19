@@ -141,6 +141,13 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return Arrays.copyOf(bb.array(), bb.limit());
     }
 
+    public byte[] getBytes(final String charsetName) {
+        final Charset charset = Charset.forName(charsetName);
+        final CharBuffer cb = CharBuffer.wrap(data);
+        final ByteBuffer bb = charset.encode(cb);
+        return Arrays.copyOf(bb.array(), bb.limit());
+    }
+
     public byte[] getBytes() {
         return getBytes(Charset.defaultCharset());
     }
@@ -151,6 +158,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
 
     @Override
     public int compareTo(final String o) {
+        return 0;
+    }
+
+    public int compareToIgnoreCase(final String o) {
         return 0;
     }
 
@@ -332,6 +343,93 @@ public class TString implements java.io.Serializable, Comparable<String> {
         for (int i=srcBegin;i<srcEnd;i++) {
             dst[dstBegin++]=data[i];
         }
+    }
+
+    public String[] split(final String aSeparator) {
+        return new String[] {(String) (Object) this};
+    }
+
+    public String intern() {
+        return (String)(Object) this;
+    }
+
+    public String toLowerCase() {
+        return (String)(Object) this;
+    }
+
+    public String toLowerCase(final Locale locale) {
+        return (String)(Object) this;
+    }
+
+    public String toUpperCase() {
+        return (String)(Object) this;
+    }
+
+    public String toUpperCase(final Locale locale) {
+        return (String)(Object) this;
+    }
+
+    public int lastIndexOf(final int charCode) {
+        return -1;
+    }
+
+    public String replaceAll(final String pattern, final String replacement) {
+        return (String)(Object) this;
+    }
+
+    public boolean endsWith(final String aString) {
+        return false;
+    }
+
+    public int codePointAt(final int aIndex) {
+        return data[aIndex];
+    }
+
+    public boolean regionMatches(final boolean v, final int value1, final String value2, final int value3, final int value4) {
+        return false;
+    }
+
+    public boolean startsWith(final String aOtherString, final int aIndex) {
+        return false;
+    }
+
+    public int indexOf(final String aOtherString) {
+        return -1;
+    }
+
+    public int indexOf(final int aCharCode, final int aIndex) {
+        return -1;
+    }
+
+    public boolean contains(final CharSequence aValue) {
+        return false;
+    }
+
+    public String replaceFirst(final String aPattern, final String aReplacement) {
+        return (String) (Object) this;
+    }
+
+    public String replace(final CharSequence aPattern, final CharSequence aReplacement) {
+        return (String) (Object) this;
+    }
+
+    public boolean matches(final String aPattern) {
+        return false;
+    }
+
+    public void getBytes(final int a, final int b, final byte[] data, final int c) {
+    }
+
+    public int indexOf(final String aString, final int aIndex) {
+        return -1;
+    }
+
+    public int offsetByCodePoints(final int a, final int b) {
+        return 0;
+    }
+
+    public int codePointBefore(final int aIndex) {
+        return 0;
     }
 
     public static String format(final Locale locale, final String pattern, final Object... values) {

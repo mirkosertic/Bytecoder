@@ -17,6 +17,36 @@ package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.reflect.Type;
+
 @SubstitutesInClass(completeReplace = true)
 public class TExecutable {
+
+    public String toGenericString() {
+        return null;
+    }
+
+    public Class[] getParameterTypes() {
+        return new Class[0];
+    }
+
+    public Type[] getGenericParameterTypes() {
+        return new Type[0];
+    }
+
+    public Type getGenericReturnType() {
+        return null;
+    }
+
+    public Class getReturnType() {
+        return null;
+    }
+
+    public int getParameterCount() {
+        return 0;
+    }
+
+    public Class[] getExceptionTypes() {
+        return new Class[0];
+    }
 }

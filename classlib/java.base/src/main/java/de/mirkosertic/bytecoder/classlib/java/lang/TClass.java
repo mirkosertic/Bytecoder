@@ -15,14 +15,19 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.security.ProtectionDomain;
-
 import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
+
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.net.URL;
+import java.security.ProtectionDomain;
 
 @SubstitutesInClass(completeReplace = true)
 public class TClass {
@@ -50,6 +55,14 @@ public class TClass {
     }
 
     public String getSimpleName() {
+        return getName();
+    }
+
+    public String getPackageName() {
+        return getName();
+    }
+
+    public String getCanonicalName() {
         return getName();
     }
 
@@ -126,5 +139,94 @@ public class TClass {
     @EmulatedByRuntime
     public static Class forName(final String name, final boolean initialize, final ClassLoader classLoader) throws ClassNotFoundException {
         throw new ClassNotFoundException(name);
+    }
+
+    @EmulatedByRuntime
+    public Type[] getGenericInterfaces() {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Class[] getInterfaces() {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Class getSuperclass() {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Constructor getDeclaredConstructor(final Class[] args) {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Method getDeclaredMethod(final String name, final Class[] arguments) {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public boolean isInstance(final Object a) {
+        return false;
+    }
+
+    @EmulatedByRuntime
+    public Field getField(final String name) {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Field[] getDeclaredFields() {
+        return new Field[0];
+    }
+
+    public InputStream getResourceAsStream(final String aName) {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public boolean isAssignableFrom(final Class aOtherClass) {
+        return false;
+    }
+
+    @EmulatedByRuntime
+    public Method[] getMethods() {
+        return new Method[0];
+    }
+
+    @EmulatedByRuntime
+    public int getModifiers() {
+        return 0;
+    }
+
+    @EmulatedByRuntime
+    public AnyTypeMatches getModule() {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Method getMethod(final String aName, final Class[] argumentTypes) {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public Type getGenericSuperclass() {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public boolean isInterface() {
+        return false;
+    }
+
+    @EmulatedByRuntime
+    public Class getEnclosingClass() {
+        return null;
+    }
+
+    @EmulatedByRuntime
+    public URL getResource(final String name) {
+        return null;
     }
 }

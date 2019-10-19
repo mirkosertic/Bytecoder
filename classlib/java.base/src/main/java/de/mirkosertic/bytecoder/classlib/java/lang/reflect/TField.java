@@ -19,4 +19,12 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TField {
+
+    public Object get(final Object o) {
+        return null;
+    }
+
+    public Class getType() {
+        return null;
+    }
 }

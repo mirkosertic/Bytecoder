@@ -58,6 +58,18 @@ public class TStringBuffer {
         return (StringBuffer) o;
     }
 
+    public StringBuffer append(final float aValue) {
+        builder.append(aValue);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
+    public StringBuffer append(final char[] aValue, final int a, final int b) {
+        builder.append(aValue, a, b);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
     public String toString() {
         return builder.toString();
     }

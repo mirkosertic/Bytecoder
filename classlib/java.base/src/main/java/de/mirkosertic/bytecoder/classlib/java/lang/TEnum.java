@@ -15,19 +15,17 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import java.util.Objects;
-
 import de.mirkosertic.bytecoder.api.NoExceptionCheck;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TEnum {
+public class TEnum implements Comparable<Enum> {
 
     private final String name;
     private final int ordinalNumber;
 
     @NoExceptionCheck
-    protected TEnum(String aName, int aOrdinalNumber) {
+    protected TEnum(final String aName, final int aOrdinalNumber) {
         name = aName;
         ordinalNumber = aOrdinalNumber;
     }
@@ -40,12 +38,24 @@ public class TEnum {
         return name;
     }
 
-    public static Enum valueOf(Class<Enum> aClass, String aValue) {
-        for (Enum theEnum : aClass.getEnumConstants()) {
+    public static Enum valueOf(final Class<Enum> aClass, final String aValue) {
+        for (final Enum theEnum : aClass.getEnumConstants()) {
             if (theEnum.name().equals(aValue)) {
                 return theEnum;
             }
         }
         throw new IllegalArgumentException();
+    }
+
+    @Override
+    public int compareTo(final Enum o) {
+        final int index = o.ordinal();
+        if (index == ordinalNumber) {
+            return 0;
+        } else if (index < ordinalNumber) {
+            return 1;
+        } else {
+            return -1;
+        }
     }
 }

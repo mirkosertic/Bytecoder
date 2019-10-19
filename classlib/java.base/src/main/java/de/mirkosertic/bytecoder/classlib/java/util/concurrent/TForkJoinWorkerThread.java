@@ -17,6 +17,12 @@ package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.concurrent.ForkJoinPool;
+
 @SubstitutesInClass(completeReplace = true)
 public class TForkJoinWorkerThread extends Thread {
+
+    public ForkJoinPool getPool() {
+        return null;
+    }
 }

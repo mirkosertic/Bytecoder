@@ -216,4 +216,66 @@ public class TStringBuilder {
     public String toString() {
         return new String(charData);
     }
+
+    public int indexOf(final String aOtherString) {
+        return -1;
+    }
+
+    public int indexOf(final String aOtherString, final int aIndex) {
+        return -1;
+    }
+
+    public void setLength(final int aLength) {
+    }
+
+    public void setCharAt(final int aIndex, final char aChar) {
+    }
+
+    public StringBuilder delete(final int aFrom, final int aTo) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public StringBuilder replace(final int aFrom, final int aTo, final String replacement) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public StringBuilder append(final boolean aValue) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public StringBuilder insert(final int aIndex, final char aChar) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public TStringBuilder append(final CharSequence aCharSequence, final int a, final int b) {
+        if (aCharSequence == null) {
+            internalAdd(toCharArray("null"));
+            return this;
+        }
+        internalAdd(toCharArray(aCharSequence));
+        return this;
+    }
+
+    public StringBuilder append(final char[] aValue, final int a, final int b) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public StringBuilder append(final char[] aValue) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public StringBuilder appendCodePoint(final int codePoint) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public StringBuilder deleteCharAt(final int aIndex) {
+        return (StringBuilder) (Object) this;
+    }
+
+    public int codePointBefore(final int aIndex) {
+        return 0;
+    }
+
+    public void ensureCapacity(final int aCapacity) {
+    }
 }

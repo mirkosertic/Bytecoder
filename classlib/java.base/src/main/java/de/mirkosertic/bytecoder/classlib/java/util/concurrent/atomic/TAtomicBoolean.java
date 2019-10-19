@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TAtomicBoolean {
 
-    private final boolean value;
+    private boolean value;
 
     public TAtomicBoolean(final boolean aValue) {
         value = aValue;
@@ -32,5 +32,23 @@ public class TAtomicBoolean {
 
     public final boolean get() {
         return value;
+    }
+
+    public final void set(final boolean aValue) {
+        value = aValue;
+    }
+
+    public final boolean getAndSet(final boolean aNewValue) {
+        final boolean old = value;
+        value = aNewValue;
+        return old;
+    }
+
+    public final boolean compareAndSet(final boolean expected, final boolean newValue) {
+        if (value == expected) {
+            value = newValue;
+            return true;
+        }
+        return false;
     }
 }

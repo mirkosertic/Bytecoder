@@ -15,12 +15,25 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-@SubstitutesInClass(completeReplace = true)
-public class TModule {
+@RunWith(BytecoderUnitTestRunner.class)
+public class ThreadTest {
 
-    public boolean isExported(final String aName) {
-        return false;
+    @Test
+    public void testThreadGroupName() {
+        final ThreadGroup g = Thread.currentThread().getThreadGroup();
+        final String name = g.getName();
+        Assert.assertEquals("main", name);
+    }
+
+    @Test
+    public void testThreadName() {
+        final Thread t = Thread.currentThread();
+        final String name = t.getName();
+        Assert.assertEquals("main", name);
     }
 }

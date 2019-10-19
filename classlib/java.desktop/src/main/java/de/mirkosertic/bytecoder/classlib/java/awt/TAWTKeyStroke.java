@@ -81,4 +81,20 @@ public class TAWTKeyStroke {
         modifiers = 0;
         onKeyRelease = false;
     }
+
+    public char getKeyChar() {
+        return keyChar;
+    }
+
+    public int getKeyCode() {
+        return keyCode;
+    }
+
+    public int getModifiers() {
+        return modifiers;
+    }
+
+    public boolean isOnKeyRelease() {
+        return onKeyRelease;
+    }
 }

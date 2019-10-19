@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 @SubstitutesInClass(completeReplace = true)
 public class TAtomicReference<V> {
 
-    private final V value;
+    private V value;
 
     public TAtomicReference(final V aValue) {
         value = aValue;
@@ -32,5 +32,15 @@ public class TAtomicReference<V> {
 
     public final V get() {
         return value;
+    }
+
+    public final void set(final V aValue) {
+        value = aValue;
+    }
+
+    public final V getAndSet(final V aNewValue) {
+        final V old = value;
+        value = aNewValue;
+        return old;
     }
 }

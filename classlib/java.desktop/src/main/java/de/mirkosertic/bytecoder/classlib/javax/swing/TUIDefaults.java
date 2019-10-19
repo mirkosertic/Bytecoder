@@ -17,7 +17,12 @@ package de.mirkosertic.bytecoder.classlib.javax.swing;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.plaf.ComponentUI;
+import java.awt.*;
 import java.util.Hashtable;
+import java.util.Locale;
 
 @SubstitutesInClass(completeReplace = true)
 public class TUIDefaults extends Hashtable<Object,Object> {
@@ -26,5 +31,49 @@ public class TUIDefaults extends Hashtable<Object,Object> {
     }
 
     public TUIDefaults(final int aValue1, final float aValue2) {
+    }
+
+    public void putDefaults(final Object... values) {
+    }
+
+    public Object get(final Object aKey, final Locale aLocale) {
+        return super.get(aKey);
+    }
+
+    public void setDefaultLocale(final Locale aLocale) {
+    }
+
+    public ComponentUI getUI(final JComponent aComponent) {
+        return null;
+    }
+
+    public Color getColor(final Object aKey) {
+        return null;
+    }
+
+    public Border getBorder(final Object aKey) {
+        return null;
+    }
+
+    public Font getFont(final Object aKey) {
+        return null;
+    }
+
+    public Insets getInsets(final Object aKey) {
+        return null;
+    }
+
+    public String getString(final Object aKey) {
+        return null;
+    }
+
+    public boolean getBoolean(final Object key) {
+        final Object value = get(key);
+        return (value instanceof Boolean) ? ((Boolean)value).booleanValue() : false;
+    }
+
+    public int getInt(final Object key) {
+        final Object value = get(key);
+        return (value instanceof Integer) ? ((Integer)value).intValue() : 0;
     }
 }

@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.io.Serializable;
@@ -160,6 +162,11 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
         return new KeySetView<>(delegate.keySet());
     }
 
+    @Substitutes("keySet")
+    public AnyTypeMatches<K> keySetInternal() {
+        return (AnyTypeMatches<K>) new KeySetView<K>(delegate.keySet());
+    }
+
     @Override
     public Collection<V> values() {
         return delegate.values();
@@ -186,5 +193,13 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
         KeySetView(final Set<K> aKeys) {
             super(aKeys);
         }
+    }
+
+    public boolean contains(final Object o) {
+        return containsKey(o) || containsValue(o);
+    }
+
+    public long mappingCount() {
+        return size();
     }
 }

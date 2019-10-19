@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.classlib.java.util;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.io.PrintStream;
+import java.util.Formatter;
+import java.util.Locale;
 
 @SubstitutesInClass(completeReplace = true)
 public class TFormatter {
@@ -28,4 +30,11 @@ public class TFormatter {
     public TFormatter(final Appendable aOut) {
     }
 
+    public Formatter format(final Locale aLocale, final String aPattern, final Object[] aValues) {
+        return (Formatter) (Object) this;
+    }
+
+    public Locale locale() {
+        return Locale.getDefault();
+    }
 }
