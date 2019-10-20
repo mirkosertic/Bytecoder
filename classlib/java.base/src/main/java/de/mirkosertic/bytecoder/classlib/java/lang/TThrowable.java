@@ -81,4 +81,7 @@ public class TThrowable {
     public StackTraceElement[] getStackTrace() {
         return new StackTraceElement[0];
     }
+
+    public void setStackTrace(final StackTraceElement[] trace) {
+    }
 }

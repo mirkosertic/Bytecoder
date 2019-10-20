@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
@@ -513,7 +514,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                             !theMethod.isConstructor() &&
                             !theMethod.getAccessFlags().isAbstract() &&
                             !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
-                            !"getEnumConstants".equals(theMethod.getName().stringValue())) {
+                            !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
+                            theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
 
                         final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                 .identifierFor(theMethod);
