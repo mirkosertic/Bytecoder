@@ -37,7 +37,7 @@ public class JFrameTest {
     }
 
     @Test
-    //@Ignore
+    @Ignore
     public void testEmptyWindow() {
         final Window window = new Frame();
         window.setMinimumSize(new Dimension(800, 600));

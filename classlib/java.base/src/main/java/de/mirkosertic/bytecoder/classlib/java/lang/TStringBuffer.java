@@ -52,6 +52,12 @@ public class TStringBuffer {
         return (StringBuffer) o;
     }
 
+    public StringBuffer append(final long aValue) {
+        builder.append(aValue);
+        final Object o = this;
+        return (StringBuffer) o;
+    }
+
     public StringBuffer append(final char aValue) {
         builder.append(aValue);
         final Object o = this;

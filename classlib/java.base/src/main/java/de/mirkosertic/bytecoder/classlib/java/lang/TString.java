@@ -436,6 +436,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return 0;
     }
 
+    public int lastIndexOf(final int codePoint, final int aIndex) {
+        return -1;
+    }
+
     public static String format(final Locale locale, final String pattern, final Object... values) {
         return pattern;
     }
