@@ -247,6 +247,10 @@ public class TStringBuilder {
         return (StringBuilder) (Object) this;
     }
 
+    public StringBuilder insert(final int aIndex, final char[] aChars) {
+        return (StringBuilder) (Object) this;
+    }
+
     public TStringBuilder append(final CharSequence aCharSequence, final int a, final int b) {
         if (aCharSequence == null) {
             internalAdd(toCharArray("null"));
@@ -273,6 +277,18 @@ public class TStringBuilder {
     }
 
     public int codePointBefore(final int aIndex) {
+        return 0;
+    }
+
+    public int codePointAt(final int aIndex) {
+        return 0;
+    }
+
+    public int offsetByCodePoints(final int a, final int b) {
+        return 0;
+    }
+
+    public int codePointCount(final int aFrom, final int aTo) {
         return 0;
     }
 

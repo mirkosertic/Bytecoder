@@ -134,6 +134,10 @@ public class TUnsafe {
         return 0;
     }
 
+    public int getInt(final Object o, final long a) {
+        return 0;
+    }
+
     public void putInt(final long a, final int b) {
     }
 

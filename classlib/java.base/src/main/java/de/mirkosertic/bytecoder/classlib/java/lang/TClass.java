@@ -141,9 +141,8 @@ public class TClass {
         throw new ClassNotFoundException(name);
     }
 
-    @EmulatedByRuntime
     public Type[] getGenericInterfaces() {
-        return null;
+        return new Type[0];
     }
 
     @EmulatedByRuntime

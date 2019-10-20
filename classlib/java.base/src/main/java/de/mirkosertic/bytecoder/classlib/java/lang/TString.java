@@ -432,6 +432,10 @@ public class TString implements java.io.Serializable, Comparable<String> {
         return 0;
     }
 
+    public int codePointCount(final int aFrom, final int aTo) {
+        return 0;
+    }
+
     public static String format(final Locale locale, final String pattern, final Object... values) {
         return pattern;
     }

@@ -77,4 +77,8 @@ public class TThrowable {
 
     public void addSuppressed(final Throwable aCause) {
     }
+
+    public StackTraceElement[] getStackTrace() {
+        return new StackTraceElement[0];
+    }
 }
