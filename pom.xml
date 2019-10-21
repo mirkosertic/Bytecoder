@@ -234,7 +234,6 @@
         <profile>
             <id>java8-compile</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
                 <jdk>1.8</jdk>
             </activation>
             <build>
@@ -261,6 +260,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
+                            <target>11</target>
                             <compilerArgs>
                                 <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
@@ -281,6 +281,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
+                            <target>12</target>
                             <compilerArgs>
                                 <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
@@ -301,6 +302,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
+                            <target>13</target>
                             <compilerArgs>
                                 <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
