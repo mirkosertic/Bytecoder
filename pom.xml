@@ -254,9 +254,6 @@
             <id>java11-compile</id>
             <activation>
                 <jdk>11</jdk>
-                <file>
-                    <missing>DEFAULTJDKONLY.marker</missing>
-                </file>
             </activation>
             <build>
                 <plugins>
@@ -277,9 +274,6 @@
             <id>java12-compile</id>
             <activation>
                 <jdk>12</jdk>
-                <file>
-                    <missing>DEFAULTJDKONLY.marker</missing>
-                </file>
             </activation>
             <build>
                 <plugins>
@@ -300,9 +294,6 @@
             <id>java13-compile</id>
             <activation>
                 <jdk>13</jdk>
-                <file>
-                    <missing>DEFAULTJDKONLY.marker</missing>
-                </file>
             </activation>
             <build>
                 <plugins>
