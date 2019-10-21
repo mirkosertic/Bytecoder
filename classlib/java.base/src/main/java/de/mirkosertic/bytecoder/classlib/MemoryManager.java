@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Import;
-import de.mirkosertic.bytecoder.classlib.java.lang.TString;
 
 /**
  * A simple Memory Manager.
@@ -320,20 +319,5 @@ public class MemoryManager {
             Address.setIntValue(theResult, theOffset, theSubArray);
         }
         return theResult;
-    }
-
-    @Export("newString")
-    public static TString newString(final char[] aData) {
-        return new TString(aData);
-    }
-
-    @Export("newCharArray")
-    public static char[] newCharArray(final int length) {
-        return new char[length];
-    }
-
-    @Export("setCharArrayEntry")
-    public static void setCharArrayEntry(final char[] aArray, final int aIndex, final char aValue) {
-        aArray[aIndex] = aValue;
     }
 }

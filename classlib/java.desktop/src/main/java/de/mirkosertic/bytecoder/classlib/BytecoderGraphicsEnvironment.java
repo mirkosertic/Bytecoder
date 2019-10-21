@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.classlib;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import sun.java2d.SunGraphicsEnvironment;
 
-@SubstitutesInClass(completeReplace = true)
-public abstract class TAbstractStringBuilder implements Appendable, CharSequence {
+import java.awt.GraphicsDevice;
+
+public abstract class BytecoderGraphicsEnvironment extends SunGraphicsEnvironment {
+
+    @Override
+    protected int getNumScreens() {
+        return 1;
+    }
+
+    @Override
+    protected GraphicsDevice makeScreenDevice(int screennum) {
+        return new BytecoderGraphicsDevice();
+    }
+
+    @Override
+    public boolean isDisplayLocal() {
+        return true;
+    }
 }

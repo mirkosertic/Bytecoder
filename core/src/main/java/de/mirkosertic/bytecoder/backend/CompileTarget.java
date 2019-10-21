@@ -15,6 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
+import java.io.FileDescriptor;
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
 import de.mirkosertic.bytecoder.classlib.VM;
@@ -29,13 +36,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
-
-import java.io.FileDescriptor;
-import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CompileTarget {
 
@@ -76,6 +76,13 @@ public class CompileTarget {
         final BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.ImplementingCallsite.class));
         theCallsite.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                 new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
+
+        // Additional classes
+        if (aOptions.getAdditionalClassesToLink() != null) {
+            for (final String theClassname : aOptions.getAdditionalClassesToLink()) {
+                theLinkerContext.resolveClass(new BytecodeObjectTypeRef(theClassname)).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+            }
+        }
 
         final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 

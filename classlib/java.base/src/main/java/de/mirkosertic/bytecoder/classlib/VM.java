@@ -20,7 +20,36 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.Comparator;
 
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.classlib.java.nio.charset.UTF_8;
+
 public class VM {
+
+    public static final byte[] DigitTens = {
+            '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+            '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
+            '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
+            '3', '3', '3', '3', '3', '3', '3', '3', '3', '3',
+            '4', '4', '4', '4', '4', '4', '4', '4', '4', '4',
+            '5', '5', '5', '5', '5', '5', '5', '5', '5', '5',
+            '6', '6', '6', '6', '6', '6', '6', '6', '6', '6',
+            '7', '7', '7', '7', '7', '7', '7', '7', '7', '7',
+            '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
+            '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
+    } ;
+
+    public static final byte[] DigitOnes = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    } ;
 
     public static abstract class ImplementingCallsite extends ConstantCallSite {
 
@@ -67,5 +96,26 @@ public class VM {
             aValue = aValue >> 4;
         }
         return theResult.reverse().toString();
+    }
+
+    private static String newStringInternal(final byte[] aData) {
+        return null;
+    }
+
+    @Export("newStringUTF8")
+    public static String newStringUTF8(final byte[] aData) {
+        // This method invocation will be replaced by an intrinsic
+        // calling the package private constructor (byte[],coder)
+        return newStringInternal(aData);
+    }
+
+    @Export("newByteArray")
+    public static byte[] newByteArray(final int length) {
+        return new byte[length];
+    }
+
+    @Export("setByteArrayEntry")
+    public static void setByteArrayEntry(final byte[] aArray, final int aIndex, final byte aValue) {
+        aArray[aIndex] = aValue;
     }
 }

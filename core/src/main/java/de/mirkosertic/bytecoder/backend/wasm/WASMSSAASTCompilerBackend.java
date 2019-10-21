@@ -48,6 +48,7 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -164,10 +165,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
-        theMemoryManagerClass.resolveStaticMethod("newString", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
-        theMemoryManagerClass.resolveStaticMethod("newCharArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("setCharArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class));
+        theVMClass.resolveStaticMethod("newStringUTF8", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
+        // We need this package-private constructor in String.class for bootstrap
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}));
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
@@ -1158,8 +1165,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 i32.c(theStringClass.getUniqueId(), null),
                                 i32.c(module.getTables().funcTable().indexOf(theStringVTable), null)), null), null);
 
-                final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1CHAR");
-                bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool, null), getGlobal(theStringPoolData, null)), null);
+                final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1BYTEBYTE");
+                bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool, null), getGlobal(theStringPoolData, null), i32.c(0, null)), null);
             }
 
             final ExportableFunction theGet = module.getFunctions().newFunction("STRINGPOOL_GLOBAL_BY_INDEX",
@@ -1424,15 +1431,17 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                + (bytecoder.runningInstanceMemory[value + 3] * 256 * 256 * 256);");
             theWriter.println("     },");
 
+            final int theStringDataOffset = theMemoryLayout.layoutFor(theStringClass.getClassName()).offsetForInstanceMember("value");
+
             theWriter.println();
             theWriter.println("     toJSString: function(value) {");
-            theWriter.println("         var theCharArray = bytecoder.intInMemory(value + 8);");
-            theWriter.println("         var theData = bytecoder.charArraytoJSString(theCharArray);");
+            theWriter.println("         var theByteArray = bytecoder.intInMemory(value + " + theStringDataOffset + ");");
+            theWriter.println("         var theData = bytecoder.byteArraytoJSString(theByteArray);");
             theWriter.println("         return theData;");
             theWriter.println("     },");
             theWriter.println();
 
-            theWriter.println("     charArraytoJSString: function(value) {");
+            theWriter.println("     byteArraytoJSString: function(value) {");
             theWriter.println("         var theLength = bytecoder.intInMemory(value + 16);");
             theWriter.println("         var theData = '';");
             theWriter.println("         value = value + 20;");
@@ -1461,11 +1470,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println();
 
             theWriter.println("     toBytecoderString: function(value) {");
-            theWriter.println("         var newArray = bytecoder.exports.newCharArray(0, value.length);");
+            theWriter.println("         var newArray = bytecoder.exports.newByteArray(0, value.length);");
             theWriter.println("         for (var i=0;i<value.length;i++) {");
-            theWriter.println("             bytecoder.exports.setCharArrayEntry(0,newArray,i,value.charCodeAt(i));");
+            theWriter.println("             bytecoder.exports.setByteArrayEntry(0,newArray,i,value.charCodeAt(i));");
             theWriter.println("         }");
-            theWriter.println("         return bytecoder.exports.newString(0, newArray);");
+            theWriter.println("         return bytecoder.exports.newStringUTF8(0, newArray);");
             theWriter.println("     },");
             theWriter.println();
 

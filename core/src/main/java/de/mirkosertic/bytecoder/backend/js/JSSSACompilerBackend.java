@@ -15,6 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
@@ -24,6 +28,7 @@ import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassTopologicOrder;
@@ -46,9 +51,6 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-
-import java.io.StringWriter;
-import java.util.List;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -74,6 +76,17 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
         theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
 
+        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class));
+        theVMClass.resolveStaticMethod("newStringUTF8", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
+        // We need this package-private constructor in String.class for bootstrap
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}));
+
         final StringWriter theStrWriter = new StringWriter();
         final JSPrintWriter theWriter = new JSPrintWriter(theStrWriter, theMinifier, theSourceMapWriter);
         theWriter.print("'use strict';").newLine();
@@ -88,19 +101,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("console.log(theResult);").newLine();
         theWriter.tab().text("},").newLine();
 
-        final BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
-        final BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
-
-        final BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)});
-
-        final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(theStringTypeRef);
-
-        // Construct a String
-        theWriter.tab().text("newString").colon().text("function(aCharArray)").space().text("{").newLine();
-        theWriter.tab(2).text("var theBytes").assign().text(theMinifier.toClassName(theArrayTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
-        theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
-        theWriter.tab(2).text("return ").text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("$newInstance", theStringConstructorSignature)).text("(theBytes);").newLine();
+        theWriter.tab().text("newString").colon().text("function(aByteArray)").space().text("{").newLine();
+        theWriter.tab(2).text("var theBytes").assign().text("bytecoder.exports.newByteArray(aByteArray.length);").newLine();
+        theWriter.tab(2).text("for").space().text("(var i=0;i<aByteArray.length;i++)").space().text("{").newLine();
+        theWriter.tab(3).text("bytecoder.exports.setByteArrayEntry(theBytes,i,aByteArray[i]);").newLine();
+        theWriter.tab(2).text("}").newLine();
+        theWriter.tab(2).text("return bytecoder.exports.newStringUTF8(theBytes);").newLine();
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("newMultiArray").colon().text("function(aDimensions,aDefault)").space().text("{").newLine();
@@ -143,7 +149,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("if").space().text("(typeof(aBytecoderString)").space().text("===").space().text("'string')").space().text("{").newLine();
         theWriter.tab(3).text("return aBytecoderString;").newLine();
         theWriter.tab(2).text("}").newLine();
-        theWriter.tab(2).text("var theArray").assign().text("aBytecoderString.").text(theMinifier.toSymbol("data")).text(".data").text(";").newLine();
+        theWriter.tab(2).text("var theArray").assign().text("aBytecoderString.").text(theMinifier.toSymbol("value")).text(".data").text(";").newLine();
         theWriter.tab(2).text("var theResult = '';").newLine();
         theWriter.tab(2).text("for").space().text("(var i=0;i<theArray.length;i++)").space().text("{").newLine();
         theWriter.tab(3).text("theResult+=String.fromCharCode(theArray[i]);").newLine();
@@ -1139,12 +1145,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         });
 
         theWriter.text("bytecoder.bootstrap").assign().text("function()").space().text("{").newLine();
-        final List<StringValue> theValues = thePool.stringValues();
-        for (int i=0; i<theValues.size(); i++) {
-            final StringValue theValue = theValues.get(i);
-            theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
-        }
 
+        // String initialization depends on exports, so we have to declare them first
         theOrderedClasses.getClassesInOrder().forEach(aEntry -> {
             final BytecodeResolvedMethods theMethods = aEntry.resolvedMethods();
             theMethods.stream().forEach(eMethod -> {
@@ -1165,6 +1167,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             });
         });
 
+        final List<StringValue> theValues = thePool.stringValues();
+        for (int i=0; i<theValues.size(); i++) {
+            final StringValue theValue = theValues.get(i);
+            theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
+        }
+
         theWriter.tab().text("bytecoder.initializeFileIO();").newLine();
 
         theWriter.text("}").newLine();
@@ -1179,12 +1187,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     }
 
     public String toArray(final String aData) {
+        final byte[] theUTF8Data = aData.getBytes(StandardCharsets.ISO_8859_1);
         final StringBuilder theResult = new StringBuilder("[");
-        for (int i=0;i<aData.length();i++) {
+        for (int i=0;i<theUTF8Data.length;i++) {
             if (i>0) {
                 theResult.append(",");
             }
-            theResult.append((int) aData.charAt(i));
+            theResult.append(theUTF8Data[i]);
         }
         theResult.append("]");
         return theResult.toString();

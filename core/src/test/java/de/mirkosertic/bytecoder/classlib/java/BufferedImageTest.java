@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.javax.swing;
+package de.mirkosertic.bytecoder.classlib.java;
 
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.Window;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 
-import javax.swing.JFrame;
-
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,23 +29,19 @@ import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions(includeJVM = false)
-public class JFrameTest {
+@BytecoderTestOptions(additionalClassesToLink = {"de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment"})
+public class BufferedImageTest {
 
     @Test
     @Ignore
-    public void testEmptyFrame() {
-        final JFrame window = new JFrame();
-        window.setMinimumSize(new Dimension(800, 600));
-        window.setVisible(true);
+    public void testCreate() {
+        final BufferedImage bi = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);
+        bi.setRGB(50, 50, 255);
+        final Graphics g = bi.getGraphics();
+        g.setColor(Color.red);
+        g.drawLine(0,0, 200, 100);
+        final int[] pixels = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
+        System.out.println(pixels.length);
+        Assert.assertEquals(20000, pixels.length);
     }
-
-    @Test
-    @Ignore
-    public void testEmptyWindow() {
-        final Window window = new Frame();
-        window.setMinimumSize(new Dimension(800, 600));
-        window.setVisible(true);
-    }
-
 }

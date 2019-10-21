@@ -15,11 +15,6 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.AnyTypeMatches;
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
-
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -28,6 +23,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.security.ProtectionDomain;
+
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
 
 @SubstitutesInClass(completeReplace = true)
 public class TClass {
@@ -128,6 +128,10 @@ public class TClass {
         return null;
     }
 
+    ClassLoader getClassLoader0() {
+        return null;
+    }
+
     public static Class forName(final AnyTypeMatches module, final String name) throws ClassNotFoundException {
         return forName(name, true, Class.class.getClassLoader());
     }
@@ -224,7 +228,6 @@ public class TClass {
         return null;
     }
 
-    @EmulatedByRuntime
     public URL getResource(final String name) {
         return null;
     }

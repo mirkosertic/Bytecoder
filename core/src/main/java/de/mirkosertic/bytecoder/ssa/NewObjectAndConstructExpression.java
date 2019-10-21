@@ -36,4 +36,9 @@ public class NewObjectAndConstructExpression extends InvocationExpression {
     public BytecodeObjectTypeRef getClazz() {
         return clazz;
     }
+
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.toType(clazz);
+    }
 }

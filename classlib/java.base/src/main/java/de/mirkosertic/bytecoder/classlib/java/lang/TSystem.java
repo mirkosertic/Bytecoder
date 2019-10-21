@@ -27,7 +27,13 @@ import java.util.Properties;
 @SubstitutesInClass(completeReplace = true)
 public class TSystem {
 
-    private static final Properties PROPERTIES = new Properties();
+    private static final Properties PROPERTIES;
+
+    static {
+        PROPERTIES = new Properties();
+        PROPERTIES.setProperty("java.awt.headless", "true");
+        PROPERTIES.setProperty("java.awt.graphicsenv", "sun.java2d.HeadlessGraphicsEnvironment");
+    }
 
     public static final InputStream in = new FileInputStream(FileDescriptor.in);
 

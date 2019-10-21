@@ -28,10 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import de.mirkosertic.bytecoder.backend.wasm.WASMIntrinsics;
-import de.mirkosertic.bytecoder.classlib.Address;
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets;
+import javax.swing.ImageIcon;
+
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -41,6 +39,10 @@ import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.backend.js.JSMinifier;
 import de.mirkosertic.bytecoder.backend.js.JSPrintWriter;
 import de.mirkosertic.bytecoder.backend.js.JSSSAWriter;
+import de.mirkosertic.bytecoder.backend.wasm.WASMIntrinsics;
+import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -60,8 +62,6 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-
-import javax.swing.*;
 
 public class PassThruRegisterAllocatorTest {
 
@@ -166,7 +166,7 @@ public class PassThruRegisterAllocatorTest {
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -210,7 +210,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(11, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -269,7 +269,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(63, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -306,7 +306,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(18, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -343,7 +343,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(28, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -380,7 +380,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(50, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -418,7 +418,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(47, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -478,7 +478,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(19, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -515,7 +515,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(3, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -554,7 +554,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(6, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();

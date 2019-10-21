@@ -24,10 +24,17 @@ import java.util.Locale;
 @SubstitutesInClass(completeReplace = true)
 public class TFormatter {
 
+    public TFormatter() {
+    }
+
     public TFormatter(final PrintStream aOut) {
     }
 
     public TFormatter(final Appendable aOut) {
+    }
+
+    public Formatter format(final String aPattern, final Object[] aValues) {
+        return (Formatter) (Object) this;
     }
 
     public Formatter format(final Locale aLocale, final String aPattern, final Object[] aValues) {
