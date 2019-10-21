@@ -18,12 +18,45 @@ package de.mirkosertic.bytecoder.classlib;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.text.DecimalFormatSymbols;
 import java.util.Comparator;
 
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.classlib.java.nio.charset.UTF_8;
 
 public class VM {
+
+    public static final DecimalFormatSymbols FORMAT_SYMBOLS = new DecimalFormatSymbols();
+
+    public static void appendInternal(final StringBuilder sb, final double aValue, final long aMultiplier) {
+        final long theA;
+        final long theB;
+        if (aValue < 0) {
+            theA = (long) Math.ceil(aValue);
+            theB = - (long) Math.ceil((aValue % 1) * 10000);
+        } else {
+            theA = (long) Math.floor(aValue);
+            theB = (long) Math.floor((aValue % 1) * 10000);
+        }
+        sb.append(theA);
+
+        final StringBuilder theTemp = new StringBuilder();
+        theTemp.append(theB);
+
+        for (int i=theTemp.length()-1;i>=0;i--) {
+            final char theChar = theTemp.charAt(i);
+            if (theChar != '0') {
+                sb.append(VM.FORMAT_SYMBOLS.getDecimalSeparator());
+                for (int j=0;j<=i;j++) {
+                    sb.append(theTemp.charAt(j));
+                }
+                return;
+            }
+        }
+
+        sb.append(VM.FORMAT_SYMBOLS.getDecimalSeparator());
+        sb.append('0');
+    }
 
     public static final byte[] DigitTens = {
             '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',

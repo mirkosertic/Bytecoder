@@ -1165,7 +1165,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 i32.c(theStringClass.getUniqueId(), null),
                                 i32.c(module.getTables().funcTable().indexOf(theStringVTable), null)), null), null);
 
-                final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOIDinitA1BYTEBYTE");
+                final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOID$init$A1BYTEBYTE");
                 bootstrap.flow.voidCall(theStringConstructor, Arrays.asList(getGlobal(theStringPool, null), getGlobal(theStringPoolData, null), i32.c(0, null)), null);
             }
 
@@ -1204,7 +1204,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     }
 
                     if (aEntry.targetNode().hasClassInitializer()) {
-                        check.flow.voidCall(weakFunctionReference(theClassName + "_VOIDclinit", null), Collections.singletonList(i32.c(-1, null)), null);
+                        check.flow.voidCall(weakFunctionReference(theClassName + "_VOID$clinit$", null), Collections.singletonList(i32.c(-1, null)), null);
                     }
 
                     theClassInitFunction.flow.ret(getGlobal(theGlobal, null), null);

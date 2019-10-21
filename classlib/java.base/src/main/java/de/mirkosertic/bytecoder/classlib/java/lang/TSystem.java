@@ -31,8 +31,7 @@ public class TSystem {
 
     static {
         PROPERTIES = new Properties();
-        PROPERTIES.setProperty("java.awt.headless", "true");
-        PROPERTIES.setProperty("java.awt.graphicsenv", "sun.java2d.HeadlessGraphicsEnvironment");
+        PROPERTIES.setProperty("java.awt.graphicsenv", "de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment");
     }
 
     public static final InputStream in = new FileInputStream(FileDescriptor.in);

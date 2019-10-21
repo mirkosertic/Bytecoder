@@ -15,22 +15,32 @@
  */
 package de.mirkosertic.bytecoder.classlib.java;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+import java.lang.reflect.InvocationTargetException;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions(additionalClassesToLink = {"de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment"})
+@BytecoderTestOptions(additionalClassesToLink = {
+        "de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment",
+        "sun.java2d.marlin.DMarlinRenderingEngine"})
 public class BufferedImageTest {
+
+    @Test
+    @Ignore
+    public void testCreateByReflection() throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        final Class clz = Class.forName("de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment");
+        Assert.assertNotNull(clz);
+        final Object o = clz.getConstructor(new Class[0]).newInstance(new Object[0]);
+        Assert.assertNotNull(o);
+    }
 
     @Test
     @Ignore

@@ -183,4 +183,8 @@ public class TUnsafe {
 
     public void freeMemory(final long a) {
     }
+
+    public long reallocateMemory(final long a, final long b) {
+        return a;
+    }
 }

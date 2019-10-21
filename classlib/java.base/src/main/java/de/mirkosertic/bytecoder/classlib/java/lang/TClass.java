@@ -159,9 +159,8 @@ public class TClass {
         return null;
     }
 
-    @EmulatedByRuntime
     public Constructor getDeclaredConstructor(final Class[] args) {
-        return null;
+        return getConstructor(args);
     }
 
     @EmulatedByRuntime

@@ -19,7 +19,7 @@ import sun.java2d.SunGraphicsEnvironment;
 
 import java.awt.GraphicsDevice;
 
-public abstract class BytecoderGraphicsEnvironment extends SunGraphicsEnvironment {
+public class BytecoderGraphicsEnvironment extends SunGraphicsEnvironment {
 
     @Override
     protected int getNumScreens() {
@@ -27,7 +27,7 @@ public abstract class BytecoderGraphicsEnvironment extends SunGraphicsEnvironmen
     }
 
     @Override
-    protected GraphicsDevice makeScreenDevice(int screennum) {
+    protected GraphicsDevice makeScreenDevice(final int screennum) {
         return new BytecoderGraphicsDevice();
     }
 
