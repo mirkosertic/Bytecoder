@@ -265,6 +265,10 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>8</release>
+                            <compilerArgs>
+                                <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
+                            </compilerArgs>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -285,6 +289,10 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>8</release>
+                            <compilerArgs>
+                                <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
+                            </compilerArgs>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -305,6 +313,10 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
                             <release>8</release>
+                            <compilerArgs>
+                                <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
+                            </compilerArgs>
                         </configuration>
                     </plugin>
                 </plugins>
