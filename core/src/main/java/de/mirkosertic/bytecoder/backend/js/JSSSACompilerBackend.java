@@ -233,6 +233,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
+        theWriter.tab(2).text("region").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
         theWriter.tab(2).text("samplemodel").colon().text("{").newLine();
         theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("},").newLine();
@@ -245,6 +250,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab(2).text("graphicsprimitivemgr").colon().text("{").newLine();
         theWriter.tab(3).text("initIDsClassClassClassClassClassClassClassClassClassClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("registerNativeLoops").colon().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
@@ -385,6 +392,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab(2).text("bufimgsurfacedata").colon().text("{").newLine();
         theWriter.tab(3).text("initIDsClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("initRasterObjectINTINTINTINTINTINTIndexColorModel").colon().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
@@ -571,6 +580,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("atan2DOUBLE").colon().text("function(p1)").space().text("{").newLine();
         theWriter.tab(4).text("return Math.atan2(p1);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("cbrtDOUBLE").colon().text("function(p1)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.cbrt(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
@@ -760,6 +772,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.text("};").newLine();
 
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
+        final String theHashCodeMethodName = theMinifier.toMethodName("hashCode", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
         final ConstantPool thePool = new ConstantPool();
 
@@ -961,6 +974,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
                 theWriter.tab().text("};").newLine();
             }
+
+            theWriter.tab().text("C.").text(theHashCodeMethodName).assign().text("function()").space().text("{").newLine();
+            theWriter.tab(2).text("return C.").text(theGetNameMethodName).text("().").text(theHashCodeMethodName).text("();").newLine();
+            theWriter.tab().text("};").newLine();
 
             theMethods.stream().forEach(aEntry -> {
                 final BytecodeMethod theMethod = aEntry.getValue();

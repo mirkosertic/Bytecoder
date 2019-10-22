@@ -30,7 +30,26 @@ import java.lang.reflect.InvocationTargetException;
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(additionalClassesToLink = {
         "de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment",
-        "sun.java2d.marlin.DMarlinRenderingEngine"})
+        "sun.java2d.marlin.DMarlinRenderingEngine",
+        "sun.java2d.loops.OpaqueCopyAnyToArgb",
+        "sun.java2d.loops.OpaqueCopyArgbToAny",
+        "sun.java2d.loops.XorCopyArgbToAny",
+        "sun.java2d.loops.SetFillRectANY",
+        "sun.java2d.loops.SetFillPathANY",
+        "sun.java2d.loops.SetFillSpansANY",
+        "sun.java2d.loops.SetDrawLineANY",
+        "sun.java2d.loops.SetDrawPolygonsANY",
+        "sun.java2d.loops.SetDrawPathANY",
+        "sun.java2d.loops.SetDrawRectANY",
+        "sun.java2d.loops.XorFillRectANY",
+        "sun.java2d.loops.XorFillPathANY",
+        "sun.java2d.loops.XorFillSpansANY",
+        "sun.java2d.loops.XorDrawLineANY",
+        "sun.java2d.loops.XorDrawPolygonsANY",
+        "sun.java2d.loops.XorDrawPathANY",
+        "sun.java2d.loops.XorDrawRectANY",
+        "sun.java2d.loops.XorDrawGlyphListANY",
+        "sun.java2d.loops.XorDrawGlyphListAAANY"})
 public class BufferedImageTest {
 
     @Test

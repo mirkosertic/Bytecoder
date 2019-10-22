@@ -1519,6 +1519,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             tanDOUBLE: function  (thisref, p1) {return Math.tan(p1);},");
             theWriter.println("             roundDOUBLE: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
+            theWriter.println("             cbrtDOUBLE: function(thisref, p1) {return Math.cbrt(p1);},");
             theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
             theWriter.println("             maxLONGLONG: function(thisref, p1, p2) { return Math.max(p1, p2);},");
             theWriter.println("             maxDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.max(p1, p2);},");

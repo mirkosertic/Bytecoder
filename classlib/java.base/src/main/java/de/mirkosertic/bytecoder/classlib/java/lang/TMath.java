@@ -16,6 +16,8 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import sun.misc.DoubleConsts;
+import sun.misc.FloatConsts;
 
 @SubstitutesInClass(completeReplace = true)
 public class TMath {
@@ -24,10 +26,10 @@ public class TMath {
     public static final double PI = 3.14159265358979323846;
 
     private static class FloatExponents {
-        public static float[] exponents = { 0x1p1f, 0x1p2f, 0x1p4f, 0x1p8f, 0x1p16f, 0x1p32f, 0x1p64f };
-        public static float[] negativeExponents = { 0x1p-1f, 0x1p-2f, 0x1p-4f, 0x1p-8f, 0x1p-16f, 0x1p-32f,
+        public static final float[] exponents = { 0x1p1f, 0x1p2f, 0x1p4f, 0x1p8f, 0x1p16f, 0x1p32f, 0x1p64f };
+        public static final float[] negativeExponents = { 0x1p-1f, 0x1p-2f, 0x1p-4f, 0x1p-8f, 0x1p-16f, 0x1p-32f,
                 0x1p-64f };
-        public static float[] negativeExponents2 = { 0x1p-0f, 0x1p-1f, 0x1p-3f, 0x1p-7f, 0x1p-15f, 0x1p-31f,
+        public static final float[] negativeExponents2 = { 0x1p-0f, 0x1p-1f, 0x1p-3f, 0x1p-7f, 0x1p-15f, 0x1p-31f,
                 0x1p-63f };
     }
 
@@ -53,6 +55,8 @@ public class TMath {
     }
 
     public static native double sqrt(double aValue);
+
+    public static native double cbrt(double aValue);
 
     public static native double ceil(double aValue);
 
@@ -207,4 +211,73 @@ public class TMath {
     }
 
     public static native double atan2(final double a, final double b);
+
+    public static double ulp(final double d) {
+        int exp = getExponent((float) d);
+
+        switch(exp) {
+            case Double.MAX_EXPONENT + 1:       // NaN or infinity
+                return Math.abs(d);
+
+            case Double.MIN_EXPONENT - 1:       // zero or subnormal
+                return Double.MIN_VALUE;
+
+            default:
+                assert exp <= Double.MAX_EXPONENT && exp >= Double.MIN_EXPONENT;
+
+                // ulp(x) is usually 2^(SIGNIFICAND_WIDTH-1)*(2^ilogb(x))
+                exp = exp - (DoubleConsts.SIGNIFICAND_WIDTH-1);
+                if (exp >= Double.MIN_EXPONENT) {
+                    return powerOfTwoD(exp);
+                }
+                else {
+                    // return a subnormal result; left shift integer
+                    // representation of Double.MIN_VALUE appropriate
+                    // number of positions
+                    return Double.longBitsToDouble(1L <<
+                            (exp - (Double.MIN_EXPONENT - (DoubleConsts.SIGNIFICAND_WIDTH-1)) ));
+                }
+        }
+    }
+
+    public static float ulp(final float f) {
+        int exp = getExponent(f);
+
+        switch(exp) {
+            case Float.MAX_EXPONENT+1:        // NaN or infinity
+                return Math.abs(f);
+
+            case Float.MIN_EXPONENT-1:        // zero or subnormal
+                return Float.MIN_VALUE;
+
+            default:
+                assert exp <= Float.MAX_EXPONENT && exp >= Float.MIN_EXPONENT;
+
+                // ulp(x) is usually 2^(SIGNIFICAND_WIDTH-1)*(2^ilogb(x))
+                exp = exp - (FloatConsts.SIGNIFICAND_WIDTH-1);
+                if (exp >= Float.MIN_EXPONENT) {
+                    return powerOfTwoF(exp);
+                } else {
+                    // return a subnormal result; left shift integer
+                    // representation of FloatConsts.MIN_VALUE appropriate
+                    // number of positions
+                    return Float.intBitsToFloat(1 <<
+                            (exp - (Float.MIN_EXPONENT - (FloatConsts.SIGNIFICAND_WIDTH-1)) ));
+                }
+        }
+    }
+
+    static double powerOfTwoD(final int n) {
+        assert(n >= Double.MIN_EXPONENT && n <= Double.MAX_EXPONENT);
+        return Double.longBitsToDouble((((long)n + (long)DoubleConsts.EXP_BIAS) <<
+                (DoubleConsts.SIGNIFICAND_WIDTH-1))
+                & DoubleConsts.EXP_BIT_MASK);
+    }
+
+    static float powerOfTwoF(final int n) {
+        assert(n >= Float.MIN_EXPONENT && n <= Float.MAX_EXPONENT);
+        return Float.intBitsToFloat(((n + FloatConsts.EXP_BIAS) <<
+                (FloatConsts.SIGNIFICAND_WIDTH-1))
+                & FloatConsts.EXP_BIT_MASK);
+    }
 }

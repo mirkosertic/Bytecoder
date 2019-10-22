@@ -230,4 +230,9 @@ public class TClass {
     public URL getResource(final String name) {
         return null;
     }
+
+    @Override
+    public int hashCode() {
+        return getName().hashCode();
+    }
 }

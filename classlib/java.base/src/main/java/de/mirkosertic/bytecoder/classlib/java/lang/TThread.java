@@ -53,6 +53,12 @@ public class TThread implements Runnable {
         name = aName;
     }
 
+    public TThread(final ThreadGroup group, final Runnable aRunnable, final String aName) {
+        threadGroup = group;
+        runnable = aRunnable;
+        name = aName;
+    }
+
     public TThread(final ThreadGroup group, final String aName) {
         threadGroup = group;
         runnable = null;
