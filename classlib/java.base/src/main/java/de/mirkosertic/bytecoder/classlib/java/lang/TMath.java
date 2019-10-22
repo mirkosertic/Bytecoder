@@ -226,7 +226,7 @@ public class TMath {
                 assert exp <= Double.MAX_EXPONENT && exp >= Double.MIN_EXPONENT;
 
                 // ulp(x) is usually 2^(SIGNIFICAND_WIDTH-1)*(2^ilogb(x))
-                exp = exp - (DoubleConsts.SIGNIFICAND_WIDTH-1);
+                exp = exp - (53-1);
                 if (exp >= Double.MIN_EXPONENT) {
                     return powerOfTwoD(exp);
                 }
@@ -235,7 +235,7 @@ public class TMath {
                     // representation of Double.MIN_VALUE appropriate
                     // number of positions
                     return Double.longBitsToDouble(1L <<
-                            (exp - (Double.MIN_EXPONENT - (DoubleConsts.SIGNIFICAND_WIDTH-1)) ));
+                            (exp - (Double.MIN_EXPONENT - (53-1)) ));
                 }
         }
     }
@@ -254,7 +254,7 @@ public class TMath {
                 assert exp <= Float.MAX_EXPONENT && exp >= Float.MIN_EXPONENT;
 
                 // ulp(x) is usually 2^(SIGNIFICAND_WIDTH-1)*(2^ilogb(x))
-                exp = exp - (FloatConsts.SIGNIFICAND_WIDTH-1);
+                exp = exp - (24-1);
                 if (exp >= Float.MIN_EXPONENT) {
                     return powerOfTwoF(exp);
                 } else {
@@ -262,7 +262,7 @@ public class TMath {
                     // representation of FloatConsts.MIN_VALUE appropriate
                     // number of positions
                     return Float.intBitsToFloat(1 <<
-                            (exp - (Float.MIN_EXPONENT - (FloatConsts.SIGNIFICAND_WIDTH-1)) ));
+                            (exp - (Float.MIN_EXPONENT - (24-1)) ));
                 }
         }
     }
