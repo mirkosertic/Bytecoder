@@ -16,8 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import sun.misc.DoubleConsts;
-import sun.misc.FloatConsts;
 
 @SubstitutesInClass(completeReplace = true)
 public class TMath {
@@ -269,15 +267,15 @@ public class TMath {
 
     static double powerOfTwoD(final int n) {
         assert(n >= Double.MIN_EXPONENT && n <= Double.MAX_EXPONENT);
-        return Double.longBitsToDouble((((long)n + (long)DoubleConsts.EXP_BIAS) <<
-                (DoubleConsts.SIGNIFICAND_WIDTH-1))
-                & DoubleConsts.EXP_BIT_MASK);
+        return Double.longBitsToDouble((((long)n + (long)1023) <<
+                (53-1))
+                & 9218868437227405312L);
     }
 
     static float powerOfTwoF(final int n) {
         assert(n >= Float.MIN_EXPONENT && n <= Float.MAX_EXPONENT);
-        return Float.intBitsToFloat(((n + FloatConsts.EXP_BIAS) <<
-                (FloatConsts.SIGNIFICAND_WIDTH-1))
-                & FloatConsts.EXP_BIT_MASK);
+        return Float.intBitsToFloat(((n + 127) <<
+                (42-1))
+                & 2139095040);
     }
 }
