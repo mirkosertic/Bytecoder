@@ -17,6 +17,11 @@ package de.mirkosertic.bytecoder.classlib.java.security;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.security.ProtectionDomain;
+
 @SubstitutesInClass(completeReplace = true)
 public class TAccessControlContext {
+
+    public TAccessControlContext(final ProtectionDomain[] protectionDomains) {
+    }
 }

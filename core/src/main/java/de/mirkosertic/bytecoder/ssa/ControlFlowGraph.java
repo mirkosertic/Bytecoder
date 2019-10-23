@@ -62,28 +62,30 @@ public class ControlFlowGraph {
 
     public void calculateReachabilityAndMarkBackEdges() {
         final Stack<RegionNode> currentPath = new Stack<>();
-        calculateReachabilityAndMarkBackEdges(currentPath, startNode());
+        calculateReachabilityAndMarkBackEdges(currentPath, startNode(), new HashSet<>());
 
         dominators = new Dominators<>(startNode(), RegionNode.NODE_COMPARATOR);
         regularFlowDominators = new Dominators<>(startNode(), RegionNode.NODE_COMPARATOR, t -> t.targetNode().getType() == RegionNode.BlockType.NORMAL);
     }
 
-    private void calculateReachabilityAndMarkBackEdges(final Stack<RegionNode> aCurrentPath, final RegionNode aNode) {
-        aCurrentPath.push(aNode);
-        for (final Edge<ControlFlowEdgeType, RegionNode> theEdge : aNode.outgoingEdges().collect(Collectors.toList())) {
-            final RegionNode theTarget = theEdge.targetNode();
-            if (aCurrentPath.contains(theTarget)) {
-                // This is a back edge
-                theEdge.newTypeIs(ControlFlowEdgeType.back);
-                // We have already visited the back edge, so we do not to continue here
-                // As this would lead to an endless loop
-            } else {
-                // Normal edge
-                // Continue with graph traversal
-                calculateReachabilityAndMarkBackEdges(aCurrentPath, theTarget);
+    private void calculateReachabilityAndMarkBackEdges(final Stack<RegionNode> aCurrentPath, final RegionNode aNode, final Set<RegionNode> aVisited) {
+        if (aVisited.add(aNode)) {
+            aCurrentPath.push(aNode);
+            for (final Edge<ControlFlowEdgeType, RegionNode> theEdge : aNode.outgoingEdges().collect(Collectors.toList())) {
+                final RegionNode theTarget = theEdge.targetNode();
+                if (aCurrentPath.contains(theTarget)) {
+                    // This is a back edge
+                    theEdge.newTypeIs(ControlFlowEdgeType.back);
+                    // We have already visited the back edge, so we do not to continue here
+                    // As this would lead to an endless loop
+                } else {
+                    // Normal edge
+                    // Continue with graph traversal
+                    calculateReachabilityAndMarkBackEdges(aCurrentPath, theTarget, aVisited);
+                }
             }
+            aCurrentPath.pop();
         }
-        aCurrentPath.pop();
     }
 
     public RegionNode createAt(final BytecodeOpcodeAddress aAddress, final RegionNode.BlockType aType) {

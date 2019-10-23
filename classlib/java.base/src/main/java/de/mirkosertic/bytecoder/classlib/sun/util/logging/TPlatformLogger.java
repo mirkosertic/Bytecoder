@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.sun.util.logging;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
@@ -24,5 +26,68 @@ public class TPlatformLogger {
 
     public static TPlatformLogger getLogger(final String name) {
         return PLATFORM_LOGGER;
+    }
+
+    public void config(final String aConfig) {
+    }
+
+    @Substitutes("isLoggable")
+    public boolean isLoggable(final AnyTypeMatches level) {
+        return false;
+    }
+
+    public boolean isEnabled() {
+        return false;
+    }
+
+    public void setLevel(final AnyTypeMatches level) {
+    }
+
+    public void fine(final String message) {
+    }
+
+    public void fine(final String message, final Throwable aCause) {
+    }
+
+    public void fine(final String message, final Object... params) {
+    }
+
+    public void finer(final String message) {
+    }
+
+    public void finer(final String message, final Throwable aCause) {
+    }
+
+    public void finer(final String message, final Object... params) {
+    }
+
+    public void finest(final String message) {
+    }
+
+    public void finest(final String message, final Throwable aCause) {
+    }
+
+    public void finest(final String message, final Object... params) {
+    }
+
+    public void warning(final String message) {
+    }
+
+    public void warning(final String message, final Object... params) {
+    }
+
+    public void warning(final String message, final Throwable cause) {
+    }
+
+    public void info(final String message) {
+    }
+
+    public void info(final String message, final Object... params) {
+    }
+
+    public void severe(final String message) {
+    }
+
+    public void severe(final String message, final Throwable cause) {
     }
 }

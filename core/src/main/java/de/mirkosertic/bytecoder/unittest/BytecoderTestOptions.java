@@ -29,4 +29,6 @@ public @interface BytecoderTestOptions {
     boolean includeJVM() default true;
 
     boolean includeTestPermutations() default true;
+
+    String[] additionalClassesToLink() default {};
 }

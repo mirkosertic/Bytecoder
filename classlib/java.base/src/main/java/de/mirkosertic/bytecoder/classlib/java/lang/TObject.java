@@ -36,7 +36,7 @@ public class TObject {
         return "";
     }
 
-    public boolean equals(Object aObject) {
+    public boolean equals(final Object aObject) {
         return this == aObject;
     }
 
@@ -47,4 +47,27 @@ public class TObject {
     public Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
+
+    @EmulatedByRuntime
+    @Substitutes("getClass")
+    public Class getClassInternal() {
+        return null;
+    }
+
+    @Substitutes("wait")
+    public void waitInternal() {
+    }
+
+    @Substitutes("wait")
+    public void waitInternal(final long aTimeout) {
+    }
+
+    @Substitutes("notify")
+    public void notifyInternal() {
+    }
+
+    @Substitutes("notifyAll")
+    public void notifyAllInternal() {
+    }
+
 }

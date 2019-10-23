@@ -19,4 +19,8 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TModule {
+
+    public boolean isExported(final String aName) {
+        return false;
+    }
 }

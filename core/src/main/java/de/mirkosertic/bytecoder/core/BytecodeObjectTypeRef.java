@@ -15,19 +15,21 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+
 public class BytecodeObjectTypeRef implements BytecodeTypeRef {
 
     private final String className;
 
-    public static BytecodeObjectTypeRef fromRuntimeClass(Class aClass) {
+    public static BytecodeObjectTypeRef fromRuntimeClass(final Class aClass) {
         return new BytecodeObjectTypeRef(aClass.getName());
     }
 
-    public static BytecodeObjectTypeRef fromUtf8Constant(BytecodeUtf8Constant aConstant) {
+    public static BytecodeObjectTypeRef fromUtf8Constant(final BytecodeUtf8Constant aConstant) {
         return new BytecodeObjectTypeRef(aConstant.stringValue().replace("/","."));
     }
 
-    public BytecodeObjectTypeRef(String aClassName) {
+    public BytecodeObjectTypeRef(final String aClassName) {
         className = aClassName;
     }
 
@@ -42,13 +44,13 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
 
-        BytecodeObjectTypeRef that = (BytecodeObjectTypeRef) o;
+        final BytecodeObjectTypeRef that = (BytecodeObjectTypeRef) o;
 
         if (!className.equals(that.className))
             return false;
@@ -67,9 +69,12 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
     }
 
     @Override
-    public boolean matchesExactlyTo(BytecodeTypeRef aOtherType) {
+    public boolean matchesExactlyTo(final BytecodeTypeRef aOtherType) {
         if (!(aOtherType instanceof BytecodeObjectTypeRef)) {
             return false;
+        }
+        if (AnyTypeMatches.class.getName().equals(className)) {
+            return true;
         }
         return className.equals(((BytecodeObjectTypeRef) aOtherType).className);
     }

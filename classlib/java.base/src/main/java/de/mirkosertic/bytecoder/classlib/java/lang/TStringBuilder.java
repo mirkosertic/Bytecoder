@@ -16,130 +16,22 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
-import java.text.DecimalFormatSymbols;
-
-@SubstitutesInClass(completeReplace = true)
+@SubstitutesInClass(completeReplace = false)
 public class TStringBuilder {
 
-    private static final DecimalFormatSymbols FORMAT_SYMBOLS = new DecimalFormatSymbols();
-
-    private static char[] toCharArray(final CharSequence seq) {
-        final int len = seq.length();
-        final char[] charData = new char[len];
-        for (int i=0;i<len;i++) {
-            charData[i] = seq.charAt(i);
-        }
-        return charData;
+    public StringBuilder append(final float aValue) {
+        VM.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
+        return (StringBuilder) (Object) this;
     }
 
-    private char[] charData;
-
-    public TStringBuilder() {
-        charData = new char[0];
+    public StringBuilder append(final double aValue) {
+        VM.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
+        return (StringBuilder) (Object) this;
     }
 
-    public TStringBuilder(final int capacity) {
-        charData = new char[0];
-    }
-
-    public TStringBuilder(final String aOtherString) {
-        charData = toCharArray(aOtherString);
-    }
-
-    public int length() {
-        return charData.length;
-    }
-
-    public char charAt(final int aIndex) {
-        return charData[aIndex];
-    }
-
-    public void internalAdd(final char[] aOtherData) {
-        final char[] theNewData = new char[charData.length + aOtherData.length];
-        int offset = 0;
-        for (int i = 0; i< charData.length; i++) {
-            theNewData[offset++] = charData[i];
-        }
-        for (int i=0;i<aOtherData.length;i++) {
-            theNewData[offset++] = aOtherData[i];
-        }
-        charData = theNewData;
-    }
-
-    public TStringBuilder reverse() {
-        final char[] theReversed = new char[charData.length];
-        for (int i=0;i<charData.length;i++) {
-            theReversed[charData.length -1 -i] = charData[i];
-        }
-        charData = theReversed;
-        return this;
-    }
-
-    public TStringBuilder append(final CharSequence aCharSequence) {
-        if (aCharSequence == null) {
-            internalAdd(toCharArray("null"));
-            return this;
-        }
-        internalAdd(toCharArray(aCharSequence));
-        return this;
-    }
-
-    public TStringBuilder append(final String aString) {
-        if (aString == null) {
-            internalAdd(toCharArray("null"));
-            return this;
-        }
-        internalAdd(toCharArray(aString));
-        return this;
-    }
-
-    public TStringBuilder append(final char aValue) {
-        internalAdd(new char[] {aValue});
-        return this;
-    }
-
-    public TStringBuilder append(final float aValue) {
-        appendInternal(aValue, 1000000000);
-        return this;
-    }
-
-    public TStringBuilder append(final double aValue) {
-        appendInternal(aValue, 1000000000);
-        return this;
-    }
-
-    public void appendInternal(final double aValue, final long aMultiplier) {
-        final long theA;
-        final long theB;
-        if (aValue < 0) {
-            theA = (long) Math.ceil(aValue);
-            theB = - (long) Math.ceil((aValue % 1) * 10000);
-        } else {
-            theA = (long) Math.floor(aValue);
-            theB = (long) Math.floor((aValue % 1) * 10000);
-        }
-        append(theA);
-
-        final StringBuilder theTemp = new StringBuilder();
-        theTemp.append(theB);
-
-        for (int i=theTemp.length()-1;i>=0;i--) {
-            final char theChar = theTemp.charAt(i);
-            if (theChar != '0') {
-                append(FORMAT_SYMBOLS.getDecimalSeparator());
-                for (int j=0;j<=i;j++) {
-                    append(theTemp.charAt(j));
-                }
-                return;
-            }
-        }
-
-        append(FORMAT_SYMBOLS.getDecimalSeparator());
-        append('0');
-    }
-
-    public TStringBuilder append(long aValue) {
+    public StringBuilder append(long aValue) {
         boolean isNegative = false;
         if (aValue < 0) {
             isNegative = true;
@@ -167,49 +59,8 @@ public class TStringBuilder {
             theNewData[theStart + i] = theCharacters[theOffset - 1 - i];
         }
 
-        internalAdd(theNewData);
-        return this;
-    }
-
-    public TStringBuilder append(final int aValue) {
-        return append((long) aValue);
-    }
-
-    public TStringBuilder append(final Object aObject) {
-        if (aObject == null) {
-            internalAdd(toCharArray("null"));
-            return this;
-        }
-        if (aObject instanceof String) {
-            internalAdd(toCharArray((String) aObject));
-            return this;
-        }
-        if (aObject instanceof Long) {
-            append(((Long) aObject).longValue());
-            return this;
-        }
-        if (aObject instanceof Integer) {
-            append(((Integer) aObject).intValue());
-            return this;
-        }
-        if (aObject instanceof Float) {
-            append(((Float) aObject).floatValue());
-            return this;
-        }
-        if (aObject instanceof Double) {
-            append(((Double) aObject).doubleValue());
-            return this;
-        }
-
-        internalAdd(toCharArray(aObject.toString()));
-        return this;
-    }
-
-    public byte[] getBytes() {
-        return toString().getBytes();
-    }
-
-    public String toString() {
-        return new String(charData);
+        final StringBuilder sb = (StringBuilder) (Object) this;
+        sb.append(theNewData);
+        return sb;
     }
 }

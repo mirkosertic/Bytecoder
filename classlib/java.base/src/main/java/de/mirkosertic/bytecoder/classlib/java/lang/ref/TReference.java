@@ -17,13 +17,23 @@ package de.mirkosertic.bytecoder.classlib.java.lang.ref;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+
 @SubstitutesInClass(completeReplace = true)
 public class TReference<T> {
 
     private T referent;
+    private ReferenceQueue queue;
+    private Reference<T> next;
 
-    TReference(T referent) {
+    TReference(final T referent) {
         this.referent = referent;
+    }
+
+    TReference(final T referent, final ReferenceQueue queue) {
+        this.referent = referent;
+        this.queue = queue;
     }
 
     public T get() {
@@ -32,5 +42,8 @@ public class TReference<T> {
 
     public void clear() {
         referent = null;
+    }
+
+    public static void reachabilityFence(final Object value) {
     }
 }

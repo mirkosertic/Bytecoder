@@ -57,4 +57,15 @@ public class MathTest {
     public void testAddExactInt() {
         Assert.assertEquals(42, Math.addExact(21, 21));
     }
+
+    @Test
+    public void testSqrt() {
+        Assert.assertEquals(3d, Math.sqrt(9d), 0);
+    }
+
+    @Test
+    public void testCbrt() {
+        Assert.assertEquals(3d, Math.cbrt(27d), 0);
+        Assert.assertEquals(-3d, Math.cbrt(-27d), 0);
+    }
 }

@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.ClassLibProvider;
+
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -27,7 +29,7 @@ public class BytecodeLoader {
     private final BytecodeReplacer bytecodeReplacer;
     private final BytecodeShadowReplacer shadowReplacer;
 
-    public BytecodeLoader(ClassLoader aClassLoader) {
+    public BytecodeLoader(final ClassLoader aClassLoader) {
         classLoader = aClassLoader;
         bytecodeReplacer = new BytecodeReplacer(this);
         shadowReplacer = new BytecodeShadowReplacer(this, bytecodeReplacer);
@@ -38,36 +40,40 @@ public class BytecodeLoader {
         return signatureParser;
     }
 
-    public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
+    public BytecodeClass loadByteCode(final BytecodeObjectTypeRef aTypeRef) throws IOException, ClassNotFoundException {
         return loadByteCode(aTypeRef, bytecodeReplacer);
     }
 
-    public BytecodeClass loadByteCode(BytecodeObjectTypeRef aTypeRef, BytecodeReplacer aDefaultReplacer) throws IOException, ClassNotFoundException {
-        String theResourceName = aTypeRef.name().replace(".", "/") + ".class";
-        InputStream theStream = classLoader.getResourceAsStream("META-INF/modules/java.base/classes/" + theResourceName);
-        if (theStream != null) {
-            try (DataInputStream dis = new DataInputStream(theStream)) {
-                BytecodeClassParser parser = parseHeader(dis, shadowReplacer);
-                return parser.parseBody(dis);
+    public BytecodeClass loadByteCode(final BytecodeObjectTypeRef aTypeRef, final BytecodeReplacer aDefaultReplacer) throws IOException, ClassNotFoundException {
+        final String theResourceName = aTypeRef.name().replace(".", "/") + ".class";
+
+        for (final ClassLibProvider theProvider : ClassLibProvider.availableProviders()) {
+            final InputStream theStream = classLoader.getResourceAsStream(theProvider.getResourceBase() + "/" + theResourceName);
+            if (theStream != null) {
+                try (final DataInputStream dis = new DataInputStream(theStream)) {
+                    final BytecodeClassParser parser = parseHeader(dis, shadowReplacer);
+                    return parser.parseBody(dis);
+                }
             }
         }
-        theStream = classLoader.getResourceAsStream(theResourceName);
+
+        final InputStream theStream = classLoader.getResourceAsStream(theResourceName);
         if (theStream == null) {
             throw new ClassNotFoundException(theResourceName);
         }
-        try (DataInputStream dis = new DataInputStream(theStream)) {
-            BytecodeClassParser parser = parseHeader(dis, aDefaultReplacer);
+        try (final DataInputStream dis = new DataInputStream(theStream)) {
+            final BytecodeClassParser parser = parseHeader(dis, aDefaultReplacer);
             return parser.parseBody(dis);
         }
     }
 
-    private BytecodeClassParser parseHeader(DataInput aStream, BytecodeReplacer aReplacer) throws IOException {
-        int theMagic = aStream.readInt();
+    private BytecodeClassParser parseHeader(final DataInput aStream, final BytecodeReplacer aReplacer) throws IOException {
+        final int theMagic = aStream.readInt();
         if (!(theMagic == 0xCAFEBABE)) {
             throw new IllegalArgumentException("Wrong class file format : " + theMagic);
         }
-        int theMinorVersion = aStream.readUnsignedShort();
-        int theMajorVersion = aStream.readUnsignedShort();
+        final int theMinorVersion = aStream.readUnsignedShort();
+        final int theMajorVersion = aStream.readUnsignedShort();
         switch (theMajorVersion) {
             case 47:
                 return new Bytecode5xClassParser(new Bytecode5XProgramParser(), signatureParser, aReplacer);

@@ -23,13 +23,13 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import de.mirkosertic.bytecoder.backend.wasm.WASMIntrinsics;
-import de.mirkosertic.bytecoder.classlib.Address;
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets;
+import javax.swing.ImageIcon;
+
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -39,6 +39,10 @@ import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.backend.js.JSMinifier;
 import de.mirkosertic.bytecoder.backend.js.JSPrintWriter;
 import de.mirkosertic.bytecoder.backend.js.JSSSAWriter;
+import de.mirkosertic.bytecoder.backend.wasm.WASMIntrinsics;
+import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.java.nio.charset.StandardCharsets;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -103,7 +107,7 @@ public class PassThruRegisterAllocatorTest {
         assertEquals(2, vars.get(4).liveRange().getDefinedAt());
         assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
         assertEquals(9L, theAllocator.registersOfType(TypeRef.Native.INT).size());
         assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());
@@ -160,9 +164,9 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(38, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -202,11 +206,11 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(13, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(11, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -238,7 +242,7 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(124, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(111, theAllocator.assignedRegister().size());
     }
@@ -259,13 +263,13 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(45, vars.size());
+        assertEquals(66, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(43, theAllocator.assignedRegister().size());
+        assertEquals(63, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -296,13 +300,13 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(19, vars.size());
+        assertEquals(8, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(18, theAllocator.assignedRegister().size());
+        assertEquals(8, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -335,11 +339,11 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(30, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(28, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -372,11 +376,11 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(54, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(50, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -410,11 +414,11 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(48, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(47, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -448,7 +452,7 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
     }
 
@@ -470,11 +474,11 @@ public class PassThruRegisterAllocatorTest {
 
         assertEquals(21, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
         assertEquals(19, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
@@ -487,8 +491,81 @@ public class PassThruRegisterAllocatorTest {
         theVariablesWriter.printStackified(stackifier);
 
         System.out.println(theWriter);
-
-
     }
 
+    @Test
+    public void testMapEntryRegisterAllocator() throws HeadToHeadControlFlowException {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
+                Map.Entry.class));
+        theLinkedClass.resolveStaticMethod("comparingByKey", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Comparator.class), new BytecodeTypeRef[]{}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("comparingByKey", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Comparator.class), new BytecodeTypeRef[]{}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        final List<Variable> vars = p.getVariables();
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
+        }
+
+        assertEquals(3, vars.size());
+
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
+
+        assertEquals(3, theAllocator.assignedRegister().size());
+
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
+        final JSMinifier theMinifier = new JSMinifier(theOptions);
+        final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
+        final StringWriter theWriter = new StringWriter();
+        final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
+        final ConstantPool thePool = new ConstantPool();
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        theVariablesWriter.printRegisterDeclarations();
+
+        final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
+        theVariablesWriter.printStackified(stackifier);
+
+        System.out.println(theWriter);
+    }
+
+    @Test
+    public void testImageIconGetNext() throws HeadToHeadControlFlowException {
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
+        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
+                ImageIcon.class));
+        theLinkedClass.resolvePrivateMethod("getNextID", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
+
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("getNextID", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+
+        KnownOptimizer.ALL.optimize(p.getControlFlowGraph(), theLinkerContext);
+
+        final List<Variable> vars = p.getVariables();
+        for (final Variable v : vars) {
+            System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
+        }
+
+        assertEquals(6, vars.size());
+
+        final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
+
+        assertEquals(6, theAllocator.assignedRegister().size());
+
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
+        final JSMinifier theMinifier = new JSMinifier(theOptions);
+        final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
+        final StringWriter theWriter = new StringWriter();
+        final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
+        final ConstantPool thePool = new ConstantPool();
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        theVariablesWriter.printRegisterDeclarations();
+
+        final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
+        theVariablesWriter.printStackified(stackifier);
+
+        System.out.println(theWriter);
+    }
 }

@@ -104,15 +104,15 @@ public class BytecodeLinkerContext {
                 }
             }
 
-            final BytecodeMethod theMethod = theLoadedClass.classInitializerOrNull();
-            if (theMethod != null) {
-                theLinkedClass.resolveClassInitializer(theMethod);
-            }
-
             for (final BytecodeInterface theInterface : theLoadedClass.getInterfaces()) {
                 final BytecodeUtf8Constant theSuperClassName = theInterface.getClassinfoConstant().getConstant();
                 final BytecodeLinkedClass theImplementedClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
                 theLinkedClass.addEdgeTo(BytecodeImplementsEdgeType.instance, theImplementedClass);
+            }
+
+            final BytecodeMethod theMethod = theLoadedClass.classInitializerOrNull();
+            if (theMethod != null) {
+                theLinkedClass.resolveClassInitializer(theMethod);
             }
 
             logger.info("Linked  {}" ,theLinkedClass.getClassName().name());

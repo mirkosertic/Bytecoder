@@ -25,11 +25,24 @@ public class TRandom {
     public TRandom() {
     }
 
-    public TRandom(long seed) {
+    public TRandom(final long seed) {
         this.seed = seed;
     }
 
     public float nextFloat() {
         return (float) Math.random();
     }
+
+    public double nextDouble() {
+        return (double) Math.random();
+    }
+
+    public int nextInt() {
+        return (int) Math.random();
+    }
+
+    public int nextInt(final int seed) {
+        return (int) Math.random();
+    }
+
 }

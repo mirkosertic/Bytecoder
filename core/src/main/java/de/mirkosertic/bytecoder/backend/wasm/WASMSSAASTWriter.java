@@ -98,6 +98,7 @@ import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
@@ -165,8 +166,10 @@ public class WASMSSAASTWriter {
     public static final String INSTANCEOFSUFFIX = "__instanceof";
     public static final String EXCEPTION_NAME = "EX";
     public static final String CLASSINITSUFFIX = "__init";
+    public static final String NEWINSTANCEHELPER = "NEWINSTANCEHELPER";
 
     public interface Resolver {
+        Global runtimeClassFor(BytecodeObjectTypeRef aObjectType);
         Global globalForStringFromPool(StringValue aValue);
         Function resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
     }
@@ -797,7 +800,15 @@ public class WASMSSAASTWriter {
         if (aValue instanceof IsNaNExpression) {
             return isNaN((IsNaNExpression) aValue);
         }
+        if (aValue instanceof NewInstanceFromDefaultConstructorExpression) {
+            return newInstanceFromDefaultConstructor((NewInstanceFromDefaultConstructorExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue newInstanceFromDefaultConstructor(final NewInstanceFromDefaultConstructorExpression aValue) {
+        final Value theClassRef = aValue.incomingDataFlows().get(0);
+        return call(weakFunctionReference(NEWINSTANCEHELPER, null), Collections.singletonList(toValue(theClassRef)), null);
     }
 
     private WASMValue isNaN(final IsNaNExpression aValue) {
@@ -1069,7 +1080,7 @@ public class WASMSSAASTWriter {
             }
         }
 
-        if (!(theClasses.stream().noneMatch(BytecodeLinkedClass::isOpaqueType))) {
+        if (theClasses.stream().anyMatch(BytecodeLinkedClass::isOpaqueType)) {
             throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 

@@ -15,6 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
@@ -24,6 +28,7 @@ import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassTopologicOrder;
@@ -46,9 +51,6 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-
-import java.io.StringWriter;
-import java.util.List;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -74,6 +76,17 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
         theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
 
+        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class));
+        theVMClass.resolveStaticMethod("newStringUTF8", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
+        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
+        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
+        // We need this package-private constructor in String.class for bootstrap
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}));
+
         final StringWriter theStrWriter = new StringWriter();
         final JSPrintWriter theWriter = new JSPrintWriter(theStrWriter, theMinifier, theSourceMapWriter);
         theWriter.print("'use strict';").newLine();
@@ -88,19 +101,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("console.log(theResult);").newLine();
         theWriter.tab().text("},").newLine();
 
-        final BytecodeObjectTypeRef theStringTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
-        final BytecodeObjectTypeRef theArrayTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
-
-        final BytecodeMethodSignature theStringConstructorSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)});
-
-        final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(theStringTypeRef);
-
-        // Construct a String
-        theWriter.tab().text("newString").colon().text("function(aCharArray)").space().text("{").newLine();
-        theWriter.tab(2).text("var theBytes").assign().text(theMinifier.toClassName(theArrayTypeRef)).text(".").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
-        theWriter.tab(2).text("theBytes.data").assign().text("aCharArray;").newLine();
-        theWriter.tab(2).text("return ").text(theMinifier.toClassName(theStringTypeRef)).text(".").text(theMinifier.toMethodName("$newInstance", theStringConstructorSignature)).text("(theBytes);").newLine();
+        theWriter.tab().text("newString").colon().text("function(aByteArray)").space().text("{").newLine();
+        theWriter.tab(2).text("var theBytes").assign().text("bytecoder.exports.newByteArray(aByteArray.length);").newLine();
+        theWriter.tab(2).text("for").space().text("(var i=0;i<aByteArray.length;i++)").space().text("{").newLine();
+        theWriter.tab(3).text("bytecoder.exports.setByteArrayEntry(theBytes,i,aByteArray[i]);").newLine();
+        theWriter.tab(2).text("}").newLine();
+        theWriter.tab(2).text("return bytecoder.exports.newStringUTF8(theBytes);").newLine();
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("newMultiArray").colon().text("function(aDimensions,aDefault)").space().text("{").newLine();
@@ -143,7 +149,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("if").space().text("(typeof(aBytecoderString)").space().text("===").space().text("'string')").space().text("{").newLine();
         theWriter.tab(3).text("return aBytecoderString;").newLine();
         theWriter.tab(2).text("}").newLine();
-        theWriter.tab(2).text("var theArray").assign().text("aBytecoderString.").text(theMinifier.toSymbol("data")).text(".data").text(";").newLine();
+        theWriter.tab(2).text("var theArray").assign().text("aBytecoderString.").text(theMinifier.toSymbol("value")).text(".data").text(";").newLine();
         theWriter.tab(2).text("var theResult = '';").newLine();
         theWriter.tab(2).text("for").space().text("(var i=0;i<theArray.length;i++)").space().text("{").newLine();
         theWriter.tab(3).text("theResult+=String.fromCharCode(theArray[i]);").newLine();
@@ -190,7 +196,281 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("isBigEndian").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return 1;").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("toolkit").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("component").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("awtevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("inputevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("dimension").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("trayicon").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("raster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("region").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("samplemodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("inflater").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("graphicsprimitivemgr").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClassClassClassClassClassClassClassClassClassClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("registerNativeLoops").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("filekey").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("ioutil").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("cursor").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("event").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("font").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("fontmetrics").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("insets").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("keyboardfocusmanager").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menucomponent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("colormodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("singlepixelpackedsamplemodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("gifimagedecoder").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("imagerepresentation").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("jpegimagedecoder").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("disposer").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("surfacedata").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("shapespaniterator").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("spancliprenderer").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("button").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("choice").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("color").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("container").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menubar").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menuitem").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bufferedimage").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("indexcolormodel").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("randomaccessfile").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bufimgsurfacedata").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClassClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("initRasterObjectINTINTINTINTINTINTIndexColorModel").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("freetypefontscaler").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDsClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("sunfontmanager").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("checkboxmenuitem").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("menu").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("rectangle").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("window").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bytecomponentraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("bytepackedraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("integercomponentraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("shortcomponentraster").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("dialog").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("frame").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("keyevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("mouseevent").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("filechannelimpl").colon().text("{").newLine();
+        theWriter.tab(3).text("initIDs").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
 
         theWriter.tab(2).text("system").colon().text("{").newLine();
         theWriter.tab(3).text("currentTimeMillis").colon().text("function()").space().text("{").newLine();
@@ -291,6 +571,18 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("logDOUBLE").colon().text("function(p1)").space().text("{").newLine();
         theWriter.tab(4).text("return Math.log(p1);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("powDOUBLEDOUBLE").colon().text("function(p1,p2)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.pow(p1,p2);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("acosDOUBLE").colon().text("function(p1)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.acos(p1);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("atan2DOUBLE").colon().text("function(p1)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.atan2(p1);").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("cbrtDOUBLE").colon().text("function(p1)").space().text("{").newLine();
+        theWriter.tab(4).text("return Math.cbrt(p1);").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
@@ -480,6 +772,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.text("};").newLine();
 
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
+        final String theHashCodeMethodName = theMinifier.toMethodName("hashCode", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
         final ConstantPool thePool = new ConstantPool();
 
@@ -675,12 +968,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 theWriter.tab().text("C.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
                 if (!theLinkedClass.getClassName().name().equals("java.lang.Class")) {
-                    theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(ConstantPool.simpleClassName(theLinkedClass.getClassName().name())))).text("];").newLine();
+                    theWriter.tab(2).text("return bytecoder.stringpool[").text("" + thePool.register(new StringValue(theLinkedClass.getClassName().name()))).text("];").newLine();
                 } else {
                     theWriter.tab(2).text("return this.").text(theGetNameMethodName).text("();").newLine();
                 }
                 theWriter.tab().text("};").newLine();
             }
+
+            theWriter.tab().text("C.").text(theHashCodeMethodName).assign().text("function()").space().text("{").newLine();
+            theWriter.tab(2).text("return C.").text(theGetNameMethodName).text("().").text(theHashCodeMethodName).text("();").newLine();
+            theWriter.tab().text("};").newLine();
 
             theMethods.stream().forEach(aEntry -> {
                 final BytecodeMethod theMethod = aEntry.getValue();
@@ -688,6 +985,33 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 // If the method is provided by the runtime, we do not need to generate the implementation
                 if (null != theMethod.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
+
+                    if (aEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
+                        && theMethod.getName().stringValue().equals("forName")
+                        && theMethod.getSignature().matchesExactlyTo(BytecodeLinkedClass.CLASS_FOR_NAME_SIGNATURE)) {
+
+                        // Special method: we resolve a runtime class by name here
+                        theWriter.tab().text("C.");
+
+                        final String theJSMethodName = theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature);
+
+                        theWriter.text(theJSMethodName).assign().text("function(className,resolve,classloader)").space().text("{").newLine();
+                        theWriter.tab(2).text("var jsClassName").assign().text("bytecoder.toJSString(className);").newLine();
+
+                        // We search for all non abstract non interface classes
+                        theOrderedClasses.getClassesInOrder().stream().forEach(search -> {
+                            if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
+                                final String theSearchClassName = theMinifier.toClassName(search.getClassName());
+                                theWriter.tab(2).text("if").space().text("(jsClassName").space().text("===").space().text("'").text(search.getClassName().name()).text("') return ").text(theSearchClassName).text(";").newLine();
+                            }
+                        });
+
+                        theWriter.tab(2).text("throw new Error();").newLine();
+                        theWriter.tab().text("};").newLine();
+
+                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
+                    }
+
                     return;
                 }
 
@@ -838,12 +1162,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         });
 
         theWriter.text("bytecoder.bootstrap").assign().text("function()").space().text("{").newLine();
-        final List<StringValue> theValues = thePool.stringValues();
-        for (int i=0; i<theValues.size(); i++) {
-            final StringValue theValue = theValues.get(i);
-            theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
-        }
 
+        // String initialization depends on exports, so we have to declare them first
         theOrderedClasses.getClassesInOrder().forEach(aEntry -> {
             final BytecodeResolvedMethods theMethods = aEntry.resolvedMethods();
             theMethods.stream().forEach(eMethod -> {
@@ -864,6 +1184,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             });
         });
 
+        final List<StringValue> theValues = thePool.stringValues();
+        for (int i=0; i<theValues.size(); i++) {
+            final StringValue theValue = theValues.get(i);
+            theWriter.tab().text("bytecoder.stringpool[").text("" + i).text("]").assign().text("bytecoder.newString(").text(toArray(theValue.getStringValue())).text(");").newLine();
+        }
+
         theWriter.tab().text("bytecoder.initializeFileIO();").newLine();
 
         theWriter.text("}").newLine();
@@ -878,12 +1204,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     }
 
     public String toArray(final String aData) {
+        final byte[] theUTF8Data = aData.getBytes(StandardCharsets.ISO_8859_1);
         final StringBuilder theResult = new StringBuilder("[");
-        for (int i=0;i<aData.length();i++) {
+        for (int i=0;i<theUTF8Data.length;i++) {
             if (i>0) {
                 theResult.append(",");
             }
-            theResult.append((int) aData.charAt(i));
+            theResult.append(theUTF8Data[i]);
         }
         theResult.append("]");
         return theResult.toString();

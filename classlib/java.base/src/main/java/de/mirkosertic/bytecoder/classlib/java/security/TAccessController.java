@@ -15,11 +15,12 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.security;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
 import java.security.AccessControlContext;
 import java.security.Permission;
 import java.security.PrivilegedAction;
-
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import java.security.PrivilegedExceptionAction;
 
 @SubstitutesInClass(completeReplace = true)
 public class TAccessController {
@@ -33,6 +34,10 @@ public class TAccessController {
     }
 
     public static <T> T doPrivileged(final PrivilegedAction<T> action, final AccessControlContext context) {
+        return action.run();
+    }
+
+    public static <T> T doPrivileged(final PrivilegedExceptionAction<T> action) throws Exception {
         return action.run();
     }
 

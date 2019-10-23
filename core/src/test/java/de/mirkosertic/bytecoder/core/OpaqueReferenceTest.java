@@ -70,8 +70,8 @@ public class OpaqueReferenceTest {
     @Test
     public void testIntArray() {
         final IntArray a = OpaqueArrays.createIntArray(10);
-        a.setInt(1, 99);
-        Assert.assertEquals(99, a.getInt(1), 0);
+        a.setIntValue(1, 99);
+        Assert.assertEquals(99, a.getIntValue(1), 0);
     }
 
     @Test
