@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.core;
 import java.util.Objects;
 
 import de.mirkosertic.bytecoder.api.OverrideParentClass;
+import de.mirkosertic.bytecoder.api.Substitutes;
 
 public class BytecodeClass {
 
@@ -30,7 +31,7 @@ public class BytecodeClass {
     private final BytecodeMethod[] methods;
     private final BytecodeAttributeInfo[] classAttributes;
 
-    public BytecodeClass(BytecodeConstantPool aConstantPool, BytecodeAccessFlags aAccessFlags, BytecodeClassinfoConstant aThisClass, BytecodeClassinfoConstant aSuperClass, BytecodeInterface[] aInterfaces, BytecodeField[] aFields, BytecodeMethod[] aMethods, BytecodeAttributeInfo[] aClassAttributes) {
+    public BytecodeClass(final BytecodeConstantPool aConstantPool, final BytecodeAccessFlags aAccessFlags, final BytecodeClassinfoConstant aThisClass, final BytecodeClassinfoConstant aSuperClass, final BytecodeInterface[] aInterfaces, final BytecodeField[] aFields, final BytecodeMethod[] aMethods, final BytecodeAttributeInfo[] aClassAttributes) {
         constantPool = aConstantPool;
         accessFlags = aAccessFlags;
         thisClass = aThisClass;
@@ -61,8 +62,8 @@ public class BytecodeClass {
         return fields;
     }
 
-    public BytecodeField fieldByName(String aName) {
-        for (BytecodeField theField : fields) {
+    public BytecodeField fieldByName(final String aName) {
+        for (final BytecodeField theField : fields) {
             if (Objects.equals(theField.getName().stringValue(), aName)) {
                 return theField;
             }
@@ -70,9 +71,14 @@ public class BytecodeClass {
         return null;
     }
 
-    public BytecodeMethod methodByNameAndSignatureOrNull(String aMethodName, BytecodeMethodSignature aSignature) {
-        for (BytecodeMethod theMethod : methods) {
-            if (Objects.equals(aMethodName, theMethod.getName().stringValue()) && theMethod.getSignature().matchesExactlyTo(aSignature)) {
+    public BytecodeMethod methodByNameAndSignatureOrNull(final String aMethodName, final BytecodeMethodSignature aSignature) {
+        for (final BytecodeMethod theMethod : methods) {
+            String theMethodName = theMethod.getName().stringValue();
+            final BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName());
+            if (theAnnotation != null) {
+                theMethodName = theAnnotation.getElementValueByName("value").stringValue();
+            }
+            if (Objects.equals(aMethodName, theMethodName) && theMethod.getSignature().matchesExactlyTo(aSignature)) {
                 return theMethod;
             }
         }
@@ -80,9 +86,9 @@ public class BytecodeClass {
     }
 
     public BytecodeClassinfoConstant getSuperClass() {
-        BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
+        final BytecodeAnnotation theDelegatesTo = getAttributes().getAnnotationByType(OverrideParentClass.class.getName());
         if (theDelegatesTo != null) {
-            BytecodeAnnotation.ElementValue theParentOverride = theDelegatesTo.getElementValueByName("parentClass");
+            final BytecodeAnnotation.ElementValue theParentOverride = theDelegatesTo.getElementValueByName("parentClass");
             return new BytecodeClassinfoConstant(-1, null, null) {
                 @Override
                 public BytecodeUtf8Constant getConstant() {
@@ -102,7 +108,7 @@ public class BytecodeClass {
     }
 
     public BytecodeMethod classInitializerOrNull() {
-        for (BytecodeMethod theMethod : methods) {
+        for (final BytecodeMethod theMethod : methods) {
             if ("<clinit>".equalsIgnoreCase(theMethod.getName().stringValue())) {
                 return theMethod;
             }

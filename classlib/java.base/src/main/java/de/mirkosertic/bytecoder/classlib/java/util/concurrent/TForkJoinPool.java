@@ -60,4 +60,8 @@ public class TForkJoinPool extends AbstractExecutorService {
     public static int getCommonPoolParallelism() {
         return 1;
     }
+
+    public int getParallelism() {
+        return 1;
+    }
 }

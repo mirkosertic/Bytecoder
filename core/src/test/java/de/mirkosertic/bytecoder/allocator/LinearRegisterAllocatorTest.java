@@ -120,16 +120,16 @@ public class LinearRegisterAllocatorTest {
 
         final List<Variable> vars = p.getVariables();
 
-        assertEquals(19, vars.size());
+        assertEquals(8, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
         for (final Variable v : vars) {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d assigned to register %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt(), theAllocator.registerAssignmentFor(v).getNumber()));
         }
 
-        assertEquals(10, theAllocator.assignedRegister().size());
+        assertEquals(8, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0]);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();

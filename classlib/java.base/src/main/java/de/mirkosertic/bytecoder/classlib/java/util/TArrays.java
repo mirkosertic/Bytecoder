@@ -15,15 +15,31 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
-@SubstitutesInClass(completeReplace = true)
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+
+@SubstitutesInClass(completeReplace = false)
 public class TArrays {
 
-    public static void sort(final Object[] aData, final int aStart, final int aEnd) {
+    public static <T> void sort(final T[] aData, final int aStart, final int aEnd) {
+        Quicksort.quickSort(aData, aStart, aEnd, VM.DEFAULT);
+    }
+
+    public static <T> void sort(final T[] aData, final int aStart, final int aEnd, final Comparator<T> c) {
+        Quicksort.quickSort(aData, aStart, aEnd, c);
+    }
+
+    public static <T> void sort(final T[] aData, final Comparator<T> c) {
+        Quicksort.quickSort(aData, 0, aData.length - 1, c);
+    }
+
+    public static <T> void sort(final T[] aData) {
+        Quicksort.quickSort(aData, 0, aData.length - 1, VM.DEFAULT);
     }
 
     public static <T> List<T> asList(final T... aValues) {
@@ -54,8 +70,32 @@ public class TArrays {
         return theResult;
     }
 
+    public static long[] copyOf(final long[] original, final int newLength) {
+        final long[] theResult = new long[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
     public static byte[] copyOf(final byte[] original, final int newLength) {
         final byte[] theResult = new byte[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static float[] copyOf(final float[] original, final int newLength) {
+        final float[] theResult = new float[newLength];
+        for (int i=0;i<Math.min(newLength, original.length);i++) {
+            theResult[i] = original[i];
+        }
+        return theResult;
+    }
+
+    public static double[] copyOf(final double[] original, final int newLength) {
+        final double[] theResult = new double[newLength];
         for (int i=0;i<Math.min(newLength, original.length);i++) {
             theResult[i] = original[i];
         }
@@ -112,8 +152,118 @@ public class TArrays {
             a[i] = val;
     }
 
+    public static void fill(final byte[] a, final int fromIndex, final int toIndex, final byte val) {
+        for (int i = fromIndex; i < toIndex; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final Object[] a, final int fromIndex, final int toIndex, final Object val) {
+        for (int i = fromIndex; i < toIndex; i++)
+            a[i] = val;
+    }
+
     public static void fill(final int[] a, final int val) {
         for (int i = 0, len = a.length; i < len; i++)
             a[i] = val;
+    }
+
+    public static void fill(final byte[] a, final byte val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final short[] a, final short val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final long[] a, final long val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final float[] a, final float val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static void fill(final double[] a, final double val) {
+        for (int i = 0, len = a.length; i < len; i++)
+            a[i] = val;
+    }
+
+    public static boolean equals(final byte[] a, final byte[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(final long[] a, final long[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(final float[] a, final float[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(final int[] a, final int[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(final Object[] a, final Object[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (!Objects.equals(a[i], b[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 }

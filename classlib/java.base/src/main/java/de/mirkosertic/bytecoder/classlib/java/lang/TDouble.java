@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.classlib.VM;
 @SubstitutesInClass(completeReplace = true)
 public class TDouble extends Number {
 
+    public static final Class<Double> TYPE = (Class<Double>) TClass.getPrimitiveClass("double");
+
     public static final double NaN = 0.0d / 0.0;
 
     private final double doubleValue;
@@ -139,6 +141,10 @@ public class TDouble extends Number {
 
     public static boolean isInfinite(final double aValue) {
         return false;
+    }
+
+    public static boolean isFinite(final double aValue) {
+        return true;
     }
 
     public static double longBitsToDouble(final long aValue) {

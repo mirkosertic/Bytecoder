@@ -108,6 +108,8 @@ public interface TypeRef {
                         return INT;
                     case SHORT:
                         return INT;
+                    case LONG:
+                        return LONG;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
 
@@ -124,6 +126,12 @@ public interface TypeRef {
 
                 }
             }
+
+            @Override
+            public boolean isCategory2() {
+                return true;
+            }
+
         },FLOAT {
             @Override
             public Native eventuallyPromoteTo(final Native aOtherType) {
@@ -146,6 +154,12 @@ public interface TypeRef {
 
                 }
             }
+
+            @Override
+            public boolean isCategory2() {
+                return true;
+            }
+
         },REFERENCE {
             @Override
             public Native eventuallyPromoteTo(final Native aOtherType) {
@@ -187,6 +201,10 @@ public interface TypeRef {
 
         @Override
         public boolean isObject() {
+            return false;
+        }
+
+        public boolean isCategory2() {
             return false;
         }
 

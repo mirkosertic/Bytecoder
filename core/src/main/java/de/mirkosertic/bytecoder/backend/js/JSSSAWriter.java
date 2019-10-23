@@ -15,6 +15,14 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
+import static java.util.Comparator.comparingLong;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.Import;
@@ -32,6 +40,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -83,6 +92,7 @@ import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
@@ -114,14 +124,6 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
-import static java.util.Comparator.comparingLong;
 
 public class JSSSAWriter {
 
@@ -264,9 +266,19 @@ public class JSSSAWriter {
             print((PHIValue) aValue);
         } else if (aValue instanceof IsNaNExpression) {
             print((IsNaNExpression) aValue);
+        } else if (aValue instanceof NewInstanceFromDefaultConstructorExpression) {
+            print((NewInstanceFromDefaultConstructorExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final NewInstanceFromDefaultConstructorExpression aExpression) {
+        final Value theClass = aExpression.incomingDataFlows().get(0);
+        print(theClass);
+        writer.text(".");
+        writer.text(minifier.toMethodName("$newInstance", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0])));
+        writer.text("()");
     }
 
     private void print(final IsNaNExpression aExpression) {

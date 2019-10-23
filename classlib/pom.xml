@@ -16,6 +16,8 @@
     <modules>
         <module>bytecoder.api</module>
         <module>java.base</module>
+        <module>java.datatransfer</module>
+        <module>java.desktop</module>
         <module>bytecoder.opencl</module>
         <module>bytecoder.web</module>
         <module>bytecoder.vue</module>
@@ -31,6 +33,16 @@
             <dependency>
                 <groupId>e.mirkosertic.bytecoder</groupId>
                 <artifactId>java.base</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>java.datatransfer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>e.mirkosertic.bytecoder</groupId>
+                <artifactId>java.desktop</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.io.Closeable;
 import java.io.FileDescriptor;
 
 @SubstitutesInClass(completeReplace = true)
@@ -48,6 +50,22 @@ public class TFileDescriptor {
 
     public void setHandle(final long handle) {
         this.handle = handle;
+    }
+
+    public void attach(final Closeable aClosable) {
+    }
+
+    public void close() {
+    }
+
+    public void closeAll(final Closeable aClosable) {
+    }
+
+    public void registerCleanup(final AnyTypeMatches aCleanable) {
+    }
+
+    public boolean valid() {
+        return true;
     }
 
     @Export("initDefaultFileHandles")

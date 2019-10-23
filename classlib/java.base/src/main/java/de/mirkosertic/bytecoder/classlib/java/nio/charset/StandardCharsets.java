@@ -20,13 +20,15 @@ import java.util.Iterator;
 
 public class StandardCharsets {
 
-    static String[] aliases_UTF_8() {
+    static final String[] aliases_UTF_8() {
         return new String[] {"UTF8","unicode-1-1-utf-8",};
     }
 
-    static String[] aliases_UTF_16() {
+    static final String[] aliases_UTF_16() {
         return new String[] {"UTF_16","utf16","unicode","UnicodeBig",};
     }
+
+    static final String[] aliases_ISO_8859_1() { return new String[]{"iso-ir-100", "ISO_8859-1", "latin1", "l1", "IBM819", "cp819", "csISOLatin1", "819", "IBM-819", "ISO8859_1", "ISO_8859-1:1987", "ISO_8859_1", "8859_1", "ISO8859-1"};}
 
     public StandardCharsets() {
     }
@@ -50,6 +52,9 @@ public class StandardCharsets {
                 if (c == 2) {
                     return UTF_16.INSTANCE;
                 }
+                if (c == 3) {
+                    return ISO_8859_1.INSTANCE;
+                }
 
                 throw new IllegalStateException("EOL");
             }
@@ -67,11 +72,19 @@ public class StandardCharsets {
                 return UTF_16.INSTANCE;
             }
         }
+        for (final String name : aliases_ISO_8859_1()) {
+            if (name.equalsIgnoreCase(charsetName)) {
+                return ISO_8859_1.INSTANCE;
+            }
+        }
         if (charsetName.equals(UTF_8.INSTANCE.name())) {
             return UTF_8.INSTANCE;
         }
         if (charsetName.equals(UTF_16.INSTANCE.name())) {
             return UTF_16.INSTANCE;
+        }
+        if (charsetName.equals(ISO_8859_1.INSTANCE.name())) {
+            return ISO_8859_1.INSTANCE;
         }
         return null;
     }

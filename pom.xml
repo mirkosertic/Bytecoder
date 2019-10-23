@@ -86,6 +86,16 @@
             </dependency>
             <dependency>
                 <groupId>${project.groupId}</groupId>
+                <artifactId>java.datatransfer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>java.desktop</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>bytecoder-classlib</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -229,7 +239,6 @@
         <profile>
             <id>java8-compile</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
                 <jdk>1.8</jdk>
             </activation>
             <build>
@@ -259,7 +268,11 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <release>11</release>
+                            <target>11</target>
+                            <compilerArgs>
+                                <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
+                            </compilerArgs>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -279,7 +292,11 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <release>12</release>
+                            <target>12</target>
+                            <compilerArgs>
+                                <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
+                            </compilerArgs>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -299,7 +316,11 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <configuration>
-                            <release>13</release>
+                            <target>13</target>
+                            <compilerArgs>
+                                <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
+                            </compilerArgs>
                         </configuration>
                     </plugin>
                 </plugins>

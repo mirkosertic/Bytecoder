@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.classlib.VM;
 @SubstitutesInClass(completeReplace = true)
 public class TLong extends Number {
 
+    public static final Class<Long> TYPE = (Class<Long>) TClass.getPrimitiveClass("long");
+
     private final long longValue;
 
     public TLong(final long aLongValue) {
@@ -84,6 +86,10 @@ public class TLong extends Number {
         return VM.stringToLong(aString);
     }
 
+    public static long parseLong(final String aString, final int base) {
+        return VM.stringToLong(aString);
+    }
+
     public static String toString(final long aValue) {
         final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
@@ -128,5 +134,66 @@ public class TLong extends Number {
             return -1;
         }
         return 0;
+    }
+
+    static int stringSize(long x) {
+        int d = 1;
+        if (x >= 0) {
+            d = 0;
+            x = -x;
+        }
+        long p = -10;
+        for (int i = 1; i < 19; i++) {
+            if (x > p)
+                return i + d;
+            p = 10 * p;
+        }
+        return 19 + d;
+    }
+
+    static int getChars(long i, final int index, final byte[] buf) {
+        long q;
+        int r;
+        int charPos = index;
+
+        final boolean negative = (i < 0);
+        if (!negative) {
+            i = -i;
+        }
+
+        // Get 2 digits/iteration using longs until quotient fits into an int
+        while (i <= Integer.MIN_VALUE) {
+            q = i / 100;
+            r = (int)((q * 100) - i);
+            i = q;
+            buf[--charPos] = VM.DigitOnes[r];
+            buf[--charPos] = VM.DigitTens[r];
+        }
+
+        // Get 2 digits/iteration using ints
+        int q2;
+        int i2 = (int)i;
+        while (i2 <= -100) {
+            q2 = i2 / 100;
+            r  = (q2 * 100) - i2;
+            i2 = q2;
+            buf[--charPos] = VM.DigitOnes[r];
+            buf[--charPos] = VM.DigitTens[r];
+        }
+
+        // We know there are at most two digits left at this point.
+        q2 = i2 / 10;
+        r  = (q2 * 10) - i2;
+        buf[--charPos] = (byte)('0' + r);
+
+        // Whatever left is the remaining digit.
+        if (q2 < 0) {
+            buf[--charPos] = (byte)('0' - q2);
+        }
+
+        if (negative) {
+            buf[--charPos] = (byte)'-';
+        }
+        return charPos;
     }
 }

@@ -17,10 +17,17 @@ package de.mirkosertic.bytecoder.classlib.java.lang.ref;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.ref.ReferenceQueue;
+
 @SubstitutesInClass(completeReplace = true)
 public class TWeakReference<T> extends TReference<T> {
 
-    public TWeakReference(T referent) {
+    public TWeakReference(final T referent) {
         super(referent);
     }
+
+    public TWeakReference(final T referent, final ReferenceQueue queue) {
+        super(referent, queue);
+    }
+
 }

@@ -68,6 +68,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
     private final List<TestOption> testOptions;
+    private final String[] additionalClassesToLink;
 
     private static ChromeDriverService DRIVERSERVICE;
     private static HttpServer TESTSERVER;
@@ -93,6 +94,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
                 }
             }
+            additionalClassesToLink = declaredOptions.additionalClassesToLink();
         } else {
             testOptions.add(new TestOption(null, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
@@ -100,6 +102,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
+            additionalClassesToLink = new String[0];
         }
     }
 
@@ -274,7 +277,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, true, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink);
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final JSCompileResult.JSContent content = result.getContent()[0];
 
@@ -373,7 +376,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink);
                 final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
                 final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];

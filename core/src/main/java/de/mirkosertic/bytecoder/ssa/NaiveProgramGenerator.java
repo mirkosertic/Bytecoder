@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionDCONST;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X1;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionDUP2X2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX1;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionDUPX2;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionF2Generic;
@@ -435,7 +436,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionDUP2) {
                 final BytecodeInstructionDUP2 theINS = (BytecodeInstructionDUP2) theInstruction;
                 final Value theValue1 = aHelper.pop();
-                if (theValue1.resolveType().resolve() == TypeRef.Native.LONG || theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+                if (theValue1.resolveType().resolve().isCategory2()) {
                     // Category 2
                     aHelper.push(theINS.getOpcodeAddress(), theValue1);
                     aHelper.push(theINS.getOpcodeAddress(), theValue1);
@@ -450,7 +451,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionDUP2X1) {
                 final BytecodeInstructionDUP2X1 theINS = (BytecodeInstructionDUP2X1) theInstruction;
                 final Value theValue1 = aHelper.pop();
-                if (theValue1.resolveType().resolve() == TypeRef.Native.LONG || theValue1.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+                if (theValue1.resolveType().resolve().isCategory2()) {
                     final Value theValue2 = aHelper.pop();
 
                     aHelper.push(theINS.getOpcodeAddress(), theValue1);
@@ -466,6 +467,48 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     aHelper.push(theINS.getOpcodeAddress(), theValue2);
                     aHelper.push(theINS.getOpcodeAddress(), theValue2);
                 }
+            } else if (theInstruction instanceof BytecodeInstructionDUP2X2) {
+                final BytecodeInstructionDUP2X2 theINS = (BytecodeInstructionDUP2X2) theInstruction;
+                final Value theValue1 = aHelper.pop();
+                if (theValue1.resolveType().resolve().isCategory2()) {
+                    // Form 2 or Form 4
+                    final Value theValue2 = aHelper.pop();
+                    if (theValue2.resolveType().resolve().isCategory2()) {
+                        // Form 4
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                    } else {
+                        // Form 2
+                        final Value theValue3 = aHelper.pop();
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue3);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                    }
+                } else {
+                    // Form 1 or Form 3
+                    final Value theValue2 = aHelper.pop();
+                    final Value theValue3 = aHelper.pop();
+                    if (theValue3.resolveType().resolve().isCategory2()) {
+                        // Form 3
+                        aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue3);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                    } else {
+                        // Form 1
+                        final Value theValue4 = aHelper.pop();
+
+                        aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue4);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue3);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                        aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                    }
+                }
             } else if (theInstruction instanceof BytecodeInstructionDUPX1) {
                 final BytecodeInstructionDUPX1 theINS = (BytecodeInstructionDUPX1) theInstruction;
                 final Value theValue1 = aHelper.pop();
@@ -480,7 +523,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Value theValue1 = aHelper.pop();
                 final Value theValue2 = aHelper.pop();
 
-                if (theValue2.resolveType().resolve() == TypeRef.Native.LONG || theValue2.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+                if (theValue2.resolveType().resolve().isCategory2()) {
                     // Form 2
                     aHelper.push(theINS.getOpcodeAddress(), theValue1);
                     aHelper.push(theINS.getOpcodeAddress(), theValue2);
@@ -1190,7 +1233,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final Variable theNewVarargsArray = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(),
                                 BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new IntegerValue(theVarArgsLength)));
                         for (int i = theSignatureLength - 1; i < theArgumentsLength; i++) {
-                            final Value theVariable = theArguments.get(i);
+                            final Value theVariable = theArguments.get(theSignatureLength - 1);
                             theArguments.remove(theVariable);
                             theInitNode.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theNewVarargsArray, new IntegerValue(i - theSignatureLength + 1), theVariable));
                         }

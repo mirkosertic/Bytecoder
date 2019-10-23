@@ -15,36 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
-import de.mirkosertic.bytecoder.allocator.Allocator;
-import de.mirkosertic.bytecoder.api.Logger;
-import de.mirkosertic.bytecoder.api.opencl.Context;
-import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
-import de.mirkosertic.bytecoder.api.opencl.Kernel;
-import de.mirkosertic.bytecoder.api.opencl.OpenCLOptions;
-import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.ssa.TypeRef;
-import org.jocl.Pointer;
-import org.jocl.Sizeof;
-import org.jocl.cl_command_queue;
-import org.jocl.cl_context;
-import org.jocl.cl_context_properties;
-import org.jocl.cl_kernel;
-import org.jocl.cl_mem;
-import org.jocl.cl_program;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.FloatBuffer;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static org.jocl.CL.CL_CONTEXT_PLATFORM;
 import static org.jocl.CL.CL_DEVICE_TYPE_ALL;
 import static org.jocl.CL.CL_MEM_READ_WRITE;
@@ -65,6 +35,37 @@ import static org.jocl.CL.clReleaseKernel;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clReleaseProgram;
 import static org.jocl.CL.clSetKernelArg;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.FloatBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jocl.Pointer;
+import org.jocl.Sizeof;
+import org.jocl.cl_command_queue;
+import org.jocl.cl_context;
+import org.jocl.cl_context_properties;
+import org.jocl.cl_kernel;
+import org.jocl.cl_mem;
+import org.jocl.cl_program;
+
+import de.mirkosertic.bytecoder.allocator.Allocator;
+import de.mirkosertic.bytecoder.api.Logger;
+import de.mirkosertic.bytecoder.api.opencl.Context;
+import de.mirkosertic.bytecoder.api.opencl.FloatSerializable;
+import de.mirkosertic.bytecoder.api.opencl.Kernel;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLOptions;
+import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
 
 class OpenCLContext implements Context {
 
@@ -115,7 +116,8 @@ class OpenCLContext implements Context {
         platform = aPlatform;
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
-        compileOptions = new CompileOptions(logger, false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, aOptions.isPreferStackifier(), Allocator.linear);
+        compileOptions = new CompileOptions(logger, false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, aOptions.isPreferStackifier(), Allocator.linear,
+                new String[0]);
 
         final cl_context_properties contextProperties = new cl_context_properties();
         contextProperties.addProperty(CL_CONTEXT_PLATFORM, aPlatform.selectedPlatform.id);

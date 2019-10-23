@@ -22,9 +22,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Properties;
 
 @SubstitutesInClass(completeReplace = true)
 public class TSystem {
+
+    private static final Properties PROPERTIES;
+
+    static {
+        PROPERTIES = new Properties();
+        PROPERTIES.setProperty("java.awt.graphicsenv", "de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment");
+    }
 
     public static final InputStream in = new FileInputStream(FileDescriptor.in);
 
@@ -53,14 +61,37 @@ public class TSystem {
     }
 
     public static String getProperty(final String aProperty) {
-        return null;
+        return PROPERTIES.getProperty(aProperty);
     }
 
     public static String getProperty(final String aProperty, final String aDefault) {
-        return aDefault;
+        return PROPERTIES.getProperty(aProperty, aDefault);
+    }
+
+    public static String setProperty(final String aProperty, final String value) {
+        return (String) PROPERTIES.setProperty(aProperty, value);
+    }
+
+    public static Properties getProperties() {
+        return PROPERTIES;
     }
 
     public static String lineSeparator() {
         return "\n";
+    }
+
+    public static String getenv(final String name) {
+        return null;
+    }
+
+    public static void loadLibrary(final String name) {
+        // System libraries cannot be loaded by Bytecoder.
+        // However, native parts are linked using the Bytecoder module imports
+    }
+
+    public static void exit(final int exitCode) {
+    }
+
+    public static void gc() {
     }
 }
