@@ -38,7 +38,7 @@ install:
   - wget https://github.com/gohugoio/hugo/releases/download/v0.49/hugo_0.49_Linux-64bit.tar.gz
   - tar xzf hugo_0.49_Linux-64bit.tar.gz
   - sudo chmod +x hugo
-  - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes
+  - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes/hugo-theme-learn
 
 script:
   - mvn clean package -P jvmtestsonly
