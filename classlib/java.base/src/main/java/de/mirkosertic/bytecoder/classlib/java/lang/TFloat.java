@@ -18,23 +18,12 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
-@SubstitutesInClass(completeReplace = true)
-public class TFloat extends Number {
+@SubstitutesInClass(completeReplace = false)
+public class TFloat {
 
-    public static final Class<Float> TYPE = (Class<Float>) TClass.getPrimitiveClass("float");
-
-    public static final float POSITIVE_INFINITY = 1 / 0.0f;
-    public static final float NEGATIVE_INFINITY = -POSITIVE_INFINITY;
-    public static final float NaN = 0.0f / 0.0f;
-
-    private final float floatValue;
-
-    public TFloat(final float aValue) {
-        floatValue = aValue;
-    }
-
-    public TFloat(final double aValue) {
-        floatValue = (float) aValue;
+    @Override
+    public String toString() {
+        return toString(((Float) (Object) this).floatValue());
     }
 
     @Override
@@ -44,148 +33,11 @@ public class TFloat extends Number {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        final TFloat tFloat = (TFloat) o;
-
-        if (Float.compare(tFloat.floatValue, floatValue) != 0)
+        if (((Float) o).floatValue() != ((Float) (Object) this).floatValue()) {
             return false;
+        }
 
         return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return (int) floatValue;
-    }
-
-    public int compareTo(final Float o) {
-        final float f = floatValue;
-        final float k = o.floatValue();
-        if (f == k) {
-            return 0;
-        }
-        if (f > k) {
-            return 1;
-        }
-        return -1;
-    }
-
-    public static int compare(final float f1, final float f2) {
-        if(f1 < f2) {
-            return -1;
-        }
-        if(f1 > f2) {
-            return 1;
-        }
-        return 0;
-    }
-
-    public static boolean isNaN(final float aValue) {
-        return !(aValue == aValue);
-    }
-
-    public static boolean isInfinite(final float aFloat) {
-        return false;
-    }
-
-    @Override
-    public float floatValue() {
-        return floatValue;
-    }
-
-    @Override
-    public int intValue() {
-        return (int) floatValue;
-    }
-
-    @Override
-    public long longValue() {
-        return (long) floatValue;
-    }
-
-    @Override
-    public double doubleValue() {
-        return floatValue;
-    }
-
-    @Override
-    public String toString() {
-        return toString(floatValue);
-    }
-
-    private static float binaryExponent(int n) {
-        float result = 1;
-        if (n >= 0) {
-            float d = 2;
-            while (n != 0) {
-                if (n % 2 != 0) {
-                    result *= d;
-                }
-                n /= 2;
-                d *= d;
-            }
-        } else {
-            n = -n;
-            float d = 0.5f;
-            while (n != 0) {
-                if (n % 2 != 0) {
-                    result *= d;
-                }
-                n /= 2;
-                d *= d;
-            }
-        }
-        return result;
-    }
-
-    public static int floatToRawIntBits(final float value) {
-        return floatToIntBits(value);
-    }
-
-    public static int floatToIntBits(final float value) {
-        if (value == POSITIVE_INFINITY) {
-            return 0x7F800000;
-        } else if (value == NEGATIVE_INFINITY) {
-            return 0xFF800000;
-        } else if (isNaN(value)) {
-            return 0x7FC00000;
-        }
-        final float abs = Math.abs(value);
-        int exp = Math.getExponent(abs);
-        int negExp = -exp + 23;
-        if (exp < -126) {
-            exp = -127;
-            negExp = 126 + 23;
-        }
-        final float doubleMantissa;
-        if (negExp <= 126) {
-            doubleMantissa = abs * binaryExponent(negExp);
-        } else {
-            doubleMantissa = abs * 0x1p126f * binaryExponent(negExp - 126);
-        }
-        final int mantissa = (int) (doubleMantissa + 0.5f) & 0x7FFFFF;
-        return mantissa | ((exp + 127) << 23) | (value < 0 || 1 / value == NEGATIVE_INFINITY  ? (1 << 31) : 0);
-    }
-
-    public static float intBitsToFloat(final int bits) {
-        if ((bits & 0x7F800000) == 0x7F800000) {
-            if (bits == 0x7F800000) {
-                return POSITIVE_INFINITY;
-            } else if (bits == 0xFF800000) {
-                return NEGATIVE_INFINITY;
-            } else {
-                return NaN;
-            }
-        }
-        final boolean negative = (bits & (1 << 31)) != 0;
-        final int rawExp = (bits >> 23) & 0xFF;
-        int mantissa = bits & 0x7FFFFF;
-        if (rawExp == 0) {
-            mantissa <<= 1;
-        } else {
-            mantissa |= 1L << 23;
-        }
-        final float value = mantissa * binaryExponent(rawExp - 127 - 23);
-        return !negative ? value : -value;
     }
 
     public static float parseFloat(final String aValue) {
@@ -207,10 +59,6 @@ public class TFloat extends Number {
             return theA + ((float) theB) / theMultiplier;
         }
         return theA - ((float) theB) / theMultiplier;
-    }
-
-    public static Float valueOf(final float aValue) {
-        return new Float(aValue);
     }
 
     public static Float valueOf(final String aValue) {
