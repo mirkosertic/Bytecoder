@@ -1,0 +1,13 @@
+baseURL = "https://mirkosertic.github.io/Bytecoder"
+languageCode = "en-us"
+title = "Bytecoder - JVM to JavaScript and WebAssemby Transpiler"
+theme = "hugo-theme-learn"
+[params]
+author = "Mirko Sertic"
+[outputs]
+home = [ "HTML", "RSS", "JSON"]
+[[menu.shortcuts]]
+name = "<i class='fab fa-github'></i> Github repo"
+identifier = "ds"
+url = "https://github.com/mirkosertic/Bytecoder"
+weight = 10

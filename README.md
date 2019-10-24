@@ -28,7 +28,7 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
 
 ## Demos
 
-![Demo screenshot](manual/docassets/jbox2ddemo.png)
+![Demo screenshot](manual/static/docassets/jbox2ddemo.png)
 
  Demo                                            |                                   
 -------------------------------------------------|
@@ -44,4 +44,4 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
 
 ## User Manual
 
-The Bytecoder User Manual is available [here](manual/README.md).
+The Bytecoder User Manual is available [here](manual/content/_index.md).

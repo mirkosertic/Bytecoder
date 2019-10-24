@@ -34,10 +34,16 @@ before_install:
   - sudo chmod +x ~/install-jdk.sh
   - sudo chmod +x .travis/deploy.sh
 
-install: true
+install:
+  - wget https://github.com/gohugoio/hugo/releases/download/v0.49/hugo_0.49_Linux-64bit.tar.gz
+  - tar xzf hugo_0.49_Linux-64bit.tar.gz
+  - sudo chmod +x hugo
+  - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes
 
 script:
   - mvn clean package -P jvmtestsonly
+
+  - ./hugo -s manual
 
 jobs:
   include:

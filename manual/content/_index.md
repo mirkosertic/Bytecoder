@@ -434,7 +434,7 @@ public void testSimpleLoop() {
 
 the following intermediate representation graph is generated (in its first, un optimized form):
 
-![Intermediate representation graph](docassets/ir_loopexample.svg)
+![Intermediate representation graph](../static/docassets/ir_loopexample.svg)
 
 This graph combines data flow analysis and control flow into one big graph. Using this graph makes data and
 control flow dependencies explicit and lays foundation for a variety of optimizations that can be performed on it to
@@ -443,13 +443,13 @@ the graph problem.
 
 The following graph shows the further optimized version of the previous loop:
 
-![Intermediate representation graph optimized](docassets/ir_loopexample_optimized.svg) 
+![Intermediate representation graph optimized](../static/docassets/ir_loopexample_optimized.svg) 
 
 There are two different output styles available for generated code:
 
 * Relooper
 
-    The [Relooper output generator](../core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf)
+    The [Relooper output generator](../../core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf)
     tries to recover high level control flow constructs from the intermediate representation. This step eliminates
     the needs of GOTO statements and thus allows generation of more natural source code, which in turn can be easier read
     and optimized by Web Browsers or other tools. The Relooper supports all styles of control flows and also supports
