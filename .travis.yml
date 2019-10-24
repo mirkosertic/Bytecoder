@@ -42,7 +42,7 @@ install:
 
 script:
   - mvn clean package -P jvmtestsonly
-  - ./hugo -s ./manual
+  - ./hugo -s ./manual -d ./integrationtest/target/bytecoder-integrationtest
 
 jobs:
   include:
