@@ -502,6 +502,21 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
+        theWriter.tab(2).text("float").colon().text("{").newLine();
+        theWriter.tab(3).text("floatToRawIntBitsFLOAT").colon().text("function(value)").space().text("{").newLine();
+        theWriter.tab(4).text("var fl = new Float32Array(1);").newLine();
+        theWriter.tab(4).text("fl[0] = value;").newLine();
+        theWriter.tab(4).text("var br = new Int32Array(fl.buffer);").newLine();
+        theWriter.tab(4).text("return br[0];").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("intBitsToFloatINT").colon().text("function(value)").space().text("{").newLine();
+        theWriter.tab(4).text("var fl = new Int32Array(1);").newLine();
+        theWriter.tab(4).text("fl[0] = value;").newLine();
+        theWriter.tab(4).text("var br = new Float32Array(fl.buffer);").newLine();
+        theWriter.tab(4).text("return br[0];").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
         theWriter.tab(2).text("math").colon().text("{").newLine();
         theWriter.tab(3).text("ceilDOUBLE").colon().text("function(p1)").space().text("{").newLine();
         theWriter.tab(4).text("return Math.ceil(p1);").newLine();
