@@ -42,8 +42,7 @@ install:
 
 script:
   - mvn clean package -P jvmtestsonly
-
-  - ./hugo -s manual
+  - ./hugo -s ./manual
 
 jobs:
   include:
