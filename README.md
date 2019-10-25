@@ -19,11 +19,11 @@ Current travis-ci build status: [![Build Status](https://travis-ci.org/mirkosert
 The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
 optimizer stages and sent to a backend implementation for target code generation.
 
-The *JavaScript* backend transforms the intermediate representation into JavaScript.
+The **JavaScript** backend transforms the intermediate representation into JavaScript.
 
-The *WebAssembly* backend transforms the intermediate representation into WebAssembly text and binary code.
+The **WebAssembly** backend transforms the intermediate representation into WebAssembly text and binary code.
 
-The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
+The **OpenCL** backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
 existing programs running on the JVM to utilize the vast power of modern GPUs.
 
 ## User Manual
