@@ -26,22 +26,6 @@ The *WebAssembly* backend transforms the intermediate representation into WebAss
 The *OpenCL* backend is used to compile single algorithms into OpenCL and execute them on the GPU. This backend is designed to enhance
 existing programs running on the JVM to utilize the vast power of modern GPUs.
 
-## Demos
-
-![Demo screenshot](manual/static/docassets/jbox2ddemo.png)
-
- Demo                                            |                                   
--------------------------------------------------|
- JBox2D Demo compiled from Java to JavaScript [Relooper Codegen](https://mirkosertic.github.io/Bytecoder/index.html) vs. [Stackifier Codegen](https://mirkosertic.github.io/Bytecoder/index-stackified.html)    |  
- JBox2D Demo compiled from Java to WebAssembly [Relooper Codegen](https://mirkosertic.github.io/Bytecoder/indexwasm.html) vs. [Stackifier Codegen](https://mirkosertic.github.io/Bytecoder/indexwasm-stackified.html)  |
- [JBox2D Demo compiled from Kotlin to JavaScript](https://mirkosertic.github.io/Bytecoder/index-kotlin.html)  |  
- [JBox2D Demo compiled from Kotlin to WebAssembly](https://mirkosertic.github.io/Bytecoder/indexwasm-kotlin.html) |
- [vue.js integration Demo compiled to WebAssembly](https://mirkosertic.github.io/Bytecoder/vuewasm.html) |
- [Lua4J Demo compiled to JavaScript](https://mirkosertic.github.io/Bytecoder/luajs.html) |
- [Lua4J Demo compiled to WebAssembly](https://mirkosertic.github.io/Bytecoder/luawasm.html) |
- [GameComposer Physics Game Example compiled to WebAssembly](https://www.mirkosertic.de/examples/gameengine/index.html). GameComposer is available [here](https://github.com/mirkosertic/GameComposer)|
- [GameComposer Physics Game Example compiled to JavaScript](https://www.mirkosertic.de/examples/gameengine/indexjs.html). GameComposer is available [here](https://github.com/mirkosertic/GameComposer) |
-
 ## User Manual
 
-The Bytecoder User Manual is available [here](manual/content/_index.md).
+The Bytecoder User Manual and a full set of example applications is available [here](https://github.com/mirkosertic/Bytecoder).
