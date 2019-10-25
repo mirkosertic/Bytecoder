@@ -1,9 +1,11 @@
 baseURL = "https://mirkosertic.github.io/Bytecoder"
-languageCode = "en-us"
+languageCode = "en"
 title = "Bytecoder - JVM to JavaScript and WebAssemby Transpiler"
 theme = "hugo-theme-learn"
+defaultContentLanguage = "en"
 [params]
 author = "Mirko Sertic"
+editURL = "https://github.com/mirkosertic/Bytecoder/tree/master/manual/content/"
 [outputs]
 home = [ "HTML", "RSS", "JSON"]
 [[menu.shortcuts]]
