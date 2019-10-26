@@ -10,4 +10,4 @@ pre = "<b>3. </b>"
 
 # Example applications
 
-The following pages show you a set of example applications compiled with Bytecoder to JavaScript or WebAssembly.
+The following pages show you a set of **example applications** compiled with **Bytecoder** to **JavaScript** or **WebAssembly**.

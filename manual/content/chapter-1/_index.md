@@ -10,4 +10,4 @@ pre = "<b>1. </b>"
 
 # Compiling JVM Bytecode to JavaScript or WebAssembly
 
-Here you will find some tutorials about compiling JVM Bytecode to JavaScript or WebAssembly.
+Here you will find some tutorials about compiling **JVM Bytecode** to **JavaScript** or **WebAssembly**.

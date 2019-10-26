@@ -76,6 +76,23 @@ The OpaqueReferenceType API allows the following types for Bytecoder-Host commun
 * `de.mirkosertic.bytecoder.api.OpaqueReferenceType` and sub classes of it
 * `de.mirkosertic.bytecoder.api.Callback` and sub classes of it
 
+{{% notice note %}}
+`java.lang.String` references are a special case. They are objects in the sence of the JVM,
+but they are not automatically converted to JavaScript String instances on host side due to
+the expensive conversion operation and its potential performance impact. However, there are
+handy conversion operations available to do it if its really needed.
+The convertions are part of the global `bytecoder` object as 
+`bytecoder.toJSString(aBytecoderString)` and `bytecoder.toBytecoderString(aJSString)` respectively.
+{{% /notice %}}
+
+{{% notice warning %}}
+The JVM long datatype is currently only in a limited form available in Bytecoder. There is currently 
+no native 64-bit integer datatype available in JavaScript. Bytecoder is limited
+to a 53-bit range due to JavaScripts IEEE 754 double precision number type. However, once JavaScript BigInt 
+will be supported by all major browsers, Bytecoder will use BigInt as a substitute for the 
+JVM long datatype. For now, there is no full emulation of long datatypes planned.
+{{% /notice %}}
+
 #### Importing functionality from the host environment
 
 Using host environment functionality is quite common. This can be either simply

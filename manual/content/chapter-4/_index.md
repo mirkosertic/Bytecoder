@@ -10,4 +10,4 @@ pre = "<b>4. </b>"
 
 # Implementation internals
 
-Here you will find a lot of information about what is going on behind the scenes of Bytecoder.
+Here you will find a lot of information about what is going on **behind the scenes of Bytecoder**.

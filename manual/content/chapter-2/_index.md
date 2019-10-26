@@ -10,5 +10,5 @@ pre = "<b>2. </b>"
 
 # Compiling Java Kernels to OpenCL and use GPU acceleration
 
-Here we will show you how to write OpenCL kernels in Java and compile them transparently to
-OpenCL kernels.
+Here we will show you how to write **kernels in Java** and **compile them transparently to
+OpenCL** kernels.
