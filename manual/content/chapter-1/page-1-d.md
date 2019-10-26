@@ -81,7 +81,7 @@ The OpaqueReferenceType API allows the following types for Bytecoder-Host commun
 but they are not automatically converted to JavaScript String instances on host side due to
 the expensive conversion operation and its potential performance impact. However, there are
 handy conversion operations available to do it if its really needed.
-The convertions are part of the global `bytecoder` object as 
+The conversion functions are part of the global `bytecoder` object as 
 `bytecoder.toJSString(aBytecoderString)` and `bytecoder.toBytecoderString(aJSString)` respectively.
 {{% /notice %}}
 

@@ -19,7 +19,7 @@ tools.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-08-03</version>
+            <version>{{% siteparam "bytecoderversion" %}}</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
@@ -51,7 +51,7 @@ JavaScript will be placed in the Maven `target/bytecoder` directory.
         <plugin>
             <groupId>de.mirkosertic.bytecoder</groupId>
             <artifactId>bytecoder-mavenplugin</artifactId>
-            <version>2019-08-03</version>
+            <version>{{% siteparam "bytecoderversion" %}}</version>
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>wasm</backend>

@@ -31,13 +31,13 @@ Now, we have the compiled .class files. Now we can use the Bytecoder CLI to comp
 Step 1: Download the CLI from Maven central:
 
 ``` 
-wget http://central.maven.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/2019-08-03/bytecoder-cli-2019-08-03-executable.jar
+wget http://central.maven.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/{{% siteparam "bytecoderversion" %}}/bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar
 ```
 
 Step 2: Invoke the CLI:
 
 ```
-java -jar bytecoder-cli-2019-08-03-executable.jar -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=. -backend=js -minify=false
+java -jar bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=. -backend=js -minify=false
 ```
 
 Step 3: Create an embedding HTML document
