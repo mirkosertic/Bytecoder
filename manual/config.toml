@@ -3,6 +3,7 @@ languageCode = "en"
 title = "Bytecoder - JVM to JavaScript and WebAssemby Transpiler"
 theme = "hugo-theme-learn"
 defaultContentLanguage = "en"
+googleAnalytics = "UA-33614060-5"
 [params]
 author = "Mirko Sertic"
 editURL = "https://github.com/mirkosertic/Bytecoder/tree/master/manual/content/"
