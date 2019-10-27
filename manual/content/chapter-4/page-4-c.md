@@ -1,4 +1,9 @@
-# Optimizer effectiveness
+---
+title: "Optimizer effectiveness"
+date: 2019-10-25T14:49:24+02:00
+draft: false
+weight: 4
+---
 
 Step                       |JBox2D JS Demo  |JBox2D Wasm Demo
 ---------------------------|----------------|--------------------
