@@ -28,4 +28,4 @@ existing programs running on the JVM to utilize the vast power of modern GPUs.
 
 ## User Manual
 
-The Bytecoder User Manual and a full set of example applications is available [here](https://github.com/mirkosertic/Bytecoder).
+The Bytecoder User Manual and a full set of example applications is available [here](https://mirkosertic.github.io/Bytecoder/).
