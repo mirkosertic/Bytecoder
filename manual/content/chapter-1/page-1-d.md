@@ -41,7 +41,7 @@ JavaScript, WebAssembly and OpenCL as target platforms. How does this wok?
 
 Bytecoder allows transparent usage of APIs not implemented by Bytecoder itself. Such APIs are
 provided by the host environment, for instance the DOM API or interaction with the browser window.
-Bytecoder support such APIs by so called OpaqueReferenceTypes. For every external API, a new OpaqueRecerenceType
+Bytecoder support such APIs by so called OpaqueReferenceTypes. For every external API, a new OpaqueReferenceType
 in form of a JVM interface class needs to be created. Bytecoder already comes with implementations for the
 browser window and the DOM.
 
@@ -77,7 +77,7 @@ The OpaqueReferenceType API allows the following types for Bytecoder-Host commun
 * `de.mirkosertic.bytecoder.api.Callback` and sub classes of it
 
 {{% notice note %}}
-`java.lang.String` references are a special case. They are objects in the sence of the JVM,
+`java.lang.String` references are a special case. They are objects in the sense of the JVM,
 but they are not automatically converted to JavaScript String instances on host side due to
 the expensive conversion operation and its potential performance impact. However, there are
 handy conversion operations available to do it if its really needed.
