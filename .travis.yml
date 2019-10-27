@@ -89,8 +89,7 @@ jobs:
             tags: true
             jdk: openjdk8
     - stage: "Deploy GitHub Pages"
-      script: mvn clean package -P notest
-    - script: ./hugo -s ./manual -d ../integrationtest/target/bytecoder-integrationtest
+      script: mvn clean package -P notest && ./hugo -s ./manual -d ../integrationtest/target/bytecoder-integrationtest
       deploy:
         - provider: pages
           skip-cleanup: true
