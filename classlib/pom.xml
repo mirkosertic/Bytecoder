@@ -17,6 +17,7 @@
         <module>bytecoder.api</module>
         <module>java.base</module>
         <module>java.datatransfer</module>
+        <module>java.xml</module>
         <module>java.desktop</module>
         <module>bytecoder.opencl</module>
         <module>bytecoder.web</module>

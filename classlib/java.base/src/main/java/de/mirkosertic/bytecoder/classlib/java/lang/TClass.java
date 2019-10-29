@@ -235,4 +235,8 @@ public class TClass {
     public int hashCode() {
         return getName().hashCode();
     }
+
+    public <T> T cast(final Object obj) {
+        return (T) obj;
+    }
 }

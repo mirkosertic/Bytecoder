@@ -50,6 +50,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     private Boolean opaque;
     private Boolean callback;
     private Boolean event;
+    private Set<BytecodeVirtualMethodIdentifier> implementedIdentifiersCache;
 
     public BytecodeLinkedClass(final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
@@ -466,9 +467,15 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
 
     public boolean implementsMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
         // Do we already have a link?
-        return outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
-                .map(t -> (BytecodeMethod) t.targetNode())
-                .map(t -> linkerContext.getMethodCollection().identifierFor(t)).anyMatch(t -> Objects.equals(t, aIdentifier));
+        if (implementedIdentifiersCache == null) {
+            implementedIdentifiersCache = outgoingEdges(
+                    BytecodeProvidesMethodEdgeType.filter())
+                    .map(t -> (BytecodeMethod) t.targetNode())
+                    .map(t -> linkerContext.getMethodCollection().identifierFor(t))
+                    .collect(Collectors.toSet());
+        }
+
+        return implementedIdentifiersCache.contains(aIdentifier);
     }
 
     @Override

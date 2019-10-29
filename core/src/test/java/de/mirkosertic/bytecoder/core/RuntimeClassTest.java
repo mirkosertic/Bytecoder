@@ -61,4 +61,10 @@ public class RuntimeClassTest {
         final Object o = cl.getConstructor(new Class[0]).newInstance();
         Assert.assertTrue(o instanceof Object);
     }
+
+    @Test
+    public void testAssignableFrom() {
+        Assert.assertTrue(Object.class.isAssignableFrom(String.class));
+        Assert.assertFalse(String.class.isAssignableFrom(Object.class));
+    }
 }

@@ -773,6 +773,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final String theGetNameMethodName = theMinifier.toMethodName("getName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
         final String theHashCodeMethodName = theMinifier.toMethodName("hashCode", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+        final String theIsAssignableFromMethodName = theMinifier.toMethodName("isAssignableFrom", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Class.class)}));
 
         final ConstantPool thePool = new ConstantPool();
 
@@ -799,22 +800,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             // Framework-Specific methods
             theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
 
-            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
-                theWriter.tab().text("var ").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
-                boolean first = true;
-                for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
-                    if (!first) {
-                        theWriter.print(",");
-                    }
-                    first = false;
-                    if (theType.getUniqueId() == theLinkedClass.getUniqueId()) {
-                        theWriter.print("C");
-                    } else {
-                        theWriter.print(theMinifier.toClassName(theType.getClassName()));
-                    }
+            theWriter.tab().text("C.").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
+            boolean first = true;
+            for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
+                if (!first) {
+                    theWriter.print(",");
                 }
-                theWriter.text("];").newLine();
+                first = false;
+                if (theType.getUniqueId() == theLinkedClass.getUniqueId()) {
+                    theWriter.print("C");
+                } else {
+                    theWriter.print(theMinifier.toClassName(theType.getClassName()));
+                }
             }
+            theWriter.text("];").newLine();
             theWriter.tab().text("C.").text(theMinifier.toSymbol("__staticCallSites")).assign().text("[];").newLine();
 
             // Init function
@@ -963,7 +962,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
                 theWriter.tab().text("C.prototype.").text("iof").assign().text("function(aType)").space().text("{").newLine();
-                theWriter.tab(2).text("return ").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(aType);").newLine();
+                theWriter.tab(2).text("return C.").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(aType);").newLine();
                 theWriter.tab().text("};").newLine();
 
                 theWriter.tab().text("C.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
@@ -977,6 +976,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             theWriter.tab().text("C.").text(theHashCodeMethodName).assign().text("function()").space().text("{").newLine();
             theWriter.tab(2).text("return C.").text(theGetNameMethodName).text("().").text(theHashCodeMethodName).text("();").newLine();
+            theWriter.tab().text("};").newLine();
+
+            theWriter.tab().text("C.").text(theIsAssignableFromMethodName).assign().text("function(aOtherType)").space().text("{").newLine();
+            theWriter.tab(2).text("return aOtherType.").text(theMinifier.toSymbol("__implementedTypes")).text(".includes(this);").newLine();
             theWriter.tab().text("};").newLine();
 
             theMethods.stream().forEach(aEntry -> {
@@ -1049,14 +1052,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 final StringBuilder theArguments = new StringBuilder();
-                boolean first = true;
+                boolean myfirst = true;
                 for (final Variable theVariable : theSSAProgram.getArguments()) {
                     if (!Variable.THISREF_NAME.equals(theVariable.getName())) {
-                        if (!first) {
+                        if (!myfirst) {
                             theArguments.append(',');
                         }
                         theArguments.append(theMinifier.toVariableName(theVariable.getName()));
-                        first = false;
+                        myfirst = false;
                     }
                 }
 

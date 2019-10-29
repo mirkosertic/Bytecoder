@@ -333,7 +333,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             @Override
             public Function resolveCallsiteBootstrapFor(final BytecodeClass owningClass, final String callsiteId, final Program program,
-                    final RegionNode bootstrapMethod) {
+                                                        final RegionNode bootstrapMethod) {
                 final String theID = "callsite_" + callsiteId.replace("/","_");
                 if (!theCallsites.containsKey(theID)) {
                     final CallSite theCallsite = new CallSite(program, bootstrapMethod);
@@ -343,6 +343,35 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 return module.functionIndex().firstByLabel(theID);
             }
         };
+
+        final ExportableFunction classIsAssignableFrom = module.getFunctions().newFunction("jlClass_BOOLEANisAssignableFromjlClass", Arrays.asList(param("thisRef", PrimitiveType.i32), param("otherType", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        {
+            aLinkerContext.linkedClasses().forEach(aEntry -> {
+                final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+                if (null != theLinkedClass.getBytecodeClass().getAttributes()
+                        .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                    return;
+                }
+
+                if (theLinkedClass.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
+                    return;
+                }
+                final String typeLabel = "" + theLinkedClass.getUniqueId();
+
+                final Global theRuntimeClass = theResolver.runtimeClassFor(theLinkedClass.getClassName());
+                final Iff theIff = classIsAssignableFrom.flow.iff(
+                        typeLabel, i32.eq(getGlobal(theRuntimeClass, null), getLocal(classIsAssignableFrom.localByLabel("otherType"), null), null), null);
+
+
+                for (final BytecodeLinkedClass theImplType : theLinkedClass.getImplementingTypes()) {
+                    final Iff theInstanceCheckIff = theIff.flow.iff(
+                            typeLabel, i32.eq(i32.c(theImplType.getUniqueId(), null), i32.load(20, getLocal(classIsAssignableFrom.localByLabel("thisRef"), null), null), null), null);
+                    theInstanceCheckIff.flow.ret(i32.c(1, null), null);
+                }
+                theIff.flow.ret(i32.c(0, null), null);
+            });
+            classIsAssignableFrom.flow.ret(i32.c(0, null), null);
+        }
 
         final ExportableFunction runtimeResolvevtableindex = module.getFunctions().newFunction("RUNTIMECLASS" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
@@ -427,6 +456,20 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         });
 
                         forNameMethod.flow.unreachable(null);
+
+                        // TODO: Can be removed once we fix the nasty shadow type anyref bug
+                        final ExportableFunction theForNameModule = module.getFunctions()
+                                .newFunction("jlClass_jlClassforNamejlModulejlString",
+                                        Arrays.asList(param("UNUSED", PrimitiveType.i32),
+                                                param("module", PrimitiveType.i32),
+                                                param("name", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+                        theForNameModule.flow.
+                                ret(call(forNameMethod, Arrays.asList(
+                                        i32.c(0, null),
+                                        getLocal(theForNameModule.localByLabel("name"), null),
+                                        i32.c(0, null),
+                                        i32.c(0, null)
+                                ), null), null);
                     }
 
                     return;
@@ -1143,6 +1186,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             newRuntimeClassFunction.flow.i32.store(12, getLocal(newRef, null),
                     i32.add(getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("enumValuesOffset"), null), null), null);
             newRuntimeClassFunction.flow.i32.store(16, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("nameStringPoolIndex"), null), null);
+            newRuntimeClassFunction.flow.i32.store(20, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("type"), null), null);
             newRuntimeClassFunction.flow.ret(getLocal(newRef, null), null);
         }
 
