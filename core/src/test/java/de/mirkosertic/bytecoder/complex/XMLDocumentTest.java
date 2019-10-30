@@ -15,22 +15,24 @@
  */
 package de.mirkosertic.bytecoder.complex;
 
-import java.io.IOException;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.w3c.dom.Document;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
-
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.w3c.dom.Document;
+import java.io.IOException;
 
 @RunWith(BytecoderUnitTestRunner.class)
+@BytecoderTestOptions(additionalClassesToLink = {
+        "de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment",
+})
 public class XMLDocumentTest {
 
     @Test
@@ -41,10 +43,9 @@ public class XMLDocumentTest {
         final Document doc = builder.newDocument();
 
         Assert.assertTrue(doc instanceof Document);
-/*        final SVGGraphics2D graphics2D = new SVGGraphics2D(doc);
+        /*final SVGGraphics2D graphics2D = new SVGGraphics2D(doc);
         graphics2D.setSVGCanvasSize(new Dimension(100, 100));
-        graphics2D.drawLine(0,0, 100, 100);*/
-/*        graphics2D.stream(new FileWriter("test.svg"));*/
-//        graphics2D.dispose();
+        graphics2D.drawLine(0,0, 100, 100);
+        graphics2D.stream(new FileWriter("test.svg"));*/
     }
 }

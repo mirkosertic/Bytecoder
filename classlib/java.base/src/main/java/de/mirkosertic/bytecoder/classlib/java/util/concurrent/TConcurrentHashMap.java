@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
 
-import de.mirkosertic.bytecoder.api.AnyTypeMatches;
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.io.Serializable;
@@ -26,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -158,13 +157,8 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
     }
 
     @Override
-    public KeySetView<K> keySet() {
-        return new KeySetView<>(delegate.keySet());
-    }
-
-    @Substitutes("keySet")
-    public AnyTypeMatches<K> keySetInternal() {
-        return (AnyTypeMatches<K>) new KeySetView<K>(delegate.keySet());
+    public ConcurrentHashMap.KeySetView keySet() {
+        return (ConcurrentHashMap.KeySetView) (Object) new KeySetView<K>(delegate.keySet());
     }
 
     @Override

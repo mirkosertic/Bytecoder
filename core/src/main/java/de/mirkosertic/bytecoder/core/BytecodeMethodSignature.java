@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+
 public class BytecodeMethodSignature {
 
     private final BytecodeTypeRef returnType;
@@ -38,8 +40,7 @@ public class BytecodeMethodSignature {
             return false;
         }
 
-        final boolean theMatch = returnType.matchesExactlyTo(aSignature.getReturnType());
-        if (!theMatch) {
+        if (!returnType.matchesExactlyTo(aSignature.getReturnType())) {
             return false;
         }
         for (int i=0;i<arguments.length;i++) {
@@ -63,5 +64,27 @@ public class BytecodeMethodSignature {
         }
         theBuilder.append(")");
         return theBuilder.toString();
+    }
+
+    public boolean containsAnyMatches() {
+        if (isAnyTypeMatchesRef(returnType)) {
+            return true;
+        }
+        for (final BytecodeTypeRef theType : arguments) {
+            if (isAnyTypeMatchesRef(theType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAnyTypeMatchesRef(final BytecodeTypeRef aType) {
+        if (aType instanceof BytecodeObjectTypeRef) {
+            final BytecodeObjectTypeRef theO = (BytecodeObjectTypeRef) aType;
+            if (theO.name().equals(AnyTypeMatches.class.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

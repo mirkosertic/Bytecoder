@@ -87,7 +87,17 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
 
                 final List<BytecodeMethod> theMethods = new ArrayList<>();
                 for (final BytecodeMethod aMethod : theShadowType.getMethods()) {
-                    theMethods.add(replaceMethodFrom(aMethod, theShadowType));
+                    final BytecodeMethod theReplacement = replaceMethodFrom(aMethod, theShadowType);
+                    // If the replacement signature contains anyref, we take the original signature as granted
+                    if (theReplacement.getSignature().containsAnyMatches()) {
+                        for (final BytecodeMethod theOriginal : aMethods) {
+                            if (theOriginal.getName().stringValue().equals(aMethod.getName().stringValue()) && theReplacement.getSignature().matchesExactlyTo(theOriginal.getSignature())) {
+                                theMethods.add(theReplacement.replaceSignature(theOriginal));
+                            }
+                        }
+                    } else {
+                        theMethods.add(theReplacement);
+                    }
                 }
 
                 return new MergeResult(

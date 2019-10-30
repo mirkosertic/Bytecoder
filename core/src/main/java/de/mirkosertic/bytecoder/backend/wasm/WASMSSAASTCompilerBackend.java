@@ -456,20 +456,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         });
 
                         forNameMethod.flow.unreachable(null);
-
-                        // TODO: Can be removed once we fix the nasty shadow type anyref bug
-                        final ExportableFunction theForNameModule = module.getFunctions()
-                                .newFunction("jlClass_jlClassforNamejlModulejlString",
-                                        Arrays.asList(param("UNUSED", PrimitiveType.i32),
-                                                param("module", PrimitiveType.i32),
-                                                param("name", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-                        theForNameModule.flow.
-                                ret(call(forNameMethod, Arrays.asList(
-                                        i32.c(0, null),
-                                        getLocal(theForNameModule.localByLabel("name"), null),
-                                        i32.c(0, null),
-                                        i32.c(0, null)
-                                ), null), null);
                     }
 
                     return;

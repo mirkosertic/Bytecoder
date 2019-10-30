@@ -202,7 +202,6 @@ public class TClass {
         return 0;
     }
 
-    @EmulatedByRuntime
     public AnyTypeMatches getModule() {
         return null;
     }

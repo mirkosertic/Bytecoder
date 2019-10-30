@@ -15,5 +15,6 @@
  */
 package de.mirkosertic.bytecoder.api;
 
+@EmulatedByRuntime
 public interface AnyTypeMatches<K> {
 }

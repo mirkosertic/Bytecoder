@@ -39,6 +39,10 @@ public class BytecodeMethod extends Node<Node, EdgeType> {
         return new BytecodeMethod(aOtherMethod.accessFlags, name, signature, aOtherMethod.attributes);
     }
 
+    public BytecodeMethod replaceSignature(final BytecodeMethod aOtherMethod) {
+        return new BytecodeMethod(aOtherMethod.accessFlags, name, aOtherMethod.getSignature(), attributes);
+    }
+
     public BytecodeAttributes getAttributes() {
         return new BytecodeAttributes(attributes);
     }
