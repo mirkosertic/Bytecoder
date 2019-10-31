@@ -27,6 +27,10 @@ public class TFormatter {
     public TFormatter() {
     }
 
+    public TFormatter(final Locale aLocale) {
+    }
+
+
     public TFormatter(final PrintStream aOut) {
     }
 

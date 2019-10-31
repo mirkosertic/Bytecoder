@@ -202,7 +202,6 @@ public class TClass {
         return 0;
     }
 
-    @EmulatedByRuntime
     public AnyTypeMatches getModule() {
         return null;
     }
@@ -234,5 +233,9 @@ public class TClass {
     @Override
     public int hashCode() {
         return getName().hashCode();
+    }
+
+    public <T> T cast(final Object obj) {
+        return (T) obj;
     }
 }

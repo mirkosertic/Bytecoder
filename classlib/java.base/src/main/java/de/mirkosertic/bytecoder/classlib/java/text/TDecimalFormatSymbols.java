@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.classlib.java.text;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.Locale;
+
 @SubstitutesInClass(completeReplace = true)
 public class TDecimalFormatSymbols {
 
@@ -24,6 +26,12 @@ public class TDecimalFormatSymbols {
 
     public static TDecimalFormatSymbols getInstance() {
         return INSTANCE;
+    }
+
+    public TDecimalFormatSymbols() {
+    }
+
+    public TDecimalFormatSymbols(final Locale locale) {
     }
 
     public char getDecimalSeparator() {

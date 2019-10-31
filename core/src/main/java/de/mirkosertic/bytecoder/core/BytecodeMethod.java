@@ -27,20 +27,26 @@ public class BytecodeMethod extends Node<Node, EdgeType> {
     private final BytecodeUtf8Constant name;
     private final BytecodeAttributeInfo[] attributes;
     private final BytecodeMethodSignature signature;
+    private final BytecodeAttributes mappedAttributes;
 
     public BytecodeMethod(final BytecodeAccessFlags aAccessFlags, final BytecodeUtf8Constant aName, final BytecodeMethodSignature aSignature, final BytecodeAttributeInfo[] aAttributes) {
         accessFlags = aAccessFlags;
         name = aName;
         signature = aSignature;
         attributes = aAttributes;
+        mappedAttributes = new BytecodeAttributes(attributes);
     }
 
     public BytecodeMethod replaceAndFlagsFrom(final BytecodeMethod aOtherMethod) {
         return new BytecodeMethod(aOtherMethod.accessFlags, name, signature, aOtherMethod.attributes);
     }
 
+    public BytecodeMethod replaceSignature(final BytecodeMethod aOtherMethod) {
+        return new BytecodeMethod(aOtherMethod.accessFlags, name, aOtherMethod.getSignature(), attributes);
+    }
+
     public BytecodeAttributes getAttributes() {
-        return new BytecodeAttributes(attributes);
+        return mappedAttributes;
     }
 
     public BytecodeUtf8Constant getName() {

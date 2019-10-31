@@ -15,21 +15,21 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class BytecodeAnnotationAttributeInfo implements BytecodeAttributeInfo {
 
-    private final BytecodeAnnotation[] annotations;
+    private final Map<String, BytecodeAnnotation> annotations;
 
-    public BytecodeAnnotationAttributeInfo(BytecodeAnnotation[] aAnnotations) {
-        annotations = aAnnotations;
+    public BytecodeAnnotationAttributeInfo(final BytecodeAnnotation[] aAnnotations) {
+        annotations = new HashMap<>();
+        for (final BytecodeAnnotation annotation : aAnnotations) {
+            annotations.put(annotation.getType().name(), annotation);
+        }
     }
 
-    public BytecodeAnnotation getAnnotationByType(String aName) {
-        for (BytecodeAnnotation theAnnotation : annotations) {
-            BytecodeTypeRef theTypeRefs = theAnnotation.getType();
-            if (theTypeRefs.name().equals(aName)) {
-                return theAnnotation;
-            }
-        }
-        return null;
+    public BytecodeAnnotation getAnnotationByType(final String aName) {
+        return annotations.get(aName);
     }
 }

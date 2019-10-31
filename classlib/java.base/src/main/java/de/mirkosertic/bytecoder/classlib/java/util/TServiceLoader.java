@@ -25,6 +25,10 @@ import java.util.function.Consumer;
 @SubstitutesInClass(completeReplace = true)
 public class TServiceLoader<S> implements Iterable<S> {
 
+    public static <S> ServiceLoader<S> load(final Class aClass) {
+        return (ServiceLoader<S>) (Object) new TServiceLoader<>();
+    }
+
     public static <S> ServiceLoader<S> load(final Class aClass, final ClassLoader aLoader) {
         return (ServiceLoader<S>) (Object) new TServiceLoader<>();
     }

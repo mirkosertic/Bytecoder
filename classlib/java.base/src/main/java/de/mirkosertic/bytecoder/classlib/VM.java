@@ -28,6 +28,9 @@ public class VM {
 
     public static final DecimalFormatSymbols FORMAT_SYMBOLS = new DecimalFormatSymbols();
 
+    public static final ClassLoader SYSTEM_LOADER = new ClassLoader() {
+    };
+
     public static void appendInternal(final StringBuilder sb, final double aValue, final long aMultiplier) {
         final long theA;
         final long theB;
