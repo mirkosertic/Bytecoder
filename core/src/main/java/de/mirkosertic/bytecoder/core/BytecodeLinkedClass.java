@@ -51,12 +51,18 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     private Boolean callback;
     private Boolean event;
     private Set<BytecodeVirtualMethodIdentifier> implementedIdentifiersCache;
+    private BytecodeLinkedClass superClass;
 
-    public BytecodeLinkedClass(final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
+    public BytecodeLinkedClass(final BytecodeLinkedClass aSuperclass, final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkerContext = aLinkerContext;
+        superClass = aSuperclass;
+
+        if (superClass != null) {
+            addEdgeTo(BytecodeSubclassOfEdgeType.instance, superClass);
+        }
     }
 
     public boolean isOpaqueType() {
@@ -139,8 +145,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     }
 
     public BytecodeLinkedClass getSuperClass() {
-        return (BytecodeLinkedClass) singleOutgoingNodeMatching(
-                BytecodeSubclassOfEdgeType.filter()).orElse(null);
+        return superClass;
     }
 
     public void resolveClassInitializer(final BytecodeMethod aMethod) {

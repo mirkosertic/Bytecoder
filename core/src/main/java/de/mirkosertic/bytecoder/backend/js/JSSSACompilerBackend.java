@@ -1064,8 +1064,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
 
                 if (theMethod.getAccessFlags().isNative()) {
-                    if (null != theLinkedClass.getBytecodeClass().getAttributes()
-                            .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                    if (theLinkedClass.emulatedByRuntime()) {
                         return;
                     }
 

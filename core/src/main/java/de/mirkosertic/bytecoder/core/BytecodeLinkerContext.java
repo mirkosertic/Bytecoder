@@ -19,7 +19,10 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.graph.Edge;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -78,8 +81,6 @@ public class BytecodeLinkerContext {
 
         try {
             final BytecodeClass theLoadedClass = loader.loadByteCode(aTypeRef);
-            final BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(classIdCounter++, this, aTypeRef, theLoadedClass);
-            rootNode.addEdgeTo(BytecodeLinkedClassEdgeType.instance, theLinkedClass);
 
             BytecodeLinkedClass theParentClass = null;
             final BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
@@ -88,9 +89,8 @@ public class BytecodeLinkerContext {
                 theParentClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
             }
 
-            if (theParentClass != null) {
-                theLinkedClass.addEdgeTo(BytecodeSubclassOfEdgeType.instance, theParentClass);
-            }
+            final BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(theParentClass, classIdCounter++, this, aTypeRef, theLoadedClass);
+            rootNode.addEdgeTo(BytecodeLinkedClassEdgeType.instance, theLinkedClass);
 
             for (final BytecodeMethod theMethod : theLoadedClass.getMethods()) {
                 final BytecodeAnnotation theAnnotation = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
@@ -162,10 +162,12 @@ public class BytecodeLinkerContext {
                 .collect(Collectors.toList());
     }
 
+    private final Map<BytecodeVirtualMethodIdentifier, List<BytecodeLinkedClass>> alreadyKnown = new HashMap<>();
+
     public List<BytecodeLinkedClass> getAllClassesAndInterfacesWithMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
-        return linkedClasses()
+        return alreadyKnown.computeIfAbsent(aIdentifier, bytecodeVirtualMethodIdentifier -> linkedClasses()
                 .map(Edge::targetNode)
                 .filter(t -> t.implementsMethod(aIdentifier))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 }

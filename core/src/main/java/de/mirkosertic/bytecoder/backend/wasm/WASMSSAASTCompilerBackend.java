@@ -255,8 +255,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final BytecodeMethodSignature theSignature = t.getSignature();
 
                 if (t.getAccessFlags().isNative() || (t.getAccessFlags().isAbstract() && theProvidingClass.isOpaqueType())) {
-                    if (null != theProvidingClass.getBytecodeClass().getAttributes()
-                            .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                    if (theProvidingClass.emulatedByRuntime()) {
                         return;
                     }
 
@@ -348,8 +347,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         {
             aLinkerContext.linkedClasses().forEach(aEntry -> {
                 final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
-                if (null != theLinkedClass.getBytecodeClass().getAttributes()
-                        .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                if (theLinkedClass.emulatedByRuntime()) {
                     return;
                 }
 
@@ -479,8 +477,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 final BytecodeMethodSignature theSignature = t.getSignature();
-                if (null != aEntry.targetNode().getBytecodeClass().getAttributes()
-                        .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                if (aEntry.targetNode().emulatedByRuntime()) {
                     return;
                 }
 
@@ -520,7 +517,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                 return;
             }
-            if (null != theLinkedClass.getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
+            if (theLinkedClass.emulatedByRuntime()) {
                 return;
             }
 
@@ -1188,7 +1185,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                     return;
                 }
-                if (null != theLinkedClass.getBytecodeClass().getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                if (theLinkedClass.emulatedByRuntime()) {
                     return;
                 }
 
@@ -1274,8 +1271,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             aLinkerContext.linkedClasses().forEach(aEntry -> {
 
-                if (null != aEntry.targetNode().getBytecodeClass().getAttributes()
-                        .getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                if (aEntry.targetNode().emulatedByRuntime()) {
                     return;
                 }
 
