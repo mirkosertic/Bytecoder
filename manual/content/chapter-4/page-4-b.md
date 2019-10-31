@@ -44,6 +44,8 @@ Their `object body` contains the following fields:
 -------------|------|------------------------------------------------
  initstatus  | i32  | The initialization status of the runtime class 
  enumvals    | i32  | Pointer to optional enum values array          
+ classname   | i32  | Pointer to the class name string objectg
+ typeid      | i32  | Internal unique id of this runtime class          
 
 Static class attributes are added to the field list on demand.
 

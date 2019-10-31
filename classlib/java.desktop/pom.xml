@@ -23,6 +23,10 @@
             <artifactId>java.datatransfer</artifactId>
         </dependency>
         <dependency>
+            <groupId>de.mirkosertic.bytecoder</groupId>
+            <artifactId>java.xml</artifactId>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>provided</scope>

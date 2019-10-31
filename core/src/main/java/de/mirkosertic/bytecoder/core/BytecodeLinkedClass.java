@@ -50,12 +50,19 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     private Boolean opaque;
     private Boolean callback;
     private Boolean event;
+    private Set<BytecodeVirtualMethodIdentifier> implementedIdentifiersCache;
+    private BytecodeLinkedClass superClass;
 
-    public BytecodeLinkedClass(final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
+    public BytecodeLinkedClass(final BytecodeLinkedClass aSuperclass, final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
         className = aClassName;
         bytecodeClass = aBytecodeClass;
         linkerContext = aLinkerContext;
+        superClass = aSuperclass;
+
+        if (superClass != null) {
+            addEdgeTo(BytecodeSubclassOfEdgeType.instance, superClass);
+        }
     }
 
     public boolean isOpaqueType() {
@@ -138,8 +145,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     }
 
     public BytecodeLinkedClass getSuperClass() {
-        return (BytecodeLinkedClass) singleOutgoingNodeMatching(
-                BytecodeSubclassOfEdgeType.filter()).orElse(null);
+        return superClass;
     }
 
     public void resolveClassInitializer(final BytecodeMethod aMethod) {
@@ -466,9 +472,15 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
 
     public boolean implementsMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
         // Do we already have a link?
-        return outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
-                .map(t -> (BytecodeMethod) t.targetNode())
-                .map(t -> linkerContext.getMethodCollection().identifierFor(t)).anyMatch(t -> Objects.equals(t, aIdentifier));
+        if (implementedIdentifiersCache == null) {
+            implementedIdentifiersCache = outgoingEdges(
+                    BytecodeProvidesMethodEdgeType.filter())
+                    .map(t -> (BytecodeMethod) t.targetNode())
+                    .map(t -> linkerContext.getMethodCollection().identifierFor(t))
+                    .collect(Collectors.toSet());
+        }
+
+        return implementedIdentifiersCache.contains(aIdentifier);
     }
 
     @Override

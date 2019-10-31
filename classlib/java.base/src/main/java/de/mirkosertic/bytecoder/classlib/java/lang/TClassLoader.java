@@ -16,15 +16,16 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
 public class TClassLoader {
 
     public static ClassLoader getPlatformClassLoader() {
-        throw new IllegalStateException();
+        return VM.SYSTEM_LOADER;
     }
 
     public static ClassLoader getSystemClassLoader() {
-        throw new IllegalStateException();
+        return VM.SYSTEM_LOADER;
     }
 }

@@ -15,22 +15,26 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 public class BytecodeAttributes {
 
     private final BytecodeAttributeInfo[] attributes;
+    private final BytecodeAnnotationAttributeInfo[] annotations;
 
-    public BytecodeAttributes(BytecodeAttributeInfo[] aAttributes) {
+    public BytecodeAttributes(
+            BytecodeAttributeInfo[] aAttributes) {
         this.attributes = aAttributes;
+        this.annotations = Arrays.stream(aAttributes).filter(t -> t instanceof BytecodeAnnotationAttributeInfo)
+                .map(t -> (BytecodeAnnotationAttributeInfo) t).collect(Collectors.toList()).toArray(new BytecodeAnnotationAttributeInfo[0]);
     }
 
     public BytecodeAnnotation getAnnotationByType(String aTypeName) {
-        for (BytecodeAttributeInfo theInfo : attributes) {
-            if (theInfo instanceof BytecodeAnnotationAttributeInfo) {
-                BytecodeAnnotationAttributeInfo theAnnotationInfo = (BytecodeAnnotationAttributeInfo) theInfo;
-                BytecodeAnnotation theFound =  theAnnotationInfo.getAnnotationByType(aTypeName);
-                if (theFound != null) {
-                    return theFound;
-                }
+        for (BytecodeAnnotationAttributeInfo theAnnotationInfo : annotations) {
+            BytecodeAnnotation theFound =  theAnnotationInfo.getAnnotationByType(aTypeName);
+            if (theFound != null) {
+                return theFound;
             }
         }
         return null;

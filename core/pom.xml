@@ -95,6 +95,12 @@
             <version>1.7.28</version>
             <scope>test</scope>
         </dependency>-->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-svggen</artifactId>
+            <version>1.11</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
