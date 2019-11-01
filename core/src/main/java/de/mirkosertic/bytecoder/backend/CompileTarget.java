@@ -35,6 +35,8 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
 public class CompileTarget {
@@ -77,6 +79,13 @@ public class CompileTarget {
         theCallsite.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                 new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
 
+        // We have to link character set implementations
+        // to make them available via reflection API
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_8")));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_16")));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/ISO_8859_1")));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/US_ASCII")));
+
         // Additional classes
         if (aOptions.getAdditionalClassesToLink() != null) {
             for (final String theClassname : aOptions.getAdditionalClassesToLink()) {
@@ -111,7 +120,7 @@ public class CompileTarget {
             // We have to link all callback implementations. They are not part of the dependency yet as
             // they are not invoked by the bytecode, but from the outside world. By adding them to the
             // dependency tree, we make sure they are available for invocation.
-            final List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(t -> t.targetNode())
+            final List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(Edge::targetNode)
                     .collect(Collectors.toList());
             for (final BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
                 if (theLinkedClass.isCallback()) {

@@ -22,7 +22,6 @@ import java.text.DecimalFormatSymbols;
 import java.util.Comparator;
 
 import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.classlib.java.nio.charset.UTF_8;
 
 public class VM {
 

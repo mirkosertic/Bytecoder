@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.classlib.java.nio.charset.UTF_8;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
@@ -30,6 +29,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -49,7 +49,7 @@ public class CharsetTest {
     @Test
     @Ignore
     public void testUTF8() {
-        final Charset cs = Charset.forName("UTF-8");
+        final Charset cs = StandardCharsets.UTF_8;
         final ByteBuffer bf = cs.encode("Münster");
         final byte[] result = Arrays.copyOf(bf.array(), bf.limit());
 
@@ -93,7 +93,7 @@ public class CharsetTest {
     @Test
     public void testUTF8Charset() throws CharacterCodingException {
         final String m = "Mün";
-        final UTF_8 cs = UTF_8.INSTANCE;
+        final Charset cs = StandardCharsets.UTF_8;
         final CharsetEncoder encoder = cs.newEncoder();
         final ByteBuffer bb = encoder.encode(CharBuffer.wrap(new char[] {'M','ü','n'}));
         final byte[] arr = bb.array();
