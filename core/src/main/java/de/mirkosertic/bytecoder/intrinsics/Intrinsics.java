@@ -32,7 +32,7 @@ public class Intrinsics {
         intrinsics.add(new VMIntrinsic());
         intrinsics.add(new JavaLangStrictMathIntrinsic());
         intrinsics.add(new JavaLangMathIntrinsic());
-        intrinsics.add(new RuntimeClassIntrinsic());
+        intrinsics.add(new JavaLangClassIntrinsic());
         intrinsics.add(new ObjectConstructorCallIntrinsic());
         intrinsics.add(new JavaLangEnumIntrinsic());
         intrinsics.add(new JavaLangFloatIntrinsic());

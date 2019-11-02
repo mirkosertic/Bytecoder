@@ -81,10 +81,13 @@ public class CompileTarget {
 
         // We have to link character set implementations
         // to make them available via reflection API
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_8")));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_16")));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/ISO_8859_1")));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/US_ASCII")));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_8")))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_16"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/ISO_8859_1"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/US_ASCII"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java/lang/CharacterDataLatin1"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         // Additional classes
         if (aOptions.getAdditionalClassesToLink() != null) {
