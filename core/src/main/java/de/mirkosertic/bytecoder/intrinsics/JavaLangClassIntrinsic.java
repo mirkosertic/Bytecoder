@@ -26,6 +26,8 @@ public class JavaLangClassIntrinsic extends Intrinsic {
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction, final String aMethodName,
                               final BytecodeObjectTypeRef aType, final List<Value> aArguments, final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+        final BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
+
         if ("getClass".equals(aMethodName) && BytecodeLinkedClass.GET_CLASS_SIGNATURE
                 .matchesExactlyTo(theSignature)) {
             final Variable theNewVariable = aTargetBlock
@@ -34,20 +36,35 @@ public class JavaLangClassIntrinsic extends Intrinsic {
 
             return true;
         }
+
+        if (theCalledClass.name().equals(Class.class.getName())) {
+            if ("newInstance".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new NewInstanceFromDefaultConstructorExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
+                return true;
+            }
+            if ("desiredAssertionStatus".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.DESIRED_ASSERTION_STATUS_SIGNATURE)) {
+                // Status is always false
+                aHelper.push(aInstruction.getOpcodeAddress(), new IntegerValue(0));
+                return true;
+            }
+        }
+
         return false;
     }
 
     @Override
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction, final String aMethodName, final List<Value> aArguments, final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
-        BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
+        final BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
+
+        if ("getClass".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE)) {
+            final Value theValue = new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
+            final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+            return true;
+        }
+
         if (theCalledClass.name().equals(Class.class.getName())) {
-            if ("getClass".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_CLASS_SIGNATURE)) {
-                final Value theValue = new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
-                final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
-                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
-                return true;
-            }
             if ("newInstance".equals(aMethodName)) {
                 aHelper.push(aInstruction.getOpcodeAddress(), new NewInstanceFromDefaultConstructorExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
                 return true;
