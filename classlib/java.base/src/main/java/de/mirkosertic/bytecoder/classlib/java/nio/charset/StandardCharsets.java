@@ -46,45 +46,48 @@ public class StandardCharsets {
             @Override
             public Charset next() {
                 c++;
-                if (c == 1) {
-                    return UTF_8.INSTANCE;
+                try {
+                    if (c == 1) {
+                        return (Charset) Class.forName("sun.nio.cs.UTF_8").newInstance();
+                    }
+                    if (c == 2) {
+                        return (Charset) Class.forName("sun.nio.cs.UTF_16").newInstance();
+                    }
+                    if (c == 3) {
+                        return (Charset) Class.forName("sun.nio.cs.ISO_88591_1").newInstance();
+                    }
+                } catch (final Exception e) {
+                    throw new IllegalStateException("Instantiation erroe", e);
                 }
-                if (c == 2) {
-                    return UTF_16.INSTANCE;
-                }
-                if (c == 3) {
-                    return ISO_8859_1.INSTANCE;
-                }
-
                 throw new IllegalStateException("EOL");
             }
         };
     }
 
-    public Charset charsetForName(final String charsetName) {
+    public Charset charsetForName(final String charsetName) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         for (final String name : aliases_UTF_8()) {
             if (name.equalsIgnoreCase(charsetName)) {
-                return UTF_8.INSTANCE;
+                return (Charset) Class.forName("sun.nio.cs.UTF_8").newInstance();
             }
         }
         for (final String name : aliases_UTF_16()) {
             if (name.equalsIgnoreCase(charsetName)) {
-                return UTF_16.INSTANCE;
+                return (Charset) Class.forName("sun.nio.cs.UTF_16").newInstance();
             }
         }
         for (final String name : aliases_ISO_8859_1()) {
             if (name.equalsIgnoreCase(charsetName)) {
-                return ISO_8859_1.INSTANCE;
+                return (Charset) Class.forName("sun.nio.cs.ISO_8859_1").newInstance();
             }
         }
-        if (charsetName.equals(UTF_8.INSTANCE.name())) {
-            return UTF_8.INSTANCE;
+        if (charsetName.equals("UTF-8")) {
+            return (Charset) Class.forName("sun.nio.cs.UTF_8").newInstance();
         }
-        if (charsetName.equals(UTF_16.INSTANCE.name())) {
-            return UTF_16.INSTANCE;
+        if (charsetName.equals("UTF-16")) {
+            return (Charset) Class.forName("sun.nio.cs.UTF_16").newInstance();
         }
-        if (charsetName.equals(ISO_8859_1.INSTANCE.name())) {
-            return ISO_8859_1.INSTANCE;
+        if (charsetName.equals("ISO-8859-1")) {
+            return (Charset) Class.forName("sun.nio.cs.ISO_8859_1").newInstance();
         }
         return null;
     }
