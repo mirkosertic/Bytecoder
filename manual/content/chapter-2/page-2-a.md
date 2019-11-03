@@ -11,6 +11,23 @@ weight: 1
 OpenCL Integration is highly experimental
 {{% /notice %}}
 
+First of all, make sure to include the following dependencies:
+
+```
+<dependencies>
+    <dependency>
+        <groupId>de.mirkosertic.bytecoder</groupId>
+        <artifactId>bytecoder.opencl</artifactId>
+        <version>{{% siteparam "bytecoderversion" %}}</version>
+    </dependency>
+    <dependency>
+        <groupId>de.mirkosertic.bytecoder</groupId>
+        <artifactId>bytecoder-core</artifactId>
+        <version>{{% siteparam "bytecoderversion" %}}</version>
+    </dependency>
+</dependency>
+```
+
 Before we can use the OpenCL integration, we have to setup the whole OpenCL environment.
 An OpenCL environment can be obtained by the following code:
 
