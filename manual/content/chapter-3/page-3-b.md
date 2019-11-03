@@ -1,5 +1,5 @@
 ---
-title: "Scala JBox2D simulation"
+title: "Kotlin JBox2D simulation"
 date: 2019-10-25T14:49:24+02:00
 draft: false
 weight: 2
