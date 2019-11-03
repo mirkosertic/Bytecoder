@@ -92,12 +92,14 @@ public abstract class TCharset
             return (java.nio.charset.Charset)a[1];
         }
         final java.nio.charset.Charset cs;
-        if ((cs = standardProvider.charsetForName(charsetName)) != null)
-        {
-            cache(charsetName, cs);
-            return cs;
+        try {
+            if ((cs = standardProvider.charsetForName(charsetName)) != null) {
+                cache(charsetName, cs);
+                return cs;
+            }
+        } catch (final Exception e) {
+            throw new IllegalArgumentException("Instantiation error", e);
         }
-
         /* Only need to check the name if we didn't find a charset for it */
         checkName(charsetName);
         return null;
@@ -135,9 +137,9 @@ public abstract class TCharset
 
     private static volatile java.nio.charset.Charset defaultCharset;
 
-    public static java.nio.charset.Charset defaultCharset() {
+    public static java.nio.charset.Charset defaultCharset() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         if (defaultCharset == null) {
-            defaultCharset = UTF_8.INSTANCE;
+            defaultCharset = (Charset) Class.forName("sun.nio.cs.UTF_8").newInstance();
         }
         return defaultCharset;
     }
