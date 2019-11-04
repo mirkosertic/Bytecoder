@@ -12,13 +12,13 @@ Sometimes the methods or properties you want aren't there, but it's very simple 
 ```
 public abstract class CustomCanvas extends de.mirkosertic.bytecoder.api.web.HTMLCanvasElement {
 
-	// The following two methods are setters and getters for the canvas.width property.
+    // The following two methods are setters and getters for the canvas.width property.
 
-	@de.mirkosertic.bytecoder.api.OpaqueProperty
-	public abstract void width(float value);
-	
-	@de.mirkosertic.bytecoder.api.OpaqueProperty
-	public abstract float width();
+    @de.mirkosertic.bytecoder.api.OpaqueProperty
+    public abstract void width(float value);
+
+    @de.mirkosertic.bytecoder.api.OpaqueProperty
+    public abstract float width();
 }
 ```
 
@@ -40,21 +40,21 @@ Explanation of JavaScript data types in this page:
 ```
 public abstract class Navigator implements de.mirkosertic.bytecoder.api.OpaqueReferenceType {
 
-	public static native Navigator navigator();
+    public static native Navigator navigator();
 
-	@de.mirkosertic.bytecoder.api.OpaqueProperty
-	public abstract String userAgent();
-	
-	@de.mirkosertic.bytecoder.api.OpaqueProperty
-	public abstract boolean cookieEnabled();
-	
-	// If you want to have a different name in the Java code, you can
-	// name the method for example beaconSend and annotate it with
-	// @OpaqueMethod("sendBeacon")
-	// This specific method has more types of possible arguments,
-	// if you need to support those you just need to add more methods
-	// but with the other `data` types
-	public abstract void sendBeacon(String url, String data);
+    @de.mirkosertic.bytecoder.api.OpaqueProperty
+    public abstract String userAgent();
+
+    @de.mirkosertic.bytecoder.api.OpaqueProperty
+    public abstract boolean cookieEnabled();
+
+    // If you want to have a different name in the Java code, you can
+    // name the method for example beaconSend and annotate it with
+    // @OpaqueMethod("sendBeacon")
+    // This specific method has more types of possible arguments,
+    // if you need to support those you just need to add more methods
+    // but with the other `data` types
+    public abstract void sendBeacon(String url, String data);
 }
 ```
 
@@ -69,7 +69,7 @@ bytecoder.imports.navigator = bytecoder.imports.navigator || {};
 
 // This method has no arguments so it's simply called navigator
 bytecoder.imports.navigator.navigator = function (thisref) {
-	return bytecoder.toBytecoderReference(navigator);
+    return bytecoder.toBytecoderReference(navigator);
 };
 ```
 
@@ -82,14 +82,14 @@ System.out.println(Navigator.navigator().userAgent());
 ```
 public abstract class ArrayBuffer implements OpaqueReferenceType {
 
-	// The @Import annotation is completely optional and
-	// it removes the need for having to include the
-	// parameter types in the method name on the JavaScript side.
-	@de.mirkosertic.bytecoder.api.Import(module = "arraybuffer", name = "create")
-	public static native create(int size);
-	
-	@de.mirkosertic.bytecoder.api.OpaqueProperty
-	public int byteLength();
+    // The @Import annotation is completely optional and
+    // it removes the need for having to include the
+    // parameter types in the method name on the JavaScript side.
+    @de.mirkosertic.bytecoder.api.Import(module = "arraybuffer", name = "create")
+    public static native create(int size);
+
+    @de.mirkosertic.bytecoder.api.OpaqueProperty
+    public int byteLength();
 }
 ```
 
@@ -108,7 +108,7 @@ bytecoder.imports.arraybuffer = bytecoder.imports.arraybuffer || {};
 // Warning: This method uses the @Import annotation which is why
 // it is called `create` and not `createINT`.
 bytecoder.imports.arraybuffer.create = function (thisref, size) {
-	return bytecoder.toBytecoderReference(new ArrayBuffer(size));
+    return bytecoder.toBytecoderReference(new ArrayBuffer(size));
 };
 ```
 
@@ -120,9 +120,9 @@ System.out.println(ArrayBuffer.create(6).byteLength()); // 6
 
 ```
 public abstract class DataView implements de.mirkosertic.bytecoder.api.OpaqueReferenceType {
-	public static native create(ArrayBuffer arrayBuffer);
-	
-	// ... opaque methods and properties ...
+    public static native create(ArrayBuffer arrayBuffer);
+
+    // ... opaque methods and properties ...
 }
 ```
 
@@ -131,18 +131,28 @@ bytecoder.imports.dataview = bytecoder.imports.dataview || {};
 
 // create - method name, ArrayBuffer - parameter type
 bytecoder.imports.dataview.createArrayBuffer = function (thisref, arraybufferref) {
-	return bytecoder.toBytecoderReference(new DataView(bytecoder.toJSReference(arraybufferref)));
+    return bytecoder.toBytecoderReference(new DataView(bytecoder.toJSReference(arraybufferref)));
 };
 ```
 
-## Imports
+## Import and Export semantics
 
-Imports are methods imported from JavaScript and called from Java.
-
-## Exports
-
-Exports are methods exported from Java and called from JavaScript.
+* Imports are methods imported from JavaScript/Host side and called from Java.
+* Exports are methods exported from Java and called from JavaScript/Host side.
 
 ## Emulating classes and methods
 
-This is done by using the @de.mirkosertic.bytecoder.api.SubstitutesInClass annotation.
+Bytecoder is based on the OpenJDK JRE classlib. However, it is sometimes neccesary to
+patch existing classes to make them compatible with Bytecoder.
+
+Bytecoder introduces a concept called shadow types for this purpose.
+
+Take a look at the `java.lang.System` class. It needs some adaptation
+for make it compatible with Bytecoder. Now, the shadow type called
+`de.mirkosertic.bytecoder.classlib.java.lang.TSystem` is introduced.
+Shadow types need the package prefix `de.mirkosertic.bytecoder.classlib`
+and the `@de.mirkosertic.bytecoder.api.SubstitutesInClass` annotation.
+
+`@SubstitutesInClass` toggles what should be adapted by the shadow
+type. It can either override the whole class by setting `completeReplace=true`
+or only specified methods by setting `completeReplace=false`.

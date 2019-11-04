@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 
 import java.util.ArrayList;
@@ -28,13 +29,19 @@ public class Program {
     private final List<Variable> arguments;
     private BytecodeProgram.FlowInformation flowInformation;
     private long analysisTime;
+    private final BytecodeLinkerContext linkerContext;
 
-    public Program(final DebugInformation aDebugInformation) {
+    public Program(final DebugInformation aDebugInformation, final BytecodeLinkerContext aLinkerContext) {
         controlFlowGraph = new ControlFlowGraph(this);
         variables = new ArrayList<>();
         arguments = new ArrayList<>();
         debugInformation = aDebugInformation;
         analysisTime = 0;
+        linkerContext = aLinkerContext;
+    }
+
+    public BytecodeLinkerContext getLinkerContext() {
+        return linkerContext;
     }
 
     public DebugInformation getDebugInformation() {

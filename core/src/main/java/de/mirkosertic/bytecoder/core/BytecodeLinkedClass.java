@@ -51,7 +51,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     private Boolean callback;
     private Boolean event;
     private Set<BytecodeVirtualMethodIdentifier> implementedIdentifiersCache;
-    private BytecodeLinkedClass superClass;
+    private final BytecodeLinkedClass superClass;
 
     public BytecodeLinkedClass(final BytecodeLinkedClass aSuperclass, final int aUniqueId, final BytecodeLinkerContext aLinkerContext, final BytecodeObjectTypeRef aClassName, final BytecodeClass aBytecodeClass) {
         uniqueId = aUniqueId;
@@ -278,13 +278,13 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             return true;
         }
 
-        boolean foundByInterface = false;
+        boolean somethingFound = false;
 
         // Try to find default methods and also mark usage
         // of interface methods
         for (final BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
             if (theImplementedInterface.resolveVirtualMethod(aMethodName, aSignature)) {
-                foundByInterface = true;
+                somethingFound = true;
             }
         }
 
@@ -301,14 +301,14 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             return true;
         }
 
-        if (!foundByInterface) {
-            final BytecodeLinkedClass theSuperClass = getSuperClass();
-            if (theSuperClass != null) {
-                return theSuperClass.resolveVirtualMethod(aMethodName, aSignature);
+        final BytecodeLinkedClass theSuperClass = getSuperClass();
+        if (theSuperClass != null) {
+            if (theSuperClass.resolveVirtualMethod(aMethodName, aSignature)) {
+                return true;
             }
         }
 
-        return foundByInterface;
+        return somethingFound;
     }
 
     public boolean resolveConstructorInvocation(final BytecodeMethodSignature aSignature) {
@@ -465,7 +465,9 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             final BytecodeResolvedMethods theResolvedMethods = theClass.resolvedMethods();
             final List<BytecodeMethod> theInstanceMethods = theResolvedMethods.stream().filter(t -> !t.getValue().getAccessFlags().isPrivate() && !t.getValue().getAccessFlags().isStatic()).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
             for (final BytecodeMethod theMethod : theInstanceMethods) {
-                BytecodeLinkedClass.this.resolveVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                if (!BytecodeLinkedClass.this.resolveVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature())) {
+                    throw new IllegalStateException("Cannot find method " + theMethod.getName() + " with signature " + theMethod.getSignature() + " in class " + theClass.getClassName().name());
+                }
             }
         }
     }

@@ -72,7 +72,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
      * The build target directory.
      */
     @Parameter(defaultValue = "${project.build.directory}")
-    protected String buldDirectory;
+    protected String buildDirectory;
 
     /**
      * Shall debug output be generated?
@@ -136,7 +136,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-        final File theBaseDirectory = new File(buldDirectory);
+        final File theBaseDirectory = new File(buildDirectory);
         final File theBytecoderDirectory = new File(theBaseDirectory, "bytecoder");
         theBytecoderDirectory.mkdirs();
 

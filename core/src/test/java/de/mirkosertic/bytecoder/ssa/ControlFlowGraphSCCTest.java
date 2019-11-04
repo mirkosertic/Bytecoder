@@ -29,7 +29,7 @@ public class ControlFlowGraphSCCTest {
 
     @Test
     public void testSimpleNode() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         graph.calculateReachabilityAndMarkBackEdges();
@@ -45,7 +45,7 @@ public class ControlFlowGraphSCCTest {
 
     @Test
     public void testSimpleFlow() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
@@ -67,7 +67,7 @@ public class ControlFlowGraphSCCTest {
 
     @Test
     public void testJoiningFlow() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
@@ -95,7 +95,7 @@ public class ControlFlowGraphSCCTest {
 
     @Test
     public void testLoop1() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
@@ -116,7 +116,7 @@ public class ControlFlowGraphSCCTest {
 
     @Test
     public void testLoop2() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
@@ -138,7 +138,7 @@ public class ControlFlowGraphSCCTest {
 
     @Test
     public void testLoop3Joining() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node1 = graph.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);

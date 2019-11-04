@@ -28,7 +28,7 @@ public class DominanceTest {
 
     @Test
     public void testDirectFlow() {
-        final Program theProgram = new Program(DebugInformation.empty());
+        final Program theProgram = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
         final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -66,7 +66,7 @@ public class DominanceTest {
 
     @Test
     public void testEndlessLoop() {
-        final Program theProgram = new Program(DebugInformation.empty());
+        final Program theProgram = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
         final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -85,7 +85,7 @@ public class DominanceTest {
 
     @Test
     public void testIFElseWithJoining() {
-        final Program theProgram = new Program(DebugInformation.empty());
+        final Program theProgram = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph theGraph = new ControlFlowGraph(theProgram);
 
         final RegionNode theNode1 = theGraph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
